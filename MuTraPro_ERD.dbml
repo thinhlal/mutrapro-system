@@ -90,7 +90,7 @@ Table specialists {
   current_workload integer [default: 0] // Số task hiện tại đang làm
   availability_status availability_status [default: 'available'] // Auto calculated
   
-  skills text[]
+  // skills moved to specialist_skills table for normalization
   portfolio_url varchar(255)
   rating decimal(3,2) [default: 0.00]
   total_projects integer [default: 0]
@@ -102,6 +102,64 @@ Table specialists {
     availability_status
     current_workload
     max_concurrent_tasks
+  }
+}
+
+// 3.1. Skill Categories (Danh mục kỹ năng)
+Table skill_categories {
+  category_id uuid [pk, increment]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Danh mục kỹ năng: Audio Engineering, Music Theory, Software Tools, etc.'
+  
+  indexes {
+    category_name [unique]
+    is_active
+  }
+}
+
+// 3.2. Skills (Kỹ năng cụ thể)  
+Table skills {
+  skill_id uuid [pk, increment]
+  category_id uuid [ref: > skill_categories.category_id, not null]
+  skill_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng cụ thể: Jazz Piano, Logic Pro, Sheet Music Notation, etc.'
+  
+  indexes {
+    category_id
+    skill_name [unique]
+    is_active
+  }
+}
+
+// 3.3. Specialist Skills (Kỹ năng của từng specialist)
+Table specialist_skills {
+  specialist_skill_id uuid [pk, increment]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  proficiency_level proficiency_level [not null]
+  years_experience integer [default: 0]
+  last_used_date date
+  is_certified boolean [default: false]
+  certification_details text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng của specialist với level và kinh nghiệm cụ thể'
+  
+  indexes {
+    (specialist_id, skill_id) [unique]
+    specialist_id
+    skill_id
+    proficiency_level
+    years_experience
   }
 }
 
@@ -131,12 +189,90 @@ Table studios {
   studio_name varchar(100) [not null]
   location varchar(255) [not null]
   capacity integer [not null]
-  equipment text[]
+  // equipment moved to studio_equipment table for better management
   hourly_rate decimal(10,2) [not null]
   is_active boolean [default: true]
   description text
   
   Note: 'Thông tin studio ghi âm'
+  
+  indexes {
+    studio_name
+    location
+    is_active
+    hourly_rate
+  }
+}
+
+// 6.1. Equipment Categories (Danh mục thiết bị)
+Table equipment_categories {
+  category_id uuid [pk, increment]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Danh mục thiết bị: Microphones, Audio Interfaces, Monitors, etc.'
+  
+  indexes {
+    category_name [unique]
+    is_active
+  }
+}
+
+// 6.2. Equipment (Thiết bị cụ thể)
+Table equipment {
+  equipment_id uuid [pk, increment]
+  category_id uuid [ref: > equipment_categories.category_id, not null]
+  equipment_name varchar(100) [not null]
+  brand varchar(50)
+  model varchar(100)
+  description text
+  specifications jsonb // Technical specs as JSON
+  purchase_date date
+  purchase_price decimal(12,2)
+  current_value decimal(12,2)
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Thiết bị cụ thể: Neumann U87, Focusrite Scarlett, Yamaha HS8, etc.'
+  
+  indexes {
+    category_id
+    equipment_name
+    brand
+    model
+    is_active
+  }
+}
+
+// 6.3. Studio Equipment (Thiết bị của từng studio)  
+Table studio_equipment {
+  studio_equipment_id uuid [pk, increment]
+  studio_id uuid [ref: > studios.studio_id, not null]
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
+  quantity integer [default: 1]
+  condition equipment_condition [default: 'good']
+  last_maintenance_date date
+  next_maintenance_date date
+  maintenance_notes text
+  is_available boolean [default: true]
+  location_in_studio varchar(100) // "Control Room", "Live Room", "Vocal Booth"
+  installation_date date
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Thiết bị có sẵn tại từng studio với trạng thái và bảo trì'
+  
+  indexes {
+    studio_id
+    equipment_id
+    condition
+    is_available
+    next_maintenance_date
+    (studio_id, equipment_id) [unique]
+  }
 }
 
 // 7. Bảng giá chuẩn (Pricing Matrix)
@@ -171,7 +307,7 @@ Table service_requests {
   request_type service_type [not null]
   title varchar(200) [not null]
   description text [not null]
-  priority priority_level [default: 'medium']
+  priority task_priority [default: 'normal']
   status request_status [default: 'pending']
   estimated_duration integer // tính bằng giờ
   actual_duration integer
@@ -217,10 +353,10 @@ Table quotations {
   deposit_amount decimal(12,2) [not null]
   final_amount decimal(12,2) [not null]
   
-  // Delivery type và rush info
-  delivery_type delivery_pricing_type [default: 'normal']
-  rush_fee_amount decimal(12,2) [default: 0] // Phí rush riêng biệt
-  overtime_fee_amount decimal(12,2) [default: 0] // Phí overtime riêng biệt
+  // Task priority pricing
+  task_priority task_priority [default: 'normal'] // normal hoặc rush
+  rush_multiplier decimal(3,2) [default: 1.0] // 1.0 = normal, 1.3-1.5 = rush
+  overtime_hours_estimate decimal(4,1) [default: 0] // Số giờ OT ước tính cho rush jobs
   
   // Trạng thái và thời gian
   status quotation_status [default: 'sent']
@@ -310,23 +446,32 @@ Table task_assignments {
   due_date timestamp [not null]
   estimated_hours decimal(6,2) [not null] // Dự kiến cần bao nhiêu giờ
   
-  // Priority management  
-  priority priority_level [default: 'medium']
-  is_rush_job boolean [default: false]
-  rush_fee_multiplier decimal(3,2) [default: 1.0] // 1.3x cho rush, 1.5x cho overtime
+  // Task priority (inherited from service_requests.priority)
+  task_priority task_priority [default: 'normal'] // normal hoặc rush
   
-  // Overtime workflow
-  overtime_requested boolean [default: false] // Coordinator có hỏi overtime không
-  overtime_approved_by_specialist boolean [default: null] // Specialist response
-  overtime_requested_at timestamp // Khi nào coordinator hỏi
-  overtime_response_at timestamp // Khi nào specialist trả lời
-  overtime_reason text // Lý do specialist accept/decline
+  // Scheduling rules based on priority
+  min_block_hours decimal(3,1) [default: 2.0] // Normal: 2h, Rush: 1.5h minimum
+  daily_overtime_hours decimal(3,1) [default: 0] // Rush: +2h/ngày, Normal: 0
+  
+  // Rush job confirmation workflow (chỉ cho rush tasks)
+  rush_job_offered boolean [default: false] // Coordinator đã offer rush job chưa
+  rush_job_accepted_by_specialist boolean // Specialist response: true/false/null
+  rush_job_offered_at timestamp // Khi nào coordinator offer
+  rush_job_response_deadline timestamp // Deadline specialist phải trả lời
+  rush_job_response_at timestamp // Khi nào specialist trả lời
+  rush_job_decline_reason text // Lý do từ chối nếu decline
+  
+  // Scheduling tracking (auto-calculated từ specialist_schedules)
+  total_hours_scheduled decimal(6,2) [default: 0] // Tổng giờ đã schedule
+  total_blocks_scheduled integer [default: 0] // Số blocks đã schedule  
+  remaining_hours decimal(6,2) // estimated_hours - total_hours_scheduled
+  scheduling_status scheduling_status [default: 'not_scheduled'] // Trạng thái phân bổ lịch
   
   completed_date timestamp
   actual_hours decimal(6,2) // Thực tế làm bao nhiêu giờ
   notes text
   
-  Note: 'Phân công công việc với timeline và priority management'
+  Note: 'Phân công task với coordinator confirmation: Normal (auto assign) vs Rush (cần specialist confirm + 2h OT/day)'
   
   indexes {
     project_id
@@ -334,8 +479,11 @@ Table task_assignments {
     status
     start_date
     due_date
-    priority
-    is_rush_job
+    task_priority
+    rush_job_offered
+    rush_job_accepted_by_specialist
+    rush_job_response_deadline
+    scheduling_status
   }
 }
 
@@ -362,14 +510,15 @@ Table specialist_schedules {
   description text
   is_recurring boolean [default: false] // Có lặp lại không (VD: meeting hàng tuần)
   
-  // Split session tracking
-  is_overtime boolean [default: false] // Có phải overtime slot không
-  split_session_order integer [default: null] // Thứ tự nếu task bị split (1, 2, 3...)
+  // Task block management
+  is_overtime_block boolean [default: false] // Có phải block overtime không (rush tasks)
+  block_order integer [default: 1] // Thứ tự block của task (1, 2, 3...)
+  is_normal_hours boolean [default: true] // Trong giờ làm bình thường hay OT
   
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Lịch chi tiết của specialist - track từng time slot để tính availability'
+  Note: 'Lịch chi tiết của specialist - track blocks với overtime support cho rush tasks'
   
   indexes {
     specialist_id
@@ -394,7 +543,7 @@ Table files {
   file_name varchar(255) [not null]
   file_path varchar(500) [not null]
   file_size bigint [not null]
-  file_type varchar(50) [not null]
+  mime_type varchar(100)   
   
   // File classification
   file_source file_source_type [not null]
@@ -737,11 +886,9 @@ Enum currency_type {
   EUR
 }
 
-Enum priority_level {
-  low
-  medium
-  high
-  urgent
+Enum task_priority {
+  normal
+  rush
 }
 
 Enum request_status {
@@ -767,6 +914,22 @@ Enum project_status {
   review
   completed
   cancelled
+}
+
+Enum proficiency_level {
+  beginner          // Mới học, ít kinh nghiệm
+  intermediate      // Biết cơ bản, có thể làm task đơn giản
+  advanced          // Thành thạo, có thể làm task phức tạp
+  expert            // Chuyên gia, có thể dạy người khác
+}
+
+Enum equipment_condition {
+  excellent         // Như mới, hoạt động hoàn hảo
+  good              // Tốt, hoạt động bình thường
+  fair              // Ổn, có thể có vài vấn đề nhỏ
+  poor              // Kém, cần sửa chữa hoặc thay thế
+  maintenance       // Đang bảo trì
+  out_of_order      // Hỏng, không sử dụng được
 }
 
 Enum milestone_type {
@@ -800,12 +963,13 @@ Enum task_type {
 }
 
 Enum assignment_status {
-  assigned
-  accepted
-  in_progress
-  completed
-  rejected
-  overdue
+  assigned         // Task đã được assign (normal tasks auto start)
+  rush_offered     // Rush task đã được offer, chờ specialist response
+  accepted         // Specialist đã accept task (normal hoặc rush)
+  in_progress      // Đang làm
+  completed        // Hoàn thành
+  rejected         // Specialist reject rush task
+  overdue          // Quá hạn
 }
 
 Enum revision_type {
@@ -823,6 +987,13 @@ Enum revision_status {
   rejected
 }
 
+Enum scheduling_status {
+  not_scheduled       // Chưa phân bổ lịch
+  partial_scheduled   // Đã schedule một phần
+  fully_scheduled     // Đã schedule đủ giờ
+  over_scheduled      // Schedule quá giờ (error)
+}
+
 Enum delivery_type {
   draft           // Bản nháp để review
   milestone       // Giao nộp theo milestone
@@ -838,11 +1009,7 @@ Enum delivery_status {
   rejected        // Customer reject, cần revision
 }
 
-Enum delivery_pricing_type {
-  normal          // Delivery bình thường
-  rush_split      // Rush job với split sessions (+30%)
-  rush_overtime   // Rush job với specialist overtime (+50%)
-}
+// Removed delivery_pricing_type - simplified to task_priority only
 
 Enum recording_session_type {
   self_recording          // Customer tự thu âm
