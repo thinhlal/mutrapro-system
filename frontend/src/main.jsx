@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 
 // Import styles
+import "bootstrap/dist/css/bootstrap.min.css";
 import "antd/dist/reset.css";
 import "./styles/global.css";
 
