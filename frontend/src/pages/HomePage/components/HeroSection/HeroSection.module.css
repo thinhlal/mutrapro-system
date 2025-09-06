@@ -1,0 +1,517 @@
+/* Hero Section */
+.heroSection {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+/* Background Slideshow */
+.backgroundSlideshow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.backgroundImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+
+.backgroundImage.active {
+  opacity: 1;
+}
+
+.backgroundOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(236, 138, 28, 0.1) 100%
+  );
+  z-index: 2;
+}
+
+/* Hero Container */
+.heroContainer {
+  position: relative;
+  z-index: 3;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.heroRow {
+  min-height: 100vh;
+  align-items: center;
+}
+
+/* Left Content */
+.leftContent {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 0;
+}
+
+.contentWrapper {
+  max-width: 600px;
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 0.8s ease-out;
+}
+
+.contentWrapper.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Logo Section */
+.logoSection {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.logoText {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.logoMy {
+  color: #ec8a1c;
+  font-size: 2.5rem;
+  font-weight: 300;
+  display: inline-block;
+}
+
+.logoMain {
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.logoSub {
+  color: #333;
+  font-size: 2.5rem;
+  font-weight: 300;
+  display: block;
+  margin-top: -0.5rem;
+}
+
+/* Main Heading */
+.mainHeading {
+  margin-bottom: 1.5rem;
+}
+
+.heroTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.1;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Description */
+.description {
+  margin-bottom: 2.5rem;
+}
+
+.heroDescription {
+  font-size: 1.25rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+
+.heroSubDescription {
+  font-size: 1.25rem;
+  color: #333;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.heroSubDescription strong {
+  color: #ec8a1c;
+  font-weight: 600;
+}
+
+/* CTA Section */
+.ctaSection {
+  margin-top: 2rem;
+}
+
+.learnMoreBtn {
+  display: inline-block;
+  background: #4a9eff;
+  color: white;
+  text-decoration: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(74, 158, 255, 0.3);
+  border: none;
+}
+
+.learnMoreBtn:hover {
+  background: #3a8eef;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+/* Right Content */
+.rightContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  position: relative;
+}
+
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: translateX(50px);
+  transition: all 0.8s ease-out 0.3s;
+}
+
+.imageWrapper.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Google Reviews Card */
+.reviewsCard {
+  position: absolute;
+  top: 20%;
+  right: 10%;
+  background: white;
+  padding: 20px 25px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+  display: grid;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  gap: 15px;
+  min-width: 300px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.googleIcon {
+  flex-shrink: 0;
+}
+
+.gLetter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  /* background: linear-gradient(135deg, #4285f4 0%, #34a853 25%, #fbbc05 50%, #ea4335 100%); */
+  background: #3a8eef;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  border-radius: 50%;
+  font-family: "Product Sans", sans-serif;
+}
+
+.reviewsContent {
+  flex: 1;
+}
+
+.rating {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.stars {
+  margin-bottom: 5px;
+}
+
+.star {
+  color: #ffc107;
+  font-size: 1.2rem;
+  margin-right: 2px;
+}
+
+.reviewCount {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.seeMoreLink {
+  color: #4a9eff;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.3s ease;
+}
+
+.seeMoreLink:hover {
+  color: #3a8eef;
+  text-decoration: none;
+}
+
+/* Main Image Content */
+.mainImageContent {
+  width: 100%;
+  height: 500px;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Slideshow Indicators */
+.slideshowIndicators {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 4;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.indicator.active {
+  background: #ec8a1c;
+  border-color: #ec8a1c;
+  box-shadow: 0 0 0 3px rgba(236, 138, 28, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+  .heroRow {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .leftContent {
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .rightContent {
+    margin-top: 2rem;
+  }
+
+  .heroTitle {
+    font-size: 2.8rem;
+  }
+
+  .logoMy,
+  .logoMain,
+  .logoSub {
+    font-size: 2rem;
+  }
+
+  .reviewsCard {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 2rem auto 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+
+  .logoMy,
+  .logoMain,
+  .logoSub {
+    font-size: 1.8rem;
+  }
+
+  .heroDescription {
+    font-size: 1rem;
+  }
+
+  .heroSubDescription {
+    font-size: 0.95rem;
+  }
+
+  .reviewsCard {
+    min-width: auto;
+    width: 90%;
+    max-width: 300px;
+    padding: 15px 20px;
+    gap: 12px;
+  }
+
+  .gLetter {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .rating {
+    font-size: 1rem;
+  }
+
+  .mainImageContent {
+    height: 400px;
+  }
+
+  .heroContainer {
+    padding: 0 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroTitle {
+    font-size: 1.8rem;
+  }
+
+  .logoMy,
+  .logoMain,
+  .logoSub {
+    font-size: 1.5rem;
+  }
+
+  .heroDescription,
+  .heroSubDescription {
+    font-size: 0.9rem;
+  }
+
+  .learnMoreBtn {
+    padding: 12px 25px;
+    font-size: 0.9rem;
+  }
+
+  .reviewsCard {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+    padding: 15px;
+  }
+
+  .mainImageContent {
+    height: 300px;
+  }
+
+  .slideshowIndicators {
+    bottom: 20px;
+  }
+
+  .indicator {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Animation Delays */
+.logoSection {
+  animation-delay: 0.2s;
+}
+
+.mainHeading {
+  animation-delay: 0.4s;
+}
+
+.description {
+  animation-delay: 0.6s;
+}
+
+.ctaSection {
+  animation-delay: 0.8s;
+}
+
+.reviewsCard {
+  animation: slideInRight 0.8s ease-out 1s both;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .backgroundImage,
+  .contentWrapper,
+  .imageWrapper,
+  .learnMoreBtn,
+  .reviewsCard {
+    transition: none;
+    animation: none;
+  }
+
+  .indicator {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .backgroundOverlay {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .heroTitle {
+    text-shadow: none;
+  }
+
+  .reviewsCard {
+    border: 2px solid #000;
+  }
+}
