@@ -1,6 +1,99 @@
-.content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+/* Page Container */
+.pageContainer {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Main Content */
+.mainContent {
+  min-height: 100vh;
+}
+
+/* Content Sections */
+.contentSection {
+  padding: 80px 0;
+  background: white;
+}
+
+.contentSection:nth-child(even) {
+  background: #fafafa;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.contentSection h2 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.contentSection p {
+  font-size: 1.1rem;
+  color: #666;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .contentSection {
+    padding: 60px 0;
+  }
+
+  .contentSection h2 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .contentSection {
+    padding: 40px 0;
+  }
+
+  .container {
+    padding: 0 15px;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animation for content reveal */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroContent {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.contentSection {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.contentSection:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.contentSection:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.contentSection:nth-child(4) {
+  animation-delay: 0.6s;
 }
