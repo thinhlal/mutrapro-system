@@ -7,6 +7,9 @@ import WhoAreWe from "./components/WhoAreWeSection/WhoAreWe";
 import WhatsIncluded from "./components/WhatsIncludedSection/WhatsIncluded";
 import FlexiblePricing from "./components/FlexiblePricingSection/FlexiblePricing";
 import styles from "./HomePage.module.css";
+import EdgeGalleryStrip from "./components/EdgeGalleryStrip/EdgeGalleryStrip";
+import ReviewsSection from "./components/ReviewsSection/ReviewsSection";
+import Footer from "../../components/common/Footer/Footer";
 
 const HomePage = () => {
   return (
@@ -33,33 +36,13 @@ const HomePage = () => {
         {/* Flexible Pricing Section */}
         <FlexiblePricing />
 
-        {/* Additional Content Sections */}
-        <section className={styles.contentSection}>
-          <div className={styles.container}>
-            <h2>Our Services</h2>
-            <p>
-              Discover our professional music transcription and arrangement
-              services.
-            </p>
-          </div>
-        </section>
+        {/* Edge Gallery Strip Section */}
+        <EdgeGalleryStrip />
 
-        <section className={styles.contentSection}>
-          <div className={styles.container}>
-            <h2>Why Choose Us</h2>
-            <p>
-              Professional quality, fast turnaround, and competitive pricing.
-            </p>
-          </div>
-        </section>
-
-        <section className={styles.contentSection}>
-          <div className={styles.container}>
-            <h2>Get Started Today</h2>
-            <p>Ready to transform your music? Contact us for a free quote.</p>
-          </div>
-        </section>
+        {/* Reviews Section */}
+        <ReviewsSection />
       </main>
+      <Footer />
     </div>
   );
 };

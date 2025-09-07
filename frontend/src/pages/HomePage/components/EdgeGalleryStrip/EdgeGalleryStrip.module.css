@@ -1,0 +1,5 @@
+.stripSection {
+  width: 100%;
+  position: relative;
+  overflow-x: clip;
+}
