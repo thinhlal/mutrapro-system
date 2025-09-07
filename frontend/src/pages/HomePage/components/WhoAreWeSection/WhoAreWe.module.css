@@ -1,0 +1,373 @@
+/* Who Are We Section */
+.whoAreWeSection {
+  padding: 100px 0;
+  background: #ffffff;
+  position: relative;
+}
+
+/* Section Header - Centered Title */
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 60px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out;
+}
+
+.sectionHeader.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sectionTitle {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.titleUnderline {
+  width: 20%;
+  height: 2px;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  border-radius: 2px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Content Row */
+.contentRow {
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+/* Image Column */
+.imageCol {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  /* max-width: 500px; */
+  height: 25rem;
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: all 0.8s ease-out 0.2s;
+}
+
+.imageWrapper.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.officeImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.officeImage:hover {
+  transform: scale(1.02);
+}
+
+/* Text Column */
+.textCol {
+  display: flex;
+  align-items: center;
+  padding: 20px 40px;
+}
+
+.textContent {
+  width: 100%;
+  opacity: 0;
+  transform: translateX(50px);
+  transition: all 0.8s ease-out 0.4s;
+}
+
+.textContent.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Text Paragraphs */
+.paragraph {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.paragraph strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* CTA Section - Centered Button */
+.ctaSection {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out 0.6s;
+}
+
+.ctaSection.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.readMoreBtn {
+  display: inline-block;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  color: white;
+  text-decoration: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(236, 138, 28, 0.3);
+  border: none;
+}
+
+.readMoreBtn:hover {
+  background: linear-gradient(135deg, #d67a16 0%, #c26d13 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(236, 138, 28, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.readMoreBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(236, 138, 28, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .whoAreWeSection {
+    padding: 80px 0;
+  }
+
+  .sectionTitle {
+    font-size: 2.5rem;
+  }
+
+  .textCol {
+    padding: 20px 30px;
+  }
+
+  .paragraph {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .whoAreWeSection {
+    padding: 70px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 50px;
+  }
+
+  .contentRow {
+    margin-bottom: 50px;
+  }
+
+  .imageCol {
+    margin-bottom: 40px;
+    padding: 15px;
+  }
+
+  .textCol {
+    padding: 15px 25px;
+  }
+
+  .imageWrapper {
+    max-width: 400px;
+    transform: translateY(-30px);
+  }
+
+  .imageWrapper.visible {
+    transform: translateY(0);
+  }
+
+  .textContent {
+    transform: translateY(30px);
+  }
+
+  .textContent.visible {
+    transform: translateY(0);
+  }
+
+  .sectionTitle {
+    font-size: 2.2rem;
+  }
+
+  .paragraph {
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .whoAreWeSection {
+    padding: 60px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 40px;
+  }
+
+  .contentRow {
+    margin-bottom: 40px;
+  }
+
+  .imageCol {
+    margin-bottom: 30px;
+    padding: 10px;
+  }
+
+  .textCol {
+    padding: 10px 20px;
+  }
+
+  .imageWrapper {
+    max-width: 350px;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
+  }
+
+  .paragraph {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .readMoreBtn {
+    padding: 12px 25px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .whoAreWeSection {
+    padding: 50px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 30px;
+  }
+
+  .contentRow {
+    margin-bottom: 30px;
+  }
+
+  .imageCol,
+  .textCol {
+    padding: 10px 15px;
+  }
+
+  .imageWrapper {
+    max-width: 100%;
+  }
+
+  .sectionTitle {
+    font-size: 1.8rem;
+  }
+
+  .paragraph {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .titleUnderline {
+    width: 60px;
+    height: 3px;
+  }
+
+  .titleUnderline::after {
+    width: 10px;
+    height: 10px;
+  }
+
+  .readMoreBtn {
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    width: 90%;
+    max-width: 280px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .sectionHeader,
+  .imageWrapper,
+  .textContent,
+  .ctaSection,
+  .officeImage,
+  .readMoreBtn {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.readMoreBtn:focus-visible {
+  outline: 2px solid #333;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .paragraph {
+    color: #000;
+  }
+
+  .paragraph strong {
+    color: #000;
+  }
+
+  .titleUnderline::after {
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  .readMoreBtn {
+    border: 2px solid #ec8a1c;
+  }
+}
+
+/* Print styles */
+@media print {
+  .whoAreWeSection {
+    padding: 20px 0;
+    background: white;
+  }
+
+  .officeImage {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  .readMoreBtn {
+    display: none;
+  }
+}

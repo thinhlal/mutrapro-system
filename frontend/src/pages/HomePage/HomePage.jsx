@@ -3,6 +3,9 @@ import Header from "../../components/common/Header/Header";
 import HeroSection from "./components/HeroSection/HeroSection";
 import HowItWorks from "./components/HowItWorksSection/HowItWorks";
 import Statistics from "./components/StatisticsSection/Statistics";
+import WhoAreWe from "./components/WhoAreWeSection/WhoAreWe";
+import WhatsIncluded from "./components/WhatsIncludedSection/WhatsIncluded";
+import FlexiblePricing from "./components/FlexiblePricingSection/FlexiblePricing";
 import styles from "./HomePage.module.css";
 
 const HomePage = () => {
@@ -21,6 +24,14 @@ const HomePage = () => {
 
         {/* Statistics Section */}
         <Statistics />
+
+        <WhoAreWe />
+
+        {/* What's Included Section */}
+        <WhatsIncluded />
+
+        {/* Flexible Pricing Section */}
+        <FlexiblePricing />
 
         {/* Additional Content Sections */}
         <section className={styles.contentSection}>

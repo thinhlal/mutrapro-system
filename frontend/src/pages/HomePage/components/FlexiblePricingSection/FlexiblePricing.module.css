@@ -1,0 +1,603 @@
+/* Flexible Pricing Section */
+.flexiblePricingSection {
+  padding: 100px 0;
+  background: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+/* Section Header */
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 40px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out;
+}
+
+.sectionHeader.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sectionTitle {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.titleUnderline {
+  width: 20%;
+  height: 2px;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  border-radius: 2px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Description Section */
+.descriptionSection {
+  text-align: center;
+  margin-bottom: 90px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out 0.2s;
+}
+
+.descriptionSection.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.descriptionText {
+  text-align: justify;
+  font-size: 1rem;
+  color: #444;
+  line-height: 1.8;
+  max-width: 1000px;
+  margin: 0 auto;
+  margin-bottom: 10px;
+}
+
+.descriptionText strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Cards Row */
+.cardsRow {
+  justify-content: center;
+  align-items: stretch;
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.cardCol {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Pricing Card */
+.pricingCard {
+  background: white;
+  border-radius: 20px;
+  padding: 0;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(50px);
+  width: 100%;
+  max-width: 350px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  position: relative;
+}
+
+.pricingCard.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pricingCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Icon */
+.cardIcon {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 80px;
+  height: 80px;
+  background: #f8f9fa;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.iconImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Card Header */
+.cardHeader {
+  padding: 22px 0px 22px 0px;
+  border-radius: 12px 12px 0px 1px;
+}
+
+/* Piano Card Header */
+.cardCol:nth-child(1) .cardHeader {
+  background: #2ec4b6;
+}
+
+/* Bands/Ensembles Card Header */
+.cardCol:nth-child(2) .cardHeader {
+  background: #219ebc;
+}
+
+/* Melodic Instrument Card Header */
+.cardCol:nth-child(3) .cardHeader {
+  background: #023047;
+}
+
+.cardTitle {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Price Section */
+.priceSection {
+  padding: 30px 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pricePrefix {
+  font-size: 1.125rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.priceAmount {
+  font-size: 2.875rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+  line-height: 1;
+}
+
+.priceSuffix {
+  font-size: 1.125rem;
+  color: #666;
+}
+
+/* Pricing Factors */
+.pricingFactors {
+  padding: 0 30px 20px;
+  flex-grow: 1;
+}
+
+.factorsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.factorsList li {
+  text-align: left;
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.factorsList li::before {
+  content: "•";
+  color: #ec8a1c;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+/* Minimum Charge */
+.minimumCharge {
+  padding: 0 30px 30px;
+  text-align: right;
+}
+
+.minimumCharge em {
+  font-size: 0.8rem;
+  color: #999;
+  font-style: italic;
+}
+
+/* CTA Section */
+.ctaSection {
+  text-align: center;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease-out 0.8s;
+}
+
+.ctaSection.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pricingGuideBtn {
+  display: inline-block;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  color: white;
+  text-decoration: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(236, 138, 28, 0.3);
+  border: none;
+}
+
+.pricingGuideBtn:hover {
+  background: linear-gradient(135deg, #d67a16 0%, #c26d13 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(236, 138, 28, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.pricingGuideBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(236, 138, 28, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .flexiblePricingSection {
+    padding: 80px 0;
+  }
+
+  .sectionTitle {
+    font-size: 2.5rem;
+  }
+
+  .descriptionText {
+    font-size: 1.05rem;
+  }
+
+  .pricingCard {
+    max-width: 320px;
+  }
+
+  .priceAmount {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .flexiblePricingSection {
+    padding: 70px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 35px;
+  }
+
+  .sectionTitle {
+    font-size: 2.2rem;
+  }
+
+  .descriptionSection {
+    margin-bottom: 50px;
+  }
+
+  .descriptionText {
+    font-size: 1rem;
+  }
+
+  .cardsRow {
+    margin-bottom: 50px;
+  }
+
+  .pricingCard {
+    max-width: 100%;
+  }
+
+  .cardIcon {
+    width: 70px;
+    height: 70px;
+    top: -35px;
+  }
+
+  .iconImage {
+    max-width: 45px;
+    max-height: 45px;
+  }
+
+  .cardHeader {
+    padding: 55px 25px 15px;
+  }
+
+  .cardTitle {
+    font-size: 1.2rem;
+  }
+
+  .priceSection {
+    padding: 25px 25px 15px;
+  }
+
+  .priceAmount {
+    font-size: 1.8rem;
+  }
+
+  .pricingFactors {
+    padding: 0 25px 15px;
+  }
+
+  .factorsList li {
+    font-size: 0.9rem;
+  }
+
+  .minimumCharge {
+    padding: 0 25px 25px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flexiblePricingSection {
+    padding: 60px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 30px;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
+  }
+
+  .descriptionSection {
+    margin-bottom: 40px;
+  }
+
+  .descriptionText {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .cardsRow {
+    margin-bottom: 40px;
+  }
+
+  .cardCol {
+    margin-bottom: 25px;
+  }
+
+  .cardIcon {
+    width: 60px;
+    height: 60px;
+    top: -30px;
+  }
+
+  .iconImage {
+    max-width: 40px;
+    max-height: 40px;
+  }
+
+  .cardHeader {
+    padding: 50px 20px 15px;
+  }
+
+  .cardTitle {
+    font-size: 1.1rem;
+  }
+
+  .priceSection {
+    padding: 20px 20px 15px;
+  }
+
+  .priceAmount {
+    font-size: 1.6rem;
+  }
+
+  .pricingFactors {
+    padding: 0 20px 15px;
+  }
+
+  .factorsList li {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .minimumCharge {
+    padding: 0 20px 20px;
+  }
+
+  .minimumCharge em {
+    font-size: 0.75rem;
+  }
+
+  .pricingGuideBtn {
+    padding: 12px 25px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .flexiblePricingSection {
+    padding: 50px 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 25px;
+  }
+
+  .sectionTitle {
+    font-size: 1.8rem;
+  }
+
+  .descriptionSection {
+    margin-bottom: 35px;
+  }
+
+  .descriptionText {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .cardsRow {
+    margin-bottom: 35px;
+  }
+
+  .cardCol {
+    margin-bottom: 20px;
+  }
+
+  .cardIcon {
+    width: 50px;
+    height: 50px;
+    top: -25px;
+  }
+
+  .iconImage {
+    max-width: 35px;
+    max-height: 35px;
+  }
+
+  .cardHeader {
+    padding: 45px 15px 12px;
+  }
+
+  .cardTitle {
+    font-size: 1rem;
+  }
+
+  .priceSection {
+    padding: 18px 15px 12px;
+  }
+
+  .priceAmount {
+    font-size: 1.4rem;
+  }
+
+  .pricingFactors {
+    padding: 0 15px 12px;
+  }
+
+  .factorsList li {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .minimumCharge {
+    padding: 0 15px 18px;
+  }
+
+  .minimumCharge em {
+    font-size: 0.7rem;
+  }
+
+  .pricingGuideBtn {
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    width: 90%;
+    max-width: 280px;
+  }
+
+  .titleUnderline {
+    width: 60px;
+    height: 3px;
+  }
+
+  .titleUnderline::after {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .sectionHeader,
+  .descriptionSection,
+  .pricingCard,
+  .ctaSection,
+  .pricingGuideBtn {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Focus styles for accessibility */
+.pricingGuideBtn:focus-visible {
+  outline: 2px solid #333;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .descriptionText {
+    color: #000;
+  }
+
+  .descriptionText strong {
+    color: #000;
+  }
+
+  .priceAmount {
+    color: #000;
+  }
+
+  .factorsList li {
+    color: #000;
+  }
+
+  .titleUnderline::after {
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  .pricingGuideBtn {
+    border: 2px solid #ec8a1c;
+  }
+}
+
+/* Print styles */
+@media print {
+  .flexiblePricingSection {
+    padding: 20px 0;
+    background: white;
+  }
+
+  .pricingCard {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  .pricingGuideBtn {
+    display: none;
+  }
+}
