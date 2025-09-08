@@ -1,74 +1,59 @@
-import { useState, useEffect, useRef } from "react";
+// WhoAreWe.jsx
+import { useState, useEffect, useRef, memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import classNames from "classnames";
 import styles from "./WhoAreWe.module.css";
+
 import officeImage from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-Office-Customer-Service-14.jpg";
 
-const WhoAreWe = () => {
+const OBSERVER_OPTS = { threshold: 0.2, rootMargin: "0px 0px -50px 0px" };
+
+function WhoAreWe() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
-  // Intersection Observer for animation trigger
+  // Trigger animations when section enters viewport
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        threshold: 0.2,
-        rootMargin: "0px 0px -50px 0px",
-      }
-    );
+    const el = sectionRef.current;
+    if (!el) return;
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true);
+    }, OBSERVER_OPTS);
 
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
+
+  const withVisible = (base) =>
+    classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.whoAreWeSection} ref={sectionRef}>
       <Container>
-        {/* Section Title - Centered above everything */}
-        <div
-          className={`${styles.sectionHeader} ${
-            isVisible ? styles.visible : ""
-          }`}
-        >
+        {/* Section Title */}
+        <div className={withVisible(styles.sectionHeader)}>
           <h2 className={styles.sectionTitle}>Who are we?</h2>
-          <div className={styles.titleUnderline}></div>
+          <div className={styles.titleUnderline} />
         </div>
 
-        {/* Main Content Row */}
+        {/* Main Content */}
         <Row className={styles.contentRow}>
-          {/* Left Column - Image */}
+          {/* Left: Image */}
           <Col lg={6} md={6} sm={12} className={styles.imageCol}>
-            <div
-              className={`${styles.imageWrapper} ${
-                isVisible ? styles.visible : ""
-              }`}
-            >
+            <div className={withVisible(styles.imageWrapper)}>
               <img
                 src={officeImage}
                 alt="Professional transcriber working in office with headphones and computer"
                 className={styles.officeImage}
+                loading="lazy"
               />
             </div>
           </Col>
 
-          {/* Right Column - Text Content */}
+          {/* Right: Text */}
           <Col lg={6} md={6} sm={12} className={styles.textCol}>
-            <div
-              className={`${styles.textContent} ${
-                isVisible ? styles.visible : ""
-              }`}
-            >
+            <div className={withVisible(styles.textContent)}>
               <p className={styles.paragraph}>
                 We are{" "}
                 <strong>
@@ -105,10 +90,8 @@ const WhoAreWe = () => {
           </Col>
         </Row>
 
-        {/* CTA Button - Centered below everything */}
-        <div
-          className={`${styles.ctaSection} ${isVisible ? styles.visible : ""}`}
-        >
+        {/* CTA */}
+        <div className={withVisible(styles.ctaSection)}>
           <a href="/about" className={styles.readMoreBtn}>
             READ MORE ABOUT US
           </a>
@@ -116,6 +99,6 @@ const WhoAreWe = () => {
       </Container>
     </section>
   );
-};
+}
 
-export default WhoAreWe;
+export default memo(WhoAreWe);

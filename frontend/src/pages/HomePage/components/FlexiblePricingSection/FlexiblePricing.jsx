@@ -1,58 +1,94 @@
 import { useState, useEffect, useRef } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import classNames from "classnames";
 import styles from "./FlexiblePricing.module.css";
+
 import pianoIcon from "../../../../assets/icons/Pricing/Grand-Piano-2-2-1.png";
 import hornsIcon from "../../../../assets/icons/Pricing/Horns2-1-2-1.png";
 import quartetIcon from "../../../../assets/icons/Pricing/Cuartet2-1-2-1.png";
 
-const FlexiblePricing = () => {
+const CARDS = [
+  {
+    icon: pianoIcon,
+    iconAlt: "Piano icon",
+    title: "Piano",
+    price: "from",
+    amount: "$19 USD",
+    suffix: "per minute of music",
+    factors: [
+      "Music length",
+      "Musical complexity and density",
+      "Difficulty of listening, notation, layers, and polyphonies",
+    ],
+    minimum: "*minimum charge of $49 USD",
+    delay: "0.2s",
+  },
+  {
+    icon: quartetIcon,
+    iconAlt: "Bands/Ensembles icon",
+    title: "Bands/Ensembles",
+    price: "from",
+    amount: "$30 USD",
+    suffix: "per minute of music",
+    factors: [
+      "Music length",
+      "Notation complexity and difficulty of listening",
+      "Part extraction",
+    ],
+    // no minimum line
+    delay: "0.4s",
+  },
+  {
+    icon: hornsIcon,
+    iconAlt: "Melodic Instrument icon",
+    title: "Melodic Instrument",
+    price: "from",
+    amount: "$15 USD",
+    suffix: "per minute of music",
+    factors: [
+      "Music length",
+      "Musical complexity and density",
+      "Idiomatic difficulty relative to each instrument",
+    ],
+    minimum: "*minimum charge of $49 USD",
+    delay: "0.6s",
+  },
+];
+
+function FlexiblePricing() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
   // Intersection Observer for animation trigger
   useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entry.isIntersecting) setIsVisible(true);
       },
-      {
-        threshold: 0.2,
-        rootMargin: "0px 0px -50px 0px",
-      }
+      { threshold: 0.2, rootMargin: "0px 0px -50px 0px" }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
+
+  const withVisible = (base) =>
+    classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.flexiblePricingSection} ref={sectionRef}>
       <Container>
         {/* Section Header */}
-        <div
-          className={`${styles.sectionHeader} ${
-            isVisible ? styles.visible : ""
-          }`}
-        >
+        <div className={withVisible(styles.sectionHeader)}>
           <h2 className={styles.sectionTitle}>Flexible pricing</h2>
-          <div className={styles.titleUnderline}></div>
+          <div className={styles.titleUnderline} />
         </div>
 
         {/* Description Text */}
-        <div
-          className={`${styles.descriptionSection} ${
-            isVisible ? styles.visible : ""
-          }`}
-        >
+        <div className={withVisible(styles.descriptionSection)}>
           <p className={styles.descriptionText}>
             <strong>There are pricing options for every budget.</strong> The
             more instruments and the longer or more complex a piece is, the
@@ -65,13 +101,13 @@ const FlexiblePricing = () => {
             <strong>
               Your score will be 100% personalized, tailored to your needs, and
               crafted note by note manually by our professional transcribers.{" "}
-            </strong>{" "}
+            </strong>
             The process will be coordinated by our customer service specialists,
             who will keep you informed at all times.
           </p>
           <p className={styles.descriptionText}>
             Revisions and transpositions are included in the price, as well as
-            all the digital formats you may need.{" "}
+            all the digital formats you may need.
           </p>
           <p className={styles.descriptionText}>
             Below you will find a price guide, but please contact us for
@@ -81,118 +117,62 @@ const FlexiblePricing = () => {
 
         {/* Pricing Cards */}
         <Row className={`${styles.cardsRow} gx-0`}>
-          {/* Card 1: Piano */}
-          <Col lg={4} md={6} sm={12} className={styles.cardCol}>
-            <div
-              className={`${styles.pricingCard} ${
-                isVisible ? styles.visible : ""
-              }`}
-              style={{ animationDelay: "0.2s" }}
-            >
-              <div className={styles.cardIcon}>
-                <img
-                  src={pianoIcon}
-                  alt="Piano icon"
-                  className={styles.iconImage}
-                />
-              </div>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>Piano</h3>
-              </div>
-              <div className={styles.priceSection}>
-                <span className={styles.pricePrefix}>from</span>
-                <span className={styles.priceAmount}>$19 USD</span>
-                <span className={styles.priceSuffix}>per minute of music</span>
-              </div>
-              <div className={styles.pricingFactors}>
-                <ul className={styles.factorsList}>
-                  <li>Music length</li>
-                  <li>Musical complexity and density</li>
-                  <li>
-                    Difficulty of listening, notation, layers, and polyphonies
-                  </li>
-                </ul>
-              </div>
-              <div className={styles.minimumCharge}>
-                <em>*minimum charge of $49 USD</em>
-              </div>
-            </div>
-          </Col>
+          {CARDS.map(
+            ({
+              icon,
+              iconAlt,
+              title,
+              price,
+              amount,
+              suffix,
+              factors,
+              minimum,
+              delay,
+            }) => (
+              <Col key={title} lg={4} md={6} sm={12} className={styles.cardCol}>
+                <div
+                  className={withVisible(styles.pricingCard)}
+                  style={{ animationDelay: delay }}
+                >
+                  <div className={styles.cardIcon}>
+                    <img
+                      src={icon}
+                      alt={iconAlt}
+                      className={styles.iconImage}
+                    />
+                  </div>
 
-          {/* Card 2: Bands/Ensembles */}
-          <Col lg={4} md={6} sm={12} className={styles.cardCol}>
-            <div
-              className={`${styles.pricingCard} ${
-                isVisible ? styles.visible : ""
-              }`}
-              style={{ animationDelay: "0.4s" }}
-            >
-              <div className={styles.cardIcon}>
-                <img
-                  src={quartetIcon}
-                  alt="Bands/Ensembles icon"
-                  className={styles.iconImage}
-                />
-              </div>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>Bands/Ensembles</h3>
-              </div>
-              <div className={styles.priceSection}>
-                <span className={styles.pricePrefix}>from</span>
-                <span className={styles.priceAmount}>$30 USD</span>
-                <span className={styles.priceSuffix}>per minute of music</span>
-              </div>
-              <div className={styles.pricingFactors}>
-                <ul className={styles.factorsList}>
-                  <li>Music length</li>
-                  <li>Notation complexity and difficulty of listening</li>
-                  <li>Part extraction</li>
-                </ul>
-              </div>
-            </div>
-          </Col>
+                  <div className={styles.cardHeader}>
+                    <h3 className={styles.cardTitle}>{title}</h3>
+                  </div>
 
-          {/* Card 3: Melodic Instrument */}
-          <Col lg={4} md={6} sm={12} className={styles.cardCol}>
-            <div
-              className={`${styles.pricingCard} ${
-                isVisible ? styles.visible : ""
-              }`}
-              style={{ animationDelay: "0.6s" }}
-            >
-              <div className={styles.cardIcon}>
-                <img
-                  src={hornsIcon}
-                  alt="Melodic Instrument icon"
-                  className={styles.iconImage}
-                />
-              </div>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>Melodic Instrument</h3>
-              </div>
-              <div className={styles.priceSection}>
-                <span className={styles.pricePrefix}>from</span>
-                <span className={styles.priceAmount}>$15 USD</span>
-                <span className={styles.priceSuffix}>per minute of music</span>
-              </div>
-              <div className={styles.pricingFactors}>
-                <ul className={styles.factorsList}>
-                  <li>Music length</li>
-                  <li>Musical complexity and density</li>
-                  <li>Idiomatic difficulty relative to each instrument</li>
-                </ul>
-              </div>
-              <div className={styles.minimumCharge}>
-                <em>*minimum charge of $49 USD</em>
-              </div>
-            </div>
-          </Col>
+                  <div className={styles.priceSection}>
+                    <span className={styles.pricePrefix}>{price}</span>
+                    <span className={styles.priceAmount}>{amount}</span>
+                    <span className={styles.priceSuffix}>{suffix}</span>
+                  </div>
+
+                  <div className={styles.pricingFactors}>
+                    <ul className={styles.factorsList}>
+                      {factors.map((f) => (
+                        <li key={f}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {minimum && (
+                    <div className={styles.minimumCharge}>
+                      <em>{minimum}</em>
+                    </div>
+                  )}
+                </div>
+              </Col>
+            )
+          )}
         </Row>
 
         {/* CTA Button */}
-        <div
-          className={`${styles.ctaSection} ${isVisible ? styles.visible : ""}`}
-        >
+        <div className={withVisible(styles.ctaSection)}>
           <a href="/pricing" className={styles.pricingGuideBtn}>
             SEE THE FULL PRICING GUIDE
           </a>
@@ -200,6 +180,6 @@ const FlexiblePricing = () => {
       </Container>
     </section>
   );
-};
+}
 
 export default FlexiblePricing;

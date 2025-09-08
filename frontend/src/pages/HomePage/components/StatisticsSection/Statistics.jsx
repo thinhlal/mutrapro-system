@@ -1,138 +1,103 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import classNames from "classnames";
 import styles from "./Statistics.module.css";
+
 import backgroundImage from "../../../../assets/images/HomePage/7-2-1-1.jpg";
 
-const Statistics = () => {
+// ===== Constants =====
+const OBSERVER_OPTS = { threshold: 0.3, rootMargin: "0px 0px -100px 0px" };
+const TARGET_NUMBERS = { transcriptions: 50629, customers: 22897 };
+const COUNT_DURATION_MS = 2500;
+
+function Statistics() {
   const [isVisible, setIsVisible] = useState(false);
-  const [countedNumbers, setCountedNumbers] = useState({
-    transcriptions: 0,
-    customers: 0,
-  });
+  const [transcriptionsCount, setTranscriptionsCount] = useState(0);
   const sectionRef = useRef(null);
 
-  // Target numbers
-  const targetNumbers = {
-    transcriptions: 50629,
-    customers: 22897,
-  };
-
-  // Intersection Observer for animation trigger
+  // Intersection Observer
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        threshold: 0.3,
-        rootMargin: "0px 0px -100px 0px",
-      }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true);
+    }, OBSERVER_OPTS);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
-  // Counting animation
+  // Counting animation ONLY for transcriptions
   useEffect(() => {
     if (!isVisible) return;
 
-    const duration = 2500; // 2.5 seconds
-    const steps = 60;
-    const stepDuration = duration / steps;
+    let rafId;
+    const start = performance.now();
 
-    const transcriptionsIncrement = targetNumbers.transcriptions / steps;
-    const customersIncrement = targetNumbers.customers / steps;
+    const tick = (now) => {
+      const t = Math.min((now - start) / COUNT_DURATION_MS, 1);
+      setTranscriptionsCount(Math.round(TARGET_NUMBERS.transcriptions * t));
+      if (t < 1) rafId = requestAnimationFrame(tick);
+    };
 
-    let currentStep = 0;
-
-    const timer = setInterval(() => {
-      currentStep++;
-
-      if (currentStep <= steps) {
-        setCountedNumbers({
-          transcriptions: Math.min(
-            Math.floor(transcriptionsIncrement * currentStep),
-            targetNumbers.transcriptions
-          ),
-          customers: Math.min(
-            Math.floor(customersIncrement * currentStep),
-            targetNumbers.customers
-          ),
-        });
-      } else {
-        clearInterval(timer);
-        // Ensure we end with exact target numbers
-        setCountedNumbers({
-          transcriptions: targetNumbers.transcriptions,
-          customers: targetNumbers.customers,
-        });
-      }
-    }, stepDuration);
-
-    return () => clearInterval(timer);
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, [isVisible]);
 
-  const formatNumber = (num) => {
-    return num.toLocaleString();
-  };
+  const formatNumber = (num) => num.toLocaleString();
 
-  const statisticsCards = [
-    {
-      id: "google",
-      icon: "G",
-      iconColor: "#4285f4",
-      title: "5.0 on Google Reviews",
-      rating: 5,
-      reviews: "791 reviews",
-      linkText: "SEE ON GOOGLE",
-      linkColor: "#4285f4",
-    },
-    {
-      id: "location",
-      icon: "🌍",
-      iconColor: "#00d4aa",
-      title: "Based in the US, UK & Europe",
-      number: countedNumbers.customers,
-      subtitle: "happy customers",
-      description: "until September 2025",
-    },
-    {
-      id: "facebook",
-      icon: "f",
-      iconColor: "#1877f2",
-      title: "5.0 on Facebook Reviews",
-      rating: 5,
-      reviews: "306 reviews",
-      linkText: "SEE ON FACEBOOK",
-      linkColor: "#1877f2",
-    },
-  ];
+  // Cards config
+  const statisticsCards = useMemo(
+    () => [
+      {
+        id: "google",
+        icon: "G",
+        iconColor: "#4285f4",
+        title: "5.0 on Google Reviews",
+        rating: 5,
+        reviews: "791 reviews",
+        linkText: "SEE ON GOOGLE",
+        linkColor: "#4285f4",
+      },
+      {
+        id: "location",
+        icon: "🌍",
+        iconColor: "#00d4aa",
+        title: "Based in the US, UK & Europe",
+        number: TARGET_NUMBERS.customers,
+        subtitle: "happy customers",
+        description: "until September 2025",
+      },
+      {
+        id: "facebook",
+        icon: "f",
+        iconColor: "#1877f2",
+        title: "5.0 on Facebook Reviews",
+        rating: 5,
+        reviews: "306 reviews",
+        linkText: "SEE ON FACEBOOK",
+        linkColor: "#1877f2",
+      },
+    ],
+    []
+  );
 
   return (
     <section className={styles.statisticsSection} ref={sectionRef}>
-      {/* Background Image */}
+      {/* Background */}
       <div
         className={styles.backgroundImage}
         style={{ backgroundImage: `url(${backgroundImage})` }}
+        aria-hidden="true"
       />
-      <div className={styles.backgroundOverlay} />
+      <div className={styles.backgroundOverlay} aria-hidden="true" />
 
       <Container>
-        {/* Main Content */}
         <div className={styles.contentWrapper}>
           {/* Header */}
           <div
-            className={`${styles.header} ${isVisible ? styles.visible : ""}`}
+            className={classNames(styles.header, {
+              [styles.visible]: isVisible,
+            })}
           >
             <h2 className={styles.mainTitle}>
               The highest-rated online sheet music transcribers
@@ -141,7 +106,7 @@ const Statistics = () => {
             {/* Main Statistics */}
             <div className={styles.mainStats}>
               <div className={styles.bigNumber}>
-                {formatNumber(countedNumbers.transcriptions)}
+                {formatNumber(transcriptionsCount)}
               </div>
               <div className={styles.bigNumberSubtitle}>
                 transcriptions delivered since 2011
@@ -152,14 +117,14 @@ const Statistics = () => {
           {/* Statistics Cards */}
           <Row className={styles.cardsRow}>
             {statisticsCards.map((card, index) => (
-              <Col lg={4} md={4} sm={12} key={card.id}>
+              <Col key={card.id} lg={4} md={4} sm={12}>
                 <div
-                  className={`${styles.statCard} ${
-                    isVisible ? styles.visible : ""
-                  }`}
+                  className={classNames(styles.statCard, {
+                    [styles.visible]: isVisible,
+                  })}
                   style={{ animationDelay: `${0.2 + index * 0.2}s` }}
                 >
-                  {/* Card Icon */}
+                  {/* Icon */}
                   <div className={styles.cardIcon}>
                     {card.icon === "G" || card.icon === "f" ? (
                       <span
@@ -173,45 +138,42 @@ const Statistics = () => {
                     )}
                   </div>
 
-                  {/* Card Content */}
+                  {/* Content */}
                   <div className={styles.cardContent}>
                     <h3 className={styles.cardTitle}>{card.title}</h3>
 
-                    {/* Rating Stars */}
-                    {card.rating && (
-                      <div className={styles.rating}>
-                        {[...Array(card.rating)].map((_, i) => (
+                    {card.rating ? (
+                      <div
+                        className={styles.rating}
+                        aria-label={`${card.rating} out of 5 stars`}
+                      >
+                        {Array.from({ length: card.rating }).map((_, i) => (
                           <span key={i} className={styles.star}>
                             ★
                           </span>
                         ))}
                       </div>
-                    )}
+                    ) : null}
 
-                    {/* Big Number for Location Card */}
-                    {card.number !== undefined && (
+                    {card.number !== undefined ? (
                       <div className={styles.cardNumber}>
                         {formatNumber(card.number)}
                       </div>
-                    )}
+                    ) : null}
 
-                    {/* Card Description */}
-                    {card.reviews && (
+                    {card.reviews ? (
                       <div className={styles.cardReviews}>{card.reviews}</div>
-                    )}
-
-                    {card.subtitle && (
+                    ) : null}
+                    {card.subtitle ? (
                       <div className={styles.cardSubtitle}>{card.subtitle}</div>
-                    )}
-
-                    {card.description && (
+                    ) : null}
+                    {card.description ? (
                       <div className={styles.cardDescription}>
                         {card.description}
                       </div>
-                    )}
+                    ) : null}
 
-                    {/* Card Link */}
-                    {card.linkText && (
+                    {card.linkText ? (
                       <a
                         href="#"
                         className={styles.cardLink}
@@ -219,7 +181,7 @@ const Statistics = () => {
                       >
                         {card.linkText} →
                       </a>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </Col>
@@ -229,6 +191,6 @@ const Statistics = () => {
       </Container>
     </section>
   );
-};
+}
 
-export default Statistics;
+export default memo(Statistics);

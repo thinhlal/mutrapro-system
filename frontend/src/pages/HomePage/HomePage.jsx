@@ -10,6 +10,7 @@ import styles from "./HomePage.module.css";
 import EdgeGalleryStrip from "./components/EdgeGalleryStrip/EdgeGalleryStrip";
 import ReviewsSection from "./components/ReviewsSection/ReviewsSection";
 import Footer from "../../components/common/Footer/Footer";
+import BackToTop from "../../components/common/BackToTop/BackToTop";
 
 const HomePage = () => {
   return (
@@ -19,30 +20,19 @@ const HomePage = () => {
 
       {/* Main Content */}
       <main className={styles.mainContent}>
-        {/* Hero Section */}
         <HeroSection />
-
-        {/* How It Works Section */}
         <HowItWorks />
-
-        {/* Statistics Section */}
         <Statistics />
-
         <WhoAreWe />
-
-        {/* What's Included Section */}
         <WhatsIncluded />
-
-        {/* Flexible Pricing Section */}
         <FlexiblePricing />
-
-        {/* Edge Gallery Strip Section */}
         <EdgeGalleryStrip />
-
-        {/* Reviews Section */}
         <ReviewsSection />
       </main>
+
+      {/* Footer */}
       <Footer />
+      <BackToTop />
     </div>
   );
 };
