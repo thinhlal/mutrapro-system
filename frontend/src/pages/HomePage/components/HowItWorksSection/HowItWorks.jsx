@@ -1,69 +1,60 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import classNames from "classnames";
 import styles from "./HowItWorks.module.css";
+
 import stepsImage from "../../../../assets/images/HomePage/3-steps.jpg";
 
-const HowItWorks = () => {
+// Constants
+const OBSERVER_OPTS = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
+const STEPS = [
+  {
+    id: 1,
+    title: "Send us audio",
+    description:
+      "We will promptly send you a quote and an estimated delivery time",
+  },
+  {
+    id: 2,
+    title: "We transcribe it for you",
+    description:
+      "Our team of transcribers will prepare the sheet music as per your requirements",
+  },
+  {
+    id: 3,
+    title: "Print & Play",
+    description:
+      "You will be able to use and play your sheet music in PDF and other formats",
+  },
+];
+
+function HowItWorks() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
   // Intersection Observer for animation trigger
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px",
-      }
-    );
+    const el = sectionRef.current;
+    if (!el) return;
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setIsVisible(true);
+    }, OBSERVER_OPTS);
 
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
-  const steps = [
-    {
-      id: 1,
-      title: "Send us audio",
-      description:
-        "We will promptly send you a quote and an estimated delivery time",
-    },
-    {
-      id: 2,
-      title: "We transcribe it for you",
-      description:
-        "Our team of transcribers will prepare the sheet music as per your requirements",
-    },
-    {
-      id: 3,
-      title: "Print & Play",
-      description:
-        "You will be able to use and play your sheet music in PDF and other formats",
-    },
-  ];
+  const withVisible = (base) =>
+    classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.howItWorksSection} ref={sectionRef}>
       <Container>
         {/* Section Header */}
-        <div
-          className={`${styles.sectionHeader} ${
-            isVisible ? styles.visible : ""
-          }`}
-        >
+        <div className={withVisible(styles.sectionHeader)}>
           <h2 className={styles.sectionTitle}>How does it work?</h2>
-          <div className={styles.titleUnderline}></div>
+          <div className={styles.titleUnderline} />
         </div>
 
         {/* Main Content */}
@@ -71,15 +62,12 @@ const HowItWorks = () => {
           <Row className={styles.mainRow}>
             {/* Process Illustration */}
             <Col lg={12}>
-              <div
-                className={`${styles.processIllustration} ${
-                  isVisible ? styles.visible : ""
-                }`}
-              >
+              <div className={withVisible(styles.processIllustration)}>
                 <img
                   src={stepsImage}
-                  alt="3 Steps Process - Send Audio, Transcribe, Print & Play"
+                  alt="3 steps: Send Audio → Transcribe → Print & Play"
                   className={styles.processImage}
+                  loading="lazy"
                 />
               </div>
             </Col>
@@ -87,16 +75,12 @@ const HowItWorks = () => {
 
           {/* Steps Text Below Image */}
           <Row className={`${styles.stepsRow} justify-content-center`}>
-            {steps.map((step) => (
-              <Col lg={3} md={3} sm={12} key={step.id}>
-                <div
-                  className={`${styles.stepText} ${
-                    isVisible ? styles.visible : ""
-                  }`}
-                >
-                  <div className={styles.stepNumber}>{step.id}.</div>
-                  <h3 className={styles.stepTitle}>{step.title}</h3>
-                  <p className={styles.stepDescription}>{step.description}</p>
+            {STEPS.map(({ id, title, description }) => (
+              <Col key={id} lg={3} md={3} sm={12}>
+                <div className={withVisible(styles.stepText)}>
+                  <div className={styles.stepNumber}>{id}.</div>
+                  <h3 className={styles.stepTitle}>{title}</h3>
+                  <p className={styles.stepDescription}>{description}</p>
                 </div>
               </Col>
             ))}
@@ -105,6 +89,6 @@ const HowItWorks = () => {
       </Container>
     </section>
   );
-};
+}
 
-export default HowItWorks;
+export default memo(HowItWorks);

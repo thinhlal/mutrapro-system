@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col } from "react-bootstrap";
+import classNames from "classnames";
 import styles from "./HeroSection.module.css";
 
-// Import all background images
+// ===== Constants & assets =====
 import heroImg1 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-1-copia.webp";
 import heroImg2 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-2.webp";
 import heroImg3 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-3.webp";
@@ -10,50 +11,41 @@ import heroImg4 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcri
 import heroImg5 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-5.webp";
 import heroImg6 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-6.webp";
 
-const HeroSection = () => {
+const IMAGES = [heroImg1, heroImg2, heroImg3, heroImg4, heroImg5, heroImg6];
+const SLIDE_INTERVAL_MS = 4000;
+const ENTRANCE_DELAY_MS = 300;
+const STAR_COUNT = 5;
+const GOOGLE_RATING = "5.0";
+const GOOGLE_REVIEWS_COUNT = 791;
+
+function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Array of background images
-  const backgroundImages = [
-    heroImg1,
-    heroImg2,
-    heroImg3,
-    heroImg4,
-    heroImg5,
-    heroImg6,
-  ];
-
   // Auto-slide background images
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex(
-        (prevIndex) => (prevIndex + 1) % backgroundImages.length
-      );
-    }, 4000); // Change image every 4 seconds
+    const id = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length);
+    }, SLIDE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [backgroundImages.length]);
-
-  // Trigger entrance animation
+  // Trigger entrance animation once
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setIsVisible(true), ENTRANCE_DELAY_MS);
+    return () => clearTimeout(t);
   }, []);
 
   return (
     <section className={styles.heroSection}>
       {/* Background Images Slideshow */}
-      <div className={styles.backgroundSlideshow}>
-        {backgroundImages.map((image, index) => (
+      <div className={styles.backgroundSlideshow} aria-hidden="true">
+        {IMAGES.map((image, index) => (
           <div
             key={index}
-            className={`${styles.backgroundImage} ${
-              index === currentImageIndex ? styles.active : ""
-            }`}
+            className={classNames(styles.backgroundImage, {
+              [styles.active]: index === currentImageIndex,
+            })}
             style={{ backgroundImage: `url(${image})` }}
           />
         ))}
@@ -65,9 +57,9 @@ const HeroSection = () => {
           {/* Left Content */}
           <Col lg={6} md={12} className={styles.leftContent}>
             <div
-              className={`${styles.contentWrapper} ${
-                isVisible ? styles.visible : ""
-              }`}
+              className={classNames(styles.contentWrapper, {
+                [styles.visible]: isVisible,
+              })}
             >
               {/* Logo */}
               <div className={styles.logoSection}>
@@ -113,35 +105,37 @@ const HeroSection = () => {
           {/* Right Content - Image Area */}
           <Col lg={6} md={12} className={styles.rightContent}>
             <div
-              className={`${styles.imageWrapper} ${
-                isVisible ? styles.visible : ""
-              }`}
+              className={classNames(styles.imageWrapper, {
+                [styles.visible]: isVisible,
+              })}
             >
               {/* Google Reviews Card */}
-              <div className={styles.reviewsCard}>
+              <div className={styles.reviewsCard} aria-label="Google Reviews">
                 <div className={styles.googleIcon}>
                   <span className={styles.gLetter}>G</span>
                 </div>
                 <div className={styles.reviewsContent}>
-                  <div className={styles.rating}>5.0 on Google Reviews</div>
-                  <div className={styles.stars}>
-                    {[...Array(5)].map((_, i) => (
+                  <div className={styles.rating}>
+                    {GOOGLE_RATING} on Google Reviews
+                  </div>
+                  <div className={styles.stars} aria-hidden="true">
+                    {Array.from({ length: STAR_COUNT }).map((_, i) => (
                       <span key={i} className={styles.star}>
                         ★
                       </span>
                     ))}
                   </div>
-                  <div className={styles.reviewCount}>791 reviews</div>
+                  <div className={styles.reviewCount}>
+                    {GOOGLE_REVIEWS_COUNT} reviews
+                  </div>
                   <a href="/reviews" className={styles.seeMoreLink}>
                     SEE MORE →
                   </a>
                 </div>
               </div>
 
-              {/* Main Image Content */}
-              <div className={styles.mainImageContent}>
-                {/* This will be overlaid on the background slideshow */}
-              </div>
+              {/* Main Image Content (overlay on slideshow) */}
+              <div className={styles.mainImageContent} />
             </div>
           </Col>
         </Row>
@@ -149,19 +143,21 @@ const HeroSection = () => {
 
       {/* Slideshow Indicators */}
       <div className={styles.slideshowIndicators}>
-        {backgroundImages.map((_, index) => (
+        {IMAGES.map((_, index) => (
           <button
             key={index}
-            className={`${styles.indicator} ${
-              index === currentImageIndex ? styles.active : ""
-            }`}
+            type="button"
+            className={classNames(styles.indicator, {
+              [styles.active]: index === currentImageIndex,
+            })}
             onClick={() => setCurrentImageIndex(index)}
             aria-label={`Go to slide ${index + 1}`}
+            aria-pressed={index === currentImageIndex}
           />
         ))}
       </div>
     </section>
   );
-};
+}
 
 export default HeroSection;

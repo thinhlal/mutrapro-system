@@ -1,101 +1,83 @@
-import { useState, useEffect } from "react";
+// Header.jsx
+import { useState, useEffect, useCallback, memo } from "react";
 import { Navbar, Nav, Container } from "react-bootstrap";
 import { Dropdown } from "antd";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import classNames from "classnames";
 import styles from "./Header.module.css";
 import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
+
+const SERVICES_ITEMS = [
+  {
+    key: "1",
+    label: (
+      <a href="#transcription" className={styles.dropdownItem}>
+        Music Transcription
+      </a>
+    ),
+  },
+  {
+    key: "2",
+    label: (
+      <a href="#arrangement" className={styles.dropdownItem}>
+        Music Arrangement
+      </a>
+    ),
+  },
+  {
+    key: "3",
+    label: (
+      <a href="#composition" className={styles.dropdownItem}>
+        Original Composition
+      </a>
+    ),
+  },
+  {
+    key: "4",
+    label: (
+      <a href="#editing" className={styles.dropdownItem}>
+        Sheet Music Editing
+      </a>
+    ),
+  },
+];
 
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [scrollDirection, setScrollDirection] = useState("up");
-  const [lastScrollTop, setLastScrollTop] = useState(0);
 
-  // Enhanced scroll effect with direction detection and sticky behavior
+  // Chỉ đổi style khi đã lướt > 20px; KHÔNG ẩn header khi cuộn xuống
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
+    const onScroll = () =>
+      setIsScrolled(
+        (window.pageYOffset || document.documentElement.scrollTop) > 20
+      );
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-      // Determine scroll direction
-      if (currentScrollTop > lastScrollTop && currentScrollTop > 100) {
-        // Scrolling down
-        setScrollDirection("down");
-      } else {
-        // Scrolling up
-        setScrollDirection("up");
-      }
-
-      // Set scrolled state for styling
-      setIsScrolled(currentScrollTop > 20);
-
-      setLastScrollTop(currentScrollTop <= 0 ? 0 : currentScrollTop);
+  // Khoá cuộn nền khi mở menu mobile + đóng bằng phím Esc
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+    const onKey = (e) =>
+      e.key === "Escape" ? setIsMobileMenuOpen(false) : null;
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
     };
+  }, [isMobileMenuOpen]);
 
-    let ticking = false;
-    const optimizedScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", optimizedScroll, { passive: true });
-    return () => window.removeEventListener("scroll", optimizedScroll);
-  }, [lastScrollTop]);
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
-  // Services dropdown items
-  const servicesItems = [
-    {
-      key: "1",
-      label: (
-        <a href="#transcription" className={styles.dropdownItem}>
-          Music Transcription
-        </a>
-      ),
-    },
-    {
-      key: "2",
-      label: (
-        <a href="#arrangement" className={styles.dropdownItem}>
-          Music Arrangement
-        </a>
-      ),
-    },
-    {
-      key: "3",
-      label: (
-        <a href="#composition" className={styles.dropdownItem}>
-          Original Composition
-        </a>
-      ),
-    },
-    {
-      key: "4",
-      label: (
-        <a href="#editing" className={styles.dropdownItem}>
-          Sheet Music Editing
-        </a>
-      ),
-    },
-  ];
+  const toggleMobileMenu = useCallback(
+    () => setIsMobileMenuOpen((v) => !v),
+    []
+  );
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
   return (
     <header
-      className={`${styles.header} ${isScrolled ? styles.scrolled : ""} ${
-        scrollDirection === "down" && isScrolled ? styles.hidden : ""
-      }`}
+      className={classNames(styles.header, { [styles.scrolled]: isScrolled })}
     >
       <Container fluid className={styles.container}>
         <Navbar expand="lg" className={styles.navbar}>
@@ -114,13 +96,12 @@ function Header() {
               <Nav.Link href="/" className={styles.navLink}>
                 Home
               </Nav.Link>
-
               <Nav.Link href="/audio-sheet-music" className={styles.navLink}>
                 Audio → Sheet Music
               </Nav.Link>
 
               <Dropdown
-                menu={{ items: servicesItems }}
+                menu={{ items: SERVICES_ITEMS }}
                 placement="bottomCenter"
                 trigger={["hover"]}
                 overlayClassName={styles.dropdown}
@@ -133,21 +114,18 @@ function Header() {
               <Nav.Link href="/pricing" className={styles.navLink}>
                 Pricing
               </Nav.Link>
-
               <Nav.Link href="/reviews" className={styles.navLink}>
                 Reviews
               </Nav.Link>
-
               <Nav.Link href="/about" className={styles.navLink}>
                 About us
               </Nav.Link>
-
               <Nav.Link href="/contact" className={styles.navLink}>
                 Contact
               </Nav.Link>
             </Nav>
 
-            {/* CTA Button */}
+            {/* CTA */}
             <div className={styles.ctaContainer}>
               <a href="/request" className={styles.ctaButton}>
                 REQUEST YOUR SHEET MUSIC
@@ -159,7 +137,11 @@ function Header() {
           <button
             className={styles.mobileToggle}
             onClick={toggleMobileMenu}
-            aria-label="Toggle mobile menu"
+            aria-label={
+              isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"
+            }
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-nav"
           >
             {isMobileMenuOpen ? (
               <CloseOutlined className={styles.toggleIcon} />
@@ -171,9 +153,12 @@ function Header() {
 
         {/* Mobile Navigation */}
         <div
-          className={`${styles.mobileNav} ${
-            isMobileMenuOpen ? styles.mobileNavOpen : ""
-          }`}
+          id="mobile-nav"
+          className={classNames(styles.mobileNav, {
+            [styles.mobileNavOpen]: isMobileMenuOpen,
+          })}
+          role="dialog"
+          aria-modal="true"
         >
           <div className={styles.mobileNavContent}>
             <Nav className={styles.mobileNavLinks}>
@@ -184,7 +169,6 @@ function Header() {
               >
                 Home
               </Nav.Link>
-
               <Nav.Link
                 href="/audio-sheet-music"
                 className={styles.mobileNavLink}
@@ -236,7 +220,6 @@ function Header() {
               >
                 Pricing
               </Nav.Link>
-
               <Nav.Link
                 href="/reviews"
                 className={styles.mobileNavLink}
@@ -244,7 +227,6 @@ function Header() {
               >
                 Reviews
               </Nav.Link>
-
               <Nav.Link
                 href="/about"
                 className={styles.mobileNavLink}
@@ -252,7 +234,6 @@ function Header() {
               >
                 About us
               </Nav.Link>
-
               <Nav.Link
                 href="/contact"
                 className={styles.mobileNavLink}
@@ -262,7 +243,7 @@ function Header() {
               </Nav.Link>
             </Nav>
 
-            {/* Mobile CTA Button */}
+            {/* Mobile CTA */}
             <div className={styles.mobileCta}>
               <a
                 href="/request"
@@ -275,13 +256,13 @@ function Header() {
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
+        {/* Mobile Overlay */}
         {isMobileMenuOpen && (
-          <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
+          <div className={styles.mobileOverlay} onClick={closeMobileMenu} />
         )}
       </Container>
     </header>
   );
 }
 
-export default Header;
+export default memo(Header);

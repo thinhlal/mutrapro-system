@@ -1,13 +1,14 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useCallback, memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { Carousel, Rate, Button } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import styles from "./ReviewsSection.module.css";
 
-// === IMPORT ẢNH BACKGROUND (đổi path theo dự án của bạn) ===
+// === Assets ===
 import bgWaves from "../../../../assets/images/Background/2-4-1-1.png";
 
-// === DATA REVIEW MẪU (đổi sang data thật của bạn) ===
+// === Constants / Sample data
+const AUTOPLAY_MS = 4000;
 const REVIEWS = [
   {
     name: "Sarah A.",
@@ -46,39 +47,46 @@ const REVIEWS = [
   },
 ];
 
-// Gom nhóm 2 thẻ/slide cho desktop; trên mobile CSS sẽ set 1 cột
-function pairize(arr, size = 2) {
+// Gom nhóm n phần tử/slide (desktop 2 thẻ/slide)
+const pairize = (arr, size = 2) => {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
-}
+};
 
-const ReviewsSection = () => {
-  const pairs = useMemo(() => pairize(REVIEWS, 2), []);
+function ReviewsSection() {
   const carouselRef = useRef(null);
+  const pairs = useMemo(() => pairize(REVIEWS, 2), []);
+
+  const handlePrev = useCallback(() => carouselRef.current?.prev(), []);
+  const handleNext = useCallback(() => carouselRef.current?.next(), []);
 
   return (
     <section className={styles.section}>
-      {/* BACKGROUND WAVES */}
+      {/* Decorative background */}
       <div className={styles.bgWrap} aria-hidden="true">
         <img src={bgWaves} className={styles.bgImage} alt="" />
       </div>
 
       <Container className={styles.container}>
-        {/* Heading */}
+        {/* Header */}
         <div className={styles.header}>
           <h2 className={styles.title}>Customer Reviews</h2>
           <span className={styles.titleUnderline} />
         </div>
 
         {/* Controls */}
-        <div className={styles.controls}>
+        <div
+          className={styles.controls}
+          role="group"
+          aria-label="Carousel controls"
+        >
           <Button
             shape="circle"
             size="large"
             className={styles.navBtn}
             icon={<LeftOutlined />}
-            onClick={() => carouselRef.current?.prev()}
+            onClick={handlePrev}
             aria-label="Previous"
           />
           <Button
@@ -86,7 +94,7 @@ const ReviewsSection = () => {
             size="large"
             className={styles.navBtn}
             icon={<RightOutlined />}
-            onClick={() => carouselRef.current?.next()}
+            onClick={handleNext}
             aria-label="Next"
           />
         </div>
@@ -95,7 +103,7 @@ const ReviewsSection = () => {
         <Carousel
           ref={carouselRef}
           autoplay
-          autoplaySpeed={4000}
+          autoplaySpeed={AUTOPLAY_MS}
           dots
           pauseOnHover
           swipeToSlide
@@ -103,15 +111,17 @@ const ReviewsSection = () => {
           className={styles.carousel}
         >
           {pairs.map((group, idx) => (
-            <div key={idx}>
+            <div key={`slide-${idx}`}>
               <Row className="g-4">
-                {group.map((r, i) => (
-                  <Col key={i} xs={12} md={12} lg={6}>
+                {group.map((r) => (
+                  <Col key={`${r.name}-${r.date}`} xs={12} md={12} lg={6}>
                     <article className={styles.card}>
-                      {/* Top row: name + Google G */}
+                      {/* Top: name + Google badge */}
                       <div className={styles.cardTop}>
                         <h3 className={styles.name}>{r.name}</h3>
-                        <div className={styles.gBadge}>G</div>
+                        <div className={styles.gBadge} aria-hidden="true">
+                          G
+                        </div>
                       </div>
 
                       {/* Stars + role + date */}
@@ -120,6 +130,7 @@ const ReviewsSection = () => {
                           value={r.rating}
                           disabled
                           className={styles.stars}
+                          aria-label={`${r.rating} out of 5 stars`}
                         />
                         <div className={styles.roleDate}>
                           {r.locationRole}{" "}
@@ -127,14 +138,13 @@ const ReviewsSection = () => {
                         </div>
                       </div>
 
-                      <hr className={styles.hr} />
+                      <div className={styles.hr} aria-hidden="true" />
 
                       {/* Content */}
                       <p className={styles.text}>{r.text}</p>
                     </article>
                   </Col>
                 ))}
-                {/* Nếu lẻ review → chèn col trống để cân lưới */}
                 {group.length === 1 && (
                   <Col lg={6} className="d-none d-lg-block" />
                 )}
@@ -145,6 +155,6 @@ const ReviewsSection = () => {
       </Container>
     </section>
   );
-};
+}
 
-export default ReviewsSection;
+export default memo(ReviewsSection);
