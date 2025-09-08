@@ -5,21 +5,23 @@ import {
   Navigate,
 } from "react-router-dom";
 import HomePage from "./pages/HomePage/HomePage";
+import LoginPage from "./pages/LoginPage/LoginPage";
+import RegisterPage from "./pages/RegisterPage/RegisterPage";
 import "./App.css";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Redirect from root to home */}
+        {/* Redirect root → /home */}
         <Route path="/" element={<Navigate to="/home" replace />} />
 
-        {/* Main routes */}
+        {/* Main pages */}
         <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/sign-up" element={<RegisterPage />} />
 
-        {/* Add more routes here */}
-
-        {/* 404 - Not Found - should be last */}
+        {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Router>
