@@ -29,10 +29,37 @@
   box-shadow: none;
 }
 
+.authAlign {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 8px;
+  gap: 16px;
+}
+
+.authLink {
+  padding: 6px 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.authSignup {
+  padding: 6px 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 991.98px) {
+  .authBar {
+    display: none;
+  }
+}
+
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 12px;
 }
 
 .navbar {

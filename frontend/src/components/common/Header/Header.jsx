@@ -79,6 +79,25 @@ function Header() {
     <header
       className={classNames(styles.header, { [styles.scrolled]: isScrolled })}
     >
+      <div
+        className={classNames(styles.container, styles.authAlign)}
+        style={{ marginTop: "1rem" }}
+      >
+        <div className="d-flex gap-4 align-items-center">
+          <a
+            href="/login"
+            className={classNames(styles.navLink, styles.authLink)}
+          >
+            Login
+          </a>
+          <a
+            href="/sign-up"
+            className={classNames(styles.navLink, styles.authSignup)}
+          >
+            Sign up
+          </a>
+        </div>
+      </div>
       <Container fluid className={styles.container}>
         <Navbar expand="lg" className={styles.navbar}>
           {/* Logo */}
