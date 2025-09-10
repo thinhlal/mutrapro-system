@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./HowItWorks.module.css";
+
+import { useIntersection } from "../../../../hooks/Animations/useIntersection";
 
 import stepsImage from "../../../../assets/images/HomePage/3-steps.jpg";
 
@@ -29,21 +31,7 @@ const STEPS = [
 ];
 
 function HowItWorks() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
-
-  // Intersection Observer for animation trigger
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setIsVisible(true);
-    }, OBSERVER_OPTS);
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
   const withVisible = (base) =>
     classNames(base, { [styles.visible]: isVisible });
