@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./WhatsIncluded.module.css";
+
+import { useIntersection } from "../../../../hooks/Animations/useIntersection";
 
 import pianoImage from "../../../../assets/images/HomePage/Piano8-1.jpg";
 import fileIconsImage from "../../../../assets/icons/HomePage/icones-2.png";
@@ -43,21 +45,7 @@ const CARDS = [
 ];
 
 function WhatsIncluded() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
-
-  // Intersection Observer for animation trigger
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setIsVisible(true);
-    }, OBSERVER_OPTS);
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
   const withVisible = (base) =>
     classNames(base, { [styles.visible]: isVisible });

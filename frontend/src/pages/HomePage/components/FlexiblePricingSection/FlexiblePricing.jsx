@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./FlexiblePricing.module.css";
+
+import { useIntersection } from "../../../../hooks/Animations/useIntersection";
 
 import pianoIcon from "../../../../assets/icons/Pricing/Grand-Piano-2-2-1.png";
 import hornsIcon from "../../../../assets/icons/Pricing/Horns2-1-2-1.png";
@@ -35,7 +36,6 @@ const CARDS = [
       "Notation complexity and difficulty of listening",
       "Part extraction",
     ],
-    // no minimum line
     delay: "0.4s",
   },
   {
@@ -56,24 +56,10 @@ const CARDS = [
 ];
 
 function FlexiblePricing() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
-
-  // Intersection Observer for animation trigger
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setIsVisible(true);
-      },
-      { threshold: 0.2, rootMargin: "0px 0px -50px 0px" }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref: sectionRef, isVisible } = useIntersection({
+    threshold: 0.2,
+    rootMargin: "0px 0px -50px 0px",
+  });
 
   const withVisible = (base) =>
     classNames(base, { [styles.visible]: isVisible });
