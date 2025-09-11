@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef, useMemo, memo } from "react";
+import { useMemo, memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./Statistics.module.css";
+
+import { useIntersection } from "../../../../hooks/Animations/useIntersection";
+import { useCountUp } from "../../../../hooks/Animations/useCountUp";
 
 import backgroundImage from "../../../../assets/images/HomePage/7-2-1-1.jpg";
 
@@ -11,37 +14,14 @@ const TARGET_NUMBERS = { transcriptions: 50629, customers: 22897 };
 const COUNT_DURATION_MS = 2500;
 
 function Statistics() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [transcriptionsCount, setTranscriptionsCount] = useState(0);
-  const sectionRef = useRef(null);
-
-  // Intersection Observer
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setIsVisible(true);
-    }, OBSERVER_OPTS);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
   // Counting animation ONLY for transcriptions
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let rafId;
-    const start = performance.now();
-
-    const tick = (now) => {
-      const t = Math.min((now - start) / COUNT_DURATION_MS, 1);
-      setTranscriptionsCount(Math.round(TARGET_NUMBERS.transcriptions * t));
-      if (t < 1) rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [isVisible]);
+  const transcriptionsCount = useCountUp(
+    TARGET_NUMBERS.transcriptions,
+    COUNT_DURATION_MS,
+    isVisible
+  );
 
   const formatNumber = (num) => num.toLocaleString();
 

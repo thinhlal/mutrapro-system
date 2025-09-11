@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./HeroSection.module.css";
+
+import { useInterval } from "../../../../hooks/Animations/useInterval";
+import { useRevealOnMount } from "../../../../hooks/Animations/useRevealOnMount";
 
 // ===== Constants & assets =====
 import heroImg1 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-1-copia.webp";
@@ -20,21 +23,14 @@ const GOOGLE_REVIEWS_COUNT = 791;
 
 function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
 
   // Auto-slide background images
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length);
-    }, SLIDE_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, []);
+  useInterval(() => {
+    setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length);
+  }, SLIDE_INTERVAL_MS);
 
   // Trigger entrance animation once
-  useEffect(() => {
-    const t = setTimeout(() => setIsVisible(true), ENTRANCE_DELAY_MS);
-    return () => clearTimeout(t);
-  }, []);
+  const isVisible = useRevealOnMount(ENTRANCE_DELAY_MS);
 
   return (
     <section className={styles.heroSection}>

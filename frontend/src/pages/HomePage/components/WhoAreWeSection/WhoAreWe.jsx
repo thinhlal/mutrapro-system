@@ -1,29 +1,17 @@
-// WhoAreWe.jsx
-import { useState, useEffect, useRef, memo } from "react";
+import { memo } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import classNames from "classnames";
 import styles from "./WhoAreWe.module.css";
+
+// import custom hook
+import { useIntersection } from "../../../../hooks/Animations/useIntersection";
 
 import officeImage from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-Office-Customer-Service-14.jpg";
 
 const OBSERVER_OPTS = { threshold: 0.2, rootMargin: "0px 0px -50px 0px" };
 
 function WhoAreWe() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
-
-  // Trigger animations when section enters viewport
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setIsVisible(true);
-    }, OBSERVER_OPTS);
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
   const withVisible = (base) =>
     classNames(base, { [styles.visible]: isVisible });
