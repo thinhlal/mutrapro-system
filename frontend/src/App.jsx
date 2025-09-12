@@ -7,6 +7,8 @@ import {
 import HomePage from "./pages/HomePage/HomePage";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
+import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
+import ServicesPage from "./pages/ServicesPage/ServicesPage";
 import "./App.css";
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
 
         {/* Main pages */}
         <Route path="/home" element={<HomePage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/transcription" element={<TranscriptionPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<RegisterPage />} />
 
