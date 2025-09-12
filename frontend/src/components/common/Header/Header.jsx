@@ -11,13 +11,21 @@ const SERVICES_ITEMS = [
   {
     key: "1",
     label: (
+      <a href="/services" className={styles.dropdownItem}>
+        All Services & Samples
+      </a>
+    ),
+  },
+  {
+    key: "2",
+    label: (
       <a href="#transcription" className={styles.dropdownItem}>
         Music Transcription
       </a>
     ),
   },
   {
-    key: "2",
+    key: "3",
     label: (
       <a href="#arrangement" className={styles.dropdownItem}>
         Music Arrangement
@@ -25,7 +33,7 @@ const SERVICES_ITEMS = [
     ),
   },
   {
-    key: "3",
+    key: "4",
     label: (
       <a href="#composition" className={styles.dropdownItem}>
         Original Composition
@@ -33,7 +41,7 @@ const SERVICES_ITEMS = [
     ),
   },
   {
-    key: "4",
+    key: "5",
     label: (
       <a href="#editing" className={styles.dropdownItem}>
         Sheet Music Editing
@@ -115,7 +123,7 @@ function Header() {
               <Nav.Link href="/" className={styles.navLink}>
                 Home
               </Nav.Link>
-              <Nav.Link href="/audio-sheet-music" className={styles.navLink}>
+              <Nav.Link href="/transcription" className={styles.navLink}>
                 Audio → Sheet Music
               </Nav.Link>
 
@@ -201,6 +209,13 @@ function Header() {
                   Services & Samples
                 </span>
                 <div className={styles.mobileServicesItems}>
+                  <Nav.Link
+                    href="/services"
+                    className={styles.mobileSubLink}
+                    onClick={closeMobileMenu}
+                  >
+                    All Services & Samples
+                  </Nav.Link>
                   <Nav.Link
                     href="#transcription"
                     className={styles.mobileSubLink}

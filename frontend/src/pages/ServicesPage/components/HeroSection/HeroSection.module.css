@@ -1,0 +1,75 @@
+/* src/pages/ServicesPage/components/HeroSection/HeroSection.module.css */
+.heroSection {
+  padding: 60px 0 40px;
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 100px;
+  padding: 0 20px;
+}
+
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  line-height: 1.2;
+}
+
+.orangeLine {
+  width: 50%;          
+  height: 1px;          
+  background-color: orange;
+  margin: 1rem auto 0;  
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #6c757d;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.ctaButton {
+  background-color: #ff6b35;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3);
+}
+
+.ctaButton:hover {
+  background-color: #e55a2b;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .ctaButton {
+    padding: 10px 25px;
+    font-size: 0.8rem;
+  }
+}
