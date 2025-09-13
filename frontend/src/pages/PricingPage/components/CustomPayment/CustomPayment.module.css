@@ -1,0 +1,94 @@
+/* src/pages/PricingPage/components/CustomPayment/CustomPayment.module.css */
+
+.section {
+  background: #ffffff;
+  padding: clamp(48px, 7vw, 96px) 0;
+  overflow: visible;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ===== Heading ===== */
+.header {
+  text-align: center;
+  margin-bottom: clamp(20px, 3.5vw, 36px);
+}
+
+.title {
+  margin: 0;
+  color: #0f1a2a;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: clamp(24px, 3.8vw, 36px);
+  line-height: 1.15;
+}
+
+.rule {
+    display: block;
+    width: 20%;
+    height: 1px;
+    background: #ee8f40;
+    margin: 30px auto 30px;
+    border-radius: 999px;
+}
+
+/* ===== Card duy nhất (không pseudo glow) ===== */
+.card {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: clamp(20px, 4.5vw, 36px) clamp(20px, 4.5vw, 40px);
+  box-shadow:
+    0 28px 80px rgba(15, 26, 42, 0.10),
+    0 10px 28px rgba(15, 26, 42, 0.06);
+  transition:
+    transform 220ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 220ms cubic-bezier(.2,.8,.2,1);
+  will-change: transform, box-shadow;
+}
+
+/* Hover: chỉ nâng thẻ và đậm bóng */
+.card:hover,
+.card:focus-within {
+  transform: translateY(-2px);
+  box-shadow:
+    0 36px 110px rgba(15, 26, 42, 0.16),
+    0 14px 38px rgba(15, 26, 42, 0.10);
+}
+
+/* Tôn trọng người dùng hạn chế chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover, .card:focus-within { transform: none; }
+}
+
+/* ===== Text/Columns ===== */
+.rightCol { position: relative; }
+
+@media (min-width: 992px) {
+  .rightCol {
+    border-left: none;                 /* không có đường dọc */
+    padding-left: clamp(0px, 1vw, 8px);
+  }
+}
+
+.question {
+  text-align: center;
+  color: #6b7280;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: clamp(16px, 2.2vw, 22px);
+  margin: 0 0 14px;
+}
+
+.text {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+  flex-grow: 1;
+}
