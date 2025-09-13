@@ -5,6 +5,10 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 
 import Header from "../../components/common/Header/Header";
 import Pricing from "./components/Pricing/Pricing";
+
+import AvailableDiscounts from "./components/AvailableDiscounts/AvailableDiscounts";
+import CustomPayment from "./components/CustomPayment/CustomPayment";
+
 import BackToTop from "../../components/common/BackToTop/BackToTop";
 import Footer from "../../components/common/Footer/Footer";
 
@@ -15,7 +19,8 @@ const PricingPage = () => {
 
             <main>
                 <Pricing />
-
+                <AvailableDiscounts />
+                <CustomPayment />
             </main>
 
             <Footer />
