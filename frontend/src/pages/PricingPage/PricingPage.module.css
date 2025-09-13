@@ -1,0 +1,19 @@
+/* src/pages/PricingPage/PricingPage.module.css */
+
+.pageContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainContent {
+  flex: 1;
+  width: 100%;
+}
+/* ===== Wave band đặt trên Pricing ===== */
+.waveHost {
+  position: relative;           /* để con absolute bám vào */
+  height: var(--wave-h, 110px); /* phải có height để lộ sóng */
+  background: #ffffff;          /* nền trắng giống site mẫu */
+  overflow: hidden;             /* tránh tràn khi resize */
+}
