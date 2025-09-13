@@ -12,6 +12,8 @@ import ContactFormSection from "./components/ContactFormSection/ContactFormSecti
 import Footer from "../../components/common/Footer/Footer";
 import BackToTop from "../../components/common/BackToTop/BackToTop";
 import styles from "./TranscriptionPage.module.css";
+import WhatsIncluded from "../HomePage/components/WhatsIncludedSection/WhatsIncluded";
+import ServicesPage from "../ServicesPage/ServicesPage";
 
 const TranscriptionPage = () => {
   return (
@@ -22,14 +24,10 @@ const TranscriptionPage = () => {
       {/* Main Content */}
       <main className={styles.mainContent}>
         <HeroSection />
-        <ServiceCategoriesSection />
         <MusicSheetSection />
         <HowItWorksSection />
-        <InstrumentsGallerySection />
-        <StatisticsSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <ContactFormSection />
+        <WhatsIncluded />
+        <ServicesPage />
       </main>
 
       {/* Footer */}

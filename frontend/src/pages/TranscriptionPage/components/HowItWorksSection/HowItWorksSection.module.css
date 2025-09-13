@@ -1,98 +1,263 @@
 /* src/pages/TranscriptionPage/components/HowItWorksSection/HowItWorksSection.module.css */
-.howItWorksSection {
-  padding: 80px 0;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
+
+.section {
+  background: #ffffff;
+  padding: clamp(56px, 8vw, 100px) 0;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
-.title {
+.heading {
   text-align: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 60px;
+  color: #3c3c3c;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: clamp(24px, 3.8vw, 36px);
+  margin: 0 0 clamp(26px, 4vw, 40px);
 }
 
-.stepsContainer {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 30px;
+/* ====== Grid 2 cột: icon | card ====== */
+.stepsGrid {
   position: relative;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: clamp(14px, 2.2vw, 20px);
+  column-gap: clamp(12px, 2vw, 24px);
 }
 
-.stepCard {
-  flex: 1;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 40px 20px;
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
-  position: relative;
-}
-
-.stepNumber {
+/* Dotted vertical line chạy xuyên suốt, canh giữa cột icon */
+.stepsGrid::before {
+  content: "";
   position: absolute;
-  top: -15px;
-  left: 50%;
+  left: 60px; /* = 120px / 2 */
+  top: 0;
+  bottom: 0;
+  width: 2px;
   transform: translateX(-50%);
-  width: 40px;
-  height: 40px;
-  background-color: #ff6b6b;
-  color: white;
-  border-radius: 50%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(236, 138, 28, 0.35) 0 12px,
+    transparent 12px 24px
+  );
+}
+
+/* Mỗi step là 1 hàng của grid */
+.stepRow {
+  display: contents;
+}
+
+/* Cột icon */
+.iconCell {
+  grid-column: 1 / 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 1.2rem;
+  padding: 8px 0;
 }
 
-.stepIcon {
-  font-size: 3rem;
-  margin-bottom: 20px;
+.iconCircle {
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 2px solid rgba(236, 138, 28, 0.6);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(236, 138, 28, 0.18);
+  z-index: 1;
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+    background-color 0.25s ease, border-color 0.25s ease;
+}
+.iconCircle img {
+  width: 100%;
+  height: 24px;
+  object-fit: contain;
   display: block;
 }
 
-.stepTitle {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 15px;
+/* Icon active khi vào viewport */
+.iconActive {
+  /* background: linear-gradient(135deg, #ffe9cf 0%, #ffd9a8 100%); */
+  border-color: #ec8a1c;
+  box-shadow: 0 8px 20px rgba(236, 138, 28, 0.35),
+    0 0 0 3px rgba(236, 138, 28, 0.1);
+  transform: scale(1.08);
 }
 
-.stepDescription {
-  font-size: 1rem;
-  opacity: 0.9;
+.iconActive img {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(236, 138, 28, 0.2));
+}
+
+/* Cột card */
+.card {
+  --notch: 12px;
+  grid-column: 2 / 3;
+  position: relative;
+  border-radius: 14px;
+  padding: clamp(16px, 2.3vw, 22px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.08);
   line-height: 1.6;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.7;
+  transform: translateY(10px);
 }
 
-.stepArrow {
+/* Mũi nhọn ở CHÍNH GIỮA */
+.card::before {
+  content: "";
   position: absolute;
-  right: -15px;
+  left: calc(-1 * var(--notch));
   top: 50%;
   transform: translateY(-50%);
-  font-size: 2rem;
-  font-weight: bold;
-  opacity: 0.7;
+  border-top: var(--notch) solid transparent;
+  border-bottom: var(--notch) solid transparent;
+  border-right: var(--notch) solid transparent; /* màu override ở toneX (+ active) */
+}
+
+.cardTitle {
+  margin: 0 0 8px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: clamp(16px, 2.2vw, 24px);
+}
+.stepNo {
+  font-weight: 800;
+}
+.cardBody p {
+  margin: 0;
+}
+.cardBody p + p {
+  margin-top: 8px;
+}
+
+/* ====== Tone base - Tất cả đồng bộ cùng màu ====== */
+.tone1,
+.tone2,
+.tone3,
+.tone4,
+.tone5 {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: #000000;
+}
+
+.tone1 .cardBody p,
+.tone2 .cardBody p,
+.tone3 .cardBody p,
+.tone4 .cardBody p,
+.tone5 .cardBody p {
+  color: #000000;
+}
+
+.tone1::before,
+.tone2::before,
+.tone3::before,
+.tone4::before,
+.tone5::before {
+  border-right-color: #3498db;
+}
+
+/* ====== Active (khi vào viewport): đổi nền + chữ mượt mà ====== */
+.isActive {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(236, 138, 28, 0.2) !important;
+}
+
+/* Tất cả tones khi active -> chuyển sang màu accent đồng bộ */
+.tone1.isActive,
+.tone2.isActive,
+.tone3.isActive,
+.tone4.isActive,
+.tone5.isActive {
+  background: linear-gradient(135deg, #1c65ec 0%, #1690d6 100%) !important;
+  color: #ffffff !important;
+}
+
+.tone1.isActive .cardBody p,
+.tone2.isActive .cardBody p,
+.tone3.isActive .cardBody p,
+.tone4.isActive .cardBody p,
+.tone5.isActive .cardBody p {
+  color: #fff !important;
+}
+
+.tone1.isActive::before,
+.tone2.isActive::before,
+.tone3.isActive::before,
+.tone4.isActive::before,
+.tone5.isActive::before {
+  border-right-color: #1c65ec !important;
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 991px) {
+  .stepsGrid {
+    grid-template-columns: 1fr;
+    row-gap: clamp(20px, 3vw, 30px);
+  }
+  .stepsGrid::before,
+  .iconCell,
+  .card::before {
+    display: none;
+  }
+
+  .card {
+    opacity: 1;
+    transform: none;
+  }
+
+  .isActive {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .iconCircle {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 16px;
+  }
+
+  .iconCircle img {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 @media (max-width: 768px) {
-  .stepsContainer {
-    flex-direction: column;
-    align-items: center;
+  .container {
+    padding: 0 16px;
   }
-  
-  .stepCard {
-    max-width: 400px;
-    width: 100%;
+
+  .card {
+    padding: clamp(14px, 2vw, 18px);
   }
-  
-  .stepArrow {
-    display: none;
+
+  .iconCircle {
+    width: 50px;
+    height: 50px;
+  }
+
+  .iconCircle img {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Tôn trọng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .iconCircle,
+  .card,
+  .iconActive,
+  .isActive {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
   }
 }

@@ -15,7 +15,7 @@
   will-change: transform, background, box-shadow;
 }
 
-.header.scrolled {
+.scrolled {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -24,11 +24,13 @@
   border-bottom: 1px solid rgba(236, 138, 28, 0.15);
 }
 
-.header.hidden {
-  transform: translateY(-100%);
-  box-shadow: none;
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 12px;
 }
 
+/* Auth bar */
 .authAlign {
   display: flex;
   justify-content: flex-end;
@@ -36,32 +38,24 @@
   padding-top: 8px;
   gap: 16px;
 }
-
 .authLink {
   padding: 6px 10px;
   font-weight: 600;
   line-height: 1;
 }
-
 .authSignup {
   padding: 6px 12px;
   font-weight: 700;
   border-radius: 999px;
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
-
 @media (max-width: 991.98px) {
-  .authBar {
+  .authAlign {
     display: none;
   }
 }
 
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 12px;
-}
-
+/* Navbar & logo */
 .navbar {
   padding: 0;
   min-height: 70px;
@@ -71,12 +65,10 @@
   width: 100%;
   transition: min-height 0.3s ease;
 }
-
 .scrolled .navbar {
   min-height: 65px;
 }
 
-/* Logo Styles */
 .brand {
   display: flex;
   align-items: center;
@@ -84,7 +76,6 @@
   margin-right: 40px;
   transition: transform 0.3s ease;
 }
-
 .brand:hover {
   transform: scale(1.05);
 }
@@ -96,12 +87,11 @@
   object-fit: contain;
   transition: height 0.3s ease;
 }
-
 .scrolled .logo {
   height: 40px;
 }
 
-/* Desktop Navigation */
+/* Desktop navigation */
 .desktopNav {
   display: flex;
   align-items: center;
@@ -109,7 +99,6 @@
   flex: 1;
   margin-left: 40px;
 }
-
 .navLinks {
   display: flex;
   align-items: center;
@@ -129,6 +118,30 @@
   transition: all 0.3s ease;
   white-space: nowrap;
   position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.linkInner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hover + underline slide-in */
+.navLink::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 2px;
+  background: #ec8a1c;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
+  opacity: 0.9;
 }
 
 .navLink:hover {
@@ -137,14 +150,29 @@
   text-decoration: none;
   transform: translateY(-1px);
 }
+.navLink:hover::after {
+  transform: scaleX(1);
+}
 
-.navLink:focus {
+/* Focus */
+.navLink:focus,
+.navLink:focus-visible {
   color: #ec8a1c;
   text-decoration: none;
   outline: 2px solid rgba(236, 138, 28, 0.3);
+  outline-offset: 2px;
 }
 
-/* Dropdown Styles */
+/* Active state */
+.active {
+  color: #ec8a1c !important;
+  background-color: rgba(236, 138, 28, 0.08) !important;
+}
+.active::after {
+  transform: scaleX(1);
+}
+
+/* Dropdown */
 .dropdown {
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -152,7 +180,6 @@
   overflow: hidden;
   margin-top: 5px;
 }
-
 .dropdownItem {
   color: #333;
   text-decoration: none;
@@ -162,18 +189,26 @@
   font-size: 14px;
   transition: all 0.2s ease;
 }
-
 .dropdownItem:hover {
   color: #ec8a1c;
   background-color: rgba(236, 138, 28, 0.05);
   text-decoration: none;
 }
 
-/* CTA Button */
+/* Caret icon for “Services & Samples” */
+.caret {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+}
+.caretOpen {
+  transform: rotate(180deg);
+}
+
+/* CTA */
 .ctaContainer {
   margin-left: 30px;
 }
-
 .ctaButton {
   background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
   color: white;
@@ -189,7 +224,6 @@
   border: none;
   white-space: nowrap;
 }
-
 .ctaButton:hover {
   background: linear-gradient(135deg, #d67a16 0%, #c26d13 100%);
   transform: translateY(-2px);
@@ -197,13 +231,12 @@
   text-decoration: none;
   color: white;
 }
-
 .ctaButton:active {
   transform: translateY(0);
   box-shadow: 0 2px 10px rgba(236, 138, 28, 0.3);
 }
 
-/* Mobile Toggle Button */
+/* Mobile toggle */
 .mobileToggle {
   display: none;
   background: none;
@@ -214,22 +247,19 @@
   transition: all 0.3s ease;
   z-index: 1001;
 }
-
 .mobileToggle:hover {
   background-color: rgba(236, 138, 28, 0.1);
 }
-
 .toggleIcon {
   font-size: 24px;
   color: #333;
   transition: color 0.3s ease;
 }
-
 .mobileToggle:hover .toggleIcon {
   color: #ec8a1c;
 }
 
-/* Mobile Navigation */
+/* Mobile nav */
 .mobileNav {
   position: fixed;
   top: 70px;
@@ -245,13 +275,11 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid rgba(236, 138, 28, 0.1);
 }
-
 .mobileNavOpen {
   transform: translateY(0);
   opacity: 1;
   visibility: visible;
 }
-
 .mobileNavContent {
   padding: 20px;
   max-width: 1400px;
@@ -266,7 +294,6 @@
   padding: 0;
   list-style: none;
 }
-
 .mobileNavLink {
   color: #333;
   text-decoration: none;
@@ -277,7 +304,6 @@
   transition: all 0.3s ease;
   border-left: 4px solid transparent;
 }
-
 .mobileNavLink:hover {
   color: #ec8a1c;
   background-color: rgba(236, 138, 28, 0.05);
@@ -289,7 +315,6 @@
 .mobileServicesGroup {
   margin: 5px 0;
 }
-
 .mobileServicesTitle {
   color: #333;
   font-weight: 600;
@@ -298,12 +323,10 @@
   display: block;
   border-left: 4px solid transparent;
 }
-
 .mobileServicesItems {
   margin-left: 20px;
   border-left: 2px solid rgba(236, 138, 28, 0.1);
 }
-
 .mobileSubLink {
   color: #666;
   text-decoration: none;
@@ -315,7 +338,6 @@
   display: block;
   border-left: 3px solid transparent;
 }
-
 .mobileSubLink:hover {
   color: #ec8a1c;
   background-color: rgba(236, 138, 28, 0.05);
@@ -330,7 +352,6 @@
   border-top: 1px solid rgba(236, 138, 28, 0.1);
   text-align: center;
 }
-
 .mobileCtaButton {
   background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
   color: white;
@@ -347,7 +368,6 @@
   width: 100%;
   max-width: 300px;
 }
-
 .mobileCtaButton:hover {
   background: linear-gradient(135deg, #d67a16 0%, #c26d13 100%);
   transform: translateY(-2px);
@@ -356,8 +376,8 @@
   color: white;
 }
 
-/* Mobile Overlay */
-.mobileOverlay {
+/* Mobile overlay */
+/* .mobileOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -367,132 +387,106 @@
   z-index: 999;
   opacity: 0;
   animation: fadeIn 0.3s ease forwards;
-}
-
+} */
 @keyframes fadeIn {
   to {
     opacity: 1;
   }
 }
 
-/* Responsive Breakpoints */
+/* Responsive */
 @media (max-width: 1200px) {
   .navLinks {
     gap: 20px;
   }
-
   .ctaContainer {
     margin-left: 20px;
   }
-
   .ctaButton {
     padding: 10px 20px;
     font-size: 13px;
   }
 }
-
 @media (max-width: 991px) {
   .desktopNav {
     display: none;
   }
-
   .mobileToggle {
     display: block;
   }
-
   .container {
     padding: 0 15px;
   }
-
   .navbar {
     min-height: 60px;
   }
-
   .logo {
     height: 40px;
   }
-
   .mobileNav {
     top: 60px;
     max-height: calc(100vh - 60px);
   }
 }
-
 @media (max-width: 768px) {
   .container {
     padding: 0 10px;
   }
-
   .navbar {
     min-height: 55px;
   }
-
   .logo {
     height: 35px;
   }
-
   .mobileNav {
     top: 55px;
     max-height: calc(100vh - 55px);
   }
-
   .mobileNavContent {
     padding: 15px;
   }
-
   .mobileNavLink {
     padding: 12px 15px;
     font-size: 15px;
   }
-
   .mobileServicesTitle {
     padding: 12px 15px;
     font-size: 15px;
   }
-
   .mobileSubLink {
     padding: 10px 15px;
     font-size: 13px;
   }
-
   .mobileCtaButton {
     padding: 12px 25px;
     font-size: 14px;
   }
 }
-
 @media (max-width: 480px) {
   .container {
     padding: 0 8px;
   }
-
   .navbar {
     min-height: 50px;
   }
-
   .logo {
     height: 30px;
   }
-
   .mobileNav {
     top: 50px;
     max-height: calc(100vh - 50px);
   }
-
   .mobileNavContent {
     padding: 10px;
   }
-
   .mobileNavLink {
     padding: 10px 12px;
     font-size: 14px;
   }
-
   .mobileServicesTitle {
     padding: 10px 12px;
     font-size: 14px;
   }
-
   .mobileSubLink {
     padding: 8px 12px;
     font-size: 12px;
@@ -510,43 +504,14 @@
   .mobileSubLink,
   .mobileCtaButton,
   .brand,
-  .mobileOverlay {
+  .mobileOverlay,
+  .caret {
     transition: none;
     animation: none;
   }
 }
 
-/* Focus styles for accessibility */
-.navLink:focus-visible,
-.ctaButton:focus-visible,
-.mobileToggle:focus-visible,
-.mobileNavLink:focus-visible,
-.mobileSubLink:focus-visible,
-.mobileCtaButton:focus-visible {
-  outline: 2px solid #ec8a1c;
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .header {
-    border-bottom: 2px solid #000;
-  }
-
-  .navLink {
-    border: 1px solid transparent;
-  }
-
-  .navLink:hover {
-    border-color: #ec8a1c;
-  }
-
-  .ctaButton {
-    border: 2px solid #ec8a1c;
-  }
-}
-
-/* Print styles */
+/* Print */
 @media print {
   .header {
     position: static;
@@ -554,7 +519,6 @@
     box-shadow: none;
     border-bottom: 1px solid #000;
   }
-
   .mobileToggle,
   .ctaButton,
   .mobileCtaButton {
