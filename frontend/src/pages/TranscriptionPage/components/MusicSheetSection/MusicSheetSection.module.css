@@ -1,7 +1,6 @@
-/* src/pages/TranscriptionPage/components/MusicSheetSection/MusicSheetSection.module.css */
-.musicSheetSection {
-  padding: 80px 0;
-  background-color: white;
+.section {
+  background: #fff;
+  padding: clamp(48px, 7vw, 96px) 0;
 }
 
 .container {
@@ -10,77 +9,227 @@
   padding: 0 20px;
 }
 
-.title {
-  text-align: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: #2c3e50;
+/* ===== Top media row ===== */
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: start;
 }
 
-.subtitle {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #6c757d;
-  margin-bottom: 60px;
+.mediaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
+.mediaLabel {
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 1.125rem;
+}
+
+/* Thumbnail / Player frame common */
+.thumbButton,
+.playerFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Clickable thumbnail */
+.thumbButton {
+  display: grid;
+  place-items: center;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.95);
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.thumbButton:hover .thumbImg {
+  transform: scale(1.02);
+  filter: saturate(1);
+}
+
+/* Play badge (circle + triangle) */
+.playBadge {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.playBadge::before {
+  content: "";
+  display: block;
+  margin-left: 3px;
+  width: 0;
+  height: 0;
+  border-left: 16px solid #ec8a1c;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+}
+.thumbButton:hover .playBadge {
+  transform: scale(1.06);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+}
+
+/* Hint text */
+.playHint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+  font-size: clamp(12px, 1.6vw, 14px);
+}
+
+/* YouTube iframe */
+.iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Close button for iframe player */
+.closeBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 28px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.closeBtn:hover {
+  background: #fff;
+}
+
+/* ===== Arrows row ===== */
+.arrowsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: clamp(18px, 2.5vw, 26px) 0;
+}
+
+.arrowDown {
+  --color: #0f172a;
+  --shadow: rgba(0, 0, 0, 0.12);
+  width: 28px;
+  height: 56px;
+  margin: 0 auto;
+  position: relative;
+}
+.arrowDown::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 12px;
+  width: 2px;
+  background: var(--color);
+  transform: translateX(-50%);
+  box-shadow: 0 6px 12px var(--shadow);
+}
+.arrowDown::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid var(--color);
+  transform: translateX(-50%);
+}
+
+/* ===== Sheets row ===== */
 .sheetsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: start;
 }
 
 .sheetCard {
-  background: white;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.sheetCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.sheetPreview {
-  height: 200px;
-  background-color: #f8f9fa;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
 }
 
-.sheetPlaceholder {
-  font-size: 2rem;
-  color: #6c757d;
+.sheetPaper {
+  width: 100%;
+  aspect-ratio: 724 / 1024; 
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 16px 36px rgba(0, 0, 0, 0.1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
-
-.sheetInfo {
-  padding: 25px;
-  text-align: center;
+.sheetPaper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sheetCard:hover .sheetPaper {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08), 0 22px 44px rgba(0, 0, 0, 0.16);
 }
 
 .sheetTitle {
-  font-size: 1.3rem;
   font-weight: 600;
-  margin-bottom: 10px;
-  color: #2c3e50;
+  color: #111827;
+  text-align: center;
+  font-size: clamp(14px, 1.8vw, 16px);
 }
 
-.difficulty {
-  display: inline-block;
-  padding: 5px 15px;
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .sheetsGrid {
+/* ===== Responsive ===== */
+@media (max-width: 991px) {
+  .mediaGrid,
+  .sheetsGrid,
+  .arrowsGrid {
     grid-template-columns: 1fr;
+  }
+  .arrowDown {
+    height: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumbImg,
+  .playBadge,
+  .sheetPaper {
+    transition: none;
   }
 }

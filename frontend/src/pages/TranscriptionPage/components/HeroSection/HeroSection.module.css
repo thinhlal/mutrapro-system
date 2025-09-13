@@ -1,9 +1,9 @@
-/* src/pages/TranscriptionPage/components/HeroSection/HeroSection.module.css */
 .heroSection {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 100px 0;
+  background: #fff;
+  color: #333;
+  padding: clamp(56px, 8vw, 120px) 0 clamp(36px, 6vw, 80px);
   text-align: center;
+  margin-top: 6rem;
 }
 
 .container {
@@ -12,76 +12,123 @@
   padding: 0 20px;
 }
 
-.content {
-  max-width: 800px;
-  margin: 0 auto;
+/* Header block */
+.headerBlock {
+  max-width: 860px;
+  margin: 0 auto clamp(28px, 5vw, 56px);
 }
 
 .title {
-  font-size: 3.5rem;
   font-weight: 700;
-  margin-bottom: 20px;
   line-height: 1.2;
+  letter-spacing: 0.2px;
+  color: #3c3c3c;
+  font-size: 2.25rem;
+  margin: 0 0 10px;
 }
 
-.subtitle {
-  font-size: 1.25rem;
-  margin-bottom: 40px;
+.titleDivider {
+  width: 20%;
+  height: 1px;
+  margin: 30px auto 30px;
+  background: #ec8a1c;
+  border-radius: 999px;
   opacity: 0.9;
 }
 
-.ctaButtons {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
+.lead {
+  font-size: clamp(16px, 2.2vw, 20px);
+  color: #666;
+  margin: 0 0 12px;
 }
 
-.primaryBtn,
-.secondaryBtn {
-  padding: 15px 30px;
-  font-size: 1.1rem;
+.description {
+  font-size: clamp(15px, 2vw, 20px);
+  color: #4b4b4b;
   font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  line-height: 1.6;
+  margin: 0;
 }
 
-.primaryBtn {
-  background-color: #ff6b6b;
-  color: white;
+/* Marquee strip */
+.stripWrap {
+  position: relative;
+  overflow: hidden;
+  margin-top: clamp(22px, 4vw, 42px);
+  padding: clamp(6px, 1.8vw, 14px) 0;
 }
 
-.primaryBtn:hover {
-  background-color: #ff5252;
+.stripTrack {
+  --marquee-duration: 250s;
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(24px, 3.5vw, 52px);
+  will-change: transform;
+  animation: marquee var(--marquee-duration) linear infinite;
+}
+
+.stripWrap:hover .stripTrack {
+  animation-play-state: paused;
+}
+
+/* Item */
+.stripItem {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: clamp(140px, 18vw, 220px);
+  user-select: none;
+  text-align: center;
+}
+
+.iconImg {
+  width: clamp(84px, 10vw, 120px);
+  height: auto;
+  display: block;
+  object-fit: contain;
+  transition: transform 220ms ease, filter 220ms ease;
+  filter: drop-shadow(0 6px 18px rgba(236, 138, 28, 0.15));
+}
+
+.stripItem:hover .iconImg {
   transform: translateY(-2px);
+  filter: drop-shadow(0 10px 26px rgba(236, 138, 28, 0.25));
 }
 
-.secondaryBtn {
-  background-color: transparent;
-  color: white;
-  border: 2px solid white;
+.itemLabel {
+  margin-top: 10px;
+  font-size: clamp(13px, 1.9vw, 16px);
+  font-weight: 600;
+  color: #2f2f2f;
+  letter-spacing: 0.2px;
 }
 
-.secondaryBtn:hover {
-  background-color: white;
-  color: #667eea;
+/* Loop vô hạn: nội dung lặp 2 lần => dịch -50% */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
+/* Responsive */
 @media (max-width: 768px) {
-  .title {
-    font-size: 2.5rem;
+  .container {
+    padding: 0 16px;
   }
-  
-  .ctaButtons {
-    flex-direction: column;
-    align-items: center;
+  .stripTrack {
+    --marquee-duration: 55s;
   }
-  
-  .primaryBtn,
-  .secondaryBtn {
-    width: 100%;
-    max-width: 300px;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .stripTrack {
+    animation: none;
+  }
+  .iconWrap {
+    transition: none;
   }
 }

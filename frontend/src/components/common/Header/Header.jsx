@@ -1,23 +1,57 @@
-// Header.jsx
+// src/components/common/Header/Header.jsx
 import { useState, useEffect, useCallback, memo } from "react";
 import { Navbar, Nav, Container } from "react-bootstrap";
 import { Dropdown } from "antd";
-import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
+import { MenuOutlined, CloseOutlined, DownOutlined } from "@ant-design/icons";
 import classNames from "classnames";
 import styles from "./Header.module.css";
 import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
 
+// ---- Helpers ----
+const SECTION_KEYS = new Map([
+  ["/", "home"],
+  ["/transcription", "audio"],
+  ["/services", "services"],
+  ["/pricing", "pricing"],
+  ["/reviews", "reviews"],
+  ["/about", "about"],
+  ["/contact", "contact"],
+]);
+
+const HASH_TO_SERVICES = new Set([
+  "#transcription",
+  "#arrangement",
+  "#composition",
+  "#editing",
+]);
+
+const getActiveKey = () => {
+  const { pathname, hash } = window.location;
+  if (HASH_TO_SERVICES.has(hash)) return "services";
+  // match longest prefix
+  let winner = "home";
+  let bestLen = -1;
+  for (const [path, key] of SECTION_KEYS.entries()) {
+    if (pathname.startsWith(path) && path.length > bestLen) {
+      bestLen = path.length;
+      winner = key;
+    }
+  }
+  return winner;
+};
+
+// ---- Data ----
 const SERVICES_ITEMS = [
   {
-    key: "1",
+    key: "services-all",
     label: (
       <a href="/services" className={styles.dropdownItem}>
-        All Services & Samples
+        All Services &amp; Samples
       </a>
     ),
   },
   {
-    key: "2",
+    key: "services-trans",
     label: (
       <a href="#transcription" className={styles.dropdownItem}>
         Music Transcription
@@ -25,7 +59,7 @@ const SERVICES_ITEMS = [
     ),
   },
   {
-    key: "3",
+    key: "services-arr",
     label: (
       <a href="#arrangement" className={styles.dropdownItem}>
         Music Arrangement
@@ -33,7 +67,7 @@ const SERVICES_ITEMS = [
     ),
   },
   {
-    key: "4",
+    key: "services-comp",
     label: (
       <a href="#composition" className={styles.dropdownItem}>
         Original Composition
@@ -41,7 +75,7 @@ const SERVICES_ITEMS = [
     ),
   },
   {
-    key: "5",
+    key: "services-edit",
     label: (
       <a href="#editing" className={styles.dropdownItem}>
         Sheet Music Editing
@@ -53,23 +87,37 @@ const SERVICES_ITEMS = [
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeKey, setActiveKey] = useState(getActiveKey());
+  const [servicesOpen, setServicesOpen] = useState(false); // rotate caret on desktop
 
-  // Chỉ đổi style khi đã lướt > 20px; KHÔNG ẩn header khi cuộn xuống
+  // Scroll-state (đổi style khi >20px)
   useEffect(() => {
-    const onScroll = () =>
-      setIsScrolled(
-        (window.pageYOffset || document.documentElement.scrollTop) > 20
-      );
+    const onScroll = () => {
+      const y = window.pageYOffset || document.documentElement.scrollTop;
+      setIsScrolled(y > 20);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Active-state theo URL/hash (back/forward/hashchange)
+  useEffect(() => {
+    const updateActive = () => setActiveKey(getActiveKey());
+    window.addEventListener("popstate", updateActive);
+    window.addEventListener("hashchange", updateActive);
+    // cũng cập nhật khi mount
+    updateActive();
+    return () => {
+      window.removeEventListener("popstate", updateActive);
+      window.removeEventListener("hashchange", updateActive);
+    };
+  }, []);
+
   // Khoá cuộn nền khi mở menu mobile + đóng bằng phím Esc
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
-    const onKey = (e) =>
-      e.key === "Escape" ? setIsMobileMenuOpen(false) : null;
+    const onKey = (e) => e.key === "Escape" && setIsMobileMenuOpen(false);
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "";
@@ -82,11 +130,28 @@ function Header() {
     []
   );
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+  const onDesktopDropdownOpenChange = useCallback((open) => {
+    setServicesOpen(open);
+  }, []);
+
+  const navLink = (href, key, label) => (
+    <Nav.Link
+      href={href}
+      className={classNames(styles.navLink, {
+        [styles.active]: activeKey === key,
+      })}
+    >
+      <span className={styles.linkInner}>{label}</span>
+    </Nav.Link>
+  );
 
   return (
     <header
-      className={classNames(styles.header, { [styles.scrolled]: isScrolled })}
+      className={classNames(styles.header, {
+        [styles.scrolled]: isScrolled,
+      })}
     >
+      {/* Auth bar */}
       <div
         className={classNames(styles.container, styles.authAlign)}
         style={{ marginTop: "1rem" }}
@@ -106,6 +171,7 @@ function Header() {
           </a>
         </div>
       </div>
+
       <Container fluid className={styles.container}>
         <Navbar expand="lg" className={styles.navbar}>
           {/* Logo */}
@@ -120,36 +186,36 @@ function Header() {
           {/* Desktop Navigation */}
           <div className={styles.desktopNav}>
             <Nav className={styles.navLinks}>
-              <Nav.Link href="/" className={styles.navLink}>
-                Home
-              </Nav.Link>
-              <Nav.Link href="/transcription" className={styles.navLink}>
-                Audio → Sheet Music
-              </Nav.Link>
+              {navLink("/", "home", "Home")}
+              {navLink("/transcription", "audio", "Audio → Sheet Music")}
 
               <Dropdown
                 menu={{ items: SERVICES_ITEMS }}
                 placement="bottomCenter"
                 trigger={["hover"]}
                 overlayClassName={styles.dropdown}
+                onOpenChange={onDesktopDropdownOpenChange}
               >
-                <Nav.Link className={styles.navLink}>
-                  Services & Samples
+                <Nav.Link
+                  className={classNames(styles.navLink, {
+                    [styles.active]: activeKey === "services",
+                  })}
+                >
+                  <span className={styles.linkInner}>
+                    Services &amp; Samples
+                    <DownOutlined
+                      className={classNames(styles.caret, {
+                        [styles.caretOpen]: servicesOpen,
+                      })}
+                    />
+                  </span>
                 </Nav.Link>
               </Dropdown>
 
-              <Nav.Link href="/pricing" className={styles.navLink}>
-                Pricing
-              </Nav.Link>
-              <Nav.Link href="/reviews" className={styles.navLink}>
-                Reviews
-              </Nav.Link>
-              <Nav.Link href="/about" className={styles.navLink}>
-                About us
-              </Nav.Link>
-              <Nav.Link href="/contact" className={styles.navLink}>
-                Contact
-              </Nav.Link>
+              {navLink("/pricing", "pricing", "Pricing")}
+              {navLink("/reviews", "reviews", "Reviews")}
+              {navLink("/about", "about", "About us")}
+              {navLink("/contact", "contact", "Contact")}
             </Nav>
 
             {/* CTA */}
@@ -191,22 +257,31 @@ function Header() {
             <Nav className={styles.mobileNavLinks}>
               <Nav.Link
                 href="/"
-                className={styles.mobileNavLink}
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "home",
+                })}
                 onClick={closeMobileMenu}
               >
                 Home
               </Nav.Link>
+
               <Nav.Link
-                href="/audio-sheet-music"
-                className={styles.mobileNavLink}
+                href="/transcription"
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "audio",
+                })}
                 onClick={closeMobileMenu}
               >
                 Audio → Sheet Music
               </Nav.Link>
 
               <div className={styles.mobileServicesGroup}>
-                <span className={styles.mobileServicesTitle}>
-                  Services & Samples
+                <span
+                  className={classNames(styles.mobileServicesTitle, {
+                    [styles.active]: activeKey === "services",
+                  })}
+                >
+                  Services &amp; Samples
                 </span>
                 <div className={styles.mobileServicesItems}>
                   <Nav.Link
@@ -214,7 +289,7 @@ function Header() {
                     className={styles.mobileSubLink}
                     onClick={closeMobileMenu}
                   >
-                    All Services & Samples
+                    All Services &amp; Samples
                   </Nav.Link>
                   <Nav.Link
                     href="#transcription"
@@ -249,28 +324,36 @@ function Header() {
 
               <Nav.Link
                 href="/pricing"
-                className={styles.mobileNavLink}
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "pricing",
+                })}
                 onClick={closeMobileMenu}
               >
                 Pricing
               </Nav.Link>
               <Nav.Link
                 href="/reviews"
-                className={styles.mobileNavLink}
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "reviews",
+                })}
                 onClick={closeMobileMenu}
               >
                 Reviews
               </Nav.Link>
               <Nav.Link
                 href="/about"
-                className={styles.mobileNavLink}
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "about",
+                })}
                 onClick={closeMobileMenu}
               >
                 About us
               </Nav.Link>
               <Nav.Link
                 href="/contact"
-                className={styles.mobileNavLink}
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "contact",
+                })}
                 onClick={closeMobileMenu}
               >
                 Contact
