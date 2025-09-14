@@ -1,4 +1,3 @@
-// src/pages/ServicesPage/ServicesPage.jsx
 import Header from "../../components/common/Header/Header";
 import HeroSection from "./components/HeroSection/HeroSection";
 import ServiceGridSection from "./components/ServiceGridSection/ServiceGridSection";
