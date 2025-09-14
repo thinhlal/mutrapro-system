@@ -25,7 +25,7 @@
 }
 
 .serviceImage {
-  width: 120px;       
+  width: 120px;
   height: auto;
   margin: 0 auto 12px;
   object-fit: contain;
@@ -33,7 +33,7 @@
 }
 
 .serviceName {
-  font-size: 1rem;   
+  font-size: 1rem;
   font-weight: 700;
   color: #333;
   line-height: 1.35;
@@ -42,18 +42,35 @@
 
 /* Responsive */
 @media (max-width: 992px) {
-  .serviceImage { width: 100px; }
-  .serviceName { font-size: 0.9rem; }
+  .serviceImage {
+    width: 100px;
+  }
+  .serviceName {
+    font-size: 0.9rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .servicesGrid { gap: 28px 20px; }
-  .serviceImage { width: 90px; }
-  .serviceName { font-size: 0.85rem; }
+  .servicesGrid {
+    gap: 28px 20px;
+  }
+  .serviceImage {
+    width: 90px;
+  }
+  .serviceName {
+    font-size: 0.85rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .servicesGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 12px; }
-  .serviceImage { width: 80px; }
-  .serviceName { font-size: 0.8rem; }
+  .servicesGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px 12px;
+  }
+  .serviceImage {
+    width: 80px;
+  }
+  .serviceName {
+    font-size: 0.8rem;
+  }
 }
