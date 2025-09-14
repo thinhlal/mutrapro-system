@@ -142,7 +142,6 @@
     padding-left: 0;
     margin: 0;
     font-size: 18px;
-    font-weight: 100;
     color: #444444;
 }
 
@@ -153,7 +152,7 @@
     margin: 8px 0;
     color: #374151;
     /* gần màu xám đậm mẫu */
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.6;
 }
 
@@ -184,6 +183,14 @@
 .explainerTitle {
     font-weight: 700;
     margin-bottom: 10px;
+}
+
+.explainerDesc {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.6;
+    margin: 0;
+    flex-grow: 1;
 }
 
 .ctaButton {

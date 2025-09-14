@@ -50,12 +50,12 @@ const Pricing = () => {
                         Every transcription is different and our prices reflect the time and skill
                         required to transcribe the music.
                     </p>
-                    <p>
+                    <p className={styles.explainerDesc}>
                         The more instruments and the longer or more complex a piece is, the longer it
                         takes to transcribe. The simpler and more schematic the required notation can
                         be, the less time it takes.
                     </p>
-                    <p>Check out the pricing guides below or request a proposal.</p>
+                    <p className={styles.explainerDesc}>Check out the pricing guides below or request a proposal.</p>
 
 
                 </div>

@@ -1,0 +1,84 @@
+/* src/pages/PricingPage/components/SecurePayment/SecurePayment.module.css */
+
+.section {
+  background: #fdf3ea; /* nền be giống mẫu */
+  padding: clamp(48px, 7vw, 96px) 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ===== heading ===== */
+.header {
+  text-align: center;
+  margin-bottom: clamp(20px, 3.5vw, 40px);
+}
+
+.title {
+  margin: 0;
+  color: #2b3a4a;           /* xám đậm */
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  font-size: clamp(24px, 3.8vw, 36px);
+  line-height: 1.15;
+}
+
+.rule {
+  display: inline-block;
+  width: clamp(120px, 18vw, 180px);
+  height: 2px;
+  background: #f0a066;     /* vạch cam dưới tiêu đề */
+  margin-top: clamp(10px, 1.6vw, 16px);
+  border-radius: 2px;
+}
+
+/* ===== grid ===== */
+.grid {
+  align-items: start;
+}
+
+.item {
+  text-align: center;
+}
+
+/* icons */
+.icon,
+.iconLogos {
+  display: block;
+  margin: 0 auto 12px;
+  height: auto;
+  object-fit: contain;
+}
+
+.icon {
+  width: clamp(68px, 8vw, 92px);
+}
+
+.iconLogos {
+  width: clamp(160px, 22vw, 210px); /* dải logo bên trái to hơn */
+}
+
+/* texts */
+.itemTitle {
+  margin: 6px 0 8px;
+  color: #6b7280;          /* xám tiêu đề mục */
+  font-weight: 800;
+  font-size: clamp(15px, 2vw, 18px);
+  letter-spacing: 0.2px;
+}
+
+.desc {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+  flex-grow: 1;
+}
+
+/* responsive */
+@media (max-width: 992px) {
+  .desc { max-width: 46ch; }
+}

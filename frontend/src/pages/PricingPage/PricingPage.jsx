@@ -8,7 +8,8 @@ import Pricing from "./components/Pricing/Pricing";
 
 import AvailableDiscounts from "./components/AvailableDiscounts/AvailableDiscounts";
 import CustomPayment from "./components/CustomPayment/CustomPayment";
-
+import SecurePayment from "./components/SecurePayment/SecurePayment";
+import PricingChart from "./components/PricingChart/PricingChart";
 import BackToTop from "../../components/common/BackToTop/BackToTop";
 import Footer from "../../components/common/Footer/Footer";
 
@@ -19,7 +20,9 @@ const PricingPage = () => {
 
             <main>
                 <Pricing />
+                <PricingChart />
                 <AvailableDiscounts />
+                <SecurePayment />
                 <CustomPayment />
             </main>
 
