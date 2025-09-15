@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./LoginPage.module.css";
+import GoogleIcon from '@mui/icons-material/Google';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ function LoginPage() {
           <div className={styles.brand}>MuTraPro</div>
           <h1 className={styles.title}>Chào mừng trở lại</h1>
           <p className={styles.subtitle}>
-            Đăng nhập để tiếp tục trải nghiệm chuyển soạn nhạc chuyên nghiệp.
+            Đăng nhập để tiếp tục trải nghiệm soạn nhạc chuyên nghiệp.
           </p>
         </div>
 
@@ -90,12 +91,8 @@ function LoginPage() {
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton}>
-                <img src="/vite.svg" alt="Google" />
+                <GoogleIcon />
                 <span>Tiếp tục với Google</span>
-              </button>
-              <button type="button" className={styles.socialButton}>
-                <img src="/vite.svg" alt="Facebook" />
-                <span>Tiếp tục với Facebook</span>
               </button>
             </div>
           </form>

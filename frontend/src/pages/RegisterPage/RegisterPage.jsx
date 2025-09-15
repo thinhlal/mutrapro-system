@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
+import GoogleIcon from '@mui/icons-material/Google';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -77,12 +78,8 @@ function RegisterPage() {
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton}>
-                <img src="/vite.svg" alt="Google" />
+                <GoogleIcon />
                 <span>Tiếp tục với Google</span>
-              </button>
-              <button type="button" className={styles.socialButton}>
-                <img src="/vite.svg" alt="Facebook" />
-                <span>Tiếp tục với Facebook</span>
               </button>
             </div>
           </form>
