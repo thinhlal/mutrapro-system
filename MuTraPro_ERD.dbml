@@ -834,6 +834,51 @@ Table activity_logs {
   }
 }
 
+// 21. Outbox Pattern - Event Publishing (Mỗi service có bảng riêng)
+Table outbox_events {
+  event_id uuid [pk, increment] // Dùng làm idempotency key luôn
+  aggregate_id uuid [not null] // ID của entity chính (quotation_id, task_id, etc.)
+  aggregate_type text [not null] // quotation, task, payment, etc.
+  event_type text [not null] // quotation.approved, task.completed, etc.
+  event_payload jsonb [not null] // Payload của event
+  occurred_at timestamptz [not null, default: `now()`]
+  
+  // Publishing status (published_at IS NULL = pending)
+  published_at timestamptz // NULL = pending, NOT NULL = published
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  
+  // Optional: distributed tracing
+  trace_id text
+  correlation_id text
+  
+  Note: 'Outbox pattern tối giản - event_id làm idempotency key, published_at IS NULL = pending'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at) [where: published_at IS NULL] // Partial index cho pending events
+  }
+}
+
+// 22. Event Processing Log - Idempotency (Mỗi service có bảng riêng)
+Table consumed_events {
+  event_id uuid [not null] // PK part 1 - event_id từ outbox
+  consumer_name text [not null] // PK part 2 - tên service consumer
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency tối giản - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk] // Composite primary key
+    consumer_name
+    processed_at
+  }
+}
+
 // ===== ENUMS =====
 
 Enum user_role {
@@ -1110,6 +1155,8 @@ Enum recording_role {
   instrumentalist  // Chơi nhạc cụ
   both             // Vừa hát vừa chơi nhạc cụ
 }
+
+// REMOVED: outbox_status và processing_status enums - không cần thiết với thiết kế tối giản
 
 // ===== BUSINESS RULES & TRIGGERS =====
 
