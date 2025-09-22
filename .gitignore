@@ -53,11 +53,6 @@ coverage/
 tmp/
 temp/
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
 # Package managers
 package-lock.json
 yarn.lock
