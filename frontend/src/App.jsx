@@ -10,6 +10,7 @@ import RegisterPage from "./pages/RegisterPage/RegisterPage";
 import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
 import ServicesPage from "./pages/ServicesPage/ServicesPage";
 import PricingPage from "./pages/PricingPage/PricingPage";
+import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
 import "./App.css";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/transcription" element={<TranscriptionPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<RegisterPage />} />
+        <Route path="/soundtosheet" element={<FromSoundToSheet />} />
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
