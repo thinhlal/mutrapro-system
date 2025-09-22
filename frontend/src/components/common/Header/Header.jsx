@@ -4,6 +4,7 @@ import { Navbar, Nav, Container } from "react-bootstrap";
 import { Dropdown } from "antd";
 import { MenuOutlined, CloseOutlined, DownOutlined } from "@ant-design/icons";
 import classNames from "classnames";
+import { Link } from "react-router-dom";
 import styles from "./Header.module.css";
 import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
 
@@ -11,6 +12,7 @@ import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
 const SECTION_KEYS = new Map([
   ["/", "home"],
   ["/transcription", "audio"],
+  ["/soundtosheet", "services"],
   ["/services", "services"],
   ["/pricing", "pricing"],
   ["/reviews", "reviews"],
@@ -45,21 +47,22 @@ const SERVICES_ITEMS = [
   {
     key: "services-all",
     label: (
-      <a href="/services" className={styles.dropdownItem}>
+      <Link to="/services" className={styles.dropdownItem}>
         All Services &amp; Samples
-      </a>
+      </Link>
     ),
   },
   {
     key: "services-trans",
     label: (
-      <a href="#transcription" className={styles.dropdownItem}>
-        Music Transcription
-      </a>
+      <Link to="/soundtosheet" className={styles.dropdownItem}>
+        From Sound to Sheet
+      </Link>
     ),
   },
   {
     key: "services-arr",
+    // vẫn để anchor về #arrangement trong trang services, tuỳ bạn có muốn tách route riêng không
     label: (
       <a href="#arrangement" className={styles.dropdownItem}>
         Music Arrangement
@@ -134,9 +137,10 @@ function Header() {
     setServicesOpen(open);
   }, []);
 
-  const navLink = (href, key, label) => (
+  const navLink = (to, key, label) => (
     <Nav.Link
-      href={href}
+      as={Link}
+      to={to}
       className={classNames(styles.navLink, {
         [styles.active]: activeKey === key,
       })}
@@ -157,25 +161,25 @@ function Header() {
         style={{ marginTop: "1rem" }}
       >
         <div className="d-flex gap-4 align-items-center">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className={classNames(styles.navLink, styles.authLink)}
           >
             Login
-          </a>
-          <a
-            href="/sign-up"
+          </Link>
+          <Link
+            to="/sign-up"
             className={classNames(styles.navLink, styles.authSignup)}
           >
             Sign up
-          </a>
+          </Link>
         </div>
       </div>
 
       <Container fluid className={styles.container}>
         <Navbar expand="lg" className={styles.navbar}>
           {/* Logo */}
-          <Navbar.Brand href="/" className={styles.brand}>
+          <Navbar.Brand as={Link} to="/" className={styles.brand}>
             <img
               src={logo}
               alt="My Sheet Music Transcriptions"
@@ -220,9 +224,9 @@ function Header() {
 
             {/* CTA */}
             <div className={styles.ctaContainer}>
-              <a href="/request" className={styles.ctaButton}>
+              <Link to="/request" className={styles.ctaButton}>
                 REQUEST YOUR SHEET MUSIC
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -256,7 +260,8 @@ function Header() {
           <div className={styles.mobileNavContent}>
             <Nav className={styles.mobileNavLinks}>
               <Nav.Link
-                href="/"
+                as={Link}
+                to="/"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "home",
                 })}
@@ -266,7 +271,8 @@ function Header() {
               </Nav.Link>
 
               <Nav.Link
-                href="/transcription"
+                as={Link}
+                to="/transcription"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "audio",
                 })}
@@ -285,19 +291,22 @@ function Header() {
                 </span>
                 <div className={styles.mobileServicesItems}>
                   <Nav.Link
-                    href="/services"
+                    as={Link}
+                    to="/services"
                     className={styles.mobileSubLink}
                     onClick={closeMobileMenu}
                   >
                     All Services &amp; Samples
                   </Nav.Link>
                   <Nav.Link
-                    href="#transcription"
+                    as={Link}
+                    to="/soundtosheet"
                     className={styles.mobileSubLink}
                     onClick={closeMobileMenu}
                   >
                     Music Transcription
                   </Nav.Link>
+                  {/* Giữ nguyên các anchor dưới đây hoặc chuyển thành route riêng tùy ý bạn */}
                   <Nav.Link
                     href="#arrangement"
                     className={styles.mobileSubLink}
@@ -323,7 +332,8 @@ function Header() {
               </div>
 
               <Nav.Link
-                href="/pricing"
+                as={Link}
+                to="/pricing"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "pricing",
                 })}
@@ -332,7 +342,8 @@ function Header() {
                 Pricing
               </Nav.Link>
               <Nav.Link
-                href="/reviews"
+                as={Link}
+                to="/reviews"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "reviews",
                 })}
@@ -341,7 +352,8 @@ function Header() {
                 Reviews
               </Nav.Link>
               <Nav.Link
-                href="/about"
+                as={Link}
+                to="/about"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "about",
                 })}
@@ -350,7 +362,8 @@ function Header() {
                 About us
               </Nav.Link>
               <Nav.Link
-                href="/contact"
+                as={Link}
+                to="/contact"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === "contact",
                 })}
@@ -362,13 +375,13 @@ function Header() {
 
             {/* Mobile CTA */}
             <div className={styles.mobileCta}>
-              <a
-                href="/request"
+              <Link
+                to="/request"
                 className={styles.mobileCtaButton}
                 onClick={closeMobileMenu}
               >
                 REQUEST YOUR SHEET MUSIC
-              </a>
+              </Link>
             </div>
           </div>
         </div>
