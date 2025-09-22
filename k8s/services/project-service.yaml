@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-service
+  namespace: mutrapro
+  labels:
+    app: project-service
+spec:
+  selector:
+    app: project-service
+  ports:
+  - name: http
+    port: 8083
+    targetPort: 8083
+    protocol: TCP
+  type: ClusterIP

@@ -1,0 +1,108 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mutrapro-ingress
+  namespace: mutrapro
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.mutrapro.local  # Change this to your domain
+    http:
+      paths:
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 8081
+      - path: /api/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8082
+      - path: /api/projects
+        pathType: Prefix
+        backend:
+          service:
+            name: project-service
+            port:
+              number: 8083
+      - path: /api/payments
+        pathType: Prefix
+        backend:
+          service:
+            name: payment-service
+            port:
+              number: 8084
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 8085
+      - path: /api/files
+        pathType: Prefix
+        backend:
+          service:
+            name: file-service
+            port:
+              number: 8086
+      - path: /api/feedback
+        pathType: Prefix
+        backend:
+          service:
+            name: feedback-service
+            port:
+              number: 8087
+      - path: /api/quotations
+        pathType: Prefix
+        backend:
+          service:
+            name: quotation-service
+            port:
+              number: 8088
+      - path: /api/revisions
+        pathType: Prefix
+        backend:
+          service:
+            name: revision-service
+            port:
+              number: 8089
+      - path: /api/specialists
+        pathType: Prefix
+        backend:
+          service:
+            name: specialist-service
+            port:
+              number: 8090
+      - path: /api/studios
+        pathType: Prefix
+        backend:
+          service:
+            name: studio-service
+            port:
+              number: 8091
+      - path: /api/tasks
+        pathType: Prefix
+        backend:
+          service:
+            name: task-service
+            port:
+              number: 8092
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8080
