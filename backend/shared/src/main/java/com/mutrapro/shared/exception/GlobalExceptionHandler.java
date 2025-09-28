@@ -24,6 +24,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -162,7 +163,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.UNAUTHORIZED.getCode())
                 .message("Authentication failed")
-                .details(ex.getMessage())
+                .details(Map.of("error", ex.getMessage()))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.UNAUTHORIZED.value())
                 .timestamp(LocalDateTime.now())
@@ -186,7 +187,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.FORBIDDEN.getCode())
                 .message("Access denied")
-                .details(ex.getMessage())
+                .details(Map.of("error", ex.getMessage()))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.FORBIDDEN.value())
                 .timestamp(LocalDateTime.now())
@@ -233,7 +234,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
                 .message("Invalid request body format")
-                .details(ex.getMessage())
+                .details(Map.of("error", ex.getMessage()))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .timestamp(LocalDateTime.now())
@@ -260,7 +261,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
                 .message("Invalid parameter type")
-                .details(message)
+                .details(Map.of("error", message))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .timestamp(LocalDateTime.now())
@@ -286,7 +287,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
                 .message("Missing required parameter")
-                .details(message)
+                .details(Map.of("error", message))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.BAD_REQUEST.value())
                 .timestamp(LocalDateTime.now())
@@ -313,7 +314,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
                 .message("HTTP method not supported")
-                .details(message)
+                .details(Map.of("error", message))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .timestamp(LocalDateTime.now())
@@ -337,7 +338,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.RESOURCE_NOT_FOUND.getCode())
                 .message("Endpoint not found")
-                .details(String.format("No handler found for %s %s", ex.getHttpMethod(), ex.getRequestURL()))
+                .details(Map.of("error", String.format("No handler found for %s %s", ex.getHttpMethod(), ex.getRequestURL())))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .timestamp(LocalDateTime.now())
@@ -361,7 +362,7 @@ public class GlobalExceptionHandler {
                 .status("error")
                 .errorCode(CommonErrorCodes.INTERNAL_SERVER_ERROR.getCode())
                 .message("An unexpected error occurred")
-                .details("Please contact support if the problem persists")
+                .details(Map.of("error", "Please contact support if the problem persists"))
                 .path(request.getRequestURI())
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .timestamp(LocalDateTime.now())

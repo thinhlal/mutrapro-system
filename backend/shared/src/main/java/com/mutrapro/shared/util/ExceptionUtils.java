@@ -26,11 +26,11 @@ public class ExceptionUtils {
         
         String message = ex.getMessage();
         if (message != null && message.toLowerCase().contains("timeout")) {
-            return new TimeoutException(
+            return new com.mutrapro.shared.exception.TimeoutException(
                 CommonErrorCodes.DATABASE_TIMEOUT,
                 "Database operation timeout",
                 "database",
-                30000 // 30 seconds default timeout
+                30000L // 30 seconds default timeout
             );
         }
         
@@ -74,11 +74,11 @@ public class ExceptionUtils {
         }
         
         if (ex instanceof SocketTimeoutException || ex instanceof TimeoutException) {
-            return new TimeoutException(
+            return new com.mutrapro.shared.exception.TimeoutException(
                 CommonErrorCodes.NETWORK_TIMEOUT,
                 "Service call timeout",
                 serviceName,
-                30000 // 30 seconds default timeout
+                30000L // 30 seconds default timeout
             );
         }
         
