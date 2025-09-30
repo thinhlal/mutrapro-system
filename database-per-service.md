@@ -1,17 +1,16 @@
 # Database Tables per Service - MuTraPro System
 
 ## 1. auth-service
-**Database**: `auth_db` (stateless, chỉ lưu sessions nếu cần)
-- `refresh_tokens` (optional - nếu dùng refresh token)
-- `user_sessions` (optional - nếu cần track sessions)
+**Database**: `auth_db` (Identity/Credentials)
+- `users_auth` (thông tin đăng nhập: username/email, password_hash, status, email_verified, mfa_enabled)
+- `user_roles` (vai trò/quyền cho user_id)
+- `refresh_tokens` (nếu dùng refresh token)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Không có bảng users/user_roles** - dùng user-service để tra thông tin
 
 ## 2. user-service  
-**Database**: `user_db`
-- `users` (primary table - sở hữu duy nhất)
-- `user_roles` (role management - sở hữu duy nhất)
+**Database**: `user_db` (Profile)
+- `users_profile` (hồ sơ người dùng: display_name, avatar_url, phone, address, ...)
 - `customers` (customer profiles)
 - `service_coordinators` (coordinators)
 - `outbox_events` (event publishing)
@@ -118,14 +117,14 @@
 - Dùng soft reference (lưu *_id + index)
 - Xác thực qua API calls hoặc events
 
-### 4. Auth Service Stateless
-- Auth-service không lưu bảng users
-- Dùng user-service để tra thông tin người dùng
-- Chỉ lưu refresh_tokens/sessions nếu cần
+### 4. Auth Service sở hữu Credentials
+- Auth-service sở hữu bảng `users_auth`, `user_roles`, `refresh_tokens` (và `mfa_secrets` nếu có)
+- Login/refresh diễn ra hoàn toàn trong auth-service trên dữ liệu local
+- Các service khác tự verify JWT bằng public key (không cần gọi user-service ở đường nóng)
 
 ### 5. Soft References
 - `project_id` trong task-service → gọi project-service API
-- `user_id` trong mọi service → gọi user-service API
+- `user_id` là UUID đồng nhất giữa services; khi cần hồ sơ (profile) → gọi user-service API, khi cần kiểm tra quyền/trạng thái đăng nhập → dựa trên JWT hoặc sự kiện replicate sang auth
 - `specialist_id` trong task-service → gọi specialist-service API
 - `milestone_id` trong payment-service → gọi quotation-service API
 

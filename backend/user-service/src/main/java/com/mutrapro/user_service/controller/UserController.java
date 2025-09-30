@@ -113,32 +113,6 @@ public class UserController {
             .build();
     }
     
-    /**
-     * Authenticate user
-     */
-    @PostMapping("/authenticate")
-    public ApiResponse<AuthenticationResponse> authenticateUser(@RequestBody AuthenticationRequest request) {
-        log.info("Authenticating user: {}", request.getUsernameOrEmail());
-        AuthenticationResponse authResponse = userService.authenticateUser(request.getUsernameOrEmail(), request.getPassword());
-        return ApiResponse.<AuthenticationResponse>builder()
-            .message("User authenticated successfully")
-            .data(authResponse)
-            .build();
-    }
-    
-    /**
-     * Change user password
-     */
-    @PostMapping("/{id}/change-password")
-    public ApiResponse<Void> changePassword(
-            @PathVariable String id, 
-            @Valid @RequestBody ChangePasswordRequest request) {
-        log.info("Changing password for user with ID: {}", id);
-        userService.changePassword(id, request);
-        return ApiResponse.<Void>builder()
-            .message("Password changed successfully")
-            .build();
-    }
     
     /**
      * Get user profile

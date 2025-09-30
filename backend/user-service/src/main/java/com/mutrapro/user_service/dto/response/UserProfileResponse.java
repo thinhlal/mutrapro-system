@@ -1,17 +1,15 @@
 package com.mutrapro.user_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.mutrapro.user_service.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * Response DTO cho User Profile - chi tiết hơn UserResponse
+ * Response DTO cho User Profile
  */
 @Data
 @Builder
@@ -26,22 +24,19 @@ public class UserProfileResponse {
     private String fullName;
     private String phone;
     private String address;
-    private UserRole primaryRole;
     private boolean isActive;
     
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
-    // User roles
-    private List<UserRole> roles;
     
     // Profile statistics (có thể lấy từ các service khác)
     private int totalProjects;
     private int completedTasks;
     private int activeProjects;
     
-    // Specialist info (nếu user là specialist)
+    // Specialist info (nếu user là specialist) - có thể lấy từ specialist-service
     private String specialization;
     private Integer experienceYears;
     private Double hourlyRate;

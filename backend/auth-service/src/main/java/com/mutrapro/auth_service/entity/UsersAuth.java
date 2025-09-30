@@ -1,4 +1,5 @@
-package com.mutrapro.user_service.entity;
+package com.mutrapro.auth_service.entity;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,50 +11,40 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-/**
- * User Profile Entity - chỉ chứa thông tin hồ sơ (không chứa credential)
- * Bảng: users_profile
- */
 @Entity
-@Table(name = "users_profile")
+@Table(name = "users_auth")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class User {
-    
+public class UsersAuth {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "user_id")
-    private String userId;
-    
-    @Column(unique = true, nullable = false, length = 50)
-    private String username;
-    
+    @Column(name = "id")
+    private String id;
+
     @Column(unique = true, nullable = false, length = 100)
+    private String username;
+
+    @Column(unique = true, nullable = false, length = 255)
     private String email;
-    
-    @Column(name = "full_name", nullable = false, length = 100)
-    private String fullName;
-    
-    @Column(name = "phone", length = 20)
-    private String phone;
-    
-    @Column(columnDefinition = "TEXT")
-    private String address;
-    
-    @Builder.Default
+
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+
     @Column(name = "is_active")
-    private boolean isActive = true;
-    
+    @Builder.Default
+    private boolean active = true;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    
 }
+
+

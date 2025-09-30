@@ -3,20 +3,13 @@ package com.mutrapro.user_service.service;
 import com.mutrapro.user_service.dto.request.*;
 import com.mutrapro.user_service.dto.response.*;
 import com.mutrapro.user_service.entity.User;
-import com.mutrapro.user_service.entity.UserRole;
-import com.mutrapro.user_service.enums.UserRole;
 import com.mutrapro.user_service.exception.*;
 import com.mutrapro.user_service.mapper.UserMapper;
 import com.mutrapro.user_service.repository.UserRepository;
-import com.mutrapro.user_service.repository.UserRoleRepository;
-import com.mutrapro.user_service.util.AuthenticationUtil;
-import com.mutrapro.user_service.util.EmailVerificationUtil;
-import com.mutrapro.user_service.util.PasswordUtil;
 import com.mutrapro.shared.util.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     
     private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationUtil authUtil;
-    private final PasswordUtil passwordUtil;
-    private final EmailVerificationUtil emailUtil;
     
     // ===== PUBLIC API METHODS =====
     
@@ -79,20 +67,8 @@ public class UserService {
             // Map request to entity
             User user = userMapper.toUser(request);
             
-            // Hash password
-            String hashedPassword = passwordEncoder.encode(request.getPassword());
-            user.setPasswordHash(hashedPassword);
-            
-            // Generate email verification token
-            emailUtil.generateEmailVerificationToken(user);
-            
             // Save user
             User savedUser = userRepository.save(user);
-            
-            // Create default role if primaryRole is specified
-            if (request.getPrimaryRole() != null) {
-                createUserRole(savedUser, request.getPrimaryRole(), savedUser);
-            }
             
             log.info("User created successfully with ID: {}", savedUser.getUserId());
             return userMapper.toUserResponse(savedUser);
@@ -142,104 +118,6 @@ public class UserService {
         }
     }
     
-    /**
-     * Xác thực user credentials
-     */
-    public AuthenticationResponse authenticateUser(String usernameOrEmail, String password) {
-        log.info("Authenticating user: {}", usernameOrEmail);
-        
-        try {
-            User user = findUserEntityByUsernameOrEmail(usernameOrEmail);
-            
-            // Check if user can login
-            if (!authUtil.canLogin(user)) {
-                if (user.isLocked()) {
-                    throw new UserAccountLockedException("User account is locked");
-                }
-                if (!user.isAccountActive()) {
-                    throw new UserAccountDisabledException("User account is disabled");
-                }
-            }
-            
-            // Verify password
-            if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-                authUtil.incrementFailedLoginAttempts(user);
-                userRepository.save(user);
-                throw new InvalidUserCredentialsException("Invalid credentials");
-            }
-            
-            // Reset failed login attempts and update last login
-            authUtil.resetFailedLoginAttempts(user);
-            authUtil.updateLastLogin(user);
-            userRepository.save(user);
-            
-            // Generate tokens (TODO: Implement JWT token generation)
-            String accessToken = "dummy_access_token"; // TODO: Generate real JWT
-            String refreshToken = "dummy_refresh_token"; // TODO: Generate real JWT
-            Long expiresIn = 3600L; // 1 hour
-            
-            log.info("User authenticated successfully: {}", usernameOrEmail);
-            return userMapper.toAuthenticationResponse(user, accessToken, refreshToken, expiresIn);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "authenticate user");
-        }
-    }
-    
-    /**
-     * Đổi mật khẩu
-     */
-    @Transactional
-    public void changePassword(String userId, ChangePasswordRequest request) {
-        log.info("Changing password for user ID: {}", userId);
-        
-        try {
-            // Validate request
-            if (!passwordUtil.isValidChangePasswordRequest(request)) {
-                throw new WeakPasswordException("New password and confirm password do not match");
-            }
-            
-            User user = findUserEntityById(userId);
-            
-            // Verify current password
-            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-                throw new InvalidUserCredentialsException("Current password is incorrect");
-            }
-            
-            // Update password
-            String newHashedPassword = passwordEncoder.encode(request.getNewPassword());
-            passwordUtil.updateUserPassword(user, newHashedPassword);
-            
-            userRepository.save(user);
-            log.info("Password changed successfully for user ID: {}", userId);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "change password");
-        }
-    }
-    
-    /**
-     * Reset password
-     */
-    @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
-        log.info("Resetting password for email: {}", request.getEmail());
-        
-        try {
-            User user = findUserEntityByEmail(request.getEmail());
-            
-            // Generate reset token
-            String resetToken = passwordUtil.generatePasswordResetToken(user);
-            
-            userRepository.save(user);
-            
-            // TODO: Send email with reset token
-            log.info("Password reset token generated for user: {}", request.getEmail());
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "reset password");
-        }
-    }
     
     /**
      * Lấy user profile
@@ -329,25 +207,6 @@ public class UserService {
             throw new InvalidEmailFormatException("Invalid email format: " + request.getEmail());
         }
         
-        // Validate password strength
-        if (isWeakPassword(request.getPassword())) {
-            throw new WeakPasswordException("Password does not meet security requirements");
-        }
-    }
-    
-    /**
-     * Create user role
-     */
-    @Transactional
-    private void createUserRole(User user, UserRole role, User assignedBy) {
-        UserRole userRole = UserRole.builder()
-                .user(user)
-                .role(role)
-                .assignedBy(assignedBy)
-                .isActive(true)
-                .build();
-        
-        userRoleRepository.save(userRole);
     }
     
     /**
@@ -357,10 +216,4 @@ public class UserService {
         return email != null && email.contains("@") && email.contains(".");
     }
     
-    /**
-     * Check if password is weak
-     */
-    private boolean isWeakPassword(String password) {
-        return password == null || password.length() < 8;
-    }
 }

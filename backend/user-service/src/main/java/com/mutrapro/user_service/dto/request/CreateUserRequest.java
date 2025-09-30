@@ -1,7 +1,6 @@
 package com.mutrapro.user_service.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.mutrapro.user_service.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

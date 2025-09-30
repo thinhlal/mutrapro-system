@@ -1,0 +1,435 @@
+// MuTraPro - ERD theo từng Microservice (Per-Service Databases)
+// Database type: PostgreSQL
+
+Project MuTraPro_PerService {
+  database_type: 'PostgreSQL'
+  Note: '''
+    ERD nhóm theo từng microservice để dễ theo dõi flow và ownership.
+    Nguyên tắc: mỗi service sở hữu DB riêng; không FK cross-service; dùng soft references qua *_id.
+  '''
+}
+
+// =========================
+// 1) AUTH-SERVICE (auth_db)
+// =========================
+Table users_auth {
+  id uuid [pk]
+  username varchar(100) [unique, not null]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  status varchar(20) [not null, default: 'ACTIVE'] // ACTIVE|LOCKED|DISABLED
+  email_verified boolean [default: false]
+  mfa_enabled boolean [default: false]
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+}
+
+Table user_roles {
+  user_id uuid [not null, ref: - users_auth.id] // local FK
+  role varchar(100) [not null]
+  assigned_at timestamptz [default: `now()`]
+  Note: 'Composite PK (user_id, role)'
+  indexes {
+    (user_id, role) [unique, pk]
+    user_id
+    role
+  }
+}
+
+Table refresh_tokens {
+  id uuid [pk]
+  user_id uuid [not null, ref: - users_auth.id]
+  token_hash varchar(255) [unique, not null]
+  issued_at timestamptz [default: `now()`]
+  expires_at timestamptz [not null]
+  revoked boolean [default: false]
+  revoked_at timestamptz
+}
+
+Table mfa_secrets {
+  user_id uuid [pk, ref: - users_auth.id]
+  secret text [not null]
+  backup_codes text
+}
+
+Table outbox_events_auth {
+  event_id uuid [pk]
+  aggregate_id uuid [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [default: `now()`]
+  published_at timestamptz
+  retry_count int [default: 0]
+}
+
+Table consumed_events_auth {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [default: `now()`]
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+  }
+}
+
+// =========================
+// 2) USER-SERVICE (user_db)
+// =========================
+Table users_profile {
+  user_id uuid [pk] // Align với users_auth.id (soft reference)
+  display_name varchar(255)
+  avatar_url text
+  phone varchar(50)
+  address text
+  locale varchar(20)
+  timezone varchar(50)
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+}
+
+Table user_contacts {
+  id uuid [pk]
+  user_id uuid [not null] // soft ref → users_profile.user_id
+  type varchar(50) [not null]
+  value varchar(255) [not null]
+  verified boolean [default: false]
+  indexes { user_id }
+}
+
+Table user_preferences {
+  user_id uuid [not null]
+  pref_key varchar(100) [not null]
+  pref_value jsonb
+  indexes { (user_id, pref_key) [unique, pk] }
+}
+
+Table outbox_events_user {
+  event_id uuid [pk]
+  aggregate_id uuid [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [default: `now()`]
+  published_at timestamptz
+}
+
+Table consumed_events_user {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [default: `now()`]
+  indexes { (event_id, consumer_name) [unique, pk] }
+}
+
+// ================================
+// 3) SPECIALIST-SERVICE (specialist_db)
+// ================================
+Table specialists {
+  specialist_id uuid [pk]
+  user_id uuid [not null] // soft ref → users_profile.user_id
+  specialization varchar(50) [not null]
+  experience_years int [default: 0]
+  max_concurrent_tasks int [default: 5]
+  portfolio_url varchar(255)
+  rating decimal(3,2) [default: 0.00]
+  total_projects int [default: 0]
+  indexes { user_id [unique] }
+}
+
+Table skill_categories {
+  category_id uuid [pk]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  indexes { category_name [unique] }
+}
+
+Table skills {
+  skill_id uuid [pk]
+  category_id uuid [not null] // local ref
+  skill_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  indexes { category_id, skill_name [unique] }
+}
+
+Table specialist_skills {
+  specialist_skill_id uuid [pk]
+  specialist_id uuid [not null]
+  skill_id uuid [not null]
+  proficiency_level varchar(30) [not null]
+  years_experience int [default: 0]
+  indexes { (specialist_id, skill_id) [unique] }
+}
+
+// ==============================
+// 4) QUOTATION-SERVICE (quotation_db)
+// ==============================
+Table service_requests {
+  request_id uuid [pk]
+  customer_id uuid [not null] // soft ref → users_profile.user_id (qua customers table nếu dùng)
+  coordinator_id uuid // soft ref → service_coordinators.coordinator_id
+  request_type varchar(50) [not null]
+  title varchar(200) [not null]
+  description text [not null]
+  priority varchar(20) [default: 'normal']
+  status varchar(30) [default: 'pending']
+  budget decimal(10,2)
+  deadline timestamptz
+}
+
+Table quotations {
+  quotation_id uuid [pk]
+  request_id uuid [not null]
+  coordinator_id uuid [not null]
+  customer_id uuid [not null]
+  version int [not null, default: 1]
+  is_active boolean [default: true]
+  parent_quotation_id uuid
+  audio_duration_minutes decimal(6,2)
+  complexity_level varchar(20) [not null]
+  estimated_hours decimal(6,2)
+  base_price decimal(12,2) [not null]
+  additional_fees decimal(12,2) [default: 0]
+  discount_percent decimal(5,2) [default: 0]
+  total_price decimal(12,2) [not null]
+  currency varchar(10) [default: 'VND']
+  deposit_percent decimal(5,2) [default: 40.0]
+  deposit_amount decimal(12,2) [not null]
+  final_amount decimal(12,2) [not null]
+  task_priority varchar(20) [default: 'normal']
+  status varchar(20) [default: 'sent']
+  valid_until timestamptz
+  notes text
+}
+
+// ============================
+// 5) PROJECT-SERVICE (project_db)
+// ============================
+Table projects {
+  project_id uuid [pk]
+  request_id uuid [not null] // soft ref → service_requests.request_id
+  quotation_id uuid [not null] // soft ref → quotations.quotation_id
+  project_name varchar(200) [not null]
+  status varchar(30) [default: 'assigned']
+  start_date timestamptz
+  end_date timestamptz
+  free_revisions_included int [default: 1]
+  used_revisions int [default: 0]
+  additional_revision_fee_vnd decimal(12,2) [default: 0]
+}
+
+// =========================
+// 6) TASK-SERVICE (task_db)
+// =========================
+Table task_assignments {
+  assignment_id uuid [pk]
+  project_id uuid [not null] // soft ref → projects.project_id
+  specialist_id uuid [not null] // soft ref → specialists.specialist_id
+  task_type varchar(50) [not null]
+  status varchar(30) [default: 'assigned']
+  assigned_date timestamptz [default: `now()`]
+  due_date timestamptz [not null]
+  estimated_hours decimal(6,2) [not null]
+  is_overdue boolean [default: false]
+  task_priority varchar(20) [default: 'normal']
+}
+
+// ==========================
+// 7) STUDIO-SERVICE (studio_db)
+// ==========================
+Table studios {
+  studio_id uuid [pk]
+  studio_name varchar(100) [not null]
+  location varchar(255) [not null]
+  capacity int [not null]
+  hourly_rate decimal(10,2) [not null]
+  is_active boolean [default: true]
+}
+
+Table equipment_categories {
+  category_id uuid [pk]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+}
+
+Table equipment {
+  equipment_id uuid [pk]
+  category_id uuid [not null]
+  equipment_name varchar(100) [not null]
+  brand varchar(50)
+  model varchar(100)
+  description text
+  specifications jsonb
+  is_active boolean [default: true]
+}
+
+Table studio_equipment {
+  studio_equipment_id uuid [pk]
+  equipment_id uuid [not null]
+  quantity int [default: 1]
+  condition varchar(30) [default: 'good']
+}
+
+Table studio_bookings {
+  booking_id uuid [pk]
+  customer_id uuid [not null] // soft ref → users_profile.user_id
+  studio_id uuid [not null]
+  project_id uuid // soft ref → projects.project_id
+  session_type varchar(30) [not null]
+  booking_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  status varchar(20) [default: 'pending']
+  billing_step_hours decimal(3,2) [default: 0.50]
+  min_billing_hours decimal(3,2) [default: 1.00]
+  studio_rate decimal(10,2) [not null]
+  duration_hours decimal(5,2) [not null]
+  artist_fee decimal(12,2) [default: 0]
+  admin_fee decimal(12,2) [default: 0]
+  equipment_rental_fee decimal(12,2) [default: 0]
+}
+
+Table booking_artists {
+  booking_artist_id uuid [pk]
+  booking_id uuid [not null]
+  specialist_id uuid [not null]
+  role varchar(30) [not null]
+  instrument_skill_id uuid
+  fee decimal(12,2) [default: 0]
+}
+
+Table booking_required_equipment {
+  booking_required_equipment_id uuid [pk]
+  booking_id uuid [not null]
+  studio_equipment_id uuid [not null]
+  quantity int [default: 1]
+  rental_fee decimal(12,2) [default: 0]
+}
+
+// ===========================
+// 8) PAYMENT-SERVICE (payment_db)
+// ===========================
+Table payment_milestones {
+  milestone_id uuid [pk]
+  quotation_id uuid [not null] // soft ref → quotations.quotation_id
+  milestone_type varchar(30) [not null]
+  milestone_name varchar(100) [not null]
+  amount decimal(12,2) [not null]
+  percentage decimal(5,2) [not null]
+  trigger_condition varchar(50) [not null]
+  status varchar(20) [default: 'pending']
+  due_date timestamptz
+  completed_at timestamptz
+}
+
+Table payments {
+  payment_id uuid [pk]
+  milestone_id uuid [not null]
+  amount decimal(12,2) [not null]
+  currency varchar(10) [default: 'VND']
+  payment_method varchar(30) [not null]
+  transaction_id varchar(100)
+  gateway_response text
+  status varchar(20) [default: 'pending']
+  payment_date timestamptz
+  processed_date timestamptz
+  ip_address varchar(45)
+  user_agent text
+}
+
+// ========================
+// 9) FILE-SERVICE (file_db)
+// ========================
+Table files {
+  file_id uuid [pk]
+  request_id uuid // soft ref → service_requests
+  assignment_id uuid // soft ref → task_assignments
+  booking_id uuid // soft ref → studio_bookings
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100)
+  file_source varchar(30) [not null]
+  content_type varchar(30) [not null]
+  processing_stage varchar(20) [default: 'raw']
+  version varchar(20) [default: '1.0']
+  audio_metadata jsonb
+  description text
+  upload_date timestamptz [default: `now()`]
+  created_by uuid // soft ref → users_profile.user_id
+}
+
+// ===============================
+// 10) NOTIFICATION-SERVICE (notification_db)
+// ===============================
+Table notifications {
+  notification_id uuid [pk]
+  user_id uuid [not null] // soft ref → users_profile.user_id
+  title varchar(200) [not null]
+  message text [not null]
+  notification_type varchar(50) [not null]
+  is_read boolean [default: false]
+  created_at timestamptz [default: `now()`]
+}
+
+// ==============================
+// 11) FEEDBACK-SERVICE (feedback_db)
+// ==============================
+Table feedback {
+  feedback_id uuid [pk]
+  request_id uuid [not null] // soft ref → service_requests.request_id
+  customer_id uuid [not null] // soft ref → users_profile.user_id
+  rating int [not null]
+  comment text
+  feedback_type varchar(30) [not null]
+  created_at timestamptz [default: `now()`]
+}
+
+// ==============================
+// 12) REVISION-SERVICE (revision_db)
+// ==============================
+Table revision_requests {
+  revision_id uuid [pk]
+  project_id uuid [not null] // soft ref → projects.project_id
+  file_id uuid [not null] // soft ref → files.file_id
+  requested_by uuid [not null] // soft ref → users_profile.user_id
+  revision_number int [not null]
+  revision_type varchar(30) [not null]
+  description text [not null]
+  is_free_revision boolean [default: true]
+  revision_fee_vnd decimal(12,2) [default: 0]
+  status varchar(20) [default: 'pending']
+  requested_at timestamptz [default: `now()`]
+  approved_at timestamptz
+  completed_at timestamptz
+}
+
+Table deliverable_packages {
+  package_id uuid [pk]
+  project_id uuid [not null]
+  package_name varchar(200) [not null]
+  description text
+  delivery_type varchar(30) [default: 'final']
+  status varchar(30) [default: 'preparing']
+  prepared_by uuid // soft ref → users_profile.user_id
+  prepared_at timestamptz
+  delivered_at timestamptz
+  approved_by_customer_at timestamptz
+  customer_notes text
+  requires_revision boolean [default: false]
+}
+
+Table package_files {
+  package_file_id uuid [pk]
+  package_id uuid [not null]
+  file_id uuid [not null]
+  file_order int [default: 1]
+  is_primary boolean [default: false]
+  indexes { (package_id, file_id) [unique] }
+}
+
+// ==============================
+// Outbox/Consumed mẫu cho các service còn lại (đặt theo service)
+// ==============================
+// Ví dụ: outbox_events_project, consumed_events_project ...
+
+
