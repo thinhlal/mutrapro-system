@@ -93,6 +93,43 @@ npm run db:seed
 npm run dev
 ```
 
+### Chạy Backend (Java Spring) với profile dev/prod
+
+Các service backend Spring Boot hỗ trợ 2 profile:
+
+- dev: dùng Postgres local cố định (localhost:5432, username/password: postgres)
+- prod: dùng biến môi trường `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` khi deploy
+
+Mỗi service có 2 file cấu hình nằm tại `backend/<service>/src/main/resources/`:
+
+- `application-dev.yml`: cấu hình phát triển
+- `application-prod.yml`: cấu hình sản xuất
+
+Chạy một service với profile dev (ví dụ `auth-service`):
+
+```bash
+cd backend/auth-service
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Chạy với profile prod (biến môi trường đã được set):
+
+```bash
+export DB_HOST=<your-db-host>
+export DB_PORT=5432
+export DB_NAME=<your-db-name>
+export DB_USER=<your-db-user>
+export DB_PASSWORD=<your-db-password>
+./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+Hoặc chạy jar đã build:
+
+```bash
+./mvnw -DskipTests package
+java -Dspring.profiles.active=dev -jar target/*.jar
+```
+
 ## Đóng góp
 1. Fork dự án
 2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)

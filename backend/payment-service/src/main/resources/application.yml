@@ -1,3 +1,5 @@
 spring:
   application:
-    name: =payment-service
+    name: payment-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
