@@ -46,7 +46,9 @@ public class AuthenticationService {
             throw UserDisabledException.create();
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
+
+        if (!authenticated) {
             throw InvalidCredentialsException.create();
         }
 

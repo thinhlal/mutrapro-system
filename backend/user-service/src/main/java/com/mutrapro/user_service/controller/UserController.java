@@ -88,32 +88,7 @@ public class UserController {
             .message("User deleted successfully")
             .build();
     }
-    
-    /**
-     * Disable user account
-     */
-    @PostMapping("/{id}/disable")
-    public ApiResponse<Void> disableUser(@PathVariable Long id) {
-        log.info("Disabling user with ID: {}", id);
-        userService.disableUser(id);
-        return ApiResponse.<Void>builder()
-            .message("User disabled successfully")
-            .build();
-    }
-    
-    /**
-     * Lock user account
-     */
-    @PostMapping("/{id}/lock")
-    public ApiResponse<Void> lockUser(@PathVariable Long id) {
-        log.info("Locking user with ID: {}", id);
-        userService.lockUser(id);
-        return ApiResponse.<Void>builder()
-            .message("User locked successfully")
-            .build();
-    }
-    
-    
+
     /**
      * Get user profile
      */

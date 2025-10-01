@@ -31,7 +31,7 @@ public class InvalidCredentialsException extends BusinessException {
     }
 
     public static InvalidCredentialsException create() {
-        return new InvalidCredentialsException("Invalid credentials");
+        return new InvalidCredentialsException("Wrong username or password!!!");
     }
 }
 

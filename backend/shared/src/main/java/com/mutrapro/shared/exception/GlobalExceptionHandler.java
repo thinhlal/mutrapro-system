@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -22,7 +24,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,6 +69,56 @@ public class GlobalExceptionHandler {
         return responseBuilder.body(errorResponse);
     }
     
+    /**
+     * Xử lý DataIntegrityViolationException (vi phạm ràng buộc CSDL)
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Data integrity violation: {}", ex.getMessage());
+        ex.getMostSpecificCause();
+        String mostSpecific = ex.getMostSpecificCause().getMessage();
+
+        ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                .status("error")
+                .errorCode(CommonErrorCodes.DATABASE_CONSTRAINT_VIOLATION.getCode())
+                .message("Data integrity violation")
+                .details(Map.of("error", mostSpecific))
+                .path(request.getRequestURI())
+                .statusCode(HttpStatus.CONFLICT.value())
+                .timestamp(LocalDateTime.now())
+                .serviceName(serviceName)
+                .traceId(getTraceId(request))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    /**
+     * Xử lý DataAccessException tổng quát (lỗi truy cập CSDL)
+     */
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataAccess(
+            DataAccessException ex, HttpServletRequest request) {
+        log.error("Database access error: {}", ex.getMessage(), ex);
+        ex.getMostSpecificCause();
+        String mostSpecific = ex.getMostSpecificCause().getMessage();
+
+        ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                .status("error")
+                .errorCode(CommonErrorCodes.DATABASE_CONNECTION_ERROR.getCode())
+                .message("Database access error")
+                .details(Map.of("error", mostSpecific))
+                .path(request.getRequestURI())
+                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .timestamp(LocalDateTime.now())
+                .serviceName(serviceName)
+                .traceId(getTraceId(request))
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
     /**
      * Xử lý ValidationException với validation errors
      */
@@ -306,8 +357,9 @@ public class GlobalExceptionHandler {
             HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
         
         log.warn("HTTP method not supported: {}", ex.getMessage());
-        
-        String message = String.format("Method '%s' is not supported. Supported methods: %s", 
+
+        assert ex.getSupportedMethods() != null;
+        String message = String.format("Method '%s' is not supported. Supported methods: %s",
                 ex.getMethod(), String.join(", ", ex.getSupportedMethods()));
         
         ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()

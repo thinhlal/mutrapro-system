@@ -6,15 +6,13 @@ import com.mutrapro.user_service.entity.User;
 import com.mutrapro.user_service.exception.*;
 import com.mutrapro.user_service.mapper.UserMapper;
 import com.mutrapro.user_service.repository.UserRepository;
-import com.mutrapro.shared.util.ExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * User Service implementation với proper exception handling
+ * User Service implementation với proper exception handlinsg
  */
 @Slf4j
 @Service
@@ -31,26 +29,18 @@ public class UserService {
      * Tìm user theo ID và trả về UserResponse
      */
     public UserResponse findById(String id) {
-        try {
-            User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
-            return userMapper.toUserResponse(user);
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "find user by ID");
-        }
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        return userMapper.toUserResponse(user);
     }
     
     /**
      * Tìm user theo email và trả về UserResponse
      */
     public UserResponse findByEmail(String email) {
-        try {
-            User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-            return userMapper.toUserResponse(user);
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "find user by email");
-        }
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        return userMapper.toUserResponse(user);
     }
     
     /**
@@ -60,22 +50,17 @@ public class UserService {
     public UserResponse createUser(CreateUserRequest request) {
         log.info("Creating new user with email: {}", request.getEmail());
         
-        try {
-            // Validate user data
-            validateUserForCreation(request);
-            
-            // Map request to entity
-            User user = userMapper.toUser(request);
-            
-            // Save user
-            User savedUser = userRepository.save(user);
-            
-            log.info("User created successfully with ID: {}", savedUser.getUserId());
-            return userMapper.toUserResponse(savedUser);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "create user");
-        }
+        // Validate user data
+        validateUserForCreation(request);
+        
+        // Map request to entity
+        User user = userMapper.toUser(request);
+        
+        // Save user
+        User savedUser = userRepository.save(user);
+        
+        log.info("User created successfully with ID: {}", savedUser.getUserId());
+        return userMapper.toUserResponse(savedUser);
     }
     
     /**
@@ -85,20 +70,15 @@ public class UserService {
     public UserResponse updateUser(String id, UpdateUserRequest request) {
         log.info("Updating user with ID: {}", id);
         
-        try {
-            User user = findUserEntityById(id);
-            
-            // Map updates to entity
-            userMapper.updateUserFromRequest(user, request);
-            
-            User updatedUser = userRepository.save(user);
-            log.info("User updated successfully with ID: {}", updatedUser.getUserId());
-            
-            return userMapper.toUserResponse(updatedUser);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "update user");
-        }
+        User user = findUserEntityById(id);
+        
+        // Map updates to entity
+        userMapper.updateUserFromRequest(user, request);
+        
+        User updatedUser = userRepository.save(user);
+        log.info("User updated successfully with ID: {}", updatedUser.getUserId());
+        
+        return userMapper.toUserResponse(updatedUser);
     }
     
     /**
@@ -108,14 +88,9 @@ public class UserService {
     public void deleteUser(String id) {
         log.info("Deleting user with ID: {}", id);
         
-        try {
-            User user = findUserEntityById(id);
-            userRepository.delete(user);
-            log.info("User deleted successfully with ID: {}", id);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "delete user");
-        }
+        User user = findUserEntityById(id);
+        userRepository.delete(user);
+        log.info("User deleted successfully with ID: {}", id);
     }
     
     
@@ -123,12 +98,8 @@ public class UserService {
      * Lấy user profile
      */
     public UserProfileResponse getUserProfile(String id) {
-        try {
-            User user = findUserEntityById(id);
-            return userMapper.toUserProfileResponse(user);
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "get user profile");
-        }
+        User user = findUserEntityById(id);
+        return userMapper.toUserProfileResponse(user);
     }
     
     /**
@@ -138,16 +109,11 @@ public class UserService {
     public UserProfileResponse updateUserProfile(String id, UpdateUserRequest request) {
         log.info("Updating profile for user ID: {}", id);
         
-        try {
-            User user = findUserEntityById(id);
-            userMapper.updateUserFromRequest(user, request);
-            
-            User updatedUser = userRepository.save(user);
-            return userMapper.toUserProfileResponse(updatedUser);
-            
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "update user profile");
-        }
+        User user = findUserEntityById(id);
+        userMapper.updateUserFromRequest(user, request);
+        
+        User updatedUser = userRepository.save(user);
+        return userMapper.toUserProfileResponse(updatedUser);
     }
     
     // ===== INTERNAL METHODS =====
@@ -156,36 +122,24 @@ public class UserService {
      * Tìm user entity theo ID (internal use)
      */
     public User findUserEntityById(String id) {
-        try {
-            return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "find user entity by ID");
-        }
+        return userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
     
     /**
      * Tìm user entity theo email (internal use)
      */
     public User findUserEntityByEmail(String email) {
-        try {
-            return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "find user entity by email");
-        }
+        return userRepository.findByEmail(email)
+            .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
     
     /**
      * Tìm user entity theo username hoặc email (internal use)
      */
     public User findUserEntityByUsernameOrEmail(String usernameOrEmail) {
-        try {
-            return userRepository.findByUsernameOrEmail(usernameOrEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found with username or email: " + usernameOrEmail));
-        } catch (DataAccessException ex) {
-            throw ExceptionUtils.wrapDatabaseException(ex, "find user entity by username or email");
-        }
+        return userRepository.findByUsernameOrEmail(usernameOrEmail)
+            .orElseThrow(() -> new UserNotFoundException("User not found with username or email: " + usernameOrEmail));
     }
     
     /**
