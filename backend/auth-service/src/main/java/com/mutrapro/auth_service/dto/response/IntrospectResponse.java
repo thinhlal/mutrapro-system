@@ -10,10 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String accessToken;
-    String tokenType;
-    Long expiresIn;
-    String username;
-    List<String> roles; // snapshot nếu cần, tạm thời để trống
+public class IntrospectResponse {
+    boolean valid;
 }

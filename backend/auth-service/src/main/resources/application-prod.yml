@@ -25,3 +25,7 @@ logging:
   level:
     root: INFO
 
+# JWT settings
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+
