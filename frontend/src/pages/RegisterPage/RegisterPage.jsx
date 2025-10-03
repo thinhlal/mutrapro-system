@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
-import GoogleIcon from '@mui/icons-material/Google';
+import GoogleIcon from "@mui/icons-material/Google";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ function RegisterPage() {
           <div className={styles.cardHeader}>
             <h2>Đăng ký</h2>
             <p>
-              Đã có tài khoản? {" "}
+              Đã có tài khoản?{" "}
               <Link to="/login" className={styles.link}>
                 Đăng nhập
               </Link>
@@ -43,28 +43,76 @@ function RegisterPage() {
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.inputRow}>
               <div className={styles.inputGroup}>
-                <input id="firstName" name="firstName" type="text" placeholder=" " className={styles.input} required />
-                <label htmlFor="firstName" className={styles.label}>Họ</label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  placeholder=" "
+                  className={styles.input}
+                  required
+                />
+                <label htmlFor="firstName" className={styles.label}>
+                  Họ
+                </label>
               </div>
               <div className={styles.inputGroup}>
-                <input id="lastName" name="lastName" type="text" placeholder=" " className={styles.input} required />
-                <label htmlFor="lastName" className={styles.label}>Tên</label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  placeholder=" "
+                  className={styles.input}
+                  required
+                />
+                <label htmlFor="lastName" className={styles.label}>
+                  Tên
+                </label>
               </div>
             </div>
 
             <div className={styles.inputGroup}>
-              <input id="email" name="email" type="email" placeholder=" " className={styles.input} required autoComplete="email" />
-              <label htmlFor="email" className={styles.label}>Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                placeholder=" "
+                className={styles.input}
+                required
+                autoComplete="email"
+              />
+              <label htmlFor="email" className={styles.label}>
+                Email
+              </label>
             </div>
 
             <div className={styles.inputGroup}>
-              <input id="password" name="password" type="password" placeholder=" " className={styles.input} required autoComplete="new-password" />
-              <label htmlFor="password" className={styles.label}>Mật khẩu</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder=" "
+                className={styles.input}
+                required
+                autoComplete="new-password"
+              />
+              <label htmlFor="password" className={styles.label}>
+                Mật khẩu
+              </label>
             </div>
 
             <div className={styles.inputGroup}>
-              <input id="confirmPassword" name="confirmPassword" type="password" placeholder=" " className={styles.input} required autoComplete="new-password" />
-              <label htmlFor="confirmPassword" className={styles.label}>Xác nhận mật khẩu</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder=" "
+                className={styles.input}
+                required
+                autoComplete="new-password"
+              />
+              <label htmlFor="confirmPassword" className={styles.label}>
+                Xác nhận mật khẩu
+              </label>
             </div>
 
             <label className={styles.checkboxLabel}>
@@ -72,9 +120,13 @@ function RegisterPage() {
               <span>Tôi đồng ý với điều khoản và chính sách</span>
             </label>
 
-            <button type="submit" className={styles.submitButton}>Tạo tài khoản</button>
+            <button type="submit" className={styles.submitButton}>
+              Tạo tài khoản
+            </button>
 
-            <div className={styles.divider}><span>hoặc</span></div>
+            <div className={styles.divider}>
+              <span>hoặc</span>
+            </div>
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton}>
