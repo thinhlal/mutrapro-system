@@ -11,6 +11,7 @@ import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
 import ServicesPage from "./pages/ServicesPage/ServicesPage";
 import PricingPage from "./pages/PricingPage/PricingPage";
 import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
+import NotationEditor from "./pages/NotationEditor/NotationEditor";
 import "./App.css";
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<RegisterPage />} />
         <Route path="/soundtosheet" element={<FromSoundToSheet />} />
+        <Route path="/editor" element={<NotationEditor />} />
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
