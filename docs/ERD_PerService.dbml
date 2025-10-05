@@ -16,6 +16,7 @@ Table users_auth {
   id uuid [pk]
   email varchar(255) [unique, not null]
   password_hash varchar(255) [not null]
+  role varchar(100) [not null]
   status varchar(20) [not null, default: 'ACTIVE'] // ACTIVE|LOCKED|DISABLED
   email_verified boolean [default: false]
   mfa_enabled boolean [default: false]
@@ -23,17 +24,6 @@ Table users_auth {
   updated_at timestamptz [default: `now()`]
 }
 
-Table user_roles {
-  user_id uuid [not null, ref: - users_auth.id] // local FK
-  role varchar(100) [not null]
-  assigned_at timestamptz [default: `now()`]
-  Note: 'Composite PK (user_id, role)'
-  indexes {
-    (user_id, role) [unique, pk]
-    user_id
-    role
-  }
-}
 
 Table refresh_tokens {
   id uuid [pk]

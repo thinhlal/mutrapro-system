@@ -14,27 +14,11 @@ import java.util.Optional;
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
-    
-    /**
-     * Tìm user theo username
-     */
-    Optional<User> findByUsername(String username);
-    
+
     /**
      * Tìm user theo email
      */
     Optional<User> findByEmail(String email);
-    
-    /**
-     * Tìm user theo username hoặc email
-     */
-    @Query("SELECT u FROM User u WHERE u.username = :usernameOrEmail OR u.email = :usernameOrEmail")
-    Optional<User> findByUsernameOrEmail(@Param("usernameOrEmail") String usernameOrEmail);
-    
-    /**
-     * Kiểm tra username đã tồn tại chưa
-     */
-    boolean existsByUsername(String username);
     
     /**
      * Kiểm tra email đã tồn tại chưa
@@ -52,9 +36,9 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByPasswordResetToken(String token);
     
     /**
-     * Tìm users theo primary role
+     * Tìm users theo role
      */
-    List<User> findByPrimaryRole(com.mutrapro.user_service.enums.UserRole primaryRole);
+    List<User> findByRole(com.mutrapro.shared.enums.Role role);
     
     /**
      * Tìm users theo active status

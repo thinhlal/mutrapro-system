@@ -134,13 +134,6 @@ public class UserService {
             .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
     
-    /**
-     * Tìm user entity theo username hoặc email (internal use)
-     */
-    public User findUserEntityByUsernameOrEmail(String usernameOrEmail) {
-        return userRepository.findByUsernameOrEmail(usernameOrEmail)
-            .orElseThrow(() -> new UserNotFoundException("User not found with username or email: " + usernameOrEmail));
-    }
     
     /**
      * Validate user data for creation
@@ -151,10 +144,6 @@ public class UserService {
             throw new UserAlreadyExistsException("User already exists with email: " + request.getEmail());
         }
         
-        // Check if username already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException("User already exists with username: " + request.getUsername());
-        }
         
         // Validate email format (basic validation)
         if (!isValidEmail(request.getEmail())) {

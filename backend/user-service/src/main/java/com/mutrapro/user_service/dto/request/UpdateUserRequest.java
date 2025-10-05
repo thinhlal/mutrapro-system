@@ -18,11 +18,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UpdateUserRequest {
-    
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Username can only contain letters, numbers, underscores, and hyphens")
-    private String username;
-    
+
     @Email(message = "Email must be valid")
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;
@@ -36,7 +32,7 @@ public class UpdateUserRequest {
     
     private String address;
     
-    private UserRole primaryRole;
+    private com.mutrapro.shared.enums.Role role;
     
     private Boolean isActive;
 }

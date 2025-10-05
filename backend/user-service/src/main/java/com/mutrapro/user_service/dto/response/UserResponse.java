@@ -19,11 +19,11 @@ import java.time.LocalDateTime;
 public class UserResponse {
     
     private String userId;
-    private String username;
     private String email;
     private String fullName;
     private String phone;
     private String address;
+    private com.mutrapro.shared.enums.Role role;
     private boolean isActive;
     
     // Timestamps

@@ -29,47 +29,22 @@ Table users {
   email varchar(100) [unique, not null]
   password_hash varchar(255) [not null]
   full_name varchar(100) [not null]
+  role user_role [not null]
   phone varchar(20)
   address text
-  primary_role user_role // Nullable - vai trò chính cho sort/label/report
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Bảng chứa thông tin tất cả người dùng. primary_role để sort/label/report, chi tiết roles trong user_roles table'
+  Note: 'Bảng chứa thông tin người dùng. 1 user 1 role.'
   
   indexes {
     // email đã [unique] ngay trên cột, không cần lặp lại ở indexes
-    primary_role
     is_active
   }
 }
 
-// 1.5. Vai trò người dùng (User Roles) - Support đa vai trò với business rules
-Table user_roles {
-  user_role_id uuid [pk, increment]
-  user_id uuid [ref: > users.user_id, not null]
-  role user_role [not null]
-  assigned_at timestamp [default: `now()`]
-  assigned_by uuid [ref: > users.user_id]
-  is_active boolean [default: true]
-  
-  Note: '''
-    Bảng quản lý đa vai trò cho người dùng. 
-    Business Rules:
-    - Một user có thể có nhiều role
-    - primary_role trong users table PHẢI tồn tại trong user_roles với is_active = true
-    - Trigger đảm bảo consistency giữa primary_role và user_roles
-    - Không thể xóa role nếu nó là primary_role
-  '''
-  
-  indexes {
-    (user_id, role) [unique]
-    user_id
-    role
-    is_active
-  }
-}
+// REMOVED: user_roles - 1 user 1 role
 
 // 2. Khách hàng (Customers)
 Table customers {

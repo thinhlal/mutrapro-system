@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.mutrapro.shared.enums.Role;
 
 import java.time.LocalDateTime;
 
@@ -28,14 +29,15 @@ public class User {
     @Column(name = "user_id")
     private String userId;
     
-    @Column(unique = true, nullable = false, length = 50)
-    private String username;
-    
     @Column(unique = true, nullable = false, length = 100)
     private String email;
     
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 100)
+    private Role role;
     
     @Column(name = "phone", length = 20)
     private String phone;

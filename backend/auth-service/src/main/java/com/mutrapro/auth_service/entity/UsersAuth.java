@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.mutrapro.shared.enums.Role;
 
 import java.time.LocalDateTime;
 
@@ -25,6 +26,10 @@ public class UsersAuth {
 
     @Column(unique = true, nullable = false)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 100)
+    private Role role;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
