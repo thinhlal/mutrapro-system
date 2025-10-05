@@ -14,6 +14,6 @@ public class AuthenticationResponse {
     String accessToken;
     String tokenType;
     Long expiresIn;
-    String username;
+    String email;
     List<String> roles; // snapshot nếu cần, tạm thời để trống
 }

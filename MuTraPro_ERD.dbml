@@ -26,7 +26,6 @@ Project MuTraPro {
 // 1. Người dùng (Users) - Enhanced with primary_role
 Table users {
   user_id uuid [pk, increment]
-  username varchar(50) [unique, not null]
   email varchar(100) [unique, not null]
   password_hash varchar(255) [not null]
   full_name varchar(100) [not null]
@@ -40,7 +39,7 @@ Table users {
   Note: 'Bảng chứa thông tin tất cả người dùng. primary_role để sort/label/report, chi tiết roles trong user_roles table'
   
   indexes {
-    // email và username đã [unique] ngay trên cột, không cần lặp lại ở indexes
+    // email đã [unique] ngay trên cột, không cần lặp lại ở indexes
     primary_role
     is_active
   }

@@ -62,7 +62,7 @@ public class AuthenticationService {
     public AuthenticationResponse authenticate(AuthenticationRequest request){
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         UsersAuth user = usersAuthRepository
-                .findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail())
+                .findByEmail(request.getEmail())
                 .orElseThrow(UserNotFoundAuthException::create);
 
         if (!user.isActive()) {
@@ -75,20 +75,20 @@ public class AuthenticationService {
             throw InvalidCredentialsException.create();
         }
 
-        String token = generateToken(user.getUsername());
+        String token = generateToken(user.getEmail());
         return AuthenticationResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .expiresIn(3600L)
-                .username(user.getUsername())
+                .email(user.getEmail())
                 .build();
     }
 
-    private String generateToken(String username){
+    private String generateToken(String email){
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(username)
+                .subject(email)
                 .issuer("custom-music")
                 .issueTime(new Date())
                 .expirationTime(new Date(
