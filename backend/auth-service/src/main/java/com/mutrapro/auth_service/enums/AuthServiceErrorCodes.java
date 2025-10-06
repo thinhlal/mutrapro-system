@@ -73,6 +73,11 @@ public enum AuthServiceErrorCodes implements ErrorCode {
     INVALID_CREDENTIALS("AUTH_5012", 401,
         "https://docs.mutrapro.com/errors/AUTH_5012",
         "Invalid credentials",
+        Retryable.NON_TRANSIENT),
+
+    USER_ALREADY_EXISTS("AUTH_5013", 409,
+        "https://docs.mutrapro.com/errors/AUTH_5013",
+        "User already exists",
         Retryable.NON_TRANSIENT);
 
     private final String code;

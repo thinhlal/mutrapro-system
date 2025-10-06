@@ -1,15 +1,9 @@
 package com.mutrapro.user_service.entity;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import com.mutrapro.shared.enums.Role;
 
-import java.time.LocalDateTime;
+import com.mutrapro.shared.entity.BaseEntity;
+import com.mutrapro.shared.enums.Role;
+import jakarta.persistence.*;
+import lombok.*;
 
 /**
  * User Profile Entity - chỉ chứa thông tin hồ sơ (không chứa credential)
@@ -17,12 +11,12 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "users_profile")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
-public class User {
+public class User extends BaseEntity<String> {
     
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -48,14 +42,4 @@ public class User {
     @Builder.Default
     @Column(name = "is_active")
     private boolean isActive = true;
-    
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
-    
 }

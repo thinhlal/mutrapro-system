@@ -1,13 +1,9 @@
 package com.mutrapro.auth_service.entity;
 
+import com.mutrapro.shared.entity.BaseEntity;
+import com.mutrapro.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import com.mutrapro.shared.enums.Role;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users_auth")
@@ -16,8 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
-public class UsersAuth {
+public class UsersAuth extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,13 +33,9 @@ public class UsersAuth {
     @Builder.Default
     private boolean active = true;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "is_verified")
+    @Builder.Default
+    private boolean isVerified = false;
 }
 
 

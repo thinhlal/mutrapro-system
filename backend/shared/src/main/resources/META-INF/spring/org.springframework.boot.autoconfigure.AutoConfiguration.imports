@@ -1,1 +1,3 @@
 com.mutrapro.shared.config.ExceptionHandlingConfig
+com.mutrapro.shared.config.JpaAuditingConfig
+com.mutrapro.shared.config.AuditorAwareConfig

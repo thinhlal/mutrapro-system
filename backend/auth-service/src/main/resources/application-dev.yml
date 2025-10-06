@@ -1,21 +1,17 @@
 server:
   port: 8080
   servlet:
-    context-path: 
+    context-path: /auth
 
 spring:
   datasource:
     url: jdbc:postgresql://switchyard.proxy.rlwy.net:24943/railway
     username: postgres
     password: hfZkdrMMFOnKfXvrUOIRNyOtuErQxAdm
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
     open-in-view: false
   sql:
     init:
@@ -29,3 +25,6 @@ logging:
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
 
+verification:
+  email-otp:
+    expiry-seconds: 900
