@@ -88,7 +88,7 @@ public class AuthenticationService {
             throw InvalidCredentialsException.create();
         }
 
-        String token = generateToken(user.getEmail());
+        String token = generateAccessToken(user);
         return AuthenticationResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
@@ -133,17 +133,17 @@ public class AuthenticationService {
                 .build();
     }
 
-    private String generateToken(String email){
+    private String generateAccessToken(UsersAuth usersAuth){
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(email)
-                .issuer("custom-music")
+                .subject(usersAuth.getEmail())
+                .issuer("mutrapro.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("customClaim", "custom")
+                .claim("scope", usersAuth.getRole())
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
