@@ -8,6 +8,7 @@ import com.mutrapro.user_service.mapper.UserMapper;
 import com.mutrapro.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ public class UserService {
     /**
      * Tìm user theo ID và trả về UserResponse
      */
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
     public UserResponse findById(String id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
@@ -47,6 +49,7 @@ public class UserService {
      * Tạo user mới
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(CreateUserRequest request) {
         log.info("Creating new user with email: {}", request.getEmail());
         
@@ -67,6 +70,7 @@ public class UserService {
      * Cập nhật user
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
     public UserResponse updateUser(String id, UpdateUserRequest request) {
         log.info("Updating user with ID: {}", id);
         
@@ -85,6 +89,7 @@ public class UserService {
      * Xóa user
      */
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(String id) {
         log.info("Deleting user with ID: {}", id);
         

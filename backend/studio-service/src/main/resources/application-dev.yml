@@ -21,3 +21,7 @@ logging:
   level:
     root: INFO
 
+# JWT Configuration - Must match auth-service signerKey
+jwt:
+  signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+

@@ -21,3 +21,7 @@ logging:
   level:
     root: INFO
 
+# JWT Configuration - Must match auth-service signerKey
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+
