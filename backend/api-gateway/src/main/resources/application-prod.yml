@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: prod
+
+# Server Configuration
+server:
+  port: 8080
+  error:
+    include-message: never
+    include-binding-errors: never
+
+# Logging Configuration for Production
+logging:
+  level:
+    com.mutrapro.api_gateway: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.security: WARN
+    org.springframework.web.reactive: WARN
+    org.springframework: WARN
+    root: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/api-gateway.log
+
+# JWT Configuration
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+
+# Services Configuration for Production
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL}
+  user-service:
+    url: ${USER_SERVICE_URL}
+  project-service:
+    url: ${PROJECT_SERVICE_URL}
+  quotation-service:
+    url: ${QUOTATION_SERVICE_URL}
+  task-service:
+    url: ${TASK_SERVICE_URL}
+  revision-service:
+    url: ${REVISION_SERVICE_URL}
+  specialist-service:
+    url: ${SPECIALIST_SERVICE_URL}
+  studio-service:
+    url: ${STUDIO_SERVICE_URL}
+  payment-service:
+    url: ${PAYMENT_SERVICE_URL}
+  notification-service:
+    url: ${NOTIFICATION_SERVICE_URL}
+  feedback-service:
+    url: ${FEEDBACK_SERVICE_URL}
+  file-service:
+    url: ${FILE_SERVICE_URL}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

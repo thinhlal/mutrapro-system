@@ -3,3 +3,97 @@ spring:
     name: api-gateway
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  
+  # Gateway Configuration
+  cloud:
+    gateway:
+      # Global CORS configuration
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      
+      # Default filters
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.requestedTokens: 1
+
+  # Security Configuration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWK_SET_URI:}
+
+# Server Configuration
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Logging Configuration
+logging:
+  level:
+    com.mutrapro.api_gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT Configuration
+jwt:
+  signerKey: ${JWT_SIGNER_KEY:MuTraProSecretKeyForJWTTokenGenerationAndValidation123456789}
+
+# Services Configuration
+services:
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8082}
+  project-service:
+    url: ${PROJECT_SERVICE_URL:http://localhost:8083}
+  quotation-service:
+    url: ${QUOTATION_SERVICE_URL:http://localhost:8084}
+  task-service:
+    url: ${TASK_SERVICE_URL:http://localhost:8085}
+  revision-service:
+    url: ${REVISION_SERVICE_URL:http://localhost:8086}
+  specialist-service:
+    url: ${SPECIALIST_SERVICE_URL:http://localhost:8087}
+  studio-service:
+    url: ${STUDIO_SERVICE_URL:http://localhost:8088}
+  payment-service:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8089}
+  notification-service:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8090}
+  feedback-service:
+    url: ${FEEDBACK_SERVICE_URL:http://localhost:8091}
+  file-service:
+    url: ${FILE_SERVICE_URL:http://localhost:8092}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true

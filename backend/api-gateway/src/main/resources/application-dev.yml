@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: dev
+
+# Server Configuration
+server:
+  port: 8080
+
+# Logging Configuration for Development
+logging:
+  level:
+    com.mutrapro.api_gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web.reactive: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT Configuration
+jwt:
+  signerKey: MuTraProSecretKeyForJWTTokenGenerationAndValidation123456789
+
+# Services Configuration for Development
+services:
+  auth-service:
+    url: http://localhost:8081
+  user-service:
+    url: http://localhost:8082
+  project-service:
+    url: http://localhost:8083
+  quotation-service:
+    url: http://localhost:8084
+  task-service:
+    url: http://localhost:8085
+  revision-service:
+    url: http://localhost:8086
+  specialist-service:
+    url: http://localhost:8087
+  studio-service:
+    url: http://localhost:8088
+  payment-service:
+    url: http://localhost:8089
+  notification-service:
+    url: http://localhost:8090
+  feedback-service:
+    url: http://localhost:8091
+  file-service:
+    url: http://localhost:8092
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
