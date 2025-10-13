@@ -1,0 +1,51 @@
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { Typography } from "antd";
+import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from "../../constants/index";
+import Header from "../../components/common/Header/Header";
+import Footer from "../../components/common/Footer/Footer";
+import SingerCard from "./components/SingerCard/SingerCard";
+import HeroSingerSection from "./components/HeroSingerSection/HeroSingerSection";
+import styles from "./SingersPage.module.css";
+
+const { Title } = Typography;
+
+const SingersPage = () => {
+  const { gender } = useParams(); // Lấy 'female' hoặc 'male' từ URL
+  const [singersData, setSingersData] = useState([]);
+  const [pageTitle, setPageTitle] = useState("");
+
+  useEffect(() => {
+    if (gender === "female") {
+      setSingersData(FEMALE_SINGERS_DATA);
+      setPageTitle("Female Singers");
+    } else if (gender === "male") {
+      setSingersData(MALE_SINGERS_DATA);
+      setPageTitle("Male Singers");
+    } else {
+      // Xử lý trường hợp URL không hợp lệ nếu cần
+      setSingersData([]);
+      setPageTitle("Singers Not Found");
+    }
+  }, [gender]); // Chạy lại effect khi 'gender' thay đổi
+
+  return (
+    <div className={styles.page}>
+      <Header />
+      <HeroSingerSection />
+      <div className="container py-5">
+        <Title level={1} className={styles.pageTitle}>
+          {pageTitle}
+        </Title>
+        <div className="row">
+          {singersData.map((singer) => (
+            <SingerCard key={singer.id} singer={singer} />
+          ))}
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+};
+
+export default SingersPage;

@@ -1,0 +1,9 @@
+.page {
+  background-color: #f8f9fa;
+}
+
+.pageTitle {
+  margin-bottom: 40px !important;
+  text-align: center;
+  font-weight: bold !important;
+}
