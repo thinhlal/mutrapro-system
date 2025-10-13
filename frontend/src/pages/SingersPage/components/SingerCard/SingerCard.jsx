@@ -6,7 +6,7 @@ const { Title, Text, Paragraph } = Typography;
 export default function SingerCard({ singer }) {
   return (
     <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
-      <Card hoverable className={styles.card}>
+      <Card hoverable className={styles.card} styles={{ body: { padding: 0 } }}>
         <div className={styles.imageContainer}>
           <img
             src={singer.image}

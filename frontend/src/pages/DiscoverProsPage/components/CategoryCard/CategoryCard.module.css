@@ -1,10 +1,12 @@
+/* src/pages/DiscoverProsPage/components/CategoryCard/CategoryCard.module.css */
+
 .link {
   text-decoration: none;
 }
 
 .card {
   border: none !important;
-  border-radius: 14px !important;
+  border-radius: 14px !important; /* Bo góc theo hình mẫu */
   overflow: hidden;
   padding: 0 !important;
   box-shadow: 0 6px 18px rgba(22, 28, 45, 0.06);
@@ -15,30 +17,83 @@
   height: 220px;
   background: #111;
   padding: 0 !important;
+  overflow: hidden; /* Rất quan trọng để ẩn phần description trượt ra ngoài */
 }
+
 .img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.4s ease; /* Hiệu ứng zoom mượt */
 }
 
+/* Lớp phủ mờ trên ảnh */
 .overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 30%,
-    rgba(0, 0, 0, 0.5) 100%
-  );
+  background: rgba(0, 0, 0, 0.4);
+  transition: background-color 0.3s ease;
+}
+
+/* Vùng chứa nội dung chữ, dùng flexbox để căn giữa */
+.content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
 }
 
 .title {
-  position: absolute;
-  left: 16px;
-  bottom: 14px;
   color: #fff;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* Hiệu ứng chuyển động mượt mà khi di chuột */
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateY(0);
+}
+
+.description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 400;
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  opacity: 0;
+  /* Ban đầu được giấu ở phía dưới và trong suốt */
+  transform: translateY(100%);
+  /* Hiệu ứng trượt lên và hiện ra mượt mà */
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.35s ease;
+}
+
+/* --- HIỆU ỨNG KHI DI CHUỘT (HOVER) --- */
+
+/* Phóng to ảnh nền một chút */
+.cover:hover .img {
+  transform: scale(1.05);
+}
+
+/* Làm lớp phủ tối hơn để chữ nổi bật */
+.cover:hover .overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Khi hover, đẩy tiêu đề lên trên để nhường chỗ */
+.cover:hover .title {
+  transform: translateY(-20px);
+}
+
+/* Khi hover, trượt phần mô tả vào đúng vị trí và làm nó hiện ra */
+.cover:hover .description {
+  opacity: 1;
+  transform: translateY(-20px);
 }
