@@ -16,7 +16,10 @@ export default function CategoryCard({ item }) {
           <div className={styles.cover}>
             <img src={item.image} alt={item.title} className={styles.img} />
             <div className={styles.overlay} />
-            <div className={styles.title}>{item.title}</div>
+            <div className={styles.content}>
+              <div className={styles.title}>{item.title}</div>
+              <p className={styles.description}>{item.description}</p>
+            </div>
           </div>
         }
       />
