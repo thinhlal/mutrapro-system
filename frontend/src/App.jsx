@@ -14,6 +14,7 @@ import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
 import NotationEditor from "./pages/NotationEditor/NotationEditor";
 import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingersPage from "./pages/SingersPage/SingersPage";
+import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
 import "./App.css";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
         <Route path="/editor" element={<NotationEditor />} />
         <Route path="/discover-pros" element={<DiscoverProsPage />} />
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
+        <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />

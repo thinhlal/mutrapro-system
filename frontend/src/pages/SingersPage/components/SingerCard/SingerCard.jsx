@@ -1,11 +1,17 @@
 import { Card, Typography, Rate } from "antd";
+import { Link } from "react-router-dom";
 import styles from "./SingerCard.module.css";
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function SingerCard({ singer }) {
   return (
-    <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+    <Link
+      to={`/pros/singer/${singer.id}`}
+      state={{ singerData: singer }}
+      className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4"
+      style={{ textDecoration: "none" }}
+    >
       <Card hoverable className={styles.card} styles={{ body: { padding: 0 } }}>
         <div className={styles.imageContainer}>
           <img
@@ -27,7 +33,6 @@ export default function SingerCard({ singer }) {
           <Text type="secondary" className={styles.location}>
             {singer.location}
           </Text>
-
           <div className={styles.rating}>
             <Rate
               disabled
@@ -38,14 +43,9 @@ export default function SingerCard({ singer }) {
               ({singer.reviews})
             </Text>
           </div>
-
-          <Paragraph
-            className={styles.description}
-            ellipsis={{ rows: 3, expandable: false }}
-          >
+          <Paragraph className={styles.description} ellipsis={{ rows: 3 }}>
             {singer.description}
           </Paragraph>
-
           <div className={styles.credits}>
             <Text strong className={styles.creditsTitle}>
               CREDITS
@@ -56,6 +56,6 @@ export default function SingerCard({ singer }) {
           </div>
         </div>
       </Card>
-    </div>
+    </Link>
   );
 }
