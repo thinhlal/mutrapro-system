@@ -7,11 +7,12 @@ import Footer from "../../components/common/Footer/Footer";
 import SingerCard from "./components/SingerCard/SingerCard";
 import HeroSingerSection from "./components/HeroSingerSection/HeroSingerSection";
 import styles from "./SingersPage.module.css";
+import SingerFilter from "./components/SingerFilter/SingerFilter";
 
 const { Title } = Typography;
 
 const SingersPage = () => {
-  const { gender } = useParams(); // Lấy 'female' hoặc 'male' từ URL
+  const { gender } = useParams();
   const [singersData, setSingersData] = useState([]);
   const [pageTitle, setPageTitle] = useState("");
 
@@ -23,16 +24,16 @@ const SingersPage = () => {
       setSingersData(MALE_SINGERS_DATA);
       setPageTitle("Male Singers");
     } else {
-      // Xử lý trường hợp URL không hợp lệ nếu cần
       setSingersData([]);
       setPageTitle("Singers Not Found");
     }
-  }, [gender]); // Chạy lại effect khi 'gender' thay đổi
+  }, [gender]);
 
   return (
     <div className={styles.page}>
       <Header />
       <HeroSingerSection />
+      <SingerFilter />
       <div className="container py-5">
         <Title level={1} className={styles.pageTitle}>
           {pageTitle}

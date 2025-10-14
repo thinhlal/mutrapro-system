@@ -1,0 +1,71 @@
+.filterContainer {
+  padding: 20px 15px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filterWrapper {
+  position: relative;
+  min-height: 32px;
+}
+
+.filterTrigger,
+.filterTriggerActive {
+  font-size: 1rem;
+  color: #555;
+  padding: 4px 0;
+}
+
+.filterTriggerActive {
+  border-right: 1px solid #f0f0f0;
+  padding-right: 16px !important;
+}
+
+.expandedFilters {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-100%, -50%);
+  display: flex;
+  align-items: center;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.4s ease;
+}
+
+.expandedFilters.expanded {
+  transform: translate(0, -50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-right: 1px solid #f0f0f0;
+}
+
+.filterItem:last-of-type {
+  border-right: none;
+}
+
+.filterItem .ant-btn-text {
+  color: #555;
+}
+.filterItem .ant-btn-text:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.searchMenu {
+  padding: 8px;
+  background-color: white;
+  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
+.sortButton {
+  color: #555;
+}
