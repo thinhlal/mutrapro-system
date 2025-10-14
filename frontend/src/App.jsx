@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import ScrollToTop from "./components/common/ScrollToTop/ScrollToTop";
 import HomePage from "./pages/HomePage/HomePage";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
@@ -20,6 +21,7 @@ import "./App.css";
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Redirect root → /home */}
         <Route path="/" element={<Navigate to="/home" replace />} />
