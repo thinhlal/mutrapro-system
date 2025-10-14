@@ -6,8 +6,8 @@ import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
 import SingerCard from "./components/SingerCard/SingerCard";
 import HeroSingerSection from "./components/HeroSingerSection/HeroSingerSection";
-import styles from "./SingersPage.module.css";
 import SingerFilter from "./components/SingerFilter/SingerFilter";
+import styles from "./SingersPage.module.css";
 
 const { Title } = Typography;
 
