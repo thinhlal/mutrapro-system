@@ -70,7 +70,7 @@ export default function QuoteUploader() {
         </div>
 
         <div className={styles.actionRow}>
-          <Tooltip title="Get pricing instantly">
+          <Tooltip title="Get pricing instantly" zIndex={0}>
             <Button type="primary" size="large" className={styles.ctaBtn}>
               Get an Instant Quote <ArrowRightOutlined />
             </Button>
