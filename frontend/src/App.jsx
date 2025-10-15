@@ -17,6 +17,7 @@ import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingersPage from "./pages/SingersPage/SingersPage";
 import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
 import "./App.css";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
         <Route path="/discover-pros" element={<DiscoverProsPage />} />
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/home" replace />} />
