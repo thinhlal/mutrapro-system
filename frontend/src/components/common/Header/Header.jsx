@@ -224,7 +224,7 @@ function Header() {
 
             {/* CTA */}
             <div className={styles.ctaContainer}>
-              <Link to="/request" className={styles.ctaButton}>
+              <Link to="/soundtosheet" className={styles.ctaButton}>
                 REQUEST YOUR SHEET MUSIC
               </Link>
             </div>
