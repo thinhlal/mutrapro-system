@@ -4,7 +4,14 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+
+// Common Components
 import ScrollToTop from "./components/common/ScrollToTop/ScrollToTop";
+
+// Layouts
+import CoordinatorLayout from "./layouts/CoordinatorLayout/CoordinatorLayout";
+
+// Customer Pages
 import HomePage from "./pages/HomePage/HomePage";
 import LoginPage from "./pages/LoginPage/LoginPage";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
@@ -16,18 +23,22 @@ import NotationEditor from "./pages/NotationEditor/NotationEditor";
 import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingersPage from "./pages/SingersPage/SingersPage";
 import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
-import "./App.css";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+
+// Coordinator Pages
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Tasks from "./pages/Task/Task";
+
+import "./App.css";
+import ContractBuilder from "./pages/ContractBuilder/ContractBuilder";
 
 function App() {
   return (
     <Router>
       <ScrollToTop />
       <Routes>
-        {/* Redirect root → /home */}
+        {/* --- CUSTOMER ROUTES --- */}
         <Route path="/" element={<Navigate to="/home" replace />} />
-
-        {/* Main pages */}
         <Route path="/home" element={<HomePage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
@@ -41,7 +52,15 @@ function App() {
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
-        {/* 404 fallback */}
+        {/* --- COORDINATOR ROUTES --- */}
+        <Route path="/coordinator" element={<CoordinatorLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="contact-builder" element={<ContractBuilder />} />
+          <Route path="task" element={<Tasks />} />
+        </Route>
+
+        {/* --- FALLBACK ROUTE --- */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Router>
