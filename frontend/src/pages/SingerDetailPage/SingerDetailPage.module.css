@@ -1,7 +1,7 @@
 .singerHeaderWrapper {
   position: relative;
   width: 100%;
-  min-height: 380px;
+  min-height: 450px;
   background-color: #f8f9fa;
   display: flex;
   align-items: center;
@@ -13,7 +13,7 @@
 .diagonalBg {
   position: absolute;
   inset: 0 0 0 0;
-  background: linear-gradient(to right, #1e3a8a, #2563eb);
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
   clip-path: polygon(0 0, 60% 0, 39% 100%, 0% 100%);
   z-index: 1;
 }

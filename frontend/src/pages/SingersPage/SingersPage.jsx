@@ -5,9 +5,10 @@ import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from "../../constants/index";
 import Header from "../../components/common/Header/Header";
 import Footer from "../../components/common/Footer/Footer";
 import SingerCard from "./components/SingerCard/SingerCard";
-import HeroSingerSection from "./components/HeroSingerSection/HeroSingerSection";
 import SingerFilter from "./components/SingerFilter/SingerFilter";
+import HeroSingerSection from "./components/HeroSingerSection/HeroSingerSection";
 import styles from "./SingersPage.module.css";
+import BackToTop from "../../components/common/BackToTop/BackToTop";
 
 const { Title } = Typography;
 
@@ -45,6 +46,7 @@ const SingersPage = () => {
         </div>
       </div>
       <Footer />
+      <BackToTop />
     </div>
   );
 };
