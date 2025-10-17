@@ -5,6 +5,7 @@ import Header from "../../components/common/Header/Header";
 import ProsTrustSection from "./components/ProsTrustSection/ProsTrustSection";
 import Footer from "../../components/common/Footer/Footer";
 import styles from "./DiscoverProsPage.module.css";
+import BackToTop from "../../components/common/BackToTop/BackToTop";
 
 const { Title, Paragraph } = Typography;
 
@@ -53,6 +54,7 @@ export default function DiscoverProsPage() {
       </section>
 
       <Footer />
+      <BackToTop />
     </div>
   );
 }
