@@ -220,9 +220,6 @@ const ContractBuilder = () => {
         <Title level={4} style={{ marginBottom: 8 }}>
           Create Contract
         </Title>
-        <Text type="secondary">
-          UI map theo DB <code>contracts v3.2</code> (pricing, deposit, SLA).
-        </Text>
         <Divider />
 
         <Form
