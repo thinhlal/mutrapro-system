@@ -1,0 +1,24 @@
+.container {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sub {
+  color: #888;
+  font-size: 12px;
+}
+
+.timeline {
+  display: grid;
+  gap: 4px;
+}

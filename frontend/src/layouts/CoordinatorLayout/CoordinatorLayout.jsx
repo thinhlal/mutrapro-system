@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   MenuFoldOutlined,
@@ -13,7 +13,7 @@ import styles from "./CoordinatorLayout.module.css";
 
 const { Header, Sider, Content } = Layout;
 
-// Menu items cho Sidebar
+// Menu items Sidebar
 const menuItems = [
   {
     key: "/coordinator/dashboard",
@@ -24,6 +24,11 @@ const menuItems = [
     key: "/coordinator/contact-builder",
     icon: <ContainerOutlined />,
     label: <Link to="/coordinator/contact-builder">Contact Builder</Link>,
+  },
+  {
+    key: "/coordinator/contracts-list",
+    icon: <ContainerOutlined />,
+    label: <Link to="/coordinator/contracts-list">Contracts</Link>,
   },
   {
     key: "/coordinator/task",
@@ -49,7 +54,7 @@ const userMenu = (
 
 const CoordinatorLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation(); // Hook để lấy path hiện tại
+  const location = useLocation();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -63,7 +68,7 @@ const CoordinatorLayout = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]} // Highlight menu item theo URL
+          selectedKeys={[location.pathname]}
           items={menuItems}
         />
       </Sider>
@@ -94,7 +99,6 @@ const CoordinatorLayout = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-          {/* Đây là nơi nội dung của các trang con sẽ được render */}
           <Outlet />
         </Content>
       </Layout>

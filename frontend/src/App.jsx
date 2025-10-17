@@ -14,23 +14,24 @@ import CoordinatorLayout from "./layouts/CoordinatorLayout/CoordinatorLayout";
 // Customer Pages
 import HomePage from "./pages/HomePage/HomePage";
 import LoginPage from "./pages/LoginPage/LoginPage";
-import RegisterPage from "./pages/RegisterPage/RegisterPage";
-import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
-import ServicesPage from "./pages/ServicesPage/ServicesPage";
 import PricingPage from "./pages/PricingPage/PricingPage";
-import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
-import NotationEditor from "./pages/NotationEditor/NotationEditor";
-import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingersPage from "./pages/SingersPage/SingersPage";
-import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import ServicesPage from "./pages/ServicesPage/ServicesPage";
+import RegisterPage from "./pages/RegisterPage/RegisterPage";
+import NotationEditor from "./pages/NotationEditor/NotationEditor";
+import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
+import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
+import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
+import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
 
 // Coordinator Pages
-import Dashboard from "./pages/Dashboard/Dashboard";
 import Tasks from "./pages/Task/Task";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import ContractBuilder from "./pages/ContractBuilder/ContractBuilder";
+import ContractsList from "./pages/ContractsList/ContractsList";
 
 import "./App.css";
-import ContractBuilder from "./pages/ContractBuilder/ContractBuilder";
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="contact-builder" element={<ContractBuilder />} />
+          <Route path="contracts-list" element={<ContractsList />} />
           <Route path="task" element={<Tasks />} />
         </Route>
 
