@@ -1,0 +1,1263 @@
+// ERD HOÀN CHỈNH cho hệ thống MuTraPro - UPDATED VERSION
+// Custom Music Transcription and Production System
+// Tác giả: [Tên sinh viên]
+// Ngày tạo: [Ngày hiện tại]
+// Version: 3.0 - Enhanced Workflow Support
+// Updated: 2025 - Support for 3 Main Workflows
+
+Project MuTraPro {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Hệ thống ký âm và sản xuất âm nhạc theo yêu cầu
+    Custom Music Transcription and Production System
+    
+    Enhanced Features v3.0:
+    - Multi-role user management
+    - Automated quotation system
+    - Milestone-based payments
+    - Single studio booking management
+    - Complete workflow tracking
+    - AI-assisted transcription
+    - Contract management system
+    - Enhanced arrangement workflow
+    - Artist recommendation system
+    
+    Main Workflows:
+    1. Transcription with AI assistance
+    2. Arrangement with optional vocalist + Contract management
+    3. Studio booking with multi-artist selection
+    
+    Studio System: Chỉ quản lý 1 studio duy nhất (MuTraPro Studio)
+  '''
+}
+
+// ===== CÁC THỰC THỂ CHÍNH =====
+
+// 1. Người dùng (Users) - Enhanced with primary_role
+Table users {
+  user_id uuid [pk, increment]
+  email varchar(100) [unique, not null]
+  password_hash varchar(255) [not null]
+  full_name varchar(100) [not null]
+  role user_role [not null]
+  phone varchar(20)
+  address text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Bảng chứa thông tin người dùng. 1 user 1 role.'
+  
+  indexes {
+    is_active
+  }
+}
+
+// 2. Khách hàng (Customers)
+Table customers {
+  customer_id uuid [pk, increment]
+  user_id uuid [ref: > users.user_id, not null]
+  customer_type customer_type [default: 'individual']
+  company_name varchar(100)
+  tax_id varchar(20)
+  preferred_contact_method contact_method [default: 'email']
+  notes text
+  
+  Note: 'Thông tin chi tiết của khách hàng'
+}
+
+// 3. Chuyên gia (Specialists) - Dynamic workload management
+Table specialists {
+  specialist_id uuid [pk, increment]
+  user_id uuid [ref: > users.user_id, not null]
+  specialization specialist_type [not null]
+  experience_years integer [default: 0]
+  hourly_rate decimal(10,2)
+  
+  // Capacity management (simplified)
+  max_concurrent_tasks integer [default: 5] // Số task tối đa có thể làm cùng lúc
+  
+  // Professional info
+  portfolio_url varchar(255)
+  rating decimal(3,2) [default: 0.00]
+  total_projects integer [default: 0]
+  
+  Note: 'Thông tin chuyên gia - current_workload tính động qua view, không lưu để tránh lệch dữ liệu'
+  
+  indexes {
+    user_id [unique] // 1 user ↔ 1 specialist
+    specialization
+    max_concurrent_tasks
+  }
+}
+
+// 3.1. Skill Categories (Danh mục kỹ năng)
+Table skill_categories {
+  category_id uuid [pk, increment]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Danh mục kỹ năng: Audio Engineering, Music Theory, Software Tools, etc.'
+  
+  indexes {
+    category_name [unique]
+    is_active
+  }
+}
+
+// 3.2. Skills (Kỹ năng cụ thể)  
+Table skills {
+  skill_id uuid [pk, increment]
+  category_id uuid [ref: > skill_categories.category_id, not null]
+  skill_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng cụ thể: Jazz Piano, Logic Pro, Sheet Music Notation, etc.'
+  
+  indexes {
+    category_id
+    skill_name [unique]
+    is_active
+  }
+}
+
+// 3.3. Specialist Skills (Kỹ năng của từng specialist)
+Table specialist_skills {
+  specialist_skill_id uuid [pk, increment]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  proficiency_level proficiency_level [not null]
+  years_experience integer [default: 0]
+  last_used_date date
+  is_certified boolean [default: false]
+  certification_details text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng của specialist với level và kinh nghiệm cụ thể'
+  
+  indexes {
+    (specialist_id, skill_id) [unique]
+    specialist_id
+    skill_id
+    proficiency_level
+    years_experience
+  }
+}
+
+// 3.4. Artist Demos (Demo giọng/nhạc cụ của nghệ sĩ) - ENHANCED
+Table artist_demos {
+  demo_id uuid [pk, increment]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  title varchar(150)
+  description text
+  skill_id uuid [ref: > skills.skill_id] // skill được demo (piano, guitar, vocal, etc.)
+  file_id uuid [ref: > files.file_id] // file audio demo nội bộ
+  preview_url varchar(500) // URL demo ngoài hệ thống (nếu có)
+  is_public boolean [default: true]
+  
+  // NEW FIELDS v3.0
+  demo_order integer [default: 1] // Thứ tự hiển thị demo
+  is_featured boolean [default: false] // Demo nổi bật
+  view_count integer [default: 0] // Số lần xem
+  customer_rating decimal(3,2) // Đánh giá từ khách hàng (0.00-5.00)
+  last_played_at timestamp // Lần cuối được nghe
+  
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Demo để khách nghe thử giọng/nhạc cụ của nghệ sĩ trước khi booking. Enhanced với tracking và rating.'
+  
+  indexes {
+    specialist_id
+    is_public
+    skill_id
+    is_featured
+    customer_rating
+  }
+}
+
+// 4. Quản lý dịch vụ (Managers) - Simplified
+Table managers {
+  manager_id uuid [pk, increment]
+  user_id uuid [ref: > users.user_id, not null]
+  department varchar(50)
+  
+  Note: 'Manager quản lý và phân công công việc - phân quyền thực hiện ở auth-service'
+  
+  indexes {
+    user_id [unique] // 1 user ↔ 1 manager
+  }
+}
+
+// 5. Studio (Single Studio System)
+Table studios {
+  studio_id uuid [pk, increment]
+  studio_name varchar(100) [not null, default: 'MuTraPro Studio']
+  location varchar(255) [not null]
+  is_active boolean [default: true]
+  
+  Note: 'Thông tin studio ghi âm'
+  
+  indexes {
+    is_active
+  }
+}
+
+// 5.1. Equipment Categories (Danh mục thiết bị)
+Table equipment_categories {
+  category_id uuid [pk, increment]
+  category_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Danh mục thiết bị: Microphones, Audio Interfaces, Monitors, etc.'
+  
+  indexes {
+    category_name [unique]
+    is_active
+  }
+}
+
+// 5.2. Equipment (Thiết bị cụ thể)
+Table equipment {
+  equipment_id uuid [pk, increment]
+  category_id uuid [ref: > equipment_categories.category_id, not null]
+  equipment_name varchar(100) [not null]
+  brand varchar(50)
+  model varchar(100)
+  description text
+  specifications jsonb // Technical specs as JSON
+  
+  total_quantity integer [default: 1] // Tổng số thiết bị cùng loại
+  maintenance_quantity integer [default: 0] // Số đang bảo trì
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Thiết bị cụ thể: Neumann U87, Focusrite Scarlett, Yamaha HS8, etc.'
+  
+  indexes {
+    category_id
+    equipment_name
+    brand
+    model
+    (brand, model) [unique] // Mỗi thiết bị có brand+model duy nhất
+    is_active
+    total_quantity
+    maintenance_quantity
+  }
+}
+
+
+// 5.3. Notation Instruments (Nhạc cụ ảo cho ký âm)
+Table notation_instruments {
+  instrument_id uuid [pk, increment]
+  instrument_name varchar(100) [not null]
+  usage notation_instrument_usage [default: 'both'] // Dùng cho transcription/arrangement/both
+  is_active boolean [default: true]
+
+  Note: 'Danh mục nhạc cụ ảo dùng trong ký âm/notation trên máy (không phải thiết bị thật)'
+
+  indexes {
+    instrument_name
+    is_active
+  }
+}
+
+// 5.4. Request Notation Instruments (Nhạc cụ ảo theo request - multi-select for arrangement)
+Table request_notation_instruments {
+  request_instrument_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  instrument_id uuid [ref: > notation_instruments.instrument_id, not null]
+
+  Note: 'Danh sách nhạc cụ ảo được chọn cho từng request. Dùng chủ yếu cho Arrangement (đa chọn). Luồng 1 Transcription giữ 1 nhạc cụ chính ở service_requests.requested_instrument_id.'
+
+  indexes {
+    request_id
+    instrument_id
+    (request_id, instrument_id) [unique]
+  }
+}
+
+
+// 6. Bảng giá chuẩn (Pricing Matrix) - ENHANCED for Arrangement
+Table pricing_matrix {
+  pricing_id uuid [pk, increment]
+  service_type service_type [not null]
+  unit_type unit_type [not null]
+  base_price decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Bảng giá chuẩn theo service type và unit type'
+  
+  indexes {
+    service_type
+    currency
+    is_active
+  }
+}
+
+// 7. Yêu cầu dịch vụ (Service Requests) - ENHANCED
+Table service_requests {
+  request_id uuid [pk, increment]
+  customer_id uuid [ref: > customers.customer_id, not null]
+  manager_id uuid [ref: > managers.manager_id]
+  request_type service_type [not null]
+  music_options jsonb // VD: { "genres": ["Pop","Rock"], "purpose": "karaoke_cover" }
+  tempo_percentage decimal(5,2) // VD: 80.00, 50.00 (tốc độ phát cho transcription)
+  title varchar(200)
+  description text [not null]
+  status request_status [default: 'pending']
+  
+  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%)'
+  
+  indexes {
+    customer_id
+    manager_id
+    status
+    request_type
+  }
+}
+
+// 9. Contracts (UPDATED v3.2 - holds pricing breakdown & links directly to request)
+Table contracts {
+  contract_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  customer_id uuid [ref: > customers.customer_id, not null]
+  manager_id uuid [ref: > managers.manager_id, not null]
+  contract_number varchar(50) [unique, not null]
+  contract_type contract_type [not null]
+  terms_and_conditions text
+  special_clauses text
+  status contract_status [default: 'draft']
+  created_at timestamp [default: `now()`]
+  sent_to_customer_at timestamp
+  customer_reviewed_at timestamp
+  signed_at timestamp
+  expires_at timestamp
+  file_id uuid [ref: > files.file_id] // Contract PDF
+  notes text
+
+  // Pricing đơn giản hóa (auto from system)
+  base_price decimal(12,2) [default: 0]
+  total_price decimal(12,2) [default: 0]
+  currency currency_type [default: 'VND']
+  deposit_percent decimal(5,2) [default: 40.0]
+  deposit_amount decimal(12,2) [default: 0]
+  final_amount decimal(12,2) [default: 0]
+  
+  // Deposit tracking
+  deposit_paid boolean [default: false]
+  deposit_paid_at timestamp
+
+  // Timeline & SLA (SIMPLIFIED v3.10)
+  expected_start_date timestamp // Ngày dự kiến bắt đầu
+  due_date timestamp            // Hạn hoàn thành theo hợp đồng (tính từ max_sla_days)
+  sla_days integer [default: 0] // Số ngày SLA max (lấy từ service_sla_defaults.max_sla_days)
+  auto_due_date boolean [default: true] // true: due_date = expected_start_date + sla_days
+  
+  Note: 'Hợp đồng quản lý - Manager tạo hợp đồng trực tiếp từ request với giá tự động'
+  
+  indexes {
+    request_id
+    customer_id
+    manager_id
+    contract_number [unique]
+    status
+    contract_type
+    expires_at
+  }
+}
+
+// Default SLA per contract type (SIMPLIFIED v3.10)
+Table service_sla_defaults {
+  sla_id uuid [pk, increment]
+  contract_type contract_type [not null]    // transcription | arrangement | recording | studio_booking
+  min_sla_days integer [not null]           // ví dụ: 3, 4, 5
+  max_sla_days integer [not null]           // ví dụ: 5, 8, 10 (arrangement_with_recording = 5+3)
+  default_buffer_days integer [default: 0]  // ngày đệm
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+
+  Note: 'SLA mặc định theo loại hợp đồng'
+
+  indexes {
+    contract_type [unique]
+    is_active
+  }
+}
+
+// 10. Dự án (Projects) - With simple revision system
+Table projects {
+  project_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  project_name varchar(200) [not null]
+  status project_status [default: 'assigned']
+  start_date timestamp
+  end_date timestamp
+  progress_percentage integer [default: 0] // CHECK: BETWEEN 0 AND 100
+  
+  // Revision management (simple system)
+  free_revisions_included integer [default: 1] // Số lần revision miễn phí (mặc định 1)
+  used_revisions integer [default: 0] // Số lần revision đã sử dụng
+  // remaining_free_revisions = free_revisions_included - used_revisions (computed)
+  
+  // Revision pricing
+  additional_revision_fee_vnd decimal(12,2) [default: 0] // Phí cho revision thêm
+  
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Dự án với hệ thống revision đơn giản - Enhanced với contract reference'
+  
+  indexes {
+    status
+    start_date
+    used_revisions
+    contract_id
+  }
+}
+
+// 11. Thanh toán theo giai đoạn (Payment Milestones)
+Table payment_milestones {
+  milestone_id uuid [pk, increment]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  
+  milestone_type milestone_type [not null]
+  milestone_name varchar(100) [not null]
+  description text
+  amount decimal(12,2) [not null]
+  percentage decimal(5,2) [not null]
+  
+  // Điều kiện kích hoạt
+  trigger_condition trigger_condition [not null]
+  required_deliverable_count integer [default: 0]
+  
+  // Trạng thái thanh toán
+  status milestone_status [default: 'pending']
+  due_date timestamp
+  completed_at timestamp
+  
+  Note: 'Các mốc thanh toán theo giai đoạn - request_id và customer_id lấy qua quotation_id'
+  
+  indexes {
+    contract_id
+    milestone_type
+    status
+    due_date
+  }
+}
+
+// 12. Phân công công việc (Task Assignments) - ENHANCED with AI
+Table task_assignments {
+  assignment_id uuid [pk, increment]
+  project_id uuid [ref: > projects.project_id, not null]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  task_type task_type [not null]
+  status assignment_status [default: 'assigned']
+  
+  // Timeline management (simplified)
+  assigned_date timestamp [default: `now()`]
+  
+  // Completion tracking
+  completed_date timestamp
+  notes text
+  
+  // Specialist response (optional flags)
+  specialist_can_do boolean // null = chưa phản hồi, true/false = phản hồi
+  specialist_response_reason text
+  specialist_responded_at timestamp
+  
+  Note: 'Phân công task'
+  
+  indexes {
+    project_id
+    specialist_id
+    status
+    specialist_can_do
+  }
+}
+
+// 13. File Management (Unified Files Table) - ENHANCED
+Table files {
+  file_id uuid [pk, increment]
+  
+  // Source references (one of these will be NULL)
+  request_id uuid [ref: > service_requests.request_id]           // Customer uploads
+  assignment_id uuid [ref: > task_assignments.assignment_id]     // Task deliverables
+  booking_id uuid [ref: > studio_bookings.booking_id]            // Studio recordings (single studio)
+  
+  // File metadata
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100)   
+  
+  // File classification
+  file_source file_source_type [not null]
+  content_type content_type [not null]
+  
+  // Version and status
+  version varchar(20) [default: '1.0']
+  
+  
+  // General metadata
+  description text
+  upload_date timestamp [default: `now()`]
+  created_by uuid [ref: > users.user_id] // WHO uploaded this
+  
+  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support'
+  
+  indexes {
+    request_id
+    assignment_id
+    booking_id
+    file_source
+    content_type
+    created_by
+    upload_date
+    notation_editor_used
+  }
+}
+
+// 14. Đặt lịch studio (Studio Bookings) - Single Studio System
+Table studio_bookings {
+  booking_id uuid [pk, increment]
+  customer_id uuid [ref: > customers.customer_id, not null]
+  studio_id uuid [ref: > studios.studio_id, not null]
+  project_id uuid [ref: > projects.project_id]
+  
+  // Recording session type
+  session_type recording_session_type [not null]
+  // Multi-artist is modeled via booking_artists; no single recording_artist_id here
+  
+  // Booking details
+  booking_date date [not null]
+  start_time time [not null] // CHECK: start_time < end_time
+  end_time time [not null]
+  status booking_status [default: 'pending']
+  
+  // Billing config & derivation
+  billing_step_hours decimal(3,2) [default: 0.50] // Bước làm tròn (VD: 0.5h)
+  min_billing_hours decimal(3,2) [default: 1.00] // Số giờ tối thiểu tính phí
+  
+  // Cost breakdown + generated total
+  studio_rate decimal(10,2) [not null] // Đơn giá/giờ studio
+  duration_hours decimal(5,2) [not null] // Giờ tính phí (billable) = max(min_billing_hours, ceil(raw_hours/billing_step_hours)*billing_step_hours)
+  artist_fee decimal(12,2) [default: 0] // Tổng phí nghệ sĩ (SUM từ booking_artists)
+  admin_fee decimal(12,2) [default: 0] // Phí hỗ trợ kỹ thuật
+  equipment_rental_fee decimal(12,2) [default: 0] // Phí thuê dụng cụ = SUM từ booking_required_equipment
+  total_cost decimal(12,2) [not null] // GENERATED: studio_rate*duration_hours + artist_fee + admin_fee + equipment_rental_fee
+  
+  // Session details
+  purpose text // What will be recorded
+  special_instructions text
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'duration_hours là giờ tính phí (billable). Dụng cụ thuê chuẩn hóa qua booking_required_equipment và cộng vào equipment_rental_fee.'
+  
+  indexes {
+    customer_id
+    studio_id
+    session_type
+    booking_date
+    status
+  }
+}
+
+// 14.1. Nghệ sĩ tham gia phiên thu (Booking Artists)
+Table booking_artists {
+  booking_artist_id uuid [pk, increment]
+  booking_id uuid [ref: > studio_bookings.booking_id, not null]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  role recording_role [not null] // vocalist | instrumentalist | both
+  skill_id uuid [ref: > skills.skill_id] // skill được sử dụng trong phiên (piano, guitar, vocal, etc.)
+  fee decimal(12,2) [default: 0] // Phí nghệ sĩ cho phiên thu này
+  notes text
+  
+  Note: 'Danh sách nghệ sĩ tham gia một phiên thu. Tổng phí nghệ sĩ = SUM(fee) theo booking_id.'
+  
+  indexes {
+    booking_id
+    specialist_id
+    (booking_id, specialist_id, skill_id) [unique]
+    role
+    skill_id
+  }
+}
+
+// 14.2. Dụng cụ yêu cầu cho phiên thu (Booking Required Equipment)
+Table booking_required_equipment {
+  booking_required_equipment_id uuid [pk, increment]
+  booking_id uuid [ref: > studio_bookings.booking_id, not null]
+  studio_equipment_id uuid [ref: > studio_equipment.studio_equipment_id, not null]
+  quantity integer [default: 1]
+  rental_fee decimal(12,2) [default: 0] // Phí thuê cho món này trong phiên
+  notes text
+  
+  Note: 'Thiết bị mượn/thuê từ studio cho mỗi booking. equipment_rental_fee = SUM(rental_fee) theo booking_id.'
+  
+  indexes {
+    booking_id
+    studio_equipment_id
+    (booking_id, studio_equipment_id) [unique]
+  }
+}
+
+// 15. Thanh toán chi tiết (Payments)
+Table payments {
+  payment_id uuid [pk, increment]
+  milestone_id uuid [ref: > payment_milestones.milestone_id, not null]
+  
+  // Thông tin thanh toán
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  payment_method payment_method [not null]
+  
+  // Thông tin giao dịch
+  transaction_id varchar(100)
+  gateway_response text
+  
+  // Trạng thái và thời gian
+  status payment_status [default: 'pending']
+  payment_date timestamp
+  processed_date timestamp
+  
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Thanh toán chi tiết theo milestone - request_id và customer_id lấy qua milestone_id'
+  
+  indexes {
+    milestone_id
+    transaction_id
+    status
+    payment_date
+  }
+}
+
+// 16. Yêu cầu chỉnh sửa (Revision Requests) - Simple revision system
+Table revision_requests {
+  revision_id uuid [pk, increment]
+  project_id uuid [ref: > projects.project_id, not null]
+  file_id uuid [ref: > files.file_id, not null]
+  requested_by uuid [ref: > users.user_id, not null] // Ai yêu cầu revision
+  
+  // Revision tracking
+  revision_number integer [not null] // Số thứ tự revision (1, 2, 3...)
+  revision_type revision_type [not null]
+  description text [not null]
+  
+  // Free vs Paid revision
+  is_free_revision boolean [default: true] // true = miễn phí, false = có phí
+  revision_fee_vnd decimal(12,2) [default: 0] // Phí revision (nếu có)
+  
+  // Status
+  status revision_status [default: 'pending']
+  requested_at timestamp [default: `now()`]
+  approved_at timestamp
+  completed_at timestamp
+  
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và customer_id lấy qua project_id'
+  
+  indexes {
+    project_id
+    file_id
+    requested_by
+    (project_id, revision_number) [unique] // Mỗi project chỉ có 1 revision với số thứ tự duy nhất
+    (project_id, status)
+    is_free_revision
+    status
+    requested_at
+  }
+}
+
+// 17. Gói giao nộp (Deliverable Packages)
+Table deliverable_packages {
+  package_id uuid [pk, increment]
+  project_id uuid [ref: > projects.project_id, not null]
+  
+  package_name varchar(200) [not null]
+  description text
+  delivery_type delivery_type [default: 'final']
+  
+  // Status tracking
+  status delivery_status [default: 'preparing']
+  prepared_by uuid [ref: > users.user_id]
+  prepared_at timestamp
+  delivered_at timestamp
+  approved_by_customer_at timestamp
+  
+  // Customer feedback
+  customer_notes text
+  requires_revision boolean [default: false]
+  
+  Note: 'Gói giao nộp chính thức - customer_id lấy qua project_id'
+  
+  indexes {
+    project_id
+    status
+    delivery_type
+    delivered_at
+  }
+}
+
+// 17.1. Files trong gói giao nộp (Package Files)
+Table package_files {
+  package_file_id uuid [pk, increment]
+  package_id uuid [ref: > deliverable_packages.package_id, not null]
+  file_id uuid [ref: > files.file_id, not null]
+  file_order integer [default: 1]
+  is_primary boolean [default: false]
+  
+  Note: 'Liên kết giữa deliverable packages và files'
+  
+  indexes {
+    package_id
+    file_id
+    (package_id, file_order)
+    is_primary
+    (package_id, file_id) [unique] // Mỗi file chỉ xuất hiện 1 lần trong package
+  }
+  
+  Note: 'Dùng partial unique index: CREATE UNIQUE INDEX ux_pkg_primary ON package_files(package_id) WHERE is_primary = true;'
+}
+
+// 18. Phản hồi (Feedback)
+Table feedback {
+  feedback_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  customer_id uuid [ref: > customers.customer_id, not null]
+  rating integer [not null] // 1-5
+  comment text
+  feedback_type feedback_type [not null]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Phản hồi từ khách hàng'
+}
+
+// 19. Thông báo (Notifications)
+Table notifications {
+  notification_id uuid [pk, increment]
+  user_id uuid [ref: > users.user_id, not null]
+  title varchar(200) [not null]
+  message text [not null]
+  notification_type notification_type [not null]
+  is_read boolean [default: false]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Hệ thống thông báo - Enhanced với notification types mới'
+  
+  indexes {
+    user_id
+    is_read
+    notification_type
+    created_at
+  }
+}
+
+// 20. Lịch sử hoạt động (Activity Logs)
+Table activity_logs {
+  log_id uuid [pk, increment]
+  user_id uuid [ref: > users.user_id]
+  entity_type varchar(50) [not null]
+  entity_id uuid [not null]
+  action varchar(100) [not null]
+  description text
+  ip_address varchar(45)
+  user_agent text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Ghi log hoạt động của người dùng'
+  
+  indexes {
+    user_id
+    entity_type
+    entity_id
+    created_at
+  }
+}
+
+// 21. Outbox Pattern - Event Publishing (Mỗi service có bảng riêng)
+Table outbox_events {
+  event_id uuid [pk, increment] // Dùng làm idempotency key luôn
+  aggregate_id uuid [not null] // ID của entity chính (quotation_id, task_id, etc.)
+  aggregate_type text [not null] // quotation, task, payment, etc.
+  event_type text [not null] // quotation.approved, task.completed, etc.
+  event_payload jsonb [not null] // Payload của event
+  occurred_at timestamptz [not null, default: `now()`]
+  
+  // Publishing status (published_at IS NULL = pending)
+  published_at timestamptz // NULL = pending, NOT NULL = published
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  
+  // Optional: distributed tracing
+  trace_id text
+  correlation_id text
+  
+  Note: 'Outbox pattern tối giản - event_id làm idempotency key, published_at IS NULL = pending'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at) [where: published_at IS NULL] // Partial index cho pending events
+  }
+}
+
+// 22. Event Processing Log - Idempotency (Mỗi service có bảng riêng)
+Table consumed_events {
+  event_id uuid [not null] // PK part 1 - event_id từ outbox
+  consumer_name text [not null] // PK part 2 - tên service consumer
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency tối giản - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk] // Composite primary key
+    consumer_name
+    processed_at
+  }
+}
+
+// ===== ENUMS =====
+
+Enum user_role {
+  customer
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+  service_coordinator
+  system_admin
+}
+
+Enum customer_type {
+  individual
+  business
+  organization
+}
+
+Enum contact_method {
+  email
+  phone
+  sms
+}
+
+Enum specialist_type {
+  transcription
+  arrangement
+  recording
+  mixing
+  mastering
+}
+
+Enum availability_status {
+  available           // current_workload < max_concurrent_tasks
+  can_take_more      // current_workload < max_concurrent_tasks (có thể nhận thêm)  
+  busy               // current_workload = max_concurrent_tasks (đang full)
+  overloaded         // current_workload > max_concurrent_tasks (quá tải)
+  unavailable        // Không có sẵn (manual set)
+  on_leave           // Đang nghỉ phép
+}
+
+Enum service_type {
+  transcription
+  arrangement
+  recording
+}
+
+
+Enum unit_type {
+  per_minute      // Tính theo phút (transcription)
+  per_song        // Tính theo bài (arrangement)
+  per_hour        // Tính theo giờ (recording)
+  fixed_price     // Giá cố định
+}
+
+Enum currency_type {
+  VND
+  USD
+  EUR
+}
+
+
+Enum request_status {
+  pending           // Chờ xử lý
+  manager_discussing // NEW v3.0 - Manager đang bàn bạc với Customer
+  contract_sent    // NEW v3.0 - Đã gửi hợp đồng
+  contract_signed  // NEW v3.0 - Khách đã ký hợp đồng
+  approved         // Khách đồng ý, đã cọc
+  artist_selection // NEW v3.0 - Đang chọn artist
+  in_progress      // Đang thực hiện
+  completed        // Hoàn thành
+  cancelled        // Đã hủy
+  rejected         // Khách từ chối
+}
+
+// Enum quotation_status - REMOVED in v3.2 (hệ thống không dùng báo giá)
+
+Enum project_status {
+  assigned
+  contract_pending // NEW v3.0 - Chờ hợp đồng
+  artist_booking   // NEW v3.0 - Đang book artist
+  in_progress
+  recording_session // NEW v3.0 - Đang trong phiên thu
+  review
+  completed
+  cancelled
+}
+
+Enum proficiency_level {
+  beginner          // Mới học, ít kinh nghiệm
+  intermediate      // Biết cơ bản, có thể làm task đơn giản
+  advanced          // Thành thạo, có thể làm task phức tạp
+  expert            // Chuyên gia, có thể dạy người khác
+}
+
+Enum equipment_condition {
+  excellent         // Như mới, hoạt động hoàn hảo
+  good              // Tốt, hoạt động bình thường
+  fair              // Ổn, có thể có vài vấn đề nhỏ
+  poor              // Kém, cần sửa chữa hoặc thay thế
+  maintenance       // Đang bảo trì
+  out_of_order      // Hỏng, không sử dụng được
+}
+
+Enum milestone_type {
+  deposit         // Tiền cọc
+  final_payment   // Thanh toán cuối
+  revision_fee    // Phí chỉnh sửa
+}
+
+Enum milestone_status {
+  pending         // Chờ điều kiện
+  due             // Đến hạn thanh toán
+  paid            // Đã thanh toán
+  overdue         // Quá hạn
+}
+
+Enum trigger_condition {
+  contract_signed       // Hợp đồng đã ký
+  project_started       // Dự án bắt đầu
+  deliverable_sent      // Gửi deliverable
+  project_completed     // Dự án hoàn thành
+}
+
+Enum task_type {
+  transcription
+  arrangement
+  recording
+}
+
+Enum assignment_status {
+  assigned         // Task đã được giao
+  in_progress      // Đang thực hiện
+  completed        // Hoàn thành
+  cancelled        // Hủy bởi manager
+}
+
+Enum revision_type {
+  minor_adjustment      // Chỉnh sửa nhỏ (free)
+  major_change         // Thay đổi lớn (có phí)
+  scope_expansion      // Mở rộng phạm vi
+  style_change         // Đổi style
+}
+
+Enum revision_status {
+  pending
+  approved
+  in_progress
+  completed
+  rejected
+}
+
+Enum delivery_type {
+  draft           // Bản nháp để review
+  milestone       // Giao nộp theo milestone
+  final           // Giao nộp cuối cùng
+  revision        // Giao nộp sau revision
+}
+
+Enum delivery_status {
+  preparing       // Đang chuẩn bị
+  ready           // Sẵn sàng giao
+  delivered       // Đã giao cho customer
+  approved        // Customer đã approve
+  rejected        // Customer reject, cần revision
+}
+
+Enum recording_session_type {
+  self_recording          // Customer tự thu âm
+  artist_assisted         // Thuê Recording Artist
+  hybrid                  // Vừa tự thu vừa có artist
+}
+
+Enum booking_status {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+Enum payment_method {
+  credit_card
+  debit_card
+  bank_transfer
+  digital_wallet
+  cash
+}
+
+Enum payment_status {
+  pending
+  processing
+  completed
+  failed
+  refunded
+  cancelled
+}
+
+Enum feedback_type {
+  service_quality
+  communication
+  timeliness
+  overall_experience
+}
+
+Enum notification_type {
+  task_assignment
+  project_update
+  payment_reminder
+  booking_confirmation
+  deadline_alert
+  system_announcement
+  contract_ready        // NEW v3.0
+  contract_signed       // NEW v3.0
+  artist_recommended    // NEW v3.0
+  demo_available        // NEW v3.0
+  ai_transcription_complete // NEW v3.0
+}
+
+Enum file_source_type {
+  customer_upload     // File khách hàng upload
+  task_deliverable    // Kết quả từ task assignment
+  studio_recording    // Raw recording từ studio
+  processed_output    // File đã xử lý
+  portfolio_demo      // Demo/portfolio của nghệ sĩ
+}
+
+Enum content_type {
+  audio              // Audio files (wav, mp3, etc.)
+  sheet_music        // PDF, MIDI, MusicXML
+  project_file       // DAW project files
+  documentation      // Notes, lyrics, etc.
+  video              // Video files
+  archive            // Zip, rar files
+}
+
+
+Enum notation_instrument_usage {
+  transcription
+  arrangement
+  both
+}
+
+Enum recording_role {
+  vocalist         // Hát/giọng
+  instrumentalist  // Chơi nhạc cụ
+  both             // Vừa hát vừa chơi nhạc cụ
+}
+
+Enum contract_type {
+  transcription
+  arrangement
+  recording
+  studio_booking
+}
+
+Enum contract_status {
+  draft
+  sent_to_customer
+  customer_reviewing
+  signed
+  expired
+  cancelled
+}
+
+
+// REMOVED: arrangement_pricing_rule_type (v3.2)
+
+// ===== BUSINESS RULES & TRIGGERS =====
+
+// Business Rule 1: Arrangement Workflow Validation
+// Đảm bảo arrangement_option phù hợp với request_type
+/*
+CREATE OR REPLACE FUNCTION validate_arrangement_option()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.request_type = 'arrangement' THEN
+    IF NEW.arrangement_option IS NULL THEN
+      RAISE EXCEPTION 'arrangement_option is required for arrangement requests';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_arrangement_option
+  BEFORE INSERT OR UPDATE ON service_requests
+  FOR EACH ROW
+  EXECUTE FUNCTION validate_arrangement_option();
+*/
+
+// REMOVED: Arrangement Pricing Calculation function (v3.2) - pricing auto, không cần rule chi tiết
+
+// Business Rule 2: Contract Creation Validation
+// Đảm bảo contract được tạo sau khi quotation được approved
+/*
+CREATE OR REPLACE FUNCTION validate_contract_creation()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM quotations 
+    WHERE quotation_id = NEW.quotation_id 
+      AND status = 'approved'
+  ) THEN
+    RAISE EXCEPTION 'Contract can only be created for approved quotations';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_contract_creation
+  BEFORE INSERT ON contracts
+  FOR EACH ROW
+  EXECUTE FUNCTION validate_contract_creation();
+*/
+
+// Business Rule 3: AI Confidence Score Validation
+// Đảm bảo AI confidence score trong khoảng hợp lệ
+/*
+CREATE OR REPLACE FUNCTION validate_ai_confidence()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.ai_confidence_score IS NOT NULL THEN
+    IF NEW.ai_confidence_score < 0.00 OR NEW.ai_confidence_score > 1.00 THEN
+      RAISE EXCEPTION 'AI confidence score must be between 0.00 and 1.00';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validate_ai_confidence
+  BEFORE INSERT OR UPDATE ON task_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION validate_ai_confidence();
+*/
+
+// ===== VIEWS & FUNCTIONS =====
+
+// View: Enhanced Specialist Workload với AI capabilities
+/*
+CREATE VIEW specialist_workload_enhanced AS
+SELECT 
+  s.specialist_id,
+  s.user_id,
+  s.specialization,
+  s.max_concurrent_tasks,
+  COUNT(ta.assignment_id) as current_workload,
+  COUNT(CASE WHEN ta.ai_assistance_used = true THEN 1 END) as ai_assisted_tasks,
+  AVG(CASE WHEN ta.ai_assistance_used = true THEN ta.ai_confidence_score END) as avg_ai_confidence,
+  CASE 
+    WHEN COUNT(ta.assignment_id) = 0 THEN 'available'
+    WHEN COUNT(ta.assignment_id) < s.max_concurrent_tasks THEN 'can_take_more'
+    WHEN COUNT(ta.assignment_id) = s.max_concurrent_tasks THEN 'busy'
+    WHEN COUNT(ta.assignment_id) > s.max_concurrent_tasks THEN 'overloaded'
+    ELSE 'unavailable'
+  END as calculated_availability_status
+FROM specialists s
+LEFT JOIN task_assignments ta ON s.specialist_id = ta.specialist_id 
+  AND ta.status IN ('assigned', 'accepted', 'in_progress')
+GROUP BY s.specialist_id, s.user_id, s.specialization, s.max_concurrent_tasks;
+*/
+
+// View: Contract Status Overview (UPDATED v3.2 - no quotations)
+/*
+CREATE VIEW contract_status_overview AS
+SELECT 
+  c.contract_id,
+  c.contract_number,
+  c.contract_type,
+  c.status,
+  c.created_at,
+  c.signed_at,
+  c.expires_at,
+  sr.title as request_title,
+  u.full_name as customer_name,
+  uc.full_name as manager_name,
+  c.total_price,
+  c.currency
+FROM contracts c
+JOIN service_requests sr ON c.request_id = sr.request_id
+JOIN customers cust ON c.customer_id = cust.customer_id
+JOIN users u ON cust.user_id = u.user_id
+JOIN managers m ON c.manager_id = m.manager_id
+JOIN users uc ON m.user_id = uc.user_id
+ORDER BY c.created_at DESC;
+*/
+
+// Function: Get Arrangement Workflow Status (UPDATED v3.2 - no quotations)
+/*
+CREATE OR REPLACE FUNCTION get_arrangement_workflow_status(p_request_id UUID)
+RETURNS TABLE(
+  request_id UUID,
+  requires_vocalist BOOLEAN,
+  pricing_discussion_completed BOOLEAN,
+  contract_created BOOLEAN,
+  contract_signed BOOLEAN,
+  artist_selected BOOLEAN,
+  current_status TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    sr.request_id,
+    sr.arrangement_option,
+    sr.requires_vocalist,
+    sr.pricing_discussion_completed,
+    (c.contract_id IS NOT NULL) as contract_created,
+    (c.status = 'signed') as contract_signed,
+    (ar.recommendation_id IS NOT NULL AND ar.customer_choice = true) as artist_selected,
+    CASE 
+      WHEN NOT sr.pricing_discussion_completed THEN 'Pricing Discussion'
+      WHEN c.contract_id IS NULL THEN 'Contract Creation'
+      WHEN c.status != 'signed' THEN 'Contract Signing'
+      WHEN sr.requires_vocalist AND (ar.recommendation_id IS NULL OR ar.customer_choice = false) THEN 'Artist Selection'
+      ELSE 'Ready for Project Creation'
+    END as current_status
+  FROM service_requests sr
+  LEFT JOIN contracts c ON c.request_id = sr.request_id
+  LEFT JOIN artist_recommendations ar ON sr.request_id = ar.request_id AND ar.customer_choice = true
+  WHERE sr.request_id = p_request_id;
+END;
+$$ LANGUAGE plpgsql;
+*/
