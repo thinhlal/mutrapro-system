@@ -13,7 +13,7 @@ Project MuTraPro {
     
     Enhanced Features v3.0:
     - Multi-role user management
-    - Automated quotation system
+    - Automated contract system
     - Milestone-based payments
     - Single studio booking management
     - Complete workflow tracking
@@ -365,7 +365,12 @@ Table contracts {
   sla_days integer [default: 0] // Số ngày SLA max (lấy từ service_sla_defaults.max_sla_days)
   auto_due_date boolean [default: true] // true: due_date = expected_start_date + sla_days
   
+  // Revision policy (SIMPLIFIED v3.11)
+  free_revisions_included integer [default: 1] // Số lần revision miễn phí cho toàn contract
+  additional_revision_fee_vnd decimal(12,2) [default: 0] // Phí revision thêm
+  
   Note: 'Hợp đồng quản lý - Manager tạo hợp đồng trực tiếp từ request với giá tự động'
+  Note: 'Revision chỉ áp dụng cho transcription và arrangement tasks, không áp dụng cho recording'
   
   indexes {
     request_id
@@ -378,7 +383,7 @@ Table contracts {
   }
 }
 
-// Default SLA per contract type (SIMPLIFIED v3.10)
+// 8. SLA mặc định theo loại hợp đồng (Service SLA Defaults)
 Table service_sla_defaults {
   sla_id uuid [pk, increment]
   contract_type contract_type [not null]    // transcription | arrangement | recording | studio_booking
@@ -396,39 +401,8 @@ Table service_sla_defaults {
   }
 }
 
-// 10. Dự án (Projects) - With simple revision system
-Table projects {
-  project_id uuid [pk, increment]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  contract_id uuid [ref: > contracts.contract_id, not null]
-  project_name varchar(200) [not null]
-  status project_status [default: 'assigned']
-  start_date timestamp
-  end_date timestamp
-  progress_percentage integer [default: 0] // CHECK: BETWEEN 0 AND 100
-  
-  // Revision management (simple system)
-  free_revisions_included integer [default: 1] // Số lần revision miễn phí (mặc định 1)
-  used_revisions integer [default: 0] // Số lần revision đã sử dụng
-  // remaining_free_revisions = free_revisions_included - used_revisions (computed)
-  
-  // Revision pricing
-  additional_revision_fee_vnd decimal(12,2) [default: 0] // Phí cho revision thêm
-  
-  notes text
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Dự án với hệ thống revision đơn giản - Enhanced với contract reference'
-  
-  indexes {
-    status
-    start_date
-    used_revisions
-    contract_id
-  }
-}
 
-// 11. Thanh toán theo giai đoạn (Payment Milestones)
+// 10. Thanh toán theo giai đoạn (Payment Milestones)
 Table payment_milestones {
   milestone_id uuid [pk, increment]
   contract_id uuid [ref: > contracts.contract_id, not null]
@@ -448,7 +422,7 @@ Table payment_milestones {
   due_date timestamp
   completed_at timestamp
   
-  Note: 'Các mốc thanh toán theo giai đoạn - request_id và customer_id lấy qua quotation_id'
+  Note: 'Các mốc thanh toán theo giai đoạn - request_id và customer_id lấy qua contract_id'
   
   indexes {
     contract_id
@@ -458,10 +432,10 @@ Table payment_milestones {
   }
 }
 
-// 12. Phân công công việc (Task Assignments) - ENHANCED with AI
+// 11. Phân công công việc (Task Assignments) - SIMPLIFIED v3.11
 Table task_assignments {
   assignment_id uuid [pk, increment]
-  project_id uuid [ref: > projects.project_id, not null]
+  contract_id uuid [ref: > contracts.contract_id, not null]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   task_type task_type [not null]
   status assignment_status [default: 'assigned']
@@ -478,17 +452,22 @@ Table task_assignments {
   specialist_response_reason text
   specialist_responded_at timestamp
   
-  Note: 'Phân công task'
+  // Revision tracking (chỉ cho transcription và arrangement)
+  used_revisions integer [default: 0] // Số lần revision đã sử dụng cho task này
+  
+  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement'
+  Note: 'CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
   
   indexes {
-    project_id
+    contract_id
     specialist_id
     status
     specialist_can_do
+    task_type
   }
 }
 
-// 13. File Management (Unified Files Table) - ENHANCED
+// 12. File Management (Unified Files Table) - ENHANCED
 Table files {
   file_id uuid [pk, increment]
   
@@ -507,14 +486,15 @@ Table files {
   file_source file_source_type [not null]
   content_type content_type [not null]
   
-  // Version and status
-  version varchar(20) [default: '1.0']
-  
-  
   // General metadata
   description text
   upload_date timestamp [default: `now()`]
   created_by uuid [ref: > users.user_id] // WHO uploaded this
+  
+  // Delivery tracking (đơn giản)
+  delivered_to_customer boolean [default: false] // true = đã gửi cho customer
+  delivered_at timestamp // Khi nào gửi
+  delivered_by uuid [ref: > users.user_id] // Ai gửi (thường là manager)
   
   Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support'
   
@@ -526,16 +506,18 @@ Table files {
     content_type
     created_by
     upload_date
-    notation_editor_used
+    delivered_to_customer
+    delivered_at
+    delivered_by
   }
 }
 
-// 14. Đặt lịch studio (Studio Bookings) - Single Studio System
+// 13. Đặt lịch studio (Studio Bookings) - Single Studio System
 Table studio_bookings {
   booking_id uuid [pk, increment]
   customer_id uuid [ref: > customers.customer_id, not null]
   studio_id uuid [ref: > studios.studio_id, not null]
-  project_id uuid [ref: > projects.project_id]
+  contract_id uuid [ref: > contracts.contract_id] // Nullable cho booking nội bộ/walk-in
   
   // Recording session type
   session_type recording_session_type [not null]
@@ -576,7 +558,7 @@ Table studio_bookings {
   }
 }
 
-// 14.1. Nghệ sĩ tham gia phiên thu (Booking Artists)
+// 13.1. Nghệ sĩ tham gia phiên thu (Booking Artists)
 Table booking_artists {
   booking_artist_id uuid [pk, increment]
   booking_id uuid [ref: > studio_bookings.booking_id, not null]
@@ -597,11 +579,11 @@ Table booking_artists {
   }
 }
 
-// 14.2. Dụng cụ yêu cầu cho phiên thu (Booking Required Equipment)
+// 13.2. Dụng cụ yêu cầu cho phiên thu (Booking Required Equipment)
 Table booking_required_equipment {
   booking_required_equipment_id uuid [pk, increment]
   booking_id uuid [ref: > studio_bookings.booking_id, not null]
-  studio_equipment_id uuid [ref: > studio_equipment.studio_equipment_id, not null]
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
   quantity integer [default: 1]
   rental_fee decimal(12,2) [default: 0] // Phí thuê cho món này trong phiên
   notes text
@@ -610,12 +592,12 @@ Table booking_required_equipment {
   
   indexes {
     booking_id
-    studio_equipment_id
-    (booking_id, studio_equipment_id) [unique]
+    equipment_id
+    (booking_id, equipment_id) [unique]
   }
 }
 
-// 15. Thanh toán chi tiết (Payments)
+// 14. Thanh toán chi tiết (Payments)
 Table payments {
   payment_id uuid [pk, increment]
   milestone_id uuid [ref: > payment_milestones.milestone_id, not null]
@@ -638,6 +620,7 @@ Table payments {
   created_at timestamp [default: `now()`]
   
   Note: 'Thanh toán chi tiết theo milestone - request_id và customer_id lấy qua milestone_id'
+  Note: 'CHECK: status <> ''not_required'' (payments không nhận giá trị not_required)'
   
   indexes {
     milestone_id
@@ -647,94 +630,43 @@ Table payments {
   }
 }
 
-// 16. Yêu cầu chỉnh sửa (Revision Requests) - Simple revision system
+// 15. Yêu cầu chỉnh sửa (Revision Requests) - Simple revision system
 Table revision_requests {
   revision_id uuid [pk, increment]
-  project_id uuid [ref: > projects.project_id, not null]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  assignment_id uuid [ref: > task_assignments.assignment_id] // Optional: biết revision thuộc task nào
   file_id uuid [ref: > files.file_id, not null]
   requested_by uuid [ref: > users.user_id, not null] // Ai yêu cầu revision
   
   // Revision tracking
   revision_number integer [not null] // Số thứ tự revision (1, 2, 3...)
-  revision_type revision_type [not null]
   description text [not null]
   
-  // Free vs Paid revision
-  is_free_revision boolean [default: true] // true = miễn phí, false = có phí
-  revision_fee_vnd decimal(12,2) [default: 0] // Phí revision (nếu có)
+  // Payment tracking for revisions
+  payment_required boolean [default: false] // true = cần thanh toán trước khi làm
+  payment_status payment_status [default: 'not_required'] // not_required | pending | paid | failed
   
   // Status
-  status revision_status [default: 'pending']
+  status revision_status [default: 'assigned']
   requested_at timestamp [default: `now()`]
-  approved_at timestamp
   completed_at timestamp
   
-  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và customer_id lấy qua project_id'
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và customer_id lấy qua contract_id'
   
   indexes {
-    project_id
+    contract_id
+    assignment_id
     file_id
     requested_by
-    (project_id, revision_number) [unique] // Mỗi project chỉ có 1 revision với số thứ tự duy nhất
-    (project_id, status)
-    is_free_revision
+    (contract_id, revision_number) [unique] // Mỗi contract chỉ có 1 revision với số thứ tự duy nhất
+    (contract_id, status)
     status
     requested_at
   }
 }
 
-// 17. Gói giao nộp (Deliverable Packages)
-Table deliverable_packages {
-  package_id uuid [pk, increment]
-  project_id uuid [ref: > projects.project_id, not null]
-  
-  package_name varchar(200) [not null]
-  description text
-  delivery_type delivery_type [default: 'final']
-  
-  // Status tracking
-  status delivery_status [default: 'preparing']
-  prepared_by uuid [ref: > users.user_id]
-  prepared_at timestamp
-  delivered_at timestamp
-  approved_by_customer_at timestamp
-  
-  // Customer feedback
-  customer_notes text
-  requires_revision boolean [default: false]
-  
-  Note: 'Gói giao nộp chính thức - customer_id lấy qua project_id'
-  
-  indexes {
-    project_id
-    status
-    delivery_type
-    delivered_at
-  }
-}
 
-// 17.1. Files trong gói giao nộp (Package Files)
-Table package_files {
-  package_file_id uuid [pk, increment]
-  package_id uuid [ref: > deliverable_packages.package_id, not null]
-  file_id uuid [ref: > files.file_id, not null]
-  file_order integer [default: 1]
-  is_primary boolean [default: false]
-  
-  Note: 'Liên kết giữa deliverable packages và files'
-  
-  indexes {
-    package_id
-    file_id
-    (package_id, file_order)
-    is_primary
-    (package_id, file_id) [unique] // Mỗi file chỉ xuất hiện 1 lần trong package
-  }
-  
-  Note: 'Dùng partial unique index: CREATE UNIQUE INDEX ux_pkg_primary ON package_files(package_id) WHERE is_primary = true;'
-}
-
-// 18. Phản hồi (Feedback)
+// 16. Phản hồi (Feedback)
 Table feedback {
   feedback_id uuid [pk, increment]
   request_id uuid [ref: > service_requests.request_id, not null]
@@ -747,7 +679,7 @@ Table feedback {
   Note: 'Phản hồi từ khách hàng'
 }
 
-// 19. Thông báo (Notifications)
+// 17. Thông báo (Notifications)
 Table notifications {
   notification_id uuid [pk, increment]
   user_id uuid [ref: > users.user_id, not null]
@@ -767,7 +699,7 @@ Table notifications {
   }
 }
 
-// 20. Lịch sử hoạt động (Activity Logs)
+// 18. Lịch sử hoạt động (Activity Logs)
 Table activity_logs {
   log_id uuid [pk, increment]
   user_id uuid [ref: > users.user_id]
@@ -789,12 +721,12 @@ Table activity_logs {
   }
 }
 
-// 21. Outbox Pattern - Event Publishing (Mỗi service có bảng riêng)
+// 19. Outbox Pattern - Event Publishing (Mỗi service có bảng riêng)
 Table outbox_events {
   event_id uuid [pk, increment] // Dùng làm idempotency key luôn
-  aggregate_id uuid [not null] // ID của entity chính (quotation_id, task_id, etc.)
-  aggregate_type text [not null] // quotation, task, payment, etc.
-  event_type text [not null] // quotation.approved, task.completed, etc.
+  aggregate_id uuid [not null] // ID của entity chính (contract_id, task_id, etc.)
+  aggregate_type text [not null] // contract, task, payment, etc.
+  event_type text [not null] // contract.signed, task.completed, etc.
   event_payload jsonb [not null] // Payload của event
   occurred_at timestamptz [not null, default: `now()`]
   
@@ -819,7 +751,7 @@ Table outbox_events {
   }
 }
 
-// 22. Event Processing Log - Idempotency (Mỗi service có bảng riêng)
+// 20. Event Processing Log - Idempotency (Mỗi service có bảng riêng)
 Table consumed_events {
   event_id uuid [not null] // PK part 1 - event_id từ outbox
   consumer_name text [not null] // PK part 2 - tên service consumer
@@ -861,8 +793,6 @@ Enum specialist_type {
   transcription
   arrangement
   recording
-  mixing
-  mastering
 }
 
 Enum availability_status {
@@ -908,18 +838,6 @@ Enum request_status {
   rejected         // Khách từ chối
 }
 
-// Enum quotation_status - REMOVED in v3.2 (hệ thống không dùng báo giá)
-
-Enum project_status {
-  assigned
-  contract_pending // NEW v3.0 - Chờ hợp đồng
-  artist_booking   // NEW v3.0 - Đang book artist
-  in_progress
-  recording_session // NEW v3.0 - Đang trong phiên thu
-  review
-  completed
-  cancelled
-}
 
 Enum proficiency_level {
   beginner          // Mới học, ít kinh nghiệm
@@ -970,35 +888,14 @@ Enum assignment_status {
   cancelled        // Hủy bởi manager
 }
 
-Enum revision_type {
-  minor_adjustment      // Chỉnh sửa nhỏ (free)
-  major_change         // Thay đổi lớn (có phí)
-  scope_expansion      // Mở rộng phạm vi
-  style_change         // Đổi style
-}
-
 Enum revision_status {
-  pending
-  approved
-  in_progress
-  completed
-  rejected
+  assigned         // Manager giao cho specialist
+  in_progress      // Specialist đang làm
+  completed        // Hoàn thành
+  cancelled        // Hủy bởi manager
 }
 
-Enum delivery_type {
-  draft           // Bản nháp để review
-  milestone       // Giao nộp theo milestone
-  final           // Giao nộp cuối cùng
-  revision        // Giao nộp sau revision
-}
-
-Enum delivery_status {
-  preparing       // Đang chuẩn bị
-  ready           // Sẵn sàng giao
-  delivered       // Đã giao cho customer
-  approved        // Customer đã approve
-  rejected        // Customer reject, cần revision
-}
+// REMOVED: delivery_type enum - đơn giản hóa, chỉ cần delivered/not delivered
 
 Enum recording_session_type {
   self_recording          // Customer tự thu âm
@@ -1024,12 +921,13 @@ Enum payment_method {
 }
 
 Enum payment_status {
-  pending
-  processing
-  completed
-  failed
-  refunded
-  cancelled
+  not_required    // Không cần thanh toán (free revision)
+  pending         // Chờ thanh toán
+  processing      // Đang xử lý thanh toán
+  completed       // Thanh toán thành công
+  failed          // Thanh toán thất bại
+  refunded        // Hoàn tiền
+  cancelled       // Hủy thanh toán
 }
 
 Enum feedback_type {
@@ -1104,6 +1002,69 @@ Enum contract_status {
 
 // ===== BUSINESS RULES & TRIGGERS =====
 
+// Trigger 1: Tự động hoá phí revision + đếm lần dùng
+/*
+CREATE OR REPLACE FUNCTION set_revision_payment_flags() RETURNS trigger AS $$
+DECLARE v_free int; v_used int;
+BEGIN
+  SELECT free_revisions_included INTO v_free FROM contracts WHERE contract_id=NEW.contract_id;
+  SELECT COALESCE(used_revisions,0) INTO v_used FROM task_assignments WHERE assignment_id=NEW.assignment_id;
+  IF v_used < COALESCE(v_free,0) THEN
+    NEW.payment_required := false; NEW.payment_status := 'not_required';
+  ELSE
+    NEW.payment_required := true;  NEW.payment_status := 'pending';
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_revision_set_payment
+BEFORE INSERT ON revision_requests FOR EACH ROW EXECUTE FUNCTION set_revision_payment_flags();
+
+CREATE OR REPLACE FUNCTION bump_used_revisions_on_complete() RETURNS trigger AS $$
+BEGIN
+  IF NEW.status='completed' AND (OLD.status IS DISTINCT FROM 'completed') AND NEW.assignment_id IS NOT NULL THEN
+    UPDATE task_assignments SET used_revisions = used_revisions + 1
+    WHERE assignment_id = NEW.assignment_id;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_revision_completed_incr
+AFTER UPDATE OF status ON revision_requests FOR EACH ROW EXECUTE FUNCTION bump_used_revisions_on_complete();
+*/
+
+// Trigger 2: Khoá ràng buộc loại task
+/*
+CREATE OR REPLACE FUNCTION enforce_task_matches_contract() RETURNS trigger AS $$
+DECLARE v_type contract_type;
+BEGIN
+  SELECT contract_type INTO v_type FROM contracts WHERE contract_id=NEW.contract_id;
+  IF NEW.task_type::text <> v_type::text THEN
+    RAISE EXCEPTION 'task_type % must match contract.contract_type %', NEW.task_type, v_type;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_task_matches_contract
+BEFORE INSERT OR UPDATE ON task_assignments FOR EACH ROW EXECUTE FUNCTION enforce_task_matches_contract();
+*/
+
+// Trigger 3: Cấm revision cho recording
+/*
+CREATE OR REPLACE FUNCTION forbid_recording_revisions() RETURNS trigger AS $$
+DECLARE v_type task_type;
+BEGIN
+  IF NEW.assignment_id IS NOT NULL THEN
+    SELECT task_type INTO v_type FROM task_assignments WHERE assignment_id=NEW.assignment_id;
+    IF v_type='recording' THEN RAISE EXCEPTION 'Recording tasks do not support revisions'; END IF;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_forbid_recording_revisions
+BEFORE INSERT ON revision_requests FOR EACH ROW EXECUTE FUNCTION forbid_recording_revisions();
+*/
+
 // Business Rule 1: Arrangement Workflow Validation
 // Đảm bảo arrangement_option phù hợp với request_type
 /*
@@ -1129,17 +1090,17 @@ CREATE TRIGGER trg_validate_arrangement_option
 // REMOVED: Arrangement Pricing Calculation function (v3.2) - pricing auto, không cần rule chi tiết
 
 // Business Rule 2: Contract Creation Validation
-// Đảm bảo contract được tạo sau khi quotation được approved
+// Đảm bảo contract được tạo sau khi service request được approved
 /*
 CREATE OR REPLACE FUNCTION validate_contract_creation()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM quotations 
-    WHERE quotation_id = NEW.quotation_id 
+    SELECT 1 FROM service_requests 
+    WHERE request_id = NEW.request_id 
       AND status = 'approved'
   ) THEN
-    RAISE EXCEPTION 'Contract can only be created for approved quotations';
+    RAISE EXCEPTION 'Contract can only be created for approved service requests';
   END IF;
   
   RETURN NEW;
@@ -1196,7 +1157,7 @@ SELECT
   END as calculated_availability_status
 FROM specialists s
 LEFT JOIN task_assignments ta ON s.specialist_id = ta.specialist_id 
-  AND ta.status IN ('assigned', 'accepted', 'in_progress')
+  AND ta.status IN ('assigned', 'in_progress')
 GROUP BY s.specialist_id, s.user_id, s.specialization, s.max_concurrent_tasks;
 */
 
