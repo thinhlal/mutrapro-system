@@ -91,41 +91,23 @@ Table specialists {
   }
 }
 
-// 3.1. Skill Categories (Danh mục kỹ năng)
-Table skill_categories {
-  category_id uuid [pk, increment]
-  category_name varchar(100) [not null]
-  description text
-  is_active boolean [default: true]
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Danh mục kỹ năng: Audio Engineering, Music Theory, Software Tools, etc.'
-  
-  indexes {
-    category_name [unique]
-    is_active
-  }
-}
-
-// 3.2. Skills (Kỹ năng cụ thể)  
+// 3.1. Skills (Kỹ năng cụ thể) - Đơn giản hóa, bỏ categories
 Table skills {
   skill_id uuid [pk, increment]
-  category_id uuid [ref: > skill_categories.category_id, not null]
   skill_name varchar(100) [not null]
   description text
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   
-  Note: 'Kỹ năng cụ thể: Jazz Piano, Logic Pro, Sheet Music Notation, etc.'
+  Note: 'Kỹ năng cụ thể: Piano, Guitar, Drums, Vocal, Audio Engineering, Logic Pro, etc.'
   
   indexes {
-    category_id
     skill_name [unique]
     is_active
   }
 }
 
-// 3.3. Specialist Skills (Kỹ năng của từng specialist)
+// 3.2. Specialist Skills (Kỹ năng của từng specialist)
 Table specialist_skills {
   specialist_skill_id uuid [pk, increment]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
@@ -198,40 +180,27 @@ Table studios {
   studio_id uuid [pk, increment]
   studio_name varchar(100) [not null, default: 'MuTraPro Studio']
   location varchar(255) [not null]
+  hourly_rate decimal(10,2) [default: 200000] // Phí thuê studio/giờ
+  free_external_guests_limit integer [default: 3] // Số khách ngoài free
+  extra_guest_fee_per_person decimal(12,2) [default: 50000] // Phí cho mỗi khách ngoài vượt quá limit
   is_active boolean [default: true]
   
-  Note: 'Thông tin studio ghi âm'
+  Note: 'Thông tin studio ghi âm với giá thuê và policy khách ngoài'
   
   indexes {
     is_active
   }
 }
 
-// 5.1. Equipment Categories (Danh mục thiết bị)
-Table equipment_categories {
-  category_id uuid [pk, increment]
-  category_name varchar(100) [not null]
-  description text
-  is_active boolean [default: true]
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Danh mục thiết bị: Microphones, Audio Interfaces, Monitors, etc.'
-  
-  indexes {
-    category_name [unique]
-    is_active
-  }
-}
-
-// 5.2. Equipment (Thiết bị cụ thể)
+// 5.1. Equipment (Thiết bị cụ thể) - Đơn giản hóa, bỏ categories
 Table equipment {
   equipment_id uuid [pk, increment]
-  category_id uuid [ref: > equipment_categories.category_id, not null]
   equipment_name varchar(100) [not null]
   brand varchar(50)
   model varchar(100)
   description text
   specifications jsonb // Technical specs as JSON
+  rental_fee decimal(12,2) [default: 0] // Phí thuê thiết bị mặc định
   
   total_quantity integer [default: 1] // Tổng số thiết bị cùng loại
   maintenance_quantity integer [default: 0] // Số đang bảo trì
@@ -239,10 +208,9 @@ Table equipment {
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Thiết bị cụ thể: Neumann U87, Focusrite Scarlett, Yamaha HS8, etc.'
+  Note: 'Thiết bị cụ thể: Yamaha C3 Piano, Fender Stratocaster Guitar, Pearl Drum Kit, etc.'
   
   indexes {
-    category_id
     equipment_name
     brand
     model
@@ -250,6 +218,22 @@ Table equipment {
     is_active
     total_quantity
     maintenance_quantity
+  }
+}
+
+
+// 5.2. Skill Equipment Mapping (Liên kết skill nhạc cụ với equipment phù hợp)
+Table skill_equipment_mapping {
+  mapping_id uuid [pk, increment]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
+  
+  Note: 'Mapping skill với equipment phù hợp. Customer tự chọn equipment từ danh sách này. VD: Piano skill → [Yamaha C3, Steinway Model D, Digital Piano]'
+  
+  indexes {
+    skill_id
+    equipment_id
+    (skill_id, equipment_id) [unique]
   }
 }
 
@@ -312,19 +296,62 @@ Table service_requests {
   customer_id uuid [ref: > customers.customer_id, not null]
   manager_id uuid [ref: > managers.manager_id]
   request_type service_type [not null]
-  music_options jsonb // VD: { "genres": ["Pop","Rock"], "purpose": "karaoke_cover" }
+  
+  // Thông tin cá nhân
+  contact_name varchar(100) // Tên liên hệ
+  contact_phone varchar(20) // Số điện thoại
+  contact_email varchar(100) // Email
+  
+  music_options jsonb // VD: { "genres": ["Pop","Rock"], "purpose": "karaoke_cover" } - NULL cho transcription
   tempo_percentage decimal(5,2) // VD: 80.00, 50.00 (tốc độ phát cho transcription)
+  has_vocalist boolean [default: false] // Customer có chọn ca sĩ cho arrangement_with_recording
+  external_guest_count integer [default: 0] // Số người customer mang theo cho studio booking
   title varchar(200)
   description text [not null]
   status request_status [default: 'pending']
   
-  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%)'
+  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). has_vocalist: true nếu customer chọn ca sĩ. music_options: NULL cho transcription. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
   
   indexes {
     customer_id
     manager_id
     status
     request_type
+  }
+}
+
+// 7.1. Request Booking Artists (Nghệ sĩ customer chọn cho studio booking)
+Table request_booking_artists {
+  request_booking_artist_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  role recording_role [not null] // vocalist | instrumentalist | both
+  skill_id uuid [ref: > skills.skill_id] // skill được sử dụng trong phiên
+  
+  Note: 'Nghệ sĩ customer chọn cho studio booking. Dùng cho luồng 2 (arrangement_with_recording) và luồng 3 (recording).'
+  
+  indexes {
+    request_id
+    specialist_id
+    (request_id, specialist_id, skill_id) [unique]
+    role
+    skill_id
+  }
+}
+
+// 7.2. Request Booking Equipment (Thiết bị customer chọn cho studio booking)
+Table request_booking_equipment {
+  request_booking_equipment_id uuid [pk, increment]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
+  quantity integer [default: 1]
+  
+  Note: 'Thiết bị customer chọn cho studio booking. Dùng cho luồng 2 (arrangement_with_recording) và luồng 3 (recording).'
+  
+  indexes {
+    request_id
+    equipment_id
+    (request_id, equipment_id) [unique]
   }
 }
 
@@ -386,7 +413,7 @@ Table contracts {
 // 8. SLA mặc định theo loại hợp đồng (Service SLA Defaults)
 Table service_sla_defaults {
   sla_id uuid [pk, increment]
-  contract_type contract_type [not null]    // transcription | arrangement | recording | studio_booking
+  contract_type contract_type [not null]    // transcription | arrangement | arrangement_with_recording | recording 
   min_sla_days integer [not null]           // ví dụ: 3, 4, 5
   max_sla_days integer [not null]           // ví dụ: 5, 8, 10 (arrangement_with_recording = 5+3)
   default_buffer_days integer [default: 0]  // ngày đệm
@@ -517,29 +544,33 @@ Table studio_bookings {
   booking_id uuid [pk, increment]
   customer_id uuid [ref: > customers.customer_id, not null]
   studio_id uuid [ref: > studios.studio_id, not null]
+  request_id uuid [ref: > service_requests.request_id] // Liên kết với service request
   contract_id uuid [ref: > contracts.contract_id] // Nullable cho booking nội bộ/walk-in
   
   // Recording session type
   session_type recording_session_type [not null]
-  // Multi-artist is modeled via booking_artists; no single recording_artist_id here
   
   // Booking details
   booking_date date [not null]
   start_time time [not null] // CHECK: start_time < end_time
   end_time time [not null]
-  status booking_status [default: 'pending']
+  status booking_status [default: 'tentative']
+  hold_expires_at timestamp // Hết hạn giữ chỗ nếu chưa ký/cọc
   
   // Billing config & derivation
   billing_step_hours decimal(3,2) [default: 0.50] // Bước làm tròn (VD: 0.5h)
   min_billing_hours decimal(3,2) [default: 1.00] // Số giờ tối thiểu tính phí
+  external_guest_count integer [default: 0] // Số khách ngoài đi kèm do khách mang vào
   
-  // Cost breakdown + generated total
-  studio_rate decimal(10,2) [not null] // Đơn giá/giờ studio
-  duration_hours decimal(5,2) [not null] // Giờ tính phí (billable) = max(min_billing_hours, ceil(raw_hours/billing_step_hours)*billing_step_hours)
-  artist_fee decimal(12,2) [default: 0] // Tổng phí nghệ sĩ (SUM từ booking_artists)
-  admin_fee decimal(12,2) [default: 0] // Phí hỗ trợ kỹ thuật
-  equipment_rental_fee decimal(12,2) [default: 0] // Phí thuê dụng cụ = SUM từ booking_required_equipment
-  total_cost decimal(12,2) [not null] // GENERATED: studio_rate*duration_hours + artist_fee + admin_fee + equipment_rental_fee
+  // Session inputs (for scheduling & trace)
+  duration_hours decimal(5,2) [not null] // Giờ đặt lịch (billable hours đã chốt trong contract)
+  
+  // Cost breakdown (for contract display)
+  artist_fee decimal(12,2) [default: 0] // Phí nghệ sĩ
+  equipment_rental_fee decimal(12,2) [default: 0] // Phí thiết bị
+  admin_fee decimal(12,2) [default: 0] // Phí hỗ trợ
+  external_guest_fee decimal(12,2) [default: 0] // Phí khách ngoài
+  total_cost decimal(12,2) [default: 0] // Tổng chi phí
   
   // Session details
   purpose text // What will be recorded
@@ -547,55 +578,21 @@ Table studio_bookings {
   notes text
   created_at timestamp [default: `now()`]
   
-  Note: 'duration_hours là giờ tính phí (billable). Dụng cụ thuê chuẩn hóa qua booking_required_equipment và cộng vào equipment_rental_fee.'
+  Note: 'Booking lưu giá chi tiết để show trong contract. Khi user thay đổi, update studio_bookings rồi update contract.total_price. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ). Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
   
   indexes {
     customer_id
     studio_id
+    request_id
+    contract_id
     session_type
     booking_date
     status
   }
 }
 
-// 13.1. Nghệ sĩ tham gia phiên thu (Booking Artists)
-Table booking_artists {
-  booking_artist_id uuid [pk, increment]
-  booking_id uuid [ref: > studio_bookings.booking_id, not null]
-  specialist_id uuid [ref: > specialists.specialist_id, not null]
-  role recording_role [not null] // vocalist | instrumentalist | both
-  skill_id uuid [ref: > skills.skill_id] // skill được sử dụng trong phiên (piano, guitar, vocal, etc.)
-  fee decimal(12,2) [default: 0] // Phí nghệ sĩ cho phiên thu này
-  notes text
-  
-  Note: 'Danh sách nghệ sĩ tham gia một phiên thu. Tổng phí nghệ sĩ = SUM(fee) theo booking_id.'
-  
-  indexes {
-    booking_id
-    specialist_id
-    (booking_id, specialist_id, skill_id) [unique]
-    role
-    skill_id
-  }
-}
-
-// 13.2. Dụng cụ yêu cầu cho phiên thu (Booking Required Equipment)
-Table booking_required_equipment {
-  booking_required_equipment_id uuid [pk, increment]
-  booking_id uuid [ref: > studio_bookings.booking_id, not null]
-  equipment_id uuid [ref: > equipment.equipment_id, not null]
-  quantity integer [default: 1]
-  rental_fee decimal(12,2) [default: 0] // Phí thuê cho món này trong phiên
-  notes text
-  
-  Note: 'Thiết bị mượn/thuê từ studio cho mỗi booking. equipment_rental_fee = SUM(rental_fee) theo booking_id.'
-  
-  indexes {
-    booking_id
-    equipment_id
-    (booking_id, equipment_id) [unique]
-  }
-}
+// 13.1 & 13.2: BỎ booking_artists và booking_required_equipment.
+// Lý do: Luồng booking sẽ đọc nghệ sĩ/thiết bị trực tiếp từ request_booking_artists và request_booking_equipment theo request_id.
 
 // 14. Thanh toán chi tiết (Payments)
 Table payments {
@@ -807,6 +804,7 @@ Enum availability_status {
 Enum service_type {
   transcription
   arrangement
+  arrangement_with_recording
   recording
 }
 
@@ -904,6 +902,7 @@ Enum recording_session_type {
 }
 
 Enum booking_status {
+  tentative      // Giữ chỗ trước khi ký hợp đồng/cọc
   pending
   confirmed
   in_progress
@@ -984,8 +983,8 @@ Enum recording_role {
 Enum contract_type {
   transcription
   arrangement
+  arrangement_with_recording
   recording
-  studio_booking
 }
 
 Enum contract_status {
@@ -1033,6 +1032,24 @@ CREATE TRIGGER trg_revision_completed_incr
 AFTER UPDATE OF status ON revision_requests FOR EACH ROW EXECUTE FUNCTION bump_used_revisions_on_complete();
 */
 
+// Trigger 1b: Booking - tính external_guest_fee từ external_guest_count và free limit
+/*
+CREATE OR REPLACE FUNCTION calc_external_guest_fee() RETURNS trigger AS $$
+DECLARE
+  v_excess int;
+BEGIN
+  v_excess := GREATEST(COALESCE(NEW.external_guest_count,0) - COALESCE(NEW.free_external_guests_limit,0), 0);
+  NEW.external_guest_fee := COALESCE(NEW.extra_guest_fee_per_person,0) * v_excess;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_booking_external_guest_fee_ins
+BEFORE INSERT ON studio_bookings FOR EACH ROW EXECUTE FUNCTION calc_external_guest_fee();
+CREATE TRIGGER trg_booking_external_guest_fee_upd
+BEFORE UPDATE OF external_guest_count, free_external_guests_limit, extra_guest_fee_per_person ON studio_bookings
+FOR EACH ROW EXECUTE FUNCTION calc_external_guest_fee();
+*/
+
 // Trigger 2: Khoá ràng buộc loại task
 /*
 CREATE OR REPLACE FUNCTION enforce_task_matches_contract() RETURNS trigger AS $$
@@ -1063,6 +1080,65 @@ END $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_forbid_recording_revisions
 BEFORE INSERT ON revision_requests FOR EACH ROW EXECUTE FUNCTION forbid_recording_revisions();
+*/
+
+// Trigger 4: (ĐÃ BỎ) Booking Artists - ràng buộc nội bộ vs khách ngoài (KHÔNG DÙNG). Booking Artists chỉ lưu nội bộ.
+/*
+CREATE OR REPLACE FUNCTION enforce_booking_artist_constraints() RETURNS trigger AS $$
+DECLARE v_cnt int;
+BEGIN
+  -- Case phân biệt external/internal
+  IF NEW.is_external THEN
+    IF NEW.specialist_id IS NOT NULL THEN
+      RAISE EXCEPTION 'External artist must not have specialist_id';
+    END IF;
+    IF NEW.external_name IS NULL OR length(trim(NEW.external_name)) = 0 THEN
+      RAISE EXCEPTION 'External artist requires external_name';
+    END IF;
+  ELSE
+    IF NEW.specialist_id IS NULL THEN
+      RAISE EXCEPTION 'Internal artist requires specialist_id';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_booking_artist_constraints
+BEFORE INSERT OR UPDATE ON booking_artists FOR EACH ROW EXECUTE FUNCTION enforce_booking_artist_constraints();
+*/
+
+// Trigger 5 (tuỳ chọn): Chỉ kiểm tra skill mapping nếu có instrumentalist với skill có mapping
+/*
+CREATE OR REPLACE FUNCTION require_matching_equipment_for_instrumentalist() RETURNS trigger AS $$
+DECLARE v_equipment_count int; v_skill_id uuid;
+BEGIN
+  -- Kiểm tra khi chốt/confirm booking
+  IF NEW.status IN ('confirmed','in_progress') THEN
+    -- Lấy skill_id của instrumentalist đầu tiên
+    SELECT skill_id INTO v_skill_id FROM booking_artists ba
+    WHERE ba.booking_id = NEW.booking_id AND (ba.role = 'instrumentalist' OR ba.role='both')
+    LIMIT 1;
+    
+    -- Chỉ kiểm tra nếu có instrumentalist với skill có mapping
+    IF v_skill_id IS NOT NULL AND EXISTS (SELECT 1 FROM skill_equipment_mapping WHERE skill_id = v_skill_id) THEN
+      -- Kiểm tra có equipment phù hợp với skill không
+      SELECT COUNT(*) INTO v_equipment_count
+      FROM booking_required_equipment bre
+      JOIN skill_equipment_mapping sem ON bre.equipment_id = sem.equipment_id
+      WHERE bre.booking_id = NEW.booking_id AND sem.skill_id = v_skill_id;
+      
+      IF COALESCE(v_equipment_count,0) = 0 THEN
+        RAISE EXCEPTION 'Instrumentalist skill % requires at least one matching equipment in booking_required_equipment', v_skill_id;
+      END IF;
+    END IF;
+    -- Nếu không có skill mapping, không kiểm tra gì (cho phép thuê bất kỳ equipment nào)
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_require_matching_equipment_for_instrumentalist
+BEFORE UPDATE OF status ON studio_bookings FOR EACH ROW EXECUTE FUNCTION require_matching_equipment_for_instrumentalist();
 */
 
 // Business Rule 1: Arrangement Workflow Validation
