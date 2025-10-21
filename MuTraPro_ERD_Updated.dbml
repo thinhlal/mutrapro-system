@@ -35,7 +35,7 @@ Project MuTraPro {
 
 // 1. Người dùng (Users) - Enhanced with primary_role
 Table users {
-  user_id uuid [pk, increment]
+  user_id uuid [pk, default: `gen_random_uuid()`]
   email varchar(100) [unique, not null]
   password_hash varchar(255) [not null]
   full_name varchar(100) [not null]
@@ -43,32 +43,62 @@ Table users {
   phone varchar(20)
   address text
   is_active boolean [default: true]
+  
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Bảng chứa thông tin người dùng. 1 user 1 role.'
+  Note: 'Bảng chứa thông tin người dùng. Gộp customers và managers, chỉ giữ specialists riêng.'
   
   indexes {
     is_active
+    role
   }
 }
 
-// 2. Khách hàng (Customers)
-Table customers {
-  customer_id uuid [pk, increment]
-  user_id uuid [ref: > users.user_id, not null]
-  customer_type customer_type [default: 'individual']
-  company_name varchar(100)
-  tax_id varchar(20)
-  preferred_contact_method contact_method [default: 'email']
-  notes text
+// 2.1. Ví điện tử (Wallets)
+Table wallets {
+  wallet_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > users.user_id, unique, not null]
+  balance decimal(14,2) [default: 0] // Số dư hiện tại
+  currency currency_type [default: 'VND']
+  status wallet_status [default: 'active']
+  created_at timestamp [default: `now()`]
   
-  Note: 'Thông tin chi tiết của khách hàng'
+  Note: 'Ví điện tử của người dùng. Mỗi user có 1 ví duy nhất.'
+  
+  indexes {
+    user_id [unique]
+    status
+  }
+}
+
+// 2.2. Giao dịch ví (Wallet Transactions)
+Table wallet_transactions {
+  wallet_tx_id uuid [pk, default: `gen_random_uuid()`]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  tx_type wallet_tx_type [not null] // topup(+), payment(-), refund(+), withdrawal(-), adjustment(+/-)
+  amount decimal(14,2) [not null] // Luôn là số dương, dấu suy từ tx_type
+  currency currency_type [default: 'VND'] // Đồng tiền giao dịch
+  balance_before decimal(14,2) [not null] // Số dư trước giao dịch
+  balance_after decimal(14,2) [not null] // Số dư sau giao dịch
+  related_payment_id uuid [ref: > payments.payment_id] // Nullable, liên kết payment nếu có
+  metadata jsonb // Mã GD cổng nạp, lý do hoàn, v.v.
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit.'
+  
+  indexes {
+    wallet_id
+    tx_type
+    currency
+    related_payment_id
+    created_at
+  }
 }
 
 // 3. Chuyên gia (Specialists) - Dynamic workload management
 Table specialists {
-  specialist_id uuid [pk, increment]
+  specialist_id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [ref: > users.user_id, not null]
   specialization specialist_type [not null]
   experience_years integer [default: 0]
@@ -93,7 +123,7 @@ Table specialists {
 
 // 3.1. Skills (Kỹ năng cụ thể) - Đơn giản hóa, bỏ categories
 Table skills {
-  skill_id uuid [pk, increment]
+  skill_id uuid [pk, default: `gen_random_uuid()`]
   skill_name varchar(100) [not null]
   description text
   is_active boolean [default: true]
@@ -109,7 +139,7 @@ Table skills {
 
 // 3.2. Specialist Skills (Kỹ năng của từng specialist)
 Table specialist_skills {
-  specialist_skill_id uuid [pk, increment]
+  specialist_skill_id uuid [pk, default: `gen_random_uuid()`]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   skill_id uuid [ref: > skills.skill_id, not null]
   proficiency_level proficiency_level [not null]
@@ -133,7 +163,7 @@ Table specialist_skills {
 
 // 3.4. Artist Demos (Demo giọng/nhạc cụ của nghệ sĩ) - ENHANCED
 Table artist_demos {
-  demo_id uuid [pk, increment]
+  demo_id uuid [pk, default: `gen_random_uuid()`]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   title varchar(150)
   description text
@@ -162,22 +192,10 @@ Table artist_demos {
   }
 }
 
-// 4. Quản lý dịch vụ (Managers) - Simplified
-Table managers {
-  manager_id uuid [pk, increment]
-  user_id uuid [ref: > users.user_id, not null]
-  department varchar(50)
-  
-  Note: 'Manager quản lý và phân công công việc - phân quyền thực hiện ở auth-service'
-  
-  indexes {
-    user_id [unique] // 1 user ↔ 1 manager
-  }
-}
 
 // 5. Studio (Single Studio System)
 Table studios {
-  studio_id uuid [pk, increment]
+  studio_id uuid [pk, default: `gen_random_uuid()`]
   studio_name varchar(100) [not null, default: 'MuTraPro Studio']
   location varchar(255) [not null]
   hourly_rate decimal(10,2) [default: 200000] // Phí thuê studio/giờ
@@ -194,7 +212,7 @@ Table studios {
 
 // 5.1. Equipment (Thiết bị cụ thể) - Đơn giản hóa, bỏ categories
 Table equipment {
-  equipment_id uuid [pk, increment]
+  equipment_id uuid [pk, default: `gen_random_uuid()`]
   equipment_name varchar(100) [not null]
   brand varchar(50)
   model varchar(100)
@@ -224,7 +242,7 @@ Table equipment {
 
 // 5.2. Skill Equipment Mapping (Liên kết skill nhạc cụ với equipment phù hợp)
 Table skill_equipment_mapping {
-  mapping_id uuid [pk, increment]
+  mapping_id uuid [pk, default: `gen_random_uuid()`]
   skill_id uuid [ref: > skills.skill_id, not null]
   equipment_id uuid [ref: > equipment.equipment_id, not null]
   
@@ -240,7 +258,7 @@ Table skill_equipment_mapping {
 
 // 5.3. Notation Instruments (Nhạc cụ ảo cho ký âm)
 Table notation_instruments {
-  instrument_id uuid [pk, increment]
+  instrument_id uuid [pk, default: `gen_random_uuid()`]
   instrument_name varchar(100) [not null]
   usage notation_instrument_usage [default: 'both'] // Dùng cho transcription/arrangement/both
   is_active boolean [default: true]
@@ -255,7 +273,7 @@ Table notation_instruments {
 
 // 5.4. Request Notation Instruments (Nhạc cụ ảo theo request - multi-select for arrangement)
 Table request_notation_instruments {
-  request_instrument_id uuid [pk, increment]
+  request_instrument_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
   instrument_id uuid [ref: > notation_instruments.instrument_id, not null]
 
@@ -271,7 +289,7 @@ Table request_notation_instruments {
 
 // 6. Bảng giá chuẩn (Pricing Matrix) - ENHANCED for Arrangement
 Table pricing_matrix {
-  pricing_id uuid [pk, increment]
+  pricing_id uuid [pk, default: `gen_random_uuid()`]
   service_type service_type [not null]
   unit_type unit_type [not null]
   base_price decimal(12,2) [not null]
@@ -292,9 +310,9 @@ Table pricing_matrix {
 
 // 7. Yêu cầu dịch vụ (Service Requests) - ENHANCED
 Table service_requests {
-  request_id uuid [pk, increment]
-  customer_id uuid [ref: > customers.customer_id, not null]
-  manager_id uuid [ref: > managers.manager_id]
+  request_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > users.user_id, not null]
+  manager_user_id uuid [ref: > users.user_id]
   request_type service_type [not null]
   
   // Thông tin cá nhân
@@ -313,8 +331,8 @@ Table service_requests {
   Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). has_vocalist: true nếu customer chọn ca sĩ. music_options: NULL cho transcription. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
   
   indexes {
-    customer_id
-    manager_id
+    user_id
+    manager_user_id
     status
     request_type
   }
@@ -322,7 +340,7 @@ Table service_requests {
 
 // 7.1. Request Booking Artists (Nghệ sĩ customer chọn cho studio booking)
 Table request_booking_artists {
-  request_booking_artist_id uuid [pk, increment]
+  request_booking_artist_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   role recording_role [not null] // vocalist | instrumentalist | both
@@ -341,7 +359,7 @@ Table request_booking_artists {
 
 // 7.2. Request Booking Equipment (Thiết bị customer chọn cho studio booking)
 Table request_booking_equipment {
-  request_booking_equipment_id uuid [pk, increment]
+  request_booking_equipment_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
   equipment_id uuid [ref: > equipment.equipment_id, not null]
   quantity integer [default: 1]
@@ -357,10 +375,10 @@ Table request_booking_equipment {
 
 // 9. Contracts (UPDATED v3.2 - holds pricing breakdown & links directly to request)
 Table contracts {
-  contract_id uuid [pk, increment]
+  contract_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
-  customer_id uuid [ref: > customers.customer_id, not null]
-  manager_id uuid [ref: > managers.manager_id, not null]
+  user_id uuid [ref: > users.user_id, not null]
+  manager_user_id uuid [ref: > users.user_id, not null]
   contract_number varchar(50) [unique, not null]
   contract_type contract_type [not null]
   terms_and_conditions text
@@ -396,13 +414,17 @@ Table contracts {
   free_revisions_included integer [default: 1] // Số lần revision miễn phí cho toàn contract
   additional_revision_fee_vnd decimal(12,2) [default: 0] // Phí revision thêm
   
-  Note: 'Hợp đồng quản lý - Manager tạo hợp đồng trực tiếp từ request với giá tự động'
-  Note: 'Revision chỉ áp dụng cho transcription và arrangement tasks, không áp dụng cho recording'
+  // Snapshot thông tin liên hệ từ service_requests (đóng băng pháp lý)
+  name_snapshot varchar(255) [not null]
+  phone_snapshot varchar(20) [not null]
+  email_snapshot varchar(255) [not null]
+  
+  Note: 'Hợp đồng quản lý - Manager tạo hợp đồng trực tiếp từ request với giá tự động. Revision chỉ áp dụng cho transcription và arrangement tasks, không áp dụng cho recording. Snapshot contact info để đóng băng pháp lý - không thay đổi sau khi ký hợp đồng.'
   
   indexes {
     request_id
-    customer_id
-    manager_id
+    user_id
+    manager_user_id
     contract_number [unique]
     status
     contract_type
@@ -412,7 +434,7 @@ Table contracts {
 
 // 8. SLA mặc định theo loại hợp đồng (Service SLA Defaults)
 Table service_sla_defaults {
-  sla_id uuid [pk, increment]
+  sla_id uuid [pk, default: `gen_random_uuid()`]
   contract_type contract_type [not null]    // transcription | arrangement | arrangement_with_recording | recording 
   min_sla_days integer [not null]           // ví dụ: 3, 4, 5
   max_sla_days integer [not null]           // ví dụ: 5, 8, 10 (arrangement_with_recording = 5+3)
@@ -431,7 +453,7 @@ Table service_sla_defaults {
 
 // 10. Thanh toán theo giai đoạn (Payment Milestones)
 Table payment_milestones {
-  milestone_id uuid [pk, increment]
+  milestone_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   
   milestone_type milestone_type [not null]
@@ -449,7 +471,7 @@ Table payment_milestones {
   due_date timestamp
   completed_at timestamp
   
-  Note: 'Các mốc thanh toán theo giai đoạn - request_id và customer_id lấy qua contract_id'
+  Note: 'Các mốc thanh toán theo giai đoạn - request_id và user_id lấy qua contract_id'
   
   indexes {
     contract_id
@@ -461,7 +483,7 @@ Table payment_milestones {
 
 // 11. Phân công công việc (Task Assignments) - SIMPLIFIED v3.11
 Table task_assignments {
-  assignment_id uuid [pk, increment]
+  assignment_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   task_type task_type [not null]
@@ -482,8 +504,7 @@ Table task_assignments {
   // Revision tracking (chỉ cho transcription và arrangement)
   used_revisions integer [default: 0] // Số lần revision đã sử dụng cho task này
   
-  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement'
-  Note: 'CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
+  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
   
   indexes {
     contract_id
@@ -496,7 +517,7 @@ Table task_assignments {
 
 // 12. File Management (Unified Files Table) - ENHANCED
 Table files {
-  file_id uuid [pk, increment]
+  file_id uuid [pk, default: `gen_random_uuid()`]
   
   // Source references (one of these will be NULL)
   request_id uuid [ref: > service_requests.request_id]           // Customer uploads
@@ -541,8 +562,8 @@ Table files {
 
 // 13. Đặt lịch studio (Studio Bookings) - Single Studio System
 Table studio_bookings {
-  booking_id uuid [pk, increment]
-  customer_id uuid [ref: > customers.customer_id, not null]
+  booking_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > users.user_id, not null]
   studio_id uuid [ref: > studios.studio_id, not null]
   request_id uuid [ref: > service_requests.request_id] // Liên kết với service request
   contract_id uuid [ref: > contracts.contract_id] // Nullable cho booking nội bộ/walk-in
@@ -581,7 +602,7 @@ Table studio_bookings {
   Note: 'Booking lưu giá chi tiết để show trong contract. Khi user thay đổi, update studio_bookings rồi update contract.total_price. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ). Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
   
   indexes {
-    customer_id
+    user_id
     studio_id
     request_id
     contract_id
@@ -596,13 +617,16 @@ Table studio_bookings {
 
 // 14. Thanh toán chi tiết (Payments)
 Table payments {
-  payment_id uuid [pk, increment]
+  payment_id uuid [pk, default: `gen_random_uuid()`]
   milestone_id uuid [ref: > payment_milestones.milestone_id, not null]
   
   // Thông tin thanh toán
   amount decimal(12,2) [not null]
   currency currency_type [default: 'VND']
   payment_method payment_method [not null]
+  
+  // Liên kết với ví điện tử
+  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Nullable, chỉ có khi method='wallet'
   
   // Thông tin giao dịch
   transaction_id varchar(100)
@@ -616,20 +640,20 @@ Table payments {
   notes text
   created_at timestamp [default: `now()`]
   
-  Note: 'Thanh toán chi tiết theo milestone - request_id và customer_id lấy qua milestone_id'
-  Note: 'CHECK: status <> ''not_required'' (payments không nhận giá trị not_required)'
+  Note: 'Thanh toán chi tiết theo milestone. Thanh toán luôn theo contract, không theo booking. CHECK: status <> not_required, (payment_method = wallet) = (wallet_tx_id IS NOT NULL)'
   
   indexes {
     milestone_id
-    transaction_id
+    payment_method
     status
+    wallet_tx_id
     payment_date
   }
 }
 
 // 15. Yêu cầu chỉnh sửa (Revision Requests) - Simple revision system
 Table revision_requests {
-  revision_id uuid [pk, increment]
+  revision_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   assignment_id uuid [ref: > task_assignments.assignment_id] // Optional: biết revision thuộc task nào
   file_id uuid [ref: > files.file_id, not null]
@@ -648,7 +672,7 @@ Table revision_requests {
   requested_at timestamp [default: `now()`]
   completed_at timestamp
   
-  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và customer_id lấy qua contract_id'
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và user_id lấy qua contract_id'
   
   indexes {
     contract_id
@@ -665,9 +689,9 @@ Table revision_requests {
 
 // 16. Phản hồi (Feedback)
 Table feedback {
-  feedback_id uuid [pk, increment]
+  feedback_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
-  customer_id uuid [ref: > customers.customer_id, not null]
+  user_id uuid [ref: > users.user_id, not null]
   rating integer [not null] // 1-5
   comment text
   feedback_type feedback_type [not null]
@@ -678,7 +702,7 @@ Table feedback {
 
 // 17. Thông báo (Notifications)
 Table notifications {
-  notification_id uuid [pk, increment]
+  notification_id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [ref: > users.user_id, not null]
   title varchar(200) [not null]
   message text [not null]
@@ -698,7 +722,7 @@ Table notifications {
 
 // 18. Lịch sử hoạt động (Activity Logs)
 Table activity_logs {
-  log_id uuid [pk, increment]
+  log_id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [ref: > users.user_id]
   entity_type varchar(50) [not null]
   entity_id uuid [not null]
@@ -720,7 +744,7 @@ Table activity_logs {
 
 // 19. Outbox Pattern - Event Publishing (Mỗi service có bảng riêng)
 Table outbox_events {
-  event_id uuid [pk, increment] // Dùng làm idempotency key luôn
+  event_id uuid [pk, default: `gen_random_uuid()`] // Dùng làm idempotency key luôn
   aggregate_id uuid [not null] // ID của entity chính (contract_id, task_id, etc.)
   aggregate_type text [not null] // contract, task, payment, etc.
   event_type text [not null] // contract.signed, task.completed, etc.
@@ -744,7 +768,7 @@ Table outbox_events {
     aggregate_type
     event_type
     occurred_at
-    (next_retry_at) [where: published_at IS NULL] // Partial index cho pending events
+    (next_retry_at) // Partial index cho pending events
   }
 }
 
@@ -767,18 +791,13 @@ Table consumed_events {
 
 Enum user_role {
   customer
+  manager
   transcription_specialist
   arrangement_specialist
   recording_artist
-  service_coordinator
   system_admin
 }
 
-Enum customer_type {
-  individual
-  business
-  organization
-}
 
 Enum contact_method {
   email
@@ -916,7 +935,22 @@ Enum payment_method {
   debit_card
   bank_transfer
   digital_wallet
+  wallet
   cash
+}
+
+Enum wallet_status {
+  active
+  locked
+  closed
+}
+
+Enum wallet_tx_type {
+  topup
+  payment
+  refund
+  withdrawal
+  adjustment
 }
 
 Enum payment_status {
@@ -1255,10 +1289,8 @@ SELECT
   c.currency
 FROM contracts c
 JOIN service_requests sr ON c.request_id = sr.request_id
-JOIN customers cust ON c.customer_id = cust.customer_id
-JOIN users u ON cust.user_id = u.user_id
-JOIN managers m ON c.manager_id = m.manager_id
-JOIN users uc ON m.user_id = uc.user_id
+JOIN users u ON c.user_id = u.user_id
+JOIN users uc ON c.manager_user_id = uc.user_id
 ORDER BY c.created_at DESC;
 */
 
@@ -1297,4 +1329,105 @@ BEGIN
   WHERE sr.request_id = p_request_id;
 END;
 $$ LANGUAGE plpgsql;
+*/
+
+// ========================================
+// WALLET SYSTEM TRIGGERS
+// ========================================
+
+/*
+-- Trigger: Tự động cập nhật số dư ví khi có giao dịch mới
+CREATE OR REPLACE FUNCTION update_wallet_balance()
+RETURNS TRIGGER AS $$
+DECLARE
+  current_balance DECIMAL(14,2);
+  new_balance DECIMAL(14,2);
+BEGIN
+  -- Lấy số dư hiện tại
+  SELECT balance INTO current_balance FROM wallets WHERE wallet_id = NEW.wallet_id;
+  
+  -- Tính số dư mới dựa trên loại giao dịch
+  CASE NEW.tx_type
+    WHEN 'topup', 'refund' THEN
+      new_balance := current_balance + NEW.amount;
+    WHEN 'payment', 'withdrawal' THEN
+      -- Kiểm tra số dư không âm
+      IF current_balance < NEW.amount THEN
+        RAISE EXCEPTION 'Insufficient wallet balance. Current: %, Required: %', current_balance, NEW.amount;
+      END IF;
+      new_balance := current_balance - NEW.amount;
+    WHEN 'adjustment' THEN
+      -- Adjustment có thể âm hoặc dương
+      new_balance := current_balance + NEW.amount;
+  END CASE;
+  
+  -- Cập nhật số dư trong ví
+  UPDATE wallets SET balance = new_balance WHERE wallet_id = NEW.wallet_id;
+  
+  -- Cập nhật balance_before và balance_after
+  NEW.balance_before := current_balance;
+  NEW.balance_after := new_balance;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_update_wallet_balance
+  BEFORE INSERT ON wallet_transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_wallet_balance();
+
+-- Trigger: Tự động tạo giao dịch ví khi thanh toán bằng ví
+CREATE OR REPLACE FUNCTION create_wallet_payment_transaction()
+RETURNS TRIGGER AS $$
+DECLARE
+  customer_wallet_id UUID;
+  wallet_tx_id UUID;
+BEGIN
+  -- Chỉ xử lý khi payment_method = 'wallet'
+  IF NEW.payment_method = 'wallet' THEN
+    -- Lấy wallet_id của customer từ milestone -> contract -> customer
+    SELECT w.wallet_id INTO customer_wallet_id
+    FROM wallets w
+    JOIN users u ON w.user_id = u.user_id
+    JOIN contracts ct ON ct.user_id = u.user_id
+    JOIN payment_milestones pm ON pm.contract_id = ct.contract_id
+    WHERE pm.milestone_id = NEW.milestone_id;
+    
+    -- Tạo giao dịch ví
+    INSERT INTO wallet_transactions (
+      wallet_id, tx_type, amount, balance_before, balance_after, related_payment_id
+    ) VALUES (
+      customer_wallet_id, 'payment', NEW.amount, 0, 0, NEW.payment_id
+    ) RETURNING wallet_tx_id INTO wallet_tx_id;
+    
+    -- Cập nhật wallet_tx_id vào payment
+    NEW.wallet_tx_id := wallet_tx_id;
+    NEW.status := 'completed';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_create_wallet_payment_transaction
+  BEFORE INSERT ON payments
+  FOR EACH ROW
+  EXECUTE FUNCTION create_wallet_payment_transaction();
+
+-- Trigger: Tự động tạo ví khi customer mới được tạo
+CREATE OR REPLACE FUNCTION create_customer_wallet()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO wallets (user_id, balance, currency, status)
+  VALUES (NEW.user_id, 0, 'VND', 'active');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_create_customer_wallet
+  AFTER INSERT ON users
+  FOR EACH ROW
+  WHEN (NEW.role = 'customer')
+  EXECUTE FUNCTION create_customer_wallet();
 */
