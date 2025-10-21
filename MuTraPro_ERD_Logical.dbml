@@ -2,7 +2,7 @@
 // Custom Music Transcription and Production System
 // Tác giả: [Tên sinh viên]
 // Ngày tạo: [Ngày hiện tại]
-// Version: 1.0 - Logical Data Model
+// Version: 2.0 - Updated Logical Data Model
 
 Project MuTraPro_Logical {
   database_type: 'PostgreSQL'
@@ -11,6 +11,16 @@ Project MuTraPro_Logical {
     Custom Music Transcription and Production System
     
     LOGICAL MODEL - Business Entities and Relationships
+    
+    Enhanced Features v2.0:
+    - Multi-role user management (customers, managers, specialists)
+    - Automated contract system
+    - Milestone-based payments
+    - Single studio booking management
+    - Complete workflow tracking
+    - Wallet payment system
+    - Manager approval for revisions
+    - File status tracking
     
     Main Workflows:
     1. Transcription with AI assistance
@@ -24,7 +34,8 @@ Project MuTraPro_Logical {
     - Tasks are assigned to specialists based on skills
     - Studio bookings support multiple artists and equipment
     - Files are delivered through assignments
-    - Revisions are tracked per contract
+    - Revisions require manager approval
+    - Manager handles studio recording and file delivery
   '''
 }
 
@@ -43,21 +54,55 @@ Table users {
   created_at
   updated_at
   
-  Note: 'Central user entity - customers, managers, specialists'
+  Note: 'Central user entity - customers, managers, specialists. Consolidated from separate customer/manager tables.'
 }
 
 Table specialists {
   specialist_id [pk]
   user_id [ref: > users.user_id]
-  bio
+  specialization
+  experience_years
   hourly_rate
-  is_available
+  max_concurrent_tasks
+  portfolio_url
   rating
   total_projects
+  
+  Note: 'Specialist profiles with skills and availability. Separate from users table.'
+}
+
+Table specialist_skills {
+  specialist_skill_id [pk]
+  specialist_id [ref: > specialists.specialist_id]
+  skill_id [ref: > skills.skill_id]
+  proficiency_level
+  years_experience
+  last_used_date
+  is_certified
+  certification_details
   created_at
   updated_at
   
-  Note: 'Specialist profiles with skills and availability'
+  Note: 'Skills of specialists with proficiency levels'
+}
+
+Table artist_demos {
+  demo_id [pk]
+  specialist_id [ref: > specialists.specialist_id]
+  title
+  description
+  skill_id [ref: > skills.skill_id]
+  file_id [ref: > files.file_id]
+  preview_url
+  is_public
+  demo_order
+  is_featured
+  view_count
+  customer_rating
+  last_played_at
+  created_at
+  
+  Note: 'Artist demos for customer preview'
 }
 
 // 2. Wallet System
@@ -69,7 +114,7 @@ Table wallets {
   status
   created_at
   
-  Note: 'Customer e-wallet for payments'
+  Note: 'Customer e-wallet for payments. One wallet per user.'
 }
 
 Table wallet_transactions {
@@ -84,7 +129,7 @@ Table wallet_transactions {
   metadata
   created_at
   
-  Note: 'Wallet transaction ledger'
+  Note: 'Wallet transaction ledger with audit trail'
 }
 
 // 3. Service Management
@@ -106,7 +151,7 @@ Table service_requests {
   created_at
   updated_at
   
-  Note: 'Customer service requests'
+  Note: 'Customer service requests with flexible contact information'
 }
 
 Table contracts {
@@ -144,7 +189,19 @@ Table contracts {
   phone_snapshot
   email_snapshot
   
-  Note: 'Service contracts with pricing and terms'
+  Note: 'Service contracts with pricing, terms, and contact snapshots for legal purposes'
+}
+
+Table service_sla_defaults {
+  sla_id [pk]
+  contract_type
+  min_sla_days
+  max_sla_days
+  default_buffer_days
+  is_active
+  created_at
+  
+  Note: 'Default SLA settings by contract type'
 }
 
 // 4. Task Management
@@ -154,38 +211,41 @@ Table task_assignments {
   specialist_id [ref: > specialists.specialist_id]
   task_type
   status
-  priority
-  description
+  assigned_date
+  completed_date
   notes
-  assigned_at
-  started_at
-  completed_at
-  due_date
-  used_revisions
   specialist_can_do
   specialist_response_reason
   specialist_responded_at
+  used_revisions
   
-  Note: 'Task assignments to specialists'
+  Note: 'Task assignments to specialists. Revision tracking for transcription/arrangement only.'
 }
 
 // 5. File Management
 Table files {
   file_id [pk]
+  request_id [ref: > service_requests.request_id]
   assignment_id [ref: > task_assignments.assignment_id]
+  booking_id [ref: > studio_bookings.booking_id]
   file_name
   file_path
   file_size
-  file_type
-  content_type
+  mime_type
   file_source
-  uploaded_by [ref: > users.user_id]
-  uploaded_at
+  content_type
+  description
+  upload_date
+  created_by [ref: > users.user_id]
   delivered_to_customer
   delivered_at
   delivered_by [ref: > users.user_id]
+  file_status
+  rejection_reason
+  reviewed_by [ref: > users.user_id]
+  reviewed_at
   
-  Note: 'File storage and delivery tracking'
+  Note: 'Unified file management with status tracking and delivery management'
 }
 
 // 6. Studio Management
@@ -198,7 +258,7 @@ Table studios {
   extra_guest_fee_per_person
   is_active
   
-  Note: 'Studio information and policies'
+  Note: 'Single studio system with pricing and guest policies'
 }
 
 Table studio_bookings {
@@ -211,30 +271,34 @@ Table studio_bookings {
   booking_date
   start_time
   end_time
-  duration_hours
   status
-  notes
+  hold_expires_at
+  billing_step_hours
+  min_billing_hours
+  external_guest_count
+  duration_hours
   artist_fee
   equipment_rental_fee
   admin_fee
   external_guest_fee
   total_cost
-  external_guest_count
-  hold_expires_at
+  purpose
+  special_instructions
+  notes
   created_at
   
-  Note: 'Studio booking sessions'
+  Note: 'Studio booking sessions with cost breakdown and tentative/confirmed status'
 }
 
 // 7. Artist and Equipment Management
 Table skills {
   skill_id [pk]
   skill_name
-  skill_type
   description
   is_active
+  created_at
   
-  Note: 'Specialist skills and capabilities'
+  Note: 'Specific skills: Piano, Guitar, Drums, Vocal, Audio Engineering, etc.'
 }
 
 Table equipment {
@@ -251,33 +315,41 @@ Table equipment {
   created_at
   updated_at
   
-  Note: 'Equipment inventory'
+  Note: 'Equipment inventory with rental fees'
+}
+
+Table skill_equipment_mapping {
+  mapping_id [pk]
+  skill_id [ref: > skills.skill_id]
+  equipment_id [ref: > equipment.equipment_id]
+  
+  Note: 'Mapping skills to compatible equipment'
 }
 
 Table notation_instruments {
   instrument_id [pk]
   instrument_name
-  instrument_type
-  description
-  usage_type
+  usage
   is_active
   
-  Note: 'Virtual instruments for notation'
+  Note: 'Virtual instruments for notation (not physical equipment)'
 }
 
-// 8. Request Selections
 Table request_notation_instruments {
-  request_notation_instrument_id [pk]
+  request_instrument_id [pk]
   request_id [ref: > service_requests.request_id]
   instrument_id [ref: > notation_instruments.instrument_id]
   
   Note: 'Customer instrument selections for requests'
 }
 
+// 8. Request Selections
 Table request_booking_artists {
   request_booking_artist_id [pk]
   request_id [ref: > service_requests.request_id]
   specialist_id [ref: > specialists.specialist_id]
+  role
+  skill_id [ref: > skills.skill_id]
   
   Note: 'Customer artist selections for studio booking'
 }
@@ -291,36 +363,17 @@ Table request_booking_equipment {
   Note: 'Customer equipment selections for studio booking'
 }
 
-// 9. Booking Details
-Table booking_artists {
-  booking_artist_id [pk]
-  booking_id [ref: > studio_bookings.booking_id]
-  specialist_id [ref: > specialists.specialist_id]
-  role
-  skill_id [ref: > skills.skill_id]
-  fee
-  
-  Note: 'Artists assigned to studio bookings'
-}
-
-Table booking_required_equipment {
-  booking_equipment_id [pk]
-  booking_id [ref: > studio_bookings.booking_id]
-  equipment_id [ref: > equipment.equipment_id]
-  quantity
-  rental_fee
-  
-  Note: 'Equipment required for studio bookings'
-}
-
-// 10. Payment Management
+// 9. Payment Management
 Table payment_milestones {
   milestone_id [pk]
   contract_id [ref: > contracts.contract_id]
   milestone_type
-  amount
-  currency
+  milestone_name
   description
+  amount
+  percentage
+  trigger_condition
+  required_deliverable_count
   status
   due_date
   completed_at
@@ -343,28 +396,33 @@ Table payments {
   notes
   created_at
   
-  Note: 'Payment transactions'
+  Note: 'Payment transactions with wallet integration'
 }
 
-// 11. Revision Management
+// 10. Revision Management
 Table revision_requests {
   revision_id [pk]
   contract_id [ref: > contracts.contract_id]
   assignment_id [ref: > task_assignments.assignment_id]
   file_id [ref: > files.file_id]
-  description
   requested_by [ref: > users.user_id]
-  assigned_to [ref: > specialists.specialist_id]
+  revision_number
+  description
+  payment_required
+  payment_status
   status
   requested_at
   completed_at
-  payment_required
-  payment_status
+  approved_by [ref: > users.user_id]
+  approved_at
+  rejected_by [ref: > users.user_id]
+  rejected_at
+  rejection_reason
   
-  Note: 'Revision requests for deliverables'
+  Note: 'Revision requests with manager approval workflow'
 }
 
-// 12. Feedback and Notifications
+// 11. Feedback and Notifications
 Table feedback {
   feedback_id [pk]
   request_id [ref: > service_requests.request_id]
@@ -389,35 +447,59 @@ Table notifications {
   Note: 'System notifications'
 }
 
-// 13. Configuration
-Table service_sla_defaults {
-  sla_id [pk]
-  contract_type
-  min_sla_days
-  max_sla_days
-  default_buffer_days
+Table activity_logs {
+  log_id [pk]
+  user_id [ref: > users.user_id]
+  entity_type
+  entity_id
+  action
+  description
+  ip_address
+  user_agent
+  created_at
   
-  Note: 'Default SLA settings by contract type'
+  Note: 'User activity logging'
 }
 
+// 12. Configuration
 Table pricing_matrix {
   pricing_id [pk]
   service_type
-  complexity_level
+  unit_type
   base_price
   currency
+  description
   is_active
+  created_at
+  updated_at
   
-  Note: 'Pricing configuration'
+  Note: 'Pricing configuration by service and unit type'
 }
 
-Table skill_equipment_mapping {
-  mapping_id [pk]
-  skill_id [ref: > skills.skill_id]
-  equipment_id [ref: > equipment.equipment_id]
-  is_required
+// 13. Event Management
+Table outbox_events {
+  event_id [pk]
+  aggregate_id
+  aggregate_type
+  event_type
+  event_payload
+  occurred_at
+  published_at
+  retry_count
+  last_error
+  next_retry_at
+  trace_id
+  correlation_id
   
-  Note: 'Skills and compatible equipment mapping'
+  Note: 'Outbox pattern for event publishing'
+}
+
+Table consumed_events {
+  event_id [pk]
+  consumer_name [pk]
+  processed_at
+  
+  Note: 'Event consumption tracking for idempotency'
 }
 
 // ===== BUSINESS RULES =====
@@ -452,64 +534,133 @@ Ref: payments.status -> payment_status
 // Business Rule 10: Wallet Status
 Ref: wallets.status -> wallet_status
 
+// Business Rule 11: File Status
+Ref: files.file_status -> file_status
+
+// Business Rule 12: File Source Type
+Ref: files.file_source -> file_source_type
+
+// Business Rule 13: Content Type
+Ref: files.content_type -> content_type
+
+// Business Rule 14: Recording Session Type
+Ref: studio_bookings.session_type -> recording_session_type
+
+// Business Rule 15: Recording Role
+Ref: request_booking_artists.role -> recording_role
+
+// Business Rule 16: Proficiency Level
+Ref: specialist_skills.proficiency_level -> proficiency_level
+
+// Business Rule 17: Specialist Type
+Ref: specialists.specialization -> specialist_type
+
+// Business Rule 18: Task Type
+Ref: task_assignments.task_type -> task_type
+
+// Business Rule 19: Milestone Type
+Ref: payment_milestones.milestone_type -> milestone_type
+
+// Business Rule 20: Milestone Status
+Ref: payment_milestones.status -> milestone_status
+
+// Business Rule 21: Trigger Condition
+Ref: payment_milestones.trigger_condition -> trigger_condition
+
+// Business Rule 22: Notation Instrument Usage
+Ref: notation_instruments.usage -> notation_instrument_usage
+
+// Business Rule 23: Request Status
+Ref: service_requests.status -> request_status
+
+// Business Rule 24: Contract Status
+Ref: contracts.status -> contract_status
+
+// Business Rule 25: Feedback Type
+Ref: feedback.feedback_type -> feedback_type
+
+// Business Rule 26: Notification Type
+Ref: notifications.notification_type -> notification_type
+
+// Business Rule 27: Currency Type
+Ref: contracts.currency -> currency_type
+Ref: payments.currency -> currency_type
+Ref: wallets.currency -> currency_type
+Ref: wallet_transactions.currency -> currency_type
+Ref: pricing_matrix.currency -> currency_type
+
+// Business Rule 28: Unit Type
+Ref: pricing_matrix.unit_type -> unit_type
+
 // ===== BUSINESS CONSTRAINTS =====
 
 // Constraint 1: One wallet per user
 Ref: wallets.user_id [unique]
 
-// Constraint 2: One contract per request
-Ref: contracts.request_id [unique]
+// Constraint 2: One specialist per user
+Ref: specialists.user_id [unique]
 
-// Constraint 3: Payment method validation
-Ref: payments.payment_method -> payment_method
+// Constraint 3: Unique contract number
+Ref: contracts.contract_number [unique]
 
-// Constraint 4: Wallet transaction validation
-Ref: wallet_transactions.tx_type -> wallet_tx_type
+// Constraint 4: Unique skill-equipment mapping
+Ref: skill_equipment_mapping(skill_id, equipment_id) [unique]
 
-// Constraint 5: Task type matches contract type
-Ref: task_assignments.task_type -> contract_type
+// Constraint 5: Unique request-instrument mapping
+Ref: request_notation_instruments(request_id, instrument_id) [unique]
 
-// Constraint 6: Revision payment validation
-Ref: revision_requests.payment_status -> payment_status
+// Constraint 6: Unique request-artist mapping
+Ref: request_booking_artists(request_id, specialist_id, skill_id) [unique]
 
-// Constraint 7: Studio booking session type
-Ref: studio_bookings.session_type -> recording_session_type
+// Constraint 7: Unique request-equipment mapping
+Ref: request_booking_equipment(request_id, equipment_id) [unique]
 
-// Constraint 8: Equipment usage type
-Ref: notation_instruments.usage_type -> notation_instrument_usage
+// Constraint 8: Unique specialist-skill mapping
+Ref: specialist_skills(specialist_id, skill_id) [unique]
 
-// Constraint 9: Skill type validation
-Ref: skills.skill_type -> skill_type
+// Constraint 9: Unique revision per contract
+Ref: revision_requests(contract_id, revision_number) [unique]
 
-// Constraint 10: Feedback type validation
-Ref: feedback.feedback_type -> feedback_type
+// Constraint 10: Unique event consumption
+Ref: consumed_events(event_id, consumer_name) [unique]
 
 // ===== BUSINESS WORKFLOWS =====
 
 // Workflow 1: Transcription Process
 // 1. Customer creates service_request (transcription)
-// 2. Manager creates contract
-// 3. Manager assigns task to specialist
-// 4. Specialist uploads notation file
-// 5. Customer reviews and requests revisions if needed
-// 6. Final delivery and payment
+// 2. Customer uploads audio file
+// 3. Customer selects notation instrument
+// 4. Manager creates contract
+// 5. Manager assigns task to specialist
+// 6. Specialist uploads notation file
+// 7. Manager reviews and delivers file to customer
+// 8. Customer requests revisions if needed (with manager approval)
+// 9. Final delivery and payment
 
 // Workflow 2: Arrangement Process
 // 1. Customer creates service_request (arrangement)
-// 2. Customer selects notation instruments
-// 3. Manager creates contract
-// 4. Manager assigns task to specialist
-// 5. Specialist creates arrangement
-// 6. Customer reviews and requests revisions
-// 7. Final delivery and payment
+// 2. Customer uploads notation file
+// 3. Customer selects notation instruments
+// 4. Customer selects vocalist if needed
+// 5. Manager creates contract
+// 6. Manager assigns task to specialist
+// 7. Specialist creates arrangement
+// 8. Manager reviews and delivers file to customer
+// 9. Customer requests revisions if needed (with manager approval)
+// 10. Final delivery and payment
 
 // Workflow 3: Studio Booking Process
-// 1. Customer creates service_request (studio_booking)
-// 2. Customer selects artists and equipment
-// 3. Manager creates contract
-// 4. Manager creates studio_booking
-// 5. Session execution
-// 6. File delivery and payment
+// 1. Customer creates service_request (recording)
+// 2. Customer uploads reference files if any
+// 3. Customer selects artists and equipment
+// 4. Customer chooses booking date/time
+// 5. System creates tentative studio_booking
+// 6. Manager creates contract
+// 7. Customer signs contract and pays deposit
+// 8. Studio booking becomes confirmed
+// 9. Session execution (Manager handles recording)
+// 10. Manager uploads and delivers file to customer
+// 11. Final payment
 
 // ===== DATA INTEGRITY RULES =====
 
@@ -523,3 +674,8 @@ Ref: feedback.feedback_type -> feedback_type
 // Rule 8: User role must be valid
 // Rule 9: Equipment must be available
 // Rule 10: Specialist must be available for assignment
+// Rule 11: Manager approval required for revisions
+// Rule 12: Manager handles studio recording
+// Rule 13: Contact information snapshotted in contracts
+// Rule 14: SLA only applies to transcription/arrangement
+// Rule 15: Recording tasks do not support revisions
