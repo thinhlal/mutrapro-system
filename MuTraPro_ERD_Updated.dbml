@@ -544,7 +544,13 @@ Table files {
   delivered_at timestamp // Khi nào gửi
   delivered_by uuid [ref: > users.user_id] // Ai gửi (thường là manager)
   
-  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support'
+  // File status tracking
+  file_status file_status [default: 'uploaded'] // Trạng thái file
+  rejection_reason text // Lý do từ chối (nếu có)
+  reviewed_by uuid [ref: > users.user_id] // Ai duyệt file
+  reviewed_at timestamp // Khi nào duyệt
+  
+  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support. Theo dõi trạng thái file và lý do từ chối.'
   
   indexes {
     request_id
@@ -557,6 +563,9 @@ Table files {
     delivered_to_customer
     delivered_at
     delivered_by
+    file_status
+    reviewed_by
+    reviewed_at
   }
 }
 
@@ -668,11 +677,18 @@ Table revision_requests {
   payment_status payment_status [default: 'not_required'] // not_required | pending | paid | failed
   
   // Status
-  status revision_status [default: 'assigned']
+  status revision_status [default: 'pending'] // pending | approved | rejected | in_progress | completed | cancelled
   requested_at timestamp [default: `now()`]
   completed_at timestamp
   
-  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và user_id lấy qua contract_id'
+  // Manager approval tracking
+  approved_by uuid [ref: > users.user_id] // Manager duyệt revision
+  approved_at timestamp // Khi nào duyệt
+  rejected_by uuid [ref: > users.user_id] // Manager từ chối revision
+  rejected_at timestamp // Khi nào từ chối
+  rejection_reason text // Lý do từ chối
+  
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và user_id lấy qua contract_id. Manager duyệt revision trước khi specialist thực hiện.'
   
   indexes {
     contract_id
@@ -683,6 +699,10 @@ Table revision_requests {
     (contract_id, status)
     status
     requested_at
+    approved_by
+    approved_at
+    rejected_by
+    rejected_at
   }
 }
 
@@ -798,6 +818,14 @@ Enum user_role {
   system_admin
 }
 
+Enum file_status {
+  uploaded
+  pending_review
+  approved
+  rejected
+  delivered
+  revision_requested
+}
 
 Enum contact_method {
   email
@@ -827,7 +855,6 @@ Enum service_type {
   recording
 }
 
-
 Enum unit_type {
   per_minute      // Tính theo phút (transcription)
   per_song        // Tính theo bài (arrangement)
@@ -841,35 +868,22 @@ Enum currency_type {
   EUR
 }
 
-
 Enum request_status {
   pending           // Chờ xử lý
-  manager_discussing // NEW v3.0 - Manager đang bàn bạc với Customer
   contract_sent    // NEW v3.0 - Đã gửi hợp đồng
   contract_signed  // NEW v3.0 - Khách đã ký hợp đồng
   approved         // Khách đồng ý, đã cọc
-  artist_selection // NEW v3.0 - Đang chọn artist
   in_progress      // Đang thực hiện
   completed        // Hoàn thành
   cancelled        // Đã hủy
   rejected         // Khách từ chối
 }
 
-
 Enum proficiency_level {
   beginner          // Mới học, ít kinh nghiệm
   intermediate      // Biết cơ bản, có thể làm task đơn giản
   advanced          // Thành thạo, có thể làm task phức tạp
   expert            // Chuyên gia, có thể dạy người khác
-}
-
-Enum equipment_condition {
-  excellent         // Như mới, hoạt động hoàn hảo
-  good              // Tốt, hoạt động bình thường
-  fair              // Ổn, có thể có vài vấn đề nhỏ
-  poor              // Kém, cần sửa chữa hoặc thay thế
-  maintenance       // Đang bảo trì
-  out_of_order      // Hỏng, không sử dụng được
 }
 
 Enum milestone_type {
@@ -906,13 +920,13 @@ Enum assignment_status {
 }
 
 Enum revision_status {
-  assigned         // Manager giao cho specialist
-  in_progress      // Specialist đang làm
-  completed        // Hoàn thành
-  cancelled        // Hủy bởi manager
+  pending         // Chờ manager duyệt
+  approved        // Manager đã duyệt
+  rejected        // Manager từ chối
+  in_progress     // Specialist đang làm
+  completed       // Hoàn thành
+  cancelled       // Hủy bởi manager
 }
-
-// REMOVED: delivery_type enum - đơn giản hóa, chỉ cần delivered/not delivered
 
 Enum recording_session_type {
   self_recording          // Customer tự thu âm
@@ -979,17 +993,12 @@ Enum notification_type {
   system_announcement
   contract_ready        // NEW v3.0
   contract_signed       // NEW v3.0
-  artist_recommended    // NEW v3.0
-  demo_available        // NEW v3.0
-  ai_transcription_complete // NEW v3.0
 }
 
 Enum file_source_type {
   customer_upload     // File khách hàng upload
   task_deliverable    // Kết quả từ task assignment
   studio_recording    // Raw recording từ studio
-  processed_output    // File đã xử lý
-  portfolio_demo      // Demo/portfolio của nghệ sĩ
 }
 
 Enum content_type {
@@ -1000,7 +1009,6 @@ Enum content_type {
   video              // Video files
   archive            // Zip, rar files
 }
-
 
 Enum notation_instrument_usage {
   transcription
