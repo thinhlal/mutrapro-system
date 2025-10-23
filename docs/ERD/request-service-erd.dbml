@@ -176,6 +176,25 @@ Table pricing_matrix {
   }
 }
 
+Table feedback {
+  feedback_id uuid [pk, default: `gen_random_uuid()`]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  rating integer [not null]
+  comment text
+  feedback_type feedback_type [not null]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Phản hồi từ khách hàng về service request'
+  
+  indexes {
+    request_id
+    user_id
+    feedback_type
+    created_at
+  }
+}
+
 Table outbox_events {
   event_id uuid [pk, default: `gen_random_uuid()`]
   aggregate_id uuid [not null]
@@ -257,4 +276,11 @@ Enum currency_type {
   VND
   USD
   EUR
+}
+
+Enum feedback_type {
+  service_quality
+  communication
+  timeliness
+  overall_experience
 }

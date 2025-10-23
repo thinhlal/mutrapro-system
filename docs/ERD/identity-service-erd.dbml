@@ -20,7 +20,7 @@
 
 Table users_auth {
   user_id uuid [pk, default: `gen_random_uuid()`]
-  email_for_login varchar(100) [unique, not null]
+  email varchar(100) [unique, not null]
   password_hash varchar(255) [not null]
   role user_role [not null]
   status varchar(20) [default: 'active']
@@ -31,7 +31,7 @@ Table users_auth {
   Note: 'Bảng xác thực người dùng - email, password, role, status'
   
   indexes {
-    email_for_login [unique]
+    email [unique]
     role
     status
     email_verified
@@ -40,7 +40,6 @@ Table users_auth {
 
 Table users {
   user_id uuid [pk, default: `gen_random_uuid()`]
-  email varchar(100) [unique, not null]
   full_name varchar(100) [not null]
   phone varchar(20)
   address text
@@ -48,10 +47,9 @@ Table users {
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Thông tin hồ sơ người dùng'
+  Note: 'Thông tin hồ sơ người dùng - email được lấy từ users_auth'
   
   indexes {
-    email [unique]
     is_active
   }
 }
