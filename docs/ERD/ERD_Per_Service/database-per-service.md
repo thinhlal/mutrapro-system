@@ -2,13 +2,11 @@
 
 ## 1. identity-service (gộp auth + profile) — Người 1
 **Database**: `identity_db`
-- `users_auth` (user_id, email_for_login, password_hash, role, status, email_verified, mfa_enabled)
-- `users` (user_id, email, full_name, phone, address, is_active, created_at, updated_at)
-- `activity_logs` (audit logs)
-- `notifications` (thông báo cơ bản - optional)
+- `users_auth` (user_id, email, password_hash, role, status, email_verified, mfa_enabled)
+- `users` (user_id, full_name, phone, address, is_active, created_at, updated_at)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: đăng nhập, phân quyền, hồ sơ người dùng, thông báo cơ bản
+- **Nhiệm vụ**: đăng nhập, phân quyền, hồ sơ người dùng
 - **API chính**: POST /auth/login, POST /auth/refresh, GET /users/{id}
 - **Events phát**: user.created, user.updated, login.failed
 
@@ -28,11 +26,12 @@
 **Database**: `request_db`
 - **Intake**: `service_requests`, `request_booking_artists`, `request_booking_equipment`, `request_notation_instruments`
 - **Catalog**: `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix`
+- **Feedback**: `feedback` (phản hồi từ khách hàng)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: tiếp nhận yêu cầu + lựa chọn; quản lý danh mục dùng chung
-- **API**: POST /requests, GET /requests/{id}, GET /requests/{id}/booking-selections, GET /catalog/equipment, GET /catalog/notation-instruments
-- **Events**: request.created, request.updated, selection.changed
+- **Nhiệm vụ**: tiếp nhận yêu cầu + lựa chọn; quản lý danh mục dùng chung; feedback
+- **API**: POST /requests, GET /requests/{id}, GET /requests/{id}/booking-selections, GET /catalog/equipment, GET /catalog/notation-instruments, POST /requests/{id}/feedback
+- **Events**: request.created, request.updated, selection.changed, feedback.submitted
 
 ## 4. project-service (đổi tên từ contract-task) — Người 2 (phần còn lại)
 **Database**: `project_db`
@@ -67,6 +66,7 @@
 - **Nhiệm vụ**: ví, giao dịch ví, thanh toán milestone
 - **API**: POST /wallets/{id}/topup, POST /wallets/{id}/debit, POST /payments
 - **Events**: wallet.debited|refunded, payment.completed|failed
+- **Lưu ý**: FK một chiều payments.wallet_tx_id → wallet_transactions.wallet_tx_id [unique, delete: set null]
 
 ## 7. file-service — Người 4
 **Database**: `file_db`
@@ -106,9 +106,10 @@
 - Xác thực qua API calls hoặc events
 
 ### 4. Identity Service sở hữu Authentication & Authorization
-- Identity-service sở hữu `users_auth` với `role`, `refresh_tokens`, `users` profile
+- Identity-service sở hữu `users_auth` với `role`, `email`, `password_hash`, `users` profile
 - Login/refresh diễn ra hoàn toàn trong identity-service trên dữ liệu local
 - Các service khác tự verify JWT bằng public key
+- Email chỉ có trong `users_auth`, không duplicate trong `users`
 
 ### 5. Soft References
 - `user_id` là UUID đồng nhất giữa services; khi cần hồ sơ → gọi identity-service API
@@ -183,7 +184,8 @@
 - **notification-service**: Communication layer (optional)
 
 ### Bảng được di chuyển:
-- `users_auth`, `users`, `notifications` → identity-service
-- `service_requests`, `request_*`, `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix` → request-service
+- `users_auth`, `users` → identity-service (xóa duplicate email, xóa activity_logs và notifications)
+- `service_requests`, `request_*`, `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix`, `feedback` → request-service
 - `contracts`, `service_sla_defaults`, `payment_milestones`, `task_assignments`, `revision_requests` → project-service
-- `wallets`, `wallet_transactions`, `payments` → billing-service
+- `wallets`, `wallet_transactions`, `payments` → billing-service (FK một chiều với UNIQUE constraint)
+- `notifications` → notification-service (riêng biệt)
