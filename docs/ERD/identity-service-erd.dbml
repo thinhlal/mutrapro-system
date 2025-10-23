@@ -1,0 +1,107 @@
+// Identity Service ERD
+// Service: identity-service (gộp auth + profile)
+// Database: identity_db
+// Người 1
+
+// API Examples:
+// POST /auth/login
+//   - Body: { "email": "user@example.com", "password": "password123" }
+//   - Response: { "access_token": "jwt_token", "refresh_token": "refresh_token" }
+//
+// POST /auth/refresh
+//   - Headers: Authorization: Bearer refresh_token
+//   - Response: { "access_token": "new_jwt_token" }
+//
+// GET /users/{id}
+//   - Headers: Authorization: Bearer access_token
+//   - Response: { "user_id": "uuid", "email": "user@example.com", "full_name": "John Doe" }
+//
+// Events: user.created, user.updated, login.failed
+
+Table users_auth {
+  user_id uuid [pk, default: `gen_random_uuid()`]
+  email_for_login varchar(100) [unique, not null]
+  password_hash varchar(255) [not null]
+  role user_role [not null]
+  status varchar(20) [default: 'active']
+  email_verified boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Bảng xác thực người dùng - email, password, role, status'
+  
+  indexes {
+    email_for_login [unique]
+    role
+    status
+    email_verified
+  }
+}
+
+Table users {
+  user_id uuid [pk, default: `gen_random_uuid()`]
+  email varchar(100) [unique, not null]
+  full_name varchar(100) [not null]
+  phone varchar(20)
+  address text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Thông tin hồ sơ người dùng'
+  
+  indexes {
+    email [unique]
+    is_active
+  }
+}
+
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum user_role {
+  customer
+  manager
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+  system_admin
+}

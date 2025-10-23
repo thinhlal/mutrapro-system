@@ -1,0 +1,132 @@
+// File Service ERD
+// Service: file-service
+// Database: file_db
+// Người 4
+
+// API Examples:
+// POST /files/upload
+//   - Body: { "file_name": "song.mp3", "file_path": "/uploads/song.mp3", "file_size": 5242880, "mime_type": "audio/mpeg" }
+//   - Response: { "file_id": "uuid", "file_name": "song.mp3", "status": "uploaded" }
+//
+// POST /files/{id}/deliver
+//   - Body: { "delivered_by": "uuid", "notes": "File delivered to customer" }
+//   - Response: { "file_id": "uuid", "delivered_to_customer": true, "delivered_at": "2024-01-15T10:30:00Z" }
+//
+// Events: file.uploaded, file.delivered
+
+Table files {
+  file_id uuid [pk, default: `gen_random_uuid()`]
+  
+  // Source references (one of these will be NULL)
+  request_id uuid [note: 'Soft reference to request-service']
+  assignment_id uuid [note: 'Soft reference to project-service']
+  booking_id uuid [note: 'Soft reference to studio-service']
+  
+  // File metadata
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100)   
+  
+  // File classification
+  file_source file_source_type [not null]
+  content_type content_type [not null]
+  
+  // General metadata
+  description text
+  upload_date timestamp [default: `now()`]
+  created_by uuid [not null, note: 'Soft reference to identity-service']
+  
+  // Delivery tracking (đơn giản)
+  delivered_to_customer boolean [default: false]
+  delivered_at timestamp
+  delivered_by uuid [note: 'Soft reference to identity-service']
+  
+  // File status tracking
+  file_status file_status [default: 'uploaded']
+  rejection_reason text
+  reviewed_by uuid [note: 'Soft reference to identity-service']
+  reviewed_at timestamp
+  
+  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support. Theo dõi trạng thái file và lý do từ chối.'
+  
+  indexes {
+    request_id
+    assignment_id
+    booking_id
+    file_source
+    content_type
+    created_by
+    upload_date
+    delivered_to_customer
+    delivered_at
+    delivered_by
+    file_status
+    reviewed_by
+    reviewed_at
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum file_source_type {
+  customer_upload
+  task_deliverable
+  studio_recording
+}
+
+Enum content_type {
+  audio
+  sheet_music
+  project_file
+  documentation
+  video
+  archive
+}
+
+Enum file_status {
+  uploaded
+  pending_review
+  approved
+  rejected
+  delivered
+  revision_requested
+}

@@ -621,9 +621,6 @@ Table studio_bookings {
   }
 }
 
-// 13.1 & 13.2: BỎ booking_artists và booking_required_equipment.
-// Lý do: Luồng booking sẽ đọc nghệ sĩ/thiết bị trực tiếp từ request_booking_artists và request_booking_equipment theo request_id.
-
 // 14. Thanh toán chi tiết (Payments)
 Table payments {
   payment_id uuid [pk, default: `gen_random_uuid()`]

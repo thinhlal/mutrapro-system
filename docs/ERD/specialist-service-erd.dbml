@@ -1,0 +1,158 @@
+// Specialist Service ERD
+// Service: specialist-service
+// Database: specialist_db
+// Người 1 (phần còn lại)
+
+// API Examples:
+// GET /specialists/{id}
+//   - Response: { "specialist_id": "uuid", "specialization": "transcription", "experience_years": 5 }
+//
+// GET /specialists?skill=piano
+//   - Response: [{ "specialist_id": "uuid", "skill_name": "piano", "proficiency_level": "expert" }]
+//
+// Events: specialist.created|updated, demo.published
+
+Table specialists {
+  specialist_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  specialization specialist_type [not null]
+  experience_years integer [default: 0]
+  hourly_rate decimal(10,2)
+  
+  // Capacity management (simplified)
+  max_concurrent_tasks integer [default: 5]
+  
+  // Professional info
+  portfolio_url varchar(255)
+  rating decimal(3,2) [default: 0.00]
+  total_projects integer [default: 0]
+  
+  Note: 'Thông tin chuyên gia - current_workload tính động qua view, không lưu để tránh lệch dữ liệu'
+  
+  indexes {
+    user_id [unique]
+    specialization
+    max_concurrent_tasks
+  }
+}
+
+Table skills {
+  skill_id uuid [pk, default: `gen_random_uuid()`]
+  skill_name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng cụ thể: Piano, Guitar, Drums, Vocal, Audio Engineering, Logic Pro, etc.'
+  
+  indexes {
+    skill_name [unique]
+    is_active
+  }
+}
+
+Table specialist_skills {
+  specialist_skill_id uuid [pk, default: `gen_random_uuid()`]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  proficiency_level proficiency_level [not null]
+  years_experience integer [default: 0]
+  last_used_date date
+  is_certified boolean [default: false]
+  certification_details text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Kỹ năng của specialist với level và kinh nghiệm cụ thể'
+  
+  indexes {
+    (specialist_id, skill_id) [unique]
+    specialist_id
+    skill_id
+    proficiency_level
+    years_experience
+  }
+}
+
+Table artist_demos {
+  demo_id uuid [pk, default: `gen_random_uuid()`]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  title varchar(150)
+  description text
+  skill_id uuid [ref: > skills.skill_id]
+  file_id uuid [not null, note: 'Soft reference to file-service']
+  preview_url varchar(500)
+  is_public boolean [default: true]
+  
+  // Enhanced fields
+  demo_order integer [default: 1]
+  is_featured boolean [default: false]
+  view_count integer [default: 0]
+  customer_rating decimal(3,2)
+  last_played_at timestamp
+  
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Demo để khách nghe thử giọng/nhạc cụ của nghệ sĩ trước khi booking. Enhanced với tracking và rating.'
+  
+  indexes {
+    specialist_id
+    is_public
+    skill_id
+    is_featured
+    customer_rating
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum specialist_type {
+  transcription
+  arrangement
+  recording
+}
+
+Enum proficiency_level {
+  beginner
+  intermediate
+  advanced
+  expert
+}

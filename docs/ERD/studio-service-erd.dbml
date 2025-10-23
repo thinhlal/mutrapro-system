@@ -1,0 +1,139 @@
+// Studio Service ERD
+// Service: studio-service
+// Database: studio_db
+// Người 3
+
+// API Examples:
+// POST /bookings
+//   - Body: { "user_id": "uuid", "studio_id": "uuid", "booking_date": "2024-01-15", "start_time": "09:00", "end_time": "12:00" }
+//   - Response: { "booking_id": "uuid", "status": "tentative" }
+//
+// POST /bookings/{id}/confirm
+//   - Body: { "contract_id": "uuid" }
+//   - Response: { "booking_id": "uuid", "status": "confirmed" }
+//   - Note: Đọc selections từ request-service qua API call
+//
+// Events: booking.confirmed, session.completed
+
+Table studios {
+  studio_id uuid [pk, default: `gen_random_uuid()`]
+  studio_name varchar(100) [not null, default: 'MuTraPro Studio']
+  location varchar(255) [not null]
+  hourly_rate decimal(10,2) [default: 200000]
+  free_external_guests_limit integer [default: 3]
+  extra_guest_fee_per_person decimal(12,2) [default: 50000]
+  is_active boolean [default: true]
+  
+  Note: 'Thông tin studio ghi âm với giá thuê và policy khách ngoài'
+  
+  indexes {
+    is_active
+  }
+}
+
+Table studio_bookings {
+  booking_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  studio_id uuid [ref: > studios.studio_id, not null]
+  request_id uuid [note: 'Soft reference to request-service']
+  contract_id uuid [note: 'Soft reference to project-service']
+  
+  // Recording session type
+  session_type recording_session_type [not null]
+  
+  // Booking details
+  booking_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  status booking_status [default: 'tentative']
+  hold_expires_at timestamp
+  
+  // Billing config & derivation
+  billing_step_hours decimal(3,2) [default: 0.50]
+  min_billing_hours decimal(3,2) [default: 1.00]
+  external_guest_count integer [default: 0]
+  
+  // Session inputs (for scheduling & trace)
+  duration_hours decimal(5,2) [not null]
+  
+  // Cost breakdown (for contract display)
+  artist_fee decimal(12,2) [default: 0]
+  equipment_rental_fee decimal(12,2) [default: 0]
+  admin_fee decimal(12,2) [default: 0]
+  external_guest_fee decimal(12,2) [default: 0]
+  total_cost decimal(12,2) [default: 0]
+  
+  // Session details
+  purpose text
+  special_instructions text
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Booking lưu giá chi tiết để show trong contract. Khi user thay đổi, update studio_bookings rồi update contract.total_price. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ). Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
+  
+  indexes {
+    user_id
+    studio_id
+    request_id
+    contract_id
+    session_type
+    booking_date
+    status
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum recording_session_type {
+  self_recording
+  artist_assisted
+  hybrid
+}
+
+Enum booking_status {
+  tentative
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}

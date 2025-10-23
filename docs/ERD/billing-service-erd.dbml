@@ -1,0 +1,173 @@
+// Billing Service ERD
+// Service: billing-service (gộp payment + wallet)
+// Database: billing_db
+// Người 3 (phần còn lại)
+
+// API Examples with Idempotency:
+// POST /wallets/{id}/topup
+//   - Headers: X-Idempotency-Key: "topup_2024_001"
+//   - Body: { "amount": 100000, "currency": "VND" }
+//
+// POST /wallets/{id}/debit
+//   - Headers: X-Idempotency-Key: "debit_payment_12345"
+//   - Body: { "amount": 50000, "currency": "VND", "payment_id": "uuid" }
+//
+// POST /payments
+//   - Headers: X-Idempotency-Key: "payment_milestone_67890"
+//   - Body: { "milestone_id": "uuid", "amount": 200000, "payment_method": "wallet" }
+//
+// Events: wallet.debited|refunded, payment.completed|failed
+
+Table wallets {
+  wallet_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [unique, not null, note: 'Soft reference to identity-service']
+  balance decimal(14,2) [default: 0]
+  currency currency_type [default: 'VND']
+  status wallet_status [default: 'active']
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Ví điện tử của người dùng. Mỗi user có 1 ví duy nhất.'
+  
+  indexes {
+    user_id [unique]
+    status
+    currency
+  }
+}
+
+Table wallet_transactions {
+  wallet_tx_id uuid [pk, default: `gen_random_uuid()`]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  tx_type wallet_tx_type [not null]
+  amount decimal(14,2) [not null]
+  currency currency_type [default: 'VND']
+  balance_before decimal(14,2) [not null]
+  balance_after decimal(14,2) [not null]
+  related_payment_id uuid [note: 'Soft reference to payments - no FK to avoid circular reference']
+  metadata jsonb
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. related_payment_id là soft reference để tránh vòng FK.'
+  
+  indexes {
+    wallet_id
+    tx_type
+    currency
+    related_payment_id
+    created_at
+  }
+}
+
+Table payments {
+  payment_id uuid [pk, default: `gen_random_uuid()`]
+  milestone_id uuid [not null, note: 'Soft reference to project-service']
+  
+  // Thông tin thanh toán
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  payment_method payment_method [not null]
+  
+  // Liên kết với ví điện tử (FK một chiều với UNIQUE)
+  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id, unique, delete: set null]
+  
+  // Thông tin giao dịch
+  transaction_id varchar(100)
+  gateway_response text
+  
+  // Trạng thái và thời gian
+  status payment_status [default: 'pending']
+  payment_date timestamp
+  processed_date timestamp
+  
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Thanh toán chi tiết theo milestone. FK một chiều với wallet_transactions để tránh vòng FK. UNIQUE constraint đảm bảo 1-1 relationship.'
+  
+  indexes {
+    milestone_id
+    payment_method
+    status
+    wallet_tx_id [unique]
+    payment_date
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum currency_type {
+  VND
+  USD
+  EUR
+}
+
+Enum wallet_status {
+  active
+  locked
+  closed
+}
+
+Enum wallet_tx_type {
+  topup
+  payment
+  refund
+  withdrawal
+  adjustment
+}
+
+Enum payment_method {
+  credit_card
+  debit_card
+  bank_transfer
+  digital_wallet
+  wallet
+  cash
+}
+
+Enum payment_status {
+  not_required
+  pending
+  processing
+  completed
+  failed
+  refunded
+  cancelled
+}

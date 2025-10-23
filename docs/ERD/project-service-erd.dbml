@@ -1,0 +1,326 @@
+// Project Service ERD
+// Service: project-service (đổi tên từ contract-task)
+// Database: project_db
+// Người 2 (phần còn lại)
+
+// API Examples:
+// POST /contracts
+//   - Body: { "request_id": "uuid", "user_id": "uuid", "manager_user_id": "uuid" }
+//   - Response: { "contract_id": "uuid", "contract_number": "CT-2024-001" }
+//
+// POST /contracts/{id}/sign
+//   - Response: { "contract_id": "uuid", "status": "signed", "signed_at": "2024-01-15T10:30:00Z" }
+//
+// POST /tasks
+//   - Body: { "contract_id": "uuid", "specialist_id": "uuid", "task_type": "transcription" }
+//   - Response: { "assignment_id": "uuid", "status": "assigned" }
+//
+// PATCH /tasks/{id}
+//   - Body: { "status": "completed", "notes": "Task completed successfully" }
+//   - Response: { "assignment_id": "uuid", "status": "completed" }
+//
+// POST /revisions
+//   - Body: { "contract_id": "uuid", "file_id": "uuid", "requested_by": "uuid", "description": "Need changes" }
+//   - Response: { "revision_id": "uuid", "status": "pending" }
+//
+// PATCH /revisions/{id}
+//   - Body: { "status": "approved", "approved_by": "uuid" }
+//   - Response: { "revision_id": "uuid", "status": "approved" }
+//
+// Events: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed
+
+Table contracts {
+  contract_id uuid [pk, default: `gen_random_uuid()`]
+  request_id uuid [not null, note: 'Soft reference to request-service']
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  manager_user_id uuid [not null, note: 'Soft reference to identity-service']
+  contract_number varchar(50) [unique, not null]
+  contract_type contract_type [not null]
+  terms_and_conditions text
+  special_clauses text
+  status contract_status [default: 'draft']
+  created_at timestamp [default: `now()`]
+  sent_to_customer_at timestamp
+  customer_reviewed_at timestamp
+  signed_at timestamp
+  expires_at timestamp
+  file_id uuid [note: 'Soft reference to file-service']
+  notes text
+
+  // Pricing đơn giản hóa (auto from system)
+  base_price decimal(12,2) [default: 0]
+  total_price decimal(12,2) [default: 0]
+  currency currency_type [default: 'VND']
+  deposit_percent decimal(5,2) [default: 40.0]
+  deposit_amount decimal(12,2) [default: 0]
+  final_amount decimal(12,2) [default: 0]
+  
+  // Deposit tracking
+  deposit_paid boolean [default: false]
+  deposit_paid_at timestamp
+
+  // Timeline & SLA (SIMPLIFIED v3.10)
+  expected_start_date timestamp
+  due_date timestamp
+  sla_days integer [default: 0]
+  auto_due_date boolean [default: true]
+  
+  // Revision policy (SIMPLIFIED v3.11)
+  free_revisions_included integer [default: 1]
+  additional_revision_fee_vnd decimal(12,2) [default: 0]
+  
+  // Snapshot thông tin liên hệ từ service_requests (đóng băng pháp lý)
+  name_snapshot varchar(255) [not null]
+  phone_snapshot varchar(20) [not null]
+  email_snapshot varchar(255) [not null]
+  
+  Note: 'Hợp đồng quản lý - Manager tạo hợp đồng trực tiếp từ request với giá tự động. Revision chỉ áp dụng cho transcription và arrangement tasks, không áp dụng cho recording. Snapshot contact info để đóng băng pháp lý - không thay đổi sau khi ký hợp đồng.'
+  
+  indexes {
+    request_id
+    user_id
+    manager_user_id
+    contract_number [unique]
+    status
+    contract_type
+    expires_at
+  }
+}
+
+Table service_sla_defaults {
+  sla_id uuid [pk, default: `gen_random_uuid()`]
+  contract_type contract_type [not null]
+  min_sla_days integer [not null]
+  max_sla_days integer [not null]
+  default_buffer_days integer [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+
+  Note: 'SLA mặc định theo loại hợp đồng'
+
+  indexes {
+    contract_type [unique]
+    is_active
+  }
+}
+
+Table payment_milestones {
+  milestone_id uuid [pk, default: `gen_random_uuid()`]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  
+  milestone_type milestone_type [not null]
+  milestone_name varchar(100) [not null]
+  description text
+  amount decimal(12,2) [not null]
+  percentage decimal(5,2) [not null]
+  
+  // Điều kiện kích hoạt
+  trigger_condition trigger_condition [not null]
+  required_deliverable_count integer [default: 0]
+  
+  // Trạng thái thanh toán
+  status milestone_status [default: 'pending']
+  due_date timestamp
+  completed_at timestamp
+  
+  Note: 'Các mốc thanh toán theo giai đoạn - request_id và user_id lấy qua contract_id'
+  
+  indexes {
+    contract_id
+    milestone_type
+    status
+    due_date
+  }
+}
+
+Table task_assignments {
+  assignment_id uuid [pk, default: `gen_random_uuid()`]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  specialist_id uuid [not null, note: 'Soft reference to specialist-service']
+  task_type task_type [not null]
+  status assignment_status [default: 'assigned']
+  
+  // Timeline management (simplified)
+  assigned_date timestamp [default: `now()`]
+  
+  // Completion tracking
+  completed_date timestamp
+  notes text
+  
+  // Specialist response (optional flags)
+  specialist_can_do boolean
+  specialist_response_reason text
+  specialist_responded_at timestamp
+  
+  // Revision tracking (chỉ cho transcription và arrangement)
+  used_revisions integer [default: 0]
+  
+  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
+  
+  indexes {
+    contract_id
+    specialist_id
+    status
+    specialist_can_do
+    task_type
+  }
+}
+
+Table revision_requests {
+  revision_id uuid [pk, default: `gen_random_uuid()`]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  assignment_id uuid [ref: > task_assignments.assignment_id]
+  file_id uuid [not null, note: 'Soft reference to file-service']
+  requested_by uuid [not null, note: 'Soft reference to identity-service']
+  
+  // Revision tracking
+  revision_number integer [not null]
+  description text [not null]
+  
+  // Payment tracking for revisions
+  payment_required boolean [default: false]
+  payment_status payment_status [default: 'not_required']
+  
+  // Status
+  status revision_status [default: 'pending']
+  requested_at timestamp [default: `now()`]
+  completed_at timestamp
+  
+  // Manager approval tracking
+  approved_by uuid [note: 'Soft reference to identity-service']
+  approved_at timestamp
+  rejected_by uuid [note: 'Soft reference to identity-service']
+  rejected_at timestamp
+  rejection_reason text
+  
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và user_id lấy qua contract_id. Manager duyệt revision trước khi specialist thực hiện.'
+  
+  indexes {
+    contract_id
+    assignment_id
+    file_id
+    requested_by
+    (contract_id, revision_number) [unique]
+    (contract_id, status)
+    status
+    requested_at
+    approved_by
+    approved_at
+    rejected_by
+    rejected_at
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: 'Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum contract_type {
+  transcription
+  arrangement
+  arrangement_with_recording
+  recording
+}
+
+Enum contract_status {
+  draft
+  sent_to_customer
+  customer_reviewing
+  signed
+  expired
+  cancelled
+}
+
+Enum milestone_type {
+  deposit
+  final_payment
+  revision_fee
+}
+
+Enum milestone_status {
+  pending
+  due
+  paid
+  overdue
+}
+
+Enum trigger_condition {
+  contract_signed
+  project_started
+  deliverable_sent
+  project_completed
+}
+
+Enum task_type {
+  transcription
+  arrangement
+  recording
+}
+
+Enum assignment_status {
+  assigned
+  in_progress
+  completed
+  cancelled
+}
+
+Enum revision_status {
+  pending
+  approved
+  rejected
+  in_progress
+  completed
+  cancelled
+}
+
+Enum payment_status {
+  not_required
+  pending
+  processing
+  completed
+  failed
+  refunded
+  cancelled
+}
+
+Enum currency_type {
+  VND
+  USD
+  EUR
+}
