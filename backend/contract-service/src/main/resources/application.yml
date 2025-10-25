@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: contract-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}

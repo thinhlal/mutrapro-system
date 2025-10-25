@@ -1,4 +1,4 @@
-# Database Tables per Service - MuTraPro System (Updated v4.0 - 8 Services Architecture)
+# Database Tables per Service - MuTraPro System (Updated v4.1 - 7 Services Architecture)
 
 ## 1. identity-service (gộp auth + profile) — Người 1
 **Database**: `identity_db`
@@ -33,18 +33,19 @@
 - **API**: POST /requests, GET /requests/{id}, GET /requests/{id}/booking-selections, GET /catalog/equipment, GET /catalog/notation-instruments, POST /requests/{id}/feedback
 - **Events**: request.created, request.updated, selection.changed, feedback.submitted
 
-## 4. project-service (đổi tên từ contract-task) — Người 2 (phần còn lại)
+## 4. project-service (gộp contract + task + revision + file) — Người 2 (phần còn lại)
 **Database**: `project_db`
 - `contracts` (contract management)
 - `service_sla_defaults` (SLA mặc định theo loại hợp đồng)
 - `payment_milestones` (payment milestones)
 - `task_assignments` (task management)
 - `revision_requests` (revision requests)
+- `files` (file management & delivery) - **MOVED FROM file-service**
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: hợp đồng, SLA, milestones, task & revisions
-- **API**: POST /contracts, POST /contracts/{id}/sign, POST /tasks, PATCH /tasks/{id}, POST /revisions, PATCH /revisions/{id}
-- **Events**: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed
+- **Nhiệm vụ**: hợp đồng, SLA, milestones, task & revisions, file management
+- **API**: POST /contracts, POST /contracts/{id}/sign, POST /tasks, PATCH /tasks/{id}, POST /revisions, PATCH /revisions/{id}, POST /files/upload, POST /files/{id}/deliver, POST /projects/{id}/files/approve
+- **Events**: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed, file.uploaded, file.delivered, file.approved
 
 ## 5. studio-service — Người 3
 **Database**: `studio_db`
@@ -68,16 +69,7 @@
 - **Events**: wallet.debited|refunded, payment.completed|failed
 - **Lưu ý**: FK một chiều payments.wallet_tx_id → wallet_transactions.wallet_tx_id [unique, delete: set null]
 
-## 7. file-service — Người 4
-**Database**: `file_db`
-- `files` (file management)
-- `outbox_events` (event publishing)
-- `consumed_events` (event consumption)
-- **Nhiệm vụ**: quản lý file & phân phối
-- **API**: POST /files/upload, POST /files/{id}/deliver
-- **Events**: file.uploaded, file.delivered
-
-## 8. notification-service — Người 4 (tuỳ chọn, có thể gộp)
+## 7. notification-service — Người 4 (tuỳ chọn, có thể gộp)
 **Database**: `notification_db`
 - `notifications` (notification system)
 - `outbox_events` (event publishing)
@@ -163,9 +155,9 @@
 - **Skills**: Spring Boot, Studio management, Payment integration, Financial logic
 
 ### Người 4 - Backend Developer
-- **Responsibility**: file-service + notification-service
-- **Focus**: File management, notifications
-- **Skills**: Spring Boot, File handling, Message queues, Notification systems
+- **Responsibility**: notification-service
+- **Focus**: Notifications, communication layer
+- **Skills**: Spring Boot, Message queues, Notification systems
 
 ---
 
@@ -174,18 +166,52 @@
 ### Service được gộp/tái cấu trúc:
 - **identity-service**: Gộp auth-service + user-service + notifications
 - **request-service**: Gộp request-service + catalog-service
-- **project-service**: Gộp contract-service + task-service + revision-service
+- **project-service**: Gộp contract-service + task-service + revision-service + **file-service**
 - **billing-service**: Gộp payment-service + wallet-service
 
 ### Service giữ nguyên:
 - **specialist-service**: Chuyên gia, kỹ năng, demo
 - **studio-service**: Studio operations
-- **file-service**: File management
 - **notification-service**: Communication layer (optional)
+
+### Service được loại bỏ:
+- **file-service**: Đã gộp vào project-service
 
 ### Bảng được di chuyển:
 - `users_auth`, `users` → identity-service (xóa duplicate email, xóa activity_logs và notifications)
 - `service_requests`, `request_*`, `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix`, `feedback` → request-service
-- `contracts`, `service_sla_defaults`, `payment_milestones`, `task_assignments`, `revision_requests` → project-service
+- `contracts`, `service_sla_defaults`, `payment_milestones`, `task_assignments`, `revision_requests`, **`files`** → project-service
 - `wallets`, `wallet_transactions`, `payments` → billing-service (FK một chiều với UNIQUE constraint)
 - `notifications` → notification-service (riêng biệt)
+
+---
+
+## Lý do gộp File Service vào Project Service:
+
+### **1. Business Workflow Integration**
+- Files được deliver trong context của project
+- File approval/rejection affects project status  
+- Revision files are part of project lifecycle
+- Customer xem files trong project dashboard
+
+### **2. Event-Driven Architecture**
+- `file.delivered` → trigger milestone completion
+- `file.rejected` → trigger revision request
+- `file.approved` → mark task as completed
+- File events naturally integrate với project events
+
+### **3. Infrastructure Independence**
+- AWS S3 storage không ảnh hưởng đến service boundaries
+- File metadata cần sync với project status
+- File delivery affects contract milestones
+
+### **4. API Consolidation**
+- POST /projects/{projectId}/files/upload
+- POST /projects/{projectId}/files/{fileId}/deliver  
+- POST /projects/{projectId}/files/{fileId}/approve
+- GET /projects/{projectId}/files (list all project files)
+
+### **5. Database Optimization**
+- Files table trong project_db với foreign keys đến contracts, task_assignments
+- Đơn giản hóa queries cho project + files
+- Consistent transaction boundaries

@@ -1,5 +1,5 @@
 // Project Service ERD
-// Service: project-service (đổi tên từ contract-task)
+// Service: project-service (gộp contract + task + revision + file)
 // Database: project_db
 // Người 2 (phần còn lại)
 
@@ -27,7 +27,19 @@
 //   - Body: { "status": "approved", "approved_by": "uuid" }
 //   - Response: { "revision_id": "uuid", "status": "approved" }
 //
-// Events: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed
+// POST /files/upload
+//   - Body: { "file_name": "song.mp3", "file_path": "/uploads/song.mp3", "file_size": 5242880, "mime_type": "audio/mpeg" }
+//   - Response: { "file_id": "uuid", "file_name": "song.mp3", "status": "uploaded" }
+//
+// POST /files/{id}/deliver
+//   - Body: { "delivered_by": "uuid", "notes": "File delivered to customer" }
+//   - Response: { "file_id": "uuid", "delivered_to_customer": true, "delivered_at": "2024-01-15T10:30:00Z" }
+//
+// POST /projects/{projectId}/files/approve
+//   - Body: { "approved_by": "uuid", "notes": "File approved for delivery" }
+//   - Response: { "file_id": "uuid", "file_status": "approved" }
+//
+// Events: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed, file.uploaded, file.delivered, file.approved
 
 Table contracts {
   contract_id uuid [pk, default: `gen_random_uuid()`]
@@ -44,7 +56,7 @@ Table contracts {
   customer_reviewed_at timestamp
   signed_at timestamp
   expires_at timestamp
-  file_id uuid [note: 'Soft reference to file-service']
+  file_id uuid [ref: > files.file_id, note: 'Contract PDF file']
   notes text
 
   // Pricing đơn giản hóa (auto from system)
@@ -170,7 +182,7 @@ Table revision_requests {
   revision_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   assignment_id uuid [ref: > task_assignments.assignment_id]
-  file_id uuid [not null, note: 'Soft reference to file-service']
+  file_id uuid [ref: > files.file_id, not null, note: 'File to be revised']
   requested_by uuid [not null, note: 'Soft reference to identity-service']
   
   // Revision tracking
@@ -198,7 +210,7 @@ Table revision_requests {
   indexes {
     contract_id
     assignment_id
-    file_id
+    file_id [unique]  // 1 file chỉ có 1 revision request
     requested_by
     (contract_id, revision_number) [unique]
     (contract_id, status)
@@ -208,6 +220,59 @@ Table revision_requests {
     approved_at
     rejected_by
     rejected_at
+  }
+}
+
+Table files {
+  file_id uuid [pk, default: `gen_random_uuid()`]
+  
+  // Source references (one of these will be NULL)
+  request_id uuid [note: 'Soft reference to request-service']
+  assignment_id uuid [ref: > task_assignments.assignment_id, note: 'Task deliverables']
+  booking_id uuid [note: 'Soft reference to studio-service']
+  
+  // File metadata
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100)   
+  
+  // File classification
+  file_source file_source_type [not null]
+  content_type content_type [not null]
+  
+  // General metadata
+  description text
+  upload_date timestamp [default: `now()`]
+  created_by uuid [not null, note: 'Soft reference to identity-service']
+  
+  // Delivery tracking (đơn giản)
+  delivered_to_customer boolean [default: false]
+  delivered_at timestamp
+  delivered_by uuid [note: 'Soft reference to identity-service']
+  
+  // File status tracking
+  file_status file_status [default: 'uploaded']
+  rejection_reason text
+  reviewed_by uuid [note: 'Soft reference to identity-service']
+  reviewed_at timestamp
+  
+  Note: 'Quản lý tất cả files trong hệ thống - MOVED FROM file-service. Enhanced với notation editor và AI support. Theo dõi trạng thái file và lý do từ chối.'
+  
+  indexes {
+    request_id
+    assignment_id
+    booking_id
+    file_source
+    content_type
+    created_by
+    upload_date
+    delivered_to_customer
+    delivered_at
+    delivered_by
+    file_status
+    reviewed_by
+    reviewed_at
   }
 }
 
@@ -323,4 +388,29 @@ Enum currency_type {
   VND
   USD
   EUR
+}
+
+// File Management Enums (MOVED FROM file-service)
+Enum file_source_type {
+  customer_upload
+  task_deliverable
+  studio_recording
+}
+
+Enum content_type {
+  audio
+  sheet_music
+  project_file
+  documentation
+  video
+  archive
+}
+
+Enum file_status {
+  uploaded
+  pending_review
+  approved
+  rejected
+  delivered
+  revision_requested
 }
