@@ -1,33 +1,52 @@
-// MuTraPro - ERD theo từng Microservice (Per-Service Databases)
+// MuTraPro - ERD theo từng Microservice (Per-Service Databases) - Updated v4.1
 // Database type: PostgreSQL
+// 7 Services Architecture (File Service merged into Project Service)
 
 Project MuTraPro_PerService {
   database_type: 'PostgreSQL'
   Note: '''
     ERD nhóm theo từng microservice để dễ theo dõi flow và ownership.
     Nguyên tắc: mỗi service sở hữu DB riêng; không FK cross-service; dùng soft references qua *_id.
+    
+    Services (7):
+    1. identity-service (auth + profile)
+    2. specialist-service 
+    3. request-service (intake + catalog)
+    4. project-service (contract + task + revision + file) ⭐
+    5. studio-service
+    6. billing-service (payment + wallet)
+    7. notification-service
   '''
 }
 
 // =========================
-// 1) AUTH-SERVICE (auth_db)
+// 1) IDENTITY-SERVICE (identity_db) - Gộp auth + profile
 // =========================
 Table users_auth {
-  id uuid [pk]
-  email varchar(255) [unique, not null]
+  user_id uuid [pk]
+  email varchar(100) [unique, not null]
   password_hash varchar(255) [not null]
-  role varchar(100) [not null]
-  status varchar(20) [not null, default: 'ACTIVE'] // ACTIVE|LOCKED|DISABLED
+  role user_role [not null]
+  status varchar(20) [default: 'active']
   email_verified boolean [default: false]
-  mfa_enabled boolean [default: false]
-  created_at timestamptz [default: `now()`]
-  updated_at timestamptz [default: `now()`]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table users {
+  user_id uuid [pk, ref: > users_auth.user_id]
+  full_name varchar(100) [not null]
+  phone varchar(20)
+  address text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
 }
 
 
 Table refresh_tokens {
   id uuid [pk]
-  user_id uuid [not null, ref: - users_auth.id]
+  user_id uuid [not null, ref: > users_auth.user_id]
   token_hash varchar(255) [unique, not null]
   issued_at timestamptz [default: `now()`]
   expires_at timestamptz [not null]
@@ -35,384 +54,814 @@ Table refresh_tokens {
   revoked_at timestamptz
 }
 
-Table outbox_events_auth {
-  event_id uuid [pk]
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
   aggregate_id uuid [not null]
+  aggregate_type text [not null]
   event_type text [not null]
   event_payload jsonb [not null]
-  occurred_at timestamptz [default: `now()`]
+  occurred_at timestamptz [not null, default: `now()`]
   published_at timestamptz
-  retry_count int [default: 0]
-}
-
-Table consumed_events_auth {
-  event_id uuid [not null]
-  consumer_name text [not null]
-  processed_at timestamptz [default: `now()`]
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
   indexes {
-    (event_id, consumer_name) [unique, pk]
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
   }
 }
 
-// =========================
-// 2) USER-SERVICE (user_db)
-// =========================
-Table users_profile {
-  user_id uuid [pk] // Align với users_auth.id (soft reference)
-  display_name varchar(255)
-  avatar_url text
-  phone varchar(50)
-  address text
-  locale varchar(20)
-  timezone varchar(50)
-  created_at timestamptz [default: `now()`]
-  updated_at timestamptz [default: `now()`]
-}
-
-Table user_contacts {
-  id uuid [pk]
-  user_id uuid [not null] // soft ref → users_profile.user_id
-  type varchar(50) [not null]
-  value varchar(255) [not null]
-  verified boolean [default: false]
-  indexes { user_id }
-}
-
-Table user_preferences {
-  user_id uuid [not null]
-  pref_key varchar(100) [not null]
-  pref_value jsonb
-  indexes { (user_id, pref_key) [unique, pk] }
-}
-
-Table outbox_events_user {
-  event_id uuid [pk]
-  aggregate_id uuid [not null]
-  event_type text [not null]
-  event_payload jsonb [not null]
-  occurred_at timestamptz [default: `now()`]
-  published_at timestamptz
-}
-
-Table consumed_events_user {
+Table consumed_events {
   event_id uuid [not null]
   consumer_name text [not null]
-  processed_at timestamptz [default: `now()`]
-  indexes { (event_id, consumer_name) [unique, pk] }
+  processed_at timestamptz [not null, default: `now()`]
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
 }
 
 // ================================
-// 3) SPECIALIST-SERVICE (specialist_db)
+// 2) SPECIALIST-SERVICE (specialist_db)
 // ================================
 Table specialists {
   specialist_id uuid [pk]
-  user_id uuid [not null] // soft ref → users_profile.user_id
-  specialization varchar(50) [not null]
-  experience_years int [default: 0]
-  max_concurrent_tasks int [default: 5]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  specialization specialist_type [not null]
+  experience_years integer [default: 0]
+  hourly_rate decimal(10,2)
+  max_concurrent_tasks integer [default: 5]
   portfolio_url varchar(255)
   rating decimal(3,2) [default: 0.00]
-  total_projects int [default: 0]
-  indexes { user_id [unique] }
-}
-
-Table skill_categories {
-  category_id uuid [pk]
-  category_name varchar(100) [not null]
-  description text
-  is_active boolean [default: true]
-  indexes { category_name [unique] }
+  total_projects integer [default: 0]
+  
+  indexes {
+    user_id [unique]
+    specialization
+    max_concurrent_tasks
+  }
 }
 
 Table skills {
   skill_id uuid [pk]
-  category_id uuid [not null] // local ref
   skill_name varchar(100) [not null]
   description text
   is_active boolean [default: true]
-  indexes { category_id, skill_name [unique] }
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    skill_name [unique]
+    is_active
+  }
 }
 
 Table specialist_skills {
   specialist_skill_id uuid [pk]
-  specialist_id uuid [not null]
-  skill_id uuid [not null]
-  proficiency_level varchar(30) [not null]
-  years_experience int [default: 0]
-  indexes { (specialist_id, skill_id) [unique] }
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  proficiency_level proficiency_level [not null]
+  years_experience integer [default: 0]
+  last_used_date date
+  is_certified boolean [default: false]
+  certification_details text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (specialist_id, skill_id) [unique]
+    specialist_id
+    skill_id
+    proficiency_level
+    years_experience
+  }
+}
+
+Table artist_demos {
+  demo_id uuid [pk]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  title varchar(150)
+  description text
+  skill_id uuid [ref: > skills.skill_id]
+  file_id uuid [note: 'Soft reference to project-service']
+  preview_url varchar(500)
+  is_public boolean [default: true]
+  demo_order integer [default: 1]
+  is_featured boolean [default: false]
+  view_count integer [default: 0]
+  customer_rating decimal(3,2)
+  last_played_at timestamp
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    specialist_id
+    is_public
+    skill_id
+    is_featured
+    customer_rating
+  }
 }
 
 // ==============================
-// 4) QUOTATION-SERVICE (quotation_db)
+// 3) REQUEST-SERVICE (request_db) - Gộp intake + catalog + feedback
 // ==============================
 Table service_requests {
   request_id uuid [pk]
-  customer_id uuid [not null] // soft ref → users_profile.user_id (qua customers table nếu dùng)
-  coordinator_id uuid // soft ref → service_coordinators.coordinator_id
-  request_type varchar(50) [not null]
-  title varchar(200) [not null]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  manager_user_id uuid [note: 'Soft reference to identity-service']
+  request_type service_type [not null]
+  contact_name varchar(100)
+  contact_phone varchar(20)
+  contact_email varchar(100)
+  music_options jsonb
+  tempo_percentage decimal(5,2)
+  has_vocalist boolean [default: false]
+  external_guest_count integer [default: 0]
+  title varchar(200)
   description text [not null]
-  priority varchar(20) [default: 'normal']
-  status varchar(30) [default: 'pending']
-  budget decimal(10,2)
-  deadline timestamptz
+  status request_status [default: 'pending']
+  
+  indexes {
+    user_id
+    manager_user_id
+    status
+    request_type
+  }
 }
 
-Table quotations {
-  quotation_id uuid [pk]
-  request_id uuid [not null]
-  coordinator_id uuid [not null]
-  customer_id uuid [not null]
-  version int [not null, default: 1]
+Table request_booking_artists {
+  request_booking_artist_id uuid [pk]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  specialist_id uuid [not null, note: 'Soft reference to specialist-service']
+  role recording_role [not null]
+  skill_id uuid [note: 'Soft reference to specialist-service']
+  
+  indexes {
+    request_id
+    specialist_id
+    (request_id, specialist_id, skill_id) [unique]
+    role
+    skill_id
+  }
+}
+
+Table request_booking_equipment {
+  request_booking_equipment_id uuid [pk]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  equipment_id uuid [not null, note: 'Soft reference to equipment table']
+  quantity integer [default: 1]
+  
+  indexes {
+    request_id
+    equipment_id
+    (request_id, equipment_id) [unique]
+  }
+}
+
+Table request_notation_instruments {
+  request_instrument_id uuid [pk]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  instrument_id uuid [ref: > notation_instruments.instrument_id, not null]
+  
+  indexes {
+    request_id
+    instrument_id
+    (request_id, instrument_id) [unique]
+  }
+}
+
+// Catalog tables
+Table notation_instruments {
+  instrument_id uuid [pk]
+  instrument_name varchar(100) [not null]
+  usage notation_instrument_usage [default: 'both']
   is_active boolean [default: true]
-  parent_quotation_id uuid
-  audio_duration_minutes decimal(6,2)
-  complexity_level varchar(20) [not null]
-  estimated_hours decimal(6,2)
-  base_price decimal(12,2) [not null]
-  additional_fees decimal(12,2) [default: 0]
-  discount_percent decimal(5,2) [default: 0]
-  total_price decimal(12,2) [not null]
-  currency varchar(10) [default: 'VND']
-  deposit_percent decimal(5,2) [default: 40.0]
-  deposit_amount decimal(12,2) [not null]
-  final_amount decimal(12,2) [not null]
-  task_priority varchar(20) [default: 'normal']
-  status varchar(20) [default: 'sent']
-  valid_until timestamptz
-  notes text
-}
-
-// ============================
-// 5) PROJECT-SERVICE (project_db)
-// ============================
-Table projects {
-  project_id uuid [pk]
-  request_id uuid [not null] // soft ref → service_requests.request_id
-  quotation_id uuid [not null] // soft ref → quotations.quotation_id
-  project_name varchar(200) [not null]
-  status varchar(30) [default: 'assigned']
-  start_date timestamptz
-  end_date timestamptz
-  free_revisions_included int [default: 1]
-  used_revisions int [default: 0]
-  additional_revision_fee_vnd decimal(12,2) [default: 0]
-}
-
-// =========================
-// 6) TASK-SERVICE (task_db)
-// =========================
-Table task_assignments {
-  assignment_id uuid [pk]
-  project_id uuid [not null] // soft ref → projects.project_id
-  specialist_id uuid [not null] // soft ref → specialists.specialist_id
-  task_type varchar(50) [not null]
-  status varchar(30) [default: 'assigned']
-  assigned_date timestamptz [default: `now()`]
-  due_date timestamptz [not null]
-  estimated_hours decimal(6,2) [not null]
-  is_overdue boolean [default: false]
-  task_priority varchar(20) [default: 'normal']
-}
-
-// ==========================
-// 7) STUDIO-SERVICE (studio_db)
-// ==========================
-Table studios {
-  studio_id uuid [pk]
-  studio_name varchar(100) [not null]
-  location varchar(255) [not null]
-  capacity int [not null]
-  hourly_rate decimal(10,2) [not null]
-  is_active boolean [default: true]
-}
-
-Table equipment_categories {
-  category_id uuid [pk]
-  category_name varchar(100) [not null]
-  description text
-  is_active boolean [default: true]
+  
+  indexes {
+    instrument_name
+    is_active
+  }
 }
 
 Table equipment {
   equipment_id uuid [pk]
-  category_id uuid [not null]
   equipment_name varchar(100) [not null]
   brand varchar(50)
   model varchar(100)
   description text
   specifications jsonb
-  is_active boolean [default: true]
-}
-
-Table studio_equipment {
-  studio_equipment_id uuid [pk]
-  equipment_id uuid [not null]
-  quantity int [default: 1]
-  condition varchar(30) [default: 'good']
-}
-
-Table studio_bookings {
-  booking_id uuid [pk]
-  customer_id uuid [not null] // soft ref → users_profile.user_id
-  studio_id uuid [not null]
-  project_id uuid // soft ref → projects.project_id
-  session_type varchar(30) [not null]
-  booking_date date [not null]
-  start_time time [not null]
-  end_time time [not null]
-  status varchar(20) [default: 'pending']
-  billing_step_hours decimal(3,2) [default: 0.50]
-  min_billing_hours decimal(3,2) [default: 1.00]
-  studio_rate decimal(10,2) [not null]
-  duration_hours decimal(5,2) [not null]
-  artist_fee decimal(12,2) [default: 0]
-  admin_fee decimal(12,2) [default: 0]
-  equipment_rental_fee decimal(12,2) [default: 0]
-}
-
-Table booking_artists {
-  booking_artist_id uuid [pk]
-  booking_id uuid [not null]
-  specialist_id uuid [not null]
-  role varchar(30) [not null]
-  instrument_skill_id uuid
-  fee decimal(12,2) [default: 0]
-}
-
-Table booking_required_equipment {
-  booking_required_equipment_id uuid [pk]
-  booking_id uuid [not null]
-  studio_equipment_id uuid [not null]
-  quantity int [default: 1]
   rental_fee decimal(12,2) [default: 0]
+  total_quantity integer [default: 1]
+  maintenance_quantity integer [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    equipment_name
+    brand
+    model
+    (brand, model) [unique]
+    is_active
+    total_quantity
+    maintenance_quantity
+  }
 }
 
-// ===========================
-// 8) PAYMENT-SERVICE (payment_db)
-// ===========================
+Table skill_equipment_mapping {
+  mapping_id uuid [pk]
+  skill_id uuid [not null, note: 'Soft reference to specialist-service']
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
+  
+  indexes {
+    skill_id
+    equipment_id
+    (skill_id, equipment_id) [unique]
+  }
+}
+
+Table pricing_matrix {
+  pricing_id uuid [pk]
+  service_type service_type [not null]
+  unit_type unit_type [not null]
+  base_price decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    service_type
+    currency
+    is_active
+  }
+}
+
+// Feedback table - MOVED FROM FEEDBACK-SERVICE
+Table feedback {
+  feedback_id uuid [pk]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  rating integer [not null]
+  comment text
+  feedback_type feedback_type [not null]
+  created_at timestamp [default: `now()`]
+}
+
+// ============================
+// 4) PROJECT-SERVICE (project_db) - Gộp contract + task + revision + file
+// ============================
+Table contracts {
+  contract_id uuid [pk]
+  request_id uuid [not null, note: 'Soft reference to request-service']
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  manager_user_id uuid [not null, note: 'Soft reference to identity-service']
+  contract_number varchar(50) [unique, not null]
+  contract_type contract_type [not null]
+  terms_and_conditions text
+  special_clauses text
+  status contract_status [default: 'draft']
+  created_at timestamp [default: `now()`]
+  sent_to_customer_at timestamp
+  customer_reviewed_at timestamp
+  signed_at timestamp
+  expires_at timestamp
+  file_id uuid [ref: > files.file_id, note: 'Contract PDF file']
+  notes text
+  
+  // Pricing
+  base_price decimal(12,2) [default: 0]
+  total_price decimal(12,2) [default: 0]
+  currency currency_type [default: 'VND']
+  deposit_percent decimal(5,2) [default: 40.0]
+  deposit_amount decimal(12,2) [default: 0]
+  final_amount decimal(12,2) [default: 0]
+  
+  // Deposit tracking
+  deposit_paid boolean [default: false]
+  deposit_paid_at timestamp
+  
+  // Timeline & SLA
+  expected_start_date timestamp
+  due_date timestamp
+  sla_days integer [default: 0]
+  auto_due_date boolean [default: true]
+  
+  // Revision policy
+  free_revisions_included integer [default: 1]
+  additional_revision_fee_vnd decimal(12,2) [default: 0]
+  
+  // Snapshot contact info
+  name_snapshot varchar(255) [not null]
+  phone_snapshot varchar(20) [not null]
+  email_snapshot varchar(255) [not null]
+  
+  indexes {
+    request_id
+    user_id
+    manager_user_id
+    contract_number [unique]
+    status
+    contract_type
+    expires_at
+  }
+}
+
+Table service_sla_defaults {
+  sla_id uuid [pk]
+  contract_type contract_type [not null]
+  min_sla_days integer [not null]
+  max_sla_days integer [not null]
+  default_buffer_days integer [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    contract_type [unique]
+    is_active
+  }
+}
+
 Table payment_milestones {
   milestone_id uuid [pk]
-  quotation_id uuid [not null] // soft ref → quotations.quotation_id
-  milestone_type varchar(30) [not null]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  milestone_type milestone_type [not null]
   milestone_name varchar(100) [not null]
+  description text
   amount decimal(12,2) [not null]
   percentage decimal(5,2) [not null]
-  trigger_condition varchar(50) [not null]
-  status varchar(20) [default: 'pending']
-  due_date timestamptz
-  completed_at timestamptz
+  trigger_condition trigger_condition [not null]
+  required_deliverable_count integer [default: 0]
+  status milestone_status [default: 'pending']
+  due_date timestamp
+  completed_at timestamp
+  
+  indexes {
+    contract_id
+    milestone_type
+    status
+    due_date
+  }
 }
 
-Table payments {
-  payment_id uuid [pk]
-  milestone_id uuid [not null]
-  amount decimal(12,2) [not null]
-  currency varchar(10) [default: 'VND']
-  payment_method varchar(30) [not null]
-  transaction_id varchar(100)
-  gateway_response text
-  status varchar(20) [default: 'pending']
-  payment_date timestamptz
-  processed_date timestamptz
-  ip_address varchar(45)
-  user_agent text
+Table task_assignments {
+  assignment_id uuid [pk]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  specialist_id uuid [not null, note: 'Soft reference to specialist-service']
+  task_type task_type [not null]
+  status assignment_status [default: 'assigned']
+  assigned_date timestamp [default: `now()`]
+  completed_date timestamp
+  notes text
+  specialist_can_do boolean
+  specialist_response_reason text
+  specialist_responded_at timestamp
+  used_revisions integer [default: 0]
+  
+  indexes {
+    contract_id
+    specialist_id
+    status
+    specialist_can_do
+    task_type
+  }
 }
 
-// ========================
-// 9) FILE-SERVICE (file_db)
-// ========================
+Table revision_requests {
+  revision_id uuid [pk]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  assignment_id uuid [ref: > task_assignments.assignment_id]
+  file_id uuid [ref: > files.file_id, not null, note: 'File to be revised']
+  requested_by uuid [not null, note: 'Soft reference to identity-service']
+  revision_number integer [not null]
+  description text [not null]
+  payment_required boolean [default: false]
+  payment_status payment_status [default: 'not_required']
+  status revision_status [default: 'pending']
+  requested_at timestamp [default: `now()`]
+  completed_at timestamp
+  approved_by uuid [note: 'Soft reference to identity-service']
+  approved_at timestamp
+  rejected_by uuid [note: 'Soft reference to identity-service']
+  rejected_at timestamp
+  rejection_reason text
+  
+  indexes {
+    contract_id
+    assignment_id
+    file_id [unique]  // 1 file chỉ có 1 revision request
+    requested_by
+    (contract_id, revision_number) [unique]
+    (contract_id, status)
+    status
+    requested_at
+    approved_by
+    approved_at
+    rejected_by
+    rejected_at
+  }
+}
+
+// Files table - MOVED FROM FILE-SERVICE
 Table files {
   file_id uuid [pk]
-  request_id uuid // soft ref → service_requests
-  assignment_id uuid // soft ref → task_assignments
-  booking_id uuid // soft ref → studio_bookings
+  request_id uuid [note: 'Soft reference to request-service']
+  assignment_id uuid [ref: > task_assignments.assignment_id, note: 'Task deliverables']
+  booking_id uuid [note: 'Soft reference to studio-service']
   file_name varchar(255) [not null]
   file_path varchar(500) [not null]
   file_size bigint [not null]
   mime_type varchar(100)
-  file_source varchar(30) [not null]
-  content_type varchar(30) [not null]
-  processing_stage varchar(20) [default: 'raw']
-  version varchar(20) [default: '1.0']
-  audio_metadata jsonb
+  file_source file_source_type [not null]
+  content_type content_type [not null]
   description text
-  upload_date timestamptz [default: `now()`]
-  created_by uuid // soft ref → users_profile.user_id
+  upload_date timestamp [default: `now()`]
+  created_by uuid [not null, note: 'Soft reference to identity-service']
+  delivered_to_customer boolean [default: false]
+  delivered_at timestamp
+  delivered_by uuid [note: 'Soft reference to identity-service']
+  file_status file_status [default: 'uploaded']
+  rejection_reason text
+  reviewed_by uuid [note: 'Soft reference to identity-service']
+  reviewed_at timestamp
+  
+  indexes {
+    request_id
+    assignment_id
+    booking_id
+    file_source
+    content_type
+    created_by
+    upload_date
+    delivered_to_customer
+    delivered_at
+    delivered_by
+    file_status
+    reviewed_by
+    reviewed_at
+  }
+}
+
+// ==========================
+// 5) STUDIO-SERVICE (studio_db)
+// ==========================
+Table studios {
+  studio_id uuid [pk]
+  studio_name varchar(100) [not null, default: 'MuTraPro Studio']
+  location varchar(255) [not null]
+  hourly_rate decimal(10,2) [default: 200000]
+  free_external_guests_limit integer [default: 3]
+  extra_guest_fee_per_person decimal(12,2) [default: 50000]
+  is_active boolean [default: true]
+  
+  indexes {
+    is_active
+  }
+}
+
+Table studio_bookings {
+  booking_id uuid [pk]
+  user_id uuid [not null, note: 'Soft reference to identity-service']
+  studio_id uuid [ref: > studios.studio_id, not null]
+  request_id uuid [note: 'Soft reference to request-service']
+  contract_id uuid [note: 'Soft reference to project-service']
+  session_type recording_session_type [not null]
+  booking_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  status booking_status [default: 'tentative']
+  hold_expires_at timestamp
+  billing_step_hours decimal(3,2) [default: 0.50]
+  min_billing_hours decimal(3,2) [default: 1.00]
+  external_guest_count integer [default: 0]
+  duration_hours decimal(5,2) [not null]
+  artist_fee decimal(12,2) [default: 0]
+  equipment_rental_fee decimal(12,2) [default: 0]
+  admin_fee decimal(12,2) [default: 0]
+  external_guest_fee decimal(12,2) [default: 0]
+  total_cost decimal(12,2) [default: 0]
+  purpose text
+  special_instructions text
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    studio_id
+    request_id
+    contract_id
+    session_type
+    booking_date
+    status
+  }
+}
+
+// ===========================
+// 6) BILLING-SERVICE (billing_db) - Gộp payment + wallet
+// ===========================
+Table wallets {
+  wallet_id uuid [pk]
+  user_id uuid [ref: > users.user_id, unique, not null]
+  balance decimal(14,2) [default: 0]
+  currency currency_type [default: 'VND']
+  status wallet_status [default: 'active']
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id [unique]
+    status
+  }
+}
+
+Table wallet_transactions {
+  wallet_tx_id uuid [pk]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  tx_type wallet_tx_type [not null]
+  amount decimal(14,2) [not null]
+  currency currency_type [default: 'VND']
+  balance_before decimal(14,2) [not null]
+  balance_after decimal(14,2) [not null]
+  related_payment_id uuid [ref: > payments.payment_id]
+  metadata jsonb
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    wallet_id
+    tx_type
+    currency
+    related_payment_id
+    created_at
+  }
+}
+
+Table payments {
+  payment_id uuid [pk]
+  milestone_id uuid [not null, note: 'Soft reference to project-service']
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  payment_method payment_method [not null]
+  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
+  transaction_id varchar(100)
+  gateway_response text
+  status payment_status [default: 'pending']
+  payment_date timestamp
+  processed_date timestamp
+  notes text
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    milestone_id
+    payment_method
+    status
+    wallet_tx_id
+    payment_date
+  }
 }
 
 // ===============================
-// 10) NOTIFICATION-SERVICE (notification_db)
+// 7) NOTIFICATION-SERVICE (notification_db)
 // ===============================
 Table notifications {
   notification_id uuid [pk]
-  user_id uuid [not null] // soft ref → users_profile.user_id
+  user_id uuid [not null, note: 'Soft reference to identity-service']
   title varchar(200) [not null]
   message text [not null]
-  notification_type varchar(50) [not null]
+  notification_type notification_type [not null]
   is_read boolean [default: false]
-  created_at timestamptz [default: `now()`]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id
+    is_read
+    notification_type
+    created_at
+  }
 }
 
 // ==============================
-// 11) FEEDBACK-SERVICE (feedback_db)
+// ENUMS
 // ==============================
-Table feedback {
-  feedback_id uuid [pk]
-  request_id uuid [not null] // soft ref → service_requests.request_id
-  customer_id uuid [not null] // soft ref → users_profile.user_id
-  rating int [not null]
-  comment text
-  feedback_type varchar(30) [not null]
-  created_at timestamptz [default: `now()`]
+
+Enum user_role {
+  customer
+  manager
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+  system_admin
 }
 
-// ==============================
-// 12) REVISION-SERVICE (revision_db)
-// ==============================
-Table revision_requests {
-  revision_id uuid [pk]
-  project_id uuid [not null] // soft ref → projects.project_id
-  file_id uuid [not null] // soft ref → files.file_id
-  requested_by uuid [not null] // soft ref → users_profile.user_id
-  revision_number int [not null]
-  revision_type varchar(30) [not null]
-  description text [not null]
-  is_free_revision boolean [default: true]
-  revision_fee_vnd decimal(12,2) [default: 0]
-  status varchar(20) [default: 'pending']
-  requested_at timestamptz [default: `now()`]
-  approved_at timestamptz
-  completed_at timestamptz
+Enum specialist_type {
+  transcription
+  arrangement
+  recording
 }
 
-Table deliverable_packages {
-  package_id uuid [pk]
-  project_id uuid [not null]
-  package_name varchar(200) [not null]
-  description text
-  delivery_type varchar(30) [default: 'final']
-  status varchar(30) [default: 'preparing']
-  prepared_by uuid // soft ref → users_profile.user_id
-  prepared_at timestamptz
-  delivered_at timestamptz
-  approved_by_customer_at timestamptz
-  customer_notes text
-  requires_revision boolean [default: false]
+Enum proficiency_level {
+  beginner
+  intermediate
+  advanced
+  expert
 }
 
-Table package_files {
-  package_file_id uuid [pk]
-  package_id uuid [not null]
-  file_id uuid [not null]
-  file_order int [default: 1]
-  is_primary boolean [default: false]
-  indexes { (package_id, file_id) [unique] }
+Enum service_type {
+  transcription
+  arrangement
+  arrangement_with_recording
+  recording
 }
 
-// ==============================
-// Outbox/Consumed mẫu cho các service còn lại (đặt theo service)
-// ==============================
-// Ví dụ: outbox_events_project, consumed_events_project ...
+Enum unit_type {
+  per_minute
+  per_song
+  per_hour
+  fixed_price
+}
+
+Enum currency_type {
+  VND
+  USD
+  EUR
+}
+
+Enum request_status {
+  pending
+  contract_sent
+  contract_signed
+  approved
+  in_progress
+  completed
+  cancelled
+  rejected
+}
+
+Enum recording_role {
+  vocalist
+  instrumentalist
+  both
+}
+
+Enum notation_instrument_usage {
+  transcription
+  arrangement
+  both
+}
+
+Enum feedback_type {
+  service_quality
+  communication
+  timeliness
+  overall_experience
+}
+
+Enum contract_type {
+  transcription
+  arrangement
+  arrangement_with_recording
+  recording
+}
+
+Enum contract_status {
+  draft
+  sent_to_customer
+  customer_reviewing
+  signed
+  expired
+  cancelled
+}
+
+Enum milestone_type {
+  deposit
+  final_payment
+  revision_fee
+}
+
+Enum milestone_status {
+  pending
+  due
+  paid
+  overdue
+}
+
+Enum trigger_condition {
+  contract_signed
+  project_started
+  deliverable_sent
+  project_completed
+}
+
+Enum task_type {
+  transcription
+  arrangement
+  recording
+}
+
+Enum assignment_status {
+  assigned
+  in_progress
+  completed
+  cancelled
+}
+
+Enum revision_status {
+  pending
+  approved
+  rejected
+  in_progress
+  completed
+  cancelled
+}
+
+Enum payment_status {
+  not_required
+  pending
+  processing
+  completed
+  failed
+  refunded
+  cancelled
+}
+
+Enum file_source_type {
+  customer_upload
+  task_deliverable
+  studio_recording
+}
+
+Enum content_type {
+  audio
+  sheet_music
+  project_file
+  documentation
+  video
+  archive
+}
+
+Enum file_status {
+  uploaded
+  pending_review
+  approved
+  rejected
+  delivered
+  revision_requested
+}
+
+Enum recording_session_type {
+  self_recording
+  artist_assisted
+  hybrid
+}
+
+Enum booking_status {
+  tentative
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+Enum payment_method {
+  credit_card
+  debit_card
+  bank_transfer
+  digital_wallet
+  wallet
+  cash
+}
+
+Enum wallet_status {
+  active
+  locked
+  closed
+}
+
+Enum wallet_tx_type {
+  topup
+  payment
+  refund
+  withdrawal
+  adjustment
+}
+
+Enum notification_type {
+  task_assignment
+  project_update
+  payment_reminder
+  booking_confirmation
+  deadline_alert
+  system_announcement
+  contract_ready
+  contract_signed
+}
 
 

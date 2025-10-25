@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: payment-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}

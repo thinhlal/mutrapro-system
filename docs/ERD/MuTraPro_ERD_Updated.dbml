@@ -2,8 +2,8 @@
 // Custom Music Transcription and Production System
 // Tác giả: [Tên sinh viên]
 // Ngày tạo: [Ngày hiện tại]
-// Version: 3.0 - Enhanced Workflow Support
-// Updated: 2025 - Support for 3 Main Workflows
+// Version: 3.1 - Enhanced Workflow Support + 1:1 File-Revision Design
+// Updated: 2025 - Support for 3 Main Workflows + Simplified Revision System
 
 Project MuTraPro {
   database_type: 'PostgreSQL'
@@ -11,7 +11,7 @@ Project MuTraPro {
     Hệ thống ký âm và sản xuất âm nhạc theo yêu cầu
     Custom Music Transcription and Production System
     
-    Enhanced Features v3.0:
+    Enhanced Features v3.1:
     - Multi-role user management
     - Automated contract system
     - Milestone-based payments
@@ -21,11 +21,18 @@ Project MuTraPro {
     - Contract management system
     - Enhanced arrangement workflow
     - Artist recommendation system
+    - Simplified revision system (1:1 file-revision relationship)
     
     Main Workflows:
     1. Transcription with AI assistance
     2. Arrangement with optional vocalist + Contract management
     3. Studio booking with multi-artist selection
+    
+    Revision System:
+    - 1 file = 1 revision request (1:1 relationship)
+    - File history tracked via assignment_id + upload_date
+    - Specialist uploads new file to replace old one
+    - Old files kept for audit trail
     
     Studio System: Chỉ quản lý 1 studio duy nhất (MuTraPro Studio)
   '''
@@ -550,7 +557,7 @@ Table files {
   reviewed_by uuid [ref: > users.user_id] // Ai duyệt file
   reviewed_at timestamp // Khi nào duyệt
   
-  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support. Theo dõi trạng thái file và lý do từ chối.'
+  Note: 'Quản lý tất cả files trong hệ thống - Enhanced với notation editor và AI support. Theo dõi trạng thái file và lý do từ chối. File history được track qua assignment_id - tất cả files của cùng 1 task được sắp xếp theo upload_date để xem file gốc và file đã revise.'
   
   indexes {
     request_id
@@ -685,12 +692,12 @@ Table revision_requests {
   rejected_at timestamp // Khi nào từ chối
   rejection_reason text // Lý do từ chối
   
-  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - request_id và user_id lấy qua contract_id. Manager duyệt revision trước khi specialist thực hiện.'
+  Note: 'Yêu cầu chỉnh sửa với hệ thống đơn giản - 1 file chỉ có 1 revision request (1:1). Manager duyệt revision trước khi specialist thực hiện. Specialist upload file mới để thay thế file cũ, file cũ được giữ lại để audit trail.'
   
   indexes {
     contract_id
     assignment_id
-    file_id
+    file_id [unique] // 1 file chỉ có 1 revision request
     requested_by
     (contract_id, revision_number) [unique] // Mỗi contract chỉ có 1 revision với số thứ tự duy nhất
     (contract_id, status)
