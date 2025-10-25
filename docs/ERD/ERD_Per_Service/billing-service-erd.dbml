@@ -43,17 +43,15 @@ Table wallet_transactions {
   currency currency_type [default: 'VND']
   balance_before decimal(14,2) [not null]
   balance_after decimal(14,2) [not null]
-  related_payment_id uuid [note: 'Soft reference to payments - no FK to avoid circular reference']
   metadata jsonb
   created_at timestamp [default: `now()`]
   
-  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. related_payment_id là soft reference để tránh vòng FK.'
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit.'
   
   indexes {
     wallet_id
     tx_type
     currency
-    related_payment_id
     created_at
   }
 }

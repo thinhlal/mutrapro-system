@@ -277,16 +277,16 @@ service_requests:
 - status: 'pending'
 ```
 
-**Files upload:**
+**Files upload (nếu có):**
 ```
 files:
 - file_source: 'customer_upload'
-- content_type: 'notation'
+- content_type: 'notation' | 'audio' | 'lyrics' | 'other'
 - request_id: [request_id]
-- file_path: "/uploads/notation/def.musicxml"
+- file_path: "/uploads/reference/def.musicxml"
 ```
 
-**Ca sĩ chọn:**
+**Ca sĩ chọn (nếu có):**
 ```
 request_booking_artists:
 - request_id: [request_id]
@@ -295,12 +295,44 @@ request_booking_artists:
 - skill_id: [bolero_vocal_skill_id]
 ```
 
-**Nhạc cụ thuê:**
+**Người chơi nhạc cụ chọn (nếu có):**
+```
+request_booking_artists:
+- request_id: [request_id]
+- specialist_id: [specialist_id]
+- role: 'instrumentalist'
+- skill_id: [piano_skill_id]
+```
+
+**Nhạc cụ thuê (nếu có):**
 ```
 request_booking_equipment:
 - request_id: [request_id]
 - equipment_id: [piano_id]
 - quantity: 1
+```
+
+### **Bước 1.5: Hệ thống tự tạo studio booking**
+```
+studio_bookings:
+- user_id: [customer_id]
+- studio_id: [studio_id]
+- request_id: [request_id]
+- contract_id: NULL (chưa có contract)
+- session_type: 'artist_assisted' | 'self_recording' | 'hybrid'
+- booking_date: [customer_chosen_date]
+- start_time: [customer_chosen_start_time]
+- end_time: [customer_chosen_end_time]
+- status: 'tentative' (bản nháp)
+- duration_hours: [calculated_hours]
+- external_guest_count: 2
+- artist_fee: 500000 (ca sĩ)
+- instrumentalist_fee: 300000 (người chơi nhạc cụ)
+- equipment_rental_fee: 200000 (piano)
+- admin_fee: 100000
+- external_guest_fee: 0 (2 người < 3 người miễn phí)
+- total_cost: 1100000
+- hold_expires_at: [booking_date - 1 day]
 ```
 
 ### **Bước 2: Manager tạo hợp đồng**
@@ -309,80 +341,89 @@ contracts:
 - request_id: [request_id]
 - contract_type: 'recording'
 - base_price: 0 (tính từ studio booking)
-- total_price: 1500000 (studio + artist + equipment + external guests)
+- total_price: 1100000 (từ studio_bookings.total_cost)
 - deposit_percent: 40.0
-- deposit_amount: 600000
-- final_amount: 900000
-- sla_days: 2 (từ service_sla_defaults)
-- due_date: expected_start_date + 2 ngày
+- deposit_amount: 440000
+- final_amount: 660000
+- sla_days: NULL (không cần SLA cho recording)
+- due_date: booking_date (due_date = booking_date)
 - free_revisions_included: 0 (không có revision cho recording)
 - additional_revision_fee_vnd: 0
 - status: 'draft'
 ```
 
-### **Bước 3: Manager tạo studio booking**
+### **Bước 3: Gửi hợp đồng cho customer xem**
+Manager gửi hợp đồng cho customer qua email hoặc notification. Customer xem hợp đồng bao gồm giá cả, thời gian, điều khoản. Customer chỉ có thể đồng ý hoặc từ chối, không thể thay đổi. Nếu customer đồng ý, contract chuyển sang trạng thái pending approval.
+
+### **Bước 4: Customer ký hợp đồng và thanh toán cọc**
+Customer ký hợp đồng bằng digital signature hoặc xác nhận. Contract chuyển sang trạng thái active. Studio booking chuyển từ tentative sang confirmed. Hệ thống tạo payment milestone cho cọc. Customer thanh toán cọc theo số tiền deposit amount.
+
 ```
 studio_bookings:
-- customer_id: [customer_id]
-- studio_id: [studio_id]
-- request_id: [request_id]
+- contract_id: [contract_id] (gán contract_id)
+- status: 'confirmed' (chốt booking)
+```
+
+### **Bước 5: Manager chọn arrangement specialist hoặc tự thu âm**
+**Manager chọn arrangement specialist trống lịch hoặc Manager tự thu âm nếu không có arrangement specialist trống lịch.**
+
+**Option 1: Có arrangement specialist trống lịch**
+```
+task_assignments:
 - contract_id: [contract_id]
-- session_type: 'artist_assisted'
-- booking_date: '2024-01-20'
-- start_time: '10:00:00'
-- end_time: '12:00:00'
-- status: 'confirmed'
-- duration_hours: 2.00
-- external_guest_count: 2
-- artist_fee: 500000 (ca sĩ)
-- equipment_rental_fee: 200000 (piano)
-- admin_fee: 100000
-- external_guest_fee: 0 (2 người < 3 người miễn phí)
-- total_cost: 800000
+- specialist_id: [arrangement_specialist_id] // Manager chọn specialist trống lịch
+- task_type: 'recording'
+- status: 'assigned'
+- assigned_date: now()
+- used_revisions: 0 // Không có revision cho recording
 ```
 
-**Ca sĩ booking:**
+**Option 2: Không có arrangement specialist trống lịch**
 ```
-booking_artists:
-- booking_id: [booking_id]
-- specialist_id: [specialist_id]
-- role: 'vocalist'
-- skill_id: [bolero_vocal_skill_id]
-- fee: 500000
-```
-
-**Nhạc cụ booking:**
-```
-booking_required_equipment:
-- booking_id: [booking_id]
-- equipment_id: [piano_id]
-- quantity: 1
+task_assignments:
+- contract_id: [contract_id]
+- specialist_id: [manager_id] // Manager tự thu âm
+- task_type: 'recording'
+- status: 'assigned'
+- assigned_date: now()
+- used_revisions: 0 // Không có revision cho recording
 ```
 
-### **Bước 4: Thực hiện session**
-**Files upload:**
+### **Bước 6: Thực hiện session**
+Customer và ca sĩ, người chơi nhạc cụ nếu có đến studio. **Arrangement specialist hoặc Manager điều khiển thiết bị thu âm và thu âm.** Thực hiện thu âm theo yêu cầu.
+
+### **Bước 7: Upload file**
+**Arrangement specialist hoặc Manager upload file audio sau khi thu âm xong.** Upload file audio với định dạng mp3, wav, hoặc stems.
+
 ```
 files:
-- file_source: 'specialist_upload'
+- file_source: 'studio_recording'
 - content_type: 'audio'
-- contract_id: [contract_id]
+- assignment_id: [assignment_id] // Gắn với task assignment
 - file_path: "/uploads/audio/def_recorded.mp3"
+- file_status: 'uploaded'
+- created_by: [arrangement_specialist_id hoặc manager_id] // Người thu âm upload
 ```
 
-### **Bước 5: Giao file**
+### **Bước 8: Manager giao file**
+**Manager giao file trực tiếp cho customer.** Cập nhật delivered to customer thành true, ghi lại khi nào giao và ai giao. File status chuyển thành delivered.
+
 ```
 files:
 - delivered_to_customer: true
 - delivered_at: now()
-- delivered_by: [manager_id]
+- delivered_by: [manager_id] // Manager giao file
+- file_status: 'delivered'
 ```
 
-### **Bước 6: Thanh toán**
+### **Bước 9: Thanh toán**
+Customer thanh toán phần còn lại theo final amount. Tạo payment với status completed. Contract chuyển sang trạng thái completed.
+
 ```
 payments:
 - contract_id: [contract_id]
 - milestone_id: [milestone_id]
-- amount: 900000
+- amount: 660000
 - status: 'completed'
 ```
 
@@ -466,22 +507,31 @@ revision_requests:
 
 ### **Luồng 3 (Recording):**
 - [x] Customer tạo request với contact_*
-- [x] Upload notation file
-- [x] Chọn ca sĩ
-- [x] Chọn nhạc cụ thuê
+- [x] Upload file tham khảo (nếu có)
+- [x] Chọn ca sĩ (nếu có)
+- [x] Chọn người chơi nhạc cụ (nếu có)
+- [x] Chọn nhạc cụ thuê (nếu có)
+- [x] Hệ thống tự tạo studio booking tentative
 - [x] Manager tạo contract
-- [x] Manager tạo studio booking
-- [x] Thực hiện session
-- [x] Giao file
-- [x] Thanh toán
+- [x] Customer ký hợp đồng và thanh toán cọc
+- [x] Studio booking chuyển sang confirmed
+- [x] Manager chọn arrangement specialist hoặc tự thu âm
+- [x] Thực hiện session thu âm
+- [x] Upload file audio
+- [x] Manager giao file
+- [x] Thanh toán cuối
 
 ---
 
 ## 🎯 NOTES
 
 1. **Thông tin cá nhân**: Chỉ lưu ở `service_requests`, `contracts` JOIN để lấy
-2. **Revision**: Chỉ áp dụng cho transcription và arrangement
-3. **Studio booking**: Có thể tentative trước khi contract ký
+2. **Revision**: Chỉ áp dụng cho transcription và arrangement, không áp dụng cho recording
+3. **Studio booking**: Hệ thống tự tạo tentative khi customer gửi request, chốt khi customer ký hợp đồng
 4. **Pricing**: Tự động từ `pricing_matrix` và `service_sla_defaults`
 5. **Files**: Unified table cho tất cả file types
 6. **External guests**: Chỉ đếm số lượng, không lưu chi tiết
+7. **Recording workflow**: Manager chọn arrangement specialist trống lịch hoặc tự thu âm
+8. **File delivery**: Manager luôn là người giao file cho customer
+9. **SLA**: Recording không có SLA vì đã có booking_date cụ thể
+10. **File source**: Recording sử dụng 'studio_recording' cho file audio

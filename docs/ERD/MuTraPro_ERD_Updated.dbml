@@ -81,7 +81,6 @@ Table wallet_transactions {
   currency currency_type [default: 'VND'] // Đồng tiền giao dịch
   balance_before decimal(14,2) [not null] // Số dư trước giao dịch
   balance_after decimal(14,2) [not null] // Số dư sau giao dịch
-  related_payment_id uuid [ref: > payments.payment_id] // Nullable, liên kết payment nếu có
   metadata jsonb // Mã GD cổng nạp, lý do hoàn, v.v.
   created_at timestamp [default: `now()`]
   
@@ -91,7 +90,6 @@ Table wallet_transactions {
     wallet_id
     tx_type
     currency
-    related_payment_id
     created_at
   }
 }
@@ -1401,9 +1399,9 @@ BEGIN
     
     -- Tạo giao dịch ví
     INSERT INTO wallet_transactions (
-      wallet_id, tx_type, amount, balance_before, balance_after, related_payment_id
+      wallet_id, tx_type, amount, balance_before, balance_after
     ) VALUES (
-      customer_wallet_id, 'payment', NEW.amount, 0, 0, NEW.payment_id
+      customer_wallet_id, 'payment', NEW.amount, 0, 0
     ) RETURNING wallet_tx_id INTO wallet_tx_id;
     
     -- Cập nhật wallet_tx_id vào payment
