@@ -456,43 +456,86 @@ Table service_sla_defaults {
 }
 
 
-// 10. Thanh toán theo giai đoạn (Payment Milestones)
-Table payment_milestones {
+// 10. Mốc công việc (Contract Milestones) - NEW
+Table contract_milestones {
   milestone_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   
-  milestone_type milestone_type [not null]
-  milestone_name varchar(100) [not null]
+  // Thông tin mốc
+  name varchar(100) [not null]
   description text
-  amount decimal(12,2) [not null]
-  percentage decimal(5,2) [not null]
   
-  // Điều kiện kích hoạt
-  trigger_condition trigger_condition [not null]
-  required_deliverable_count integer [default: 0]
+  // Chủ sở hữu mốc (specialist hoặc manager)
+  owner_id uuid [ref: > users.user_id, not null]
   
-  // Trạng thái thanh toán
-  status milestone_status [default: 'pending']
+  //Timeline
   due_date timestamp
-  completed_at timestamp
   
-  Note: 'Các mốc thanh toán theo giai đoạn - request_id và user_id lấy qua contract_id'
+  // Trạng thái
+  status milestone_work_status [default: 'planned']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  Note: 'Mốc công việc trong hợp đồng - Tách biệt với đợt thanh toán'
   
   indexes {
     contract_id
-    milestone_type
+    owner_id
     status
     due_date
   }
 }
 
-// 11. Phân công công việc (Task Assignments) - SIMPLIFIED v3.11
+// 11. Đợt thanh toán (Contract Installments) - NEW
+Table contract_installments {
+  installment_id uuid [pk, default: `gen_random_uuid()`]
+  contract_id uuid [ref: > contracts.contract_id, not null]
+  
+  // Thông tin đợt
+  label varchar(50) [not null] // Deposit, Phase 1, Phase 2, Final
+  due_date timestamp
+  
+  // Số tiền
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  
+  // Trạng thái
+  status installment_status [default: 'pending']
+  
+  // Đánh dấu cọc
+  is_deposit boolean [default: false]
+  
+  // Liên kết với mốc công việc (optional)
+  milestone_id uuid [ref: > contract_milestones.milestone_id]
+  
+  // Điều kiện thanh toán
+  gate_condition gate_condition
+  
+  created_at timestamp [default: `now()`]
+  paid_at timestamp
+  
+  Note: 'Đợt thanh toán trong hợp đồng - Tự động tạo Deposit và Final khi tạo hợp đồng từ deposit_percent'
+  
+  indexes {
+    contract_id
+#     milestone_id
+    status
+    is_deposit
+    due_date
+  }
+}
+
+// 12. Phân công công việc (Task Assignments) - SIMPLIFIED v3.11
 Table task_assignments {
   assignment_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   task_type task_type [not null]
   status assignment_status [default: 'assigned']
+  
+  // Gán task vào mốc công việc
+  milestone_id uuid [ref: > contract_milestones.milestone_id]
   
   // Timeline management (simplified)
   assigned_date timestamp [default: `now()`]
@@ -509,11 +552,12 @@ Table task_assignments {
   // Revision tracking (chỉ cho transcription và arrangement)
   used_revisions integer [default: 0] // Số lần revision đã sử dụng cho task này
   
-  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
+  Note: 'Phân công task trực tiếp từ contract - Gán vào mốc công việc qua milestone_id. Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
   
   indexes {
     contract_id
     specialist_id
+    milestone_id
     status
     specialist_can_do
     task_type
@@ -629,7 +673,7 @@ Table studio_bookings {
 // 14. Thanh toán chi tiết (Payments)
 Table payments {
   payment_id uuid [pk, default: `gen_random_uuid()`]
-  milestone_id uuid [ref: > payment_milestones.milestone_id, not null]
+  installment_id uuid [ref: > contract_installments.installment_id, not null]
   
   // Thông tin thanh toán
   amount decimal(12,2) [not null]
@@ -651,10 +695,10 @@ Table payments {
   notes text
   created_at timestamp [default: `now()`]
   
-  Note: 'Thanh toán chi tiết theo milestone. Thanh toán luôn theo contract, không theo booking. CHECK: status <> not_required, (payment_method = wallet) = (wallet_tx_id IS NOT NULL)'
+  Note: 'Thanh toán chi tiết theo đợt thanh toán (installment). Thanh toán luôn theo contract, không theo booking. CHECK: status <> not_required, (payment_method = wallet) = (wallet_tx_id IS NOT NULL)'
   
   indexes {
-    milestone_id
+    installment_id
     payment_method
     status
     wallet_tx_id
@@ -888,24 +932,25 @@ Enum proficiency_level {
   expert            // Chuyên gia, có thể dạy người khác
 }
 
-Enum milestone_type {
-  deposit         // Tiền cọc
-  final_payment   // Thanh toán cuối
-  revision_fee    // Phí chỉnh sửa
+Enum milestone_work_status {
+  planned         // Tạo mốc
+  in_progress     // Đang thực hiện (mở khi đã cọc)
+  submitted       // Đã nộp mốc cho manager duyệt
+  accepted        // Manager duyệt OK
+  rejected        // Manager từ chối, yêu cầu làm lại
 }
 
-Enum milestone_status {
-  pending         // Chờ điều kiện
-  due             // Đến hạn thanh toán
+Enum installment_status {
+  pending         // Chờ thanh toán
   paid            // Đã thanh toán
   overdue         // Quá hạn
+  cancelled       // Hủy
 }
 
-Enum trigger_condition {
-  contract_signed       // Hợp đồng đã ký
-  project_started       // Dự án bắt đầu
-  deliverable_sent      // Gửi deliverable
-  project_completed     // Dự án hoàn thành
+Enum gate_condition {
+  before_start    // Trả trước khi bắt đầu mốc (dùng cho Deposit)
+  after_accept    // Trả sau khi mốc được duyệt
+  after_delivery  // Trả sau khi có file bàn giao (delivered)
 }
 
 Enum task_type {
@@ -1074,6 +1119,117 @@ END $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_revision_completed_incr
 AFTER UPDATE OF status ON revision_requests FOR EACH ROW EXECUTE FUNCTION bump_used_revisions_on_complete();
+*/
+
+// Trigger 7: Tự sinh đợt thanh toán khi tạo hợp đồng
+/*
+CREATE OR REPLACE FUNCTION auto_create_installments() RETURNS trigger AS $$
+DECLARE
+  v_deposit_amount decimal(12,2);
+  v_final_amount decimal(12,2);
+BEGIN
+  -- Tính toán số tiền cọc và cuối
+  v_deposit_amount := NEW.total_price * (NEW.deposit_percent / 100.0);
+  v_final_amount := NEW.total_price - v_deposit_amount;
+  
+  -- Tạo đợt cọc
+  INSERT INTO contract_installments (
+    contract_id, label, due_date, amount, currency, 
+    is_deposit, status, gate_condition
+  ) VALUES (
+    NEW.contract_id, 'Deposit', NEW.expected_start_date, v_deposit_amount, NEW.currency,
+    true, 'pending', 'before_start'
+  );
+  
+  -- Tạo đợt cuối
+  INSERT INTO contract_installments (
+    contract_id, label, due_date, amount, currency,
+    is_deposit, status, gate_condition
+  ) VALUES (
+    NEW.contract_id, 'Final', NEW.due_date, v_final_amount, NEW.currency,
+    false, 'pending', 'after_accept'
+  );
+  
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_create_installments
+AFTER INSERT ON contracts FOR EACH ROW EXECUTE FUNCTION auto_create_installments();
+*/
+
+// Trigger 8: Mở milestone sau khi Deposit paid
+/*
+CREATE OR REPLACE FUNCTION open_milestones_after_deposit() RETURNS trigger AS $$
+BEGIN
+  -- Khi Deposit paid → cho phép milestone chuyển từ planned → in_progress
+  IF NEW.is_deposit = true AND NEW.status = 'paid' THEN
+    UPDATE contract_milestones
+    SET status = 'in_progress'
+    WHERE contract_id = NEW.contract_id
+      AND status = 'planned';
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_open_milestones_after_deposit
+AFTER UPDATE OF status ON contract_installments FOR EACH ROW
+EXECUTE FUNCTION open_milestones_after_deposit();
+*/
+
+// Trigger 9: Auto set milestone submitted khi deliver file
+/*
+CREATE OR REPLACE FUNCTION auto_submit_milestone_on_delivery() RETURNS trigger AS $$
+DECLARE
+  v_milestone_id uuid;
+BEGIN
+  -- Khi delivered_to_customer=true lần đầu → milestone submitted
+  IF NEW.delivered_to_customer = true AND OLD.delivered_to_customer = false THEN
+    -- Lấy milestone_id từ assignment
+    SELECT milestone_id INTO v_milestone_id
+    FROM task_assignments
+    WHERE assignment_id = NEW.assignment_id;
+    
+    -- Update milestone status
+    IF v_milestone_id IS NOT NULL THEN
+      UPDATE contract_milestones
+      SET status = 'submitted'
+      WHERE milestone_id = v_milestone_id
+        AND status = 'in_progress';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_auto_submit_milestone_on_delivery
+AFTER UPDATE OF delivered_to_customer ON files FOR EACH ROW
+EXECUTE FUNCTION auto_submit_milestone_on_delivery();
+*/
+
+// Trigger 10: Mở Final khi milestone accepted/delivered
+/*
+CREATE OR REPLACE FUNCTION open_final_on_milestone_complete() RETURNS trigger AS $$
+DECLARE
+  v_gate condition;
+BEGIN
+  -- Khi milestone accepted hoặc delivered → mở Final theo gate
+  IF NEW.status = 'accepted' THEN
+    -- Check gate condition
+    SELECT gate_condition INTO v_gate
+    FROM contract_installments
+    WHERE contract_id = NEW.contract_id
+      AND is_deposit = false
+      AND status = 'pending';
+    
+    -- Nếu gate là after_accept hoặc after_delivery thì giữ pending (đã mở)
+    -- Không cần làm gì thêm vì status đã là pending từ đầu
+  END IF;
+  
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_open_final_on_milestone_complete
+AFTER UPDATE OF status ON contract_milestones FOR EACH ROW
+EXECUTE FUNCTION open_final_on_milestone_complete();
 */
 
 // Trigger 1b: Booking - tính external_guest_fee từ external_guest_count và free limit
@@ -1396,13 +1552,13 @@ DECLARE
 BEGIN
   -- Chỉ xử lý khi payment_method = 'wallet'
   IF NEW.payment_method = 'wallet' THEN
-    -- Lấy wallet_id của customer từ milestone -> contract -> customer
+    -- Lấy wallet_id của customer từ installment -> contract -> customer
     SELECT w.wallet_id INTO customer_wallet_id
     FROM wallets w
     JOIN users u ON w.user_id = u.user_id
     JOIN contracts ct ON ct.user_id = u.user_id
-    JOIN payment_milestones pm ON pm.contract_id = ct.contract_id
-    WHERE pm.milestone_id = NEW.milestone_id;
+    JOIN contract_installments ci ON ci.contract_id = ct.contract_id
+    WHERE ci.installment_id = NEW.installment_id;
     
     -- Tạo giao dịch ví
     INSERT INTO wallet_transactions (

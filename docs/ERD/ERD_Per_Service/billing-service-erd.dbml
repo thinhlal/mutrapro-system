@@ -13,8 +13,8 @@
 //   - Body: { "amount": 50000, "currency": "VND", "payment_id": "uuid" }
 //
 // POST /payments
-//   - Headers: X-Idempotency-Key: "payment_milestone_67890"
-//   - Body: { "milestone_id": "uuid", "amount": 200000, "payment_method": "wallet" }
+//   - Headers: X-Idempotency-Key: "payment_installment_67890"
+//   - Body: { "installment_id": "uuid", "amount": 200000, "payment_method": "wallet" }
 //
 // Events: wallet.debited|refunded, payment.completed|failed
 
@@ -58,7 +58,7 @@ Table wallet_transactions {
 
 Table payments {
   payment_id uuid [pk, default: `gen_random_uuid()`]
-  milestone_id uuid [not null, note: 'Soft reference to project-service']
+  installment_id uuid [not null, note: 'Soft reference to project-service - contract_installments']
   
   // Thông tin thanh toán
   amount decimal(12,2) [not null]
@@ -80,10 +80,10 @@ Table payments {
   notes text
   created_at timestamp [default: `now()`]
   
-  Note: 'Thanh toán chi tiết theo milestone. FK một chiều với wallet_transactions để tránh vòng FK. UNIQUE constraint đảm bảo 1-1 relationship.'
+  Note: 'Thanh toán chi tiết theo đợt thanh toán (installment). FK một chiều với wallet_transactions để tránh vòng FK. UNIQUE constraint đảm bảo 1-1 relationship.'
   
   indexes {
-    milestone_id
+    installment_id
     payment_method
     status
     wallet_tx_id [unique]
