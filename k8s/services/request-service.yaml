@@ -10,8 +10,8 @@ spec:
     app: request-service
   ports:
   - name: http
-    port: 80
-    targetPort: 8085
+    port: 8084
+    targetPort: 8084
     protocol: TCP
   type: ClusterIP
 

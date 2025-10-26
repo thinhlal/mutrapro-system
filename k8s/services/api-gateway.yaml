@@ -10,7 +10,7 @@ spec:
     app: api-gateway
   ports:
   - name: http
-    port: 8080
+    port: 80
     targetPort: 8080
     protocol: TCP
   type: LoadBalancer  # For external access

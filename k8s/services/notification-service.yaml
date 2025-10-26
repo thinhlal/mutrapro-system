@@ -10,7 +10,7 @@ spec:
     app: notification-service
   ports:
   - name: http
-    port: 80
-    targetPort: 8080
+    port: 8085
+    targetPort: 8085
     protocol: TCP
   type: ClusterIP

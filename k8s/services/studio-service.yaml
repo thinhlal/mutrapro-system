@@ -10,7 +10,7 @@ spec:
     app: studio-service
   ports:
   - name: http
-    port: 80
-    targetPort: 8080
+    port: 8087
+    targetPort: 8087
     protocol: TCP
   type: ClusterIP

@@ -10,8 +10,8 @@ spec:
     app: billing-service
   ports:
   - name: http
-    port: 80
-    targetPort: 8084
+    port: 8083
+    targetPort: 8083
     protocol: TCP
   type: ClusterIP
 

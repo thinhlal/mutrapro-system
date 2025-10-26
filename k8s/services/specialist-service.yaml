@@ -10,7 +10,7 @@ spec:
     app: specialist-service
   ports:
   - name: http
-    port: 80
-    targetPort: 8080
+    port: 8086
+    targetPort: 8086
     protocol: TCP
   type: ClusterIP

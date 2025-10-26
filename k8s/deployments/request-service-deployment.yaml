@@ -21,7 +21,7 @@ spec:
       - name: request-service
         image: mutrapro/request-service:latest
         ports:
-        - containerPort: 8085
+        - containerPort: 8084
         env:
         - name: SPRING_PROFILES_ACTIVE
           valueFrom:
@@ -58,7 +58,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
-            port: 8085
+            port: 8084
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 10
@@ -66,7 +66,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health/readiness
-            port: 8085
+            port: 8084
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -74,7 +74,7 @@ spec:
         startupProbe:
           httpGet:
             path: /actuator/health
-            port: 8085
+            port: 8084
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
