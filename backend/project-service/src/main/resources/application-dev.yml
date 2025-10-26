@@ -1,0 +1,26 @@
+server:
+  port: 8086
+  servlet:
+    context-path: 
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/project_db
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    root: INFO
+
+# JWT Configuration - Must match auth-service signerKey
+jwt:
+  signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
