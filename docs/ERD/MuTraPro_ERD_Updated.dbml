@@ -89,14 +89,25 @@ Table wallet_transactions {
   balance_before decimal(14,2) [not null] // Số dư trước giao dịch
   balance_after decimal(14,2) [not null] // Số dư sau giao dịch
   metadata jsonb // Mã GD cổng nạp, lý do hoàn, v.v.
+  
+  // Truy vết giao dịch đến thực thể
+  contract_id uuid [ref: > contracts.contract_id] // Liên kết với contract
+  installment_id uuid [ref: > contract_installments.installment_id] // Liên kết với installment
+  booking_id uuid [ref: > studio_bookings.booking_id] // Liên kết với booking
+  refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Hoàn tiền cho giao dịch nào
+  
   created_at timestamp [default: `now()`]
   
-  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit.'
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. Truy vết đến contract/installment/booking để audit trail đầy đủ.'
   
   indexes {
     wallet_id
     tx_type
     currency
+    contract_id
+    installment_id
+    booking_id
+    refund_of_wallet_tx_id
     created_at
   }
 }
@@ -512,10 +523,13 @@ Table contract_installments {
   // Điều kiện thanh toán
   gate_condition gate_condition
   
+  // Khấu trừ từ reservation fee hoặc credit khác
+  applied_credit_amount decimal(12,2) [default: 0] // Tổng số tiền đã khấu trừ
+  
   created_at timestamp [default: `now()`]
   paid_at timestamp
   
-  Note: 'Đợt thanh toán trong hợp đồng - Tự động tạo Deposit và Final khi tạo hợp đồng từ deposit_percent'
+  Note: 'Đợt thanh toán trong hợp đồng - Tự động tạo Deposit và Final khi tạo hợp đồng từ deposit_percent. applied_credit_amount để track số tiền đã khấu trừ từ reservation fee.'
   
   indexes {
     contract_id
@@ -655,9 +669,18 @@ Table studio_bookings {
   purpose text // What will be recorded
   special_instructions text
   notes text
+  
+  // Reservation fee management (cho giữ chỗ trước hợp đồng)
+  reservation_fee_amount decimal(12,2) [default: 0] // Phí giữ chỗ
+  reservation_fee_status reservation_fee_status [default: 'none'] // Trạng thái phí giữ chỗ
+  reservation_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Giao dịch thanh toán phí giữ chỗ
+  reservation_refund_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Giao dịch hoàn phí giữ chỗ
+  reservation_applied_to_installment_id uuid [ref: > contract_installments.installment_id] // Khấu trừ vào installment nào
+  refund_policy_json jsonb // Chính sách hoàn tiền (optional)
+  
   created_at timestamp [default: `now()`]
   
-  Note: 'Booking lưu giá chi tiết để show trong contract. Khi user thay đổi, update studio_bookings rồi update contract.total_price. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ). Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
+  Note: 'Booking lưu giá chi tiết để show trong contract. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ) với reservation_fee. Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
   
   indexes {
     user_id
@@ -938,6 +961,15 @@ Enum milestone_work_status {
   submitted       // Đã nộp mốc cho manager duyệt
   accepted        // Manager duyệt OK
   rejected        // Manager từ chối, yêu cầu làm lại
+}
+
+Enum reservation_fee_status {
+  none            // Không có phí giữ chỗ
+  pending         // Chờ thanh toán
+  paid            // Đã thanh toán phí giữ chỗ
+  applied         // Đã khấu trừ vào Deposit
+  refunded        // Đã hoàn tiền
+  forfeited       // Mất phí giữ chỗ (hủy <24h hoặc no-show)
 }
 
 Enum installment_status {
@@ -1230,6 +1262,102 @@ END $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_open_final_on_milestone_complete
 AFTER UPDATE OF status ON contract_milestones FOR EACH ROW
 EXECUTE FUNCTION open_final_on_milestone_complete();
+*/
+
+// Trigger 11: Khấu trừ Reservation Fee vào Deposit khi ký hợp đồng
+/*
+CREATE OR REPLACE FUNCTION apply_reservation_to_deposit() RETURNS trigger AS $$
+DECLARE
+  v_reservation_fee decimal(12,2);
+  v_booking_id uuid;
+BEGIN
+  -- Khi Deposit paid và có reservation
+  IF NEW.is_deposit = true AND NEW.status = 'paid' THEN
+    -- Tìm booking có reservation fee chưa apply
+    SELECT sb.booking_id, sb.reservation_fee_amount 
+    INTO v_booking_id, v_reservation_fee
+    FROM studio_bookings sb
+    WHERE sb.contract_id = NEW.contract_id
+      AND sb.reservation_fee_status = 'paid'
+      AND sb.reservation_applied_to_installment_id IS NULL
+    LIMIT 1;
+    
+    -- Nếu có reservation chưa apply
+    IF v_booking_id IS NOT NULL AND v_reservation_fee > 0 THEN
+      -- Khấu trừ vào amount và applied_credit_amount
+      NEW.amount := NEW.amount - v_reservation_fee;
+      NEW.applied_credit_amount := NEW.applied_credit_amount + v_reservation_fee;
+      
+      -- Update booking reservation status
+      UPDATE studio_bookings
+      SET reservation_fee_status = 'applied',
+          reservation_applied_to_installment_id = NEW.installment_id
+      WHERE booking_id = v_booking_id;
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_apply_reservation_to_deposit
+BEFORE UPDATE OF status ON contract_installments FOR EACH ROW
+EXECUTE FUNCTION apply_reservation_to_deposit();
+*/
+
+// Trigger 12: Tính refund khi hủy reservation
+/*
+CREATE OR REPLACE FUNCTION calculate_reservation_refund() RETURNS trigger AS $$
+DECLARE
+  v_hours_before_booking int;
+  v_refund_percent decimal(5,2);
+  v_refund_amount decimal(12,2);
+BEGIN
+  -- Chỉ xử lý khi reservation_fee_status chuyển sang refunded hoặc forfeited
+  IF NEW.reservation_fee_status IN ('refunded', 'forfeited') 
+     AND OLD.reservation_fee_status NOT IN ('refunded', 'forfeited') THEN
+    
+    -- Tính số giờ trước booking
+    SELECT EXTRACT(EPOCH FROM (booking_date + start_time - NOW())) / 3600
+    INTO v_hours_before_booking
+    FROM studio_bookings
+    WHERE booking_id = NEW.booking_id;
+    
+    -- Tính refund theo chính sách
+    IF v_hours_before_booking >= 72 THEN
+      v_refund_percent := 100.0; -- Hoàn 100%
+      NEW.reservation_fee_status := 'refunded';
+    ELSIF v_hours_before_booking >= 24 THEN
+      v_refund_percent := 50.0;  -- Hoàn 50%
+      NEW.reservation_fee_status := 'refunded';
+    ELSE
+      v_refund_percent := 0.0;   -- Không hoàn
+      NEW.reservation_fee_status := 'forfeited';
+    END IF;
+    
+    -- Tính refund amount
+    v_refund_amount := NEW.reservation_fee_amount * (v_refund_percent / 100.0);
+    
+    -- Nếu có hoàn tiền, tạo wallet transaction refund
+    IF v_refund_amount > 0 THEN
+      -- Create refund wallet transaction
+      INSERT INTO wallet_transactions (
+        wallet_id, tx_type, amount, booking_id, refund_of_wallet_tx_id
+      ) VALUES (
+        (SELECT w.wallet_id FROM wallets w JOIN users u ON w.user_id = u.user_id WHERE u.user_id = NEW.user_id),
+        'refund',
+        v_refund_amount,
+        NEW.booking_id,
+        NEW.reservation_wallet_tx_id
+      ) RETURNING wallet_tx_id INTO NEW.reservation_refund_wallet_tx_id;
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_calculate_reservation_refund
+BEFORE UPDATE OF reservation_fee_status ON studio_bookings FOR EACH ROW
+EXECUTE FUNCTION calculate_reservation_refund();
 */
 
 // Trigger 1b: Booking - tính external_guest_fee từ external_guest_count và free limit
