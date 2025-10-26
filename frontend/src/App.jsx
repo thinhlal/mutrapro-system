@@ -24,6 +24,8 @@ import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
 import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
 import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
+import TranscriptionQuotePage from "./pages/TranscriptionQuote/TranscriptionQuotePage";
+import ReviewOrderPage from "./pages/ReviewOrderPage/ReviewOrderPage";
 
 // Coordinator Pages
 import Tasks from "./pages/Task/Task";
@@ -52,6 +54,11 @@ function App() {
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/transcription/quote"
+          element={<TranscriptionQuotePage />}
+        />
+        <Route path="/checkout/review" element={<ReviewOrderPage />} />
 
         {/* --- COORDINATOR ROUTES --- */}
         <Route path="/coordinator" element={<CoordinatorLayout />}>
