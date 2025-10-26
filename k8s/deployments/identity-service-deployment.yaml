@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: specialist-service
+  name: identity-service
   namespace: mutrapro
   labels:
-    app: specialist-service
+    app: identity-service
     version: v1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: specialist-service
+      app: identity-service
   template:
     metadata:
       labels:
-        app: specialist-service
+        app: identity-service
         version: v1
     spec:
       containers:
-      - name: specialist-service
-        image: mutrapro/specialist-service:latest
+      - name: identity-service
+        image: mutrapro/identity-service:latest
         ports:
         - containerPort: 8080
         env:
@@ -32,17 +32,32 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: mutrapro-config
-              key: SPECIALIST_DATASOURCE_URL
+              key: IDENTITY_DATASOURCE_URL
         - name: SPRING_DATASOURCE_USERNAME
           valueFrom:
             configMapKeyRef:
               name: mutrapro-config
-              key: SPECIALIST_DATASOURCE_USERNAME
+              key: IDENTITY_DATASOURCE_USERNAME
         - name: SPRING_DATASOURCE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mutrapro-secrets
-              key: SPECIALIST_DATASOURCE_PASSWORD
+              key: IDENTITY_DATASOURCE_PASSWORD
+        - name: SPRING_REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: mutrapro-config
+              key: SPRING_REDIS_HOST
+        - name: SPRING_REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: mutrapro-config
+              key: SPRING_REDIS_PORT
+        - name: JWT_SIGNER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mutrapro-secrets
+              key: JWT_SECRET
         - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
           valueFrom:
             configMapKeyRef:
@@ -80,3 +95,4 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 30
       restartPolicy: Always
+

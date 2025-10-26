@@ -10,7 +10,7 @@ spec:
     app: project-service
   ports:
   - name: http
-    port: 8083
-    targetPort: 8083
+    port: 80
+    targetPort: 8086
     protocol: TCP
   type: ClusterIP

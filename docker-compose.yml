@@ -23,45 +23,25 @@ services:
       - mutrapro-network
     restart: unless-stopped
 
-  # Auth Service
-  auth-service:
+  # Identity Service (merged from auth-service and user-service)
+  identity-service:
     build:
       context: ./backend
-      dockerfile: ./auth-service/Dockerfile
+      dockerfile: ./identity-service/Dockerfile
     ports:
-      - "8082:8082"
+      - "8081:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
-      - SPRING_DATASOURCE_USERNAME=auth_service_user
-      - SPRING_DATASOURCE_PASSWORD=auth_service_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/identity_db
+      - SPRING_DATASOURCE_USERNAME=identity_service_user
+      - SPRING_DATASOURCE_PASSWORD=identity_service_password
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
-      - JWT_SECRET=your-jwt-secret-key-here
-      - JWT_EXPIRATION=86400
+      - JWT_SIGNER_KEY=QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
     depends_on:
       - postgres
       - redis
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
-  # User Service
-  user-service:
-    build:
-      context: ./backend
-      dockerfile: ./user-service/Dockerfile
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db
-      - SPRING_DATASOURCE_USERNAME=user_service_user
-      - SPRING_DATASOURCE_PASSWORD=user_service_password
-    depends_on:
-      - postgres
     networks:
       - mutrapro-network
     restart: unless-stopped
@@ -72,7 +52,7 @@ services:
       context: ./backend
       dockerfile: ./project-service/Dockerfile
     ports:
-      - "8083:8083"
+      - "8086:8086"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
@@ -85,19 +65,38 @@ services:
       - mutrapro-network
     restart: unless-stopped
 
-  # Payment Service
-  payment-service:
+  # Billing Service
+  billing-service:
     build:
       context: ./backend
-      dockerfile: ./payment-service/Dockerfile
+      dockerfile: ./billing-service/Dockerfile
     ports:
       - "8084:8084"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/billing_db
+      - SPRING_DATASOURCE_USERNAME=billing_service_user
+      - SPRING_DATASOURCE_PASSWORD=billing_service_password
+    depends_on:
+      - postgres
+    networks:
+      - mutrapro-network
+    restart: unless-stopped
+
+  # Request Service
+  request-service:
+    build:
+      context: ./backend
+      dockerfile: ./request-service/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/request_db
+      - SPRING_DATASOURCE_USERNAME=request_service_user
+      - SPRING_DATASOURCE_PASSWORD=request_service_password
     depends_on:
       - postgres
     networks:
@@ -110,7 +109,7 @@ services:
       context: ./backend
       dockerfile: ./notification-service/Dockerfile
     ports:
-      - "8085:8085"
+      - "8088:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
@@ -126,89 +125,13 @@ services:
       - mutrapro-network
     restart: unless-stopped
 
-  # File Service
-  file-service:
-    build:
-      context: ./backend
-      dockerfile: ./file-service/Dockerfile
-    ports:
-      - "8086:8086"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
-    depends_on:
-      - postgres
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
-  # Feedback Service
-  feedback-service:
-    build:
-      context: ./backend
-      dockerfile: ./feedback-service/Dockerfile
-    ports:
-      - "8087:8087"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
-    depends_on:
-      - postgres
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
-  # Quotation Service
-  quotation-service:
-    build:
-      context: ./backend
-      dockerfile: ./quotation-service/Dockerfile
-    ports:
-      - "8088:8088"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
-    depends_on:
-      - postgres
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
-  # Revision Service
-  revision-service:
-    build:
-      context: ./backend
-      dockerfile: ./revision-service/Dockerfile
-    ports:
-      - "8089:8089"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
-    depends_on:
-      - postgres
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
   # Specialist Service
   specialist-service:
     build:
       context: ./backend
       dockerfile: ./specialist-service/Dockerfile
     ports:
-      - "8090:8090"
+      - "8090:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
@@ -227,26 +150,7 @@ services:
       context: ./backend
       dockerfile: ./studio-service/Dockerfile
     ports:
-      - "8091:8091"
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mutrapro
-      - SPRING_DATASOURCE_USERNAME=mutrapro_user
-      - SPRING_DATASOURCE_PASSWORD=mutrapro_password
-    depends_on:
-      - postgres
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-
-  # Task Service
-  task-service:
-    build:
-      context: ./backend
-      dockerfile: ./task-service/Dockerfile
-    ports:
-      - "8092:8092"
+      - "8091:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka

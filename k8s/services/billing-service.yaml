@@ -1,16 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: specialist-service
+  name: billing-service
   namespace: mutrapro
   labels:
-    app: specialist-service
+    app: billing-service
 spec:
   selector:
-    app: specialist-service
+    app: billing-service
   ports:
   - name: http
     port: 80
-    targetPort: 8080
+    targetPort: 8084
     protocol: TCP
   type: ClusterIP
+

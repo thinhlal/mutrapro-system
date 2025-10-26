@@ -53,22 +53,17 @@ kubectl apply -f k8s/deployments/
 
 # Wait for core services to be ready first
 echo "⏳ Waiting for core services to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/user-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/auth-service -n $NAMESPACE
+kubectl wait --for=condition=available --timeout=300s deployment/identity-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/api-gateway -n $NAMESPACE
 
 # Wait for other services to be ready
 echo "⏳ Waiting for other services to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/project-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/payment-service -n $NAMESPACE
+kubectl wait --for=condition=available --timeout=300s deployment/billing-service -n $NAMESPACE
+kubectl wait --for=condition=available --timeout=300s deployment/request-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/notification-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/file-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/feedback-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/quotation-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/revision-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/specialist-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/studio-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/task-service -n $NAMESPACE
 
 # 5. Apply services
 echo "Applying Kubernetes services..."
@@ -93,8 +88,7 @@ echo "  kubectl get services -n $NAMESPACE"
 echo "  kubectl get ingress -n $NAMESPACE"
 echo ""
 echo "To view logs:"
-echo "  kubectl logs -f deployment/user-service -n $NAMESPACE"
-echo "  kubectl logs -f deployment/auth-service -n $NAMESPACE"
+echo "  kubectl logs -f deployment/identity-service -n $NAMESPACE"
 echo "  kubectl logs -f deployment/api-gateway -n $NAMESPACE"
 echo ""
 echo "To access the API Gateway:"

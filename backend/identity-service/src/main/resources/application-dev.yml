@@ -1,17 +1,17 @@
 server:
-  port: 8085
+  port: 8080
   servlet:
     context-path: 
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/identity_db
+    url: jdbc:postgresql://localhost:5432/identity_service
     username: postgres
     password: postgres
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     open-in-view: false
   sql:
     init:
@@ -21,6 +21,10 @@ logging:
   level:
     root: INFO
 
-# JWT Configuration - Must match auth-service signerKey
+# JWT Configuration
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+
+verification:
+  email-otp:
+    expiry-seconds: 900

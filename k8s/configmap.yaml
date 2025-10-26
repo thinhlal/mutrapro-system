@@ -5,41 +5,26 @@ metadata:
   namespace: mutrapro
 data:
   # Database Configuration - Each service has its own database
-  USER_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/user_db"
-  USER_DATASOURCE_USERNAME: "user_service_user"
-  
-  AUTH_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/auth_db"
-  AUTH_DATASOURCE_USERNAME: "auth_service_user"
+  IDENTITY_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/identity_db"
+  IDENTITY_DATASOURCE_USERNAME: "identity_service_user"
   
   PROJECT_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/project_db"
   PROJECT_DATASOURCE_USERNAME: "project_service_user"
   
-  PAYMENT_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/payment_db"
-  PAYMENT_DATASOURCE_USERNAME: "payment_service_user"
+  BILLING_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/billing_db"
+  BILLING_DATASOURCE_USERNAME: "billing_service_user"
+  
+  REQUEST_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/request_db"
+  REQUEST_DATASOURCE_USERNAME: "request_service_user"
   
   NOTIFICATION_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/notification_db"
   NOTIFICATION_DATASOURCE_USERNAME: "notification_service_user"
-  
-  FILE_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/file_db"
-  FILE_DATASOURCE_USERNAME: "file_service_user"
-  
-  FEEDBACK_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/feedback_db"
-  FEEDBACK_DATASOURCE_USERNAME: "feedback_service_user"
-  
-  QUOTATION_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/quotation_db"
-  QUOTATION_DATASOURCE_USERNAME: "quotation_service_user"
-  
-  REVISION_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/revision_db"
-  REVISION_DATASOURCE_USERNAME: "revision_service_user"
   
   SPECIALIST_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/specialist_db"
   SPECIALIST_DATASOURCE_USERNAME: "specialist_service_user"
   
   STUDIO_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/studio_db"
   STUDIO_DATASOURCE_USERNAME: "studio_service_user"
-  
-  TASK_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/task_db"
-  TASK_DATASOURCE_USERNAME: "task_service_user"
   
   # API Gateway database (if needed)
   GATEWAY_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/gateway_db"

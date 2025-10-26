@@ -19,86 +19,58 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: user-service
+            name: identity-service
             port:
-              number: 8081
-      - path: /api/auth
+              number: 80
+      - path: /auth
         pathType: Prefix
         backend:
           service:
-            name: auth-service
+            name: identity-service
             port:
-              number: 8082
+              number: 80
       - path: /api/projects
         pathType: Prefix
         backend:
           service:
             name: project-service
             port:
-              number: 8083
-      - path: /api/payments
+              number: 80
+      - path: /api/billing
         pathType: Prefix
         backend:
           service:
-            name: payment-service
+            name: billing-service
             port:
-              number: 8084
+              number: 80
+      - path: /api/requests
+        pathType: Prefix
+        backend:
+          service:
+            name: request-service
+            port:
+              number: 80
       - path: /api/notifications
         pathType: Prefix
         backend:
           service:
             name: notification-service
             port:
-              number: 8085
-      - path: /api/files
-        pathType: Prefix
-        backend:
-          service:
-            name: file-service
-            port:
-              number: 8086
-      - path: /api/feedback
-        pathType: Prefix
-        backend:
-          service:
-            name: feedback-service
-            port:
-              number: 8087
-      - path: /api/quotations
-        pathType: Prefix
-        backend:
-          service:
-            name: quotation-service
-            port:
-              number: 8088
-      - path: /api/revisions
-        pathType: Prefix
-        backend:
-          service:
-            name: revision-service
-            port:
-              number: 8089
+              number: 80
       - path: /api/specialists
         pathType: Prefix
         backend:
           service:
             name: specialist-service
             port:
-              number: 8090
+              number: 80
       - path: /api/studios
         pathType: Prefix
         backend:
           service:
             name: studio-service
             port:
-              number: 8091
-      - path: /api/tasks
-        pathType: Prefix
-        backend:
-          service:
-            name: task-service
-            port:
-              number: 8092
+              number: 80
       - path: /
         pathType: Prefix
         backend:

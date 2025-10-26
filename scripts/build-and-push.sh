@@ -18,18 +18,13 @@ echo "Build Context: $BUILD_CONTEXT"
 # List of services
 SERVICES=(
     "api-gateway"
-    "auth-service"
-    "user-service"
+    "identity-service"
     "project-service"
-    "payment-service"
+    "billing-service"
+    "request-service"
     "notification-service"
-    "file-service"
-    "feedback-service"
-    "quotation-service"
-    "revision-service"
     "specialist-service"
     "studio-service"
-    "task-service"
 )
 
 # Function to build and push a service
