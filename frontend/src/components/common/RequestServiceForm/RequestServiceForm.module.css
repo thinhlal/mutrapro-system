@@ -1,0 +1,32 @@
+/* src/pages/ServiceRequest/components/RequestServiceForm/RequestServiceForm.module.css */
+.wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 60px;
+  margin-bottom: 20px;
+}
+.card {
+  width: 100%;
+  max-width: 860px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f2fb 100%);
+  border: 2px solid #6b21a8;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(107, 33, 168, 0.12);
+  padding: 24px;
+}
+.title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  color: #5b139b;
+}
+.desc {
+  margin: 4px 0 16px;
+  color: #4b5563;
+}
+.form :global(.ant-radio-button-wrapper) {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.actions {
+  margin-top: 8px;
+}

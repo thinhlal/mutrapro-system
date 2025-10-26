@@ -1,0 +1,118 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 100px;
+  margin-bottom: 100px;
+  scroll-margin-top: 150px;
+  z-index: 0;
+}
+
+.card {
+  width: 100%;
+  max-width: 720px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f2fb 100%);
+  border: 2px solid #6b21a8;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(107, 33, 168, 0.15);
+  padding: 24px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.iconBadge {
+  height: 48px;
+  width: 48px;
+  border-radius: 50%;
+  border: 2px solid #6b21a8;
+  display: grid;
+  place-items: center;
+  color: #6b21a8;
+  background: #fff;
+}
+
+.musicIcon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.headings {
+  flex: 1;
+}
+.title {
+  margin: 0;
+  font-size: 28px;
+  color: #5b139b;
+}
+.desc {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.supportText {
+  margin: 16px 0 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.linkInput {
+  margin-bottom: 12px;
+  z-index: 0 !important;
+}
+
+.dragRow {
+  margin-top: 8px;
+  z-index: 0 !important;
+}
+
+.dragger {
+  background: #faf5ff;
+  border: 1px dashed #c084fc !important;
+  z-index: 0 !important;
+}
+
+.dragger :global(.ant-upload-drag) {
+  position: static;
+  z-index: auto;
+}
+
+.actionRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 16px;
+  z-index: 0 !important;
+}
+
+.ctaBtn {
+  background-color: #6b21a8;
+}
+
+.selectedBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed #e5e6eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+.fileLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.audioPreview {
+  width: 100%;
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 16px;
+  }
+  .title {
+    font-size: 22px;
+  }
+}

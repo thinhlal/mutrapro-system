@@ -1,4 +1,3 @@
-// src/pages/FromSoundToSheet/components/QuoteUploader/QuoteUploader.jsx
 import { useState, useCallback } from "react";
 import { Input, Upload, Button, Tooltip, message, Tag, Space } from "antd";
 import {
@@ -9,7 +8,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import styles from "./QuoteUploader.module.css";
+import styles from "./TranscriptionUploader.module.css";
 import { getMediaDurationSec } from "../../../../utils/getMediaDuration";
 
 const { Dragger } = Upload;
@@ -22,7 +21,7 @@ const toMMSS = (s = 0) =>
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : "—";
 
-export default function QuoteUploader() {
+export default function TranscriptionUploader() {
   const [linkValue, setLinkValue] = useState("");
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState("");

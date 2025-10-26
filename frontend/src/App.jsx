@@ -20,12 +20,14 @@ import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import ServicesPage from "./pages/ServicesPage/ServicesPage";
 import RegisterPage from "./pages/RegisterPage/RegisterPage";
 import NotationEditor from "./pages/NotationEditor/NotationEditor";
-import FromSoundToSheet from "./pages/FromSoundToSheet/FromSoundToSheet";
+import ServiceRequestPage from "./pages/ServiceRequestPage/ServiceRequestPage";
 import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
 import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
 import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
 import TranscriptionQuotePage from "./pages/TranscriptionQuote/TranscriptionQuotePage";
 import ReviewOrderPage from "./pages/ReviewOrderPage/ReviewOrderPage";
+import RecordingQuotePage from "./pages/RecordingQuotePage/RecordingQuotePage";
+import ArrangementQuotePage from "./pages/ArrangementQuotePage/ArrangementQuotePage";
 
 // Coordinator Pages
 import Tasks from "./pages/Task/Task";
@@ -48,16 +50,20 @@ function App() {
         <Route path="/transcription" element={<TranscriptionPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<RegisterPage />} />
-        <Route path="/soundtosheet" element={<FromSoundToSheet />} />
+        <Route path="/soundtosheet" element={<ServiceRequestPage />} />
         <Route path="/editor" element={<NotationEditor />} />
         <Route path="/discover-pros" element={<DiscoverProsPage />} />
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+
+        {/* --- QUOTE ROUTES --- */}
         <Route
           path="/transcription/quote"
           element={<TranscriptionQuotePage />}
         />
+        <Route path="/arrangement/quote" element={<ArrangementQuotePage />} />
+        <Route path="/recording/quote" element={<RecordingQuotePage />} />
         <Route path="/checkout/review" element={<ReviewOrderPage />} />
 
         {/* --- COORDINATOR ROUTES --- */}
