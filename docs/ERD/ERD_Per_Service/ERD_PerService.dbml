@@ -390,23 +390,29 @@ Table service_sla_defaults {
   }
 }
 
-Table payment_milestones {
+Table contract_milestones {
   milestone_id uuid [pk]
   contract_id uuid [ref: > contracts.contract_id, not null]
-  milestone_type milestone_type [not null]
-  milestone_name varchar(100) [not null]
+  
+  // Thông tin mốc
+  name varchar(100) [not null]
   description text
-  amount decimal(12,2) [not null]
-  percentage decimal(5,2) [not null]
-  trigger_condition trigger_condition [not null]
-  required_deliverable_count integer [default: 0]
-  status milestone_status [default: 'pending']
+  
+  // Chủ sở hữu mốc (specialist hoặc manager)
+  owner_id uuid [not null, note: 'Soft reference to identity-service']
+  
+  // Timeline
   due_date timestamp
-  completed_at timestamp
+  
+  // Trạng thái
+  status milestone_work_status [default: 'planned']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
   
   indexes {
     contract_id
-    milestone_type
+    owner_id
     status
     due_date
   }
@@ -418,6 +424,10 @@ Table task_assignments {
   specialist_id uuid [not null, note: 'Soft reference to specialist-service']
   task_type task_type [not null]
   status assignment_status [default: 'assigned']
+  
+  // Gán task vào mốc công việc
+  milestone_id uuid [note: 'Soft reference to contract_milestones in project-service']
+  
   assigned_date timestamp [default: `now()`]
   completed_date timestamp
   notes text
@@ -429,6 +439,7 @@ Table task_assignments {
   indexes {
     contract_id
     specialist_id
+    milestone_id
     status
     specialist_can_do
     task_type
@@ -589,22 +600,69 @@ Table wallet_transactions {
   currency currency_type [default: 'VND']
   balance_before decimal(14,2) [not null]
   balance_after decimal(14,2) [not null]
-  related_payment_id uuid [ref: > payments.payment_id]
   metadata jsonb
+  
+  // Truy vết giao dịch đến thực thể
+  contract_id uuid [note: 'Soft reference to project-service']
+  installment_id uuid [note: 'Soft reference to billing-service - contract_installments']
+  booking_id uuid [note: 'Soft reference to studio-service']
+  refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
+  
   created_at timestamp [default: `now()`]
   
   indexes {
     wallet_id
     tx_type
     currency
-    related_payment_id
+    contract_id
+    installment_id
+    booking_id
+    refund_of_wallet_tx_id
     created_at
+  }
+}
+
+Table contract_installments {
+  installment_id uuid [pk]
+  contract_id uuid [not null, note: 'Soft reference to project-service']
+  
+  // Thông tin đợt
+  label varchar(50) [not null] // Deposit, Phase 1, Phase 2, Final
+  due_date timestamp
+  
+  // Số tiền
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  
+  // Trạng thái
+  status installment_status [default: 'pending']
+  
+  // Đánh dấu cọc
+  is_deposit boolean [default: false]
+  
+  // Liên kết với mốc công việc (optional)
+  milestone_id uuid [note: 'Soft reference to project-service - contract_milestones']
+  
+  // Điều kiện thanh toán
+  gate_condition gate_condition
+  
+  // Khấu trừ từ reservation fee hoặc credit khác
+  applied_credit_amount decimal(12,2) [default: 0]
+  
+  created_at timestamp [default: `now()`]
+  paid_at timestamp
+  
+  indexes {
+    contract_id
+    status
+    is_deposit
+    due_date
   }
 }
 
 Table payments {
   payment_id uuid [pk]
-  milestone_id uuid [not null, note: 'Soft reference to project-service']
+  installment_id uuid [ref: > contract_installments.installment_id, not null]
   amount decimal(12,2) [not null]
   currency currency_type [default: 'VND']
   payment_method payment_method [not null]
@@ -618,7 +676,7 @@ Table payments {
   created_at timestamp [default: `now()`]
   
   indexes {
-    milestone_id
+    installment_id
     payment_method
     status
     wallet_tx_id
@@ -744,18 +802,25 @@ Enum milestone_type {
   revision_fee
 }
 
-Enum milestone_status {
-  pending
-  due
-  paid
-  overdue
+Enum milestone_work_status {
+  planned
+  in_progress
+  submitted
+  accepted
+  rejected
 }
 
-Enum trigger_condition {
-  contract_signed
-  project_started
-  deliverable_sent
-  project_completed
+Enum installment_status {
+  pending
+  paid
+  overdue
+  cancelled
+}
+
+Enum gate_condition {
+  before_start
+  after_accept
+  after_delivery
 }
 
 Enum task_type {

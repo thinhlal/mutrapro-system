@@ -67,9 +67,18 @@ Table studio_bookings {
   purpose text
   special_instructions text
   notes text
+  
+  // Reservation fee management (cho giữ chỗ trước hợp đồng)
+  reservation_fee_amount decimal(12,2) [default: 0] // Phí giữ chỗ
+  reservation_fee_status reservation_fee_status [default: 'none'] // Trạng thái phí giữ chỗ
+  reservation_wallet_tx_id uuid [note: 'Soft reference to billing-service'] // Giao dịch thanh toán phí giữ chỗ
+  reservation_refund_wallet_tx_id uuid [note: 'Soft reference to billing-service'] // Giao dịch hoàn phí giữ chỗ
+  reservation_applied_to_installment_id uuid [note: 'Soft reference to billing-service'] // Khấu trừ vào installment nào
+  refund_policy_json jsonb // Chính sách hoàn tiền (optional)
+  
   created_at timestamp [default: `now()`]
   
-  Note: 'Booking lưu giá chi tiết để show trong contract. Khi user thay đổi, update studio_bookings rồi update contract.total_price. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ). Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
+  Note: 'Booking lưu giá chi tiết để show trong contract. Có thể tạo booking sớm ở trạng thái tentative (giữ chỗ) với reservation_fee. Khi hợp đồng ký/cọc xong, cập nhật status=confirmed và gán contract_id. Hết hạn giữ chỗ: hold_expires_at.'
   
   indexes {
     user_id
@@ -136,4 +145,13 @@ Enum booking_status {
   completed
   cancelled
   no_show
+}
+
+Enum reservation_fee_status {
+  none
+  pending
+  paid
+  applied
+  refunded
+  forfeited
 }

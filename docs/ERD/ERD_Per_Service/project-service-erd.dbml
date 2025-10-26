@@ -116,34 +116,36 @@ Table service_sla_defaults {
   }
 }
 
-Table payment_milestones {
+Table contract_milestones {
   milestone_id uuid [pk, default: `gen_random_uuid()`]
   contract_id uuid [ref: > contracts.contract_id, not null]
   
-  milestone_type milestone_type [not null]
-  milestone_name varchar(100) [not null]
+  // Thông tin mốc
+  name varchar(100) [not null]
   description text
-  amount decimal(12,2) [not null]
-  percentage decimal(5,2) [not null]
   
-  // Điều kiện kích hoạt
-  trigger_condition trigger_condition [not null]
-  required_deliverable_count integer [default: 0]
+  // Chủ sở hữu mốc (specialist hoặc manager)
+  owner_id uuid [not null, note: 'Soft reference to identity-service']
   
-  // Trạng thái thanh toán
-  status milestone_status [default: 'pending']
+  // Timeline
   due_date timestamp
-  completed_at timestamp
   
-  Note: 'Các mốc thanh toán theo giai đoạn - request_id và user_id lấy qua contract_id'
+  // Trạng thái
+  status milestone_work_status [default: 'planned']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  Note: 'Mốc công việc trong hợp đồng - Tách biệt với đợt thanh toán'
   
   indexes {
     contract_id
-    milestone_type
+    owner_id
     status
     due_date
   }
 }
+
 
 Table task_assignments {
   assignment_id uuid [pk, default: `gen_random_uuid()`]
@@ -151,6 +153,9 @@ Table task_assignments {
   specialist_id uuid [not null, note: 'Soft reference to specialist-service']
   task_type task_type [not null]
   status assignment_status [default: 'assigned']
+  
+  // Gán task vào mốc công việc
+  milestone_id uuid [note: 'Soft reference to contract_milestones in project-service']
   
   // Timeline management (simplified)
   assigned_date timestamp [default: `now()`]
@@ -167,11 +172,12 @@ Table task_assignments {
   // Revision tracking (chỉ cho transcription và arrangement)
   used_revisions integer [default: 0]
   
-  Note: 'Phân công task trực tiếp từ contract - Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
+  Note: 'Phân công task trực tiếp từ contract - Gán vào mốc công việc qua milestone_id. Revision chỉ áp dụng cho transcription/arrangement. CHECK: task_type phải khớp với contract.contract_type (transcription, arrangement, recording)'
   
   indexes {
     contract_id
     specialist_id
+    milestone_id
     status
     specialist_can_do
     task_type
