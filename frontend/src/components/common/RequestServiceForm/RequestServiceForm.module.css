@@ -7,9 +7,9 @@
 }
 .card {
   width: 100%;
-  max-width: 860px;
+  max-width: 930px;
   background: linear-gradient(180deg, #ffffff 0%, #f7f2fb 100%);
-  border: 2px solid #6b21a8;
+  border: 2px solid #ec8a1c;
   border-radius: 18px;
   box-shadow: 0 6px 20px rgba(107, 33, 168, 0.12);
   padding: 24px;
@@ -17,7 +17,7 @@
 .title {
   margin: 0 0 6px;
   font-size: 26px;
-  color: #5b139b;
+  color: #000000;
 }
 .desc {
   margin: 4px 0 16px;
@@ -29,4 +29,9 @@
 }
 .actions {
   margin-top: 8px;
+}
+
+.ctaBtn {
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  color: #ffffff;
 }
