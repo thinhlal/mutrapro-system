@@ -50,7 +50,7 @@ export default function RequestServiceForm({ onCreated }) {
           className={styles.form}
         >
           <Form.Item label="Full Name" name="fullName" rules={[requiredMsg]}>
-            <Input placeholder="e.g., John Doe" />
+            <Input size="large" placeholder="e.g., John Doe" />
           </Form.Item>
 
           <Form.Item
@@ -58,11 +58,11 @@ export default function RequestServiceForm({ onCreated }) {
             name="email"
             rules={[requiredMsg, { type: "email", message: "Invalid email" }]}
           >
-            <Input placeholder="you@example.com" />
+            <Input size="large" placeholder="you@example.com" />
           </Form.Item>
 
           <Form.Item label="Phone" name="phone" rules={[requiredMsg]}>
-            <Input placeholder="+84 ..." />
+            <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
           <Form.Item
@@ -85,7 +85,12 @@ export default function RequestServiceForm({ onCreated }) {
           </Form.Item>
 
           <div className={styles.actions}>
-            <Button type="primary" size="large" htmlType="submit">
+            <Button
+              className={styles.ctaBtn}
+              type="primary"
+              size="large"
+              htmlType="submit"
+            >
               Create Request
             </Button>
           </div>

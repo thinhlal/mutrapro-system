@@ -9,9 +9,9 @@
 
 .card {
   width: 100%;
-  max-width: 720px;
+  max-width: 930px;
   background: linear-gradient(180deg, #ffffff 0%, #f7f2fb 100%);
-  border: 2px solid #6b21a8;
+  border: 2px solid #ec8a1c;
   border-radius: 18px;
   box-shadow: 0 6px 20px rgba(107, 33, 168, 0.15);
   padding: 24px;
@@ -27,10 +27,10 @@
   height: 48px;
   width: 48px;
   border-radius: 50%;
-  border: 2px solid #6b21a8;
+  border: 2px solid #ec8a1c;
   display: grid;
   place-items: center;
-  color: #6b21a8;
+  color: #ec8a1c;
   background: #fff;
 }
 
@@ -45,7 +45,7 @@
 .title {
   margin: 0;
   font-size: 28px;
-  color: #5b139b;
+  color: #000000;
 }
 .desc {
   margin: 4px 0 0;
@@ -87,7 +87,7 @@
 }
 
 .ctaBtn {
-  background-color: #6b21a8;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
 }
 
 .selectedBox {

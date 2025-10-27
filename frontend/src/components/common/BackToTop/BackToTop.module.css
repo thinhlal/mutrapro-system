@@ -6,6 +6,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease-in-out;
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
 }
 
 .backToTop.visible {

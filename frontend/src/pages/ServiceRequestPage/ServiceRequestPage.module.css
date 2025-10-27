@@ -10,6 +10,15 @@
   --card-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
 }
 
+:root {
+  --header-h: 200px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--header-h);
+}
+
 .hero {
   position: relative;
   overflow: hidden;
