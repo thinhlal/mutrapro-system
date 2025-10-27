@@ -1,8 +1,7 @@
 // src/components/common/Header/Header.jsx
 import { useState, useEffect, useCallback, memo } from "react";
 import { Navbar, Nav, Container } from "react-bootstrap";
-import { Dropdown } from "antd";
-import { MenuOutlined, CloseOutlined, DownOutlined } from "@ant-design/icons";
+import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import classNames from "classnames";
 import { Link } from "react-router-dom";
 import styles from "./Header.module.css";
@@ -12,24 +11,15 @@ import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
 const SECTION_KEYS = new Map([
   ["/", "home"],
   ["/transcription", "audio"],
-  ["/soundtosheet", "services"],
-  ["/services", "services"],
+  ["/soundtosheet", "request"],
   ["/pricing", "pricing"],
   ["/reviews", "reviews"],
   ["/about", "about"],
   ["/contact", "contact"],
 ]);
 
-const HASH_TO_SERVICES = new Set([
-  "#transcription",
-  "#arrangement",
-  "#composition",
-  "#editing",
-]);
-
 const getActiveKey = () => {
-  const { pathname, hash } = window.location;
-  if (HASH_TO_SERVICES.has(hash)) return "services";
+  const { pathname } = window.location;
   // match longest prefix
   let winner = "home";
   let bestLen = -1;
@@ -42,56 +32,10 @@ const getActiveKey = () => {
   return winner;
 };
 
-// ---- Data ----
-const SERVICES_ITEMS = [
-  {
-    key: "services-all",
-    label: (
-      <Link to="/services" className={styles.dropdownItem}>
-        All Services &amp; Samples
-      </Link>
-    ),
-  },
-  {
-    key: "services-trans",
-    label: (
-      <Link to="/soundtosheet" className={styles.dropdownItem}>
-        From Sound to Sheet
-      </Link>
-    ),
-  },
-  {
-    key: "services-arr",
-    // vẫn để anchor về #arrangement trong trang services, tuỳ bạn có muốn tách route riêng không
-    label: (
-      <a href="#arrangement" className={styles.dropdownItem}>
-        Music Arrangement
-      </a>
-    ),
-  },
-  {
-    key: "services-comp",
-    label: (
-      <a href="#composition" className={styles.dropdownItem}>
-        Original Composition
-      </a>
-    ),
-  },
-  {
-    key: "services-edit",
-    label: (
-      <a href="#editing" className={styles.dropdownItem}>
-        Sheet Music Editing
-      </a>
-    ),
-  },
-];
-
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeKey, setActiveKey] = useState(getActiveKey());
-  const [servicesOpen, setServicesOpen] = useState(false); // rotate caret on desktop
 
   // Scroll-state (đổi style khi >20px)
   useEffect(() => {
@@ -104,16 +48,14 @@ function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Active-state theo URL/hash (back/forward/hashchange)
+  // Active-state theo URL (back/forward)
   useEffect(() => {
     const updateActive = () => setActiveKey(getActiveKey());
     window.addEventListener("popstate", updateActive);
-    window.addEventListener("hashchange", updateActive);
     // cũng cập nhật khi mount
     updateActive();
     return () => {
       window.removeEventListener("popstate", updateActive);
-      window.removeEventListener("hashchange", updateActive);
     };
   }, []);
 
@@ -133,9 +75,6 @@ function Header() {
     []
   );
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
-  const onDesktopDropdownOpenChange = useCallback((open) => {
-    setServicesOpen(open);
-  }, []);
 
   const navLink = (to, key, label) => (
     <Nav.Link
@@ -150,7 +89,7 @@ function Header() {
   );
 
   return (
-    <header
+    <div
       className={classNames(styles.header, {
         [styles.scrolled]: isScrolled,
       })}
@@ -192,30 +131,7 @@ function Header() {
             <Nav className={styles.navLinks}>
               {navLink("/", "home", "Home")}
               {navLink("/transcription", "audio", "Audio → Sheet Music")}
-
-              <Dropdown
-                menu={{ items: SERVICES_ITEMS }}
-                placement="bottomCenter"
-                trigger={["hover"]}
-                overlayClassName={styles.dropdown}
-                onOpenChange={onDesktopDropdownOpenChange}
-              >
-                <Nav.Link
-                  className={classNames(styles.navLink, {
-                    [styles.active]: activeKey === "services",
-                  })}
-                >
-                  <span className={styles.linkInner}>
-                    Services &amp; Samples
-                    <DownOutlined
-                      className={classNames(styles.caret, {
-                        [styles.caretOpen]: servicesOpen,
-                      })}
-                    />
-                  </span>
-                </Nav.Link>
-              </Dropdown>
-
+              {navLink("/soundtosheet", "request", "Request Service")}
               {navLink("/pricing", "pricing", "Pricing")}
               {navLink("/reviews", "reviews", "Reviews")}
               {navLink("/about", "about", "About us")}
@@ -281,55 +197,16 @@ function Header() {
                 Audio → Sheet Music
               </Nav.Link>
 
-              <div className={styles.mobileServicesGroup}>
-                <span
-                  className={classNames(styles.mobileServicesTitle, {
-                    [styles.active]: activeKey === "services",
-                  })}
-                >
-                  Services &amp; Samples
-                </span>
-                <div className={styles.mobileServicesItems}>
-                  <Nav.Link
-                    as={Link}
-                    to="/services"
-                    className={styles.mobileSubLink}
-                    onClick={closeMobileMenu}
-                  >
-                    All Services &amp; Samples
-                  </Nav.Link>
-                  <Nav.Link
-                    as={Link}
-                    to="/soundtosheet"
-                    className={styles.mobileSubLink}
-                    onClick={closeMobileMenu}
-                  >
-                    Music Transcription
-                  </Nav.Link>
-                  {/* Giữ nguyên các anchor dưới đây hoặc chuyển thành route riêng tùy ý bạn */}
-                  <Nav.Link
-                    href="#arrangement"
-                    className={styles.mobileSubLink}
-                    onClick={closeMobileMenu}
-                  >
-                    Music Arrangement
-                  </Nav.Link>
-                  <Nav.Link
-                    href="#composition"
-                    className={styles.mobileSubLink}
-                    onClick={closeMobileMenu}
-                  >
-                    Original Composition
-                  </Nav.Link>
-                  <Nav.Link
-                    href="#editing"
-                    className={styles.mobileSubLink}
-                    onClick={closeMobileMenu}
-                  >
-                    Sheet Music Editing
-                  </Nav.Link>
-                </div>
-              </div>
+              <Nav.Link
+                as={Link}
+                to="/soundtosheet"
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === "request",
+                })}
+                onClick={closeMobileMenu}
+              >
+                Request Service
+              </Nav.Link>
 
               <Nav.Link
                 as={Link}
@@ -376,7 +253,7 @@ function Header() {
             {/* Mobile CTA */}
             <div className={styles.mobileCta}>
               <Link
-                to="/request"
+                to="/soundtosheet"
                 className={styles.mobileCtaButton}
                 onClick={closeMobileMenu}
               >
@@ -391,7 +268,7 @@ function Header() {
           <div className={styles.mobileOverlay} onClick={closeMobileMenu} />
         )}
       </Container>
-    </header>
+    </div>
   );
 }
 

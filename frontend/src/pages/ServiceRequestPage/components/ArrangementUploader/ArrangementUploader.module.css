@@ -90,6 +90,24 @@
   background-color: #6b21a8;
 }
 
+.selectedBox {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed #e5e6eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+.fileLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.audioPreview {
+  width: 100%;
+  outline: none;
+}
+
 @media (max-width: 768px) {
   .card {
     padding: 16px;
