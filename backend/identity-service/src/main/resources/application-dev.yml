@@ -35,6 +35,10 @@ logging:
 # JWT Configuration
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+  access-token:
+    expiry-seconds: 3600  # 1 hour
+  refresh-token:
+    expiry-days: 7        # 7 days
 
 verification:
   email-otp:

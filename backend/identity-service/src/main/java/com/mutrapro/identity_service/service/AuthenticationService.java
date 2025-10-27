@@ -34,6 +34,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
@@ -62,6 +65,14 @@ public class AuthenticationService {
     @NonFinal
     @Value("${verification.email-otp.expiry-seconds:900}")
     long otpExpirySeconds;
+    
+    @NonFinal
+    @Value("${jwt.access-token.expiry-seconds:3600}")
+    int ACCESS_TOKEN_EXPIRY_SECONDS;
+    
+    @NonFinal
+    @Value("${jwt.refresh-token.expiry-days:7}")
+    int REFRESH_TOKEN_EXPIRY_DAYS;
 
     public IntrospectResponse introspect(IntrospectRequest request)
             throws JOSEException, ParseException {
@@ -74,7 +85,7 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request){
+    public AuthenticationResponse authenticate(AuthenticationRequest request, HttpServletResponse response){
         UsersAuth user = usersAuthRepository
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> UserNotFoundException.byEmail(request.getEmail()));
@@ -89,11 +100,65 @@ public class AuthenticationService {
             throw InvalidCredentialsException.create();
         }
 
-        String token = generateAccessToken(user);
+        String accessToken = generateAccessToken(user);
+        String refreshToken = generateRefreshToken(user);
+        
+        // Save refresh token to cookie
+        saveCookieToResponse(response, "refreshToken", refreshToken, REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60);
+        
         return AuthenticationResponse.builder()
-                .accessToken(token)
+                .accessToken(accessToken)
                 .tokenType("Bearer")
-                .expiresIn(3600L)
+                .expiresIn((long) ACCESS_TOKEN_EXPIRY_SECONDS)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+    
+    @Transactional
+    public AuthenticationResponse refreshToken(HttpServletRequest request, HttpServletResponse response)
+            throws JOSEException, ParseException {
+        // Get refresh token from cookie
+        Cookie[] cookies = request.getCookies();
+        String refreshToken = null;
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (refreshToken == null) {
+            throw RefreshTokenNotFoundException.create();
+        }
+
+        // Xác thực refresh token
+        SignedJWT refreshJWT = verifyToken(refreshToken);
+
+        // Get email from JWT subject
+        String userEmail = refreshJWT.getJWTClaimsSet().getSubject();
+
+        // Find user by email
+        UsersAuth user = usersAuthRepository.findByEmail(userEmail)
+                .orElseThrow(() -> UserNotFoundException.byEmail(userEmail));
+        
+        if (!user.isActive()) {
+            throw UserDisabledException.create();
+        }
+
+        // Create new access token and refresh token
+        var newAccessToken = generateAccessToken(user);
+        var newRefreshToken = generateRefreshToken(user);
+
+        // Save new refresh token to cookie
+        saveCookieToResponse(response, "refreshToken", newRefreshToken, REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60);
+
+        return AuthenticationResponse.builder()
+                .accessToken(newAccessToken)
+                .tokenType("Bearer")
+                .expiresIn((long) ACCESS_TOKEN_EXPIRY_SECONDS)
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .build();
@@ -204,7 +269,7 @@ public class AuthenticationService {
                 .issuer("mutrapro.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
+                        Instant.now().plus(ACCESS_TOKEN_EXPIRY_SECONDS, ChronoUnit.SECONDS).toEpochMilli()
                 ))
                 .jwtID(jti) // Add JWT ID claim
                 .claim("scope", usersAuth.getRole())
@@ -220,6 +285,44 @@ public class AuthenticationService {
             log.error("Failed to sign JWT token", e);
             throw JwtSigningFailedException.fromCause(e);
         }
+    }
+    
+    private String generateRefreshToken(UsersAuth usersAuth) {
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+
+        // Generate unique JWT ID
+        String jti = UUID.randomUUID().toString();
+
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(usersAuth.getEmail())
+                .issuer("mutrapro.com")
+                .issueTime(new Date())
+                .expirationTime(new Date(
+                        Instant.now().plus(REFRESH_TOKEN_EXPIRY_DAYS, ChronoUnit.DAYS).toEpochMilli()
+                ))
+                .jwtID(jti)
+                .claim("scope", usersAuth.getRole())
+                .build();
+
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+        JWSObject jwsObject = new JWSObject(header, payload);
+
+        try {
+            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            log.error("Failed to sign refresh token", e);
+            throw JwtSigningFailedException.fromCause(e);
+        }
+    }
+    
+    private void saveCookieToResponse(HttpServletResponse response, String name, String value, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setMaxAge(maxAge);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // Set to true in production with HTTPS
+        cookie.setPath("/");
+        response.addCookie(cookie);
     }
 }
 

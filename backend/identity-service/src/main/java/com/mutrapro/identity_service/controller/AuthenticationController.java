@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.text.ParseException;
 
 @RestController
@@ -27,8 +29,8 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
 
     @PostMapping("/log-in")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
-        var result = authenticationService.authenticate(request);
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request, HttpServletResponse response){
+        var result = authenticationService.authenticate(request, response);
         return ApiResponse.<AuthenticationResponse>builder()
                 .data(result)
                 .message("Login successfully!!!")
@@ -59,6 +61,16 @@ public class AuthenticationController {
         authenticationService.logout(request);
         return ApiResponse.<Void>builder()
                 .message("Logout successfully!!!")
+                .build();
+    }
+    
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> refreshToken(HttpServletRequest request, HttpServletResponse response)
+            throws JOSEException, ParseException {
+        var result = authenticationService.refreshToken(request, response);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(result)
+                .message("Token refreshed successfully!!!")
                 .build();
     }
 }

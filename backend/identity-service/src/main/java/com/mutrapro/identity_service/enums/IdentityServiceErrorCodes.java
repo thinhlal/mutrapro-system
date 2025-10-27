@@ -141,23 +141,28 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
         "The refresh token has expired",
         Retryable.NON_TRANSIENT),
 
-    USER_NOT_FOUND_AUTH("AUTH_5010", 404,
+    REFRESH_TOKEN_NOT_FOUND("AUTH_5010", 401,
         "https://docs.mutrapro.com/errors/AUTH_5010",
+        "Refresh token not found in cookie",
+        Retryable.NON_TRANSIENT),
+
+    USER_NOT_FOUND_AUTH("AUTH_5011", 404,
+        "https://docs.mutrapro.com/errors/AUTH_5011",
         "User not found",
         Retryable.NON_TRANSIENT),
 
-    USER_DISABLED("AUTH_5011", 403,
-        "https://docs.mutrapro.com/errors/AUTH_5011",
+    USER_DISABLED("AUTH_5012", 403,
+        "https://docs.mutrapro.com/errors/AUTH_5012",
         "User disabled",
         Retryable.NON_TRANSIENT),
 
-    INVALID_CREDENTIALS("AUTH_5012", 401,
-        "https://docs.mutrapro.com/errors/AUTH_5012",
+    INVALID_CREDENTIALS("AUTH_5013", 401,
+        "https://docs.mutrapro.com/errors/AUTH_5013",
         "Invalid credentials",
         Retryable.NON_TRANSIENT),
 
-    USER_ALREADY_EXISTS_AUTH("AUTH_5013", 409,
-        "https://docs.mutrapro.com/errors/AUTH_5013",
+    USER_ALREADY_EXISTS_AUTH("AUTH_5014", 409,
+        "https://docs.mutrapro.com/errors/AUTH_5014",
         "User already exists",
         Retryable.NON_TRANSIENT);
 
