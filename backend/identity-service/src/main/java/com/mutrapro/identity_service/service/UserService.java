@@ -36,34 +36,18 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
     
-    /**
-     * Tìm user theo email và trả về UserResponse
-     */
-    public UserResponse findByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> UserNotFoundException.byEmail(email));
-        return userMapper.toUserResponse(user);
-    }
     
     /**
      * Tạo user mới
+     * Note: User chỉ nên được tạo qua register flow trong AuthenticationService
+     * Method này chỉ dùng để update profile sau khi user đã được tạo
      */
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(CreateUserRequest request) {
-        log.info("Creating new user with email: {}", request.getEmail());
-        
-        // Validate user data
-        validateUserForCreation(request);
-        
-        // Map request to entity
-        User user = userMapper.toUser(request);
-        
-        // Save user
-        User savedUser = userRepository.save(user);
-        
-        log.info("User created successfully with ID: {}", savedUser.getUserId());
-        return userMapper.toUserResponse(savedUser);
+        throw new UnsupportedOperationException(
+            "User creation not supported via this endpoint. Users must be created via registration flow."
+        );
     }
     
     /**
@@ -129,40 +113,6 @@ public class UserService {
     public User findUserEntityById(String id) {
         return userRepository.findById(id)
             .orElseThrow(() -> UserNotFoundException.byId(id));
-    }
-    
-    /**
-     * Tìm user entity theo email (internal use)
-     */
-    public User findUserEntityByEmail(String email) {
-        return userRepository.findByEmail(email)
-            .orElseThrow(() -> UserNotFoundException.byEmail(email));
-    }
-    
-    
-    /**
-     * Validate user data for creation
-     */
-    private void validateUserForCreation(CreateUserRequest request) {
-        // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw UserAlreadyExistsException.create();
-        }
-        
-        
-        // Validate email format (basic validation)
-        if (!isValidEmail(request.getEmail())) {
-            throw InvalidEmailFormatException.withEmail(request.getEmail());
-        }
-        
-    }
-    
-    /**
-     * Validate email format
-     */
-    private boolean isValidEmail(String email) {
-        return email != null && email.contains("@") && email.contains(".");
-    }
-    
+    }  
 }
 

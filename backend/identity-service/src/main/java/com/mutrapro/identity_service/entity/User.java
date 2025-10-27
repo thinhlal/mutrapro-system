@@ -1,16 +1,15 @@
 package com.mutrapro.identity_service.entity;
 
 import com.mutrapro.shared.entity.BaseEntity;
-import com.mutrapro.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
 /**
  * User Profile Entity - chỉ chứa thông tin hồ sơ (không chứa credential)
- * Bảng: users_profile
+ * Bảng: users
  */
 @Entity
-@Table(name = "users_profile")
+@Table(name = "users")
 @Getter
 @Setter
 @Builder
@@ -19,19 +18,11 @@ import lombok.*;
 public class User extends BaseEntity<String> {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "user_id")
-    private String userId;
-    
-    @Column(unique = true, nullable = false, length = 100)
-    private String email;
+    private String userId; // UserId từ users_auth table
     
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 100)
-    private Role role;
     
     @Column(name = "phone", length = 20)
     private String phone;

@@ -27,7 +27,7 @@ public class ApplicationInitConfig {
                         .email("admin@admin.com")
                         .passwordHash(passwordEncoder.encode("admin@admin.com"))
                         .role(Role.SYSTEM_ADMIN)
-                        .isVerified(true)
+                        .emailVerified(true)
                         .build();
                 usersAuthRepository.save(usersAuth);
                 log.warn("Admin user has been created with default password: admin@admin.com");

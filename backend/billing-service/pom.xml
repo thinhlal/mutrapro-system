@@ -6,14 +6,14 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.5</version>
+		<version>3.5.7</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.mutrapro</groupId>
 	<artifactId>billing-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>billing-service</name>
-	<description>MuTraPro Billing Service - Wallet, Payment & Transaction Management</description>
+	<description>MuTraPro Billing Service - Wallet, Payment, Transaction Management</description>
 	<url />
 	<licenses>
 		<license />

@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Response DTO cho User Profile
+ * Response DTO cho User Profile - Chỉ chứa thông tin từ users table
+ * Note: Email và Role thuộc users_auth table, không được include ở đây
  */
 @Data
 @Builder
@@ -19,26 +20,13 @@ import java.time.LocalDateTime;
 public class UserProfileResponse {
     
     private String userId;
-    private String email;
     private String fullName;
     private String phone;
     private String address;
-    private com.mutrapro.shared.enums.Role role;
     private boolean isActive;
     
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
-    
-    // Profile statistics (có thể lấy từ các service khác)
-    private int totalProjects;
-    private int completedTasks;
-    private int activeProjects;
-    
-    // Specialist info (nếu user là specialist) - có thể lấy từ specialist-service
-    private String specialization;
-    private Integer experienceYears;
-    private Double hourlyRate;
 }
 

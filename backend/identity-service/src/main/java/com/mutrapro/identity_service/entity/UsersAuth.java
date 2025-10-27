@@ -16,26 +16,43 @@ public class UsersAuth extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private String id;
+    @Column(name = "user_id")
+    private String userId;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 100)
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 100)
+    @Column(name = "role", nullable = false)
     private Role role;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "is_active")
+    @Column(name = "status", length = 20)
     @Builder.Default
-    private boolean active = true;
+    private String status = "active";
 
-    @Column(name = "is_verified")
+    @Column(name = "email_verified")
     @Builder.Default
-    private boolean isVerified = false;
+    private boolean emailVerified = false;
+    
+    // Convenience methods
+    public boolean isActive() {
+        return "active".equals(status);
+    }
+    
+    public void setActive(boolean active) {
+        this.status = active ? "active" : "inactive";
+    }
+    
+    public boolean isVerified() {
+        return emailVerified;
+    }
+    
+    public void setVerified(boolean verified) {
+        this.emailVerified = verified;
+    }
 }
 
 

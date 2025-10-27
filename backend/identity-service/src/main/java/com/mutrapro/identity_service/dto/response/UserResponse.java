@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Response DTO cho User Profile
+ * Response DTO cho User - Chỉ chứa thông tin từ users table
+ * Note: Email và Role thuộc users_auth table, không được include ở đây
  */
 @Data
 @Builder
@@ -19,11 +20,9 @@ import java.time.LocalDateTime;
 public class UserResponse {
     
     private String userId;
-    private String email;
     private String fullName;
     private String phone;
     private String address;
-    private com.mutrapro.shared.enums.Role role;
     private boolean isActive;
     
     // Timestamps

@@ -35,25 +35,12 @@ public class UserController {
     }
     
     /**
-     * Get user by email
-     */
-    @GetMapping("/email/{email}")
-    public ApiResponse<UserResponse> getUserByEmail(@PathVariable String email) {
-        log.info("Getting user with email: {}", email);
-        UserResponse user = userService.findByEmail(email);
-        return ApiResponse.<UserResponse>builder()
-            .message("User retrieved successfully")
-            .data(user)
-            .build();
-    }
-    
-    /**
      * Create new user
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        log.info("Creating new user with email: {}", request.getEmail());
+        log.info("Creating new user with fullName: {}", request.getFullName());
         UserResponse user = userService.createUser(request);
         return ApiResponse.<UserResponse>builder()
             .message("User created successfully")

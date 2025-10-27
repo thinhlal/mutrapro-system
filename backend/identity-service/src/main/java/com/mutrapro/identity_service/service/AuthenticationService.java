@@ -2,16 +2,19 @@ package com.mutrapro.identity_service.service;
 
 import com.mutrapro.identity_service.dto.request.AuthenticationRequest;
 import com.mutrapro.identity_service.dto.request.IntrospectRequest;
+import com.mutrapro.identity_service.dto.request.LogoutRequest;
 import com.mutrapro.identity_service.dto.request.RegisterRequest;
 import com.mutrapro.identity_service.dto.response.AuthenticationResponse;
 import com.mutrapro.identity_service.dto.response.IntrospectResponse;
 import com.mutrapro.identity_service.dto.response.RegisterResponse;
 import com.mutrapro.identity_service.entity.EmailVerification;
+import com.mutrapro.identity_service.entity.User;
 import com.mutrapro.identity_service.enums.VerificationChannel;
 import com.mutrapro.identity_service.enums.VerificationStatus;
 import com.mutrapro.identity_service.exception.*;
 import com.mutrapro.identity_service.entity.UsersAuth;
 import com.mutrapro.identity_service.repository.EmailVerificationRepository;
+import com.mutrapro.identity_service.repository.UserRepository;
 import com.mutrapro.identity_service.repository.UsersAuthRepository;
 import com.mutrapro.shared.enums.Role;
 import com.nimbusds.jose.*;
@@ -26,6 +29,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +49,11 @@ public class AuthenticationService {
 
     private final EmailVerificationRepository emailVerificationRepository;
     private final UsersAuthRepository usersAuthRepository;
+    private final UserRepository userRepository;
     private final UsersAuthMapper usersAuthMapper;
     private final SecureRandom secureRandom = new SecureRandom();
     private final PasswordEncoder passwordEncoder;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -60,23 +67,17 @@ public class AuthenticationService {
             throws JOSEException, ParseException {
         var token = request.getToken();
 
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
-        SignedJWT signedJWT = SignedJWT.parse(token);
-
-        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-        var verified = signedJWT.verify(verifier);
+       verifyToken(token);
 
         return IntrospectResponse.builder()
-                .valid(verified && expiryTime.after(new Date()))
+                .valid(true)
                 .build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request){
         UsersAuth user = usersAuthRepository
                 .findByEmail(request.getEmail())
-                .orElseThrow(UserNotFoundException::byEmail);
+                .orElseThrow(() -> UserNotFoundException.byEmail(request.getEmail()));
 
         if (!user.isActive()) {
             throw UserDisabledException.create();
@@ -104,16 +105,27 @@ public class AuthenticationService {
             throw UserAlreadyExistsException.create();
         });
 
-        var user = usersAuthMapper.toUsersAuth(request);
-        user.setRole(request.getRole() != null ? request.getRole() : Role.CUSTOMER);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        UsersAuth userSaved = usersAuthRepository.save(user);
+        // Create UsersAuth
+        var userAuth = usersAuthMapper.toUsersAuth(request);
+        userAuth.setRole(request.getRole() != null ? request.getRole() : Role.CUSTOMER);
+        userAuth.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        UsersAuth userAuthSaved = usersAuthRepository.save(userAuth);
+
+        // Create User (users table)
+        User user = User.builder()
+                .userId(userAuthSaved.getUserId()) // Use same userId from users_auth
+                .fullName(request.getFullName())
+                .phone(request.getPhone())
+                .address(request.getAddress())
+                .isActive(true)
+                .build();
+        userRepository.save(user);
 
         long expiresInSeconds = otpExpirySeconds;
 
         String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
         var verification = EmailVerification.builder()
-                .userId(userSaved.getId())
+                .userId(userAuthSaved.getUserId())
                 .otpHash(passwordEncoder.encode(otp))
                 .channel(VerificationChannel.EMAIL_OTP)
                 .expiresAt(Instant.now().plus(expiresInSeconds, ChronoUnit.SECONDS))
@@ -122,9 +134,9 @@ public class AuthenticationService {
         var emailVerification = emailVerificationRepository.save(verification);
 
         return RegisterResponse.builder()
-                .userId(userSaved.getId())
-                .email(userSaved.getEmail())
-                .role(userSaved.getRole().name())
+                .userId(userAuthSaved.getUserId())
+                .email(userAuthSaved.getEmail())
+                .role(userAuthSaved.getRole().name())
                 .verification(RegisterResponse.VerificationInfo.builder()
                         .channel("EMAIL_OTP")
                         .expiresInSeconds(expiresInSeconds)
@@ -134,8 +146,58 @@ public class AuthenticationService {
                 .build();
     }
 
+    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+        String token = request.getToken();
+
+        //Decode token to get ClaimsSet
+        var signedJWT = verifyToken(token);
+        JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+        Date expirationTime = claimsSet.getExpirationTime();
+
+        // Get JWT ID (jti) from token
+        String jti = claimsSet.getJWTID();
+
+        if (jti == null || jti.isEmpty()) {
+            log.warn("Token does not have jti claim, cannot logout");
+            return;
+        }
+
+        // Calculate remaining time of token (TTL)
+        long ttl = expirationTime.getTime() - System.currentTimeMillis();
+
+        if (ttl > 0) {
+            // Save jti to Redis with TTL = remaining time of token
+            // Key format: "blacklist:jti:" + jti
+            String key = "blacklist:jti:" + jti;
+            redisTemplate.opsForValue().set(key, "logout",
+                    java.time.Duration.ofMillis(ttl));
+
+            log.info("JWT ID {} has been added to Redis blacklist with TTL: {}ms", jti, ttl);
+        } else {
+            log.warn("Token has expired, no need to add to blacklist");
+        }
+    }
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        var verified = signedJWT.verify(verifier);
+
+        if (!(verified && expiryTime.after(new Date())))
+            throw TokenInvalidException.create();
+
+        return signedJWT;
+    }
+
     private String generateAccessToken(UsersAuth usersAuth){
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+
+        // Generate unique JWT ID
+        String jti = UUID.randomUUID().toString();
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(usersAuth.getEmail())
@@ -144,6 +206,7 @@ public class AuthenticationService {
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
+                .jwtID(jti) // Add JWT ID claim
                 .claim("scope", usersAuth.getRole())
                 .build();
 

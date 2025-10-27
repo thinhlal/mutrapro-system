@@ -1,8 +1,9 @@
 package com.mutrapro.identity_service.controller;
 
-
+import jakarta.validation.Valid;
 import com.mutrapro.identity_service.dto.request.AuthenticationRequest;
 import com.mutrapro.identity_service.dto.request.IntrospectRequest;
+import com.mutrapro.identity_service.dto.request.LogoutRequest;
 import com.mutrapro.identity_service.dto.request.RegisterRequest;
 import com.mutrapro.identity_service.dto.response.AuthenticationResponse;
 import com.mutrapro.identity_service.dto.response.IntrospectResponse;
@@ -35,7 +36,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    ApiResponse<RegisterResponse> register(@RequestBody RegisterRequest request){
+    ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request){
         var result = authenticationService.register(request);
         return ApiResponse.<RegisterResponse>builder()
                 .data(result)
@@ -49,6 +50,15 @@ public class AuthenticationController {
         var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
                 .data(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request) 
+            throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder()
+                .message("Logout successfully!!!")
                 .build();
     }
 }
