@@ -16,6 +16,9 @@ import {
   Space,
 } from "antd";
 import styles from "./ArrangementQuotePage.module.css";
+import Header from "../../components/common/Header/Header";
+import Footer from "../../components/common/Footer/Footer";
+import BackToTop from "../../components/common/BackToTop/BackToTop";
 
 const { Title, Text } = Typography;
 
@@ -114,217 +117,228 @@ export default function ArrangementQuotePage() {
   }
 
   return (
-    <div className={styles.wrap}>
-      <Title level={2}>Arrangement — Files & Options</Title>
+    <>
+      <Header />
+      <div className={styles.wrap}>
+        <Title level={2}>Arrangement — Files & Options</Title>
 
-      <div className={styles.row}>
-        <div className={styles.left}>
-          {/* Không cần waveform; giữ khu vực trống hoặc thông tin hướng dẫn */}
-          <div
-            style={{ padding: 12, border: "1px dashed #ddd", borderRadius: 8 }}
-          >
-            <Text type="secondary">
-              Please review your instruments and complexity level. You can
-              attach lyrics if vocalist is included.
-            </Text>
+        <div className={styles.row}>
+          <div className={styles.left}>
+            {/* Không cần waveform; giữ khu vực trống hoặc thông tin hướng dẫn */}
+            <div
+              style={{
+                padding: 12,
+                border: "1px dashed #ddd",
+                borderRadius: 8,
+              }}
+            >
+              <Text type="secondary">
+                Please review your instruments and complexity level. You can
+                attach lyrics if vocalist is included.
+              </Text>
+            </div>
           </div>
-        </div>
 
-        <div className={styles.right}>
-          <Space direction="vertical" style={{ width: "100%" }} size={8}>
-            <div className={styles.metaRow}>
-              <Text strong>Notation File:</Text>
-              <Input
-                value={source.fileName}
-                placeholder="Untitled"
-                onChange={(e) =>
-                  setSource((s) => ({ ...s, fileName: e.target.value }))
-                }
-                variant="filled"
-                style={{ maxWidth: 360 }}
-                allowClear
-              />
-            </div>
-            <div className={styles.metaRow}>
-              <Text strong>Type:</Text>
-              <Text>{source.fileType || "Unknown"}</Text>
-            </div>
-
-            <div className={styles.rightAlign}>
-              <Button danger type="text" onClick={clearSource}>
-                Remove source
-              </Button>
-              <Button
-                type="link"
-                onClick={() => navigate(-1)}
-                style={{ paddingLeft: 8 }}
-              >
-                Change on previous page
-              </Button>
-            </div>
-          </Space>
-        </div>
-      </div>
-
-      <Divider />
-
-      <Collapse
-        bordered={false}
-        defaultActiveKey={["instruments"]}
-        items={[
-          {
-            key: "instruments",
-            label: (
-              <div className={styles.sectionTitle}>Instrument Selection</div>
-            ),
-            extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
-            children: (
-              <Select
-                mode="multiple"
-                placeholder="Pick instruments (required)"
-                value={instruments}
-                onChange={setInstruments}
-                style={{ width: "100%" }}
-                options={[
-                  { value: "piano", label: "Piano" },
-                  { value: "guitar", label: "Guitar" },
-                  { value: "violin", label: "Violin" },
-                  { value: "strings", label: "Strings Section" },
-                  { value: "brass", label: "Brass" },
-                  { value: "winds", label: "Winds" },
-                  { value: "rhythm", label: "Rhythm Section" },
-                  { value: "vocal", label: "Vocal" },
-                ]}
-                tagRender={(props) => (
-                  <Tag closable={props.closable} onClose={props.onClose}>
-                    {props.label}
-                  </Tag>
-                )}
-              />
-            ),
-          },
-          {
-            key: "complexity",
-            label: <div className={styles.sectionTitle}>Complexity</div>,
-            children: (
-              <div className={styles.inlineRow}>
-                <div>
-                  <Text strong>Complexity Level</Text>
-                  <Slider
-                    min={1}
-                    max={5}
-                    value={complexity}
-                    onChange={setComplexity}
-                    tooltip={{ formatter: (v) => `Level ${v}` }}
-                  />
-                </div>
+          <div className={styles.right}>
+            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+              <div className={styles.metaRow}>
+                <Text strong>Notation File:</Text>
+                <Input
+                  value={source.fileName}
+                  placeholder="Untitled"
+                  onChange={(e) =>
+                    setSource((s) => ({ ...s, fileName: e.target.value }))
+                  }
+                  variant="filled"
+                  style={{ maxWidth: 360 }}
+                  allowClear
+                />
               </div>
-            ),
-          },
-          {
-            key: "editable",
-            label: <div className={styles.sectionTitle}>Editable Formats</div>,
-            children: (
-              <Select
-                mode="multiple"
-                value={editableFormats}
-                onChange={setEditableFormats}
-                placeholder="Editable formats (+$5 each)"
-                style={{ width: "100%" }}
-                options={[
-                  { value: "musicxml", label: "MusicXML (.xml)" },
-                  { value: "midi", label: "MIDI (.mid)" },
-                  { value: "sib", label: "Sibelius (.sib)" },
-                  { value: "gp", label: "Guitar Pro (.gp)" },
-                  { value: "musx", label: "Finale (.musx)" },
-                  { value: "mscz", label: "MuseScore (.mscz)" },
-                  { value: "dorico", label: "Dorico" },
-                ]}
-              />
-            ),
-          },
-          ...(withVocalist
-            ? [
-                {
-                  key: "vocal",
-                  label: <div className={styles.sectionTitle}>Vocalist</div>,
-                  children: (
-                    <Checkbox
-                      checked={lyricsProvided}
-                      onChange={(e) => setLyricsProvided(e.target.checked)}
-                    >
-                      I will provide lyrics (recommended for vocalist)
-                    </Checkbox>
-                  ),
-                },
-              ]
-            : []),
-        ]}
-      />
+              <div className={styles.metaRow}>
+                <Text strong>Type:</Text>
+                <Text>{source.fileType || "Unknown"}</Text>
+              </div>
 
-      <div className={styles.footerBar}>
-        <div>
-          <Text type="secondary">Current total</Text>
-          <Title level={4} style={{ margin: 0 }}>
-            ${price.total.toFixed(2)}
-          </Title>
+              <div className={styles.rightAlign}>
+                <Button danger type="text" onClick={clearSource}>
+                  Remove source
+                </Button>
+                <Button
+                  type="link"
+                  onClick={() => navigate(-1)}
+                  style={{ paddingLeft: 8 }}
+                >
+                  Change on previous page
+                </Button>
+              </div>
+            </Space>
+          </div>
         </div>
-        <div>
-          <Button
-            size="large"
-            disabled={!canProceed}
-            onClick={() => setShowCart(true)}
-            type="primary"
-          >
-            Review Cart
-          </Button>
-        </div>
-      </div>
 
-      <Drawer
-        title="What's in your cart"
-        placement="bottom"
-        height={320}
-        open={showCart}
-        onClose={() => setShowCart(false)}
-      >
-        <div className={styles.cartGrid}>
+        <Divider />
+
+        <Collapse
+          bordered={false}
+          defaultActiveKey={["instruments"]}
+          items={[
+            {
+              key: "instruments",
+              label: (
+                <div className={styles.sectionTitle}>Instrument Selection</div>
+              ),
+              extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
+              children: (
+                <Select
+                  mode="multiple"
+                  placeholder="Pick instruments (required)"
+                  value={instruments}
+                  onChange={setInstruments}
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "piano", label: "Piano" },
+                    { value: "guitar", label: "Guitar" },
+                    { value: "violin", label: "Violin" },
+                    { value: "strings", label: "Strings Section" },
+                    { value: "brass", label: "Brass" },
+                    { value: "winds", label: "Winds" },
+                    { value: "rhythm", label: "Rhythm Section" },
+                    { value: "vocal", label: "Vocal" },
+                  ]}
+                  tagRender={(props) => (
+                    <Tag closable={props.closable} onClose={props.onClose}>
+                      {props.label}
+                    </Tag>
+                  )}
+                />
+              ),
+            },
+            {
+              key: "complexity",
+              label: <div className={styles.sectionTitle}>Complexity</div>,
+              children: (
+                <div className={styles.inlineRow}>
+                  <div>
+                    <Text strong>Complexity Level</Text>
+                    <Slider
+                      min={1}
+                      max={5}
+                      value={complexity}
+                      onChange={setComplexity}
+                      tooltip={{ formatter: (v) => `Level ${v}` }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "editable",
+              label: (
+                <div className={styles.sectionTitle}>Editable Formats</div>
+              ),
+              children: (
+                <Select
+                  mode="multiple"
+                  value={editableFormats}
+                  onChange={setEditableFormats}
+                  placeholder="Editable formats (+$5 each)"
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "musicxml", label: "MusicXML (.xml)" },
+                    { value: "midi", label: "MIDI (.mid)" },
+                    { value: "sib", label: "Sibelius (.sib)" },
+                    { value: "gp", label: "Guitar Pro (.gp)" },
+                    { value: "musx", label: "Finale (.musx)" },
+                    { value: "mscz", label: "MuseScore (.mscz)" },
+                    { value: "dorico", label: "Dorico" },
+                  ]}
+                />
+              ),
+            },
+            ...(withVocalist
+              ? [
+                  {
+                    key: "vocal",
+                    label: <div className={styles.sectionTitle}>Vocalist</div>,
+                    children: (
+                      <Checkbox
+                        checked={lyricsProvided}
+                        onChange={(e) => setLyricsProvided(e.target.checked)}
+                      >
+                        I will provide lyrics (recommended for vocalist)
+                      </Checkbox>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+        />
+
+        <div className={styles.footerBar}>
           <div>
-            <Title level={4} style={{ marginTop: 0 }}>
-              {source.fileName || "Untitled"}
+            <Text type="secondary">Current total</Text>
+            <Title level={4} style={{ margin: 0 }}>
+              ${price.total.toFixed(2)}
             </Title>
-            <Divider />
-            <ul className={styles.listDots}>
-              {price.items.map((it, idx) => (
-                <li key={idx}>• {it.label}</li>
-              ))}
-            </ul>
           </div>
-
-          <div className={styles.cartRight}>
-            <div className={styles.totalLine}>
-              <Text>Subtotal:</Text>
-              <Text>${price.subtotal.toFixed(2)}</Text>
-            </div>
-            <div className={styles.totalLineStrong}>
-              <Text strong>Total:</Text>
-              <Text strong>${price.total.toFixed(2)}</Text>
-            </div>
-            <Divider />
-            <div className={styles.rightAlign}>
-              <Button
-                onClick={() => setShowCart(false)}
-                style={{ marginRight: 8 }}
-              >
-                Edit Order
-              </Button>
-              <Button type="primary" href="/checkout/review">
-                Next
-              </Button>
-            </div>
+          <div>
+            <Button
+              size="large"
+              disabled={!canProceed}
+              onClick={() => setShowCart(true)}
+              type="primary"
+            >
+              Review Cart
+            </Button>
           </div>
         </div>
-      </Drawer>
-    </div>
+
+        <Drawer
+          title="What's in your cart"
+          placement="bottom"
+          height={320}
+          open={showCart}
+          onClose={() => setShowCart(false)}
+        >
+          <div className={styles.cartGrid}>
+            <div>
+              <Title level={4} style={{ marginTop: 0 }}>
+                {source.fileName || "Untitled"}
+              </Title>
+              <Divider />
+              <ul className={styles.listDots}>
+                {price.items.map((it, idx) => (
+                  <li key={idx}>• {it.label}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={styles.cartRight}>
+              <div className={styles.totalLine}>
+                <Text>Subtotal:</Text>
+                <Text>${price.subtotal.toFixed(2)}</Text>
+              </div>
+              <div className={styles.totalLineStrong}>
+                <Text strong>Total:</Text>
+                <Text strong>${price.total.toFixed(2)}</Text>
+              </div>
+              <Divider />
+              <div className={styles.rightAlign}>
+                <Button
+                  onClick={() => setShowCart(false)}
+                  style={{ marginRight: 8 }}
+                >
+                  Edit Order
+                </Button>
+                <Button type="primary" href="/checkout/review">
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Drawer>
+      </div>
+      <Footer />
+      <BackToTop />
+    </>
   );
 }
