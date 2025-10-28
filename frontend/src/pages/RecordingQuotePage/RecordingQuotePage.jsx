@@ -13,6 +13,9 @@ import {
   Space,
 } from "antd";
 import styles from "./RecordingQuotePage.module.css";
+import Header from "../../components/common/Header/Header";
+import Footer from "../../components/common/Footer/Footer";
+import BackToTop from "../../components/common/BackToTop/BackToTop";
 
 const { Title, Text } = Typography;
 
@@ -56,157 +59,174 @@ export default function RecordingQuotePage() {
   );
 
   return (
-    <div className={styles.wrap}>
-      <Title level={2}>Recording — Session Details</Title>
+    <>
+      <Header />
+      <div className={styles.wrap}>
+        <Title level={2}>Recording — Session Details</Title>
 
-      <div className={styles.row}>
-        <div className={styles.left}>
-          <div
-            style={{ padding: 12, border: "1px dashed #ddd", borderRadius: 8 }}
-          >
-            <Text type="secondary">
-              Configure your session hours, performers, and post-production
-              add-ons.
-            </Text>
+        <div className={styles.row}>
+          <div className={styles.left}>
+            <div
+              style={{
+                padding: 12,
+                border: "1px dashed #ddd",
+                borderRadius: 8,
+              }}
+            >
+              <Text type="secondary">
+                Configure your session hours, performers, and post-production
+                add-ons.
+              </Text>
+            </div>
+          </div>
+
+          <div className={styles.right}>
+            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+              <div className={styles.metaRow}>
+                <Text strong>Reference Files:</Text>
+                <Text>{files.length ? `${files.length} file(s)` : "None"}</Text>
+              </div>
+              {files.length ? (
+                <ul className={styles.listDots} style={{ marginTop: 6 }}>
+                  {files.map((f, i) => (
+                    <li key={i}>
+                      {f.fileName} — {f.fileType}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Empty description="No files uploaded (optional)" />
+              )}
+              <div className={styles.rightAlign}>
+                <Button type="link" onClick={() => navigate(-1)}>
+                  Add/change on previous page
+                </Button>
+              </div>
+            </Space>
           </div>
         </div>
 
-        <div className={styles.right}>
-          <Space direction="vertical" style={{ width: "100%" }} size={8}>
-            <div className={styles.metaRow}>
-              <Text strong>Reference Files:</Text>
-              <Text>{files.length ? `${files.length} file(s)` : "None"}</Text>
-            </div>
-            {files.length ? (
-              <ul className={styles.listDots} style={{ marginTop: 6 }}>
-                {files.map((f, i) => (
-                  <li key={i}>
-                    {f.fileName} — {f.fileType}
-                  </li>
+        <Divider />
+
+        <Collapse
+          bordered={false}
+          defaultActiveKey={["session"]}
+          items={[
+            {
+              key: "session",
+              label: <div className={styles.sectionTitle}>Session Setup</div>,
+              extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
+              children: (
+                <div className={styles.inlineRow}>
+                  <div>
+                    <Text strong>Hours</Text>
+                    <div>
+                      <Slider
+                        min={1}
+                        max={8}
+                        value={hours}
+                        onChange={setHours}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Text strong>Performers</Text>
+                    <div>
+                      <Slider
+                        min={0}
+                        max={6}
+                        value={musicians}
+                        onChange={setMusicians}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "post",
+              label: <div className={styles.sectionTitle}>Post-production</div>,
+              children: (
+                <Space direction="vertical">
+                  <Checkbox
+                    checked={mixing}
+                    onChange={(e) => setMixing(e.target.checked)}
+                  >
+                    Mixing (+$30)
+                  </Checkbox>
+                  <Checkbox
+                    checked={mastering}
+                    onChange={(e) => setMastering(e.target.checked)}
+                  >
+                    Mastering (+$40)
+                  </Checkbox>
+                </Space>
+              ),
+            },
+          ]}
+        />
+
+        <div className={styles.footerBar}>
+          <div>
+            <Text type="secondary">Current total</Text>
+            <Title level={4} style={{ margin: 0 }}>
+              ${price.total.toFixed(2)}
+            </Title>
+          </div>
+          <div>
+            <Button size="large" onClick={() => setOpen(true)} type="primary">
+              Review Cart
+            </Button>
+          </div>
+        </div>
+
+        <Drawer
+          title="What's in your cart"
+          placement="bottom"
+          height={320}
+          open={open}
+          onClose={() => setOpen(false)}
+        >
+          <div className={styles.cartGrid}>
+            <div>
+              <Title level={4} style={{ marginTop: 0 }}>
+                Recording Session
+              </Title>
+              <Divider />
+              <ul className={styles.listDots}>
+                {price.items.map((it, idx) => (
+                  <li key={idx}>• {it.label}</li>
                 ))}
               </ul>
-            ) : (
-              <Empty description="No files uploaded (optional)" />
-            )}
-            <div className={styles.rightAlign}>
-              <Button type="link" onClick={() => navigate(-1)}>
-                Add/change on previous page
-              </Button>
             </div>
-          </Space>
-        </div>
-      </div>
 
-      <Divider />
-
-      <Collapse
-        bordered={false}
-        defaultActiveKey={["session"]}
-        items={[
-          {
-            key: "session",
-            label: <div className={styles.sectionTitle}>Session Setup</div>,
-            extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
-            children: (
-              <div className={styles.inlineRow}>
-                <div>
-                  <Text strong>Hours</Text>
-                  <div>
-                    <Slider min={1} max={8} value={hours} onChange={setHours} />
-                  </div>
-                </div>
-                <div>
-                  <Text strong>Performers</Text>
-                  <div>
-                    <Slider
-                      min={0}
-                      max={6}
-                      value={musicians}
-                      onChange={setMusicians}
-                    />
-                  </div>
-                </div>
+            <div className={styles.cartRight}>
+              <div className={styles.totalLine}>
+                <Text>Subtotal:</Text>
+                <Text>${price.subtotal.toFixed(2)}</Text>
               </div>
-            ),
-          },
-          {
-            key: "post",
-            label: <div className={styles.sectionTitle}>Post-production</div>,
-            children: (
-              <Space direction="vertical">
-                <Checkbox
-                  checked={mixing}
-                  onChange={(e) => setMixing(e.target.checked)}
+              <div className={styles.totalLineStrong}>
+                <Text strong>Total:</Text>
+                <Text strong>${price.total.toFixed(2)}</Text>
+              </div>
+              <Divider />
+              <div className={styles.rightAlign}>
+                <Button
+                  onClick={() => setOpen(false)}
+                  style={{ marginRight: 8 }}
                 >
-                  Mixing (+$30)
-                </Checkbox>
-                <Checkbox
-                  checked={mastering}
-                  onChange={(e) => setMastering(e.target.checked)}
-                >
-                  Mastering (+$40)
-                </Checkbox>
-              </Space>
-            ),
-          },
-        ]}
-      />
-
-      <div className={styles.footerBar}>
-        <div>
-          <Text type="secondary">Current total</Text>
-          <Title level={4} style={{ margin: 0 }}>
-            ${price.total.toFixed(2)}
-          </Title>
-        </div>
-        <div>
-          <Button size="large" onClick={() => setOpen(true)} type="primary">
-            Review Cart
-          </Button>
-        </div>
+                  Edit Order
+                </Button>
+                <Button type="primary" href="/checkout/review">
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Drawer>
       </div>
-
-      <Drawer
-        title="What's in your cart"
-        placement="bottom"
-        height={320}
-        open={open}
-        onClose={() => setOpen(false)}
-      >
-        <div className={styles.cartGrid}>
-          <div>
-            <Title level={4} style={{ marginTop: 0 }}>
-              Recording Session
-            </Title>
-            <Divider />
-            <ul className={styles.listDots}>
-              {price.items.map((it, idx) => (
-                <li key={idx}>• {it.label}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={styles.cartRight}>
-            <div className={styles.totalLine}>
-              <Text>Subtotal:</Text>
-              <Text>${price.subtotal.toFixed(2)}</Text>
-            </div>
-            <div className={styles.totalLineStrong}>
-              <Text strong>Total:</Text>
-              <Text strong>${price.total.toFixed(2)}</Text>
-            </div>
-            <Divider />
-            <div className={styles.rightAlign}>
-              <Button onClick={() => setOpen(false)} style={{ marginRight: 8 }}>
-                Edit Order
-              </Button>
-              <Button type="primary" href="/checkout/review">
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Drawer>
-    </div>
+      <Footer />
+      <BackToTop />
+    </>
   );
 }
