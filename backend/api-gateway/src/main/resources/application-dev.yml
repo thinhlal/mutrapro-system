@@ -1,0 +1,87 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+spring:
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://127.0.0.1:5173"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        # Identity Service
+        - id: identity-service
+          uri: ${IDENTITY_URI:http://localhost:8081}
+          predicates:
+            - Path=/identity/**
+          filters:
+            - StripPrefix=1
+
+        # Project Service
+        - id: project-service
+          uri: ${PROJECT_URI:http://localhost:8082}
+          predicates:
+            - Path=/projects/**
+          filters:
+            - StripPrefix=1
+
+        # Request Service
+        - id: request-service
+          uri: ${REQUEST_URI:http://localhost:8084}
+          predicates:
+            - Path=/requests/**
+          filters:
+            - StripPrefix=1
+
+        # Billing Service
+        - id: billing-service
+          uri: ${BILLING_URI:http://localhost:8083}
+          predicates:
+            - Path=/billing/**
+          filters:
+            - StripPrefix=1
+
+        # Specialist Service
+        - id: specialist-service
+          uri: ${SPECIALIST_URI:http://localhost:8086}
+          predicates:
+            - Path=/specialists/**
+          filters:
+            - StripPrefix=1
+
+        # Studio Service
+        - id: studio-service
+          uri: ${STUDIO_URI:http://localhost:8087}
+          predicates:
+            - Path=/studios/**
+          filters:
+            - StripPrefix=1
+
+        # Notification Service
+        - id: notification-service
+          uri: ${NOTIFICATION_URI:http://localhost:8085}
+          predicates:
+            - Path=/notifications/**
+          filters:
+            - StripPrefix=1
+
+
+jwt:
+  signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}
