@@ -18,15 +18,10 @@ spring:
       mode: never
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: 
+      host: redis-11105.c292.ap-southeast-1-1.ec2.redns.redis-cloud.com
+      port: 11105
+      password: 7h9vCLiYAuVo4IBKbOJHz2LKcW8B4l0a
       timeout: 3000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
 
 logging:
   level:

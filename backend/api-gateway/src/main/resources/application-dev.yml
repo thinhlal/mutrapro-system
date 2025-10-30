@@ -10,8 +10,9 @@ management:
 spring:
   data:
     redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
+      host: redis-11105.c292.ap-southeast-1-1.ec2.redns.redis-cloud.com
+      port: 11105
+      password: 7h9vCLiYAuVo4IBKbOJHz2LKcW8B4l0a
   cloud:
     gateway:
       default-filters:
