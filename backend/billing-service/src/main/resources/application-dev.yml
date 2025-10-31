@@ -1,13 +1,13 @@
 server:
-  port: 8084
+  port: 8083
   servlet:
     context-path: 
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/billing_db
+    url: jdbc:postgresql://shinkansen.proxy.rlwy.net:22601/railway
     username: postgres
-    password: postgres
+    password: wQMmyHLmSzihiSpyGvKBdeUWSalNIAuT
   jpa:
     hibernate:
       ddl-auto: update

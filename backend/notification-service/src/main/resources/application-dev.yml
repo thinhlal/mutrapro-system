@@ -1,13 +1,13 @@
 server:
-  port: 8080
+  port: 8085
   servlet:
     context-path: 
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/notification_service
+    url: jdbc:postgresql://shuttle.proxy.rlwy.net:27656/railway
     username: postgres
-    password: postgres
+    password: dIdGTMYGKPlmGPvxOWHwwKGGDJbymqqj
   jpa:
     hibernate:
       ddl-auto: update

@@ -15,64 +15,75 @@ spring:
       password: ${REDIS_PASSWORD}
   cloud:
     gateway:
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-            allowCredentials: false
-      routes:
-        - id: identity-service
-          uri: ${IDENTITY_URI:http://identity-service:8081}
-          predicates:
-            - Path=/identity/**
-          filters:
-            - StripPrefix=1
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:5173"
+                  - "http://127.0.0.1:5173"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                allowCredentials: true
+          routes:
+            # Identity Service
+            - id: identity-service
+              uri: ${IDENTITY_URI:http://localhost:8081}
+              predicates:
+                - Path=/identity/**
+              filters:
+                - StripPrefix=1
 
-        - id: project-service
-          uri: ${PROJECT_URI:http://project-service:8082}
-          predicates:
-            - Path=/projects/**
-          filters:
-            - StripPrefix=1
+            # Project Service
+            - id: project-service
+              uri: ${PROJECT_URI:http://localhost:8082}
+              predicates:
+                - Path=/projects/**
+              filters:
+                - StripPrefix=1
 
-        - id: billing-service
-          uri: ${BILLING_URI:http://billing-service:8083}
-          predicates:
-            - Path=/billing/**
-          filters:
-            - StripPrefix=1
+            # Request Service
+            - id: request-service
+              uri: ${REQUEST_URI:http://localhost:8084}
+              predicates:
+                - Path=/requests/**
+              filters:
+                - StripPrefix=1
 
-        - id: request-service
-          uri: ${REQUEST_URI:http://request-service:8084}
-          predicates:
-            - Path=/requests/**
-          filters:
-            - StripPrefix=1
+            # Billing Service
+            - id: billing-service
+              uri: ${BILLING_URI:http://localhost:8083}
+              predicates:
+                - Path=/billing/**
+              filters:
+                - StripPrefix=1
 
-        - id: notification-service
-          uri: ${NOTIFICATION_URI:http://notification-service:8085}
-          predicates:
-            - Path=/notifications/**
-          filters:
-            - StripPrefix=1
+            # Specialist Service
+            - id: specialist-service
+              uri: ${SPECIALIST_URI:http://localhost:8086}
+              predicates:
+                - Path=/specialists/**
+              filters:
+                - StripPrefix=1
 
-        - id: specialist-service
-          uri: ${SPECIALIST_URI:http://specialist-service:8086}
-          predicates:
-            - Path=/specialists/**
-          filters:
-            - StripPrefix=1
+            # Studio Service
+            - id: studio-service
+              uri: ${STUDIO_URI:http://localhost:8087}
+              predicates:
+                - Path=/studios/**
+              filters:
+                - StripPrefix=1
 
-        - id: studio-service
-          uri: ${STUDIO_URI:http://studio-service:8087}
-          predicates:
-            - Path=/studios/**
-          filters:
-            - StripPrefix=1
+            # Notification Service
+            - id: notification-service
+              uri: ${NOTIFICATION_URI:http://localhost:8085}
+              predicates:
+                - Path=/notifications/**
+              filters:
+                - StripPrefix=1
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}

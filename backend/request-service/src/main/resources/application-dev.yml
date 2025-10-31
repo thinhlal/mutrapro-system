@@ -1,13 +1,13 @@
 server:
-  port: 8085
+  port: 8084
   servlet:
     context-path: 
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/request_db
+    url: jdbc:postgresql://metro.proxy.rlwy.net:15490/railway
     username: postgres
-    password: postgres
+    password: mctNKuNiSneLFXCqgnSONsjXoRNFCqNo
   jpa:
     hibernate:
       ddl-auto: update
