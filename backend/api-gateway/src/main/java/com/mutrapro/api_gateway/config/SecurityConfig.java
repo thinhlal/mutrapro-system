@@ -48,6 +48,14 @@ public class SecurityConfig {
                 .authorizeExchange(registry -> registry
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/identity/auth/**").permitAll()
+                        // Swagger UI endpoints cho tất cả services
+                        .pathMatchers("/identity/swagger-ui/**", "/identity/swagger-ui.html", "/identity/v3/api-docs/**").permitAll()
+                        .pathMatchers("/projects/swagger-ui/**", "/projects/swagger-ui.html", "/projects/v3/api-docs/**").permitAll()
+                        .pathMatchers("/billing/swagger-ui/**", "/billing/swagger-ui.html", "/billing/v3/api-docs/**").permitAll()
+                        .pathMatchers("/requests/swagger-ui/**", "/requests/swagger-ui.html", "/requests/v3/api-docs/**").permitAll()
+                        .pathMatchers("/notifications/swagger-ui/**", "/notifications/swagger-ui.html", "/notifications/v3/api-docs/**").permitAll()
+                        .pathMatchers("/specialists/swagger-ui/**", "/specialists/swagger-ui.html", "/specialists/v3/api-docs/**").permitAll()
+                        .pathMatchers("/studios/swagger-ui/**", "/studios/swagger-ui.html", "/studios/v3/api-docs/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

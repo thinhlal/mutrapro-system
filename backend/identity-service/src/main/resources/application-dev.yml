@@ -5,7 +5,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://trolley.proxy.rlwy.net:19324/railway
+    url: jdbc:postgresql://trolley.proxy.rlwy.net:19324/railway?TimeZone=UTC
     username: postgres
     password: beywrjIGcwFtmwRKIlgUPUHayisTmIlx
   jpa:
