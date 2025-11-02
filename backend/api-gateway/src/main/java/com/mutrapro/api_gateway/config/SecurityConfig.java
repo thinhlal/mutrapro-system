@@ -26,10 +26,10 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/actuator/**",
             "/identity/auth/**",
-            // Swagger UI endpoints cho tất cả services
-            "/**/swagger-ui/**",
-            "/**/swagger-ui.html",
-            "/**/v3/api-docs/**"
+            // Swagger UI endpoints cho tất cả services (dùng * thay vì ** để match một segment)
+            "/*/swagger-ui/**",
+            "/*/swagger-ui.html",
+            "/*/v3/api-docs/**"
     };
 
     @Bean

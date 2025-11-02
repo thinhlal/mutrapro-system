@@ -21,7 +21,7 @@ public class UpdateUserRequest {
     @Size(max = 100, message = "Full name must not exceed 100 characters")
     private String fullName;
     
-    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Phone number must be valid")
+    @Pattern(regexp = "^\\d{10}$", message = "Phone number must be exactly 10 digits")
     @Size(max = 20, message = "Phone number must not exceed 20 characters")
     private String phone;
     

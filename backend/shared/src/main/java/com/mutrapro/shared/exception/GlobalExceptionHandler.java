@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -399,6 +400,36 @@ public class GlobalExceptionHandler {
                 .build();
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+    
+    /**
+     * Xử lý HttpMediaTypeNotSupportedException (Content-Type không được support)
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        
+        log.warn("HTTP media type not supported: {}", ex.getMessage());
+        
+        String message = String.format("Content-Type '%s' is not supported. Required: %s",
+                ex.getContentType(),
+                ex.getSupportedMediaTypes() != null && !ex.getSupportedMediaTypes().isEmpty()
+                        ? ex.getSupportedMediaTypes().get(0)
+                        : "application/json");
+        
+        ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                .status("error")
+                .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
+                .message("Unsupported media type")
+                .details(Map.of("error", message))
+                .path(request.getRequestURI())
+                .statusCode(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value())
+                .timestamp(LocalDateTime.now())
+                .serviceName(serviceName)
+                .traceId(getTraceId(request))
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(errorResponse);
     }
     
     /**
