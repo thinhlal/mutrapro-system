@@ -23,6 +23,15 @@ public class SecurityConfig {
     @Value("${app.api-prefix:/api/v1}")
     private String apiPrefix;
 
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/actuator/**",
+            "/identity/auth/**",
+            // Swagger UI endpoints cho tất cả services
+            "/**/swagger-ui/**",
+            "/**/swagger-ui.html",
+            "/**/v3/api-docs/**"
+    };
+
     @Bean
     public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.signerKey}") String signerKey) {
         byte[] secret = signerKey.getBytes(StandardCharsets.UTF_8);
@@ -46,19 +55,12 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity http,
             JwtAuthenticationConverter jwtConverter) {
+        String[] publicPaths = buildPublicPaths();
+        
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(registry -> registry
-                        .pathMatchers("/actuator/**").permitAll()
-                        .pathMatchers(apiPrefix + "/identity/auth/**").permitAll()
-                        // Swagger UI endpoints cho tất cả services
-                        .pathMatchers(apiPrefix + "/identity/swagger-ui/**", apiPrefix + "/identity/swagger-ui.html", apiPrefix + "/identity/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/projects/swagger-ui/**", apiPrefix + "/projects/swagger-ui.html", apiPrefix + "/projects/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/billing/swagger-ui/**", apiPrefix + "/billing/swagger-ui.html", apiPrefix + "/billing/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/requests/swagger-ui/**", apiPrefix + "/requests/swagger-ui.html", apiPrefix + "/requests/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/notifications/swagger-ui/**", apiPrefix + "/notifications/swagger-ui.html", apiPrefix + "/notifications/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/specialists/swagger-ui/**", apiPrefix + "/specialists/swagger-ui.html", apiPrefix + "/specialists/v3/api-docs/**").permitAll()
-                        .pathMatchers(apiPrefix + "/studios/swagger-ui/**", apiPrefix + "/studios/swagger-ui.html", apiPrefix + "/studios/v3/api-docs/**").permitAll()
+                        .pathMatchers(publicPaths).permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -69,6 +71,19 @@ public class SecurityConfig {
                 .build();
     }
 
+    private String[] buildPublicPaths() {
+        String[] paths = new String[PUBLIC_ENDPOINTS.length];
+        for (int i = 0; i < PUBLIC_ENDPOINTS.length; i++) {
+            String endpoint = PUBLIC_ENDPOINTS[i];
+            // Actuator không cần prefix
+            if (endpoint.startsWith("/actuator")) {
+                paths[i] = endpoint;
+            } else {
+                paths[i] = apiPrefix + endpoint;
+            }
+        }
+        return paths;
+    }
 }
 
 
