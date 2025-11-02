@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+app:
+  api-prefix: ${API_PREFIX:/api/v1}
+
 management:
   endpoints:
     web:
@@ -33,57 +36,57 @@ spring:
             - id: identity-service
               uri: ${IDENTITY_URI:http://localhost:8081}
               predicates:
-                - Path=/identity/**
+                - Path=${app.api-prefix}/identity/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Project Service
             - id: project-service
               uri: ${PROJECT_URI:http://localhost:8082}
               predicates:
-                - Path=/projects/**
+                - Path=${app.api-prefix}/projects/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Request Service
             - id: request-service
               uri: ${REQUEST_URI:http://localhost:8084}
               predicates:
-                - Path=/requests/**
+                - Path=${app.api-prefix}/requests/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Billing Service
             - id: billing-service
               uri: ${BILLING_URI:http://localhost:8083}
               predicates:
-                - Path=/billing/**
+                - Path=${app.api-prefix}/billing/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Specialist Service
             - id: specialist-service
               uri: ${SPECIALIST_URI:http://localhost:8086}
               predicates:
-                - Path=/specialists/**
+                - Path=${app.api-prefix}/specialists/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Studio Service
             - id: studio-service
               uri: ${STUDIO_URI:http://localhost:8087}
               predicates:
-                - Path=/studios/**
+                - Path=${app.api-prefix}/studios/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
             # Notification Service
             - id: notification-service
               uri: ${NOTIFICATION_URI:http://localhost:8085}
               predicates:
-                - Path=/notifications/**
+                - Path=${app.api-prefix}/notifications/**
               filters:
-                - StripPrefix=1
+                - StripPrefix=3
 
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn

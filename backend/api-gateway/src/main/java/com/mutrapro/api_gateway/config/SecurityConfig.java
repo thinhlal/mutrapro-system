@@ -20,6 +20,9 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    @Value("${app.api-prefix:/api/v1}")
+    private String apiPrefix;
+
     @Bean
     public ReactiveJwtDecoder jwtDecoder(@Value("${jwt.signerKey}") String signerKey) {
         byte[] secret = signerKey.getBytes(StandardCharsets.UTF_8);
@@ -47,7 +50,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(registry -> registry
                         .pathMatchers("/actuator/**").permitAll()
-                        .pathMatchers("/identity/auth/**").permitAll()
+                        .pathMatchers(apiPrefix + "/identity/auth/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
