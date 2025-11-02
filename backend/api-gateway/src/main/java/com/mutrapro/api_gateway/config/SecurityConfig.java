@@ -51,6 +51,14 @@ public class SecurityConfig {
                 .authorizeExchange(registry -> registry
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers(apiPrefix + "/identity/auth/**").permitAll()
+                        // Swagger UI endpoints cho tất cả services
+                        .pathMatchers(apiPrefix + "/identity/swagger-ui/**", apiPrefix + "/identity/swagger-ui.html", apiPrefix + "/identity/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/projects/swagger-ui/**", apiPrefix + "/projects/swagger-ui.html", apiPrefix + "/projects/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/billing/swagger-ui/**", apiPrefix + "/billing/swagger-ui.html", apiPrefix + "/billing/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/requests/swagger-ui/**", apiPrefix + "/requests/swagger-ui.html", apiPrefix + "/requests/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/notifications/swagger-ui/**", apiPrefix + "/notifications/swagger-ui.html", apiPrefix + "/notifications/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/specialists/swagger-ui/**", apiPrefix + "/specialists/swagger-ui.html", apiPrefix + "/specialists/v3/api-docs/**").permitAll()
+                        .pathMatchers(apiPrefix + "/studios/swagger-ui/**", apiPrefix + "/studios/swagger-ui.html", apiPrefix + "/studios/v3/api-docs/**").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
