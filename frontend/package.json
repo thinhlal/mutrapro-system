@@ -15,6 +15,7 @@
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "antd": "^5.27.3",
+    "axios": "^0.27.2",
     "bootstrap": "^5.3.8",
     "dayjs": "^1.11.18",
     "flat-embed": "^2.5.1",
@@ -23,6 +24,7 @@
     "react": "^19.1.1",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.1",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.8.2",
     "wavesurfer.js": "^7.11.1",
     "zustand": "^5.0.8"
