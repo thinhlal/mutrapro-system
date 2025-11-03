@@ -1,27 +1,27 @@
 // src/pages/ServiceRequest/ServiceRequestPage.jsx
-import { useRef, useState, useCallback } from "react";
-import styles from "./ServiceRequestPage.module.css";
-import Guitarist from "../../assets/images/FromSoundToSheet/homeBannerTunescribersTeam.webp";
-import Grid from "../../assets/images/FromSoundToSheet/homeBannerGridVector.webp";
-import Wave from "../../assets/images/FromSoundToSheet/MusicLines.svg";
-import Header from "../../components/common/Header/Header";
-import TranscriptionUploader from "./components/TranscriptionUploader/TranscriptionUploader"; // dùng cho Transcription
-import ArrangementUploader from "./components/ArrangementUploader/ArrangementUploader";
-import RecordingUploader from "./components/RecordingUploader/RecordingUploader";
-import RequestServiceForm from "../../components/common/RequestServiceForm/RequestServiceForm";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
-import Footer from "../../components/common/Footer/Footer";
+import { useRef, useState, useCallback } from 'react';
+import styles from './ServiceRequestPage.module.css';
+import Guitarist from '../../assets/images/FromSoundToSheet/homeBannerTunescribersTeam.webp';
+import Grid from '../../assets/images/FromSoundToSheet/homeBannerGridVector.webp';
+import Wave from '../../assets/images/FromSoundToSheet/MusicLines.svg';
+import Header from '../../components/common/Header/Header';
+import TranscriptionUploader from './components/TranscriptionUploader/TranscriptionUploader'; // dùng cho Transcription
+import ArrangementUploader from './components/ArrangementUploader/ArrangementUploader';
+import RecordingUploader from './components/RecordingUploader/RecordingUploader';
+import RequestServiceForm from '../../components/common/RequestServiceForm/RequestServiceForm';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
+import Footer from '../../components/common/Footer/Footer';
 
 export default function ServiceRequestPage() {
   const [selectedType, setSelectedType] = useState(null); // transcription | arrangement | arrangement_with_recording | recording
   const uploadRef = useRef(null);
 
-  const handleCreated = useCallback((type) => {
+  const handleCreated = useCallback(type => {
     setSelectedType(type);
     // scroll tới khu vực upload sau khi tạo yêu cầu
     requestAnimationFrame(() => {
-      const el = uploadRef.current || document.getElementById("quote-uploader");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const el = uploadRef.current || document.getElementById('quote-uploader');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, []);
 
@@ -55,9 +55,9 @@ export default function ServiceRequestPage() {
               type="button"
               className={styles.ctaBtn}
               onClick={() => {
-                const el = document.getElementById("request-service-form");
+                const el = document.getElementById('request-service-form');
                 if (el)
-                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
             >
               Start a Request <span aria-hidden>→</span>
@@ -82,14 +82,14 @@ export default function ServiceRequestPage() {
 
       {/* Khu upload theo loại yêu cầu */}
       <div ref={uploadRef}>
-        {selectedType === "transcription" && <TranscriptionUploader />}
-        {selectedType === "arrangement" && (
+        {selectedType === 'transcription' && <TranscriptionUploader />}
+        {selectedType === 'arrangement' && (
           <ArrangementUploader variant="pure" />
         )}
-        {selectedType === "arrangement_with_recording" && (
+        {selectedType === 'arrangement_with_recording' && (
           <ArrangementUploader variant="with_recording" />
         )}
-        {selectedType === "recording" && <RecordingUploader />}
+        {selectedType === 'recording' && <RecordingUploader />}
         {/* Mặc định (chưa chọn) hiển thị uploader Transcription cũ để tương thích */}
         {!selectedType && <TranscriptionUploader />}
       </div>

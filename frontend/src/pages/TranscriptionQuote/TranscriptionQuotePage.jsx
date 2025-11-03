@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Collapse,
@@ -14,16 +14,16 @@ import {
   Input,
   Empty,
   Space,
-} from "antd";
+} from 'antd';
 
-import Header from "../../components/common/Header/Header";
-import Footer from "../../components/common/Footer/Footer";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
-import styles from "./TranscriptionQuotePage.module.css";
+import Header from '../../components/common/Header/Header';
+import Footer from '../../components/common/Footer/Footer';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
+import styles from './TranscriptionQuotePage.module.css';
 
 // === WaveSurfer
-import WaveSurfer from "wavesurfer.js";
-import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
+import WaveSurfer from 'wavesurfer.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 
 const { Title, Text } = Typography;
 
@@ -32,12 +32,12 @@ const UNIT_SECONDS = 15;
 const PRICE_PER_15S = 7.5;
 const FORMAT_PRICE = 5;
 
-const toMMSS = (s) =>
-  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(
+const toMMSS = s =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
     Math.floor(s % 60)
-  ).padStart(2, "0")}`;
+  ).padStart(2, '0')}`;
 
-const ceilUnit = (sec) => Math.ceil(sec / UNIT_SECONDS) * UNIT_SECONDS;
+const ceilUnit = sec => Math.ceil(sec / UNIT_SECONDS) * UNIT_SECONDS;
 
 function quote(durationSec, opts) {
   const billable = Math.max(UNIT_SECONDS, ceilUnit(durationSec || 0));
@@ -47,7 +47,7 @@ function quote(durationSec, opts) {
     { label: `Base transcription (${toMMSS(billable)})`, amount: base },
   ];
   if (opts.includeChordSymbols)
-    items.push({ label: "Include chord symbols", amount: 5 });
+    items.push({ label: 'Include chord symbols', amount: 5 });
   const editable = (opts.editableFormats?.length || 0) * FORMAT_PRICE;
   if (editable)
     items.push({
@@ -81,9 +81,9 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
     const ws = WaveSurfer.create({
       container: containerRef.current,
       height: 140,
-      waveColor: "#bcd6ff",
-      progressColor: "#3b82f6",
-      cursorColor: "#ec8a1c",
+      waveColor: '#bcd6ff',
+      progressColor: '#3b82f6',
+      cursorColor: '#ec8a1c',
       barWidth: 2,
       barGap: 1,
       responsive: true,
@@ -93,7 +93,7 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
 
     ws.load(src);
 
-    ws.on("ready", () => {
+    ws.on('ready', () => {
       const d = ws.getDuration();
       setDur(d);
       onReady?.(d);
@@ -101,10 +101,10 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
       const start = Math.max(0, initial?.startSec ?? 0);
       const end = Math.min(d, initial?.endSec ?? d);
       regionRef.current = ws.addRegion({
-        id: "selected",
+        id: 'selected',
         start,
         end,
-        color: "rgba(59,130,246,0.15)",
+        color: 'rgba(59,130,246,0.15)',
       });
 
       onSelectionChange?.({
@@ -128,13 +128,13 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
       });
     });
 
-    ws.on("audioprocess", () => setCur(ws.getCurrentTime()));
-    ws.on("play", () => setPlaying(true));
-    ws.on("pause", () => setPlaying(false));
-    ws.on("finish", () => setPlaying(false));
+    ws.on('audioprocess', () => setCur(ws.getCurrentTime()));
+    ws.on('play', () => setPlaying(true));
+    ws.on('pause', () => setPlaying(false));
+    ws.on('finish', () => setPlaying(false));
 
-    ws.on("region-updated", (r) => {
-      if (r.id !== "selected") return;
+    ws.on('region-updated', r => {
+      if (r.id !== 'selected') return;
       onSelectionChange?.({
         startSec: r.start,
         endSec: r.end,
@@ -154,14 +154,14 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
       <div
         ref={containerRef}
         onClick={() => wsRef.current?.playPause()}
-        style={{ background: "#1f1f1f", borderRadius: 8, cursor: "pointer" }}
+        style={{ background: '#1f1f1f', borderRadius: 8, cursor: 'pointer' }}
         title="Click waveform để Play/Pause"
       />
       <div
-        style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 8 }}
+        style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}
       >
         <Button size="small" onClick={() => wsRef.current?.playPause()}>
-          {isPlaying ? "Pause" : "Play"}
+          {isPlaying ? 'Pause' : 'Play'}
         </Button>
         <Button size="small" onClick={() => onApi?.().playSelection?.()}>
           Play Selection
@@ -182,10 +182,10 @@ export default function TranscriptionQuotePage() {
 
   // ===== Source từ trang uploader =====
   const [source, setSource] = useState({
-    type: navState.sourceType || "upload", // "upload" | "url"
-    url: navState.url || "",
-    fileName: navState.fileName || "",
-    blobUrl: navState.blobUrl || "",
+    type: navState.sourceType || 'upload', // "upload" | "url"
+    url: navState.url || '',
+    fileName: navState.fileName || '',
+    blobUrl: navState.blobUrl || '',
     durationSec: Number(navState.durationSec) || 0,
   });
 
@@ -205,7 +205,7 @@ export default function TranscriptionQuotePage() {
   const waveApiRef = useRef(null);
 
   // ===== Tuỳ chọn =====
-  const [copyright, setCopyright] = useState("other");
+  const [copyright, setCopyright] = useState('other');
   const [instruments, setInstruments] = useState([]);
   const [includeChordSymbols, setIncludeChordSymbols] = useState(false);
   const [transpose, setTranspose] = useState(0);
@@ -232,7 +232,7 @@ export default function TranscriptionQuotePage() {
         : trackDuration;
     setTrackDuration(dur);
     setSelection({ startSec: 0, endSec: dur, durationSec: dur });
-    setSource((prev) => ({
+    setSource(prev => ({
       ...prev,
       type: navState.sourceType ?? prev.type,
       url: navState.url ?? prev.url,
@@ -248,10 +248,10 @@ export default function TranscriptionQuotePage() {
 
   const clearSource = () => {
     setSource({
-      type: "upload",
-      url: "",
-      fileName: "",
-      blobUrl: "",
+      type: 'upload',
+      url: '',
+      fileName: '',
+      blobUrl: '',
       durationSec: 0,
     });
   };
@@ -289,16 +289,16 @@ export default function TranscriptionQuotePage() {
                 startSec: selection.startSec,
                 endSec: selection.endSec,
               }}
-              onReady={(dur) => {
+              onReady={dur => {
                 setTrackDuration(dur);
                 if (!source.durationSec) {
-                  setSource((s) => ({ ...s, durationSec: dur }));
+                  setSource(s => ({ ...s, durationSec: dur }));
                 }
               }}
               onSelectionChange={({ startSec, endSec, durationSec }) =>
                 setSelection({ startSec, endSec, durationSec })
               }
-              onApi={(api) => {
+              onApi={api => {
                 waveApiRef.current = api;
                 return api;
               }}
@@ -316,10 +316,10 @@ export default function TranscriptionQuotePage() {
                   Math.floor(selection.endSec),
                 ]}
                 tooltip={{
-                  formatter: (v) =>
-                    `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(
+                  formatter: v =>
+                    `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(
                       Math.floor(v % 60)
-                    ).padStart(2, "0")}`,
+                    ).padStart(2, '0')}`,
                 }}
                 onChange={([start, end]) => {
                   setSelection({
@@ -342,14 +342,14 @@ export default function TranscriptionQuotePage() {
 
           <div className={styles.right}>
             {/* Thông tin file — cho phép đổi tên hiển thị hoặc xoá nguồn */}
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <div className={styles.metaRow}>
                 <Text strong>Song Title:</Text>
                 <Input
                   value={source.fileName}
                   placeholder="Untitled"
-                  onChange={(e) =>
-                    setSource((s) => ({ ...s, fileName: e.target.value }))
+                  onChange={e =>
+                    setSource(s => ({ ...s, fileName: e.target.value }))
                   }
                   variant="filled"
                   style={{ maxWidth: 320 }}
@@ -358,7 +358,7 @@ export default function TranscriptionQuotePage() {
               </div>
               <div className={styles.metaRow}>
                 <Text strong>Source Type:</Text>
-                <Text>{source.type === "url" ? "Link" : "File Upload"}</Text>
+                <Text>{source.type === 'url' ? 'Link' : 'File Upload'}</Text>
               </div>
               {source.url ? (
                 <div className={styles.metaRow}>
@@ -397,10 +397,10 @@ export default function TranscriptionQuotePage() {
 
         <Collapse
           bordered={false}
-          defaultActiveKey={["copyright"]}
+          defaultActiveKey={['copyright']}
           items={[
             {
-              key: "copyright",
+              key: 'copyright',
               label: (
                 <div className={styles.sectionTitle}>Copyright Information</div>
               ),
@@ -412,12 +412,12 @@ export default function TranscriptionQuotePage() {
                       value={copyright}
                       onChange={setCopyright}
                       options={[
-                        { label: "Someone else", value: "other" },
+                        { label: 'Someone else', value: 'other' },
                         {
-                          label: "Song is in the public domain",
-                          value: "public_domain",
+                          label: 'Song is in the public domain',
+                          value: 'public_domain',
                         },
-                        { label: "I own the copyright", value: "owner" },
+                        { label: 'I own the copyright', value: 'owner' },
                       ]}
                     />
                   </div>
@@ -428,7 +428,7 @@ export default function TranscriptionQuotePage() {
               ),
             },
             {
-              key: "what",
+              key: 'what',
               label: (
                 <div className={styles.sectionTitle}>
                   What Do You Want Us To Do?
@@ -437,7 +437,7 @@ export default function TranscriptionQuotePage() {
               children: <Text>Transcribe the song</Text>,
             },
             {
-              key: "instruments",
+              key: 'instruments',
               label: (
                 <div className={styles.sectionTitle}>Instrument Selection</div>
               ),
@@ -448,16 +448,16 @@ export default function TranscriptionQuotePage() {
                   placeholder="Pick instruments (required)"
                   value={instruments}
                   onChange={setInstruments}
-                  style={{ width: "100%" }}
+                  style={{ width: '100%' }}
                   options={[
-                    { value: "piano", label: "Piano" },
-                    { value: "guitar", label: "Guitar" },
-                    { value: "violin", label: "Violin" },
-                    { value: "bass", label: "Bass" },
-                    { value: "drums", label: "Drums" },
-                    { value: "vocal", label: "Vocal" },
+                    { value: 'piano', label: 'Piano' },
+                    { value: 'guitar', label: 'Guitar' },
+                    { value: 'violin', label: 'Violin' },
+                    { value: 'bass', label: 'Bass' },
+                    { value: 'drums', label: 'Drums' },
+                    { value: 'vocal', label: 'Vocal' },
                   ]}
-                  tagRender={(props) => (
+                  tagRender={props => (
                     <Tag closable={props.closable} onClose={props.onClose}>
                       {props.label}
                     </Tag>
@@ -466,24 +466,24 @@ export default function TranscriptionQuotePage() {
               ),
             },
             {
-              key: "lyrics",
+              key: 'lyrics',
               label: (
                 <div className={styles.sectionTitle}>Lyrics & Notations</div>
               ),
-              collapsible: instruments.length ? "header" : "disabled",
+              collapsible: instruments.length ? 'header' : 'disabled',
               children: (
                 <Checkbox
                   checked={includeChordSymbols}
-                  onChange={(e) => setIncludeChordSymbols(e.target.checked)}
+                  onChange={e => setIncludeChordSymbols(e.target.checked)}
                 >
                   Include Chord Symbols (+$5)
                 </Checkbox>
               ),
             },
             {
-              key: "keytempo",
+              key: 'keytempo',
               label: <div className={styles.sectionTitle}>Key & Tempo</div>,
-              collapsible: instruments.length ? "header" : "disabled",
+              collapsible: instruments.length ? 'header' : 'disabled',
               children: (
                 <div className={styles.inlineRow}>
                   <div>
@@ -494,7 +494,7 @@ export default function TranscriptionQuotePage() {
                         max={6}
                         value={transpose}
                         onChange={setTranspose}
-                        tooltip={{ formatter: (v) => `${v} semitones` }}
+                        tooltip={{ formatter: v => `${v} semitones` }}
                       />
                     </div>
                   </div>
@@ -507,7 +507,7 @@ export default function TranscriptionQuotePage() {
                         step={5}
                         value={slowdown}
                         onChange={setSlowdown}
-                        tooltip={{ formatter: (v) => `${v}%` }}
+                        tooltip={{ formatter: v => `${v}%` }}
                       />
                     </div>
                   </div>
@@ -515,28 +515,28 @@ export default function TranscriptionQuotePage() {
               ),
             },
             {
-              key: "additional",
+              key: 'additional',
               label: (
                 <div className={styles.sectionTitle}>
                   Additional Files & Information
                 </div>
               ),
-              collapsible: instruments.length ? "header" : "disabled",
+              collapsible: instruments.length ? 'header' : 'disabled',
               children: (
                 <Select
                   mode="multiple"
                   value={editableFormats}
                   onChange={setEditableFormats}
                   placeholder="Editable formats (+$5 each)"
-                  style={{ width: "100%" }}
+                  style={{ width: '100%' }}
                   options={[
-                    { value: "musicxml", label: "MusicXML (.xml)" },
-                    { value: "midi", label: "MIDI (.mid)" },
-                    { value: "sib", label: "Sibelius (.sib)" },
-                    { value: "gp", label: "Guitar Pro (.gp)" },
-                    { value: "musx", label: "Finale (.musx)" },
-                    { value: "mscz", label: "MuseScore (.mscz)" },
-                    { value: "dorico", label: "Dorico" },
+                    { value: 'musicxml', label: 'MusicXML (.xml)' },
+                    { value: 'midi', label: 'MIDI (.mid)' },
+                    { value: 'sib', label: 'Sibelius (.sib)' },
+                    { value: 'gp', label: 'Guitar Pro (.gp)' },
+                    { value: 'musx', label: 'Finale (.musx)' },
+                    { value: 'mscz', label: 'MuseScore (.mscz)' },
+                    { value: 'dorico', label: 'Dorico' },
                   ]}
                 />
               ),
@@ -573,7 +573,7 @@ export default function TranscriptionQuotePage() {
           <div className={styles.cartGrid}>
             <div>
               <Title level={4} style={{ marginTop: 0 }}>
-                {source.fileName || "Untitled"}
+                {source.fileName || 'Untitled'}
               </Title>
               <div className={styles.cartMeta}>
                 <Text>Start Time: {toMMSS(selection.startSec)}</Text>

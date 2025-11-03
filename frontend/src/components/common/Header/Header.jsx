@@ -1,29 +1,29 @@
 // src/components/common/Header/Header.jsx
-import { useState, useEffect, useCallback, memo } from "react";
-import { Navbar, Nav, Container } from "react-bootstrap";
-import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
-import classNames from "classnames";
-import { Link } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
-import UserMenu from "../UserMenu/UserMenu";
-import styles from "./Header.module.css";
-import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
+import { useState, useEffect, useCallback, memo } from 'react';
+import { Navbar, Nav, Container } from 'react-bootstrap';
+import { MenuOutlined, CloseOutlined } from '@ant-design/icons';
+import classNames from 'classnames';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
+import UserMenu from '../UserMenu/UserMenu';
+import styles from './Header.module.css';
+import logo from '../../../assets/images/Logo/Logotip-Positiu.svg';
 
 // ---- Helpers ----
 const SECTION_KEYS = new Map([
-  ["/", "home"],
-  ["/transcription", "audio"],
-  ["/soundtosheet", "request"],
-  ["/pricing", "pricing"],
-  ["/reviews", "reviews"],
-  ["/about", "about"],
-  ["/contact", "contact"],
+  ['/', 'home'],
+  ['/transcription', 'audio'],
+  ['/soundtosheet', 'request'],
+  ['/pricing', 'pricing'],
+  ['/reviews', 'reviews'],
+  ['/about', 'about'],
+  ['/contact', 'contact'],
 ]);
 
 const getActiveKey = () => {
   const { pathname } = window.location;
   // match longest prefix
-  let winner = "home";
+  let winner = 'home';
   let bestLen = -1;
   for (const [path, key] of SECTION_KEYS.entries()) {
     if (pathname.startsWith(path) && path.length > bestLen) {
@@ -47,36 +47,33 @@ function Header() {
       setIsScrolled(y > 20);
     };
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // Active-state theo URL (back/forward)
   useEffect(() => {
     const updateActive = () => setActiveKey(getActiveKey());
-    window.addEventListener("popstate", updateActive);
+    window.addEventListener('popstate', updateActive);
     // cũng cập nhật khi mount
     updateActive();
     return () => {
-      window.removeEventListener("popstate", updateActive);
+      window.removeEventListener('popstate', updateActive);
     };
   }, []);
 
   // Khoá cuộn nền khi mở menu mobile + đóng bằng phím Esc
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
-    const onKey = (e) => e.key === "Escape" && setIsMobileMenuOpen(false);
-    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
+    const onKey = e => e.key === 'Escape' && setIsMobileMenuOpen(false);
+    window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
     };
   }, [isMobileMenuOpen]);
 
-  const toggleMobileMenu = useCallback(
-    () => setIsMobileMenuOpen((v) => !v),
-    []
-  );
+  const toggleMobileMenu = useCallback(() => setIsMobileMenuOpen(v => !v), []);
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
   const navLink = (to, key, label) => (
@@ -100,7 +97,7 @@ function Header() {
       {/* Auth bar */}
       <div
         className={classNames(styles.container, styles.authAlign)}
-        style={{ marginTop: "1rem" }}
+        style={{ marginTop: '1rem' }}
       >
         {isAuthenticated ? (
           <UserMenu />
@@ -136,13 +133,13 @@ function Header() {
           {/* Desktop Navigation */}
           <div className={styles.desktopNav}>
             <Nav className={styles.navLinks}>
-              {navLink("/", "home", "Home")}
-              {navLink("/transcription", "audio", "Audio → Sheet Music")}
-              {navLink("/soundtosheet", "request", "Request Service")}
-              {navLink("/pricing", "pricing", "Pricing")}
-              {navLink("/reviews", "reviews", "Reviews")}
-              {navLink("/about", "about", "About us")}
-              {navLink("/contact", "contact", "Contact")}
+              {navLink('/', 'home', 'Home')}
+              {navLink('/transcription', 'audio', 'Audio → Sheet Music')}
+              {navLink('/soundtosheet', 'request', 'Request Service')}
+              {navLink('/pricing', 'pricing', 'Pricing')}
+              {navLink('/reviews', 'reviews', 'Reviews')}
+              {navLink('/about', 'about', 'About us')}
+              {navLink('/contact', 'contact', 'Contact')}
             </Nav>
 
             {/* CTA */}
@@ -158,7 +155,7 @@ function Header() {
             className={styles.mobileToggle}
             onClick={toggleMobileMenu}
             aria-label={
-              isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"
+              isMobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'
             }
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-nav"
@@ -186,7 +183,7 @@ function Header() {
                 as={Link}
                 to="/"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "home",
+                  [styles.active]: activeKey === 'home',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -197,7 +194,7 @@ function Header() {
                 as={Link}
                 to="/transcription"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "audio",
+                  [styles.active]: activeKey === 'audio',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -208,7 +205,7 @@ function Header() {
                 as={Link}
                 to="/soundtosheet"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "request",
+                  [styles.active]: activeKey === 'request',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -219,7 +216,7 @@ function Header() {
                 as={Link}
                 to="/pricing"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "pricing",
+                  [styles.active]: activeKey === 'pricing',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -229,7 +226,7 @@ function Header() {
                 as={Link}
                 to="/reviews"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "reviews",
+                  [styles.active]: activeKey === 'reviews',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -239,7 +236,7 @@ function Header() {
                 as={Link}
                 to="/about"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "about",
+                  [styles.active]: activeKey === 'about',
                 })}
                 onClick={closeMobileMenu}
               >
@@ -249,7 +246,7 @@ function Header() {
                 as={Link}
                 to="/contact"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === "contact",
+                  [styles.active]: activeKey === 'contact',
                 })}
                 onClick={closeMobileMenu}
               >

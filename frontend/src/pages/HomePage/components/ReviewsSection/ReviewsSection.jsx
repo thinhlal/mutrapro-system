@@ -1,49 +1,49 @@
-import { useMemo, useRef, useCallback, memo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import { Carousel, Rate, Button } from "antd";
-import { LeftOutlined, RightOutlined } from "@ant-design/icons";
-import styles from "./ReviewsSection.module.css";
+import { useMemo, useRef, useCallback, memo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import { Carousel, Rate, Button } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import styles from './ReviewsSection.module.css';
 
 // === Assets ===
-import bgWaves from "../../../../assets/images/Background/2-4-1-1.png";
+import bgWaves from '../../../../assets/images/Background/2-4-1-1.png';
 
 // === Constants / Sample data
 const AUTOPLAY_MS = 4000;
 const REVIEWS = [
   {
-    name: "Sarah A.",
-    locationRole: "Harpist from the US",
-    date: "March 2025",
+    name: 'Sarah A.',
+    locationRole: 'Harpist from the US',
+    date: 'March 2025',
     rating: 5,
-    text: "Such an amazing team and great work they provide! Very professional, everything is handled with care and done in a timely manner! Until I can learn to play music on my harp by ear, I’ll only use their services from now on which is 💯x better than AI transcriptions! ❤️",
+    text: 'Such an amazing team and great work they provide! Very professional, everything is handled with care and done in a timely manner! Until I can learn to play music on my harp by ear, I’ll only use their services from now on which is 💯x better than AI transcriptions! ❤️',
   },
   {
-    name: "Guy L.",
-    locationRole: "Pianist from the UK",
-    date: "January 2025",
+    name: 'Guy L.',
+    locationRole: 'Pianist from the UK',
+    date: 'January 2025',
     rating: 5,
-    text: "Exceptional. I requested a transcription of a pretty complex piano piece, and the finished product really exceeded my expectations in terms of accuracy and presentation. Despite its complexity, I didn’t need to ask for any revisions. Will definitely use again.",
+    text: 'Exceptional. I requested a transcription of a pretty complex piano piece, and the finished product really exceeded my expectations in terms of accuracy and presentation. Despite its complexity, I didn’t need to ask for any revisions. Will definitely use again.',
   },
   {
-    name: "Marta S.",
-    locationRole: "Composer from Spain",
-    date: "December 2024",
+    name: 'Marta S.',
+    locationRole: 'Composer from Spain',
+    date: 'December 2024',
     rating: 5,
-    text: "Fast turnaround and stellar quality! Communication was clear and friendly from start to finish. Highly recommended.",
+    text: 'Fast turnaround and stellar quality! Communication was clear and friendly from start to finish. Highly recommended.',
   },
   {
-    name: "Ethan P.",
-    locationRole: "Guitarist from Canada",
-    date: "November 2024",
+    name: 'Ethan P.',
+    locationRole: 'Guitarist from Canada',
+    date: 'November 2024',
     rating: 5,
-    text: "They nailed the fingerstyle parts I was struggling with. Clean notation and easy to read. Will come back for more.",
+    text: 'They nailed the fingerstyle parts I was struggling with. Clean notation and easy to read. Will come back for more.',
   },
   {
-    name: "Julia K.",
-    locationRole: "Vocalist from Germany",
-    date: "September 2024",
+    name: 'Julia K.',
+    locationRole: 'Vocalist from Germany',
+    date: 'September 2024',
     rating: 5,
-    text: "Beautifully formatted lead sheets with correct harmonies. Exactly what I needed for rehearsal.",
+    text: 'Beautifully formatted lead sheets with correct harmonies. Exactly what I needed for rehearsal.',
   },
 ];
 
@@ -113,7 +113,7 @@ function ReviewsSection() {
           {pairs.map((group, idx) => (
             <div key={`slide-${idx}`}>
               <Row className="g-4">
-                {group.map((r) => (
+                {group.map(r => (
                   <Col key={`${r.name}-${r.date}`} xs={12} md={12} lg={6}>
                     <article className={styles.card}>
                       {/* Top: name + Google badge */}
@@ -133,7 +133,7 @@ function ReviewsSection() {
                           aria-label={`${r.rating} out of 5 stars`}
                         />
                         <div className={styles.roleDate}>
-                          {r.locationRole}{" "}
+                          {r.locationRole}{' '}
                           <b className={styles.date}>| {r.date}</b>
                         </div>
                       </div>

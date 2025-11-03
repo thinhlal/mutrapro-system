@@ -1,15 +1,15 @@
-import { useMemo, memo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./Statistics.module.css";
+import { useMemo, memo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './Statistics.module.css';
 
-import { useIntersection } from "../../../../hooks/Animations/useIntersection";
-import { useCountUp } from "../../../../hooks/Animations/useCountUp";
+import { useIntersection } from '../../../../hooks/Animations/useIntersection';
+import { useCountUp } from '../../../../hooks/Animations/useCountUp';
 
-import backgroundImage from "../../../../assets/images/HomePage/7-2-1-1.jpg";
+import backgroundImage from '../../../../assets/images/HomePage/7-2-1-1.jpg';
 
 // ===== Constants =====
-const OBSERVER_OPTS = { threshold: 0.3, rootMargin: "0px 0px -100px 0px" };
+const OBSERVER_OPTS = { threshold: 0.3, rootMargin: '0px 0px -100px 0px' };
 const TARGET_NUMBERS = { transcriptions: 50629, customers: 22897 };
 const COUNT_DURATION_MS = 2500;
 
@@ -23,39 +23,39 @@ function Statistics() {
     isVisible
   );
 
-  const formatNumber = (num) => num.toLocaleString();
+  const formatNumber = num => num.toLocaleString();
 
   // Cards config
   const statisticsCards = useMemo(
     () => [
       {
-        id: "google",
-        icon: "G",
-        iconColor: "#4285f4",
-        title: "5.0 on Google Reviews",
+        id: 'google',
+        icon: 'G',
+        iconColor: '#4285f4',
+        title: '5.0 on Google Reviews',
         rating: 5,
-        reviews: "791 reviews",
-        linkText: "SEE ON GOOGLE",
-        linkColor: "#4285f4",
+        reviews: '791 reviews',
+        linkText: 'SEE ON GOOGLE',
+        linkColor: '#4285f4',
       },
       {
-        id: "location",
-        icon: "🌍",
-        iconColor: "#00d4aa",
-        title: "Based in the US, UK & Europe",
+        id: 'location',
+        icon: '🌍',
+        iconColor: '#00d4aa',
+        title: 'Based in the US, UK & Europe',
         number: TARGET_NUMBERS.customers,
-        subtitle: "happy customers",
-        description: "until September 2025",
+        subtitle: 'happy customers',
+        description: 'until September 2025',
       },
       {
-        id: "facebook",
-        icon: "f",
-        iconColor: "#1877f2",
-        title: "5.0 on Facebook Reviews",
+        id: 'facebook',
+        icon: 'f',
+        iconColor: '#1877f2',
+        title: '5.0 on Facebook Reviews',
         rating: 5,
-        reviews: "306 reviews",
-        linkText: "SEE ON FACEBOOK",
-        linkColor: "#1877f2",
+        reviews: '306 reviews',
+        linkText: 'SEE ON FACEBOOK',
+        linkColor: '#1877f2',
       },
     ],
     []
@@ -106,7 +106,7 @@ function Statistics() {
                 >
                   {/* Icon */}
                   <div className={styles.cardIcon}>
-                    {card.icon === "G" || card.icon === "f" ? (
+                    {card.icon === 'G' || card.icon === 'f' ? (
                       <span
                         className={styles.iconText}
                         style={{ color: card.iconColor }}

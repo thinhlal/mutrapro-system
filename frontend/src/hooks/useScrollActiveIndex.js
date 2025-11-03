@@ -1,6 +1,6 @@
 // Custom hook để xử lý scroll active index
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 const useScrollActiveIndex = (isClient = true) => {
   const cardRefs = useRef([]);
@@ -35,18 +35,18 @@ const useScrollActiveIndex = (isClient = true) => {
 
     // Intersection Observer for better performance
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         // Throttle the update to avoid too many re-renders
         requestAnimationFrame(updateActiveIndex);
       },
       {
         threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: "-20% 0px -20% 0px",
+        rootMargin: '-20% 0px -20% 0px',
       }
     );
 
     // Observe all cards
-    cardRefs.current.forEach((card) => {
+    cardRefs.current.forEach(card => {
       if (card) observer.observe(card);
     });
 
@@ -62,14 +62,14 @@ const useScrollActiveIndex = (isClient = true) => {
       }
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     // Initial update
     updateActiveIndex();
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [isClient]);
 

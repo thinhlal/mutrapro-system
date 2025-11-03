@@ -69,7 +69,7 @@
   box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
 }
 
-.formGroup input[type="file"] {
+.formGroup input[type='file'] {
   padding: 10px;
   background-color: #f8f9fa;
 }
@@ -105,7 +105,7 @@
   .formWrapper {
     padding: 30px 25px;
   }
-  
+
   .title {
     font-size: 1.8rem;
   }

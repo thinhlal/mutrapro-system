@@ -1,6 +1,6 @@
-import { HOW_IT_WORKS_STEPS, HOW_IT_WORKS_ICONS } from "../../../../constants";
-import { useScrollActiveIndex, useClientSide } from "../../../../hooks";
-import styles from "./HowItWorksSection.module.css";
+import { HOW_IT_WORKS_STEPS, HOW_IT_WORKS_ICONS } from '../../../../constants';
+import { useScrollActiveIndex, useClientSide } from '../../../../hooks';
+import styles from './HowItWorksSection.module.css';
 
 export default function HowItWorksSection() {
   const isClient = useClientSide();
@@ -22,7 +22,7 @@ export default function HowItWorksSection() {
                 <div className={styles.iconCell}>
                   <div
                     className={`${styles.iconCircle} ${
-                      isActive ? styles.iconActive : ""
+                      isActive ? styles.iconActive : ''
                     }`}
                   >
                     <img src={Icon} alt={`Step ${step.id} icon`} />
@@ -31,16 +31,16 @@ export default function HowItWorksSection() {
 
                 {/* Card */}
                 <article
-                  ref={(el) => (cardRefs.current[idx] = el)}
+                  ref={el => (cardRefs.current[idx] = el)}
                   data-index={idx}
                   className={[
                     styles.card,
                     styles[`tone${idx + 1}`],
-                    isActive ? styles.isActive : "",
-                  ].join(" ")}
+                    isActive ? styles.isActive : '',
+                  ].join(' ')}
                 >
                   <h3 className={styles.cardTitle}>
-                    <span className={styles.stepNo}>{step.id}.</span>{" "}
+                    <span className={styles.stepNo}>{step.id}.</span>{' '}
                     {step.title}
                   </h3>
                   <div className={styles.cardBody}>

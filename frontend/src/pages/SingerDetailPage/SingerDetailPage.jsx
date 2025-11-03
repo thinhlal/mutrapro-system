@@ -1,11 +1,11 @@
-import { useLocation } from "react-router-dom";
-import { Container, Row, Col } from "react-bootstrap";
-import { Button, Rate, Tabs, Typography, Tag } from "antd";
-import { HeartOutlined, PlayCircleFilled } from "@ant-design/icons";
-import { SINGER_DETAIL_DATA as staticSingerData } from "../../constants/index";
-import Header from "../../components/common/Header/Header";
-import Footer from "../../components/common/Footer/Footer";
-import styles from "./SingerDetailPage.module.css";
+import { useLocation } from 'react-router-dom';
+import { Container, Row, Col } from 'react-bootstrap';
+import { Button, Rate, Tabs, Typography, Tag } from 'antd';
+import { HeartOutlined, PlayCircleFilled } from '@ant-design/icons';
+import { SINGER_DETAIL_DATA as staticSingerData } from '../../constants/index';
+import Header from '../../components/common/Header/Header';
+import Footer from '../../components/common/Footer/Footer';
+import styles from './SingerDetailPage.module.css';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -16,14 +16,14 @@ const ProfileTab = ({ data }) => (
       <Title level={5} className={styles.sectionTitle}>
         Languages
       </Title>
-      <Text>{data.languages.join(", ")}</Text>
+      <Text>{data.languages.join(', ')}</Text>
     </div>
     <div className={styles.section}>
       <Title level={4} className={styles.sectionTitle}>
         Credits
       </Title>
       <div className={styles.tagGroup}>
-        {data.credits.map((cred) => (
+        {data.credits.map(cred => (
           <Tag key={cred}>{cred}</Tag>
         ))}
       </div>
@@ -32,7 +32,7 @@ const ProfileTab = ({ data }) => (
       <Title level={4} className={styles.sectionTitle}>
         Sounds Like
       </Title>
-      <Text>{data.soundsLike.join(", ")}</Text>
+      <Text>{data.soundsLike.join(', ')}</Text>
     </div>
   </div>
 );
@@ -42,7 +42,7 @@ const ReviewsTab = ({ data }) => (
     <Title level={4} className={styles.sectionTitle}>
       {data.length} Reviews - {staticSingerData.repeatClients} Repeat Clients
     </Title>
-    {data.map((review) => (
+    {data.map(review => (
       <div key={review.id} className={styles.reviewItem}>
         <div className={styles.reviewHeader}>
           <Text strong>{review.name}</Text>
@@ -56,7 +56,7 @@ const ReviewsTab = ({ data }) => (
         {review.isVerified && <Tag color="green">Verified</Tag>}
       </div>
     ))}
-    <Button type="default" style={{ marginTop: "1rem" }}>
+    <Button type="default" style={{ marginTop: '1rem' }}>
       Show More
     </Button>
   </div>
@@ -74,20 +74,20 @@ export default function SingerDetailPage() {
 
   const tabItems = [
     {
-      key: "1",
-      label: "Profile",
+      key: '1',
+      label: 'Profile',
       children: <ProfileTab data={staticSingerData.profile} />,
     },
     {
-      key: "2",
+      key: '2',
       label: `Reviews (${
         singer.reviewsCount || staticSingerData.reviewsCount
       })`,
       children: <ReviewsTab data={staticSingerData.reviews} />,
     },
     {
-      key: "3",
-      label: "Interview",
+      key: '3',
+      label: 'Interview',
       children: (
         <div className={styles.tabContent}>Interview content goes here.</div>
       ),
@@ -109,7 +109,7 @@ export default function SingerDetailPage() {
 
               <Text className={styles.singerRoles}>
                 {Array.isArray(singer.roles)
-                  ? singer.roles.join(" • ")
+                  ? singer.roles.join(' • ')
                   : singer.roles}
               </Text>
 
@@ -162,7 +162,7 @@ export default function SingerDetailPage() {
               </div>
 
               <div className={styles.sidebarSection}>
-                {staticSingerData.audioSamples.map((sample) => (
+                {staticSingerData.audioSamples.map(sample => (
                   <div key={sample.id} className={styles.audioTrack}>
                     <PlayCircleFilled className={styles.playIcon} />
                     <div>
@@ -175,11 +175,11 @@ export default function SingerDetailPage() {
 
               <div className={styles.sidebarSection}>
                 <Title level={5}>Top Genres</Title>
-                <Text>{staticSingerData.sidebar.genres.join(", ")}</Text>
+                <Text>{staticSingerData.sidebar.genres.join(', ')}</Text>
               </div>
               <div className={styles.sidebarSection}>
                 <Title level={5}>Sound Alike</Title>
-                <Text>{staticSingerData.sidebar.vocalStyle.join(", ")}</Text>
+                <Text>{staticSingerData.sidebar.vocalStyle.join(', ')}</Text>
               </div>
               <div className={styles.sidebarSection}>
                 <Title level={5}>Studio Gear</Title>

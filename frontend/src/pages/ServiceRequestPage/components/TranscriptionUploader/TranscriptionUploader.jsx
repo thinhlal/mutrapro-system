@@ -1,30 +1,30 @@
-import { useState, useCallback } from "react";
-import { Input, Upload, Button, Tooltip, message, Tag, Space } from "antd";
+import { useState, useCallback } from 'react';
+import { Input, Upload, Button, Tooltip, message, Tag, Space } from 'antd';
 import {
   InboxOutlined,
   LinkOutlined,
   ArrowRightOutlined,
   FileTextOutlined,
   DeleteOutlined,
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import styles from "./TranscriptionUploader.module.css";
-import { getMediaDurationSec } from "../../../../utils/getMediaDuration";
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import styles from './TranscriptionUploader.module.css';
+import { getMediaDurationSec } from '../../../../utils/getMediaDuration';
 
 const { Dragger } = Upload;
 
 const toMMSS = (s = 0) =>
-  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(
     2,
-    "0"
+    '0'
   )}`;
 const toSize = (bytes = 0) =>
-  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : "—";
+  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
 export default function TranscriptionUploader() {
-  const [linkValue, setLinkValue] = useState("");
+  const [linkValue, setLinkValue] = useState('');
   const [file, setFile] = useState(null);
-  const [blobUrl, setBlobUrl] = useState("");
+  const [blobUrl, setBlobUrl] = useState('');
   const [durationSec, setDurationSec] = useState(null); // null = chưa đo, number = đã đo
   const navigate = useNavigate();
 
@@ -57,29 +57,29 @@ export default function TranscriptionUploader() {
       } catch {}
     }
     setFile(null);
-    setBlobUrl("");
+    setBlobUrl('');
     setDurationSec(null);
   };
 
   const goQuote = async () => {
     if (!file && !linkValue.trim()) {
-      message.warning("Please paste a link or upload a file.");
+      message.warning('Please paste a link or upload a file.');
       return;
     }
 
     const state = {
-      sourceType: file ? "upload" : "url",
-      fileName: file ? file.name : "",
-      url: file ? "" : linkValue.trim(),
+      sourceType: file ? 'upload' : 'url',
+      fileName: file ? file.name : '',
+      url: file ? '' : linkValue.trim(),
       durationSec: 0,
-      blobUrl: "",
+      blobUrl: '',
     };
 
     try {
       if (file) {
         // nếu chưa đo xong thì đo nốt; nếu đã có thì dùng luôn
         const sec =
-          typeof durationSec === "number"
+          typeof durationSec === 'number'
             ? durationSec
             : await getMediaDurationSec(file);
         state.durationSec = sec || 0;
@@ -91,7 +91,7 @@ export default function TranscriptionUploader() {
       // giữ durationSec = 0 rồi điều hướng
     }
 
-    navigate("/transcription/quote", { state });
+    navigate('/transcription/quote', { state });
   };
 
   return (
@@ -155,16 +155,16 @@ export default function TranscriptionUploader() {
         {/* Hiển thị file đã chọn */}
         {file && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <div className={styles.fileLine}>
                 <Space wrap>
                   <FileTextOutlined />
                   <b>{file.name}</b>
-                  <Tag>{file.type || "unknown"}</Tag>
+                  <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Duration:{" "}
-                    {durationSec == null ? "…" : toMMSS(durationSec || 0)}
+                    • Duration:{' '}
+                    {durationSec == null ? '…' : toMMSS(durationSec || 0)}
                   </span>
                 </Space>
                 <Button
@@ -179,8 +179,8 @@ export default function TranscriptionUploader() {
               </div>
 
               {blobUrl &&
-                (file.type?.startsWith("audio/") ||
-                  file.type?.startsWith("video/")) && (
+                (file.type?.startsWith('audio/') ||
+                  file.type?.startsWith('video/')) && (
                   <audio
                     controls
                     src={blobUrl}

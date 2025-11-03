@@ -1,19 +1,19 @@
 // src/pages/ServiceRequest/components/ArrangementUploader/ArrangementUploader.jsx
-import { useState } from "react";
-import { Upload, Space, Tag, Button, message } from "antd";
+import { useState } from 'react';
+import { Upload, Space, Tag, Button, message } from 'antd';
 import {
   InboxOutlined,
   FileTextOutlined,
   DeleteOutlined,
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import styles from "./ArrangementUploader.module.css";
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import styles from './ArrangementUploader.module.css';
 const { Dragger } = Upload;
 
 const toSize = (bytes = 0) =>
-  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : "—";
+  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function ArrangementUploader({ variant = "pure" }) {
+export default function ArrangementUploader({ variant = 'pure' }) {
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
 
@@ -26,17 +26,17 @@ export default function ArrangementUploader({ variant = "pure" }) {
 
   const onContinue = () => {
     if (!file) {
-      message.warning("Please upload your original notation.");
+      message.warning('Please upload your original notation.');
       return;
     }
     const state = {
-      sourceType: "upload",
+      sourceType: 'upload',
       fileName: file.name,
-      fileType: file.type || "unknown",
+      fileType: file.type || 'unknown',
       size: file.size || 0,
       variant, // "pure" | "with_recording"
     };
-    navigate("/arrangement/quote", { state });
+    navigate('/arrangement/quote', { state });
   };
 
   return (
@@ -52,9 +52,9 @@ export default function ArrangementUploader({ variant = "pure" }) {
           </div>
           <div className={styles.headings}>
             <h2 id="arr-title" className={styles.title}>
-              {variant === "with_recording"
-                ? "Arrangement + Recording"
-                : "Arrangement Uploader"}
+              {variant === 'with_recording'
+                ? 'Arrangement + Recording'
+                : 'Arrangement Uploader'}
             </h2>
             <p className={styles.desc}>
               Upload your original notation (MusicXML/MIDI/PDF). We’ll arrange
@@ -84,12 +84,12 @@ export default function ArrangementUploader({ variant = "pure" }) {
 
         {file && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <div className={styles.fileLine}>
                 <Space wrap>
                   <FileTextOutlined />
                   <b>{file.name}</b>
-                  <Tag>{file.type || "unknown"}</Tag>
+                  <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                 </Space>
                 <Button

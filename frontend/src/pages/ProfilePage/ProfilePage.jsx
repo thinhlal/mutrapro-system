@@ -1,11 +1,25 @@
-import React, { useState, useEffect } from "react";
-import { Avatar, Button, Select, Tabs, Input, Modal, message, Spin } from "antd";
-import { EditOutlined, UserOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
-import styles from "./ProfilePage.module.css";
-import Header from "../../components/common/Header/Header";
-import Footer from "../../components/common/Footer/Footer";
-import { useAuth } from "../../contexts/AuthContext";
-import { useUserStore } from "../../stores/useUserStore";
+import React, { useState, useEffect } from 'react';
+import {
+  Avatar,
+  Button,
+  Select,
+  Tabs,
+  Input,
+  Modal,
+  message,
+  Spin,
+} from 'antd';
+import {
+  EditOutlined,
+  UserOutlined,
+  SaveOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
+import styles from './ProfilePage.module.css';
+import Header from '../../components/common/Header/Header';
+import Footer from '../../components/common/Footer/Footer';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUserStore } from '../../stores/useUserStore';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -13,13 +27,14 @@ const { TextArea } = Input;
 
 const ProfileContent = () => {
   const { user: authUser } = useAuth();
-  const { userProfile, loading, error, fetchUserProfile, updateUserProfile } = useUserStore();
-  
+  const { userProfile, loading, error, fetchUserProfile, updateUserProfile } =
+    useUserStore();
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
-  
+
   const [editForm, setEditForm] = useState({
     fullName: '',
     phone: '',
@@ -42,21 +57,22 @@ const ProfileContent = () => {
     } else {
       Modal.info({
         title: 'Lưu ý',
-        content: 'Vui lòng nhập User ID của bạn (tạm thời để test). Trong production, thông tin này sẽ được lấy tự động sau khi login.',
+        content:
+          'Vui lòng nhập User ID của bạn (tạm thời để test). Trong production, thông tin này sẽ được lấy tự động sau khi login.',
         onOk: () => {
           const inputUserId = prompt('Nhập User ID:');
           if (inputUserId) {
             localStorage.setItem('temp_userId', inputUserId);
             setUserId(inputUserId);
           }
-        }
+        },
       });
     }
   }, []);
 
   useEffect(() => {
     if (userId) {
-      fetchUserProfile(userId).catch((err) => {
+      fetchUserProfile(userId).catch(err => {
         message.error('Không thể tải thông tin profile');
       });
     }
@@ -73,35 +89,53 @@ const ProfileContent = () => {
     }
   }, [userProfile]);
 
-  const handleEdit = (field) => {
-    switch(field) {
-      case 'fullName': setIsEditingName(true); break;
-      case 'phone': setIsEditingPhone(true); break;
-      case 'address': setIsEditingAddress(true); break;
-      case 'about': setIsEditingAbout(true); break;
-      default: break;
+  const handleEdit = field => {
+    switch (field) {
+      case 'fullName':
+        setIsEditingName(true);
+        break;
+      case 'phone':
+        setIsEditingPhone(true);
+        break;
+      case 'address':
+        setIsEditingAddress(true);
+        break;
+      case 'about':
+        setIsEditingAbout(true);
+        break;
+      default:
+        break;
     }
   };
 
-  const handleCancel = (field) => {
+  const handleCancel = field => {
     // Reset to original value
     if (userProfile) {
       setEditForm(prev => ({
         ...prev,
-        [field]: userProfile[field] || ''
+        [field]: userProfile[field] || '',
       }));
     }
-    
-    switch(field) {
-      case 'fullName': setIsEditingName(false); break;
-      case 'phone': setIsEditingPhone(false); break;
-      case 'address': setIsEditingAddress(false); break;
-      case 'about': setIsEditingAbout(false); break;
-      default: break;
+
+    switch (field) {
+      case 'fullName':
+        setIsEditingName(false);
+        break;
+      case 'phone':
+        setIsEditingPhone(false);
+        break;
+      case 'address':
+        setIsEditingAddress(false);
+        break;
+      case 'about':
+        setIsEditingAbout(false);
+        break;
+      default:
+        break;
     }
   };
 
-  const handleSave = async (field) => {
+  const handleSave = async field => {
     if (!userId) {
       message.error('User ID không hợp lệ');
       return;
@@ -109,17 +143,26 @@ const ProfileContent = () => {
 
     try {
       await updateUserProfile(userId, {
-        [field]: editForm[field]
+        [field]: editForm[field],
       });
-      
+
       message.success('Cập nhật thành công');
-      
-      switch(field) {
-        case 'fullName': setIsEditingName(false); break;
-        case 'phone': setIsEditingPhone(false); break;
-        case 'address': setIsEditingAddress(false); break;
-        case 'about': setIsEditingAbout(false); break;
-        default: break;
+
+      switch (field) {
+        case 'fullName':
+          setIsEditingName(false);
+          break;
+        case 'phone':
+          setIsEditingPhone(false);
+          break;
+        case 'address':
+          setIsEditingAddress(false);
+          break;
+        case 'about':
+          setIsEditingAbout(false);
+          break;
+        default:
+          break;
       }
     } catch (err) {
       message.error(err.message || 'Cập nhật thất bại');
@@ -129,7 +172,7 @@ const ProfileContent = () => {
   const handleChange = (field, value) => {
     setEditForm(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -189,7 +232,7 @@ const ProfileContent = () => {
                   <div className={styles.editContainer}>
                     <Input
                       value={editForm.fullName}
-                      onChange={(e) => handleChange('fullName', e.target.value)}
+                      onChange={e => handleChange('fullName', e.target.value)}
                       placeholder="Nhập họ tên"
                     />
                     <div className={styles.editActions}>
@@ -237,7 +280,7 @@ const ProfileContent = () => {
                   <div className={styles.editContainer}>
                     <Input
                       value={editForm.phone}
-                      onChange={(e) => handleChange('phone', e.target.value)}
+                      onChange={e => handleChange('phone', e.target.value)}
                       placeholder="Nhập số điện thoại"
                     />
                     <div className={styles.editActions}>
@@ -277,7 +320,7 @@ const ProfileContent = () => {
                   <div className={styles.editContainer}>
                     <Input
                       value={editForm.address}
-                      onChange={(e) => handleChange('address', e.target.value)}
+                      onChange={e => handleChange('address', e.target.value)}
                       placeholder="Nhập địa chỉ"
                     />
                     <div className={styles.editActions}>
@@ -319,7 +362,7 @@ const ProfileContent = () => {
               <div className={styles.editContainer}>
                 <TextArea
                   value={editForm.about}
-                  onChange={(e) => handleChange('about', e.target.value)}
+                  onChange={e => handleChange('about', e.target.value)}
                   placeholder="Thêm thông tin về bản thân"
                   rows={4}
                 />
@@ -343,9 +386,12 @@ const ProfileContent = () => {
                 </div>
               </div>
             ) : (
-              <div className={`${styles.valueContainer} ${styles.aboutMeInput}`}>
+              <div
+                className={`${styles.valueContainer} ${styles.aboutMeInput}`}
+              >
                 <span>
-                  {userProfile?.about || 'Add here some information about yourself'}
+                  {userProfile?.about ||
+                    'Add here some information about yourself'}
                 </span>
                 <EditOutlined
                   className={styles.editIcon}

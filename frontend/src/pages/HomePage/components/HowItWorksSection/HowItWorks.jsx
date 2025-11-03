@@ -1,40 +1,39 @@
-import { memo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./HowItWorks.module.css";
+import { memo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './HowItWorks.module.css';
 
-import { useIntersection } from "../../../../hooks/Animations/useIntersection";
+import { useIntersection } from '../../../../hooks/Animations/useIntersection';
 
-import stepsImage from "../../../../assets/images/HomePage/3-steps.jpg";
+import stepsImage from '../../../../assets/images/HomePage/3-steps.jpg';
 
 // Constants
-const OBSERVER_OPTS = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
+const OBSERVER_OPTS = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
 const STEPS = [
   {
     id: 1,
-    title: "Send us audio",
+    title: 'Send us audio',
     description:
-      "We will promptly send you a quote and an estimated delivery time",
+      'We will promptly send you a quote and an estimated delivery time',
   },
   {
     id: 2,
-    title: "We transcribe it for you",
+    title: 'We transcribe it for you',
     description:
-      "Our team of transcribers will prepare the sheet music as per your requirements",
+      'Our team of transcribers will prepare the sheet music as per your requirements',
   },
   {
     id: 3,
-    title: "Print & Play",
+    title: 'Print & Play',
     description:
-      "You will be able to use and play your sheet music in PDF and other formats",
+      'You will be able to use and play your sheet music in PDF and other formats',
   },
 ];
 
 function HowItWorks() {
   const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
-  const withVisible = (base) =>
-    classNames(base, { [styles.visible]: isVisible });
+  const withVisible = base => classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.howItWorksSection} ref={sectionRef}>

@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./HeroSection.module.css";
+import { useState } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './HeroSection.module.css';
 
-import { useInterval } from "../../../../hooks/Animations/useInterval";
-import { useRevealOnMount } from "../../../../hooks/Animations/useRevealOnMount";
+import { useInterval } from '../../../../hooks/Animations/useInterval';
+import { useRevealOnMount } from '../../../../hooks/Animations/useRevealOnMount';
 
 // ===== Constants & assets =====
-import heroImg1 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-1-copia.webp";
-import heroImg2 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-2.webp";
-import heroImg3 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-3.webp";
-import heroImg4 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-4.webp";
-import heroImg5 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-5.webp";
-import heroImg6 from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-6.webp";
+import heroImg1 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-1-copia.webp';
+import heroImg2 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-2.webp';
+import heroImg3 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-3.webp';
+import heroImg4 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-4.webp';
+import heroImg5 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-5.webp';
+import heroImg6 from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-CS-6.webp';
 
 const IMAGES = [heroImg1, heroImg2, heroImg3, heroImg4, heroImg5, heroImg6];
 const SLIDE_INTERVAL_MS = 4000;
 const ENTRANCE_DELAY_MS = 300;
 const STAR_COUNT = 5;
-const GOOGLE_RATING = "5.0";
+const GOOGLE_RATING = '5.0';
 const GOOGLE_REVIEWS_COUNT = 791;
 
 function HeroSection() {
@@ -26,7 +26,7 @@ function HeroSection() {
 
   // Auto-slide background images
   useInterval(() => {
-    setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length);
+    setCurrentImageIndex(prev => (prev + 1) % IMAGES.length);
   }, SLIDE_INTERVAL_MS);
 
   // Trigger entrance animation once

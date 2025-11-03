@@ -1,6 +1,6 @@
-import { Card } from "antd";
-import { Link } from "react-router-dom";
-import styles from "./CategoryCard.module.css";
+import { Card } from 'antd';
+import { Link } from 'react-router-dom';
+import styles from './CategoryCard.module.css';
 
 export default function CategoryCard({ item }) {
   return (

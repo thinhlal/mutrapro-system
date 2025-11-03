@@ -1,15 +1,15 @@
-import { Typography } from "antd";
-import styles from "./HeroSingerSection.module.css";
+import { Typography } from 'antd';
+import styles from './HeroSingerSection.module.css';
 
 const { Title, Paragraph } = Typography;
 
 const HeroSection = ({ gender }) => {
   // Tự động thay đổi chữ "Male" / "Female" dựa trên prop 'gender'
-  const title = `Top ${gender === "male" ? "Male" : "Female"} Singers for hire`;
+  const title = `Top ${gender === 'male' ? 'Male' : 'Female'} Singers for hire`;
   const subtitle = `These curated professional ${
-    gender === "male" ? "male" : "female"
+    gender === 'male' ? 'male' : 'female'
   } session singers are available to record vocal tracks for your song`;
-  const ctaText = "Hear from our providers";
+  const ctaText = 'Hear from our providers';
 
   return (
     <section className={styles.hero}>

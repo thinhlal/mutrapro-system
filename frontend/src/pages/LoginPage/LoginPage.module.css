@@ -6,15 +6,16 @@
   align-items: center;
   justify-content: center;
   /* Đã đổi màu radial gradient sang tông cam/vàng */
-  background: radial-gradient(
+  background:
+    radial-gradient(
       1200px 600px at 20% 10%,
-      rgba(245, 158, 11, 0.1), /* Đổi từ tím sang vàng/cam */
-      transparent 50%
+      rgba(245, 158, 11, 0.1),
+      /* Đổi từ tím sang vàng/cam */ transparent 50%
     ),
     radial-gradient(
       800px 400px at 80% 20%,
-      rgba(251, 146, 60, 0.12), /* Đổi từ đỏ sang cam */
-      transparent 50%
+      rgba(251, 146, 60, 0.12),
+      /* Đổi từ đỏ sang cam */ transparent 50%
     ),
     linear-gradient(180deg, #ffe8c4 0%, #dca34d 100%);
   color: #e6e6f0;
@@ -27,10 +28,10 @@
   /* Đã đổi màu conic-gradient sang các tông màu nóng */
   background: conic-gradient(
     from 220deg at 50% 50%,
-    rgba(245, 158, 11, 0.12), /* Đổi từ xanh */
-    rgba(251, 146, 60, 0.12), /* Đổi từ hồng */
-    rgba(234, 179, 8, 0.12), /* Đổi từ xanh lá */
-    rgba(245, 158, 11, 0.12) /* Đổi từ xanh */
+    rgba(245, 158, 11, 0.12),
+    /* Đổi từ xanh */ rgba(251, 146, 60, 0.12),
+    /* Đổi từ hồng */ rgba(234, 179, 8, 0.12),
+    /* Đổi từ xanh lá */ rgba(245, 158, 11, 0.12) /* Đổi từ xanh */
   );
   filter: blur(60px);
   animation: rotate 16s linear infinite;
@@ -70,8 +71,11 @@
   color: #e6e6f0;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  transition: transform 120ms ease, border-color 200ms ease,
-    background 200ms ease, opacity 160ms ease;
+  transition:
+    transform 120ms ease,
+    border-color 200ms ease,
+    background 200ms ease,
+    opacity 160ms ease;
 }
 
 .backButton:hover {
@@ -130,7 +134,8 @@
   background: rgba(246, 246, 255, 0.9);
   border: 1px solid rgba(245, 158, 11, 0.18); /* Đổi từ xanh sang vàng/cam */
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35),
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
   padding: 28px;
   animation: floatUp 600ms ease both;
@@ -155,7 +160,7 @@
 .cardHeader h2 {
   margin: 0 0 6px 0;
   font-size: 22px;
-  color: black
+  color: black;
 }
 
 .cardHeader p {
@@ -182,7 +187,9 @@
   color: #e6e6f0;
   border-radius: 12px;
   outline: none;
-  transition: border-color 200ms ease, box-shadow 200ms ease,
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
     transform 120ms ease;
 }
 
@@ -247,7 +254,10 @@
   padding: 14px 16px;
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 200ms ease, opacity 160ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 200ms ease,
+    opacity 160ms ease;
   box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35); /* Đổi box-shadow */
 }
 
@@ -268,7 +278,7 @@
 
 .divider::before,
 .divider::after {
-  content: "";
+  content: '';
   height: 1px;
   /* Đổi màu gradient của divider */
   background: linear-gradient(
@@ -298,7 +308,9 @@
   color: black;
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 120ms ease, border-color 200ms ease,
+  transition:
+    transform 120ms ease,
+    border-color 200ms ease,
     background 200ms ease;
 }
 

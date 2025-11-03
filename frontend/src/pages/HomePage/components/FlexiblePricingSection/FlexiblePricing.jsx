@@ -1,68 +1,67 @@
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./FlexiblePricing.module.css";
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './FlexiblePricing.module.css';
 
-import { useIntersection } from "../../../../hooks/Animations/useIntersection";
+import { useIntersection } from '../../../../hooks/Animations/useIntersection';
 
-import pianoIcon from "../../../../assets/icons/Pricing/Grand-Piano-2-2-1.png";
-import hornsIcon from "../../../../assets/icons/Pricing/Horns2-1-2-1.png";
-import quartetIcon from "../../../../assets/icons/Pricing/Cuartet2-1-2-1.png";
+import pianoIcon from '../../../../assets/icons/Pricing/Grand-Piano-2-2-1.png';
+import hornsIcon from '../../../../assets/icons/Pricing/Horns2-1-2-1.png';
+import quartetIcon from '../../../../assets/icons/Pricing/Cuartet2-1-2-1.png';
 
 const CARDS = [
   {
     icon: pianoIcon,
-    iconAlt: "Piano icon",
-    title: "Piano",
-    price: "from",
-    amount: "$19 USD",
-    suffix: "per minute of music",
+    iconAlt: 'Piano icon',
+    title: 'Piano',
+    price: 'from',
+    amount: '$19 USD',
+    suffix: 'per minute of music',
     factors: [
-      "Music length",
-      "Musical complexity and density",
-      "Difficulty of listening, notation, layers, and polyphonies",
+      'Music length',
+      'Musical complexity and density',
+      'Difficulty of listening, notation, layers, and polyphonies',
     ],
-    minimum: "*minimum charge of $49 USD",
-    delay: "0.2s",
+    minimum: '*minimum charge of $49 USD',
+    delay: '0.2s',
   },
   {
     icon: quartetIcon,
-    iconAlt: "Bands/Ensembles icon",
-    title: "Bands/Ensembles",
-    price: "from",
-    amount: "$30 USD",
-    suffix: "per minute of music",
+    iconAlt: 'Bands/Ensembles icon',
+    title: 'Bands/Ensembles',
+    price: 'from',
+    amount: '$30 USD',
+    suffix: 'per minute of music',
     factors: [
-      "Music length",
-      "Notation complexity and difficulty of listening",
-      "Part extraction",
+      'Music length',
+      'Notation complexity and difficulty of listening',
+      'Part extraction',
     ],
-    delay: "0.4s",
+    delay: '0.4s',
   },
   {
     icon: hornsIcon,
-    iconAlt: "Melodic Instrument icon",
-    title: "Melodic Instrument",
-    price: "from",
-    amount: "$15 USD",
-    suffix: "per minute of music",
+    iconAlt: 'Melodic Instrument icon',
+    title: 'Melodic Instrument',
+    price: 'from',
+    amount: '$15 USD',
+    suffix: 'per minute of music',
     factors: [
-      "Music length",
-      "Musical complexity and density",
-      "Idiomatic difficulty relative to each instrument",
+      'Music length',
+      'Musical complexity and density',
+      'Idiomatic difficulty relative to each instrument',
     ],
-    minimum: "*minimum charge of $49 USD",
-    delay: "0.6s",
+    minimum: '*minimum charge of $49 USD',
+    delay: '0.6s',
   },
 ];
 
 function FlexiblePricing() {
   const { ref: sectionRef, isVisible } = useIntersection({
     threshold: 0.2,
-    rootMargin: "0px 0px -50px 0px",
+    rootMargin: '0px 0px -50px 0px',
   });
 
-  const withVisible = (base) =>
-    classNames(base, { [styles.visible]: isVisible });
+  const withVisible = base => classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.flexiblePricingSection} ref={sectionRef}>
@@ -83,10 +82,11 @@ function FlexiblePricing() {
           </p>
           <p className={styles.descriptionText}>
             We are a team of professional musicians, performers, editors, and
-            musicologists with extensive experience.{" "}
+            musicologists with extensive experience.{' '}
             <strong>
               Your score will be 100% personalized, tailored to your needs, and
-              crafted note by note manually by our professional transcribers.{" "}
+              crafted note by note manually by our professional
+              transcribers.{' '}
             </strong>
             The process will be coordinated by our customer service specialists,
             who will keep you informed at all times.
@@ -140,7 +140,7 @@ function FlexiblePricing() {
 
                   <div className={styles.pricingFactors}>
                     <ul className={styles.factorsList}>
-                      {factors.map((f) => (
+                      {factors.map(f => (
                         <li key={f}>{f}</li>
                       ))}
                     </ul>

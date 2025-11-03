@@ -13,9 +13,10 @@
   min-height: 100vh;
   background-color: var(--background-page);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
   margin-top: 8rem;
 }
 
@@ -34,7 +35,9 @@
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 6px;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   font-weight: 500;
 }
 
@@ -189,7 +192,7 @@
   position: relative;
 }
 :global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn)::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: -13px;
   left: 0;

@@ -1,12 +1,12 @@
-import Header from "../../components/common/Header/Header";
-import HeroSection from "./components/HeroSection/HeroSection";
-import MusicSheetSection from "./components/MusicSheetSection/MusicSheetSection";
-import HowItWorksSection from "./components/HowItWorksSection/HowItWorksSection";
-import Footer from "../../components/common/Footer/Footer";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
-import styles from "./TranscriptionPage.module.css";
-import WhatsIncluded from "../HomePage/components/WhatsIncludedSection/WhatsIncluded";
-import ServicesPage from "../ServicesPage/ServicesPage";
+import Header from '../../components/common/Header/Header';
+import HeroSection from './components/HeroSection/HeroSection';
+import MusicSheetSection from './components/MusicSheetSection/MusicSheetSection';
+import HowItWorksSection from './components/HowItWorksSection/HowItWorksSection';
+import Footer from '../../components/common/Footer/Footer';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
+import styles from './TranscriptionPage.module.css';
+import WhatsIncluded from '../HomePage/components/WhatsIncludedSection/WhatsIncluded';
+import ServicesPage from '../ServicesPage/ServicesPage';
 
 const TranscriptionPage = () => {
   return (

@@ -1,6 +1,6 @@
 // src/components/FlatEditor.jsx
-import { useEffect, useRef, useState } from "react";
-import Embed from "flat-embed";
+import { useEffect, useRef, useState } from 'react';
+import Embed from 'flat-embed';
 
 // Piano C-major 4/4, 2 ô nhịp — demo siêu gọn
 const DEMO_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -45,31 +45,31 @@ export default function FlatEditor() {
     const instance = new Embed(hostRef.current, {
       embedParams: {
         appId: import.meta.env.VITE_FLAT_APP_ID,
-        mode: "edit",
-        controlsPosition: "bottom",
+        mode: 'edit',
+        controlsPosition: 'bottom',
       },
     });
 
     instance
       .ready()
       .then(() => setReady(true))
-      .catch((e) => setErr(e?.message || "Init failed"));
+      .catch(e => setErr(e?.message || 'Init failed'));
 
     setEmbed(instance);
   }, []);
 
   // ✅ Sửa handler: .mxl là file nén -> đọc bằng arrayBuffer
-  const handleUpload = async (e) => {
+  const handleUpload = async e => {
     if (!embed) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       const name = file.name.toLowerCase();
-      if (name.endsWith(".mid") || name.endsWith(".midi")) {
+      if (name.endsWith('.mid') || name.endsWith('.midi')) {
         const buf = new Uint8Array(await file.arrayBuffer());
         await embed.loadMIDI(buf);
-      } else if (name.endsWith(".mxl")) {
+      } else if (name.endsWith('.mxl')) {
         // compressed MusicXML
         const buf = new Uint8Array(await file.arrayBuffer());
         await embed.loadMusicXML(buf);
@@ -78,29 +78,29 @@ export default function FlatEditor() {
         await embed.loadMusicXML(text);
       }
     } catch (e2) {
-      alert("Load file lỗi: " + (e2?.message || String(e2)));
+      alert('Load file lỗi: ' + (e2?.message || String(e2)));
     } finally {
-      e.target.value = "";
+      e.target.value = '';
     }
   };
 
   const exportXML = async () => {
     const data = await embed.getMusicXML({ compressed: true });
     const blob = new Blob([data], {
-      type: "application/vnd.recordare.musicxml+xml",
+      type: 'application/vnd.recordare.musicxml+xml',
     });
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = "score.musicxml";
+    a.download = 'score.musicxml';
     a.click();
   };
 
   const exportMIDI = async () => {
     const data = await embed.getMIDI();
-    const blob = new Blob([data], { type: "audio/midi" });
-    const a = document.createElement("a");
+    const blob = new Blob([data], { type: 'audio/midi' });
+    const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = "score.mid";
+    a.download = 'score.mid';
     a.click();
   };
 
@@ -113,14 +113,14 @@ export default function FlatEditor() {
   return (
     <div style={{ padding: 12 }}>
       <div
-        style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}
+        style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}
       >
         <label>
           <input
             type="file"
             accept=".musicxml,.xml,.mxl,.mid,.midi"
             onChange={handleUpload}
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
           />
           <button type="button">Upload MusicXML/MIDI</button>
         </label>
@@ -145,12 +145,12 @@ export default function FlatEditor() {
         </button>
       </div>
 
-      {err && <div style={{ color: "red", marginBottom: 8 }}>{err}</div>}
+      {err && <div style={{ color: 'red', marginBottom: 8 }}>{err}</div>}
       {!ready && <div style={{ marginBottom: 8 }}>Loading editor…</div>}
 
       <div
         ref={hostRef}
-        style={{ width: "100%", height: "75vh", border: "1px solid #ddd" }}
+        style={{ width: '100%', height: '75vh', border: '1px solid #ddd' }}
       />
     </div>
   );

@@ -1,11 +1,11 @@
-import React from "react";
-import { Slider, Typography } from "antd";
+import React from 'react';
+import { Slider, Typography } from 'antd';
 
 const { Text } = Typography;
-const toMMSS = (s) =>
-  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
+const toMMSS = s =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(
     2,
-    "0"
+    '0'
   )}`;
 
 export default function WaveformRangePicker({
@@ -21,12 +21,12 @@ export default function WaveformRangePicker({
         style={{
           height: 120,
           borderRadius: 8,
-          background: "#222",
+          background: '#222',
           marginBottom: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
         }}
       >
         {/* Placeholder for real waveform canvas */}
@@ -44,9 +44,9 @@ export default function WaveformRangePicker({
 
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontVariantNumeric: "tabular-nums",
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         <Text>{toMMSS(start)}</Text>

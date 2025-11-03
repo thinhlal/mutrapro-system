@@ -11,7 +11,7 @@ export const createLoopedArray = (array, times = 2) => {
   if (!Array.isArray(array) || array.length === 0) {
     return [];
   }
-  
+
   const result = [];
   for (let i = 0; i < times; i++) {
     result.push(...array);

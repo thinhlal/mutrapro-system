@@ -18,7 +18,7 @@ function UserMenu() {
 
   // Close menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false);
       }
@@ -35,7 +35,7 @@ function UserMenu() {
 
   // Close menu on Escape key
   useEffect(() => {
-    const handleEscape = (event) => {
+    const handleEscape = event => {
       if (event.key === 'Escape') {
         setIsOpen(false);
       }
@@ -65,11 +65,11 @@ function UserMenu() {
   };
 
   const toggleMenu = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(prev => !prev);
   };
 
   // Get initials from email for avatar
-  const getInitials = (email) => {
+  const getInitials = email => {
     if (!email) return 'U';
     return email.charAt(0).toUpperCase();
   };
@@ -193,4 +193,3 @@ function UserMenu() {
 }
 
 export default UserMenu;
-

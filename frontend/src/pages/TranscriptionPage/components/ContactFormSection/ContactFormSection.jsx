@@ -1,35 +1,35 @@
 // src/pages/TranscriptionPage/components/ContactFormSection/ContactFormSection.jsx
-import { useState } from "react";
-import styles from "./ContactFormSection.module.css";
+import { useState } from 'react';
+import styles from './ContactFormSection.module.css';
 
 const ContactFormSection = () => {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    instrument: "",
-    message: "",
-    audioFile: null
+    name: '',
+    email: '',
+    instrument: '',
+    message: '',
+    audioFile: null,
   });
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = e => {
     setFormData(prev => ({
       ...prev,
-      audioFile: e.target.files[0]
+      audioFile: e.target.files[0],
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     // Handle form submission
-    console.log("Form submitted:", formData);
+    console.log('Form submitted:', formData);
   };
 
   return (
@@ -40,7 +40,7 @@ const ContactFormSection = () => {
           <p className={styles.subtitle}>
             Send us your audio and get professional sheet music
           </p>
-          
+
           <form className={styles.contactForm} onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
               <label htmlFor="name">Full Name</label>

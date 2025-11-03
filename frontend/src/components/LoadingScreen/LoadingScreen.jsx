@@ -18,4 +18,3 @@ function LoadingScreen({ message = 'Loading...', subMessage = '' }) {
 }
 
 export default LoadingScreen;
-

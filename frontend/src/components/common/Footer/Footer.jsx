@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import { Input, Button, Divider, Tooltip } from "antd";
+import { useState } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import { Input, Button, Divider, Tooltip } from 'antd';
 import {
   MailOutlined,
   PhoneOutlined,
@@ -11,20 +11,20 @@ import {
   InstagramFilled,
   LinkedinFilled,
   GithubFilled,
-} from "@ant-design/icons";
-import styles from "./Footer.module.css";
+} from '@ant-design/icons';
+import styles from './Footer.module.css';
 
 // (Tùy chọn) import logo của bạn
 // import logo from "../../../../assets/logo.svg";
 
 const Footer = () => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = e => {
     e.preventDefault();
     // TODO: Gọi API/submit form của bạn
     // reset hoặc toast ở đây
-    setEmail("");
+    setEmail('');
   };
 
   return (
@@ -51,14 +51,14 @@ const Footer = () => {
 
               <div className={styles.contacts}>
                 <div>
-                  <EnvironmentOutlined />{" "}
+                  <EnvironmentOutlined />{' '}
                   <span>US &amp; Europe (online worldwide)</span>
                 </div>
                 <div>
                   <PhoneOutlined /> <a href="tel:+1234567890">+1 234 567 890</a>
                 </div>
                 <div>
-                  <MailOutlined />{" "}
+                  <MailOutlined />{' '}
                   <a href="mailto:hello@mutrapro.com">hello@mutrapro.com</a>
                 </div>
               </div>
@@ -150,7 +150,7 @@ const Footer = () => {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 aria-label="Email address"
                 required
               />

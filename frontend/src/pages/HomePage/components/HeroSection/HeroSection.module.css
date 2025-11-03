@@ -91,7 +91,11 @@
 }
 
 .logoText {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   margin: 0;
   line-height: 1.2;
 }
@@ -245,7 +249,7 @@
   font-size: 24px;
   font-weight: 700;
   border-radius: 50%;
-  font-family: "Product Sans", sans-serif;
+  font-family: 'Product Sans', sans-serif;
 }
 
 .reviewsContent {

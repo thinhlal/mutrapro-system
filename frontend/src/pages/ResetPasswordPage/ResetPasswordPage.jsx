@@ -184,7 +184,8 @@ function ResetPasswordPage() {
       <div
         className={`${styles.step} ${step >= 1 ? styles.active : ''} ${
           step > 1 ? styles.completed : ''
-        }`}></div>
+        }`}
+      ></div>
       <div className={`${styles.step} ${step >= 2 ? styles.active : ''}`}></div>
     </div>
   );
@@ -209,7 +210,8 @@ function ResetPasswordPage() {
             messageType === 'success'
               ? styles.successMessage
               : styles.errorMessage
-          }>
+          }
+        >
           {messageType === 'success' && (
             <CheckCircleIcon
               style={{ fontSize: '20px', verticalAlign: 'middle' }}
@@ -219,7 +221,10 @@ function ResetPasswordPage() {
         </div>
       )}
 
-      <form onSubmit={handleForgotPassword} className={styles.resetPasswordForm}>
+      <form
+        onSubmit={handleForgotPassword}
+        className={styles.resetPasswordForm}
+      >
         <div className={styles.inputGroup}>
           <input
             type="email"
@@ -237,7 +242,8 @@ function ResetPasswordPage() {
         <button
           type="submit"
           className={styles.submitButton}
-          disabled={loading}>
+          disabled={loading}
+        >
           {loading ? (
             <div className={styles.buttonLoading}>
               <div className={styles.spinner}></div>
@@ -252,7 +258,8 @@ function ResetPasswordPage() {
           type="button"
           className={styles.secondaryButton}
           onClick={() => navigate('/login')}
-          disabled={loading}>
+          disabled={loading}
+        >
           Back to Login
         </button>
       </form>
@@ -278,7 +285,8 @@ function ResetPasswordPage() {
             messageType === 'success'
               ? styles.successMessage
               : styles.errorMessage
-          }>
+          }
+        >
           {messageType === 'success' && (
             <CheckCircleIcon
               style={{ fontSize: '20px', verticalAlign: 'middle' }}
@@ -320,7 +328,8 @@ function ResetPasswordPage() {
               type="button"
               className={styles.passwordToggle}
               onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}>
+              tabIndex={-1}
+            >
               {showPassword ? '👁️' : '👁️‍🗨️'}
             </button>
           </div>
@@ -343,7 +352,8 @@ function ResetPasswordPage() {
               type="button"
               className={styles.passwordToggle}
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              tabIndex={-1}>
+              tabIndex={-1}
+            >
               {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
             </button>
           </div>
@@ -355,7 +365,8 @@ function ResetPasswordPage() {
         <button
           type="submit"
           className={styles.submitButton}
-          disabled={loading}>
+          disabled={loading}
+        >
           {loading ? (
             <div className={styles.buttonLoading}>
               <div className={styles.spinner}></div>
@@ -370,7 +381,8 @@ function ResetPasswordPage() {
           type="button"
           className={styles.secondaryButton}
           onClick={() => setStep(1)}
-          disabled={loading}>
+          disabled={loading}
+        >
           Go Back
         </button>
       </form>
@@ -400,4 +412,3 @@ function ResetPasswordPage() {
 }
 
 export default ResetPasswordPage;
-

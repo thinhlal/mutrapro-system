@@ -3,43 +3,43 @@ import {
   Routes,
   Route,
   Navigate,
-} from "react-router-dom";
+} from 'react-router-dom';
 
 // Common Components
-import ScrollToTop from "./components/common/ScrollToTop/ScrollToTop";
-import ProtectedRoute from "./components/HandleRoutes/ProtectedRoute";
+import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
+import ProtectedRoute from './components/HandleRoutes/ProtectedRoute';
 
 // Layouts
-import CoordinatorLayout from "./layouts/CoordinatorLayout/CoordinatorLayout";
+import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
 
 // Customer Pages
-import HomePage from "./pages/HomePage/HomePage";
-import LoginPage from "./pages/LoginPage/LoginPage";
-import PricingPage from "./pages/PricingPage/PricingPage";
-import SingersPage from "./pages/SingersPage/SingersPage";
-import ProfilePage from "./pages/ProfilePage/ProfilePage";
-import ServicesPage from "./pages/ServicesPage/ServicesPage";
-import RegisterPage from "./pages/RegisterPage/RegisterPage";
-import NotationEditor from "./pages/NotationEditor/NotationEditor";
-import ServiceRequestPage from "./pages/ServiceRequestPage/ServiceRequestPage";
-import DiscoverProsPage from "./pages/DiscoverProsPage/DiscoverProsPage";
-import SingerDetailPage from "./pages/SingerDetailPage/SingerDetailPage";
-import TranscriptionPage from "./pages/TranscriptionPage/TranscriptionPage";
-import TranscriptionQuotePage from "./pages/TranscriptionQuote/TranscriptionQuotePage";
-import ReviewOrderPage from "./pages/ReviewOrderPage/ReviewOrderPage";
-import RecordingQuotePage from "./pages/RecordingQuotePage/RecordingQuotePage";
-import ArrangementQuotePage from "./pages/ArrangementQuotePage/ArrangementQuotePage";
-import UnauthorizedPage from "./pages/UnauthorizedPage/UnauthorizedPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage/VerifyEmailPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage/ResetPasswordPage";
+import HomePage from './pages/HomePage/HomePage';
+import LoginPage from './pages/LoginPage/LoginPage';
+import PricingPage from './pages/PricingPage/PricingPage';
+import SingersPage from './pages/SingersPage/SingersPage';
+import ProfilePage from './pages/ProfilePage/ProfilePage';
+import ServicesPage from './pages/ServicesPage/ServicesPage';
+import RegisterPage from './pages/RegisterPage/RegisterPage';
+import NotationEditor from './pages/NotationEditor/NotationEditor';
+import ServiceRequestPage from './pages/ServiceRequestPage/ServiceRequestPage';
+import DiscoverProsPage from './pages/DiscoverProsPage/DiscoverProsPage';
+import SingerDetailPage from './pages/SingerDetailPage/SingerDetailPage';
+import TranscriptionPage from './pages/TranscriptionPage/TranscriptionPage';
+import TranscriptionQuotePage from './pages/TranscriptionQuote/TranscriptionQuotePage';
+import ReviewOrderPage from './pages/ReviewOrderPage/ReviewOrderPage';
+import RecordingQuotePage from './pages/RecordingQuotePage/RecordingQuotePage';
+import ArrangementQuotePage from './pages/ArrangementQuotePage/ArrangementQuotePage';
+import UnauthorizedPage from './pages/UnauthorizedPage/UnauthorizedPage';
+import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage';
+import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
 
 // Coordinator Pages
-import Tasks from "./pages/Task/Task";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import ContractBuilder from "./pages/ContractBuilder/ContractBuilder";
-import ContractsList from "./pages/ContractsList/ContractsList";
+import Tasks from './pages/Task/Task';
+import Dashboard from './pages/Dashboard/Dashboard';
+import ContractBuilder from './pages/ContractBuilder/ContractBuilder';
+import ContractsList from './pages/ContractsList/ContractsList';
 
-import "./App.css";
+import './App.css';
 
 function App() {
   return (
@@ -55,7 +55,7 @@ function App() {
         <Route path="/discover-pros" element={<DiscoverProsPage />} />
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
-        
+
         {/* --- AUTH ROUTES --- */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

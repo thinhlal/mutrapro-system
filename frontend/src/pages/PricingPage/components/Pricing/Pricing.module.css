@@ -1,213 +1,214 @@
 /* Section layout */
 .section {
-    background: #fff;
-    color: #333;
-    padding: clamp(56px, 8vw, 120px) 0 clamp(36px, 6vw, 80px);
-    text-align: center;
-    margin-top: 6rem;
+  background: #fff;
+  color: #333;
+  padding: clamp(56px, 8vw, 120px) 0 clamp(36px, 6vw, 80px);
+  text-align: center;
+  margin-top: 6rem;
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* Heading */
 .title {
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: 0.2px;
-    color: #3c3c3c;
-    font-size: 2.25rem;
-    margin: 0 0 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+  color: #3c3c3c;
+  font-size: 2.25rem;
+  margin: 0 0 10px;
 }
 
 .titleUnderline {
-    display: block;
-    width: 80px;
-    height: 1px;
-    background: #ee8f40;
-    margin: 30px auto 30px;
-    border-radius: 999px;
+  display: block;
+  width: 80px;
+  height: 1px;
+  background: #ee8f40;
+  margin: 30px auto 30px;
+  border-radius: 999px;
 }
 
 .subtitle {
-    font-size: clamp(16px, 2.2vw, 20px);
-    color: #666;
-    margin: 0 0 12px;
+  font-size: clamp(16px, 2.2vw, 20px);
+  color: #666;
+  margin: 0 0 12px;
 }
 
 /* Card */
 .pricingCard {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: clamp(24px, 4vw, 40px);
-    box-shadow:
-        0 10px 30px rgba(15, 26, 42, 0.08),
-        0 0 80px rgba(238, 143, 64, 0.08);
-    margin: clamp(24px, 4vw, 40px) 0;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: clamp(24px, 4vw, 40px);
+  box-shadow:
+    0 10px 30px rgba(15, 26, 42, 0.08),
+    0 0 80px rgba(238, 143, 64, 0.08);
+  margin: clamp(24px, 4vw, 40px) 0;
 }
 
 .leftCol {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* ⬅️ căn ngang */
-    justify-content: center;
-    /* ⬅️ căn dọc */
-    text-align: center;
-    /* ⬅️ chữ ở giữa */
-    gap: 8px;
-    padding-right: clamp(12px, 2vw, 24px);
-    border-right: none;
-    margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* ⬅️ căn ngang */
+  justify-content: center;
+  /* ⬅️ căn dọc */
+  text-align: center;
+  /* ⬅️ chữ ở giữa */
+  gap: 8px;
+  padding-right: clamp(12px, 2vw, 24px);
+  border-right: none;
+  margin-bottom: 0;
 }
 
 .rightCol {
-    padding-left: clamp(12px, 2vw, 24px);
-    text-align: left;
-    /* ✅ canh trái toàn bộ cột phải */
+  padding-left: clamp(12px, 2vw, 24px);
+  text-align: left;
+  /* ✅ canh trái toàn bộ cột phải */
 }
 
 /* Mobile stack */
 @media (max-width: 992px) {
-    .leftCol {
-        border-right: none;
-        border-bottom: none;
-        /* ❌ không kẻ đường phân cách khi xuống mobile */
-        padding-right: 0;
-        padding-bottom: 20px;
-    }
+  .leftCol {
+    border-right: none;
+    border-bottom: none;
+    /* ❌ không kẻ đường phân cách khi xuống mobile */
+    padding-right: 0;
+    padding-bottom: 20px;
+  }
 
-    .rightCol {
-        padding-left: 0;
-        padding-top: 0;
-    }
+  .rightCol {
+    padding-left: 0;
+    padding-top: 0;
+  }
 }
 
 /* Price block (giữ nguyên gần mẫu) */
 .fromText {
-    color: #6b7280;
-    font-weight: 600;
-    margin: 0 0 4px;
+  color: #6b7280;
+  font-weight: 600;
+  margin: 0 0 4px;
 }
 
 .priceLine {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    justify-content: center;
-    /* ⬅️ $15 và USD ở giữa */
-
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  justify-content: center;
+  /* ⬅️ $15 và USD ở giữa */
 }
 
 .priceAmount {
-    font-size: clamp(40px, 6vw, 60px);
-    font-weight: 700;
-    color: #444444;
-    line-height: 1;
+  font-size: clamp(40px, 6vw, 60px);
+  font-weight: 700;
+  color: #444444;
+  line-height: 1;
 }
 
 .priceCurrency {
-    font-size: clamp(22px, 3.2vw, 32px);
-    font-weight: 800;
-    color: #0f1a2a;
-    line-height: 1.1;
+  font-size: clamp(22px, 3.2vw, 32px);
+  font-weight: 800;
+  color: #0f1a2a;
+  line-height: 1.1;
 }
 
 .perMinute {
-    font-weight: 700;
-    color: #0f1a2a;
-    margin: 6px 0 0;
+  font-weight: 700;
+  color: #0f1a2a;
+  margin: 6px 0 0;
 }
 
 .minimumNote {
-    color: #6b7280;
-    font-size: 14px;
-    margin-top: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 8px;
 }
 
 /* Rates */
 .ratesTitle {
-    color: #878787;
-    font-weight: 700;
-    margin: 0 0 10px;
-    text-align: left;
+  color: #878787;
+  font-weight: 700;
+  margin: 0 0 10px;
+  text-align: left;
 }
 
 /* Danh sách 1., 2., 3., 4. hiển thị cùng dòng với text */
 .ratesList {
-    list-style: none;
-    padding-left: 0;
-    margin: 0;
-    font-size: 18px;
-    color: #444444;
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  font-size: 18px;
+  color: #444444;
 }
 
 .ratesList li {
-    position: relative;
-    padding-left: 28px;
-    /* chỗ cho số 1., 2., ... */
-    margin: 8px 0;
-    color: #374151;
-    /* gần màu xám đậm mẫu */
-    font-weight: 500;
-    line-height: 1.6;
+  position: relative;
+  padding-left: 28px;
+  /* chỗ cho số 1., 2., ... */
+  margin: 8px 0;
+  color: #374151;
+  /* gần màu xám đậm mẫu */
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .ratesList li::before {
-    content: counter(item) ".";
-    counter-increment: item;
-    position: absolute;
-    left: 0;
-    top: 0;
-    font-weight: 800;
-    color: #ee8f40;
-    /* số màu cam */
+  content: counter(item) '.';
+  counter-increment: item;
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 800;
+  color: #ee8f40;
+  /* số màu cam */
 }
 
 /* Bắt đầu đếm từ 0 và reset counter cho list */
 .ratesList {
-    counter-reset: item;
+  counter-reset: item;
 }
 
 /* Explainer + CTA */
 .explainer {
-    text-align: left;
-    max-width: 880px;
-    margin: clamp(28px, 5vw, 56px) auto 0;
-    color: #0f1a2a;
+  text-align: left;
+  max-width: 880px;
+  margin: clamp(28px, 5vw, 56px) auto 0;
+  color: #0f1a2a;
 }
 
 .explainerTitle {
-    font-weight: 700;
-    margin-bottom: 10px;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
 .explainerDesc {
-    font-size: 1rem;
-    color: #666;
-    line-height: 1.6;
-    margin: 0;
-    flex-grow: 1;
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+  flex-grow: 1;
 }
 
 .ctaButton {
-    margin-top: 18px;
-    background: #ee8f40 !important;
-    border-color: #ee8f40 !important;
-    color: #ffffff !important;
-    border-radius: 999px !important;
-    height: 48px !important;
-    padding: 0 28px !important;
-    font-weight: 700;
-    box-shadow: 0 12px 30px rgba(238, 143, 64, 0.35);
-    transition: transform .2s ease, box-shadow .2s ease;
+  margin-top: 18px;
+  background: #ee8f40 !important;
+  border-color: #ee8f40 !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  height: 48px !important;
+  padding: 0 28px !important;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(238, 143, 64, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ctaButton:hover,
 .ctaButton:focus {
-    transform: translateY(-1px);
-    box-shadow: 0 16px 40px rgba(238, 143, 64, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 40px rgba(238, 143, 64, 0.45);
 }

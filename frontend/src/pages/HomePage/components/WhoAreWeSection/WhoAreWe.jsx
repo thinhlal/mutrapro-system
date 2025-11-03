@@ -1,20 +1,19 @@
-import { memo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./WhoAreWe.module.css";
+import { memo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './WhoAreWe.module.css';
 
 // import custom hook
-import { useIntersection } from "../../../../hooks/Animations/useIntersection";
+import { useIntersection } from '../../../../hooks/Animations/useIntersection';
 
-import officeImage from "../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-Office-Customer-Service-14.jpg";
+import officeImage from '../../../../assets/images/HomePage/My-Sheet-Music-Transcriptions-Office-Customer-Service-14.jpg';
 
-const OBSERVER_OPTS = { threshold: 0.2, rootMargin: "0px 0px -50px 0px" };
+const OBSERVER_OPTS = { threshold: 0.2, rootMargin: '0px 0px -50px 0px' };
 
 function WhoAreWe() {
   const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
-  const withVisible = (base) =>
-    classNames(base, { [styles.visible]: isVisible });
+  const withVisible = base => classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.whoAreWeSection} ref={sectionRef}>
@@ -43,11 +42,11 @@ function WhoAreWe() {
           <Col lg={6} md={6} sm={12} className={styles.textCol}>
             <div className={withVisible(styles.textContent)}>
               <p className={styles.paragraph}>
-                We are{" "}
+                We are{' '}
                 <strong>
                   a team of 40+ professional transcribers, arrangers, music
                   editors, musicologists, and engineers
-                </strong>{" "}
+                </strong>{' '}
                 with proven experience in all types of musical transcriptions,
                 arrangements, digitizations, and their music applications.
               </p>
@@ -65,10 +64,10 @@ function WhoAreWe() {
               </p>
 
               <p className={styles.paragraph}>
-                We transcribe{" "}
+                We transcribe{' '}
                 <strong>each note by hand and by ear one by one</strong>. We
                 don't use any kind of automatic transcription software. It's a
-                slow process but it gives{" "}
+                slow process but it gives{' '}
                 <strong>
                   great results, reliable notation, and tailored solutions
                 </strong>

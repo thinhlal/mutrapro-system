@@ -1,12 +1,12 @@
 // src/pages/TranscriptionPage/components/MusicSheetSection/MusicSheetSection.jsx
-import { useState, memo } from "react";
-import styles from "./MusicSheetSection.module.css";
+import { useState, memo } from 'react';
+import styles from './MusicSheetSection.module.css';
 
 /* ====== ASSETS ====== */
-import commonThumb from "../../../../assets/images/Thumnail/Video-Thumbnail-MSMT-1.jpg";
-import sheetRocketMan from "../../../../assets/images/Transcript/Rocket-man-724x1024.png";
-import sheetShadowSmile from "../../../../assets/images/Transcript/s145-724x1024.png";
-import sheetTrumpetSolo from "../../../../assets/images/Transcript/Woodchoppers-ball-trumpet-solo-1-724x1024.png";
+import commonThumb from '../../../../assets/images/Thumnail/Video-Thumbnail-MSMT-1.jpg';
+import sheetRocketMan from '../../../../assets/images/Transcript/Rocket-man-724x1024.png';
+import sheetShadowSmile from '../../../../assets/images/Transcript/s145-724x1024.png';
+import sheetTrumpetSolo from '../../../../assets/images/Transcript/Woodchoppers-ball-trumpet-solo-1-724x1024.png';
 
 /* ====== HELPERS ====== */
 function extractYouTubeId(input) {
@@ -14,8 +14,8 @@ function extractYouTubeId(input) {
   const cleaned = String(input).trim();
 
   // Nếu đã là ID 11 ký tự (lọc ký tự thừa như & ...)
-  const idLike = cleaned.replace(/[^a-zA-Z0-9_-]/g, "");
-  if (/^[a-zA-Z0-9_-]{11}$/.test(idLike) && !cleaned.startsWith("http")) {
+  const idLike = cleaned.replace(/[^a-zA-Z0-9_-]/g, '');
+  if (/^[a-zA-Z0-9_-]{11}$/.test(idLike) && !cleaned.startsWith('http')) {
     return idLike;
   }
 
@@ -23,45 +23,44 @@ function extractYouTubeId(input) {
   try {
     const u = new URL(cleaned);
     // youtu.be/<id>
-    if (u.hostname.includes("youtu.be")) {
-      const seg = u.pathname.split("/").filter(Boolean)[0];
+    if (u.hostname.includes('youtu.be')) {
+      const seg = u.pathname.split('/').filter(Boolean)[0];
       if (/^[a-zA-Z0-9_-]{11}$/.test(seg)) return seg;
     }
     // /watch?v=<id>
-    const v = u.searchParams.get("v");
+    const v = u.searchParams.get('v');
     if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
 
     // /embed/<id> hoặc /shorts/<id>
     const m = u.pathname.match(/\/(embed|shorts)\/([a-zA-Z0-9_-]{11})/);
     if (m) return m[2];
-  } catch {
-  }
+  } catch {}
   return null;
 }
 
 /* ====== CONFIG ======*/
 const VIDEO_ITEMS = [
   {
-    key: "v1",
-    label: "Piano & Vocal Score",
-    youtube: "https://www.youtube.com/watch?v=LmnejiLlR-M&t=2s",
+    key: 'v1',
+    label: 'Piano & Vocal Score',
+    youtube: 'https://www.youtube.com/watch?v=LmnejiLlR-M&t=2s',
   },
   {
-    key: "v2",
-    label: "Piano Cover Transcription",
-    youtube: "https://www.youtube.com/watch?v=750BWuHGBNI",
+    key: 'v2',
+    label: 'Piano Cover Transcription',
+    youtube: 'https://www.youtube.com/watch?v=750BWuHGBNI',
   },
   {
-    key: "v3",
-    label: "Trumpet Jazz Solo",
-    youtube: "https://www.youtube.com/watch?v=4OcySBum734&t=117s",
+    key: 'v3',
+    label: 'Trumpet Jazz Solo',
+    youtube: 'https://www.youtube.com/watch?v=4OcySBum734&t=117s',
   },
 ];
 
 const SHEET_ITEMS = [
-  { key: "s1", title: "The Shadow Of Your Smile", img: sheetShadowSmile },
-  { key: "s2", title: "Rocket Man", img: sheetRocketMan },
-  { key: "s3", title: "Woodchopper’s Ball", img: sheetTrumpetSolo },
+  { key: 's1', title: 'The Shadow Of Your Smile', img: sheetShadowSmile },
+  { key: 's2', title: 'Rocket Man', img: sheetRocketMan },
+  { key: 's3', title: 'Woodchopper’s Ball', img: sheetTrumpetSolo },
 ];
 
 /* ====== SUB-COMPONENTS ====== */
@@ -117,7 +116,7 @@ function VideoCard({ label, youtube, playing, onPlay, onClose, thumb }) {
         // Fallback khi không bóc được ID hợp lệ
         <a
           className={styles.thumbButton}
-          href={typeof youtube === "string" ? youtube : "#"}
+          href={typeof youtube === 'string' ? youtube : '#'}
           target="_blank"
           rel="noreferrer"
           title="Open on YouTube"
@@ -148,21 +147,19 @@ function SheetCard({ title, img }) {
 
 function MusicSheetSection() {
   const [playingMap, setPlayingMap] = useState(() =>
-    Object.fromEntries(VIDEO_ITEMS.map((v) => [v.key, false]))
+    Object.fromEntries(VIDEO_ITEMS.map(v => [v.key, false]))
   );
 
-  const handlePlay = (key) =>
-    setPlayingMap((prev) => ({ ...prev, [key]: true }));
+  const handlePlay = key => setPlayingMap(prev => ({ ...prev, [key]: true }));
 
-  const handleClose = (key) =>
-    setPlayingMap((prev) => ({ ...prev, [key]: false }));
+  const handleClose = key => setPlayingMap(prev => ({ ...prev, [key]: false }));
 
   return (
     <section className={styles.section} aria-label="Sample Transcriptions">
       <div className={styles.container}>
         {/* Hàng trên: 3 video */}
         <div className={styles.mediaGrid}>
-          {VIDEO_ITEMS.map((v) => (
+          {VIDEO_ITEMS.map(v => (
             <VideoCard
               key={v.key}
               label={v.label}
@@ -184,7 +181,7 @@ function MusicSheetSection() {
 
         {/* Hàng dưới: 3 trang sheet */}
         <div className={styles.sheetsGrid}>
-          {SHEET_ITEMS.map((s) => (
+          {SHEET_ITEMS.map(s => (
             <SheetCard key={s.key} title={s.title} img={s.img} />
           ))}
         </div>

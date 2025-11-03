@@ -17,7 +17,7 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (loading) return;
 
@@ -28,7 +28,6 @@ function LoginPage() {
 
       // Redirect to the page user tried to access, or home page
       navigate(from, { replace: true });
-      
     } catch (error) {
       // Check if error is email not verified
       if (error.errorCode === 'USER_4013') {
@@ -72,7 +71,9 @@ function LoginPage() {
             <h2>Đăng nhập</h2>
             <p>
               Chưa có tài khoản?{' '}
-              <Link to="/register" className={styles.link}> {/* Sửa thành /register */}
+              <Link to="/register" className={styles.link}>
+                {' '}
+                {/* Sửa thành /register */}
                 Đăng ký ngay
               </Link>
             </p>
@@ -89,7 +90,7 @@ function LoginPage() {
                 required
                 autoComplete="email"
                 value={email} // Thêm value
-                onChange={(e) => setEmail(e.target.value)} // Thêm onChange
+                onChange={e => setEmail(e.target.value)} // Thêm onChange
                 disabled={loading} // Vô hiệu hóa khi đang loading
               />
               <label htmlFor="email" className={styles.label}>
@@ -107,7 +108,7 @@ function LoginPage() {
                 required
                 autoComplete="current-password"
                 value={password} // Thêm value
-                onChange={(e) => setPassword(e.target.value)} // Thêm onChange
+                onChange={e => setPassword(e.target.value)} // Thêm onChange
                 disabled={loading} // Vô hiệu hóa khi đang loading
               />
               <label htmlFor="password" className={styles.label}>
@@ -120,7 +121,11 @@ function LoginPage() {
                 <input type="checkbox" className={styles.checkbox} />
                 <span>Ghi nhớ tôi</span>
               </label>
-              <button type="button" className={styles.textButton} onClick={() => navigate('/reset-password')}>
+              <button
+                type="button"
+                className={styles.textButton}
+                onClick={() => navigate('/reset-password')}
+              >
                 Quên mật khẩu?
               </button>
             </div>

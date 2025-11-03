@@ -71,7 +71,8 @@
   /* Ban đầu được giấu ở phía dưới và trong suốt */
   transform: translateY(100%);
   /* Hiệu ứng trượt lên và hiện ra mượt mà */
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+  transition:
+    transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     opacity 0.35s ease;
 }
 

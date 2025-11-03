@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   Table,
   Input,
@@ -11,180 +11,180 @@ import {
   message,
   Tooltip,
   Typography,
-} from "antd";
+} from 'antd';
 import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
   FilePdfOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
-import styles from "./ContractsList.module.css";
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
+import styles from './ContractsList.module.css';
 
 // ===== Enums (phù hợp với ContractBuilder) =====
 const CONTRACT_TYPES = [
-  { label: "Transcription", value: "transcription" },
-  { label: "Arrangement", value: "arrangement" },
-  { label: "Recording", value: "recording" },
-  { label: "Bundle (T+A+R)", value: "bundle" },
+  { label: 'Transcription', value: 'transcription' },
+  { label: 'Arrangement', value: 'arrangement' },
+  { label: 'Recording', value: 'recording' },
+  { label: 'Bundle (T+A+R)', value: 'bundle' },
 ];
 const CONTRACT_STATUS = [
-  { label: "Draft", value: "draft" },
-  { label: "Sent", value: "sent" },
-  { label: "Reviewed", value: "reviewed" },
-  { label: "Signed", value: "signed" },
-  { label: "Expired", value: "expired" },
+  { label: 'Draft', value: 'draft' },
+  { label: 'Sent', value: 'sent' },
+  { label: 'Reviewed', value: 'reviewed' },
+  { label: 'Signed', value: 'signed' },
+  { label: 'Expired', value: 'expired' },
 ];
 const CURRENCIES = [
-  { label: "VND", value: "VND" },
-  { label: "USD", value: "USD" },
+  { label: 'VND', value: 'VND' },
+  { label: 'USD', value: 'USD' },
 ];
 
 // ===== Mock Data (bám DB contracts v3.2) =====
 // Lưu ý: thêm vài field tiện hiển thị như customer_name, service_name.
 const MOCK_CONTRACTS = [
   {
-    contract_id: "f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a01",
-    request_id: "req-0001",
-    customer_id: "cus-001",
-    manager_id: "mgr-01",
-    contract_number: "CTR-20251017-A12B",
-    contract_type: "transcription",
-    status: "draft",
-    created_at: "2025-10-16T12:05:00Z",
+    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a01',
+    request_id: 'req-0001',
+    customer_id: 'cus-001',
+    manager_id: 'mgr-01',
+    contract_number: 'CTR-20251017-A12B',
+    contract_type: 'transcription',
+    status: 'draft',
+    created_at: '2025-10-16T12:05:00Z',
     sent_to_customer_at: null,
     customer_reviewed_at: null,
     signed_at: null,
     expires_at: null,
     file_id: null,
-    notes: "First draft.",
+    notes: 'First draft.',
     base_price: 1500000,
     total_price: 2000000,
-    currency: "VND",
+    currency: 'VND',
     deposit_percent: 40,
     deposit_amount: 800000,
     final_amount: 1200000,
     deposit_paid: false,
     deposit_paid_at: null,
-    expected_start_date: "2025-10-18T00:00:00Z",
-    due_date: "2025-10-25T00:00:00Z",
+    expected_start_date: '2025-10-18T00:00:00Z',
+    due_date: '2025-10-25T00:00:00Z',
     sla_days: 7,
     auto_due_date: true,
     // convenience
-    customer_name: "Nguyễn A",
-    service_name: "Piano Transcription",
+    customer_name: 'Nguyễn A',
+    service_name: 'Piano Transcription',
   },
   {
-    contract_id: "f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a02",
-    request_id: "req-0002",
-    customer_id: "cus-002",
-    manager_id: "mgr-01",
-    contract_number: "CTR-20251016-FF21",
-    contract_type: "arrangement",
-    status: "sent",
-    created_at: "2025-10-16T09:00:00Z",
-    sent_to_customer_at: "2025-10-16T10:00:00Z",
+    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a02',
+    request_id: 'req-0002',
+    customer_id: 'cus-002',
+    manager_id: 'mgr-01',
+    contract_number: 'CTR-20251016-FF21',
+    contract_type: 'arrangement',
+    status: 'sent',
+    created_at: '2025-10-16T09:00:00Z',
+    sent_to_customer_at: '2025-10-16T10:00:00Z',
     signed_at: null,
     base_price: 3000000,
     total_price: 3500000,
-    currency: "VND",
+    currency: 'VND',
     deposit_percent: 50,
     deposit_amount: 1750000,
     final_amount: 1750000,
     deposit_paid: false,
-    expected_start_date: "2025-10-19T00:00:00Z",
-    due_date: "2025-10-26T00:00:00Z",
+    expected_start_date: '2025-10-19T00:00:00Z',
+    due_date: '2025-10-26T00:00:00Z',
     sla_days: 7,
     auto_due_date: true,
-    customer_name: "Trần B",
-    service_name: "Full Arrangement",
+    customer_name: 'Trần B',
+    service_name: 'Full Arrangement',
   },
   {
-    contract_id: "f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a03",
-    request_id: "req-0003",
-    customer_id: "cus-003",
-    manager_id: "mgr-02",
-    contract_number: "CTR-20251012-9ACD",
-    contract_type: "recording",
-    status: "signed",
-    created_at: "2025-10-12T07:30:00Z",
-    sent_to_customer_at: "2025-10-12T08:00:00Z",
-    customer_reviewed_at: "2025-10-12T12:00:00Z",
-    signed_at: "2025-10-13T09:00:00Z",
+    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a03',
+    request_id: 'req-0003',
+    customer_id: 'cus-003',
+    manager_id: 'mgr-02',
+    contract_number: 'CTR-20251012-9ACD',
+    contract_type: 'recording',
+    status: 'signed',
+    created_at: '2025-10-12T07:30:00Z',
+    sent_to_customer_at: '2025-10-12T08:00:00Z',
+    customer_reviewed_at: '2025-10-12T12:00:00Z',
+    signed_at: '2025-10-13T09:00:00Z',
     base_price: 2000,
     total_price: 2500,
-    currency: "USD",
+    currency: 'USD',
     deposit_percent: 40,
     deposit_amount: 1000,
     final_amount: 1500,
     deposit_paid: true,
-    deposit_paid_at: "2025-10-12T15:00:00Z",
-    expected_start_date: "2025-10-14T00:00:00Z",
-    due_date: "2025-10-21T00:00:00Z",
+    deposit_paid_at: '2025-10-12T15:00:00Z',
+    expected_start_date: '2025-10-14T00:00:00Z',
+    due_date: '2025-10-21T00:00:00Z',
     sla_days: 7,
     auto_due_date: true,
-    customer_name: "Pham C",
-    service_name: "Studio Recording",
+    customer_name: 'Pham C',
+    service_name: 'Studio Recording',
   },
   {
-    contract_id: "f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a04",
-    request_id: "req-0004",
-    customer_id: "cus-004",
-    manager_id: "mgr-02",
-    contract_number: "CTR-20250930-1B3F",
-    contract_type: "bundle",
-    status: "expired",
-    created_at: "2025-09-30T11:00:00Z",
-    expires_at: "2025-10-15T00:00:00Z",
+    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a04',
+    request_id: 'req-0004',
+    customer_id: 'cus-004',
+    manager_id: 'mgr-02',
+    contract_number: 'CTR-20250930-1B3F',
+    contract_type: 'bundle',
+    status: 'expired',
+    created_at: '2025-09-30T11:00:00Z',
+    expires_at: '2025-10-15T00:00:00Z',
     base_price: 7000000,
     total_price: 9000000,
-    currency: "VND",
+    currency: 'VND',
     deposit_percent: 30,
     deposit_amount: 2700000,
     final_amount: 6300000,
     deposit_paid: false,
-    expected_start_date: "2025-10-01T00:00:00Z",
-    due_date: "2025-10-12T00:00:00Z",
+    expected_start_date: '2025-10-01T00:00:00Z',
+    due_date: '2025-10-12T00:00:00Z',
     sla_days: 11,
     auto_due_date: true,
-    customer_name: "Lê D",
-    service_name: "T+A+R Package",
+    customer_name: 'Lê D',
+    service_name: 'T+A+R Package',
   },
 ];
 
 // helpers
 const fmtMoney = (n, cur) =>
-  typeof n === "number"
-    ? (cur === "USD" ? "$" : "") + n.toLocaleString()
-    : n ?? "";
+  typeof n === 'number'
+    ? (cur === 'USD' ? '$' : '') + n.toLocaleString()
+    : (n ?? '');
 
 const statusColor = {
-  draft: "default",
-  sent: "geekblue",
-  reviewed: "gold",
-  signed: "green",
-  expired: "volcano",
+  draft: 'default',
+  sent: 'geekblue',
+  reviewed: 'gold',
+  signed: 'green',
+  expired: 'volcano',
 };
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
 export default function ContractsList() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [type, setType] = useState();
   const [status, setStatus] = useState();
   const [currency, setCurrency] = useState();
   const [dateRange, setDateRange] = useState([]);
 
   const data = useMemo(() => {
-    return MOCK_CONTRACTS.filter((c) => {
+    return MOCK_CONTRACTS.filter(c => {
       const q =
         c.contract_number.toLowerCase() +
-        " " +
-        (c.customer_name || "").toLowerCase() +
-        " " +
-        (c.service_name || "").toLowerCase();
+        ' ' +
+        (c.customer_name || '').toLowerCase() +
+        ' ' +
+        (c.service_name || '').toLowerCase();
       const passSearch = q.includes(search.toLowerCase().trim());
       const passType = type ? c.contract_type === type : true;
       const passStatus = status ? c.status === status : true;
@@ -194,8 +194,8 @@ export default function ContractsList() {
           ? dayjs(c.created_at).isBetween(
               dateRange[0],
               dateRange[1],
-              "day",
-              "[]"
+              'day',
+              '[]'
             )
           : true;
       return passSearch && passType && passStatus && passCur && passDate;
@@ -204,9 +204,9 @@ export default function ContractsList() {
 
   const columns = [
     {
-      title: "Contract No",
-      dataIndex: "contract_number",
-      key: "contract_number",
+      title: 'Contract No',
+      dataIndex: 'contract_number',
+      key: 'contract_number',
       width: 190,
       render: (v, r) => (
         <Space direction="vertical" size={0}>
@@ -219,8 +219,8 @@ export default function ContractsList() {
       sorter: (a, b) => a.contract_number.localeCompare(b.contract_number),
     },
     {
-      title: "Customer / Service",
-      key: "customer",
+      title: 'Customer / Service',
+      key: 'customer',
       render: (_, r) => (
         <div>
           <Text>{r.customer_name}</Text>
@@ -230,50 +230,50 @@ export default function ContractsList() {
       width: 220,
     },
     {
-      title: "Type",
-      dataIndex: "contract_type",
-      key: "contract_type",
+      title: 'Type',
+      dataIndex: 'contract_type',
+      key: 'contract_type',
       width: 140,
-      filters: CONTRACT_TYPES.map((x) => ({ text: x.label, value: x.value })),
+      filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
       onFilter: (val, rec) => rec.contract_type === val,
-      render: (v) => (
+      render: v => (
         <Tag color="processing">
-          {CONTRACT_TYPES.find((x) => x.value === v)?.label || v}
+          {CONTRACT_TYPES.find(x => x.value === v)?.label || v}
         </Tag>
       ),
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
       width: 120,
-      render: (v) => (
-        <Tag color={statusColor[v] || "default"}>{v.toUpperCase()}</Tag>
+      render: v => (
+        <Tag color={statusColor[v] || 'default'}>{v.toUpperCase()}</Tag>
       ),
-      filters: CONTRACT_STATUS.map((x) => ({ text: x.label, value: x.value })),
+      filters: CONTRACT_STATUS.map(x => ({ text: x.label, value: x.value })),
       onFilter: (val, rec) => rec.status === val,
     },
     {
-      title: "Created",
-      dataIndex: "created_at",
-      key: "created_at",
+      title: 'Created',
+      dataIndex: 'created_at',
+      key: 'created_at',
       width: 140,
-      render: (v) => dayjs(v).format("YYYY-MM-DD"),
+      render: v => dayjs(v).format('YYYY-MM-DD'),
       sorter: (a, b) =>
         dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf(),
     },
     {
-      title: "Price",
-      key: "price",
+      title: 'Price',
+      key: 'price',
       width: 170,
       render: (_, r) => (
         <div>
           <div>
-            <Text strong>{fmtMoney(r.total_price, r.currency)}</Text>{" "}
+            <Text strong>{fmtMoney(r.total_price, r.currency)}</Text>{' '}
             <Tag>{r.currency}</Tag>
           </div>
           <div className={styles.sub}>
-            Deposit {r.deposit_percent}% ={" "}
+            Deposit {r.deposit_percent}% ={' '}
             {fmtMoney(r.deposit_amount, r.currency)}
           </div>
         </div>
@@ -281,27 +281,27 @@ export default function ContractsList() {
       sorter: (a, b) => (a.total_price || 0) - (b.total_price || 0),
     },
     {
-      title: "Timeline",
-      key: "timeline",
+      title: 'Timeline',
+      key: 'timeline',
       width: 220,
       render: (_, r) => (
         <div className={styles.timeline}>
           <div>
-            <span className={styles.sub}>Start</span>{" "}
-            {dayjs(r.expected_start_date).format("YYYY-MM-DD")}
+            <span className={styles.sub}>Start</span>{' '}
+            {dayjs(r.expected_start_date).format('YYYY-MM-DD')}
           </div>
           <div>
-            <span className={styles.sub}>Due</span>{" "}
-            {dayjs(r.due_date).format("YYYY-MM-DD")}{" "}
+            <span className={styles.sub}>Due</span>{' '}
+            {dayjs(r.due_date).format('YYYY-MM-DD')}{' '}
             <span className={styles.sub}>({r.sla_days}d)</span>
           </div>
         </div>
       ),
     },
     {
-      title: "Actions",
-      key: "actions",
-      fixed: "right",
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
       width: 220,
       render: (_, r) => (
         <Space>
@@ -371,12 +371,12 @@ export default function ContractsList() {
         <Button
           icon={<ReloadOutlined />}
           onClick={() => {
-            setSearch("");
+            setSearch('');
             setType();
             setStatus();
             setCurrency();
             setDateRange([]);
-            message.success("Filters cleared");
+            message.success('Filters cleared');
           }}
         >
           Reset

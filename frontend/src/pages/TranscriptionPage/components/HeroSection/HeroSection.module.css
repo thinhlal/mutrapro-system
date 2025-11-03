@@ -86,7 +86,9 @@
   height: auto;
   display: block;
   object-fit: contain;
-  transition: transform 220ms ease, filter 220ms ease;
+  transition:
+    transform 220ms ease,
+    filter 220ms ease;
   filter: drop-shadow(0 6px 18px rgba(236, 138, 28, 0.15));
 }
 

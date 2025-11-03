@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { useState } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -7,38 +7,38 @@ import {
   UnorderedListOutlined,
   UserOutlined,
   ContainerOutlined,
-} from "@ant-design/icons";
-import { Button, Layout, Menu, theme, Avatar, Dropdown } from "antd";
-import styles from "./CoordinatorLayout.module.css";
+} from '@ant-design/icons';
+import { Button, Layout, Menu, theme, Avatar, Dropdown } from 'antd';
+import styles from './CoordinatorLayout.module.css';
 
 const { Header, Sider, Content } = Layout;
 
 // Menu items Sidebar
 const menuItems = [
   {
-    key: "/coordinator/dashboard",
+    key: '/coordinator/dashboard',
     icon: <DashboardOutlined />,
     label: <Link to="/coordinator/dashboard">Dashboard</Link>,
   },
   {
-    key: "/coordinator/contact-builder",
+    key: '/coordinator/contact-builder',
     icon: <ContainerOutlined />,
     label: <Link to="/coordinator/contact-builder">Contact Builder</Link>,
   },
   {
-    key: "/coordinator/contracts-list",
+    key: '/coordinator/contracts-list',
     icon: <ContainerOutlined />,
     label: <Link to="/coordinator/contracts-list">Contracts</Link>,
   },
   {
-    key: "/coordinator/task",
+    key: '/coordinator/task',
     icon: <UnorderedListOutlined />,
     label: <Link to="/coordinator/task">Task</Link>,
   },
   {
-    key: "3",
+    key: '3',
     icon: <UserOutlined />,
-    label: "Profile",
+    label: 'Profile',
   },
 ];
 
@@ -63,7 +63,7 @@ const CoordinatorLayout = () => {
     <Layout className={styles.coordinatorLayout}>
       <Sider trigger={null} collapsible collapsed={collapsed}>
         <div className={styles.logo}>
-          {collapsed ? "MTP" : "MuTraPro Admin"}
+          {collapsed ? 'MTP' : 'MuTraPro Admin'}
         </div>
         <Menu
           theme="dark"
@@ -84,8 +84,8 @@ const CoordinatorLayout = () => {
             className={styles.triggerButton}
           />
           <div className={styles.headerRight}>
-            <Dropdown overlay={userMenu} trigger={["click"]}>
-              <a onClick={(e) => e.preventDefault()}>
+            <Dropdown overlay={userMenu} trigger={['click']}>
+              <a onClick={e => e.preventDefault()}>
                 <Avatar icon={<UserOutlined />} />
                 <span className={styles.userName}>Coordinator Name</span>
               </a>

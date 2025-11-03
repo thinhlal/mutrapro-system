@@ -1,6 +1,6 @@
 // src/pages/Arrangement/ArrangementQuotePage.jsx
-import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Collapse,
@@ -14,11 +14,11 @@ import {
   Input,
   Empty,
   Space,
-} from "antd";
-import styles from "./ArrangementQuotePage.module.css";
-import Header from "../../components/common/Header/Header";
-import Footer from "../../components/common/Footer/Footer";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
+} from 'antd';
+import styles from './ArrangementQuotePage.module.css';
+import Header from '../../components/common/Header/Header';
+import Footer from '../../components/common/Footer/Footer';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
 
 const { Title, Text } = Typography;
 
@@ -32,7 +32,7 @@ const PRICE_VOCALIST = 20;
 function calcPrice(instruments, complexity, editableFormats, withVocalist) {
   const items = [];
   const base = PRICE_BASE;
-  items.push({ label: "Base arrangement", amount: base });
+  items.push({ label: 'Base arrangement', amount: base });
 
   const instExtra = Math.max(0, instruments.length - 1) * PRICE_PER_INSTRUMENT;
   if (instExtra)
@@ -57,7 +57,7 @@ function calcPrice(instruments, complexity, editableFormats, withVocalist) {
 
   if (withVocalist)
     items.push({
-      label: "Include vocalist (recording add-on)",
+      label: 'Include vocalist (recording add-on)',
       amount: PRICE_VOCALIST,
     });
 
@@ -73,17 +73,17 @@ export default function ArrangementQuotePage() {
 
   // Source
   const [source, setSource] = useState({
-    fileName: navState.fileName || "",
-    fileType: navState.fileType || "",
+    fileName: navState.fileName || '',
+    fileType: navState.fileType || '',
     size: Number(navState.size) || 0,
-    variant: navState.variant || "pure", // "pure" | "with_recording"
+    variant: navState.variant || 'pure', // "pure" | "with_recording"
   });
 
   // Form options
   const [instruments, setInstruments] = useState([]);
   const [complexity, setComplexity] = useState(1); // 1–5
   const [editableFormats, setEditableFormats] = useState([]);
-  const withVocalist = source.variant === "with_recording";
+  const withVocalist = source.variant === 'with_recording';
   const [lyricsProvided, setLyricsProvided] = useState(false);
 
   // NEW: state cho Drawer
@@ -97,7 +97,7 @@ export default function ArrangementQuotePage() {
   const canProceed = hasSource && instruments.length > 0;
 
   const clearSource = () => {
-    setSource({ fileName: "", fileType: "", size: 0, variant: "pure" });
+    setSource({ fileName: '', fileType: '', size: 0, variant: 'pure' });
   };
 
   if (!hasSource) {
@@ -128,7 +128,7 @@ export default function ArrangementQuotePage() {
             <div
               style={{
                 padding: 12,
-                border: "1px dashed #ddd",
+                border: '1px dashed #ddd',
                 borderRadius: 8,
               }}
             >
@@ -140,14 +140,14 @@ export default function ArrangementQuotePage() {
           </div>
 
           <div className={styles.right}>
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <div className={styles.metaRow}>
                 <Text strong>Notation File:</Text>
                 <Input
                   value={source.fileName}
                   placeholder="Untitled"
-                  onChange={(e) =>
-                    setSource((s) => ({ ...s, fileName: e.target.value }))
+                  onChange={e =>
+                    setSource(s => ({ ...s, fileName: e.target.value }))
                   }
                   variant="filled"
                   style={{ maxWidth: 360 }}
@@ -156,7 +156,7 @@ export default function ArrangementQuotePage() {
               </div>
               <div className={styles.metaRow}>
                 <Text strong>Type:</Text>
-                <Text>{source.fileType || "Unknown"}</Text>
+                <Text>{source.fileType || 'Unknown'}</Text>
               </div>
 
               <div className={styles.rightAlign}>
@@ -179,10 +179,10 @@ export default function ArrangementQuotePage() {
 
         <Collapse
           bordered={false}
-          defaultActiveKey={["instruments"]}
+          defaultActiveKey={['instruments']}
           items={[
             {
-              key: "instruments",
+              key: 'instruments',
               label: (
                 <div className={styles.sectionTitle}>Instrument Selection</div>
               ),
@@ -193,18 +193,18 @@ export default function ArrangementQuotePage() {
                   placeholder="Pick instruments (required)"
                   value={instruments}
                   onChange={setInstruments}
-                  style={{ width: "100%" }}
+                  style={{ width: '100%' }}
                   options={[
-                    { value: "piano", label: "Piano" },
-                    { value: "guitar", label: "Guitar" },
-                    { value: "violin", label: "Violin" },
-                    { value: "strings", label: "Strings Section" },
-                    { value: "brass", label: "Brass" },
-                    { value: "winds", label: "Winds" },
-                    { value: "rhythm", label: "Rhythm Section" },
-                    { value: "vocal", label: "Vocal" },
+                    { value: 'piano', label: 'Piano' },
+                    { value: 'guitar', label: 'Guitar' },
+                    { value: 'violin', label: 'Violin' },
+                    { value: 'strings', label: 'Strings Section' },
+                    { value: 'brass', label: 'Brass' },
+                    { value: 'winds', label: 'Winds' },
+                    { value: 'rhythm', label: 'Rhythm Section' },
+                    { value: 'vocal', label: 'Vocal' },
                   ]}
-                  tagRender={(props) => (
+                  tagRender={props => (
                     <Tag closable={props.closable} onClose={props.onClose}>
                       {props.label}
                     </Tag>
@@ -213,7 +213,7 @@ export default function ArrangementQuotePage() {
               ),
             },
             {
-              key: "complexity",
+              key: 'complexity',
               label: <div className={styles.sectionTitle}>Complexity</div>,
               children: (
                 <div className={styles.inlineRow}>
@@ -224,14 +224,14 @@ export default function ArrangementQuotePage() {
                       max={5}
                       value={complexity}
                       onChange={setComplexity}
-                      tooltip={{ formatter: (v) => `Level ${v}` }}
+                      tooltip={{ formatter: v => `Level ${v}` }}
                     />
                   </div>
                 </div>
               ),
             },
             {
-              key: "editable",
+              key: 'editable',
               label: (
                 <div className={styles.sectionTitle}>Editable Formats</div>
               ),
@@ -241,15 +241,15 @@ export default function ArrangementQuotePage() {
                   value={editableFormats}
                   onChange={setEditableFormats}
                   placeholder="Editable formats (+$5 each)"
-                  style={{ width: "100%" }}
+                  style={{ width: '100%' }}
                   options={[
-                    { value: "musicxml", label: "MusicXML (.xml)" },
-                    { value: "midi", label: "MIDI (.mid)" },
-                    { value: "sib", label: "Sibelius (.sib)" },
-                    { value: "gp", label: "Guitar Pro (.gp)" },
-                    { value: "musx", label: "Finale (.musx)" },
-                    { value: "mscz", label: "MuseScore (.mscz)" },
-                    { value: "dorico", label: "Dorico" },
+                    { value: 'musicxml', label: 'MusicXML (.xml)' },
+                    { value: 'midi', label: 'MIDI (.mid)' },
+                    { value: 'sib', label: 'Sibelius (.sib)' },
+                    { value: 'gp', label: 'Guitar Pro (.gp)' },
+                    { value: 'musx', label: 'Finale (.musx)' },
+                    { value: 'mscz', label: 'MuseScore (.mscz)' },
+                    { value: 'dorico', label: 'Dorico' },
                   ]}
                 />
               ),
@@ -257,12 +257,12 @@ export default function ArrangementQuotePage() {
             ...(withVocalist
               ? [
                   {
-                    key: "vocal",
+                    key: 'vocal',
                     label: <div className={styles.sectionTitle}>Vocalist</div>,
                     children: (
                       <Checkbox
                         checked={lyricsProvided}
-                        onChange={(e) => setLyricsProvided(e.target.checked)}
+                        onChange={e => setLyricsProvided(e.target.checked)}
                       >
                         I will provide lyrics (recommended for vocalist)
                       </Checkbox>
@@ -302,7 +302,7 @@ export default function ArrangementQuotePage() {
           <div className={styles.cartGrid}>
             <div>
               <Title level={4} style={{ marginTop: 0 }}>
-                {source.fileName || "Untitled"}
+                {source.fileName || 'Untitled'}
               </Title>
               <Divider />
               <ul className={styles.listDots}>

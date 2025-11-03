@@ -15,7 +15,7 @@ export const useUserStore = create((set, get) => ({
   /**
    * Fetch user profile by userId
    */
-  fetchUserProfile: async (userId) => {
+  fetchUserProfile: async userId => {
     set({ loading: true, error: null });
     try {
       const response = await userService.getUserProfile(userId);
@@ -39,7 +39,7 @@ export const useUserStore = create((set, get) => ({
    */
   fetchMyProfile: async () => {
     const { accessToken } = useAuth.getState();
-    
+
     if (!accessToken) {
       set({ error: 'Chưa đăng nhập' });
       throw new Error('Not authenticated');
@@ -57,9 +57,11 @@ export const useUserStore = create((set, get) => ({
     // and we can't extract it from JWT (only has email),
     // we'll need to call an endpoint to get it
     // OR store it in AuthContext after successful API call
-    
+
     // Temporary solution: we'll need the userId parameter
-    throw new Error('fetchMyProfile requires userId - use fetchUserProfile(userId) instead');
+    throw new Error(
+      'fetchMyProfile requires userId - use fetchUserProfile(userId) instead'
+    );
   },
 
   /**
@@ -98,7 +100,7 @@ export const useUserStore = create((set, get) => ({
   /**
    * Set user profile directly (useful for optimistic updates)
    */
-  setUserProfile: (profile) => {
+  setUserProfile: profile => {
     set({ userProfile: profile });
   },
 
@@ -109,4 +111,3 @@ export const useUserStore = create((set, get) => ({
     set({ error: null });
   },
 }));
-

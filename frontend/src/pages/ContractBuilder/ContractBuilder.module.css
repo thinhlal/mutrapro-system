@@ -25,7 +25,7 @@
 }
 
 .seal::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: 999px;
@@ -94,7 +94,9 @@
 .card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 16px;
 }
 

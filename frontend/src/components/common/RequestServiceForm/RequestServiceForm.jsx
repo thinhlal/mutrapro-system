@@ -1,29 +1,29 @@
 // src/pages/ServiceRequest/components/RequestServiceForm/RequestServiceForm.jsx
-import { useMemo } from "react";
-import { Form, Input, Radio, Button, message } from "antd";
-import styles from "./RequestServiceForm.module.css";
+import { useMemo } from 'react';
+import { Form, Input, Radio, Button, message } from 'antd';
+import styles from './RequestServiceForm.module.css';
 
 const SERVICE_OPTIONS = [
-  { label: "Transcription (Sound → Sheet)", value: "transcription" },
-  { label: "Arrangement", value: "arrangement" },
+  { label: 'Transcription (Sound → Sheet)', value: 'transcription' },
+  { label: 'Arrangement', value: 'arrangement' },
   {
-    label: "Arrangement + Recording (with Vocalist)",
-    value: "arrangement_with_recording",
+    label: 'Arrangement + Recording (with Vocalist)',
+    value: 'arrangement_with_recording',
   },
-  { label: "Recording (Studio Booking)", value: "recording" },
+  { label: 'Recording (Studio Booking)', value: 'recording' },
 ];
 
 export default function RequestServiceForm({ onCreated }) {
   const [form] = Form.useForm();
 
-  const onFinish = async (values) => {
+  const onFinish = async values => {
     // TODO: call API create service-request nếu có; hiện tại demo UI
-    message.success("Your request has been created!");
+    message.success('Your request has been created!');
     onCreated?.(values.serviceType);
   };
 
   const requiredMsg = useMemo(
-    () => ({ required: true, message: "Required" }),
+    () => ({ required: true, message: 'Required' }),
     []
   );
 
@@ -46,7 +46,7 @@ export default function RequestServiceForm({ onCreated }) {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ serviceType: "transcription" }}
+          initialValues={{ serviceType: 'transcription' }}
           className={styles.form}
         >
           <Form.Item label="Full Name" name="fullName" rules={[requiredMsg]}>
@@ -56,7 +56,7 @@ export default function RequestServiceForm({ onCreated }) {
           <Form.Item
             label="Email"
             name="email"
-            rules={[requiredMsg, { type: "email", message: "Invalid email" }]}
+            rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
           >
             <Input size="large" placeholder="you@example.com" />
           </Form.Item>

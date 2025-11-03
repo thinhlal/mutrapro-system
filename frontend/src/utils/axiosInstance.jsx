@@ -1,12 +1,12 @@
 // src/utils/axiosInstance.jsx
-import axios from "axios";
-import { API_CONFIG, API_ENDPOINTS } from "../config/apiConfig";
-import { useAuth } from "../contexts/AuthContext";
+import axios from 'axios';
+import { API_CONFIG, API_ENDPOINTS } from '../config/apiConfig';
+import { useAuth } from '../contexts/AuthContext';
 
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   withCredentials: true, // Important: Send cookies with requests
 });
@@ -16,7 +16,7 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
     } else {
@@ -29,15 +29,15 @@ const processQueue = (error, token = null) => {
 // --- REQUEST INTERCEPTOR ---
 // Automatically add Bearer token to all requests
 axiosInstance.interceptors.request.use(
-  (config) => {
+  config => {
     const token = useAuth.getState().accessToken;
 
     if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
@@ -45,11 +45,11 @@ axiosInstance.interceptors.request.use(
 // --- RESPONSE INTERCEPTOR ---
 // Handle token refresh on 401 errors
 axiosInstance.interceptors.response.use(
-  (response) => {
+  response => {
     // Success response, return as is
     return response;
   },
-  async (error) => {
+  async error => {
     const originalRequest = error.config;
 
     // If error is not 401 or request is already retried, reject immediately
@@ -84,11 +84,11 @@ axiosInstance.interceptors.response.use(
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
-        .then((token) => {
-          originalRequest.headers["Authorization"] = `Bearer ${token}`;
+        .then(token => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
           return axiosInstance(originalRequest);
         })
-        .catch((err) => {
+        .catch(err => {
           return Promise.reject(err);
         });
     }
@@ -103,7 +103,7 @@ axiosInstance.interceptors.response.use(
       processQueue(null, newToken);
 
       // Retry original request with new token
-      originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+      originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
       return axiosInstance(originalRequest);
     } catch (refreshError) {
       // Refresh failed, process queue with error and logout

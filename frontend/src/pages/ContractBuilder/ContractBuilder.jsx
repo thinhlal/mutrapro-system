@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   Button,
   DatePicker,
@@ -11,36 +11,36 @@ import {
   Space,
   Divider,
   message,
-} from "antd";
-import dayjs from "dayjs";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import styles from "./ContractBuilder.module.css";
+} from 'antd';
+import dayjs from 'dayjs';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import styles from './ContractBuilder.module.css';
 
 const { Title, Text } = Typography;
 
 // Enums
 const CONTRACT_TYPES = [
-  { label: "Transcription", value: "transcription" },
-  { label: "Arrangement", value: "arrangement" },
-  { label: "Recording", value: "recording" },
-  { label: "Bundle (T+A+R)", value: "bundle" },
+  { label: 'Transcription', value: 'transcription' },
+  { label: 'Arrangement', value: 'arrangement' },
+  { label: 'Recording', value: 'recording' },
+  { label: 'Bundle (T+A+R)', value: 'bundle' },
 ];
 const CONTRACT_STATUS = [
-  { label: "Draft", value: "draft" },
-  { label: "Sent", value: "sent" },
-  { label: "Reviewed", value: "reviewed" },
-  { label: "Signed", value: "signed" },
-  { label: "Expired", value: "expired" },
+  { label: 'Draft', value: 'draft' },
+  { label: 'Sent', value: 'sent' },
+  { label: 'Reviewed', value: 'reviewed' },
+  { label: 'Signed', value: 'signed' },
+  { label: 'Expired', value: 'expired' },
 ];
 
 const CURRENCIES = [
-  { label: "VND", value: "VND" },
-  { label: "USD", value: "USD" },
+  { label: 'VND', value: 'VND' },
+  { label: 'USD', value: 'USD' },
 ];
 
-function genContractNumber(prefix = "CTR") {
-  const date = dayjs().format("YYYYMMDD");
+function genContractNumber(prefix = 'CTR') {
+  const date = dayjs().format('YYYYMMDD');
   const rand = Math.random().toString(16).slice(2, 6).toUpperCase();
   return `${prefix}-${date}-${rand}`;
 }
@@ -55,9 +55,9 @@ const ContractBuilder = () => {
   useEffect(() => {
     form.setFieldsValue({
       contract_number: genContractNumber(),
-      contract_type: "arrangement",
-      status: "draft",
-      currency: "VND",
+      contract_type: 'arrangement',
+      status: 'draft',
+      currency: 'VND',
       deposit_percent: 40,
       base_price: 0,
       total_price: 0,
@@ -85,18 +85,18 @@ const ContractBuilder = () => {
       const start = v.expected_start_date
         ? dayjs(v.expected_start_date)
         : dayjs();
-      const due = start.add(Number(v.sla_days || 0), "day");
+      const due = start.add(Number(v.sla_days || 0), 'day');
       form.setFieldsValue({ due_date: due });
     }
   };
   const onValuesChange = () => recompute();
 
   // submit → chuẩn hoá payload (frontend only)
-  const onFinish = (values) => {
+  const onFinish = values => {
     const normalized = {
       show_seal: !!values.show_seal,
-      seal_text: values.seal_text?.trim() || "MuTraPro Official",
-      seal_variant: values.seal_variant || "red",
+      seal_text: values.seal_text?.trim() || 'MuTraPro Official',
+      seal_variant: values.seal_variant || 'red',
       show_watermark: !!values.show_watermark,
 
       request_id: values.request_id || null,
@@ -105,14 +105,14 @@ const ContractBuilder = () => {
 
       contract_number: values.contract_number,
       contract_type: values.contract_type,
-      status: values.status || "draft",
+      status: values.status || 'draft',
       terms_and_conditions: values.terms_and_conditions?.trim(),
       special_clauses: values.special_clauses?.trim(),
       notes: values.notes?.trim(),
 
       base_price: Number(values.base_price || 0),
       total_price: Number(values.total_price || values.base_price || 0),
-      currency: values.currency || "VND",
+      currency: values.currency || 'VND',
       deposit_percent: Number(values.deposit_percent || 0),
       deposit_amount: Number(values.deposit_amount || 0),
       final_amount: Number(values.final_amount || 0),
@@ -130,16 +130,16 @@ const ContractBuilder = () => {
       auto_due_date: !!values.auto_due_date,
 
       // preview-only
-      partyA: values.partyA?.trim() || "MuTraPro Studio Co., Ltd",
-      partyAAddress: values.partyAAddress?.trim() || "",
-      partyB: values.partyB?.trim() || "",
-      partyBAddress: values.partyBAddress?.trim() || "",
+      partyA: values.partyA?.trim() || 'MuTraPro Studio Co., Ltd',
+      partyAAddress: values.partyAAddress?.trim() || '',
+      partyB: values.partyB?.trim() || '',
+      partyBAddress: values.partyBAddress?.trim() || '',
       effectiveDate: values.effectiveDate
-        ? dayjs(values.effectiveDate).format("YYYY-MM-DD")
-        : dayjs().format("YYYY-MM-DD"),
+        ? dayjs(values.effectiveDate).format('YYYY-MM-DD')
+        : dayjs().format('YYYY-MM-DD'),
     };
     setData(normalized);
-    message.success("Preview updated (contracts v3.2)");
+    message.success('Preview updated (contracts v3.2)');
   };
 
   // export PDF
@@ -149,14 +149,14 @@ const ContractBuilder = () => {
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
       windowWidth: el.scrollWidth,
       windowHeight: el.scrollHeight,
     });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -168,13 +168,13 @@ const ContractBuilder = () => {
 
     pdf.addImage(
       imgData,
-      "PNG",
+      'PNG',
       0,
       position,
       imgWidth,
       imgHeight,
       undefined,
-      "FAST"
+      'FAST'
     );
     heightLeft -= pageHeight;
 
@@ -183,19 +183,19 @@ const ContractBuilder = () => {
       position = -(imgHeight - heightLeft);
       pdf.addImage(
         imgData,
-        "PNG",
+        'PNG',
         0,
         position,
         imgWidth,
         imgHeight,
         undefined,
-        "FAST"
+        'FAST'
       );
       heightLeft -= pageHeight;
     }
 
-    const safe = (data?.contract_number || "contract").replace(/\s+/g, "_");
-    pdf.save(`${safe}_${dayjs().format("YYYYMMDD")}.pdf`);
+    const safe = (data?.contract_number || 'contract').replace(/\s+/g, '_');
+    pdf.save(`${safe}_${dayjs().format('YYYYMMDD')}.pdf`);
   };
 
   const header = useMemo(
@@ -206,7 +206,7 @@ const ContractBuilder = () => {
           <div className={styles.tagline}>Contract Preview</div>
         </div>
         <div className={styles.meta}>
-          <div>Generated: {dayjs().format("YYYY-MM-DD HH:mm")}</div>
+          <div>Generated: {dayjs().format('YYYY-MM-DD HH:mm')}</div>
         </div>
       </div>
     ),
@@ -284,20 +284,20 @@ const ContractBuilder = () => {
             label="Effective Date"
             rules={[{ required: true }]}
           >
-            <DatePicker style={{ width: "100%" }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
           <Form.Item name="currency" label="Currency" initialValue="VND">
             <Select options={CURRENCIES} />
           </Form.Item>
           <Form.Item name="base_price" label="Base Price">
-            <InputNumber min={0} step={1000} style={{ width: "100%" }} />
+            <InputNumber min={0} step={1000} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="total_price" label="Total Price (editable)">
-            <InputNumber min={0} step={1000} style={{ width: "100%" }} />
+            <InputNumber min={0} step={1000} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="deposit_percent" label="Deposit %" initialValue={40}>
-            <InputNumber min={0} max={100} step={1} style={{ width: "100%" }} />
+            <InputNumber min={0} max={100} step={1} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="deposit_paid"
@@ -309,8 +309,8 @@ const ContractBuilder = () => {
           <Form.Item name="deposit_paid_at" label="Deposit Paid At">
             <DatePicker
               showTime
-              style={{ width: "100%" }}
-              disabled={!form.getFieldValue("deposit_paid")}
+              style={{ width: '100%' }}
+              disabled={!form.getFieldValue('deposit_paid')}
             />
           </Form.Item>
 
@@ -324,7 +324,7 @@ const ContractBuilder = () => {
             <InputNumber
               min={0}
               step={1000}
-              style={{ width: "100%" }}
+              style={{ width: '100%' }}
               disabled
             />
           </Form.Item>
@@ -336,17 +336,17 @@ const ContractBuilder = () => {
             <InputNumber
               min={0}
               step={1000}
-              style={{ width: "100%" }}
+              style={{ width: '100%' }}
               disabled
             />
           </Form.Item>
 
           <Divider className={styles.fullRow}>Timeline & SLA</Divider>
           <Form.Item name="expected_start_date" label="Expected Start">
-            <DatePicker style={{ width: "100%" }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="sla_days" label="SLA Days">
-            <InputNumber min={0} max={120} style={{ width: "100%" }} />
+            <InputNumber min={0} max={120} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="auto_due_date"
@@ -357,8 +357,8 @@ const ContractBuilder = () => {
           </Form.Item>
           <Form.Item name="due_date" label="Due Date">
             <DatePicker
-              style={{ width: "100%" }}
-              disabled={form.getFieldValue("auto_due_date")}
+              style={{ width: '100%' }}
+              disabled={form.getFieldValue('auto_due_date')}
             />
           </Form.Item>
 
@@ -400,8 +400,8 @@ const ContractBuilder = () => {
           <Form.Item name="seal_variant" label="Seal Color" initialValue="red">
             <Select
               options={[
-                { label: "Red", value: "red" },
-                { label: "Blue", value: "blue" },
+                { label: 'Red', value: 'red' },
+                { label: 'Blue', value: 'blue' },
               ]}
             />
           </Form.Item>
@@ -448,7 +448,7 @@ const ContractBuilder = () => {
           <div className={styles.doc} ref={docRef}>
             {data?.show_watermark && (
               <div className={styles.watermark}>
-                {(data?.status || "DRAFT").toString().toUpperCase()}
+                {(data?.status || 'DRAFT').toString().toUpperCase()}
               </div>
             )}
 
@@ -456,85 +456,85 @@ const ContractBuilder = () => {
             {data?.show_seal && (
               <div
                 className={`${styles.seal} ${
-                  styles[`seal_${data?.seal_variant || "red"}`]
+                  styles[`seal_${data?.seal_variant || 'red'}`]
                 }`}
               >
                 <div className={styles.sealInner}>
                   <div className={styles.sealText}>
-                    {data?.seal_text || "MuTraPro Official"}
+                    {data?.seal_text || 'MuTraPro Official'}
                   </div>
                   <div className={styles.sealDate}>
-                    {dayjs().format("YYYY-MM-DD")}
+                    {dayjs().format('YYYY-MM-DD')}
                   </div>
                 </div>
               </div>
             )}
             <h1 className={styles.docTitle}>
               {data?.contract_type
-                ? `${(data.contract_type || "Contract")
+                ? `${(data.contract_type || 'Contract')
                     .toString()
                     .toUpperCase()} Contract`
-                : "Service Agreement"}
+                : 'Service Agreement'}
             </h1>
             <p>
-              <strong>Contract No:</strong> {data?.contract_number || "—"}{" "}
+              <strong>Contract No:</strong> {data?.contract_number || '—'}{' '}
               &nbsp;|&nbsp;
-              <strong>Status:</strong> {data?.status || "draft"}
+              <strong>Status:</strong> {data?.status || 'draft'}
             </p>
             <p>
-              <strong>Effective Date:</strong>{" "}
-              {data?.effectiveDate || dayjs().format("YYYY-MM-DD")}
+              <strong>Effective Date:</strong>{' '}
+              {data?.effectiveDate || dayjs().format('YYYY-MM-DD')}
             </p>
 
             <h3>Parties</h3>
             <p>
-              <strong>Party A:</strong> {data?.partyA || "Company A"} –{" "}
-              {data?.partyAAddress || "Address A"}
+              <strong>Party A:</strong> {data?.partyA || 'Company A'} –{' '}
+              {data?.partyAAddress || 'Address A'}
               <br />
-              <strong>Party B:</strong> {data?.partyB || "Company B"} –{" "}
-              {data?.partyBAddress || "Address B"}
+              <strong>Party B:</strong> {data?.partyB || 'Company B'} –{' '}
+              {data?.partyBAddress || 'Address B'}
             </p>
 
             <h3>Pricing & Payment</h3>
             <p>
               <strong>Currency:</strong> {data?.currency} &nbsp;|&nbsp;
-              <strong>Base:</strong>{" "}
-              {data?.base_price?.toLocaleString?.() ?? data?.base_price}{" "}
+              <strong>Base:</strong>{' '}
+              {data?.base_price?.toLocaleString?.() ?? data?.base_price}{' '}
               &nbsp;|&nbsp;
-              <strong>Total:</strong>{" "}
-              {data?.total_price?.toLocaleString?.() ?? data?.total_price}{" "}
+              <strong>Total:</strong>{' '}
+              {data?.total_price?.toLocaleString?.() ?? data?.total_price}{' '}
               &nbsp;|&nbsp;
-              <strong>Deposit:</strong> {data?.deposit_percent}% ={" "}
-              {data?.deposit_amount?.toLocaleString?.() ?? data?.deposit_amount}{" "}
+              <strong>Deposit:</strong> {data?.deposit_percent}% ={' '}
+              {data?.deposit_amount?.toLocaleString?.() ?? data?.deposit_amount}{' '}
               &nbsp;|&nbsp;
-              <strong>Final:</strong>{" "}
-              {data?.final_amount?.toLocaleString?.() ?? data?.final_amount}{" "}
+              <strong>Final:</strong>{' '}
+              {data?.final_amount?.toLocaleString?.() ?? data?.final_amount}{' '}
               &nbsp;|&nbsp;
-              <strong>Deposit Status:</strong>{" "}
+              <strong>Deposit Status:</strong>{' '}
               {data?.deposit_paid
                 ? `Paid at ${dayjs(data.deposit_paid_at).format(
-                    "YYYY-MM-DD HH:mm"
+                    'YYYY-MM-DD HH:mm'
                   )}`
-                : "Not paid"}
+                : 'Not paid'}
             </p>
 
             <h3>Timeline & SLA</h3>
             <p>
-              <strong>Expected Start:</strong>{" "}
+              <strong>Expected Start:</strong>{' '}
               {data?.expected_start_date
-                ? dayjs(data.expected_start_date).format("YYYY-MM-DD")
-                : "—"}{" "}
+                ? dayjs(data.expected_start_date).format('YYYY-MM-DD')
+                : '—'}{' '}
               &nbsp;|&nbsp;
               <strong>SLA Days:</strong> {data?.sla_days} &nbsp;|&nbsp;
-              <strong>Due Date:</strong>{" "}
-              {data?.due_date ? dayjs(data.due_date).format("YYYY-MM-DD") : "—"}{" "}
+              <strong>Due Date:</strong>{' '}
+              {data?.due_date ? dayjs(data.due_date).format('YYYY-MM-DD') : '—'}{' '}
               (auto: {String(data?.auto_due_date)})
             </p>
 
             {data?.terms_and_conditions && (
               <>
                 <h3>Terms & Conditions</h3>
-                <p style={{ whiteSpace: "pre-line" }}>
+                <p style={{ whiteSpace: 'pre-line' }}>
                   {data.terms_and_conditions}
                 </p>
               </>
@@ -543,7 +543,7 @@ const ContractBuilder = () => {
             {data?.special_clauses && (
               <>
                 <h3>Special Clauses</h3>
-                <p style={{ whiteSpace: "pre-line" }}>{data.special_clauses}</p>
+                <p style={{ whiteSpace: 'pre-line' }}>{data.special_clauses}</p>
               </>
             )}
 

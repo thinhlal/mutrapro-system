@@ -214,7 +214,7 @@
 }
 
 .factorsList li::before {
-  content: "•";
+  content: '•';
   color: #ec8a1c;
   font-weight: bold;
   position: absolute;

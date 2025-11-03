@@ -31,12 +31,12 @@ export const login = async (email, password) => {
  * Backend (Identity Service) yêu cầu: { fullName, phone, address, email, password, role }
  *
  */
-export const register = async (registerData) => {
+export const register = async registerData => {
   // registerData là một object chứa { fullName, email, password, phone, ... }
   try {
     const response = await axiosInstancePublic.post(
       API_ENDPOINTS.AUTH.REGISTER,
-      registerData 
+      registerData
     );
     // Trả về response.data (là ApiResponse<RegisterResponse>)
     //
@@ -51,12 +51,12 @@ export const register = async (registerData) => {
  * DÙNG axiosInstance (vì user phải đăng nhập rồi mới logout).
  * Backend (Identity Service) yêu cầu token trong body
  */
-export const logout = async (token) => {
-   try {
+export const logout = async token => {
+  try {
     // Token (accessToken) sẽ được gửi trong body
     const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT, {
-       token
-    }); 
+      token,
+    });
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi logout' };
@@ -81,10 +81,10 @@ export const refreshToken = async () => {
 /**
  * Introspect token để kiểm tra tính hợp lệ
  */
-export const introspect = async (token) => {
+export const introspect = async token => {
   try {
     const response = await axiosInstance.post(API_ENDPOINTS.AUTH.INTROSPECT, {
-      token
+      token,
     });
     return response.data;
   } catch (error) {

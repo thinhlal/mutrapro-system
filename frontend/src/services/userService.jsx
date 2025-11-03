@@ -7,9 +7,11 @@ import axiosInstancePublic from '../utils/axiosInstancePublic';
  * Get user by ID (basic info from users_auth table)
  * Endpoint: GET /api/users/{id}
  */
-export const getUserById = async (userId) => {
+export const getUserById = async userId => {
   try {
-    const response = await axiosInstance.get(`${API_ENDPOINTS.USER.CREATE}/${userId}`);
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.USER.CREATE}/${userId}`
+    );
     return response.data; // ApiResponse<UserResponse>
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy thông tin user' };
@@ -20,12 +22,16 @@ export const getUserById = async (userId) => {
  * Get user profile (detailed info from users table)
  * Endpoint: GET /api/users/{id}/profile
  */
-export const getUserProfile = async (userId) => {
+export const getUserProfile = async userId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.USER.PROFILE(userId));
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.USER.PROFILE(userId)
+    );
     return response.data; // ApiResponse<UserProfileResponse>
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' }
+    );
   }
 };
 
@@ -65,9 +71,11 @@ export const updateUserProfile = async (userId, profileData) => {
  * Delete user
  * Endpoint: DELETE /api/users/{id}
  */
-export const deleteUser = async (userId) => {
+export const deleteUser = async userId => {
   try {
-    const response = await axiosInstance.delete(`${API_ENDPOINTS.USER.CREATE}/${userId}`);
+    const response = await axiosInstance.delete(
+      `${API_ENDPOINTS.USER.CREATE}/${userId}`
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi xóa user' };
@@ -78,9 +86,12 @@ export const deleteUser = async (userId) => {
  * Create new user (admin only)
  * Endpoint: POST /api/users
  */
-export const createUser = async (userData) => {
+export const createUser = async userData => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.USER.CREATE, userData);
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.USER.CREATE,
+      userData
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi tạo user' };
@@ -91,7 +102,7 @@ export const createUser = async (userData) => {
  * Verify email with OTP
  * Endpoint: POST /users/verify-email (public)
  */
-export const verifyEmail = async (verificationData) => {
+export const verifyEmail = async verificationData => {
   try {
     const response = await axiosInstancePublic.post(
       API_ENDPOINTS.USER.VERIFY_EMAIL,
@@ -107,7 +118,7 @@ export const verifyEmail = async (verificationData) => {
  * Resend verification email
  * Endpoint: POST /users/resend-verification (public)
  */
-export const resendVerification = async (email) => {
+export const resendVerification = async email => {
   try {
     const response = await axiosInstancePublic.post(
       API_ENDPOINTS.USER.RESEND_VERIFICATION,
@@ -118,4 +129,3 @@ export const resendVerification = async (email) => {
     throw error.response?.data || { message: 'Lỗi khi gửi lại email xác thực' };
   }
 };
-

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Đếm tăng dần từ 0 → to trong khoảng duration (ms).
@@ -12,7 +12,7 @@ export function useCountUp(to, duration = 2000, start = true) {
     if (!start) return;
 
     const begin = performance.now();
-    const animate = (now) => {
+    const animate = now => {
       const t = Math.min((now - begin) / duration, 1);
       setValue(Math.round(to * t));
       if (t < 1) {

@@ -1,6 +1,6 @@
 // src/pages/Recording/RecordingQuotePage.jsx
-import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Collapse,
@@ -11,11 +11,11 @@ import {
   Drawer,
   Empty,
   Space,
-} from "antd";
-import styles from "./RecordingQuotePage.module.css";
-import Header from "../../components/common/Header/Header";
-import Footer from "../../components/common/Footer/Footer";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
+} from 'antd';
+import styles from './RecordingQuotePage.module.css';
+import Header from '../../components/common/Header/Header';
+import Footer from '../../components/common/Footer/Footer';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
 
 const { Title, Text } = Typography;
 
@@ -33,9 +33,9 @@ function calcPrice(hours, musicians, mixing, mastering) {
   const musFee = Math.max(0, musicians) * RATE_PER_MUSICIAN;
   if (musFee) items.push({ label: `Performers x${musicians}`, amount: musFee });
 
-  if (mixing) items.push({ label: "Mixing add-on", amount: ADD_MIXING });
+  if (mixing) items.push({ label: 'Mixing add-on', amount: ADD_MIXING });
   if (mastering)
-    items.push({ label: "Mastering add-on", amount: ADD_MASTERING });
+    items.push({ label: 'Mastering add-on', amount: ADD_MASTERING });
 
   const subtotal = items.reduce((s, i) => s + i.amount, 0);
   return { items, subtotal, total: subtotal };
@@ -69,7 +69,7 @@ export default function RecordingQuotePage() {
             <div
               style={{
                 padding: 12,
-                border: "1px dashed #ddd",
+                border: '1px dashed #ddd',
                 borderRadius: 8,
               }}
             >
@@ -81,10 +81,10 @@ export default function RecordingQuotePage() {
           </div>
 
           <div className={styles.right}>
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               <div className={styles.metaRow}>
                 <Text strong>Reference Files:</Text>
-                <Text>{files.length ? `${files.length} file(s)` : "None"}</Text>
+                <Text>{files.length ? `${files.length} file(s)` : 'None'}</Text>
               </div>
               {files.length ? (
                 <ul className={styles.listDots} style={{ marginTop: 6 }}>
@@ -110,10 +110,10 @@ export default function RecordingQuotePage() {
 
         <Collapse
           bordered={false}
-          defaultActiveKey={["session"]}
+          defaultActiveKey={['session']}
           items={[
             {
-              key: "session",
+              key: 'session',
               label: <div className={styles.sectionTitle}>Session Setup</div>,
               extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
               children: (
@@ -144,19 +144,19 @@ export default function RecordingQuotePage() {
               ),
             },
             {
-              key: "post",
+              key: 'post',
               label: <div className={styles.sectionTitle}>Post-production</div>,
               children: (
                 <Space direction="vertical">
                   <Checkbox
                     checked={mixing}
-                    onChange={(e) => setMixing(e.target.checked)}
+                    onChange={e => setMixing(e.target.checked)}
                   >
                     Mixing (+$30)
                   </Checkbox>
                   <Checkbox
                     checked={mastering}
-                    onChange={(e) => setMastering(e.target.checked)}
+                    onChange={e => setMastering(e.target.checked)}
                   >
                     Mastering (+$40)
                   </Checkbox>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export function useRevealOnMount(delayMs = 0) {
   const [isVisible, setIsVisible] = useState(false);

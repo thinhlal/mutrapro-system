@@ -1,11 +1,11 @@
-import { Typography } from "antd";
-import { PROS_CATEGORIES } from "../../constants/index";
-import CategoryCard from "./components/CategoryCard/CategoryCard";
-import Header from "../../components/common/Header/Header";
-import ProsTrustSection from "./components/ProsTrustSection/ProsTrustSection";
-import Footer from "../../components/common/Footer/Footer";
-import styles from "./DiscoverProsPage.module.css";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
+import { Typography } from 'antd';
+import { PROS_CATEGORIES } from '../../constants/index';
+import CategoryCard from './components/CategoryCard/CategoryCard';
+import Header from '../../components/common/Header/Header';
+import ProsTrustSection from './components/ProsTrustSection/ProsTrustSection';
+import Footer from '../../components/common/Footer/Footer';
+import styles from './DiscoverProsPage.module.css';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
 
 const { Title, Paragraph } = Typography;
 
@@ -40,10 +40,10 @@ export default function DiscoverProsPage() {
 
       <section className="container">
         <div
-          style={{ marginTop: "3rem", marginBottom: "3rem" }}
+          style={{ marginTop: '3rem', marginBottom: '3rem' }}
           className="row g-4"
         >
-          {PROS_CATEGORIES.map((item) => (
+          {PROS_CATEGORIES.map(item => (
             <CategoryCard key={item.id} item={item} />
           ))}
         </div>

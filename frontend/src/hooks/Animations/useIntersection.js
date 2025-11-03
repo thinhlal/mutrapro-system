@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from 'react';
 
 const DEFAULT_OPTS = {
   threshold: 0.2,
-  rootMargin: "0px 0px -50px 0px",
+  rootMargin: '0px 0px -50px 0px',
 };
 
 export function useIntersection(options = DEFAULT_OPTS) {

@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import styles from "./RegisterPage.module.css";
-import GoogleIcon from "@mui/icons-material/Google";
-import { useAuth } from "../../contexts/AuthContext";
-import { Toaster, toast } from "react-hot-toast";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import styles from './RegisterPage.module.css';
+import GoogleIcon from '@mui/icons-material/Google';
+import { useAuth } from '../../contexts/AuthContext';
+import { Toaster, toast } from 'react-hot-toast';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -11,29 +11,29 @@ function RegisterPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    address: "",
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    address: '',
     agreeToTerms: false,
   });
 
   const [errors, setErrors] = useState({});
 
   // Handle input change
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
 
     // Clear error for this field when user types
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -42,40 +42,40 @@ function RegisterPage() {
     const newErrors = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "Vui lòng nhập họ";
+      newErrors.firstName = 'Vui lòng nhập họ';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "Vui lòng nhập tên";
+      newErrors.lastName = 'Vui lòng nhập tên';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
+      newErrors.email = 'Vui lòng nhập email';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email không hợp lệ";
+      newErrors.email = 'Email không hợp lệ';
     }
 
     if (!formData.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
+      newErrors.password = 'Vui lòng nhập mật khẩu';
     } else if (formData.password.length < 8) {
-      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+      newErrors.password = 'Mật khẩu phải có ít nhất 8 ký tự';
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Mật khẩu không khớp";
+      newErrors.confirmPassword = 'Mật khẩu không khớp';
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = "Vui lòng đồng ý với điều khoản";
+      newErrors.agreeToTerms = 'Vui lòng đồng ý với điều khoản';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
 
     if (loading) return;
@@ -92,20 +92,22 @@ function RegisterPage() {
         password: formData.password,
         phone: formData.phone || null,
         address: formData.address || null,
-        role: "CUSTOMER", // Default role
+        role: 'CUSTOMER', // Default role
       };
 
       await register(registerData);
 
-      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
-      
+      toast.success(
+        'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.'
+      );
+
       // Redirect to verify email page after 2 seconds
       setTimeout(() => {
         navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }, 2000);
     } catch (error) {
       const errorMessage =
-        error.message || error.data?.message || "Đăng ký thất bại";
+        error.message || error.data?.message || 'Đăng ký thất bại';
       toast.error(errorMessage);
     }
   };
@@ -119,7 +121,7 @@ function RegisterPage() {
           type="button"
           aria-label="Quay lại trang chủ"
           className={styles.backButton}
-          onClick={() => navigate("/home")}
+          onClick={() => navigate('/home')}
         >
           <span className={styles.backIcon}>&larr;</span>
           <span className={styles.backText}>Back</span>
@@ -136,7 +138,7 @@ function RegisterPage() {
           <div className={styles.cardHeader}>
             <h2>Đăng ký</h2>
             <p>
-              Đã có tài khoản?{" "}
+              Đã có tài khoản?{' '}
               <Link to="/login" className={styles.link}>
                 Đăng nhập
               </Link>
@@ -151,7 +153,7 @@ function RegisterPage() {
                   name="firstName"
                   type="text"
                   placeholder=" "
-                  className={`${styles.input} ${errors.firstName ? styles.inputError : ""}`}
+                  className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
                   value={formData.firstName}
                   onChange={handleChange}
                   disabled={loading}
@@ -170,7 +172,7 @@ function RegisterPage() {
                   name="lastName"
                   type="text"
                   placeholder=" "
-                  className={`${styles.input} ${errors.lastName ? styles.inputError : ""}`}
+                  className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
                   value={formData.lastName}
                   onChange={handleChange}
                   disabled={loading}
@@ -191,7 +193,7 @@ function RegisterPage() {
                 name="email"
                 type="email"
                 placeholder=" "
-                className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
                 value={formData.email}
                 onChange={handleChange}
                 disabled={loading}
@@ -212,7 +214,7 @@ function RegisterPage() {
                 name="password"
                 type="password"
                 placeholder=" "
-                className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
+                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
                 value={formData.password}
                 onChange={handleChange}
                 disabled={loading}
@@ -233,7 +235,7 @@ function RegisterPage() {
                 name="confirmPassword"
                 type="password"
                 placeholder=" "
-                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ""}`}
+                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 disabled={loading}
@@ -244,7 +246,9 @@ function RegisterPage() {
                 Xác nhận mật khẩu
               </label>
               {errors.confirmPassword && (
-                <span className={styles.errorText}>{errors.confirmPassword}</span>
+                <span className={styles.errorText}>
+                  {errors.confirmPassword}
+                </span>
               )}
             </div>
 
@@ -269,7 +273,7 @@ function RegisterPage() {
               className={styles.submitButton}
               disabled={loading}
             >
-              {loading ? "Đang xử lý..." : "Tạo tài khoản"}
+              {loading ? 'Đang xử lý...' : 'Tạo tài khoản'}
             </button>
 
             <div className={styles.divider}>

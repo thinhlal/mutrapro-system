@@ -5,16 +5,16 @@ import { useAuth } from '../../contexts/AuthContext';
 /**
  * ProtectedRoute Component
  * Protects routes that require authentication and specific roles
- * 
+ *
  * @param {Object} props
  * @param {React.ReactNode} props.children - The component to render if authorized
  * @param {Array<string>} props.allowedRoles - Array of roles that can access this route (e.g., ['CUSTOMER', 'ADMIN'])
  * @param {string} props.redirectTo - Path to redirect if not authorized (default: '/login')
  */
-const ProtectedRoute = ({ 
-  children, 
-  allowedRoles = [], 
-  redirectTo = '/login' 
+const ProtectedRoute = ({
+  children,
+  allowedRoles = [],
+  redirectTo = '/login',
 }) => {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
@@ -36,4 +36,3 @@ const ProtectedRoute = ({
 };
 
 export default ProtectedRoute;
-

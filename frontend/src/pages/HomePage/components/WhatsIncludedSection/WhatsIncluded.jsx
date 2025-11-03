@@ -1,54 +1,53 @@
-import { memo } from "react";
-import { Container, Row, Col } from "react-bootstrap";
-import classNames from "classnames";
-import styles from "./WhatsIncluded.module.css";
+import { memo } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import classNames from 'classnames';
+import styles from './WhatsIncluded.module.css';
 
-import { useIntersection } from "../../../../hooks/Animations/useIntersection";
+import { useIntersection } from '../../../../hooks/Animations/useIntersection';
 
-import pianoImage from "../../../../assets/images/HomePage/Piano8-1.jpg";
-import fileIconsImage from "../../../../assets/icons/HomePage/icones-2.png";
-import fastDeliveryIcon from "../../../../assets/icons/HomePage/fast-delivery-new-1.png";
-import accuracyIcon from "../../../../assets/icons/HomePage/accuracy-3-1-1.png";
+import pianoImage from '../../../../assets/images/HomePage/Piano8-1.jpg';
+import fileIconsImage from '../../../../assets/icons/HomePage/icones-2.png';
+import fastDeliveryIcon from '../../../../assets/icons/HomePage/fast-delivery-new-1.png';
+import accuracyIcon from '../../../../assets/icons/HomePage/accuracy-3-1-1.png';
 
-const OBSERVER_OPTS = { threshold: 0.2, rootMargin: "0px 0px -50px 0px" };
+const OBSERVER_OPTS = { threshold: 0.2, rootMargin: '0px 0px -50px 0px' };
 
 const CARDS = [
   {
-    id: "fast",
+    id: 'fast',
     icon: fastDeliveryIcon,
-    iconAlt: "Fast delivery icon",
-    iconClass: "iconImage",
-    title: "Fast turnaround time",
-    description: "1-2 days standard delivery time. Rush orders available",
-    delay: "0.2s",
+    iconAlt: 'Fast delivery icon',
+    iconClass: 'iconImage',
+    title: 'Fast turnaround time',
+    description: '1-2 days standard delivery time. Rush orders available',
+    delay: '0.2s',
   },
   {
-    id: "formats",
+    id: 'formats',
     icon: fileIconsImage,
-    iconAlt: "File format icons",
-    iconClass: "fileIconsImage",
-    title: "All sheet music formats",
+    iconAlt: 'File format icons',
+    iconClass: 'fileIconsImage',
+    title: 'All sheet music formats',
     description:
-      "Get the transcription in digital format: PDF, midi, SIB, MUSX, XML, MSCZ, GP",
-    delay: "0.4s",
+      'Get the transcription in digital format: PDF, midi, SIB, MUSX, XML, MSCZ, GP',
+    delay: '0.4s',
   },
   {
-    id: "accuracy",
+    id: 'accuracy',
     icon: accuracyIcon,
-    iconAlt: "Accuracy target icon",
-    iconClass: "iconImage",
-    title: "100% accuracy & Customer care",
+    iconAlt: 'Accuracy target icon',
+    iconClass: 'iconImage',
+    title: '100% accuracy & Customer care',
     description:
-      "Note-for-note transcriptions and full customer support along the process",
-    delay: "0.6s",
+      'Note-for-note transcriptions and full customer support along the process',
+    delay: '0.6s',
   },
 ];
 
 function WhatsIncluded() {
   const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
-  const withVisible = (base) =>
-    classNames(base, { [styles.visible]: isVisible });
+  const withVisible = base => classNames(base, { [styles.visible]: isVisible });
 
   return (
     <section className={styles.whatsIncludedSection} ref={sectionRef}>

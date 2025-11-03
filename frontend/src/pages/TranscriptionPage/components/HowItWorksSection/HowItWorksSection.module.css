@@ -31,7 +31,7 @@
 
 /* Dotted vertical line chạy xuyên suốt, canh giữa cột icon */
 .stepsGrid::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 60px; /* = 120px / 2 */
   top: 0;
@@ -69,8 +69,11 @@
   place-items: center;
   box-shadow: 0 4px 12px rgba(236, 138, 28, 0.18);
   z-index: 1;
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
-    background-color 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
 }
 .iconCircle img {
   width: 100%;
@@ -83,7 +86,8 @@
 .iconActive {
   /* background: linear-gradient(135deg, #ffe9cf 0%, #ffd9a8 100%); */
   border-color: #ec8a1c;
-  box-shadow: 0 8px 20px rgba(236, 138, 28, 0.35),
+  box-shadow:
+    0 8px 20px rgba(236, 138, 28, 0.35),
     0 0 0 3px rgba(236, 138, 28, 0.1);
   transform: scale(1.08);
 }
@@ -100,7 +104,9 @@
   position: relative;
   border-radius: 14px;
   padding: clamp(16px, 2.3vw, 22px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.08);
   line-height: 1.6;
   border: 1px solid rgba(0, 0, 0, 0.03);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -110,7 +116,7 @@
 
 /* Mũi nhọn ở CHÍNH GIỮA */
 .card::before {
-  content: "";
+  content: '';
   position: absolute;
   left: calc(-1 * var(--notch));
   top: 50%;
@@ -166,7 +172,9 @@
 .isActive {
   opacity: 1 !important;
   transform: translateY(0) scale(1.02) !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.12),
+    0 20px 40px rgba(0, 0, 0, 0.08) !important;
   border-color: rgba(236, 138, 28, 0.2) !important;
 }
 

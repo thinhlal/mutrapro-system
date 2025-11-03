@@ -11,16 +11,15 @@ const USER_STORAGE_KEY = 'user';
 /**
  * Hàm nội bộ để lấy thông tin user đầy đủ từ backend
  */
-const fetchFullUserProfile = async (userId) => {
+const fetchFullUserProfile = async userId => {
   try {
     const response = await userService.getUserProfile(userId);
     return response.data; // UserProfileResponse
   } catch (error) {
-    console.error("Không thể lấy user profile:", error);
+    console.error('Không thể lấy user profile:', error);
     return null;
   }
 };
-
 
 // Initialize state from localStorage
 const initializeAuth = () => {
@@ -48,7 +47,7 @@ export const useAuth = create((set, get) => ({
 
       // Decode JWT token để lấy thông tin
       const decodedToken = decodeJWT(data.accessToken);
-      
+
       if (!decodedToken) {
         throw new Error('Invalid token received from server');
       }
@@ -66,7 +65,7 @@ export const useAuth = create((set, get) => ({
       // Tuy nhiên, cần userId để gọi API này
       // Vì backend không trả userId trong AuthenticationResponse,
       // ta có thể skip bước này và lấy profile khi cần thiết
-      
+
       // For now, use basic user data from token
       const finalUserData = {
         ...baseUserData,
@@ -82,24 +81,23 @@ export const useAuth = create((set, get) => ({
 
       // IMPORTANT: Chỉ lưu user info vào localStorage, KHÔNG lưu token
       localStorageService.setItem(USER_STORAGE_KEY, finalUserData);
-      
+
       // Remove old auth key if exists
       localStorageService.removeItem(AUTH_STORAGE_KEY);
-      
-      return response;
 
+      return response;
     } catch (error) {
       set({ loading: false, error: error.message || 'Đăng nhập thất bại' });
       throw error;
     }
   },
 
-  register: async (registerData) => {
+  register: async registerData => {
     set({ loading: true, error: null });
     try {
       const response = await authService.register(registerData);
       set({ loading: false });
-      return response; 
+      return response;
     } catch (error) {
       set({ loading: false, error: error.message || 'Đăng ký thất bại' });
       throw error;
@@ -110,7 +108,7 @@ export const useAuth = create((set, get) => ({
     const token = get().accessToken;
     set({ loading: true });
     try {
-      if(token) {
+      if (token) {
         await authService.logout(token);
       }
     } catch (error) {
@@ -121,7 +119,7 @@ export const useAuth = create((set, get) => ({
         user: null,
         accessToken: null,
         loading: false,
-        error: null
+        error: null,
       });
       // Clear user info from localStorage
       localStorageService.removeItem(USER_STORAGE_KEY);
@@ -134,14 +132,14 @@ export const useAuth = create((set, get) => ({
     try {
       const response = await authService.refreshToken();
       const { data } = response; // AuthenticationResponse
-      
+
       if (!data || !data.accessToken) {
         throw new Error('Invalid refresh token response');
       }
 
       // Decode new token
       const decodedToken = decodeJWT(data.accessToken);
-      
+
       if (!decodedToken) {
         throw new Error('Invalid token received from server');
       }
@@ -162,7 +160,7 @@ export const useAuth = create((set, get) => ({
 
       // Update localStorage
       localStorageService.setItem(USER_STORAGE_KEY, updatedUserData);
-      
+
       return data.accessToken;
     } catch (error) {
       console.error('Failed to refresh token:', error);
@@ -173,14 +171,14 @@ export const useAuth = create((set, get) => ({
   },
 
   // Set access token (used by axios interceptor after refresh)
-  setAccessToken: (token) => {
+  setAccessToken: token => {
     set({ accessToken: token });
   },
 
   // Check if token is expired and refresh if needed
   checkAndRefreshToken: async () => {
     const { accessToken, refreshAccessToken } = get();
-    
+
     if (!accessToken) {
       return false;
     }
@@ -193,7 +191,7 @@ export const useAuth = create((set, get) => ({
         return false;
       }
     }
-    
+
     return true;
   },
 }));

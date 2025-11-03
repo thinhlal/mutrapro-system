@@ -1,9 +1,9 @@
-import Header from "../../components/common/Header/Header";
-import HeroSection from "./components/HeroSection/HeroSection";
-import ServiceGridSection from "./components/ServiceGridSection/ServiceGridSection";
-import Footer from "../../components/common/Footer/Footer";
-import BackToTop from "../../components/common/BackToTop/BackToTop";
-import styles from "./ServicesPage.module.css";
+import Header from '../../components/common/Header/Header';
+import HeroSection from './components/HeroSection/HeroSection';
+import ServiceGridSection from './components/ServiceGridSection/ServiceGridSection';
+import Footer from '../../components/common/Footer/Footer';
+import BackToTop from '../../components/common/BackToTop/BackToTop';
+import styles from './ServicesPage.module.css';
 
 const ServicesPage = () => {
   return (

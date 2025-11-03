@@ -1,6 +1,6 @@
-import { TRANSCRIPTION_SERVICES } from "../../../../constants";
-import { createLoopedArray, createUniqueKey } from "../../../../utils";
-import styles from "./HeroSection.module.css";
+import { TRANSCRIPTION_SERVICES } from '../../../../constants';
+import { createLoopedArray, createUniqueKey } from '../../../../utils';
+import styles from './HeroSection.module.css';
 
 // Lặp 2 lần để tạo hiệu ứng loop vô hạn mượt
 const LOOPED_SERVICES = createLoopedArray(TRANSCRIPTION_SERVICES, 2);

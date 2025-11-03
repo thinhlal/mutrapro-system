@@ -109,7 +109,10 @@ html {
   cursor: pointer;
   background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
   color: #fff;
-  transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease,
+  transition:
+    background 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease,
     filter 200ms ease;
   box-shadow: 0 8px 18px rgba(230, 120, 24, 0.28);
   white-space: nowrap;

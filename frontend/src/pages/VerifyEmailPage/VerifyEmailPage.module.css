@@ -3,7 +3,7 @@
 
 /* Main Layout */
 .verifyEmailMain {
-  background: linear-gradient(135deg, #E67E22 0%, #D35400 100%);
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
   position: relative;
   height: 100vh;
   display: flex;
@@ -31,7 +31,11 @@
       rgba(211, 84, 0, 0.2) 0%,
       transparent 50%
     ),
-    radial-gradient(circle at 40% 40%, rgba(241, 196, 15, 0.15) 0%, transparent 50%);
+    radial-gradient(
+      circle at 40% 40%,
+      rgba(241, 196, 15, 0.15) 0%,
+      transparent 50%
+    );
   animation: float 20s ease-in-out infinite;
 }
 
@@ -137,10 +141,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FF9900, #FFFFFF, #FF9900);
+  background: linear-gradient(135deg, #ff9900, #ffffff, #ff9900);
   background-size: 200% 200%;
   border-radius: 50%;
-  animation: pulse 2s infinite, iconGradient 3s ease infinite;
+  animation:
+    pulse 2s infinite,
+    iconGradient 3s ease infinite;
   box-shadow: 0 10px 30px rgba(255, 153, 0, 0.3);
   transition: all 0.3s ease;
 }
@@ -272,7 +278,7 @@
 }
 
 .otpInput.success {
-  border-color: #FFFFFF;
+  border-color: #ffffff;
   background: rgba(255, 255, 255, 0.2);
   animation: bounce 0.6s ease;
 }
@@ -355,7 +361,7 @@
 .successMessage {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 @keyframes slideIn {
@@ -372,8 +378,8 @@
 .verifyButton {
   width: 100%;
   padding: 1rem 1.5rem;
-  background: #FFFFFF;
-  color: #F7931E;
+  background: #ffffff;
+  color: #f7931e;
   border: none;
   border-radius: 12px;
   font-size: 1rem;
@@ -409,7 +415,7 @@
 .verifyButton:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 15px 35px rgba(255, 255, 255, 0.5);
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 .verifyButton:disabled {
@@ -420,8 +426,8 @@
 }
 
 .verifyButton.success {
-  background: #FFFFFF;
-  color: #F7931E;
+  background: #ffffff;
+  color: #f7931e;
   box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
 }
 
@@ -644,4 +650,3 @@
     animation: none;
   }
 }
-

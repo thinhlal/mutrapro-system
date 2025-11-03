@@ -19,7 +19,7 @@
 
 .title {
   margin: 0;
-  color: #2b3a4a;           /* xám đậm */
+  color: #2b3a4a; /* xám đậm */
   font-weight: 800;
   letter-spacing: 0.2px;
   font-size: clamp(24px, 3.8vw, 36px);
@@ -30,7 +30,7 @@
   display: inline-block;
   width: clamp(120px, 18vw, 180px);
   height: 2px;
-  background: #f0a066;     /* vạch cam dưới tiêu đề */
+  background: #f0a066; /* vạch cam dưới tiêu đề */
   margin-top: clamp(10px, 1.6vw, 16px);
   border-radius: 2px;
 }
@@ -64,7 +64,7 @@
 /* texts */
 .itemTitle {
   margin: 6px 0 8px;
-  color: #6b7280;          /* xám tiêu đề mục */
+  color: #6b7280; /* xám tiêu đề mục */
   font-weight: 800;
   font-size: clamp(15px, 2vw, 18px);
   letter-spacing: 0.2px;
@@ -80,5 +80,7 @@
 
 /* responsive */
 @media (max-width: 992px) {
-  .desc { max-width: 46ch; }
+  .desc {
+    max-width: 46ch;
+  }
 }

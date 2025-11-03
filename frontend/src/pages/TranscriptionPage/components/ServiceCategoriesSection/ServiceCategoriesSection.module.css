@@ -59,7 +59,7 @@
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 20px;
   }
-  
+
   .categoryCard {
     padding: 30px 15px;
   }

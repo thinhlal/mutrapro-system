@@ -12,8 +12,8 @@
 }
 /* ===== Wave band đặt trên Pricing ===== */
 .waveHost {
-  position: relative;           /* để con absolute bám vào */
+  position: relative; /* để con absolute bám vào */
   height: var(--wave-h, 110px); /* phải có height để lộ sóng */
-  background: #ffffff;          /* nền trắng giống site mẫu */
-  overflow: hidden;             /* tránh tràn khi resize */
+  background: #ffffff; /* nền trắng giống site mẫu */
+  overflow: hidden; /* tránh tràn khi resize */
 }

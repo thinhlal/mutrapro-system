@@ -1,27 +1,27 @@
-import { useState } from "react";
-import { Button, Dropdown, Input, Menu } from "antd";
-import { SearchOutlined, DownOutlined } from "@ant-design/icons";
-import styles from "./SingerFilter.module.css";
+import { useState } from 'react';
+import { Button, Dropdown, Input, Menu } from 'antd';
+import { SearchOutlined, DownOutlined } from '@ant-design/icons';
+import styles from './SingerFilter.module.css';
 
 const genreItems = [
-  { key: "1", label: "Pop" },
-  { key: "2", label: "Rock" },
-  { key: "3", label: "EDM" },
-  { key: "4", label: "R&B" },
-  { key: "5", label: "Hip-Hop" },
+  { key: '1', label: 'Pop' },
+  { key: '2', label: 'Rock' },
+  { key: '3', label: 'EDM' },
+  { key: '4', label: 'R&B' },
+  { key: '5', label: 'Hip-Hop' },
 ];
 
 const languageItems = [
-  { key: "1", label: "English" },
-  { key: "2", label: "Spanish" },
-  { key: "3", label: "French" },
-  { key: "4", label: "German" },
+  { key: '1', label: 'English' },
+  { key: '2', label: 'Spanish' },
+  { key: '3', label: 'French' },
+  { key: '4', label: 'German' },
 ];
 
 const recommendedItems = [
-  { key: "1", label: "Recommended" },
-  { key: "2", label: "Most Reviews" },
-  { key: "3", label: "Newest" },
+  { key: '1', label: 'Recommended' },
+  { key: '2', label: 'Most Reviews' },
+  { key: '3', label: 'Newest' },
 ];
 
 const SingerFilter = () => {
@@ -35,7 +35,7 @@ const SingerFilter = () => {
     <div className={styles.searchMenu}>
       <Input.Search
         placeholder="Search by name..."
-        onSearch={(value) => console.log(value)}
+        onSearch={value => console.log(value)}
         allowClear
       />
     </div>
@@ -58,7 +58,7 @@ const SingerFilter = () => {
 
             <div
               className={`${styles.expandedFilters} ${
-                isExpanded ? styles.expanded : ""
+                isExpanded ? styles.expanded : ''
               }`}
             >
               <Button
@@ -72,7 +72,7 @@ const SingerFilter = () => {
                 <Input
                   placeholder="Sounds like..."
                   suffix={
-                    <SearchOutlined style={{ color: "rgba(0,0,0,.45)" }} />
+                    <SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />
                   }
                   variant="borderless"
                 />

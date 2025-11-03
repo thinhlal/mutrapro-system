@@ -1,32 +1,32 @@
-import TrustImage from "../../../../assets/images/DiscoverPros/SoundBetter.jpg";
-import { Typography } from "antd";
-import { CheckCircleFilled } from "@ant-design/icons";
-import styles from "./ProsTrustSection.module.css";
+import TrustImage from '../../../../assets/images/DiscoverPros/SoundBetter.jpg';
+import { Typography } from 'antd';
+import { CheckCircleFilled } from '@ant-design/icons';
+import styles from './ProsTrustSection.module.css';
 
 const { Title, Paragraph } = Typography;
 
 export default function ProsTrustSection() {
-  const title = "Over 400,000 musicians have used and trust SoundBetter";
+  const title = 'Over 400,000 musicians have used and trust SoundBetter';
   const bullets = [
     {
-      title: "Safe and secure",
+      title: 'Safe and secure',
       body: "Fund a project to get started and release payment once it's completed",
     },
     {
-      title: "Protect your copyright",
-      body: "Our software provides a record of exchanges and files for future reference",
+      title: 'Protect your copyright',
+      body: 'Our software provides a record of exchanges and files for future reference',
     },
     {
-      title: "Human support",
-      body: "Email, phone and chat to help you with your projects",
+      title: 'Human support',
+      body: 'Email, phone and chat to help you with your projects',
     },
     {
-      title: "Simply the best talent",
-      body: "Pros work for their reviews and will give you their best",
+      title: 'Simply the best talent',
+      body: 'Pros work for their reviews and will give you their best',
     },
     {
-      title: "Level up",
-      body: "Better sounding content gets more plays, bookings and placement",
+      title: 'Level up',
+      body: 'Better sounding content gets more plays, bookings and placement',
     },
   ];
 

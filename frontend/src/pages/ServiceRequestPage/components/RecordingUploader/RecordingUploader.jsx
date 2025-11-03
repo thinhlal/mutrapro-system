@@ -1,17 +1,17 @@
 // src/pages/ServiceRequest/components/RecordingUploader/RecordingUploader.jsx
-import { useState } from "react";
-import { Upload, Space, Tag, Button, message } from "antd";
+import { useState } from 'react';
+import { Upload, Space, Tag, Button, message } from 'antd';
 import {
   InboxOutlined,
   FileTextOutlined,
   DeleteOutlined,
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import styles from "./RecordingUploader.module.css";
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import styles from './RecordingUploader.module.css';
 const { Dragger } = Upload;
 
 const toSize = (bytes = 0) =>
-  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : "—";
+  bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
 export default function RecordingUploader() {
   const [files, setFiles] = useState([]);
@@ -19,17 +19,17 @@ export default function RecordingUploader() {
 
   const beforeUpload = () => false;
   const onChange = ({ fileList }) => {
-    setFiles(fileList.map((it) => it.originFileObj).filter(Boolean));
+    setFiles(fileList.map(it => it.originFileObj).filter(Boolean));
   };
   const clearAll = () => setFiles([]);
 
   const onContinue = () => {
-    const payload = files.map((f) => ({
+    const payload = files.map(f => ({
       fileName: f.name,
-      fileType: f.type || "unknown",
+      fileType: f.type || 'unknown',
       size: f.size || 0,
     }));
-    navigate("/recording/quote", { state: { files: payload } });
+    navigate('/recording/quote', { state: { files: payload } });
   };
 
   return (
@@ -74,18 +74,18 @@ export default function RecordingUploader() {
 
         {files.length > 0 && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
-            <Space direction="vertical" style={{ width: "100%" }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={8}>
               {files.map((f, idx) => (
                 <div className={styles.fileLine} key={idx}>
                   <Space wrap>
                     <FileTextOutlined />
                     <b>{f.name}</b>
-                    <Tag>{f.type || "unknown"}</Tag>
+                    <Tag>{f.type || 'unknown'}</Tag>
                     <span>{toSize(f.size)}</span>
                   </Space>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   size="small"
                   icon={<DeleteOutlined />}

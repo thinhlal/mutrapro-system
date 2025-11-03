@@ -63,7 +63,7 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 30px;
   }
-  
+
   .statNumber {
     font-size: 2.5rem;
   }

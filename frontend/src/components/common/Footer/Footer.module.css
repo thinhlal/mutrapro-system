@@ -1,6 +1,7 @@
 :root {
   --footer-bg: #0d0f13;
-  --footer-grad: radial-gradient(
+  --footer-grad:
+    radial-gradient(
       1200px 400px at 10% -10%,
       rgba(212, 125, 86, 0.18),
       transparent
