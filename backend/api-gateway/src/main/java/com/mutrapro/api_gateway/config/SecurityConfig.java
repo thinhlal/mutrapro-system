@@ -26,6 +26,9 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/actuator/**",
             "/identity/auth/**",
+            "/identity/users/verify-email",
+            "/identity/users/resend-verification",
+            "/identity/users/verification-status",
             // Swagger UI endpoints cho tất cả services (dùng * thay vì ** để match một segment)
             "/*/swagger-ui/**",
             "/*/swagger-ui.html",

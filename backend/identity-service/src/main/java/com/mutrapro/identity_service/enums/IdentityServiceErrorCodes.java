@@ -89,6 +89,32 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
         "https://docs.mutrapro.com/errors/ERR_4015",
         "Two-factor authentication is required for this action",
         Retryable.NON_TRANSIENT),
+    
+    // Email Verification Errors (4016-4020)
+    VERIFICATION_CODE_INVALID("USER_4016", 400,
+        "https://docs.mutrapro.com/errors/USER_4016",
+        "Invalid verification code",
+        Retryable.NON_TRANSIENT),
+    
+    VERIFICATION_CODE_EXPIRED("USER_4017", 400,
+        "https://docs.mutrapro.com/errors/USER_4017",
+        "Verification code has expired",
+        Retryable.NON_TRANSIENT),
+    
+    VERIFICATION_CODE_NOT_FOUND("USER_4018", 404,
+        "https://docs.mutrapro.com/errors/USER_4018",
+        "Verification code not found",
+        Retryable.NON_TRANSIENT),
+    
+    EMAIL_ALREADY_VERIFIED("USER_4019", 400,
+        "https://docs.mutrapro.com/errors/USER_4019",
+        "Email already verified",
+        Retryable.NON_TRANSIENT),
+    
+    VERIFICATION_LIMIT_EXCEEDED("USER_4020", 429,
+        "https://docs.mutrapro.com/errors/USER_4020",
+        "Verification request limit exceeded. Please try again later",
+        Retryable.NON_TRANSIENT, 300),
 
     // Auth Errors (5000-5099)
     TOKEN_GENERATION_FAILED("AUTH_5000", 500,

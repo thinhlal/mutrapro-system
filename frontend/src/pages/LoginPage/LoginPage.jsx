@@ -30,7 +30,16 @@ function LoginPage() {
       navigate(from, { replace: true });
       
     } catch (error) {
-      toast.error(error.message || 'Email hoặc mật khẩu không chính xác');
+      // Check if error is email not verified
+      if (error.errorCode === 'USER_4013') {
+        toast.error('Vui lòng xác thực email trước khi đăng nhập');
+        // Redirect to verify email page
+        setTimeout(() => {
+          navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        }, 1000);
+      } else {
+        toast.error(error.message || 'Email hoặc mật khẩu không chính xác');
+      }
     }
   };
 
@@ -111,7 +120,7 @@ function LoginPage() {
                 <input type="checkbox" className={styles.checkbox} />
                 <span>Ghi nhớ tôi</span>
               </label>
-              <button type="button" className={styles.textButton}>
+              <button type="button" className={styles.textButton} onClick={() => navigate('/reset-password')}>
                 Quên mật khẩu?
               </button>
             </div>

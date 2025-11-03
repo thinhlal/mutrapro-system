@@ -101,6 +101,11 @@ public class AuthenticationService {
             throw UserDisabledException.create();
         }
 
+        // Check if email is verified
+        if (!user.isEmailVerified()) {
+            throw EmailNotVerifiedException.create();
+        }
+
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
 
         if (!authenticated) {

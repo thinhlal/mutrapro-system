@@ -53,6 +53,8 @@ export const API_CONFIG = {
       RESEND_VERIFICATION: `${IDENTITY_PATH}/users/resend-verification`,
       // Public Endpoint: /users/request-verification
       REQUEST_VERIFICATION: `${IDENTITY_PATH}/users/request-verification`,
+      // Public Endpoint: /users/verification-status
+      VERIFICATION_STATUS: `${IDENTITY_PATH}/users/verification-status`,
       // (Endpoint 'CREATE_PASSWORD' cũ của bạn có thể là RESET_PASSWORD)
       CREATE_PASSWORD: `${IDENTITY_PATH}/auth/reset-password`,
     },

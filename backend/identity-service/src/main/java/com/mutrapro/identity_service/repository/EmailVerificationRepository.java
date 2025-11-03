@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Repository
 public interface EmailVerificationRepository extends JpaRepository<EmailVerification, String> {
@@ -21,5 +22,11 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
     @Query("DELETE FROM EmailVerification e WHERE e.status = com.mutrapro.identity_service.enums.VerificationStatus.EXPIRED " +
            "AND e.expiresAt < :cutoff")
     int deleteExpiredOlderThan(@Param("cutoff") Instant cutoff);
+    
+    // Find active verification by userId
+    @Query(value = "SELECT * FROM email_verifications WHERE user_id = :userId " +
+           "AND status = 'PENDING' AND expires_at > :now ORDER BY expires_at DESC LIMIT 1",
+           nativeQuery = true)
+    Optional<EmailVerification> findActiveByUserId(@Param("userId") String userId, @Param("now") Instant now);
 }
 

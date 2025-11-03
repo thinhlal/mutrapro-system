@@ -99,9 +99,9 @@ function RegisterPage() {
 
       toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
       
-      // Redirect to login page after 2 seconds
+      // Redirect to verify email page after 2 seconds
       setTimeout(() => {
-        navigate("/login");
+        navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }, 2000);
     } catch (error) {
       const errorMessage =
