@@ -1,15 +1,118 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./RegisterPage.module.css";
 import GoogleIcon from "@mui/icons-material/Google";
+import { useAuth } from "../../contexts/AuthContext";
+import { Toaster, toast } from "react-hot-toast";
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const handleSubmit = (e) => {
+  const { register, loading } = useAuth();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+    address: "",
+    agreeToTerms: false,
+  });
+
+  const [errors, setErrors] = useState({});
+
+  // Handle input change
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
+    // Clear error for this field when user types
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Vui lòng nhập họ";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Vui lòng nhập tên";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Vui lòng nhập email";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Mật khẩu không khớp";
+    }
+
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = "Vui lòng đồng ý với điều khoản";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (loading) return;
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      // Prepare register data according to backend RegisterRequest
+      const registerData = {
+        fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        role: "CUSTOMER", // Default role
+      };
+
+      await register(registerData);
+
+      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+      
+      // Redirect to login page after 2 seconds
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error) {
+      const errorMessage =
+        error.message || error.data?.message || "Đăng ký thất bại";
+      toast.error(errorMessage);
+    }
   };
 
   return (
     <div className={styles.pageWrapper}>
+      <Toaster position="top-right" />
       <div className={styles.gradientBg} />
       <div className={styles.container}>
         <button
@@ -48,12 +151,18 @@ function RegisterPage() {
                   name="firstName"
                   type="text"
                   placeholder=" "
-                  className={styles.input}
+                  className={`${styles.input} ${errors.firstName ? styles.inputError : ""}`}
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  disabled={loading}
                   required
                 />
                 <label htmlFor="firstName" className={styles.label}>
                   Họ
                 </label>
+                {errors.firstName && (
+                  <span className={styles.errorText}>{errors.firstName}</span>
+                )}
               </div>
               <div className={styles.inputGroup}>
                 <input
@@ -61,12 +170,18 @@ function RegisterPage() {
                   name="lastName"
                   type="text"
                   placeholder=" "
-                  className={styles.input}
+                  className={`${styles.input} ${errors.lastName ? styles.inputError : ""}`}
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  disabled={loading}
                   required
                 />
                 <label htmlFor="lastName" className={styles.label}>
                   Tên
                 </label>
+                {errors.lastName && (
+                  <span className={styles.errorText}>{errors.lastName}</span>
+                )}
               </div>
             </div>
 
@@ -76,13 +191,19 @@ function RegisterPage() {
                 name="email"
                 type="email"
                 placeholder=" "
-                className={styles.input}
+                className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
+                value={formData.email}
+                onChange={handleChange}
+                disabled={loading}
                 required
                 autoComplete="email"
               />
               <label htmlFor="email" className={styles.label}>
                 Email
               </label>
+              {errors.email && (
+                <span className={styles.errorText}>{errors.email}</span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -91,13 +212,19 @@ function RegisterPage() {
                 name="password"
                 type="password"
                 placeholder=" "
-                className={styles.input}
+                className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
+                value={formData.password}
+                onChange={handleChange}
+                disabled={loading}
                 required
                 autoComplete="new-password"
               />
               <label htmlFor="password" className={styles.label}>
                 Mật khẩu
               </label>
+              {errors.password && (
+                <span className={styles.errorText}>{errors.password}</span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -106,22 +233,43 @@ function RegisterPage() {
                 name="confirmPassword"
                 type="password"
                 placeholder=" "
-                className={styles.input}
+                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ""}`}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                disabled={loading}
                 required
                 autoComplete="new-password"
               />
               <label htmlFor="confirmPassword" className={styles.label}>
                 Xác nhận mật khẩu
               </label>
+              {errors.confirmPassword && (
+                <span className={styles.errorText}>{errors.confirmPassword}</span>
+              )}
             </div>
 
             <label className={styles.checkboxLabel}>
-              <input type="checkbox" className={styles.checkbox} required />
+              <input
+                type="checkbox"
+                name="agreeToTerms"
+                className={styles.checkbox}
+                checked={formData.agreeToTerms}
+                onChange={handleChange}
+                disabled={loading}
+                required
+              />
               <span>Tôi đồng ý với điều khoản và chính sách</span>
             </label>
+            {errors.agreeToTerms && (
+              <span className={styles.errorText}>{errors.agreeToTerms}</span>
+            )}
 
-            <button type="submit" className={styles.submitButton}>
-              Tạo tài khoản
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={loading}
+            >
+              {loading ? "Đang xử lý..." : "Tạo tài khoản"}
             </button>
 
             <div className={styles.divider}>

@@ -4,6 +4,8 @@ import { Navbar, Nav, Container } from "react-bootstrap";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
 import classNames from "classnames";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
+import UserMenu from "../UserMenu/UserMenu";
 import styles from "./Header.module.css";
 import logo from "../../../assets/images/Logo/Logotip-Positiu.svg";
 
@@ -36,6 +38,7 @@ function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeKey, setActiveKey] = useState(getActiveKey());
+  const { isAuthenticated } = useAuth();
 
   // Scroll-state (đổi style khi >20px)
   useEffect(() => {
@@ -99,20 +102,24 @@ function Header() {
         className={classNames(styles.container, styles.authAlign)}
         style={{ marginTop: "1rem" }}
       >
-        <div className="d-flex gap-4 align-items-center">
-          <Link
-            to="/login"
-            className={classNames(styles.navLink, styles.authLink)}
-          >
-            Login
-          </Link>
-          <Link
-            to="/sign-up"
-            className={classNames(styles.navLink, styles.authSignup)}
-          >
-            Sign up
-          </Link>
-        </div>
+        {isAuthenticated ? (
+          <UserMenu />
+        ) : (
+          <div className="d-flex gap-4 align-items-center">
+            <Link
+              to="/login"
+              className={classNames(styles.navLink, styles.authLink)}
+            >
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className={classNames(styles.navLink, styles.authSignup)}
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
       </div>
 
       <Container fluid className={styles.container}>

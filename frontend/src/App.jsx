@@ -7,6 +7,7 @@ import {
 
 // Common Components
 import ScrollToTop from "./components/common/ScrollToTop/ScrollToTop";
+import ProtectedRoute from "./components/HandleRoutes/ProtectedRoute";
 
 // Layouts
 import CoordinatorLayout from "./layouts/CoordinatorLayout/CoordinatorLayout";
@@ -28,6 +29,7 @@ import TranscriptionQuotePage from "./pages/TranscriptionQuote/TranscriptionQuot
 import ReviewOrderPage from "./pages/ReviewOrderPage/ReviewOrderPage";
 import RecordingQuotePage from "./pages/RecordingQuotePage/RecordingQuotePage";
 import ArrangementQuotePage from "./pages/ArrangementQuotePage/ArrangementQuotePage";
+import UnauthorizedPage from "./pages/UnauthorizedPage/UnauthorizedPage";
 
 // Coordinator Pages
 import Tasks from "./pages/Task/Task";
@@ -42,32 +44,91 @@ function App() {
     <Router>
       <ScrollToTop />
       <Routes>
-        {/* --- CUSTOMER ROUTES --- */}
+        {/* --- PUBLIC ROUTES --- */}
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/transcription" element={<TranscriptionPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/sign-up" element={<RegisterPage />} />
-        <Route path="/soundtosheet" element={<ServiceRequestPage />} />
-        <Route path="/editor" element={<NotationEditor />} />
         <Route path="/discover-pros" element={<DiscoverProsPage />} />
         <Route path="/pros/singers/:gender" element={<SingersPage />} />
         <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        
+        {/* --- AUTH ROUTES --- */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/sign-up" element={<RegisterPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* --- QUOTE ROUTES --- */}
+        {/* --- PROTECTED CUSTOMER ROUTES --- */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/editor"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <NotationEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/soundtosheet"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <ServiceRequestPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* --- PROTECTED QUOTE ROUTES --- */}
         <Route
           path="/transcription/quote"
-          element={<TranscriptionQuotePage />}
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <TranscriptionQuotePage />
+            </ProtectedRoute>
+          }
         />
-        <Route path="/arrangement/quote" element={<ArrangementQuotePage />} />
-        <Route path="/recording/quote" element={<RecordingQuotePage />} />
-        <Route path="/checkout/review" element={<ReviewOrderPage />} />
+        <Route
+          path="/arrangement/quote"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <ArrangementQuotePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recording/quote"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <RecordingQuotePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout/review"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <ReviewOrderPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* --- COORDINATOR ROUTES --- */}
-        <Route path="/coordinator" element={<CoordinatorLayout />}>
+        {/* --- COORDINATOR ROUTES (PROTECTED) --- */}
+        <Route
+          path="/coordinator"
+          element={
+            <ProtectedRoute allowedRoles={['COORDINATOR', 'ADMIN']}>
+              <CoordinatorLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="contact-builder" element={<ContractBuilder />} />
