@@ -1,37 +1,42 @@
 // src/contexts/AuthContext.jsx
 import { create } from 'zustand';
 import * as authService from '../services/authService';
+import * as userService from '../services/userService';
 import * as localStorageService from '../services/localStorageService';
-// (Bạn sẽ cần tạo file userService.jsx và import nó ở đây)
-// import * as userService from '../services/userService'; 
+import { decodeJWT, isTokenExpired } from '../utils/jwtUtils';
 
 const AUTH_STORAGE_KEY = 'auth';
+const USER_STORAGE_KEY = 'user';
 
-// Hàm nội bộ để lấy thông tin user đầy đủ
-// (Đây là hàm bạn sẽ cần gọi sau khi login)
+/**
+ * Hàm nội bộ để lấy thông tin user đầy đủ từ backend
+ */
 const fetchFullUserProfile = async (userId) => {
-  // try {
-  //   // Giả sử bạn có hàm userService.getProfile(userId)
-  //   const response = await userService.getProfile(userId); 
-  //   return response.data; // Trả về { fullName, phone, address, ... }
-  // } catch (error) {
-  //   console.error("Không thể lấy user profile:", error);
-  //   return null; // Trả về null nếu lỗi
-  // }
-  
-  // Tạm thời hardcode, bạn sẽ cần implement hàm gọi API thật
-  console.log("Sẽ cần gọi API profile cho userId:", userId);
-  return { fullName: "Loading..." }; // Dữ liệu tạm
+  try {
+    const response = await userService.getUserProfile(userId);
+    return response.data; // UserProfileResponse
+  } catch (error) {
+    console.error("Không thể lấy user profile:", error);
+    return null;
+  }
 };
 
 
+// Initialize state from localStorage
+const initializeAuth = () => {
+  const storedUser = localStorageService.getItem(USER_STORAGE_KEY);
+  return {
+    isAuthenticated: !!storedUser,
+    user: storedUser || null,
+    accessToken: null, // Never store in localStorage for security
+    loading: false,
+    error: null,
+  };
+};
+
 export const useAuth = create((set, get) => ({
   // --- State ---
-  isAuthenticated: localStorageService.getItem(AUTH_STORAGE_KEY)?.isAuthenticated || false,
-  user: localStorageService.getItem(AUTH_STORAGE_KEY)?.user || null,
-  accessToken: localStorageService.getItem(AUTH_STORAGE_KEY)?.accessToken || null,
-  loading: false,
-  error: null,
+  ...initializeAuth(),
 
   // --- Actions ---
   login: async (email, password) => {
@@ -39,35 +44,47 @@ export const useAuth = create((set, get) => ({
     try {
       const response = await authService.login(email, password);
       const { data } = response; // data là AuthenticationResponse
+      // data contains: { accessToken, tokenType, expiresIn, email, role }
 
-      // Lấy thông tin cơ bản từ login
+      // Decode JWT token để lấy thông tin
+      const decodedToken = decodeJWT(data.accessToken);
+      
+      if (!decodedToken) {
+        throw new Error('Invalid token received from server');
+      }
+
+      // Extract user info from token
+      // JWT payload contains: { sub: email, scope: role, exp, iat, jti, iss }
       const baseUserData = {
-        userId: data.userId, // <--- LẤY ID TỪ RESPONSE
-        email: data.email,
-        role: data.role,
+        email: decodedToken.sub || data.email,
+        role: decodedToken.scope || data.role,
+        tokenExpiry: decodedToken.exp,
       };
 
-      // *** GỌI API PROFILE ĐỂ LẤY THÔNG TIN ĐẦY ĐỦ ***
-      // const fullProfile = await fetchFullUserProfile(data.userId);
-
-      // Gộp thông tin
+      // *** TÙY CHỌN: GỌI API PROFILE ĐỂ LẤY THÔNG TIN ĐẦY ĐỦ ***
+      // Nếu cần thông tin như fullName, phone, address, có thể gọi API profile
+      // Tuy nhiên, cần userId để gọi API này
+      // Vì backend không trả userId trong AuthenticationResponse,
+      // ta có thể skip bước này và lấy profile khi cần thiết
+      
+      // For now, use basic user data from token
       const finalUserData = {
         ...baseUserData,
-        // ...fullProfile, // (fullName, phone, address... từ API profile)
       };
 
       set({
         isAuthenticated: true,
-        user: finalUserData, // Lưu user đầy đủ
-        accessToken: data.accessToken,
+        user: finalUserData,
+        accessToken: data.accessToken, // Store in memory only
         loading: false,
+        error: null,
       });
 
-      localStorageService.setItem(AUTH_STORAGE_KEY, {
-        isAuthenticated: true,
-        user: finalUserData,
-        accessToken: data.accessToken,
-      });
+      // IMPORTANT: Chỉ lưu user info vào localStorage, KHÔNG lưu token
+      localStorageService.setItem(USER_STORAGE_KEY, finalUserData);
+      
+      // Remove old auth key if exists
+      localStorageService.removeItem(AUTH_STORAGE_KEY);
       
       return response;
 
@@ -106,7 +123,77 @@ export const useAuth = create((set, get) => ({
         loading: false,
         error: null
       });
-      localStorageService.removeItem(AUTH_STORAGE_KEY);
+      // Clear user info from localStorage
+      localStorageService.removeItem(USER_STORAGE_KEY);
+      localStorageService.removeItem(AUTH_STORAGE_KEY); // Remove old key if exists
     }
+  },
+
+  // Refresh access token using refresh token from cookie
+  refreshAccessToken: async () => {
+    try {
+      const response = await authService.refreshToken();
+      const { data } = response; // AuthenticationResponse
+      
+      if (!data || !data.accessToken) {
+        throw new Error('Invalid refresh token response');
+      }
+
+      // Decode new token
+      const decodedToken = decodeJWT(data.accessToken);
+      
+      if (!decodedToken) {
+        throw new Error('Invalid token received from server');
+      }
+
+      // Update user info from new token
+      const updatedUserData = {
+        email: decodedToken.sub || data.email,
+        role: decodedToken.scope || data.role,
+        tokenExpiry: decodedToken.exp,
+      };
+
+      set({
+        isAuthenticated: true,
+        user: updatedUserData,
+        accessToken: data.accessToken,
+        error: null,
+      });
+
+      // Update localStorage
+      localStorageService.setItem(USER_STORAGE_KEY, updatedUserData);
+      
+      return data.accessToken;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      // Token refresh failed, logout user
+      get().logout();
+      throw error;
+    }
+  },
+
+  // Set access token (used by axios interceptor after refresh)
+  setAccessToken: (token) => {
+    set({ accessToken: token });
+  },
+
+  // Check if token is expired and refresh if needed
+  checkAndRefreshToken: async () => {
+    const { accessToken, refreshAccessToken } = get();
+    
+    if (!accessToken) {
+      return false;
+    }
+
+    if (isTokenExpired(accessToken)) {
+      try {
+        await refreshAccessToken();
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+    
+    return true;
   },
 }));

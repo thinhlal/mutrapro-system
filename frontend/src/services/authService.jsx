@@ -49,13 +49,11 @@ export const register = async (registerData) => {
 /**
  * Dịch vụ xử lý logout.
  * DÙNG axiosInstance (vì user phải đăng nhập rồi mới logout).
- * Backend (Identity Service) yêu
- *
+ * Backend (Identity Service) yêu cầu token trong body
  */
 export const logout = async (token) => {
    try {
     // Token (accessToken) sẽ được gửi trong body
-    //
     const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT, {
        token
     }); 
@@ -65,4 +63,31 @@ export const logout = async (token) => {
   }
 };
 
-// ... (Thêm các service khác như introspect, refresh token... tương tự)
+/**
+ * Dịch vụ refresh access token.
+ * DÙNG axiosInstancePublic vì token hiện tại có thể đã hết hạn.
+ * Refresh token được gửi tự động qua HTTP-only cookie.
+ */
+export const refreshToken = async () => {
+  try {
+    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.REFRESH);
+    // Backend trả về response.data là ApiResponse<AuthenticationResponse>
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi refresh token' };
+  }
+};
+
+/**
+ * Introspect token để kiểm tra tính hợp lệ
+ */
+export const introspect = async (token) => {
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.AUTH.INTROSPECT, {
+      token
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi introspect token' };
+  }
+};

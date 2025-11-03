@@ -7,6 +7,7 @@ const axiosInstancePublic = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important: Send cookies (for refresh token)
 });
 
 export default axiosInstancePublic;
