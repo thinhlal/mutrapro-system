@@ -22,6 +22,11 @@ spring:
       port: 11105
       password: 7h9vCLiYAuVo4IBKbOJHz2LKcW8B4l0a
       timeout: 3000ms
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 logging:
   level:
@@ -38,3 +43,10 @@ jwt:
 verification:
   email-otp:
     expiry-seconds: 900
+
+app:
+  outbox:
+    max-retries: 3
+  event-topics:
+    mappings:
+      email.verification: email-verification

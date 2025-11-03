@@ -1,3 +1,6 @@
+com.mutrapro.shared.config.KafkaProducerConfig
+com.mutrapro.shared.config.KafkaConsumerConfig
+com.mutrapro.shared.config.OutboxPropertiesAutoConfiguration
 com.mutrapro.shared.config.ExceptionHandlingConfig
 com.mutrapro.shared.config.JpaAuditingConfig
 com.mutrapro.shared.config.AuditorAwareConfig

@@ -202,6 +202,18 @@ services:
     networks:
       - mutrapro-network
 
+  kafka:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    command: >-
+      redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M
+      --node-id 0 --check=false --kafka-addr PLAINTEXT://0.0.0.0:9092
+      --advertise-kafka-addr PLAINTEXT://localhost:9092
+    ports:
+      - "9092:9092"
+    networks:
+      - mutrapro-network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine

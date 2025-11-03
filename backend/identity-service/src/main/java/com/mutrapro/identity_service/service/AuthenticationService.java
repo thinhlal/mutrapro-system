@@ -7,13 +7,18 @@ import com.mutrapro.identity_service.dto.request.RegisterRequest;
 import com.mutrapro.identity_service.dto.response.AuthenticationResponse;
 import com.mutrapro.identity_service.dto.response.IntrospectResponse;
 import com.mutrapro.identity_service.dto.response.RegisterResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.identity_service.entity.EmailVerification;
+import com.mutrapro.identity_service.entity.OutboxEvent;
 import com.mutrapro.identity_service.entity.User;
+import com.mutrapro.shared.event.EmailVerificationEvent;
 import com.mutrapro.identity_service.enums.VerificationChannel;
 import com.mutrapro.identity_service.enums.VerificationStatus;
 import com.mutrapro.identity_service.exception.*;
 import com.mutrapro.identity_service.entity.UsersAuth;
 import com.mutrapro.identity_service.repository.EmailVerificationRepository;
+import com.mutrapro.identity_service.repository.OutboxEventRepository;
 import com.mutrapro.identity_service.repository.UserRepository;
 import com.mutrapro.identity_service.repository.UsersAuthRepository;
 import com.mutrapro.shared.enums.Role;
@@ -57,6 +62,8 @@ public class AuthenticationService {
     private final SecureRandom secureRandom = new SecureRandom();
     private final PasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -169,7 +176,7 @@ public class AuthenticationService {
         usersAuthRepository.findByEmail(request.getEmail()).ifPresent(u -> {
             throw UserAlreadyExistsException.create();
         });
-
+        
         // Create UsersAuth
         var userAuth = usersAuthMapper.toUsersAuth(request);
         userAuth.setRole(request.getRole() != null ? request.getRole() : Role.CUSTOMER);
@@ -197,6 +204,29 @@ public class AuthenticationService {
                 .status(VerificationStatus.PENDING)
                 .build();
         var emailVerification = emailVerificationRepository.save(verification);
+
+        // Save email verification event vào outbox (same transaction)
+        UUID eventId = UUID.randomUUID();
+        EmailVerificationEvent emailEvent = EmailVerificationEvent.builder()
+                .eventId(eventId)
+                .email(userAuthSaved.getEmail())
+                .otp(otp)
+                .fullName(request.getFullName())
+                .timestamp(Instant.now())
+                .build();
+        
+        JsonNode eventPayload = objectMapper.valueToTree(emailEvent);
+        
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(UUID.fromString(userAuthSaved.getUserId()))
+                .aggregateType("user")
+                .eventType("email.verification")
+                .eventPayload(eventPayload)
+                .occurredAt(Instant.now())
+                .build();
+        
+        outboxEventRepository.save(outboxEvent);
+        // Background job sẽ publish events từ outbox ra Kafka
 
         return RegisterResponse.builder()
                 .userId(userAuthSaved.getUserId())

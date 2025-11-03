@@ -22,6 +22,11 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
       timeout: 3000ms
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 logging:
   level:
@@ -39,3 +44,10 @@ jwt:
 verification:
   email-otp:
     expiry-seconds: 900
+
+app:
+  outbox:
+    max-retries: ${OUTBOX_MAX_RETRIES:3}
+  event-topics:
+    mappings:
+      email.verification: email-verification
