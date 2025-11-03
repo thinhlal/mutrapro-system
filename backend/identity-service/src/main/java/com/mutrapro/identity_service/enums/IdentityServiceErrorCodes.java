@@ -115,6 +115,11 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
         "https://docs.mutrapro.com/errors/USER_4020",
         "Verification request limit exceeded. Please try again later",
         Retryable.NON_TRANSIENT, 300),
+    
+    PASSWORD_RESET_TOKEN_INVALID("USER_4021", 400,
+        "https://docs.mutrapro.com/errors/USER_4021",
+        "Invalid password reset token",
+        Retryable.NON_TRANSIENT),
 
     // Auth Errors (5000-5099)
     TOKEN_GENERATION_FAILED("AUTH_5000", 500,

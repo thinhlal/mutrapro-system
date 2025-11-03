@@ -40,8 +40,12 @@ function ResetPasswordPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const resetToken = urlParams.get('token');
+    const resetEmail = urlParams.get('email');
     if (resetToken) {
       setToken(resetToken);
+      if (resetEmail) {
+        setEmail(resetEmail);
+      }
       setStep(2);
     }
   }, [location]);
@@ -140,6 +144,7 @@ function ResetPasswordPage() {
       const response = await axiosInstancePublic.post(
         API_ENDPOINTS.AUTH.RESET_PASSWORD,
         {
+          email, // Include email in request
           token,
           newPassword,
           confirmPassword,

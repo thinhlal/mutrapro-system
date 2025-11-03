@@ -5,10 +5,12 @@ import com.mutrapro.identity_service.dto.request.AuthenticationRequest;
 import com.mutrapro.identity_service.dto.request.IntrospectRequest;
 import com.mutrapro.identity_service.dto.request.LogoutRequest;
 import com.mutrapro.identity_service.dto.request.RegisterRequest;
+import com.mutrapro.identity_service.dto.request.ResetPasswordRequest;
 import com.mutrapro.identity_service.dto.response.AuthenticationResponse;
 import com.mutrapro.identity_service.dto.response.IntrospectResponse;
 import com.mutrapro.identity_service.dto.response.RegisterResponse;
 import com.mutrapro.identity_service.service.AuthenticationService;
+import com.mutrapro.identity_service.service.PasswordResetService;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
@@ -27,6 +29,7 @@ import java.text.ParseException;
 public class AuthenticationController {
 
     AuthenticationService authenticationService;
+    PasswordResetService passwordResetService;
 
     @PostMapping("/log-in")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request, HttpServletResponse response){
@@ -71,6 +74,22 @@ public class AuthenticationController {
         return ApiResponse.<AuthenticationResponse>builder()
                 .data(result)
                 .message("Token refreshed successfully!!!")
+                .build();
+    }
+    
+    @PostMapping("/forgot-password")
+    ApiResponse<Void> forgotPassword(@RequestParam String email) {
+        passwordResetService.forgotPassword(email);
+        return ApiResponse.<Void>builder()
+                .message("Password reset link sent to your email")
+                .build();
+    }
+    
+    @PostMapping("/reset-password")
+    ApiResponse<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Password reset successfully")
                 .build();
     }
 }

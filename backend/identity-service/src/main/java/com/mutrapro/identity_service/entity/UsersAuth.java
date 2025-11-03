@@ -5,6 +5,8 @@ import com.mutrapro.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users_auth")
 @Getter
@@ -37,9 +39,15 @@ public class UsersAuth extends BaseEntity<String> {
     @Builder.Default
     private boolean emailVerified = false;
     
+    @Column(name = "password_reset_token_hash", length = 255)
+    private String passwordResetTokenHash;
+    
+    @Column(name = "password_reset_token_expires_at")
+    private Instant passwordResetTokenExpiresAt;
+    
     // Convenience methods
     public boolean isActive() {
-        return "active".equals(status);
+        return !"active".equals(status);
     }
     
     public void setActive(boolean active) {

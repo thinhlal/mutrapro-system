@@ -43,9 +43,12 @@ spring:
 app:
   email:
     from-name: ${MAIL_FROM_NAME:MuTraPro}
+  frontend:
+    url: ${FRONTEND_URL:https://mutrapro.com}
   event-topics:
     mappings:
       email.verification: email-verification
+      password.reset: password-reset
 
 logging:
   level:

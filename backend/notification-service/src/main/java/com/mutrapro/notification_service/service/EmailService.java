@@ -22,6 +22,9 @@ public class EmailService {
 
     @Value("${app.email.from-name:MuTraPro}")
     private String fromName;
+    
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     /**
      * Gửi email verification code
@@ -52,6 +55,47 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send verification email", e);
+        }
+    }
+
+    /**
+     * Gửi email password reset link
+     */
+    public void sendPasswordResetLink(String toEmail, String fullName, String resetToken, Long expiryHours) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromName + " <" + fromEmail + ">");
+            message.setTo(toEmail);
+            message.setSubject("Đặt lại mật khẩu - MuTraPro");
+            
+            // Construct reset URL with email and token
+            String resetUrl = String.format(
+                "%s/reset-password?email=%s&token=%s",
+                frontendUrl,
+                java.net.URLEncoder.encode(toEmail, java.nio.charset.StandardCharsets.UTF_8),
+                resetToken
+            );
+            
+            String emailBody = String.format(
+                "Xin chào %s,\n\n" +
+                "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n" +
+                "Để đặt lại mật khẩu, vui lòng click vào link sau:\n" +
+                "%s\n\n" +
+                "Link này sẽ hết hạn sau %d giờ.\n\n" +
+                "Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.\n\n" +
+                "Trân trọng,\n" +
+                "Đội ngũ MuTraPro",
+                fullName, resetUrl, expiryHours
+            );
+            
+            message.setText(emailBody);
+            
+            mailSender.send(message);
+            
+            log.info("Password reset email sent successfully to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send password reset email", e);
         }
     }
 }

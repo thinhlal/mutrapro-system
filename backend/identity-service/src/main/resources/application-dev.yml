@@ -43,6 +43,8 @@ jwt:
 verification:
   email-otp:
     expiry-seconds: 900
+  password-reset:
+    expiry-hours: 24
 
 app:
   outbox:
@@ -50,3 +52,4 @@ app:
   event-topics:
     mappings:
       email.verification: email-verification
+      password.reset: password-reset
