@@ -144,7 +144,7 @@ function UserMenu() {
                 onClick={handleMenuItemClick}
               >
                 <UserOutlined className={styles.dropdownIcon} />
-                <span>Hồ sơ của tôi</span>
+                <span>My Profile</span>
               </Link>
             </li>
 
@@ -170,7 +170,7 @@ function UserMenu() {
                 onClick={handleMenuItemClick}
               >
                 <SettingOutlined className={styles.dropdownIcon} />
-                <span>Cài đặt</span>
+                <span>Settings</span>
               </Link>
             </li>
           </ul>
@@ -184,7 +184,7 @@ function UserMenu() {
             disabled={loading}
           >
             <LogoutOutlined className={styles.dropdownIcon} />
-            <span>{loading ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+            <span>{loading ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       )}
