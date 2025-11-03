@@ -61,7 +61,7 @@
 }
 
 .profileContentWrapper {
-  max-width: 900px;
+  /* max-width: 900px; */
   margin: 0 auto;
   background-color: var(--background-card);
   padding: 24px 32px;
