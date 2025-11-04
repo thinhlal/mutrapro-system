@@ -16,8 +16,15 @@ const ProtectedRoute = ({
   allowedRoles = [],
   redirectTo = '/login',
 }) => {
-  const { isAuthenticated, user } = useAuth();
+  const auth = useAuth();
+  if (!auth) return null;
+  const { isAuthenticated, user, initialized } = auth;
   const location = useLocation();
+
+  // Chờ khởi tạo trạng thái auth (load từ localStorage) để tránh redirect sớm khi F5
+  if (!initialized) {
+    return null; // hoặc spinner nhẹ nếu muốn
+  }
 
   // Not authenticated - redirect to login
   if (!isAuthenticated || !user) {

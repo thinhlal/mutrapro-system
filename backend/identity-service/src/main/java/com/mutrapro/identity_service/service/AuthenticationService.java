@@ -85,7 +85,7 @@ public class AuthenticationService {
             throws JOSEException, ParseException {
         var token = request.getToken();
 
-       verifyToken(token);
+        verifyToken(token, "access");
 
         return IntrospectResponse.builder()
                 .valid(true)
@@ -118,12 +118,15 @@ public class AuthenticationService {
         // Save refresh token to cookie
         saveCookieToResponse(response, "refreshToken", refreshToken, REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60);
         
+        var profile = userRepository.findById(user.getUserId()).orElse(null);
         return AuthenticationResponse.builder()
+                .userId(user.getUserId())
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresIn((long) ACCESS_TOKEN_EXPIRY_SECONDS)
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .fullName(profile != null ? profile.getFullName() : null)
                 .build();
     }
     
@@ -147,7 +150,7 @@ public class AuthenticationService {
         }
 
         // Xác thực refresh token
-        SignedJWT refreshJWT = verifyToken(refreshToken);
+        SignedJWT refreshJWT = verifyToken(refreshToken, "refresh");
 
         // Get email from JWT subject
         String userEmail = refreshJWT.getJWTClaimsSet().getSubject();
@@ -160,19 +163,41 @@ public class AuthenticationService {
             throw UserDisabledException.create();
         }
 
+        // Optional: Invalidate current access token (if client sent it in Authorization header)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String oldAccessToken = authHeader.substring(7);
+            try {
+                SignedJWT oldAccessJWT = SignedJWT.parse(oldAccessToken);
+                String oldAccessJti = oldAccessJWT.getJWTClaimsSet().getJWTID();
+                Date oldAccessExpiry = oldAccessJWT.getJWTClaimsSet().getExpirationTime();
+                invalidateToken(oldAccessJti, oldAccessExpiry);
+            } catch (Exception e) {
+                log.warn("Failed to parse/blacklist old access token during refresh", e);
+            }
+        }
+
+        // Invalidate used refresh token (rotate & revoke)
+        String usedRefreshJti = refreshJWT.getJWTClaimsSet().getJWTID();
+        Date refreshExpiry = refreshJWT.getJWTClaimsSet().getExpirationTime();
+        invalidateToken(usedRefreshJti, refreshExpiry);
+
         // Create new access token and refresh token
         var newAccessToken = generateAccessToken(user);
         var newRefreshToken = generateRefreshToken(user);
 
         // Save new refresh token to cookie
         saveCookieToResponse(response, "refreshToken", newRefreshToken, REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60);
-
+        
+        var profile = userRepository.findById(user.getUserId()).orElse(null);
         return AuthenticationResponse.builder()
+                .userId(user.getUserId())
                 .accessToken(newAccessToken)
                 .tokenType("Bearer")
                 .expiresIn((long) ACCESS_TOKEN_EXPIRY_SECONDS)
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .fullName(profile != null ? profile.getFullName() : null)
                 .build();
     }
 
@@ -246,48 +271,63 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+    public void logout(LogoutRequest request, HttpServletResponse response) throws ParseException, JOSEException {
         String token = request.getToken();
+        try {
+            // Decode token to get ClaimsSet
+            SignedJWT signedJWT = verifyToken(token, "access");
+            JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+            Date expirationTime = claimsSet.getExpirationTime();
 
-        //Decode token to get ClaimsSet
-        var signedJWT = verifyToken(token);
-        JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
-        Date expirationTime = claimsSet.getExpirationTime();
-
-        // Get JWT ID (jti) from token
-        String jti = claimsSet.getJWTID();
-
-        if (jti == null || jti.isEmpty()) {
-            log.warn("Token does not have jti claim, cannot logout");
-            return;
+            // Get JWT ID (jti) from token
+            String jti = claimsSet.getJWTID();
+            if (jti == null || jti.isEmpty()) {
+                log.warn("Token does not have jti claim, cannot logout");
+            } else {
+                invalidateToken(jti, expirationTime);
+            }
+        } catch (Exception ex) {
+            // Tolerant logout: nếu token không hợp lệ/hết hạn, vẫn xóa cookie và coi như thành công
+            log.warn("Logout called with invalid/expired token: {}", ex.getMessage());
+        } finally {
+            // Delete refresh token cookie (idempotent)
+            saveCookieToResponse(response, "refreshToken", null, 0);
         }
+    }
 
-        // Calculate remaining time of token (TTL)
-        long ttl = expirationTime.getTime() - System.currentTimeMillis();
-
-        if (ttl > 0) {
-            // Save jti to Redis with TTL = remaining time of token
-            // Key format: "blacklist:jti:" + jti
-            String key = "blacklist:jti:" + jti;
-            redisTemplate.opsForValue().set(key, "logout",
-                    java.time.Duration.ofMillis(ttl));
-
-            log.info("JWT ID {} has been added to Redis blacklist with TTL: {}ms", jti, ttl);
+    private void invalidateToken(String jwtId, Date expiryTime) {
+        if (jwtId == null || expiryTime == null) return;
+        long ttlMs = expiryTime.getTime() - System.currentTimeMillis();
+        if (ttlMs > 0) {
+            String key = "blacklist:jti:" + jwtId;
+            redisTemplate.opsForValue().set(key, "revoked", java.time.Duration.ofMillis(ttlMs));
+            log.info("JWT ID {} has been added to Redis blacklist with TTL: {}ms", jwtId, ttlMs);
         } else {
             log.warn("Token has expired, no need to add to blacklist");
         }
     }
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    private SignedJWT verifyToken(String token, String expectedTokenType) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        String tokenType = (String) signedJWT.getJWTClaimsSet().getClaim("type");
+        String jti = signedJWT.getJWTClaimsSet().getJWTID();
 
         var verified = signedJWT.verify(verifier);
 
         if (!(verified && expiryTime.after(new Date())))
+            throw TokenInvalidException.create();
+
+        if (expectedTokenType != null && !expectedTokenType.equals(tokenType))
+            throw TokenInvalidException.create();
+
+        // Check blacklist in Redis
+        String blacklistKey = "blacklist:jti:" + jti;
+        String blacklisted = redisTemplate.opsForValue().get(blacklistKey);
+        if (blacklisted != null)
             throw TokenInvalidException.create();
 
         return signedJWT;
@@ -307,6 +347,7 @@ public class AuthenticationService {
                         Instant.now().plus(ACCESS_TOKEN_EXPIRY_SECONDS, ChronoUnit.SECONDS).toEpochMilli()
                 ))
                 .jwtID(jti) // Add JWT ID claim
+                .claim("type", "access")
                 .claim("scope", usersAuth.getRole())
                 .build();
 
@@ -336,6 +377,7 @@ public class AuthenticationService {
                         Instant.now().plus(REFRESH_TOKEN_EXPIRY_DAYS, ChronoUnit.DAYS).toEpochMilli()
                 ))
                 .jwtID(jti)
+                .claim("type", "refresh")
                 .claim("scope", usersAuth.getRole())
                 .build();
 

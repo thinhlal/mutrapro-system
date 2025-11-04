@@ -121,7 +121,7 @@ function RegisterPage() {
           type="button"
           aria-label="Quay lại trang chủ"
           className={styles.backButton}
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/')}
         >
           <span className={styles.backIcon}>&larr;</span>
           <span className={styles.backText}>Back</span>

@@ -8,6 +8,7 @@ import {
 // Common Components
 import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
 import ProtectedRoute from './components/HandleRoutes/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext.jsx';
 
 // Layouts
 import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
@@ -44,11 +45,11 @@ import './App.css';
 function App() {
   return (
     <Router>
-      <ScrollToTop />
-      <Routes>
+      <AuthProvider>
+        <ScrollToTop />
+        <Routes>
         {/* --- PUBLIC ROUTES --- */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/transcription" element={<TranscriptionPage />} />
@@ -141,8 +142,9 @@ function App() {
         </Route>
 
         {/* --- FALLBACK ROUTE --- */}
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }

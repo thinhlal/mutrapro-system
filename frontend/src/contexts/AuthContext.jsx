@@ -1,197 +1,117 @@
-// src/contexts/AuthContext.jsx
-import { create } from 'zustand';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as authService from '../services/authService';
-import * as userService from '../services/userService';
-import * as localStorageService from '../services/localStorageService';
-import { decodeJWT, isTokenExpired } from '../utils/jwtUtils';
+import { setItem, getItem, removeItem } from '../services/localStorageService';
 
-const AUTH_STORAGE_KEY = 'auth';
-const USER_STORAGE_KEY = 'user';
+export const AuthContext = createContext();
 
-/**
- * Hàm nội bộ để lấy thông tin user đầy đủ từ backend
- */
-const fetchFullUserProfile = async userId => {
-  try {
-    const response = await userService.getUserProfile(userId);
-    return response.data; // UserProfileResponse
-  } catch (error) {
-    console.error('Không thể lấy user profile:', error);
-    return null;
-  }
-};
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const navigate = useNavigate();
 
-// Initialize state from localStorage
-const initializeAuth = () => {
-  const storedUser = localStorageService.getItem(USER_STORAGE_KEY);
-  return {
-    isAuthenticated: !!storedUser,
-    user: storedUser || null,
-    accessToken: null, // Never store in localStorage for security
-    loading: false,
-    error: null,
-  };
-};
+  // Initialize user from localStorage
+  useEffect(() => {
+    const userData = getItem('user');
+    if (userData) {
+      try {
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        removeItem('user');
+      }
+    }
+    setInitialized(true);
+  }, []);
 
-export const useAuth = create((set, get) => ({
-  // --- State ---
-  ...initializeAuth(),
+  // Handle auto logout when refresh token fails
+  useEffect(() => {
+    const handleAutoLogout = async () => {
+      // Delay để hiển thị loading animation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      removeItem('user');
+      removeItem('accessToken');
+      setUser(null);
+      navigate('/login', { replace: true });
+    };
 
-  // --- Actions ---
-  login: async (email, password) => {
-    set({ loading: true, error: null });
+    window.addEventListener('auth:logout', handleAutoLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleAutoLogout);
+    };
+  }, [navigate]);
+
+  const logIn = async (email, password) => {
+    setLoading(true);
     try {
       const response = await authService.login(email, password);
-      const { data } = response; // data là AuthenticationResponse
-      // data contains: { accessToken, tokenType, expiresIn, email, role }
+      const token = response?.accessToken;
+      const user = response?.user;
 
-      // Decode JWT token để lấy thông tin
-      const decodedToken = decodeJWT(data.accessToken);
-
-      if (!decodedToken) {
-        throw new Error('Invalid token received from server');
+      if (token) {
+        setItem('accessToken', token);
+      }
+      if (user) {
+        setItem('user', user);
+        setUser(user);
       }
 
-      // Extract user info from token
-      // JWT payload contains: { sub: email, scope: role, exp, iat, jti, iss }
-      const baseUserData = {
-        email: decodedToken.sub || data.email,
-        role: decodedToken.scope || data.role,
-        tokenExpiry: decodedToken.exp,
-      };
-
-      // *** TÙY CHỌN: GỌI API PROFILE ĐỂ LẤY THÔNG TIN ĐẦY ĐỦ ***
-      // Nếu cần thông tin như fullName, phone, address, có thể gọi API profile
-      // Tuy nhiên, cần userId để gọi API này
-      // Vì backend không trả userId trong AuthenticationResponse,
-      // ta có thể skip bước này và lấy profile khi cần thiết
-
-      // For now, use basic user data from token
-      const finalUserData = {
-        ...baseUserData,
-      };
-
-      set({
-        isAuthenticated: true,
-        user: finalUserData,
-        accessToken: data.accessToken, // Store in memory only
-        loading: false,
-        error: null,
-      });
-
-      // IMPORTANT: Chỉ lưu user info vào localStorage, KHÔNG lưu token
-      localStorageService.setItem(USER_STORAGE_KEY, finalUserData);
-
-      // Remove old auth key if exists
-      localStorageService.removeItem(AUTH_STORAGE_KEY);
-
       return response;
-    } catch (error) {
-      set({ loading: false, error: error.message || 'Đăng nhập thất bại' });
-      throw error;
+    } finally {
+      setLoading(false);
     }
-  },
+  };
 
-  register: async registerData => {
-    set({ loading: true, error: null });
+  // Update user info (for profile updates)
+  const updateUser = updatedUserData => {
+    const newUserData = { ...user, ...updatedUserData };
+    setUser(newUserData);
+    setItem('user', newUserData);
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await authService.logout(getItem('accessToken'));
+    } catch (_) {
+      // bỏ qua lỗi logout để đảm bảo client state được dọn sạch
+    } finally {
+      removeItem('accessToken');
+      removeItem('user');
+      setUser(null);
+      setLoading(false);
+      navigate('/login', { replace: true });
+    }
+  };
+
+  const register = async registerData => {
+    setLoading(true);
     try {
       const response = await authService.register(registerData);
-      set({ loading: false });
       return response;
-    } catch (error) {
-      set({ loading: false, error: error.message || 'Đăng ký thất bại' });
-      throw error;
-    }
-  },
-
-  logout: async () => {
-    const token = get().accessToken;
-    set({ loading: true });
-    try {
-      if (token) {
-        await authService.logout(token);
-      }
-    } catch (error) {
-      console.error('Lỗi khi gọi API logout (blacklist):', error);
     } finally {
-      set({
-        isAuthenticated: false,
-        user: null,
-        accessToken: null,
-        loading: false,
-        error: null,
-      });
-      // Clear user info from localStorage
-      localStorageService.removeItem(USER_STORAGE_KEY);
-      localStorageService.removeItem(AUTH_STORAGE_KEY); // Remove old key if exists
+      setLoading(false);
     }
-  },
+  };
 
-  // Refresh access token using refresh token from cookie
-  refreshAccessToken: async () => {
-    try {
-      const response = await authService.refreshToken();
-      const { data } = response; // AuthenticationResponse
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        initialized,
+        isAuthenticated: !!user,
+        logIn,
+        logout,
+        register,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-      if (!data || !data.accessToken) {
-        throw new Error('Invalid refresh token response');
-      }
-
-      // Decode new token
-      const decodedToken = decodeJWT(data.accessToken);
-
-      if (!decodedToken) {
-        throw new Error('Invalid token received from server');
-      }
-
-      // Update user info from new token
-      const updatedUserData = {
-        email: decodedToken.sub || data.email,
-        role: decodedToken.scope || data.role,
-        tokenExpiry: decodedToken.exp,
-      };
-
-      set({
-        isAuthenticated: true,
-        user: updatedUserData,
-        accessToken: data.accessToken,
-        error: null,
-      });
-
-      // Update localStorage
-      localStorageService.setItem(USER_STORAGE_KEY, updatedUserData);
-
-      return data.accessToken;
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
-      // Token refresh failed, logout user
-      get().logout();
-      throw error;
-    }
-  },
-
-  // Set access token (used by axios interceptor after refresh)
-  setAccessToken: token => {
-    set({ accessToken: token });
-  },
-
-  // Check if token is expired and refresh if needed
-  checkAndRefreshToken: async () => {
-    const { accessToken, refreshAccessToken } = get();
-
-    if (!accessToken) {
-      return false;
-    }
-
-    if (isTokenExpired(accessToken)) {
-      try {
-        await refreshAccessToken();
-        return true;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    return true;
-  },
-}));
+export const useAuth = () => useContext(AuthContext);

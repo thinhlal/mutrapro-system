@@ -11,14 +11,31 @@ import axiosInstancePublic from '../utils/axiosInstancePublic';
  */
 export const login = async (email, password) => {
   try {
-    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.LOGIN, {
-      email,
-      password,
-    });
-    // Backend trả về theo cấu trúc ApiResponse<T>
-    //
-    // Chúng ta trả về response.data để store xử lý
-    return response.data;
+    const response = await axiosInstancePublic.post(
+      API_ENDPOINTS.AUTH.LOGIN,
+      {
+        email,
+        password,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    // Chuẩn hoá theo response thực tế:
+    // axios -> response.data = { status, statusCode, message, timestamp, data: { accessToken, tokenType, expiresIn, email, role } }
+    const payload = response?.data;
+    const auth = payload?.data || {};
+
+    const accessToken = auth.accessToken;
+    const user = {
+      id: auth.userId,
+      email: auth.email,
+      role: auth.role,
+      fullName: auth.fullName,
+    };
+
+    return { accessToken, user };
   } catch (error) {
     // Ném lỗi để Zustand store có thể bắt và xử lý
     throw error.response?.data || { message: 'Lỗi máy chủ' };
@@ -48,14 +65,16 @@ export const register = async registerData => {
 
 /**
  * Dịch vụ xử lý logout.
- * DÙNG axiosInstance (vì user phải đăng nhập rồi mới logout).
+ * DÙNG axiosInstancePublic (vì user phải đăng nhập rồi mới logout).
  * Backend (Identity Service) yêu cầu token trong body
  */
 export const logout = async token => {
   try {
     // Token (accessToken) sẽ được gửi trong body
-    const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT, {
+    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.LOGOUT, {
       token,
+    }, {
+      withCredentials: true,
     });
     return response.data;
   } catch (error) {
@@ -70,7 +89,9 @@ export const logout = async token => {
  */
 export const refreshToken = async () => {
   try {
-    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.REFRESH);
+    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.REFRESH, {}, {
+      withCredentials: true,
+    });
     // Backend trả về response.data là ApiResponse<AuthenticationResponse>
     return response.data;
   } catch (error) {
@@ -85,6 +106,8 @@ export const introspect = async token => {
   try {
     const response = await axiosInstance.post(API_ENDPOINTS.AUTH.INTROSPECT, {
       token,
+    }, {
+      withCredentials: true,
     });
     return response.data;
   } catch (error) {

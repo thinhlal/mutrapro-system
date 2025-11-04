@@ -103,6 +103,7 @@ export const API_ENDPOINTS = {
 if (API_CONFIG.IS_DEV) {
   console.log('🔧 [Config] API Configuration:', {
     BASE_URL: API_CONFIG.BASE_URL,
+    API_PREFIX: API_CONFIG.API_PREFIX,
     GOOGLE_CLIENT_ID: API_CONFIG.GOOGLE_CLIENT_ID ? 'Set' : 'Not set',
     ENV: API_CONFIG.IS_DEV ? 'Development' : 'Production',
   });

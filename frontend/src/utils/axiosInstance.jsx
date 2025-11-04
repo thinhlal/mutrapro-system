@@ -1,118 +1,145 @@
-// src/utils/axiosInstance.jsx
 import axios from 'axios';
 import { API_CONFIG, API_ENDPOINTS } from '../config/apiConfig';
-import { useAuth } from '../contexts/AuthContext';
+import { getItem } from '../services/localStorageService';
+import { setItem, removeItem } from '../services/localStorageService';
 
 const axiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important: Send cookies with requests
+  withCredentials: true,
 });
 
-// Queue to store failed requests while refreshing token
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
-      prom.reject(error);
+      reject(error);
     } else {
-      prom.resolve(token);
+      resolve(token);
     }
   });
   failedQueue = [];
 };
 
-// --- REQUEST INTERCEPTOR ---
-// Automatically add Bearer token to all requests
+// Request interceptor - CHỈ LOG LỖI, KHÔNG LOG SUCCESS
 axiosInstance.interceptors.request.use(
   config => {
-    const token = useAuth.getState().accessToken;
-
+    const token = getItem('accessToken');
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   error => {
+    // CHỈ log request setup errors (rất hiếm)
+    console.error('Request setup error:', error);
     return Promise.reject(error);
   }
 );
 
-// --- RESPONSE INTERCEPTOR ---
-// Handle token refresh on 401 errors
+// Response interceptor - CHỈ LOG API ERRORS
 axiosInstance.interceptors.response.use(
-  response => {
-    // Success response, return as is
-    return response;
-  },
+  // SUCCESS responses - KHÔNG LOG GÌ CẢaaaaaaaaaaaaaaa
+  response => response,
+
+  // ERROR responses - CHỈ LOG ERRORS CẦN THIẾT
   async error => {
     const originalRequest = error.config;
 
-    // If error is not 401 or request is already retried, reject immediately
+    // 1. Log SERVER ERRORS (5xx) - Server có vấn đề
+    if (error.response?.status >= 500) {
+      console.error(`Server Error ${error.response.status}:`, {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        status: error.response.status,
+        data: error.response.data,
+      });
+    }
+
+    // 2. Log NETWORK ERRORS - Không kết nối được
+    else if (!error.response && error.request) {
+      console.error('Network Error:', {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        message: error.message,
+      });
+    }
+
+    // 3. KHÔNG LOG client errors 4xx (trừ auth errors đặc biệt)
+    // Vì 400, 404, 422 là business logic errors, không cần Sentry
+
+    // 401 handling
+    const SKIP_REFRESH_URLS = [
+      API_ENDPOINTS.AUTH.REFRESH,
+      API_ENDPOINTS.AUTH.LOGOUT,
+    ];
+
     if (
-      !error.response ||
-      error.response.status !== 401 ||
-      originalRequest._retry
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !SKIP_REFRESH_URLS.includes(originalRequest.url)
     ) {
-      return Promise.reject(error);
-    }
+      originalRequest._retry = true;
 
-    // Don't retry refresh endpoint itself
-    if (originalRequest.url?.includes(API_ENDPOINTS.AUTH.REFRESH)) {
-      // Refresh token failed, logout user
-      useAuth.getState().logout();
-      return Promise.reject(error);
-    }
-
-    // Don't retry login/register endpoints
-    if (
-      originalRequest.url?.includes(API_ENDPOINTS.AUTH.LOGIN) ||
-      originalRequest.url?.includes(API_ENDPOINTS.AUTH.REGISTER)
-    ) {
-      return Promise.reject(error);
-    }
-
-    // Mark request as retried to avoid infinite loop
-    originalRequest._retry = true;
-
-    if (isRefreshing) {
-      // If already refreshing, queue this request
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then(token => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
         })
-        .catch(err => {
-          return Promise.reject(err);
-        });
+          .then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      isRefreshing = true;
+
+      try {
+        const refreshResponse = await axiosInstance.post(
+          API_ENDPOINTS.AUTH.REFRESH,
+          {},
+          {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true,
+          }
+        );
+
+        // ApiResponse format: { status: 'success'|'error', data: { accessToken, ... }, errorCode?, message? }
+        if (
+          refreshResponse?.data?.status === 'success' &&
+          refreshResponse?.data?.data?.accessToken
+        ) {
+          const newToken = refreshResponse.data.data.accessToken;
+          setItem('accessToken', newToken);
+          // Cập nhật header Authorization cho request gốc
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          // Nếu request gốc gửi token trong body (vd: /auth/introspect, /auth/logout), cập nhật luôn
+          if (
+            originalRequest.data &&
+            typeof originalRequest.data === 'object' &&
+            Object.prototype.hasOwnProperty.call(originalRequest.data, 'token')
+          ) {
+            originalRequest.data = { ...originalRequest.data, token: newToken };
+          }
+          processQueue(null, newToken);
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Auth refresh failed:', refreshError);
+        removeItem('accessToken');
+        processQueue(refreshError, null);
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    isRefreshing = true;
-
-    try {
-      // Attempt to refresh token
-      const newToken = await useAuth.getState().refreshAccessToken();
-
-      // Process queued requests with new token
-      processQueue(null, newToken);
-
-      // Retry original request with new token
-      originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-      return axiosInstance(originalRequest);
-    } catch (refreshError) {
-      // Refresh failed, process queue with error and logout
-      processQueue(refreshError, null);
-      useAuth.getState().logout();
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
-    }
+    return Promise.reject(error);
   }
 );
 

@@ -9,10 +9,10 @@ import { OAuthConfig } from '../../config/OAuthConfig';
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loading } = useAuth();
+  const { logIn, loading } = useAuth() || {};
 
   // Get the page user tried to access before being redirected to login
-  const from = location.state?.from?.pathname || '/home';
+  const from = location.state?.from?.pathname || '/';
 
   // State cục bộ để quản lý email và password
   const [email, setEmail] = useState('');
@@ -23,7 +23,7 @@ function LoginPage() {
     if (loading) return;
 
     try {
-      await login(email, password);
+      await logIn(email, password);
 
       toast.success('Đăng nhập thành công!');
 
