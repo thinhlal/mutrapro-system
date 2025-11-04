@@ -5,7 +5,8 @@ export const API_CONFIG = {
     import.meta.env.VITE_API_BACK_END_ENDPOINT || 'http://localhost:8080',
 
   // Tiền tố API chung được định nghĩa trong Gateway
-  API_PREFIX: '/api/v1',
+  API_PREFIX: 
+    import.meta.env.VITE_API_PREFIX || '/api/v1',
 
   // Google OAuth config
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',

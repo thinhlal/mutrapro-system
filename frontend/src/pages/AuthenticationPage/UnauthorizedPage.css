@@ -1,0 +1,202 @@
+.unauthorized-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unauthorized-wrapper .unauthorized-container {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.unauthorized-wrapper .unauthorized-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #ff4757, #ff6b7d, #ffa502, #ff6348);
+}
+
+.unauthorized-wrapper .unauthorized-icon {
+  margin-bottom: 30px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.unauthorized-wrapper .unauthorized-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.unauthorized-wrapper .unauthorized-message {
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.unauthorized-wrapper .unauthorized-details {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 40px;
+  text-align: left;
+}
+
+.unauthorized-wrapper .unauthorized-details p {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.unauthorized-wrapper .unauthorized-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.unauthorized-wrapper .unauthorized-details li {
+  padding: 8px 0;
+  color: #5a6c7d;
+  position: relative;
+  padding-left: 25px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.unauthorized-wrapper .unauthorized-details li::before {
+  content: '•';
+  color: #ff4757;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  font-size: 1.2rem;
+}
+
+.unauthorized-wrapper .unauthorized-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.unauthorized-wrapper .btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  min-width: 120px;
+}
+
+.unauthorized-wrapper .btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.unauthorized-wrapper .btn-primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.unauthorized-wrapper .btn-secondary {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+}
+
+.unauthorized-wrapper .btn-secondary:hover {
+  background: linear-gradient(135deg, #ff5757 0%, #e04960 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+}
+
+.unauthorized-wrapper .btn-outline {
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.unauthorized-wrapper .btn-outline:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .unauthorized-wrapper {
+    padding: 10px;
+  }
+
+  .unauthorized-wrapper .unauthorized-container {
+    padding: 40px 25px;
+  }
+
+  .unauthorized-wrapper .unauthorized-title {
+    font-size: 2rem;
+  }
+
+  .unauthorized-wrapper .unauthorized-message {
+    font-size: 1.1rem;
+  }
+
+  .unauthorized-wrapper .unauthorized-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .unauthorized-wrapper .btn {
+    width: 100%;
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .unauthorized-wrapper .unauthorized-title {
+    font-size: 1.8rem;
+  }
+
+  .unauthorized-wrapper .unauthorized-message {
+    font-size: 1rem;
+  }
+
+  .unauthorized-wrapper .unauthorized-details {
+    padding: 20px;
+  }
+}

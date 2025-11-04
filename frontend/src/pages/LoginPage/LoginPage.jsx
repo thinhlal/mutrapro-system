@@ -4,6 +4,7 @@ import styles from './LoginPage.module.css';
 import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../contexts/AuthContext';
 import { Toaster, toast } from 'react-hot-toast';
+import { OAuthConfig } from '../../config/OAuthConfig';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -39,6 +40,21 @@ function LoginPage() {
       } else {
         toast.error(error.message || 'Email hoặc mật khẩu không chính xác');
       }
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    try {
+      const targetUrl =
+        `${OAuthConfig.authUri}?` +
+        `client_id=${OAuthConfig.clientId}&` +
+        `redirect_uri=${encodeURIComponent(OAuthConfig.redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(OAuthConfig.scope)}`;
+      window.location.href = targetUrl;
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast.error('Google login error');
     }
   };
 
@@ -143,7 +159,7 @@ function LoginPage() {
             </div>
 
             <div className={styles.socialRow}>
-              <button type="button" className={styles.socialButton}>
+              <button type="button" className={styles.socialButton} onClick={handleGoogleLogin}>
                 <GoogleIcon />
                 <span>Tiếp tục với Google</span>
               </button>
