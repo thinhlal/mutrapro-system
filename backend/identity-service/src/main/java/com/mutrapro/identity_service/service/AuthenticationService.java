@@ -1,6 +1,7 @@
 package com.mutrapro.identity_service.service;
 
 import com.mutrapro.identity_service.dto.request.AuthenticationRequest;
+import com.mutrapro.identity_service.dto.request.CreatePasswordRequest;
 import com.mutrapro.identity_service.dto.request.IntrospectRequest;
 import com.mutrapro.identity_service.dto.request.LogoutRequest;
 import com.mutrapro.identity_service.dto.request.RegisterRequest;
@@ -28,6 +29,11 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.mutrapro.identity_service.mapper.UsersAuthMapper;
+import com.mutrapro.identity_service.dto.request.ExchangeTokenRequest;
+import com.mutrapro.identity_service.dto.response.ExchangeTokenResponse;
+import com.mutrapro.identity_service.dto.response.OutboundUserResponse;
+import com.mutrapro.identity_service.repository.httpclient.OutboundIdentityClient;
+import com.mutrapro.identity_service.repository.httpclient.OutboundUserClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -64,6 +70,8 @@ public class AuthenticationService {
     private final RedisTemplate<String, String> redisTemplate;
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final OutboundIdentityClient outboundIdentityClient;
+    private final OutboundUserClient outboundUserClient;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -81,6 +89,21 @@ public class AuthenticationService {
     @Value("${jwt.refresh-token.expiry-days:7}")
     int REFRESH_TOKEN_EXPIRY_DAYS;
 
+    @NonFinal
+    @Value("${outbound.identity.client-id:}")
+    String CLIENT_ID;
+
+    @NonFinal
+    @Value("${outbound.identity.client-secret:}")
+    String CLIENT_SECRET;
+
+    @NonFinal
+    @Value("${outbound.identity.redirect-uri:}")
+    String REDIRECT_URI;
+
+    @NonFinal
+    protected final String GRANT_TYPE = "authorization_code";
+
     public IntrospectResponse introspect(IntrospectRequest request)
             throws JOSEException, ParseException {
         var token = request.getToken();
@@ -89,6 +112,73 @@ public class AuthenticationService {
 
         return IntrospectResponse.builder()
                 .valid(true)
+                .build();
+    }
+
+    @Transactional
+    public AuthenticationResponse outboundAuthentication(String code, HttpServletResponse response) {
+        // 1) Exchange code for Google access token via Feign client
+        ExchangeTokenResponse tokenResp = outboundIdentityClient.exchangeToken(
+                ExchangeTokenRequest.builder()
+                        .code(code)
+                        .clientId(CLIENT_ID)
+                        .clientSecret(CLIENT_SECRET)
+                        .redirectUri(REDIRECT_URI)
+                        .grantType(GRANT_TYPE)
+                        .build()
+        );
+        if (tokenResp == null || tokenResp.getAccessToken() == null) {
+            throw InvalidCredentialsException.create();
+        }
+        String googleAccessToken = tokenResp.getAccessToken();
+        // 2) Get user info from Google via Feign client
+        OutboundUserResponse userInfo = outboundUserClient.getUserInfo("json", "Bearer " + googleAccessToken);
+        if (userInfo == null || userInfo.getEmail() == null) {
+            throw InvalidCredentialsException.create();
+        }
+        String email = userInfo.getEmail();
+        String fullName = userInfo.getName();
+        // 3) Onboard or load UsersAuth + User
+        UsersAuth usersAuth = usersAuthRepository.findByEmail(email).orElse(null);
+        if (usersAuth == null) {
+            usersAuth = UsersAuth.builder()
+                    .email(email)
+                    .role(Role.CUSTOMER)
+                    .emailVerified(true)
+                    .status("active")
+                    .authProvider("GOOGLE")
+                    .authProviderId(userInfo.getId())
+                    .hasLocalPassword(false)
+                    .build();
+            log.info("UsersAuth: {}", usersAuth);
+            usersAuth = usersAuthRepository.save(usersAuth);
+            log.info("UsersAuth saved: {}", usersAuth);
+            User profile = User.builder()
+                    .userId(usersAuth.getUserId())
+                    .fullName(fullName != null ? fullName : email)
+                    .avatarUrl(userInfo.getPicture())
+                    .isActive(true)
+                    .build();
+            log.info("User: {}", profile);
+            userRepository.save(profile);
+            log.info("User saved: {}", profile);
+        }
+
+        // 4) Issue local tokens
+        String accessToken = generateAccessToken(usersAuth);
+        String refreshToken = generateRefreshToken(usersAuth);
+        saveCookieToResponse(response, "refreshToken", refreshToken, REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60);
+
+        var profile = userRepository.findById(usersAuth.getUserId()).orElse(null);
+        return AuthenticationResponse.builder()
+                .userId(usersAuth.getUserId())
+                .accessToken(accessToken)
+                .tokenType("Bearer")
+                .expiresIn((long) ACCESS_TOKEN_EXPIRY_SECONDS)
+                .email(usersAuth.getEmail())
+                .role(usersAuth.getRole().name())
+                .fullName(profile != null ? profile.getFullName() : fullName)
+                .isNoPassword(!usersAuth.isHasLocalPassword())
                 .build();
     }
 
@@ -104,6 +194,11 @@ public class AuthenticationService {
         // Check if email is verified
         if (!user.isEmailVerified()) {
             throw EmailNotVerifiedException.create();
+        }
+
+        // Nếu tài khoản chưa có mật khẩu local (đăng nhập OAuth), từ chối đăng nhập bằng password
+        if (!user.isHasLocalPassword()) {
+            throw NoLocalPasswordException.create();
         }
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
@@ -127,6 +222,7 @@ public class AuthenticationService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .fullName(profile != null ? profile.getFullName() : null)
+                .isNoPassword(!user.isHasLocalPassword())
                 .build();
     }
     
@@ -198,6 +294,7 @@ public class AuthenticationService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .fullName(profile != null ? profile.getFullName() : null)
+                .isNoPassword(!user.isHasLocalPassword())
                 .build();
     }
 
@@ -211,6 +308,7 @@ public class AuthenticationService {
         var userAuth = usersAuthMapper.toUsersAuth(request);
         userAuth.setRole(request.getRole() != null ? request.getRole() : Role.CUSTOMER);
         userAuth.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        userAuth.setHasLocalPassword(true);
         UsersAuth userAuthSaved = usersAuthRepository.save(userAuth);
 
         // Create User (users table)
@@ -293,6 +391,17 @@ public class AuthenticationService {
             // Delete refresh token cookie (idempotent)
             saveCookieToResponse(response, "refreshToken", null, 0);
         }
+    }
+
+    public void createPassword(CreatePasswordRequest request) {
+        UsersAuth user = usersAuthRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> UserNotFoundException.byEmail(request.getEmail()));
+        if (user.getPasswordHash() != null) {
+            throw PasswordAlreadySetException.create();
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setHasLocalPassword(true);
+        usersAuthRepository.save(user);
     }
 
     private void invalidateToken(String jwtId, Date expiryTime) {

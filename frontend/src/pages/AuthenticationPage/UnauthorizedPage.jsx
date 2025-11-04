@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './UnauthorizedPage.css';
+import styles from './UnauthorizedPage.module.css';
 import { AuthContext } from '../../contexts/AuthContext';
 
 const UnauthorizedPage = () => {
@@ -23,10 +23,10 @@ const UnauthorizedPage = () => {
   };
 
   return (
-    <div className="unauthorized-wrapper">
-      <div className="unauthorized-container">
-        <div className="unauthorized-content">
-          <div className="unauthorized-icon">
+    <div className={styles.wrapper}>
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.icon}>
             <svg
               width="120"
               height="120"
@@ -42,14 +42,14 @@ const UnauthorizedPage = () => {
             </svg>
           </div>
 
-          <h1 className="unauthorized-title">Không Có Quyền Truy Cập</h1>
+          <h1 className={styles.title}>Không Có Quyền Truy Cập</h1>
 
-          <p className="unauthorized-message">
+          <p className={styles.message}>
             Xin lỗi, bạn không có quyền truy cập vào trang này. Vui lòng kiểm
             tra quyền của bạn hoặc liên hệ quản trị viên.
           </p>
 
-          <div className="unauthorized-details">
+          <div className={styles.details}>
             <p>Điều này có thể xảy ra vì:</p>
             <ul>
               <li>Bạn chưa đăng nhập vào hệ thống</li>
@@ -59,14 +59,14 @@ const UnauthorizedPage = () => {
             </ul>
           </div>
 
-          <div className="unauthorized-actions">
-            <button className="btn btn-primary" onClick={handleLogin}>
+          <div className={styles.actions}>
+            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleLogin}>
               Đăng Nhập
             </button>
-            <button className="btn btn-secondary" onClick={handleGoHome}>
+            <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleGoHome}>
               Về Trang Chủ
             </button>
-            <button className="btn btn-outline" onClick={handleGoBack}>
+            <button className={`${styles.btn} ${styles.btnOutline}`} onClick={handleGoBack}>
               Quay Lại
             </button>
           </div>

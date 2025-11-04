@@ -3,9 +3,11 @@ package com.mutrapro.identity_service.service;
 import com.mutrapro.identity_service.dto.request.*;
 import com.mutrapro.identity_service.dto.response.*;
 import com.mutrapro.identity_service.entity.User;
+import com.mutrapro.identity_service.entity.UsersAuth;
 import com.mutrapro.identity_service.exception.*;
 import com.mutrapro.identity_service.mapper.UserMapper;
 import com.mutrapro.identity_service.repository.UserRepository;
+import com.mutrapro.identity_service.repository.UsersAuthRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     
     private final UserRepository userRepository;
+    private final UsersAuthRepository usersAuthRepository;
     private final UserMapper userMapper;
     
     // ===== PUBLIC API METHODS =====
@@ -81,28 +84,84 @@ public class UserService {
         userRepository.delete(user);
         log.info("User deleted successfully with ID: {}", id);
     }
-    
-    
+
     /**
-     * Lấy user profile
+     * Lấy đầy đủ thông tin user (users + users_auth)
      */
-    public UserProfileResponse getUserProfile(String id) {
-        User user = findUserEntityById(id);
-        return userMapper.toUserProfileResponse(user);
+    public FullUserResponse getFullUser(String id) {
+        UsersAuth userAuth = usersAuthRepository.findByUserId(id)
+            .orElseThrow(() -> UserNotFoundException.byId(id));
+        User user = userRepository.findByUserId(userAuth.getUserId())
+            .orElseThrow(() -> UserNotFoundException.byId(userAuth.getUserId()));
+
+        return FullUserResponse.builder()
+            .userId(user.getUserId())
+            .fullName(user.getFullName())
+            .phone(user.getPhone())
+            .address(user.getAddress())
+            .avatarUrl(user.getAvatarUrl())
+            .active(user.isActive())
+            .email(userAuth.getEmail())
+            .role(userAuth.getRole().name())
+            .emailVerified(userAuth.isEmailVerified())
+            .authProvider(userAuth.getAuthProvider())
+            .authProviderId(userAuth.getAuthProviderId())
+            .isNoPassword(!userAuth.isHasLocalPassword())
+            .build();
     }
-    
+
     /**
-     * Cập nhật user profile
+     * Cập nhật đầy đủ thông tin (users + users_auth)
      */
     @Transactional
-    public UserProfileResponse updateUserProfile(String id, UpdateUserRequest request) {
-        log.info("Updating profile for user ID: {}", id);
-        
-        User user = findUserEntityById(id);
-        userMapper.updateUserFromRequest(user, request);
-        
-        User updatedUser = userRepository.save(user);
-        return userMapper.toUserProfileResponse(updatedUser);
+    public FullUserResponse updateFullUser(String id, UpdateFullUserRequest request) {
+        log.info("Updating full user for ID: {}", id);
+
+        UsersAuth userAuth = usersAuthRepository.findByUserId(id)
+            .orElseThrow(() -> UserNotFoundException.byId(id));
+        User user = userRepository.findByUserId(userAuth.getUserId())
+            .orElseThrow(() -> UserNotFoundException.byId(userAuth.getUserId()));
+
+        // Update users fields if provided
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+        if (request.getIsActive() != null) {
+            user.setActive(request.getIsActive());
+        }
+
+        // Update users_auth restricted fields if provided
+        if (request.getEmailVerified() != null) {
+            userAuth.setEmailVerified(request.getEmailVerified());
+        }
+
+        // Persist
+        userRepository.save(user);
+        usersAuthRepository.save(userAuth);
+
+        return FullUserResponse.builder()
+            .userId(user.getUserId())
+            .fullName(user.getFullName())
+            .phone(user.getPhone())
+            .address(user.getAddress())
+            .avatarUrl(user.getAvatarUrl())
+            .active(user.isActive())
+            .email(userAuth.getEmail())
+            .role(userAuth.getRole().name())
+            .emailVerified(userAuth.isEmailVerified())
+            .authProvider(userAuth.getAuthProvider())
+            .authProviderId(userAuth.getAuthProviderId())
+            .isNoPassword(!userAuth.isHasLocalPassword())
+            .build();
     }
     
     // ===== INTERNAL METHODS =====

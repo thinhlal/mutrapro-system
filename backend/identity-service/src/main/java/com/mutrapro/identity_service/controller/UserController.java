@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
     
@@ -77,31 +77,32 @@ public class UserController {
     }
 
     /**
-     * Get user profile
+     * Get full user (users + users_auth)
      */
-    @GetMapping("/{id}/profile")
-    public ApiResponse<UserProfileResponse> getUserProfile(@PathVariable String id) {
-        log.info("Getting profile for user with ID: {}", id);
-        UserProfileResponse user = userService.getUserProfile(id);
-        return ApiResponse.<UserProfileResponse>builder()
-            .message("User profile retrieved successfully")
+    @GetMapping("/{id}/full")
+    public ApiResponse<FullUserResponse> getFullUser(@PathVariable String id) {
+        log.info("Getting full user for ID: {}", id);
+        FullUserResponse user = userService.getFullUser(id);
+        return ApiResponse.<FullUserResponse>builder()
+            .message("Full user retrieved successfully")
+            .data(user)
+            .build();
+    }
+
+    /**
+     * Update full user (users + users_auth)
+     */
+    @PutMapping("/{id}/full")
+    public ApiResponse<FullUserResponse> updateFullUser(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateFullUserRequest request) {
+        log.info("Updating full user for ID: {}", id);
+        FullUserResponse user = userService.updateFullUser(id, request);
+        return ApiResponse.<FullUserResponse>builder()
+            .message("Full user updated successfully")
             .data(user)
             .build();
     }
     
-    /**
-     * Update user profile
-     */
-    @PutMapping("/{id}/profile")
-    public ApiResponse<UserProfileResponse> updateUserProfile(
-            @PathVariable String id, 
-            @Valid @RequestBody UpdateUserRequest request) {
-        log.info("Updating profile for user with ID: {}", id);
-        UserProfileResponse user = userService.updateUserProfile(id, request);
-        return ApiResponse.<UserProfileResponse>builder()
-            .message("User profile updated successfully")
-            .data(user)
-            .build();
-    }
 }
 

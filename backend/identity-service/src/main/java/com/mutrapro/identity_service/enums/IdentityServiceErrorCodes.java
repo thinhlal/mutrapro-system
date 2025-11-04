@@ -195,6 +195,16 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
     USER_ALREADY_EXISTS_AUTH("AUTH_5014", 409,
         "https://docs.mutrapro.com/errors/AUTH_5014",
         "User already exists",
+        Retryable.NON_TRANSIENT),
+
+    PASSWORD_ALREADY_SET("AUTH_5015", 400,
+        "https://docs.mutrapro.com/errors/AUTH_5015",
+        "Password already set",
+        Retryable.NON_TRANSIENT),
+
+    NO_LOCAL_PASSWORD("AUTH_5016", 401,
+        "https://docs.mutrapro.com/errors/AUTH_5016",
+        "No local password set. Please sign in with Google or create a password.",
         Retryable.NON_TRANSIENT);
 
     private final String code;

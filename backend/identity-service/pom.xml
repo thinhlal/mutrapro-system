@@ -31,6 +31,17 @@
 		<java.version>21</java.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 	</properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2025.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -117,6 +128,12 @@
 		<groupId>org.springframework.kafka</groupId>
 		<artifactId>spring-kafka</artifactId>
 	</dependency>
+
+		<!-- OpenFeign for outbound OAuth calls -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
 </dependencies>
 
 	<build>

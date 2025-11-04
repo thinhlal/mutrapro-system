@@ -24,46 +24,27 @@ export const getUserById = async userId => {
  */
 export const getUserProfile = async userId => {
   try {
+    console.log('getUserProfile', userId);
     const response = await axiosInstance.get(
-      API_ENDPOINTS.USER.PROFILE(userId)
+      API_ENDPOINTS.USER.FULL(userId)
     );
-    return response.data; // ApiResponse<UserProfileResponse>
+    console.log('getUserProfile', response.data);
+    return response.data; // ApiResponse<FullUserResponse>
   } catch (error) {
-    throw (
-      error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' }
-    );
+    console.log(error);
+    throw error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' };
   }
 };
 
-/**
- * Update user basic info
- * Endpoint: PUT /api/users/{id}
- */
-export const updateUser = async (userId, userData) => {
+export const updateFullUser = async (userId, payload) => {
   try {
     const response = await axiosInstance.put(
-      `${API_ENDPOINTS.USER.CREATE}/${userId}`,
-      userData
+      API_ENDPOINTS.USER.FULL_UPDATE(userId),
+      payload
     );
-    return response.data;
+    return response.data; // ApiResponse<FullUserResponse>
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật user' };
-  }
-};
-
-/**
- * Update user profile (detailed info)
- * Endpoint: PUT /api/users/{id}/profile
- */
-export const updateUserProfile = async (userId, profileData) => {
-  try {
-    const response = await axiosInstance.put(
-      API_ENDPOINTS.USER.PROFILE(userId),
-      profileData
-    );
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật thông tin' };
+    throw error.response?.data || { message: 'Lỗi khi cập nhật thông tin đầy đủ' };
   }
 };
 
@@ -82,10 +63,6 @@ export const deleteUser = async userId => {
   }
 };
 
-/**
- * Create new user (admin only)
- * Endpoint: POST /api/users
- */
 export const createUser = async userData => {
   try {
     const response = await axiosInstance.post(

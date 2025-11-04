@@ -16,5 +16,6 @@ public class AuthenticationResponse {
     String email;
     String role;
     String fullName;
+    Boolean isNoPassword;
 }
 

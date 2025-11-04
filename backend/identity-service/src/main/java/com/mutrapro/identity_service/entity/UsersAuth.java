@@ -28,7 +28,7 @@ public class UsersAuth extends BaseEntity<String> {
     @Column(name = "role", nullable = false)
     private Role role;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(name = "status", length = 20)
@@ -38,6 +38,17 @@ public class UsersAuth extends BaseEntity<String> {
     @Column(name = "email_verified")
     @Builder.Default
     private boolean emailVerified = false;
+
+    @Column(name = "auth_provider", length = 32)
+    @Builder.Default
+    private String authProvider = "LOCAL"; // e.g., GOOGLE, LOCAL
+
+    @Column(name = "auth_provider_id", length = 128)
+    private String authProviderId; // external provider subject/id (null cho LOCAL)
+
+    @Column(name = "has_local_password")
+    @Builder.Default
+    private boolean hasLocalPassword = true;
     
     @Column(name = "password_reset_token_hash", length = 255)
     private String passwordResetTokenHash;

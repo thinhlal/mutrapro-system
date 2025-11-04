@@ -54,3 +54,10 @@ app:
     mappings:
       email.verification: email-verification
       password.reset: password-reset
+
+# Outbound OAuth configuration (prod)
+outbound:
+  identity:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI}

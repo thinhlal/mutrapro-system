@@ -3,6 +3,7 @@ package com.mutrapro.identity_service.controller;
 import jakarta.validation.Valid;
 import com.mutrapro.identity_service.dto.request.AuthenticationRequest;
 import com.mutrapro.identity_service.dto.request.IntrospectRequest;
+import com.mutrapro.identity_service.dto.request.CreatePasswordRequest;
 import com.mutrapro.identity_service.dto.request.LogoutRequest;
 import com.mutrapro.identity_service.dto.request.RegisterRequest;
 import com.mutrapro.identity_service.dto.request.ResetPasswordRequest;
@@ -76,6 +77,16 @@ public class AuthenticationController {
                 .message("Token refreshed successfully!!!")
                 .build();
     }
+
+    @PostMapping("/outbound/authentication")
+    ApiResponse<AuthenticationResponse> outboundAuthentication(@RequestParam("code") String code,
+                                                               HttpServletResponse response) {
+        var result = authenticationService.outboundAuthentication(code, response);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(result)
+                .message("Login successfully!!!")
+                .build();
+    }
     
     @PostMapping("/forgot-password")
     ApiResponse<Void> forgotPassword(@RequestParam String email) {
@@ -90,6 +101,14 @@ public class AuthenticationController {
         passwordResetService.resetPassword(request);
         return ApiResponse.<Void>builder()
                 .message("Password reset successfully")
+                .build();
+    }
+
+    @PostMapping("/create-password")
+    ApiResponse<Void> createPassword(@RequestBody @Valid CreatePasswordRequest request) {
+        authenticationService.createPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Password created successfully")
                 .build();
     }
 }

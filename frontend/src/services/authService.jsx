@@ -33,6 +33,7 @@ export const login = async (email, password) => {
       email: auth.email,
       role: auth.role,
       fullName: auth.fullName,
+      isNoPassword: auth.isNoPassword === true,
     };
 
     return { accessToken, user };
@@ -112,5 +113,21 @@ export const introspect = async token => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi introspect token' };
+  }
+};
+
+/**
+ * Tạo mật khẩu cho tài khoản OAuth (Google)
+ */
+export const createPassword = async ({ email, password }) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.AUTH.CREATE_PASSWORD,
+      { email, password },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi tạo mật khẩu' };
   }
 };

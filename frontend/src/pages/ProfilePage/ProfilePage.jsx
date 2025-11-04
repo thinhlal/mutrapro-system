@@ -20,6 +20,7 @@ import Header from '../../components/common/Header/Header';
 import Footer from '../../components/common/Footer/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserStore } from '../../stores/useUserStore';
+import * as authService from '../../services/authService';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -27,6 +28,11 @@ const { TextArea } = Input;
 
 const ProfileContent = () => {
   const { user: authUser } = useAuth();
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [showCreatePasswordForm, setShowCreatePasswordForm] = useState(false);
   const { userProfile, loading, error, fetchUserProfile, updateUserProfile } =
     useUserStore();
 
@@ -42,33 +48,18 @@ const ProfileContent = () => {
     about: '',
   });
 
-  // TODO: Get userId from somewhere
-  // Vấn đề: Backend không trả userId trong login response
-  // Giải pháp tạm thời: Sử dụng mock userId hoặc lấy từ URL params
-  // Best practice: Backend cần thêm userId vào AuthenticationResponse hoặc tạo endpoint /auth/me
   const [userId, setUserId] = useState(null);
-
   useEffect(() => {
-    // Temporary: Prompt user to enter their userId
-    // In production, this should come from backend after login
-    const storedUserId = localStorage.getItem('temp_userId');
-    if (storedUserId) {
-      setUserId(storedUserId);
+    // Hiển thị nút tạo mật khẩu nếu tài khoản chưa có mật khẩu local
+    if (authUser?.isNoPassword === true) {
+      setShowCreatePassword(true);
     } else {
-      Modal.info({
-        title: 'Lưu ý',
-        content:
-          'Vui lòng nhập User ID của bạn (tạm thời để test). Trong production, thông tin này sẽ được lấy tự động sau khi login.',
-        onOk: () => {
-          const inputUserId = prompt('Nhập User ID:');
-          if (inputUserId) {
-            localStorage.setItem('temp_userId', inputUserId);
-            setUserId(inputUserId);
-          }
-        },
-      });
+      setShowCreatePassword(false);
     }
-  }, []);
+    if (authUser?.id) {
+      setUserId(authUser.id);
+    }
+  }, [authUser]);
 
   useEffect(() => {
     if (userId) {
@@ -218,9 +209,87 @@ const ProfileContent = () => {
               </div>
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel}>Password</label>
-                <Button type="default" className={styles.changePasswordButton}>
-                  Change password
-                </Button>
+                {showCreatePassword ? (
+                  !showCreatePasswordForm ? (
+                    <Button
+                      type="primary"
+                      className={styles.changePasswordButton}
+                      onClick={() => setShowCreatePasswordForm(true)}
+                    >
+                      Tạo mật khẩu
+                    </Button>
+                  ) : (
+                    <div className={styles.editContainer}>
+                      <Input.Password
+                        placeholder="Nhập mật khẩu mới"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                      />
+                      <Input.Password
+                        placeholder="Xác nhận mật khẩu"
+                        style={{ marginTop: 8 }}
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                      />
+                      <div className={styles.editActions}>
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
+                          size="small"
+                          loading={creating}
+                          onClick={async () => {
+                            if (!authUser?.email) {
+                              message.error('Không tìm thấy email tài khoản');
+                              return;
+                            }
+                            if (!newPassword || newPassword.length < 8) {
+                              message.error('Mật khẩu tối thiểu 8 ký tự');
+                              return;
+                            }
+                            if (newPassword !== confirmPassword) {
+                              message.error('Mật khẩu xác nhận không khớp');
+                              return;
+                            }
+                            try {
+                              setCreating(true);
+                              await authService.createPassword({
+                                email: authUser.email,
+                                password: newPassword,
+                              });
+                              message.success('Tạo mật khẩu thành công');
+                              setShowCreatePassword(false);
+                              setShowCreatePasswordForm(false);
+                              setNewPassword('');
+                              setConfirmPassword('');
+                            } catch (e) {
+                              message.error(e?.message || 'Tạo mật khẩu thất bại');
+                            } finally {
+                              setCreating(false);
+                            }
+                          }}
+                        >
+                          Lưu mật khẩu
+                        </Button>
+                        <Button
+                          icon={<CloseOutlined />}
+                          size="small"
+                          onClick={() => {
+                            setShowCreatePasswordForm(false);
+                            setNewPassword('');
+                            setConfirmPassword('');
+                          }}
+                          style={{ marginLeft: 8 }}
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <Button type="default" className={styles.changePasswordButton}>
+                    Change password
+                  </Button>
+                )}
               </div>
             </div>
 

@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useContext, useRef } from 'react';
-import { AuthContext } from '../../contexts/AuthContext';
-import { API_CONFIG, API_ENDPOINTS } from '../../configs/apiConfig';
-import axiosInstance from '../../utils/axiosInstance';
-import { toast } from 'react-toastify';
-import axios from 'axios';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { API_ENDPOINTS } from '../../config/apiConfig';
+import axiosInstancePublic from '../../utils/axiosInstancePublic';
+import { setItem } from '../../services/localStorageService';
+import { toast } from 'react-hot-toast';
 import LoadingScreen from '../../components/LoadingScreen/LoadingScreen';
 
 export default function AuthenticatePage() {
   const navigate = useNavigate();
-  const { logIn } = useContext(AuthContext);
+  const { updateUser } = useAuth() || {};
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const hasAuthenticated = useRef(false);
@@ -36,31 +36,34 @@ export default function AuthenticatePage() {
   const authenticateUser = async code => {
     try {
       setIsLoading(true);
-      const response = await axios.post(
-        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.AUTH.GOOGLE_LOGIN}?code=${code}`
+      const response = await axiosInstancePublic.post(
+        API_ENDPOINTS.AUTH.GOOGLE_LOGIN_WITH_CODE(code),
       );
-
-      const data = response.data;
-      if (!data.success || !data.result?.token) {
-        throw new Error(data.message || 'No token response from server');
+      const payload = response?.data;
+      const auth = payload?.data;
+      if (!auth?.accessToken) {
+        throw new Error(payload?.message || 'No token response from server');
       }
+      setItem('accessToken', auth.accessToken);
+      setItem('user', {
+        id: auth.userId,
+        email: auth.email,
+        role: auth.role,
+        fullName: auth.fullName,
+        isNoPassword: auth.isNoPassword,
+      });
+      if (updateUser) updateUser({
+        id: auth.userId,
+        email: auth.email,
+        role: auth.role,
+        fullName: auth.fullName,
+        isNoPassword: auth.isNoPassword,
+      });
 
-      const token = data.result.token;
-      localStorage.setItem('token', token);
-
-      const profileResponse = await axiosInstance.get(
-        API_ENDPOINTS.USER.PROFILE
-      );
-
-      const profileData = profileResponse.data;
-      const userData = profileData.result;
-      userData.role = userData.role?.toUpperCase?.() || 'USER';
-
-      logIn(userData);
-      toast.success(`Welcome back, ${userData.name || 'user'}!`);
+      toast.success('Login successfully!');
       setTimeout(() => {
         navigate('/');
-      }, 100);
+      }, 1000);
     } catch (err) {
       console.error('Authentication Error: ', err);
       setError(err.response?.data?.message || err.message);

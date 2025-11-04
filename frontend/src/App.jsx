@@ -33,6 +33,7 @@ import ArrangementQuotePage from './pages/ArrangementQuotePage/ArrangementQuoteP
 import UnauthorizedPage from './pages/UnauthorizedPage/UnauthorizedPage';
 import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
+import AuthenticatePage from './pages/AuthenticationPage/AuthenticatePage';
 
 // Coordinator Pages
 import Tasks from './pages/Task/Task';
@@ -63,6 +64,7 @@ function App() {
         <Route path="/sign-up" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/authenticate" element={<AuthenticatePage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* --- PROTECTED CUSTOMER ROUTES --- */}

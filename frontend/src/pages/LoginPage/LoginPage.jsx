@@ -37,6 +37,8 @@ function LoginPage() {
         setTimeout(() => {
           navigate(`/verify-email?email=${encodeURIComponent(email)}`);
         }, 1000);
+      } else if (error.errorCode === 'AUTH_5016') {
+        toast.error('Tài khoản chưa có mật khẩu. Hãy đăng nhập Google hoặc tạo mật khẩu trong Profile.');
       } else {
         toast.error(error.message || 'Email hoặc mật khẩu không chính xác');
       }

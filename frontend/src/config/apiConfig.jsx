@@ -35,19 +35,26 @@ export const API_ENDPOINTS = {
     REFRESH: `${IDENTITY_PATH}/auth/refresh`,
     // Public Endpoint: /auth/outbound/authentication
     GOOGLE_LOGIN: `${IDENTITY_PATH}/auth/outbound/authentication`,
+    // Convenience builder: kèm code query cho OAuth callback
+    GOOGLE_LOGIN_WITH_CODE: code =>
+      `${IDENTITY_PATH}/auth/outbound/authentication?code=${code}`,
     // Controller: /auth/introspect
     INTROSPECT: `${IDENTITY_PATH}/auth/introspect`,
     // Public Endpoint: /auth/forgot-password
     FORGOT_PASSWORD: `${IDENTITY_PATH}/auth/forgot-password`,
     // Public Endpoint: /auth/reset-password
     RESET_PASSWORD: `${IDENTITY_PATH}/auth/reset-password`,
+    // Create password for OAuth accounts
+    CREATE_PASSWORD: `${IDENTITY_PATH}/auth/create-password`,
   },
 
   USER: {
-    // Controller: /api/users/{id}/profile
-    PROFILE: id => `${IDENTITY_PATH}/api/users/${id}/profile`,
-    // Controller: /api/users
-    CREATE: `${IDENTITY_PATH}/api/users`,
+    // Controller: /users/{id}/full (users + users_auth)
+    FULL: id => `${IDENTITY_PATH}/users/${id}/full`,
+    // Controller: /users/{id}/full (users + users_auth)
+    FULL_UPDATE: id => `${IDENTITY_PATH}/users/${id}/full`,
+    // Controller: /users
+    CREATE: `${IDENTITY_PATH}/users`,
     // Public Endpoint: /users/verify-email
     VERIFY_EMAIL: `${IDENTITY_PATH}/users/verify-email`,
     // Public Endpoint: /users/resend-verification
