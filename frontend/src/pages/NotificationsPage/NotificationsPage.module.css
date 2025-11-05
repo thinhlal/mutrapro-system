@@ -1,0 +1,141 @@
+:root {
+  --background-card: #ffffff;
+  --text-primary: #222222;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
+  --accent-color: #f97316;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --info-color: #1890ff;
+}
+
+.notificationsContent {
+  background-color: var(--background-card);
+  padding: 24px 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.notificationTabs {
+  margin-top: 24px;
+}
+
+.tabBadge {
+  margin-left: 8px;
+}
+
+/* Inbox Tab Styles */
+.inboxContent {
+  margin-top: 16px;
+}
+
+.inboxHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.notificationItem {
+  padding: 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notificationItem:hover {
+  background-color: #fafafa;
+}
+
+.notificationItem.unread {
+  background-color: #fff7ed;
+}
+
+.notificationItem.unread:hover {
+  background-color: #ffedd5;
+}
+
+.notificationItem:last-child {
+  border-bottom: none !important;
+}
+
+.notifIcon {
+  font-size: 24px;
+  margin-right: 8px;
+}
+
+.notifIcon.success {
+  color: var(--success-color);
+}
+
+.notifIcon.warning {
+  color: var(--warning-color);
+}
+
+.notifIcon.info {
+  color: var(--info-color);
+}
+
+.notifHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notifTitle {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.notifMessage {
+  margin: 8px 0 4px 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.notifTime {
+  font-size: 12px;
+}
+
+/* Settings Tab Styles */
+.settingsContent {
+  margin-top: 16px;
+}
+
+.settingsDesc {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.settingsList {
+  margin-top: 16px;
+}
+
+.listItem {
+  padding: 16px 0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.listItem:last-child {
+  border-bottom: none !important;
+}
+
+.settingTitle {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+/* Tabs customization */
+:global(.ant-tabs-tab) {
+  font-weight: 500;
+}
+
+:global(.ant-tabs-tab-active) {
+  font-weight: 600;
+}
+

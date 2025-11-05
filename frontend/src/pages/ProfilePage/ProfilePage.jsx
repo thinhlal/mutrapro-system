@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Avatar,
   Button,
-  Select,
-  Tabs,
   Input,
-  Modal,
   message,
   Spin,
 } from 'antd';
@@ -16,14 +13,11 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import styles from './ProfilePage.module.css';
-import Header from '../../components/common/Header/Header';
-import Footer from '../../components/common/Footer/Footer';
+import ProfileLayout from '../../layouts/ProfileLayout/ProfileLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserStore } from '../../stores/useUserStore';
 import * as authService from '../../services/authService';
 
-const { TabPane } = Tabs;
-const { Option } = Select;
 const { TextArea } = Input;
 
 const ProfileContent = () => {
@@ -195,252 +189,120 @@ const ProfileContent = () => {
   return (
     <div className={styles.profileContentWrapper}>
       <h1 className={styles.pageTitle}>Profile</h1>
-      <Tabs defaultActiveKey="1" type="card">
-        <TabPane tab="Information" key="1">
-          <div className={styles.infoGrid}>
-            <div className={styles.leftColumn}>
-              <div className={styles.avatarContainer}>
-                <Avatar size={100} icon={<UserOutlined />}>
-                  {getInitials().toUpperCase()}
-                </Avatar>
-                <div className={styles.avatarEditIcon}>
-                  <EditOutlined />
-                </div>
-              </div>
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Password</label>
-                {showCreatePassword ? (
-                  !showCreatePasswordForm ? (
-                    <Button
-                      type="primary"
-                      className={styles.changePasswordButton}
-                      onClick={() => setShowCreatePasswordForm(true)}
-                    >
-                      Tạo mật khẩu
-                    </Button>
-                  ) : (
-                    <div className={styles.editContainer}>
-                      <Input.Password
-                        placeholder="Nhập mật khẩu mới"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                      />
-                      <Input.Password
-                        placeholder="Xác nhận mật khẩu"
-                        style={{ marginTop: 8 }}
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                      />
-                      <div className={styles.editActions}>
-                        <Button
-                          type="primary"
-                          icon={<SaveOutlined />}
-                          size="small"
-                          loading={creating}
-                          onClick={async () => {
-                            if (!authUser?.email) {
-                              message.error('Không tìm thấy email tài khoản');
-                              return;
-                            }
-                            if (!newPassword || newPassword.length < 8) {
-                              message.error('Mật khẩu tối thiểu 8 ký tự');
-                              return;
-                            }
-                            if (newPassword !== confirmPassword) {
-                              message.error('Mật khẩu xác nhận không khớp');
-                              return;
-                            }
-                            try {
-                              setCreating(true);
-                              await authService.createPassword({
-                                email: authUser.email,
-                                password: newPassword,
-                              });
-                              message.success('Tạo mật khẩu thành công');
-                              setShowCreatePassword(false);
-                              setShowCreatePasswordForm(false);
-                              setNewPassword('');
-                              setConfirmPassword('');
-                            } catch (e) {
-                              message.error(e?.message || 'Tạo mật khẩu thất bại');
-                            } finally {
-                              setCreating(false);
-                            }
-                          }}
-                        >
-                          Lưu mật khẩu
-                        </Button>
-                        <Button
-                          icon={<CloseOutlined />}
-                          size="small"
-                          onClick={() => {
-                            setShowCreatePasswordForm(false);
-                            setNewPassword('');
-                            setConfirmPassword('');
-                          }}
-                          style={{ marginLeft: 8 }}
-                        >
-                          Hủy
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                ) : (
-                  <Button type="default" className={styles.changePasswordButton}>
-                    Change password
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.rightColumn}>
-              {/* Full Name */}
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Name</label>
-                {isEditingName ? (
-                  <div className={styles.editContainer}>
-                    <Input
-                      value={editForm.fullName}
-                      onChange={e => handleChange('fullName', e.target.value)}
-                      placeholder="Nhập họ tên"
-                    />
-                    <div className={styles.editActions}>
-                      <Button
-                        type="primary"
-                        icon={<SaveOutlined />}
-                        size="small"
-                        onClick={() => handleSave('fullName')}
-                        loading={loading}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        icon={<CloseOutlined />}
-                        size="small"
-                        onClick={() => handleCancel('fullName')}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.valueContainer}>
-                    <span>{userProfile?.fullName || 'Chưa cập nhật'}</span>
-                    <EditOutlined
-                      className={styles.editIcon}
-                      onClick={() => handleEdit('fullName')}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Email (readonly) */}
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Email</label>
-                <div className={styles.valueContainer}>
-                  <span>{authUser?.email || 'Chưa có email'}</span>
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Phone</label>
-                {isEditingPhone ? (
-                  <div className={styles.editContainer}>
-                    <Input
-                      value={editForm.phone}
-                      onChange={e => handleChange('phone', e.target.value)}
-                      placeholder="Nhập số điện thoại"
-                    />
-                    <div className={styles.editActions}>
-                      <Button
-                        type="primary"
-                        icon={<SaveOutlined />}
-                        size="small"
-                        onClick={() => handleSave('phone')}
-                        loading={loading}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        icon={<CloseOutlined />}
-                        size="small"
-                        onClick={() => handleCancel('phone')}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.valueContainer}>
-                    <span>{userProfile?.phone || 'Chưa cập nhật'}</span>
-                    <EditOutlined
-                      className={styles.editIcon}
-                      onClick={() => handleEdit('phone')}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Address</label>
-                {isEditingAddress ? (
-                  <div className={styles.editContainer}>
-                    <Input
-                      value={editForm.address}
-                      onChange={e => handleChange('address', e.target.value)}
-                      placeholder="Nhập địa chỉ"
-                    />
-                    <div className={styles.editActions}>
-                      <Button
-                        type="primary"
-                        icon={<SaveOutlined />}
-                        size="small"
-                        onClick={() => handleSave('address')}
-                        loading={loading}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        icon={<CloseOutlined />}
-                        size="small"
-                        onClick={() => handleCancel('address')}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.valueContainer}>
-                    <span>{userProfile?.address || 'Chưa cập nhật'}</span>
-                    <EditOutlined
-                      className={styles.editIcon}
-                      onClick={() => handleEdit('address')}
-                    />
-                  </div>
-                )}
-              </div>
+      
+      <div className={styles.infoGrid}>
+        <div className={styles.leftColumn}>
+          <div className={styles.avatarContainer}>
+            <Avatar size={100} icon={<UserOutlined />}>
+              {getInitials().toUpperCase()}
+            </Avatar>
+            <div className={styles.avatarEditIcon}>
+              <EditOutlined />
             </div>
           </div>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Password</label>
+            {showCreatePassword ? (
+              !showCreatePasswordForm ? (
+                <Button
+                  type="primary"
+                  className={styles.changePasswordButton}
+                  onClick={() => setShowCreatePasswordForm(true)}
+                >
+                  Tạo mật khẩu
+                </Button>
+              ) : (
+                <div className={styles.editContainer}>
+                  <Input.Password
+                    placeholder="Nhập mật khẩu mới"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                  />
+                  <Input.Password
+                    placeholder="Xác nhận mật khẩu"
+                    style={{ marginTop: 8 }}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                  />
+                  <div className={styles.editActions}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      size="small"
+                      loading={creating}
+                      onClick={async () => {
+                        if (!authUser?.email) {
+                          message.error('Không tìm thấy email tài khoản');
+                          return;
+                        }
+                        if (!newPassword || newPassword.length < 8) {
+                          message.error('Mật khẩu tối thiểu 8 ký tự');
+                          return;
+                        }
+                        if (newPassword !== confirmPassword) {
+                          message.error('Mật khẩu xác nhận không khớp');
+                          return;
+                        }
+                        try {
+                          setCreating(true);
+                          await authService.createPassword({
+                            email: authUser.email,
+                            password: newPassword,
+                          });
+                          message.success('Tạo mật khẩu thành công');
+                          setShowCreatePassword(false);
+                          setShowCreatePasswordForm(false);
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        } catch (e) {
+                          message.error(e?.message || 'Tạo mật khẩu thất bại');
+                        } finally {
+                          setCreating(false);
+                        }
+                      }}
+                    >
+                      Lưu mật khẩu
+                    </Button>
+                    <Button
+                      icon={<CloseOutlined />}
+                      size="small"
+                      onClick={() => {
+                        setShowCreatePasswordForm(false);
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      style={{ marginLeft: 8 }}
+                    >
+                      Hủy
+                    </Button>
+                  </div>
+                </div>
+              )
+            ) : (
+              <Button type="default" className={styles.changePasswordButton}>
+                Change password
+              </Button>
+            )}
+          </div>
+        </div>
 
-          {/* About Me Section */}
-          <div className={styles.aboutMeSection}>
-            <label className={styles.fieldLabel}>About me</label>
-            {isEditingAbout ? (
+        <div className={styles.rightColumn}>
+          {/* Full Name */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Name</label>
+            {isEditingName ? (
               <div className={styles.editContainer}>
-                <TextArea
-                  value={editForm.about}
-                  onChange={e => handleChange('about', e.target.value)}
-                  placeholder="Thêm thông tin về bản thân"
-                  rows={4}
+                <Input
+                  value={editForm.fullName}
+                  onChange={e => handleChange('fullName', e.target.value)}
+                  placeholder="Nhập họ tên"
                 />
                 <div className={styles.editActions}>
                   <Button
                     type="primary"
                     icon={<SaveOutlined />}
                     size="small"
-                    onClick={() => handleSave('about')}
+                    onClick={() => handleSave('fullName')}
                     loading={loading}
                   >
                     Save
@@ -448,65 +310,167 @@ const ProfileContent = () => {
                   <Button
                     icon={<CloseOutlined />}
                     size="small"
-                    onClick={() => handleCancel('about')}
+                    onClick={() => handleCancel('fullName')}
                   >
                     Cancel
                   </Button>
                 </div>
               </div>
             ) : (
-              <div
-                className={`${styles.valueContainer} ${styles.aboutMeInput}`}
-              >
-                <span>
-                  {userProfile?.about ||
-                    'Add here some information about yourself'}
-                </span>
+              <div className={styles.valueContainer}>
+                <span>{userProfile?.fullName || 'Chưa cập nhật'}</span>
                 <EditOutlined
                   className={styles.editIcon}
-                  onClick={() => handleEdit('about')}
+                  onClick={() => handleEdit('fullName')}
                 />
               </div>
             )}
           </div>
-        </TabPane>
-        <TabPane tab="User settings" key="2">
-          <p>Nội dung cho User Settings</p>
-        </TabPane>
-        <TabPane tab="Company" key="3">
-          <p>Nội dung cho Company</p>
-        </TabPane>
-      </Tabs>
+
+          {/* Email (readonly) */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Email</label>
+            <div className={styles.valueContainer}>
+              <span>{authUser?.email || 'Chưa có email'}</span>
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Phone</label>
+            {isEditingPhone ? (
+              <div className={styles.editContainer}>
+                <Input
+                  value={editForm.phone}
+                  onChange={e => handleChange('phone', e.target.value)}
+                  placeholder="Nhập số điện thoại"
+                />
+                <div className={styles.editActions}>
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    size="small"
+                    onClick={() => handleSave('phone')}
+                    loading={loading}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    icon={<CloseOutlined />}
+                    size="small"
+                    onClick={() => handleCancel('phone')}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.valueContainer}>
+                <span>{userProfile?.phone || 'Chưa cập nhật'}</span>
+                <EditOutlined
+                  className={styles.editIcon}
+                  onClick={() => handleEdit('phone')}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Address</label>
+            {isEditingAddress ? (
+              <div className={styles.editContainer}>
+                <Input
+                  value={editForm.address}
+                  onChange={e => handleChange('address', e.target.value)}
+                  placeholder="Nhập địa chỉ"
+                />
+                <div className={styles.editActions}>
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    size="small"
+                    onClick={() => handleSave('address')}
+                    loading={loading}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    icon={<CloseOutlined />}
+                    size="small"
+                    onClick={() => handleCancel('address')}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.valueContainer}>
+                <span>{userProfile?.address || 'Chưa cập nhật'}</span>
+                <EditOutlined
+                  className={styles.editIcon}
+                  onClick={() => handleEdit('address')}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* About Me Section */}
+      <div className={styles.aboutMeSection}>
+        <label className={styles.fieldLabel}>About me</label>
+        {isEditingAbout ? (
+          <div className={styles.editContainer}>
+            <TextArea
+              value={editForm.about}
+              onChange={e => handleChange('about', e.target.value)}
+              placeholder="Thêm thông tin về bản thân"
+              rows={4}
+            />
+            <div className={styles.editActions}>
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                size="small"
+                onClick={() => handleSave('about')}
+                loading={loading}
+              >
+                Save
+              </Button>
+              <Button
+                icon={<CloseOutlined />}
+                size="small"
+                onClick={() => handleCancel('about')}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`${styles.valueContainer} ${styles.aboutMeInput}`}
+          >
+            <span>
+              {userProfile?.about ||
+                'Add here some information about yourself'}
+            </span>
+            <EditOutlined
+              className={styles.editIcon}
+              onClick={() => handleEdit('about')}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 const ProfilePage = () => {
   return (
-    <div>
-      <Header />
-      <div className={styles.profilePageContainer}>
-        <nav className={styles.sideNav}>
-          <div className={styles.navItem}>Back to app</div>
-          <div className={styles.navSeparator}></div>
-          <div className={styles.navItem}>Personal</div>
-          <div className={`${styles.navItem} ${styles.active}`}>Profile</div>
-          <div className={styles.navItem}>Notifications</div>
-          <div className={styles.navItem}>Subscription</div>
-          <div className={styles.navSeparator}></div>
-          <div className={styles.navItem}>Current team:</div>
-          <div className={styles.navItem}>Members</div>
-          <div className={styles.navItem}>Settings</div>
-          <div className={styles.navItem}>Plan</div>
-        </nav>
-
-        <main className={styles.mainContent}>
-          <ProfileContent />
-        </main>
-      </div>
-
-      <Footer />
-    </div>
+    <ProfileLayout>
+      <ProfileContent />
+    </ProfileLayout>
   );
 };
 
