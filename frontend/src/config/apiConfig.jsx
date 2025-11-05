@@ -29,6 +29,8 @@ export const API_ENDPOINTS = {
   AUTH: {
     // Controller: /auth/log-in
     LOGIN: `${IDENTITY_PATH}/auth/log-in`,
+    // Controller: /auth/register
+    REGISTER: `${IDENTITY_PATH}/auth/register`,
     // Controller: /auth/logout
     LOGOUT: `${IDENTITY_PATH}/auth/logout`,
     // Controller: /auth/refresh

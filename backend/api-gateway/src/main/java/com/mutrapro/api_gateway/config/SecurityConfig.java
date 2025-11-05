@@ -6,6 +6,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -61,8 +63,12 @@ public class SecurityConfig {
         String[] publicPaths = buildPublicPaths();
         
         return http
+                // Enable CORS so Spring Security doesn't block preflight
+                .cors(Customizer.withDefaults())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(registry -> registry
+                        // Allow CORS preflight requests
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers(publicPaths).permitAll()
                         .anyExchange().authenticated()
                 )
