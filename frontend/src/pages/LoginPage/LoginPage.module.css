@@ -1,28 +1,27 @@
-/* Layout */
+  /* Layout */
 .pageWrapper {
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Đã đổi màu radial gradient sang tông cam/vàng */
-  background:
-    radial-gradient(
-      1200px 600px at 20% 10%,
-      rgba(245, 158, 11, 0.1),
-      /* Đổi từ tím sang vàng/cam */ transparent 50%
-    ),
-    radial-gradient(
-      800px 400px at 80% 20%,
-      rgba(251, 146, 60, 0.12),
-      /* Đổi từ đỏ sang cam */ transparent 50%
-    ),
-    linear-gradient(180deg, #ffe8c4 0%, #dca34d 100%);
+  background: url('../../assets/images/LoginPage/Classical_Music-495872600.jpg') center/cover no-repeat;
   color: #e6e6f0;
   overflow: hidden;
 }
 
-.gradientBg {
+.pageWrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  
+}.gradientBg {
   position: absolute;
   inset: -10% -10% -10% -10%;
   /* Đã đổi màu conic-gradient sang các tông màu nóng */
@@ -54,6 +53,7 @@
   grid-template-columns: 1.1fr 1fr;
   gap: 32px;
   align-items: center;
+  z-index: 2;
 }
 
 /* Back button */
@@ -182,9 +182,9 @@
 .input {
   width: 100%;
   padding: 16px 14px 14px 14px;
-  background: #0f1117;
+  background: #e8f0fe;
   border: 1px solid rgba(245, 158, 11, 0.24); /* Đổi từ xanh sang vàng/cam */
-  color: #e6e6f0;
+  color: #000000;
   border-radius: 12px;
   outline: none;
   transition:
