@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styles from './LoginPage.module.css';
 import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../contexts/AuthContext';
-import { Toaster, toast } from 'react-hot-toast';
 import { OAuthConfig } from '../../config/OAuthConfig';
 
 function LoginPage() {
@@ -17,30 +16,38 @@ function LoginPage() {
   // State cục bộ để quản lý email và password
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async e => {
     e.preventDefault();
     if (loading) return;
 
+    // Clear previous errors
+    setErrors({});
+    setSuccessMessage('');
+
     try {
       await logIn(email, password);
 
-      toast.success('Đăng nhập thành công!');
+      setSuccessMessage('Login successful! Redirecting...');
 
       // Redirect to the page user tried to access, or home page
-      navigate(from, { replace: true });
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
     } catch (error) {
       // Check if error is email not verified
       if (error.errorCode === 'USER_4013') {
-        toast.error('Vui lòng xác thực email trước khi đăng nhập');
+        setErrors({ general: 'Please verify your email before logging in' });
         // Redirect to verify email page
         setTimeout(() => {
           navigate(`/verify-email?email=${encodeURIComponent(email)}`);
-        }, 1000);
+        }, 2000);
       } else if (error.errorCode === 'AUTH_5016') {
-        toast.error('Tài khoản chưa có mật khẩu. Hãy đăng nhập Google hoặc tạo mật khẩu trong Profile.');
+        setErrors({ general: 'Account does not have a password. Please login with Google or create a password in Profile.' });
       } else {
-        toast.error(error.message || 'Email hoặc mật khẩu không chính xác');
+        setErrors({ general: error.message || 'Incorrect email or password' });
       }
     }
   };
@@ -56,15 +63,12 @@ function LoginPage() {
       window.location.href = targetUrl;
     } catch (error) {
       console.error('Google login error:', error);
-      toast.error('Google login error');
+      setErrors({ general: 'Google login error' });
     }
   };
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Component để hiển thị toast */}
-      <Toaster position="top-right" />
-
       <div className={styles.gradientBg} />
       <div className={styles.container}>
         <button
@@ -78,42 +82,56 @@ function LoginPage() {
         </button>
         <div className={styles.leftPane}>
           <div className={styles.brand}>MuTraPro</div>
-          <h1 className={styles.title}>Chào mừng trở lại</h1>
+          <h1 className={styles.title}>Welcome Back</h1>
           <p className={styles.subtitle}>
-            Đăng nhập để tiếp tục trải nghiệm soạn nhạc chuyên nghiệp.
+            Sign in to continue your professional music composition experience.
           </p>
         </div>
 
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <h2>Đăng nhập</h2>
+            <h2>Sign In</h2>
             <p>
-              Chưa có tài khoản?{' '}
+              Don't have an account?{' '}
               <Link to="/register" className={styles.link}>
                 {' '}
                 {/* Sửa thành /register */}
-                Đăng ký ngay
+                Sign up now
               </Link>
             </p>
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit}>
+            {successMessage && (
+              <div className={styles.successMessage}>{successMessage}</div>
+            )}
+            
+            {errors.general && (
+              <div className={styles.errorMessage}>{errors.general}</div>
+            )}
+
             <div className={styles.inputGroup}>
               <input
                 id="email"
                 name="email"
                 type="email"
                 placeholder=" "
-                className={styles.input}
+                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
                 required
                 autoComplete="email"
-                value={email} // Thêm value
-                onChange={e => setEmail(e.target.value)} // Thêm onChange
-                disabled={loading} // Vô hiệu hóa khi đang loading
+                value={email}
+                onChange={e => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                }}
+                disabled={loading}
               />
               <label htmlFor="email" className={styles.label}>
                 Email
               </label>
+              {errors.email && (
+                <span className={styles.errorText}>{errors.email}</span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -122,29 +140,35 @@ function LoginPage() {
                 name="password"
                 type="password"
                 placeholder=" "
-                className={styles.input}
+                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
                 required
                 autoComplete="current-password"
-                value={password} // Thêm value
-                onChange={e => setPassword(e.target.value)} // Thêm onChange
-                disabled={loading} // Vô hiệu hóa khi đang loading
+                value={password}
+                onChange={e => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                }}
+                disabled={loading}
               />
               <label htmlFor="password" className={styles.label}>
-                Mật khẩu
+                Password
               </label>
+              {errors.password && (
+                <span className={styles.errorText}>{errors.password}</span>
+              )}
             </div>
 
             <div className={styles.optionsRow}>
               <label className={styles.checkboxLabel}>
                 <input type="checkbox" className={styles.checkbox} />
-                <span>Ghi nhớ tôi</span>
+                <span>Remember me</span>
               </label>
               <button
                 type="button"
                 className={styles.textButton}
                 onClick={() => navigate('/reset-password')}
               >
-                Quên mật khẩu?
+                Forgot password?
               </button>
             </div>
 
@@ -153,17 +177,17 @@ function LoginPage() {
               className={styles.submitButton}
               disabled={loading} // Vô hiệu hóa khi đang loading
             >
-              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
 
             <div className={styles.divider}>
-              <span>hoặc</span>
+              <span>or</span>
             </div>
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton} onClick={handleGoogleLogin}>
                 <GoogleIcon />
-                <span>Tiếp tục với Google</span>
+                <span>Continue with Google</span>
               </button>
             </div>
           </form>

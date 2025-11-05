@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import styles from './RegisterPage.module.css';
 import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../contexts/AuthContext';
-import { Toaster, toast } from 'react-hot-toast';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -22,6 +21,7 @@ function RegisterPage() {
   });
 
   const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Handle input change
   const handleChange = e => {
@@ -31,9 +31,14 @@ function RegisterPage() {
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // Clear error for this field when user types
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+    // Clear error for this field and general error when user types
+    if (errors[name] || errors.general) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        delete newErrors.general;
+        return newErrors;
+      });
     }
   };
 
@@ -42,33 +47,33 @@ function RegisterPage() {
     const newErrors = {};
 
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'Vui lòng nhập họ';
+      newErrors.firstName = 'Please enter first name';
     }
 
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Vui lòng nhập tên';
+      newErrors.lastName = 'Please enter last name';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Vui lòng nhập email';
+      newErrors.email = 'Please enter email';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
+      newErrors.email = 'Invalid email';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Vui lòng nhập mật khẩu';
+      newErrors.password = 'Please enter password';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 8 ký tự';
+      newErrors.password = 'Password must be at least 8 characters';
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      newErrors.confirmPassword = 'Please confirm password';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu không khớp';
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'Vui lòng đồng ý với điều khoản';
+      newErrors.agreeToTerms = 'Please agree to terms';
     }
 
     setErrors(newErrors);
@@ -79,6 +84,9 @@ function RegisterPage() {
     e.preventDefault();
 
     if (loading) return;
+
+    // Clear previous success message
+    setSuccessMessage('');
 
     if (!validateForm()) {
       return;
@@ -97,8 +105,8 @@ function RegisterPage() {
 
       await register(registerData);
 
-      toast.success(
-        'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.'
+      setSuccessMessage(
+        'Registration successful! Please check your email to verify your account. Redirecting...'
       );
 
       // Redirect to verify email page after 2 seconds
@@ -107,14 +115,13 @@ function RegisterPage() {
       }, 2000);
     } catch (error) {
       const errorMessage =
-        error.message || error.data?.message || 'Đăng ký thất bại';
-      toast.error(errorMessage);
+        error.message || error.data?.message || 'Registration failed';
+      setErrors({ general: errorMessage });
     }
   };
 
   return (
     <div className={styles.pageWrapper}>
-      <Toaster position="top-right" />
       <div className={styles.gradientBg} />
       <div className={styles.container}>
         <button
@@ -128,24 +135,32 @@ function RegisterPage() {
         </button>
         <div className={styles.leftPane}>
           <div className={styles.brand}>MuTraPro</div>
-          <h1 className={styles.title}>Tạo tài khoản mới</h1>
+          <h1 className={styles.title}>Create New Account</h1>
           <p className={styles.subtitle}>
-            Gia nhập cộng đồng nhạc sĩ và biên soạn viên chuyên nghiệp.
+            Join the community of professional musicians and composers.
           </p>
         </div>
 
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <h2>Đăng ký</h2>
+            <h2>Sign Up</h2>
             <p>
-              Đã có tài khoản?{' '}
+              Already have an account?{' '}
               <Link to="/login" className={styles.link}>
-                Đăng nhập
+                Sign in
               </Link>
             </p>
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit}>
+            {successMessage && (
+              <div className={styles.successMessage}>{successMessage}</div>
+            )}
+            
+            {errors.general && (
+              <div className={styles.errorMessage}>{errors.general}</div>
+            )}
+
             <div className={styles.inputRow}>
               <div className={styles.inputGroup}>
                 <input
@@ -160,7 +175,7 @@ function RegisterPage() {
                   required
                 />
                 <label htmlFor="firstName" className={styles.label}>
-                  Họ
+                  First Name
                 </label>
                 {errors.firstName && (
                   <span className={styles.errorText}>{errors.firstName}</span>
@@ -179,7 +194,7 @@ function RegisterPage() {
                   required
                 />
                 <label htmlFor="lastName" className={styles.label}>
-                  Tên
+                  Last Name
                 </label>
                 {errors.lastName && (
                   <span className={styles.errorText}>{errors.lastName}</span>
@@ -222,7 +237,7 @@ function RegisterPage() {
                 autoComplete="new-password"
               />
               <label htmlFor="password" className={styles.label}>
-                Mật khẩu
+                Password
               </label>
               {errors.password && (
                 <span className={styles.errorText}>{errors.password}</span>
@@ -243,7 +258,7 @@ function RegisterPage() {
                 autoComplete="new-password"
               />
               <label htmlFor="confirmPassword" className={styles.label}>
-                Xác nhận mật khẩu
+                Confirm Password
               </label>
               {errors.confirmPassword && (
                 <span className={styles.errorText}>
@@ -262,7 +277,7 @@ function RegisterPage() {
                 disabled={loading}
                 required
               />
-              <span>Tôi đồng ý với điều khoản và chính sách</span>
+              <span>I agree to the terms and conditions</span>
             </label>
             {errors.agreeToTerms && (
               <span className={styles.errorText}>{errors.agreeToTerms}</span>
@@ -273,17 +288,17 @@ function RegisterPage() {
               className={styles.submitButton}
               disabled={loading}
             >
-              {loading ? 'Đang xử lý...' : 'Tạo tài khoản'}
+              {loading ? 'Processing...' : 'Create Account'}
             </button>
 
             <div className={styles.divider}>
-              <span>hoặc</span>
+              <span>or</span>
             </div>
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton}>
                 <GoogleIcon />
-                <span>Tiếp tục với Google</span>
+                <span>Continue with Google</span>
               </button>
             </div>
           </form>
