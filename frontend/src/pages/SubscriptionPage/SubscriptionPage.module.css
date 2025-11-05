@@ -1,0 +1,91 @@
+:root {
+  --background-card: #ffffff;
+  --text-primary: #222222;
+  --text-secondary: #666666;
+  --border-color: #e0e0e0;
+  --accent-color: #f97316;
+}
+
+.subscriptionContent {
+  background-color: var(--background-card);
+  padding: 24px 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.subtitle {
+  display: block;
+  margin-bottom: 24px;
+}
+
+.currentPlan {
+  margin-top: 24px;
+}
+
+.planHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.plansGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.planCard {
+  position: relative;
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.planCard:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.planCard.recommended {
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+}
+
+.recommendedTag {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.priceSection {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 16px 0 24px 0;
+}
+
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+}
+
+.featuresList li {
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.checkIcon {
+  color: #52c41a;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.upgradeButton {
+  margin-top: auto;
+}
+

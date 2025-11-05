@@ -8,61 +8,6 @@
   --accent-color-light: #fff7ed;
 }
 
-.profilePageContainer {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--background-page);
-  color: var(--text-primary);
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
-  margin-top: 8rem;
-}
-
-.sideNav {
-  width: 240px;
-  background-color: var(--background-card);
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-right: 1px solid var(--border-color);
-}
-
-.navItem {
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
-  font-weight: 500;
-}
-
-.navItem:hover {
-  background-color: var(--accent-color-light);
-  color: var(--accent-color);
-}
-
-.navItem.active {
-  background-color: var(--accent-color-light);
-  color: var(--accent-color);
-  font-weight: 600;
-}
-
-.navSeparator {
-  height: 1px;
-  background-color: var(--border-color);
-  margin: 8px 0;
-}
-
-.mainContent {
-  flex-grow: 1;
-  padding: 32px;
-}
-
 .profileContentWrapper {
   /* max-width: 900px; */
   margin: 0 auto;
@@ -155,12 +100,6 @@
   color: var(--accent-color) !important;
 }
 
-.timezoneSelect > div {
-  background-color: #f9fafb !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-color) !important;
-}
-
 .aboutMeSection {
   margin-top: 24px;
 }
@@ -175,28 +114,14 @@
   font-style: italic;
 }
 
-:global(.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab) {
-  background: transparent !important;
-  border-color: transparent !important;
-  color: var(--text-secondary);
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-:global(.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active) {
-  background: var(--background-card) !important;
-  color: var(--accent-color) !important;
-  border-bottom-color: var(--background-card) !important;
-}
-
-:global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn) {
-  color: var(--accent-color) !important;
-  position: relative;
-}
-:global(.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn)::after {
-  content: '';
-  position: absolute;
-  bottom: -13px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--accent-color);
+.editActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }

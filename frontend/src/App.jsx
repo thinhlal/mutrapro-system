@@ -19,6 +19,8 @@ import LoginPage from './pages/LoginPage/LoginPage';
 import PricingPage from './pages/PricingPage/PricingPage';
 import SingersPage from './pages/SingersPage/SingersPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
+import NotificationsPage from './pages/NotificationsPage/NotificationsPage';
+import SubscriptionPage from './pages/SubscriptionPage/SubscriptionPage';
 import ServicesPage from './pages/ServicesPage/ServicesPage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import NotationEditor from './pages/NotationEditor/NotationEditor';
@@ -73,6 +75,22 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/notifications"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/subscription"
+          element={
+            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
+              <SubscriptionPage />
             </ProtectedRoute>
           }
         />

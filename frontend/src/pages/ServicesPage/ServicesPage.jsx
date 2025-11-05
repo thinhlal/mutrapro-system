@@ -18,7 +18,6 @@ const ServicesPage = () => {
       </main>
 
       {/* Footer */}
-      <Footer />
       <BackToTop />
     </div>
   );
