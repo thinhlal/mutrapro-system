@@ -103,7 +103,7 @@ function App() {
           }
         />
         <Route
-          path="/soundtosheet"
+          path="/request-service"
           element={
             <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
               <ServiceRequestPage />

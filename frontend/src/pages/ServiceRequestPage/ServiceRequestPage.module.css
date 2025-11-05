@@ -4,7 +4,7 @@
   --title: clamp(36px, 6vw, 84px);
   --sub: clamp(16px, 1.6vw + 8px, 28px);
   --pill-radius: 999px;
-  --brand: #5d19b7; /* tím đậm tiêu đề */
+  --brand: #5d19b7; 
   --btn: #ff6a00;
   --btn-hover: #ff8127;
   --card-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
@@ -257,5 +257,24 @@ html {
   }
   .sheetLines {
     display: none;
+  }
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 1440px;
+  margin: 60px auto 40px;
+  padding: 0 var(--pad-x);
+  align-items: start;
+}
+
+/* Responsive: mobile stack lại */
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin: 40px auto 30px;
   }
 }

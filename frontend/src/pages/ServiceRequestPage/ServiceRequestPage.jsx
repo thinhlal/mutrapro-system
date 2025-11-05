@@ -77,21 +77,24 @@ export default function ServiceRequestPage() {
         </div>
       </section>
 
-      {/* NEW: Customer tạo yêu cầu */}
-      <RequestServiceForm onCreated={handleCreated} />
+     
+      <div className={styles.contentGrid}>
+      
+        <RequestServiceForm onCreated={handleCreated} />
 
-      {/* Khu upload theo loại yêu cầu */}
-      <div ref={uploadRef}>
-        {selectedType === 'transcription' && <TranscriptionUploader />}
-        {selectedType === 'arrangement' && (
-          <ArrangementUploader variant="pure" />
-        )}
-        {selectedType === 'arrangement_with_recording' && (
-          <ArrangementUploader variant="with_recording" />
-        )}
-        {selectedType === 'recording' && <RecordingUploader />}
-        {/* Mặc định (chưa chọn) hiển thị uploader Transcription cũ để tương thích */}
-        {!selectedType && <TranscriptionUploader />}
+       
+        <div ref={uploadRef}>
+          {selectedType === 'transcription' && <TranscriptionUploader />}
+          {selectedType === 'arrangement' && (
+            <ArrangementUploader variant="pure" />
+          )}
+          {selectedType === 'arrangement_with_recording' && (
+            <ArrangementUploader variant="with_recording" />
+          )}
+          {selectedType === 'recording' && <RecordingUploader />}
+        
+          {!selectedType && <TranscriptionUploader />}
+        </div>
       </div>
 
       <Footer />

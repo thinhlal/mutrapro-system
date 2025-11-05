@@ -13,7 +13,7 @@ import logo from '../../../assets/images/Logo/Logotip-Positiu.svg';
 const SECTION_KEYS = new Map([
   ['/', 'home'],
   ['/transcription', 'audio'],
-  ['/soundtosheet', 'request'],
+  ['/request-service', 'request'],
   ['/pricing', 'pricing'],
   ['/reviews', 'reviews'],
   ['/about', 'about'],
@@ -135,7 +135,7 @@ function Header() {
             <Nav className={styles.navLinks}>
               {navLink('/', 'home', 'Home')}
               {navLink('/transcription', 'audio', 'Audio → Sheet Music')}
-              {navLink('/soundtosheet', 'request', 'Request Service')}
+              {navLink('/request-service', 'request', 'Request Service')}
               {navLink('/pricing', 'pricing', 'Pricing')}
               {navLink('/reviews', 'reviews', 'Reviews')}
               {navLink('/about', 'about', 'About us')}
@@ -144,7 +144,7 @@ function Header() {
 
             {/* CTA */}
             <div className={styles.ctaContainer}>
-              <Link to="/soundtosheet" className={styles.ctaButton}>
+              <Link to="/request-service" className={styles.ctaButton}>
                 REQUEST YOUR SHEET MUSIC
               </Link>
             </div>
