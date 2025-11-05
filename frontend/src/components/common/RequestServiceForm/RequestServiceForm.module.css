@@ -2,12 +2,12 @@
 .wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 60px;
-  margin-bottom: 20px;
+  margin: 0; 
+  height: 100%;
 }
 .card {
   width: 100%;
-  max-width: 930px;
+  max-width: 100%; 
   background: linear-gradient(180deg, #ffffff 0%, #f7f2fb 100%);
   border: 2px solid #ec8a1c;
   border-radius: 18px;
