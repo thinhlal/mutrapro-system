@@ -1,0 +1,93 @@
+package com.mutrapro.request_service.enums;
+
+import com.mutrapro.shared.exception.ErrorCode;
+import com.mutrapro.shared.exception.Retryable;
+
+/**
+ * Request Service Error Codes
+ * Range: 6000-6999
+ */
+public enum RequestServiceErrorCodes implements ErrorCode {
+
+    // File Upload Errors (6000-6099)
+    FILE_REQUIRED("FILE_6000", 400,
+        "https://docs.mutrapro.com/errors/FILE_6000",
+        "File is required",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_SIZE_EXCEEDED("FILE_6001", 400,
+        "https://docs.mutrapro.com/errors/FILE_6001",
+        "File size exceeds maximum allowed size",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_TYPE_NOT_ALLOWED("FILE_6002", 400,
+        "https://docs.mutrapro.com/errors/FILE_6002",
+        "File type is not allowed",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_UPLOAD_FAILED("FILE_6003", 500,
+        "https://docs.mutrapro.com/errors/FILE_6003",
+        "Failed to upload file",
+        Retryable.TRANSIENT),
+    
+    FILE_READ_ERROR("FILE_6004", 500,
+        "https://docs.mutrapro.com/errors/FILE_6004",
+        "Error reading file",
+        Retryable.TRANSIENT),
+    
+    USER_NOT_AUTHENTICATED("REQUEST_6005", 401,
+        "https://docs.mutrapro.com/errors/REQUEST_6005",
+        "User not authenticated",
+        Retryable.NON_TRANSIENT);
+
+    private final String code;
+    private final int httpStatus;
+    private final String type;
+    private final String description;
+    private final Retryable retryable;
+    private final long retryAfterSeconds;
+
+    RequestServiceErrorCodes(String code, int httpStatus, String type, String description, Retryable retryable) {
+        this(code, httpStatus, type, description, retryable, 30);
+    }
+
+    RequestServiceErrorCodes(String code, int httpStatus, String type, String description, Retryable retryable, long retryAfterSeconds) {
+        this.code = code;
+        this.httpStatus = httpStatus;
+        this.type = type;
+        this.description = description;
+        this.retryable = retryable;
+        this.retryAfterSeconds = retryAfterSeconds;
+    }
+    
+    @Override
+    public String getCode() {
+        return code;
+    }
+    
+    @Override
+    public int getHttpStatus() {
+        return httpStatus;
+    }
+    
+    @Override
+    public String getType() {
+        return type;
+    }
+    
+    @Override
+    public String getDescription() {
+        return description;
+    }
+    
+    @Override
+    public Retryable getRetryable() {
+        return retryable;
+    }
+    
+    @Override
+    public long getRetryAfterSeconds() {
+        return retryAfterSeconds;
+    }
+}
+

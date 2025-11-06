@@ -13,9 +13,23 @@ spring:
       ddl-auto: validate
     show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
   sql:
     init:
       mode: never
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 104857600  # 100MB
+      max-request-size: 104857600  # 100MB
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 logging:
   level:
@@ -23,4 +37,27 @@ logging:
 
 # JWT Configuration - Must match auth-service signerKey
 jwt:
-  signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+  signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}
+
+# File upload configuration
+file:
+  upload:
+    max-size: 104857600  # 100MB
+    allowed-audio-types: audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
+
+# Outbox Configuration
+app:
+  outbox:
+    max-retries: 3
+  event-topics:
+    mappings:
+      file.uploaded: file-uploaded

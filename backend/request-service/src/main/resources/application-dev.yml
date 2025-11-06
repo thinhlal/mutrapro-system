@@ -20,6 +20,16 @@ spring:
   sql:
     init:
       mode: never
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 104857600  # 100MB
+      max-request-size: 104857600  # 100MB
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 logging:
   level:
@@ -28,3 +38,26 @@ logging:
 # JWT Configuration - Must match auth-service signerKey
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+
+# File upload configuration
+file:
+  upload:
+    max-size: 104857600  # 100MB
+    allowed-audio-types: audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    bucket-name: mutrapro-dev-files
+    region: ap-southeast-1
+    access-key: AKIAZ24ITCMNFIY2Z3VX
+    secret-key: 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
+
+# Outbox Configuration
+app:
+  outbox:
+    max-retries: 3
+  event-topics:
+    mappings:
+      file.uploaded: file-uploaded
