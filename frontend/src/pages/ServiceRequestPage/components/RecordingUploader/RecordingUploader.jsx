@@ -13,7 +13,7 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function RecordingUploader() {
+export default function RecordingUploader({ serviceType }) {
   const [files, setFiles] = useState([]);
   const navigate = useNavigate();
 
@@ -29,7 +29,9 @@ export default function RecordingUploader() {
       fileType: f.type || 'unknown',
       size: f.size || 0,
     }));
-    navigate('/recording/quote', { state: { files: payload } });
+    navigate('/recording/quote', {
+      state: { files: payload, serviceType: serviceType || 'recording' },
+    });
   };
 
   return (
