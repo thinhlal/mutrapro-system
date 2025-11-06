@@ -21,7 +21,7 @@ const toMMSS = (s = 0) =>
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function TranscriptionUploader() {
+export default function TranscriptionUploader({ serviceType }) {
   const [linkValue, setLinkValue] = useState('');
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
@@ -73,6 +73,7 @@ export default function TranscriptionUploader() {
       url: file ? '' : linkValue.trim(),
       durationSec: 0,
       blobUrl: '',
+      serviceType: serviceType || 'transcription',
     };
 
     try {
@@ -91,7 +92,15 @@ export default function TranscriptionUploader() {
       // giữ durationSec = 0 rồi điều hướng
     }
 
-    navigate('/transcription/quote', { state });
+    // Navigate đến route tương ứng với service type
+    const routeMap = {
+      transcription: '/transcription/quote',
+      arrangement: '/arrangement/quote',
+      arrangement_with_recording: '/arrangement/quote',
+      recording: '/recording/quote',
+    };
+    const targetRoute = routeMap[serviceType] || '/transcription/quote';
+    navigate(targetRoute, { state });
   };
 
   return (

@@ -1,25 +1,21 @@
-// src/pages/ServiceRequest/components/RequestServiceForm/RequestServiceForm.jsx
 import { useMemo } from 'react';
-import { Form, Input, Radio, Button, message } from 'antd';
+import { Form, Input, Button, message, Tag } from 'antd';
 import styles from './RequestServiceForm.module.css';
 
-const SERVICE_OPTIONS = [
-  { label: 'Transcription (Sound → Sheet)', value: 'transcription' },
-  { label: 'Arrangement', value: 'arrangement' },
-  {
-    label: 'Arrangement + Recording (with Vocalist)',
-    value: 'arrangement_with_recording',
-  },
-  { label: 'Recording (Studio Booking)', value: 'recording' },
-];
+const SERVICE_LABELS = {
+  transcription: 'Transcription (Sound → Sheet)',
+  arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement + Recording (with Vocalist)',
+  recording: 'Recording (Studio Booking)',
+};
 
-export default function RequestServiceForm({ onCreated }) {
+export default function RequestServiceForm({ onCreated, serviceType }) {
   const [form] = Form.useForm();
 
   const onFinish = async values => {
     // TODO: call API create service-request nếu có; hiện tại demo UI
     message.success('Your request has been created!');
-    onCreated?.(values.serviceType);
+    onCreated?.(serviceType || values.serviceType);
   };
 
   const requiredMsg = useMemo(
@@ -38,7 +34,7 @@ export default function RequestServiceForm({ onCreated }) {
           Create Your Service Request
         </h2>
         <p className={styles.desc}>
-          Tell us what you need. After creating the request, you’ll be prompted
+          Tell us what you need. After creating the request, you'll be prompted
           to upload the right files.
         </p>
 
@@ -46,7 +42,7 @@ export default function RequestServiceForm({ onCreated }) {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ serviceType: 'transcription' }}
+          initialValues={{ serviceType: serviceType || 'transcription' }}
           className={styles.form}
         >
           <Form.Item label="Full Name" name="fullName" rules={[requiredMsg]}>
@@ -65,17 +61,13 @@ export default function RequestServiceForm({ onCreated }) {
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
-          <Form.Item
-            label="Service Type"
-            name="serviceType"
-            rules={[requiredMsg]}
-          >
-            <Radio.Group
-              options={SERVICE_OPTIONS}
-              optionType="button"
-              buttonStyle="solid"
-            />
-          </Form.Item>
+          {serviceType && (
+            <Form.Item label="Service Type">
+              <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
+                {SERVICE_LABELS[serviceType] || serviceType}
+              </Tag>
+            </Form.Item>
+          )}
 
           <Form.Item label="Notes (optional)" name="notes">
             <Input.TextArea
@@ -84,7 +76,7 @@ export default function RequestServiceForm({ onCreated }) {
             />
           </Form.Item>
 
-          <div className={styles.actions}>
+          {/* <div className={styles.actions}>
             <Button
               className={styles.ctaBtn}
               type="primary"
@@ -93,7 +85,7 @@ export default function RequestServiceForm({ onCreated }) {
             >
               Create Request
             </Button>
-          </div>
+          </div> */}
         </Form>
       </div>
     </section>

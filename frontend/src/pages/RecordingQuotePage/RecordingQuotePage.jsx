@@ -11,11 +11,14 @@ import {
   Drawer,
   Empty,
   Space,
+  Radio,
+  Card,
 } from 'antd';
 import styles from './RecordingQuotePage.module.css';
 import Header from '../../components/common/Header/Header';
 import Footer from '../../components/common/Footer/Footer';
 import BackToTop from '../../components/common/BackToTop/BackToTop';
+import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../constants/index';
 
 const { Title, Text } = Typography;
 
@@ -51,12 +54,21 @@ export default function RecordingQuotePage() {
   const [musicians, setMusicians] = useState(1);
   const [mixing, setMixing] = useState(false);
   const [mastering, setMastering] = useState(false);
-  const [open, setOpen] = useState(false); // <-- FIXED
+  const [open, setOpen] = useState(false);
+
+  // ===== Chọn ca sĩ =====
+  const [singerGender, setSingerGender] = useState('female');
+  const [selectedSinger, setSelectedSinger] = useState(null);
+
+  const singersData =
+    singerGender === 'female' ? FEMALE_SINGERS_DATA : MALE_SINGERS_DATA;
 
   const price = useMemo(
     () => calcPrice(hours, musicians, mixing, mastering),
     [hours, musicians, mixing, mastering]
   );
+
+  const canProceed = selectedSinger !== null;
 
   return (
     <>
@@ -110,12 +122,84 @@ export default function RecordingQuotePage() {
 
         <Collapse
           bordered={false}
-          defaultActiveKey={['session']}
+          defaultActiveKey={['singer-selection']}
           items={[
+            {
+              key: 'singer-selection',
+              label: (
+                <div className={styles.sectionTitle}>
+                  Singer Selection (Required)
+                </div>
+              ),
+              children: (
+                <div>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong>Select Gender:</Text>
+                    <Radio.Group
+                      value={singerGender}
+                      onChange={e => {
+                        setSingerGender(e.target.value);
+                        setSelectedSinger(null);
+                      }}
+                      style={{ marginLeft: 16 }}
+                    >
+                      <Radio.Button value="female">Female</Radio.Button>
+                      <Radio.Button value="male">Male</Radio.Button>
+                    </Radio.Group>
+                  </div>
+
+                  <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                    <div className="row g-3">
+                      {singersData.map(singer => (
+                        <div
+                          key={singer.id}
+                          className="col-12 col-md-6 col-lg-4"
+                        >
+                          <Card
+                            hoverable
+                            onClick={() => setSelectedSinger(singer.id)}
+                            style={{
+                              border:
+                                selectedSinger === singer.id
+                                  ? '2px solid #1890ff'
+                                  : '1px solid #d9d9d9',
+                            }}
+                            cover={
+                              <img
+                                alt={singer.name}
+                                src={singer.image}
+                                style={{ height: 200, objectFit: 'cover' }}
+                              />
+                            }
+                          >
+                            <Card.Meta
+                              title={singer.name}
+                              description={
+                                <div>
+                                  <div>{singer.location}</div>
+                                  <div style={{ marginTop: 4 }}>
+                                    {singer.roles.slice(0, 2).join(', ')}
+                                  </div>
+                                  <div style={{ marginTop: 4 }}>
+                                    ⭐ {singer.rating} ({singer.reviews}{' '}
+                                    reviews)
+                                  </div>
+                                </div>
+                              }
+                            />
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ),
+            },
             {
               key: 'session',
               label: <div className={styles.sectionTitle}>Session Setup</div>,
               extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
+              collapsible: selectedSinger !== null ? 'header' : 'disabled',
               children: (
                 <div className={styles.inlineRow}>
                   <div>
@@ -146,6 +230,7 @@ export default function RecordingQuotePage() {
             {
               key: 'post',
               label: <div className={styles.sectionTitle}>Post-production</div>,
+              collapsible: selectedSinger !== null ? 'header' : 'disabled',
               children: (
                 <Space direction="vertical">
                   <Checkbox
@@ -174,7 +259,12 @@ export default function RecordingQuotePage() {
             </Title>
           </div>
           <div>
-            <Button size="large" onClick={() => setOpen(true)} type="primary">
+            <Button
+              size="large"
+              onClick={() => setOpen(true)}
+              type="primary"
+              disabled={!canProceed}
+            >
               Review Cart
             </Button>
           </div>

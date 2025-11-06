@@ -14,11 +14,14 @@ import {
   Input,
   Empty,
   Space,
+  Radio,
+  Card,
 } from 'antd';
 
 import Header from '../../components/common/Header/Header';
 import Footer from '../../components/common/Footer/Footer';
 import BackToTop from '../../components/common/BackToTop/BackToTop';
+import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../constants/index';
 import styles from './TranscriptionQuotePage.module.css';
 
 // === WaveSurfer
@@ -187,6 +190,7 @@ export default function TranscriptionQuotePage() {
     fileName: navState.fileName || '',
     blobUrl: navState.blobUrl || '',
     durationSec: Number(navState.durationSec) || 0,
+    serviceType: navState.serviceType || 'transcription',
   });
 
   // Nếu không có nguồn → hướng người dùng quay lại trang upload
@@ -211,6 +215,13 @@ export default function TranscriptionQuotePage() {
   const [transpose, setTranspose] = useState(0);
   const [slowdown, setSlowdown] = useState(100);
   const [editableFormats, setEditableFormats] = useState([]);
+
+  // ===== Chọn ca sĩ (cho recording) =====
+  const [singerGender, setSingerGender] = useState('female');
+  const [selectedSinger, setSelectedSinger] = useState(null);
+
+  const singersData =
+    singerGender === 'female' ? FEMALE_SINGERS_DATA : MALE_SINGERS_DATA;
 
   // ===== Drawer + giá =====
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -244,7 +255,11 @@ export default function TranscriptionQuotePage() {
   }, [location?.state]);
 
   const canProceed =
-    hasSource && selection.durationSec > 0 && instruments.length > 0;
+    hasSource &&
+    selection.durationSec > 0 &&
+    (source.serviceType === 'recording'
+      ? selectedSinger !== null
+      : instruments.length > 0);
 
   const clearSource = () => {
     setSource({
@@ -436,41 +451,133 @@ export default function TranscriptionQuotePage() {
               ),
               children: <Text>Transcribe the song</Text>,
             },
-            {
-              key: 'instruments',
-              label: (
-                <div className={styles.sectionTitle}>Instrument Selection</div>
-              ),
-              extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
-              children: (
-                <Select
-                  mode="multiple"
-                  placeholder="Pick instruments (required)"
-                  value={instruments}
-                  onChange={setInstruments}
-                  style={{ width: '100%' }}
-                  options={[
-                    { value: 'piano', label: 'Piano' },
-                    { value: 'guitar', label: 'Guitar' },
-                    { value: 'violin', label: 'Violin' },
-                    { value: 'bass', label: 'Bass' },
-                    { value: 'drums', label: 'Drums' },
-                    { value: 'vocal', label: 'Vocal' },
-                  ]}
-                  tagRender={props => (
-                    <Tag closable={props.closable} onClose={props.onClose}>
-                      {props.label}
-                    </Tag>
-                  )}
-                />
-              ),
-            },
+            ...(source.serviceType === 'transcription'
+              ? [
+                  {
+                    key: 'instruments',
+                    label: (
+                      <div className={styles.sectionTitle}>
+                        Instrument Selection
+                      </div>
+                    ),
+                    extra: (
+                      <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>
+                    ),
+                    children: (
+                      <Select
+                        mode="multiple"
+                        placeholder="Pick instruments (required)"
+                        value={instruments}
+                        onChange={setInstruments}
+                        style={{ width: '100%' }}
+                        options={[
+                          { value: 'piano', label: 'Piano' },
+                          { value: 'guitar', label: 'Guitar' },
+                          { value: 'violin', label: 'Violin' },
+                          { value: 'bass', label: 'Bass' },
+                          { value: 'drums', label: 'Drums' },
+                          { value: 'vocal', label: 'Vocal' },
+                        ]}
+                        tagRender={props => (
+                          <Tag
+                            closable={props.closable}
+                            onClose={props.onClose}
+                          >
+                            {props.label}
+                          </Tag>
+                        )}
+                      />
+                    ),
+                  },
+                ]
+              : []),
+            ...(source.serviceType === 'recording'
+              ? [
+                  {
+                    key: 'singer-selection',
+                    label: (
+                      <div className={styles.sectionTitle}>
+                        Singer Selection
+                      </div>
+                    ),
+                    children: (
+                      <div>
+                        <div style={{ marginBottom: 16 }}>
+                          <Text strong>Select Gender:</Text>
+                          <Radio.Group
+                            value={singerGender}
+                            onChange={e => {
+                              setSingerGender(e.target.value);
+                              setSelectedSinger(null);
+                            }}
+                            style={{ marginLeft: 16 }}
+                          >
+                            <Radio.Button value="female">Female</Radio.Button>
+                            <Radio.Button value="male">Male</Radio.Button>
+                          </Radio.Group>
+                        </div>
+
+                        <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                          <div className="row g-3">
+                            {singersData.map(singer => (
+                              <div
+                                key={singer.id}
+                                className="col-12 col-md-6 col-lg-4"
+                              >
+                                <Card
+                                  hoverable
+                                  onClick={() => setSelectedSinger(singer.id)}
+                                  style={{
+                                    border:
+                                      selectedSinger === singer.id
+                                        ? '2px solid #1890ff'
+                                        : '1px solid #d9d9d9',
+                                  }}
+                                  cover={
+                                    <img
+                                      alt={singer.name}
+                                      src={singer.image}
+                                      style={{
+                                        height: 200,
+                                        objectFit: 'cover',
+                                      }}
+                                    />
+                                  }
+                                >
+                                  <Card.Meta
+                                    title={singer.name}
+                                    description={
+                                      <div>
+                                        <div>{singer.location}</div>
+                                        <div style={{ marginTop: 4 }}>
+                                          {singer.roles.slice(0, 2).join(', ')}
+                                        </div>
+                                        <div style={{ marginTop: 4 }}>
+                                          ⭐ {singer.rating} ({singer.reviews}{' '}
+                                          reviews)
+                                        </div>
+                                      </div>
+                                    }
+                                  />
+                                </Card>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
             {
               key: 'lyrics',
               label: (
                 <div className={styles.sectionTitle}>Lyrics & Notations</div>
               ),
-              collapsible: instruments.length ? 'header' : 'disabled',
+              collapsible:
+                instruments.length > 0 || selectedSinger !== null
+                  ? 'header'
+                  : 'disabled',
               children: (
                 <Checkbox
                   checked={includeChordSymbols}
@@ -483,7 +590,10 @@ export default function TranscriptionQuotePage() {
             {
               key: 'keytempo',
               label: <div className={styles.sectionTitle}>Key & Tempo</div>,
-              collapsible: instruments.length ? 'header' : 'disabled',
+              collapsible:
+                instruments.length > 0 || selectedSinger !== null
+                  ? 'header'
+                  : 'disabled',
               children: (
                 <div className={styles.inlineRow}>
                   <div>
@@ -521,7 +631,10 @@ export default function TranscriptionQuotePage() {
                   Additional Files & Information
                 </div>
               ),
-              collapsible: instruments.length ? 'header' : 'disabled',
+              collapsible:
+                instruments.length > 0 || selectedSinger !== null
+                  ? 'header'
+                  : 'disabled',
               children: (
                 <Select
                   mode="multiple"
