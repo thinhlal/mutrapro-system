@@ -20,8 +20,9 @@ export const API_CONFIG = {
 // Các đường dẫn này được định nghĩa trong cấu hình routes của api-gateway
 const { API_PREFIX } = API_CONFIG;
 const IDENTITY_PATH = `${API_PREFIX}/identity`;
-const PROJECT_PATH = `${API_PREFIX}/projects`; // Quản lý Files, Folders, Tags
-const BILLING_PATH = `${API_PREFIX}/billing`; // Quản lý Payments, Subscriptions
+const PROJECT_PATH = `${API_PREFIX}/projects`; 
+const BILLING_PATH = `${API_PREFIX}/billing`; 
+const REQUEST_PATH = `${API_PREFIX}/requests`;
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -105,6 +106,11 @@ export const API_ENDPOINTS = {
   SUBSCRIPTION_PLANS: {
     GET_ALL: `${BILLING_PATH}/subscription-plans`,
     GET_BY_ID: planId => `${BILLING_PATH}/subscription-plans/${planId}`,
+  },
+
+  // === Request Service (Quản lý Notation, Requests) ===
+  REQUEST: {
+    NOTATION_INSTRUMENTS: `${REQUEST_PATH}/notation-instruments`,
   },
 };
 
