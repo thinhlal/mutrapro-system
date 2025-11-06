@@ -1,0 +1,19 @@
+package com.mutrapro.request_service.dto.response;
+
+import com.mutrapro.request_service.enums.NotationInstrumentUsage;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class NotationInstrumentResponse {
+    String instrumentId;
+    String instrumentName;
+    NotationInstrumentUsage usage;
+    boolean isActive;
+}
+
+
