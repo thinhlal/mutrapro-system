@@ -65,7 +65,7 @@ export default function FlatEditor() {
     if (!file) return;
 
     try {
-      const name = file.name.toLowerCase();
+      const name = (file.name || '').toLowerCase();
       if (name.endsWith('.mid') || name.endsWith('.midi')) {
         const buf = new Uint8Array(await file.arrayBuffer());
         await embed.loadMIDI(buf);

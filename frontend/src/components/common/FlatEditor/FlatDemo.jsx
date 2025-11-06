@@ -9,11 +9,11 @@ export default function FlatDemo() {
 
   // ==== form Create ====
   const [showCreate, setShowCreate] = useState(false);
-  const [instruments, setInstruments] = useState(['Piano']); // cho phép nhiều
-  const [beats, setBeats] = useState('4'); // chỉ số nhịp trên
-  const [beatType, setBeatType] = useState('4'); // chỉ số nhịp dưới
-  const [tempo, setTempo] = useState('90'); // bpm
-  const [keyFifths, setKeyFifths] = useState('0'); // 0 = C major/A minor
+  const [instruments, setInstruments] = useState(['Piano']);
+  const [beats, setBeats] = useState('4');
+  const [beatType, setBeatType] = useState('4');
+  const [tempo, setTempo] = useState('90');
+  const [keyFifths, setKeyFifths] = useState('0');
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -38,7 +38,7 @@ export default function FlatDemo() {
   }, []);
 
   // ================== CREATE FLOW ==================
-  // Map nhạc cụ -> cấu hình staff/clef/midi (đơn giản, đủ xài)
+
   const INSTRUMENTS = {
     Piano: {
       staves: 2,
@@ -155,7 +155,7 @@ export default function FlatDemo() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const name = file.name.toLowerCase();
+      const name = (file.name || '').toLowerCase();
       if (name.endsWith('.mid') || name.endsWith('.midi')) {
         const buf = new Uint8Array(await file.arrayBuffer());
         await embed.loadMIDI(buf);

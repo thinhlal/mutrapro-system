@@ -180,12 +180,12 @@ export default function ContractsList() {
   const data = useMemo(() => {
     return MOCK_CONTRACTS.filter(c => {
       const q =
-        c.contract_number.toLowerCase() +
+        (c.contract_number || '').toLowerCase() +
         ' ' +
         (c.customer_name || '').toLowerCase() +
         ' ' +
         (c.service_name || '').toLowerCase();
-      const passSearch = q.includes(search.toLowerCase().trim());
+      const passSearch = q.includes((search || '').toLowerCase().trim());
       const passType = type ? c.contract_type === type : true;
       const passStatus = status ? c.status === status : true;
       const passCur = currency ? c.currency === currency : true;
@@ -216,7 +216,7 @@ export default function ContractsList() {
           </Text>
         </Space>
       ),
-      sorter: (a, b) => a.contract_number.localeCompare(b.contract_number),
+      sorter: (a, b) => (a.contract_number || '').localeCompare(b.contract_number || ''),
     },
     {
       title: 'Customer / Service',
