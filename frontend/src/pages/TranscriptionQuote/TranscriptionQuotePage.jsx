@@ -16,12 +16,15 @@ import {
   Space,
   Radio,
   Card,
+  Spin,
+  message,
 } from 'antd';
 
 import Header from '../../components/common/Header/Header';
 import Footer from '../../components/common/Footer/Footer';
 import BackToTop from '../../components/common/BackToTop/BackToTop';
 import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../constants/index';
+import { useInstrumentStore } from '../../stores/useInstrumentStore';
 import styles from './TranscriptionQuotePage.module.css';
 
 // === WaveSurfer
@@ -218,6 +221,15 @@ export default function TranscriptionQuotePage() {
   const [slowdown, setSlowdown] = useState(100);
   const [editableFormats, setEditableFormats] = useState([]);
 
+  // ===== Instrument Store =====
+  const {
+    instruments: instrumentsData,
+    loading: instrumentsLoading,
+    error: instrumentsError,
+    fetchInstruments,
+    getInstrumentsByUsage,
+  } = useInstrumentStore();
+
   // ===== Chọn ca sĩ (cho recording) =====
   const [singerGender, setSingerGender] = useState('female');
   const [selectedSinger, setSelectedSinger] = useState(null);
@@ -228,6 +240,20 @@ export default function TranscriptionQuotePage() {
   // ===== Drawer + giá =====
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [price, setPrice] = useState({ items: [], subtotal: 0, total: 0 });
+
+  // Fetch instruments on mount
+  useEffect(() => {
+    const loadInstruments = async () => {
+      try {
+        await fetchInstruments();
+      } catch (error) {
+        message.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.');
+        console.error('Error fetching instruments:', error);
+      }
+    };
+
+    loadInstruments();
+  }, [fetchInstruments]);
 
   // Recalc price
   useEffect(() => {
@@ -466,29 +492,42 @@ export default function TranscriptionQuotePage() {
                       <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>
                     ),
                     children: (
-                      <Select
-                        mode="multiple"
-                        placeholder="Pick instruments (required)"
-                        value={instruments}
-                        onChange={setInstruments}
-                        style={{ width: '100%' }}
-                        options={[
-                          { value: 'piano', label: 'Piano' },
-                          { value: 'guitar', label: 'Guitar' },
-                          { value: 'violin', label: 'Violin' },
-                          { value: 'bass', label: 'Bass' },
-                          { value: 'drums', label: 'Drums' },
-                          { value: 'vocal', label: 'Vocal' },
-                        ]}
-                        tagRender={props => (
-                          <Tag
-                            closable={props.closable}
-                            onClose={props.onClose}
-                          >
-                            {props.label}
-                          </Tag>
-                        )}
-                      />
+                      <Spin spinning={instrumentsLoading}>
+                        <Select
+                          mode="multiple"
+                          placeholder="Pick instruments (required)"
+                          value={instruments}
+                          onChange={setInstruments}
+                          style={{ width: '100%' }}
+                          options={getInstrumentsByUsage('transcription').map(
+                            inst => ({
+                              value: inst.instrumentId,
+                              label: inst.instrumentName,
+                            })
+                          )}
+                          tagRender={props => (
+                            <Tag
+                              closable={props.closable}
+                              onClose={props.onClose}
+                            >
+                              {props.label}
+                            </Tag>
+                          )}
+                          notFoundContent={
+                            instrumentsError ? (
+                              <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={instrumentsError}
+                              />
+                            ) : (
+                              <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description="Không có nhạc cụ nào"
+                              />
+                            )
+                          }
+                        />
+                      </Spin>
                     ),
                   },
                 ]

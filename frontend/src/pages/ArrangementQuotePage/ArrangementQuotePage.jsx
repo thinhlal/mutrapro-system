@@ -1,5 +1,5 @@
 // src/pages/Arrangement/ArrangementQuotePage.jsx
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
@@ -14,11 +14,14 @@ import {
   Input,
   Empty,
   Space,
+  Spin,
+  message,
 } from 'antd';
 import styles from './ArrangementQuotePage.module.css';
 import Header from '../../components/common/Header/Header';
 import Footer from '../../components/common/Footer/Footer';
 import BackToTop from '../../components/common/BackToTop/BackToTop';
+import { useInstrumentStore } from '../../stores/useInstrumentStore';
 
 const { Title, Text } = Typography;
 
@@ -88,6 +91,29 @@ export default function ArrangementQuotePage() {
 
   // NEW: state cho Drawer
   const [showCart, setShowCart] = useState(false);
+
+  // ===== Instrument Store =====
+  const {
+    instruments: instrumentsData,
+    loading: instrumentsLoading,
+    error: instrumentsError,
+    fetchInstruments,
+    getInstrumentsByUsage,
+  } = useInstrumentStore();
+
+  // Fetch instruments on mount
+  useEffect(() => {
+    const loadInstruments = async () => {
+      try {
+        await fetchInstruments();
+      } catch (error) {
+        message.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.');
+        console.error('Error fetching instruments:', error);
+      }
+    };
+
+    loadInstruments();
+  }, [fetchInstruments]);
 
   const price = useMemo(
     () => calcPrice(instruments, complexity, editableFormats, withVocalist),
@@ -188,28 +214,37 @@ export default function ArrangementQuotePage() {
               ),
               extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
               children: (
-                <Select
-                  mode="multiple"
-                  placeholder="Pick instruments (required)"
-                  value={instruments}
-                  onChange={setInstruments}
-                  style={{ width: '100%' }}
-                  options={[
-                    { value: 'piano', label: 'Piano' },
-                    { value: 'guitar', label: 'Guitar' },
-                    { value: 'violin', label: 'Violin' },
-                    { value: 'strings', label: 'Strings Section' },
-                    { value: 'brass', label: 'Brass' },
-                    { value: 'winds', label: 'Winds' },
-                    { value: 'rhythm', label: 'Rhythm Section' },
-                    { value: 'vocal', label: 'Vocal' },
-                  ]}
-                  tagRender={props => (
-                    <Tag closable={props.closable} onClose={props.onClose}>
-                      {props.label}
-                    </Tag>
-                  )}
-                />
+                <Spin spinning={instrumentsLoading}>
+                  <Select
+                    mode="multiple"
+                    placeholder="Pick instruments (required)"
+                    value={instruments}
+                    onChange={setInstruments}
+                    style={{ width: '100%' }}
+                    options={getInstrumentsByUsage('arrangement').map(inst => ({
+                      value: inst.instrumentId,
+                      label: inst.instrumentName,
+                    }))}
+                    tagRender={props => (
+                      <Tag closable={props.closable} onClose={props.onClose}>
+                        {props.label}
+                      </Tag>
+                    )}
+                    notFoundContent={
+                      instrumentsError ? (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description={instrumentsError}
+                        />
+                      ) : (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description="Không có nhạc cụ nào"
+                        />
+                      )
+                    }
+                  />
+                </Spin>
               ),
             },
             {
