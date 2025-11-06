@@ -13,7 +13,7 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function ArrangementUploader({ variant = 'pure' }) {
+export default function ArrangementUploader({ variant = 'pure', serviceType }) {
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
 
@@ -35,6 +35,11 @@ export default function ArrangementUploader({ variant = 'pure' }) {
       fileType: file.type || 'unknown',
       size: file.size || 0,
       variant, // "pure" | "with_recording"
+      serviceType:
+        serviceType ||
+        (variant === 'with_recording'
+          ? 'arrangement_with_recording'
+          : 'arrangement'),
     };
     navigate('/arrangement/quote', { state });
   };

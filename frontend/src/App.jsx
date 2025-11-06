@@ -51,117 +51,135 @@ function App() {
       <AuthProvider>
         <ScrollToTop />
         <Routes>
-        {/* --- PUBLIC ROUTES --- */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/transcription" element={<TranscriptionPage />} />
-        <Route path="/discover-pros" element={<DiscoverProsPage />} />
-        <Route path="/pros/singers/:gender" element={<SingersPage />} />
-        <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
+          {/* --- PUBLIC ROUTES --- */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/transcription" element={<TranscriptionPage />} />
+          <Route path="/detail-service" element={<ServiceRequestPage />} />
+          <Route path="/pros/singers/:gender" element={<SingersPage />} />
+          <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
 
-        {/* --- AUTH ROUTES --- */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/sign-up" element={<RegisterPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/authenticate" element={<AuthenticatePage />} />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          {/* --- AUTH ROUTES --- */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/sign-up" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/authenticate" element={<AuthenticatePage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* --- PROTECTED CUSTOMER ROUTES --- */}
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/notifications"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <NotificationsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/subscription"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <SubscriptionPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/editor"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <NotationEditor />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/request-service"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <ServiceRequestPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* --- PROTECTED CUSTOMER ROUTES --- */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/notifications"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/subscription"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <SubscriptionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/editor"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <NotationEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/request-service"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <DiscoverProsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- PROTECTED QUOTE ROUTES --- */}
-        <Route
-          path="/transcription/quote"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <TranscriptionQuotePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/arrangement/quote"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <ArrangementQuotePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recording/quote"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <RecordingQuotePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/checkout/review"
-          element={
-            <ProtectedRoute allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}>
-              <ReviewOrderPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* --- PROTECTED QUOTE ROUTES --- */}
+          <Route
+            path="/transcription/quote"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <TranscriptionQuotePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/arrangement/quote"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <ArrangementQuotePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recording/quote"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <RecordingQuotePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout/review"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+              >
+                <ReviewOrderPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- COORDINATOR ROUTES (PROTECTED) --- */}
-        <Route
-          path="/coordinator"
-          element={
-            <ProtectedRoute allowedRoles={['COORDINATOR', 'ADMIN']}>
-              <CoordinatorLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="contact-builder" element={<ContractBuilder />} />
-          <Route path="contracts-list" element={<ContractsList />} />
-          <Route path="task" element={<Tasks />} />
-        </Route>
+          {/* --- COORDINATOR ROUTES (PROTECTED) --- */}
+          <Route
+            path="/coordinator"
+            element={
+              <ProtectedRoute allowedRoles={['COORDINATOR', 'ADMIN']}>
+                <CoordinatorLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="contact-builder" element={<ContractBuilder />} />
+            <Route path="contracts-list" element={<ContractsList />} />
+            <Route path="task" element={<Tasks />} />
+          </Route>
 
-        {/* --- FALLBACK ROUTE --- */}
+          {/* --- FALLBACK ROUTE --- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

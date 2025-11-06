@@ -1,5 +1,6 @@
 // src/pages/ServiceRequest/ServiceRequestPage.jsx
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import styles from './ServiceRequestPage.module.css';
 import Guitarist from '../../assets/images/FromSoundToSheet/homeBannerTunescribersTeam.webp';
 import Grid from '../../assets/images/FromSoundToSheet/homeBannerGridVector.webp';
@@ -13,8 +14,17 @@ import BackToTop from '../../components/common/BackToTop/BackToTop';
 import Footer from '../../components/common/Footer/Footer';
 
 export default function ServiceRequestPage() {
-  const [selectedType, setSelectedType] = useState(null); // transcription | arrangement | arrangement_with_recording | recording
+  const location = useLocation();
+  const serviceTypeFromNav = location?.state?.serviceType;
+
+  const [selectedType, setSelectedType] = useState(serviceTypeFromNav || null); // transcription | arrangement | arrangement_with_recording | recording
   const uploadRef = useRef(null);
+
+  useEffect(() => {
+    if (serviceTypeFromNav) {
+      setSelectedType(serviceTypeFromNav);
+    }
+  }, [serviceTypeFromNav]);
 
   const handleCreated = useCallback(type => {
     setSelectedType(type);
@@ -77,23 +87,32 @@ export default function ServiceRequestPage() {
         </div>
       </section>
 
-     
       <div className={styles.contentGrid}>
-      
-        <RequestServiceForm onCreated={handleCreated} />
+        <RequestServiceForm
+          onCreated={handleCreated}
+          serviceType={selectedType}
+        />
 
-       
         <div ref={uploadRef}>
-          {selectedType === 'transcription' && <TranscriptionUploader />}
+          {selectedType === 'transcription' && (
+            <TranscriptionUploader serviceType={selectedType} />
+          )}
           {selectedType === 'arrangement' && (
-            <ArrangementUploader variant="pure" />
+            <ArrangementUploader variant="pure" serviceType={selectedType} />
           )}
           {selectedType === 'arrangement_with_recording' && (
-            <ArrangementUploader variant="with_recording" />
+            <ArrangementUploader
+              variant="with_recording"
+              serviceType={selectedType}
+            />
           )}
-          {selectedType === 'recording' && <RecordingUploader />}
-        
-          {!selectedType && <TranscriptionUploader />}
+          {selectedType === 'recording' && (
+            <RecordingUploader serviceType={selectedType} />
+          )}
+
+          {!selectedType && (
+            <TranscriptionUploader serviceType={selectedType} />
+          )}
         </div>
       </div>
 

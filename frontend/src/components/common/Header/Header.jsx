@@ -20,9 +20,22 @@ const SECTION_KEYS = new Map([
   ['/contact', 'contact'],
 ]);
 
+const SERVICE_FLOW_ROUTES = [
+  '/request-service',
+  '/detail-service',
+  '/transcription/quote',
+  '/arrangement/quote',
+  '/recording/quote',
+  '/checkout/review',
+];
+
 const getActiveKey = () => {
   const { pathname } = window.location;
-  // match longest prefix
+
+  if (SERVICE_FLOW_ROUTES.some(route => pathname.startsWith(route))) {
+    return 'request';
+  }
+
   let winner = 'home';
   let bestLen = -1;
   for (const [path, key] of SECTION_KEYS.entries()) {
@@ -55,14 +68,12 @@ function Header() {
   useEffect(() => {
     const updateActive = () => setActiveKey(getActiveKey());
     window.addEventListener('popstate', updateActive);
-    // cũng cập nhật khi mount
     updateActive();
     return () => {
       window.removeEventListener('popstate', updateActive);
     };
   }, []);
 
-  // Khoá cuộn nền khi mở menu mobile + đóng bằng phím Esc
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
     const onKey = e => e.key === 'Escape' && setIsMobileMenuOpen(false);
@@ -203,7 +214,7 @@ function Header() {
 
               <Nav.Link
                 as={Link}
-                to="/soundtosheet"
+                to="/request-service"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === 'request',
                 })}
@@ -257,7 +268,7 @@ function Header() {
             {/* Mobile CTA */}
             <div className={styles.mobileCta}>
               <Link
-                to="/soundtosheet"
+                to="/request-service"
                 className={styles.mobileCtaButton}
                 onClick={closeMobileMenu}
               >
