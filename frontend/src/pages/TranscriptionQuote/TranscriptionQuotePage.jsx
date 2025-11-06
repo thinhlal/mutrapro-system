@@ -61,15 +61,6 @@ function quote(durationSec, opts) {
   return { items, subtotal, total: subtotal };
 }
 
-// ===================== WaveformViewer (inline component) =====================
-/**
- * Props:
- *  - src: string (URL/blob) - audio source
- *  - initial: { startSec, endSec }
- *  - onReady(durationSec)
- *  - onSelectionChange({ startSec, endSec, durationSec })
- *  - onApi(api) -> api: { setRegion(s,e), playSelection(), playPause() }
- */
 function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
   const containerRef = useRef(null);
   const wsRef = useRef(null);
@@ -94,7 +85,11 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
     });
     wsRef.current = ws;
 
-    ws.load(src);
+    ws.load(src).catch(error => {
+      if (error.name !== 'AbortError') {
+        console.error('Failed to load audio:', error);
+      }
+    });
 
     ws.on('ready', () => {
       const d = ws.getDuration();
@@ -146,7 +141,14 @@ function WaveformViewer({ src, initial, onReady, onSelectionChange, onApi }) {
     });
 
     return () => {
-      ws.destroy();
+      try {
+        ws.destroy();
+      } catch (error) {
+        // Bỏ qua lỗi AbortError khi cleanup đang load audio
+        if (error.name !== 'AbortError') {
+          console.error('Wavesurfer cleanup error:', error);
+        }
+      }
       wsRef.current = null;
       regionRef.current = null;
     };
@@ -343,7 +345,7 @@ export default function TranscriptionQuotePage() {
                     durationSec: Math.max(0, end - start),
                   });
                 }}
-                onAfterChange={([start, end]) => {
+                onChangeComplete={([start, end]) => {
                   waveApiRef.current?.setRegion?.(start, end);
                 }}
               />
