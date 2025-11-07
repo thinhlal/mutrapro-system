@@ -149,7 +149,7 @@ function UserMenu() {
             </li>
 
             {/* Dashboard for Coordinator/Admin */}
-            {(user?.role === 'COORDINATOR' || user?.role === 'ADMIN') && (
+            {user?.role === 'SERVICE_COORDINATOR' && (
               <li>
                 <Link
                   to="/coordinator/dashboard"
@@ -157,9 +157,35 @@ function UserMenu() {
                   onClick={handleMenuItemClick}
                 >
                   <DashboardOutlined className={styles.dropdownIcon} />
-                  <span>Dashboard</span>
+                  <span>Coordinator Dashboard</span>
                 </Link>
               </li>
+            )}
+
+            {/* Admin Dashboard */}
+            {user?.role === 'SYSTEM_ADMIN' && (
+              <>
+                <li>
+                  <Link
+                    to="/admin/dashboard"
+                    className={styles.dropdownItem}
+                    onClick={handleMenuItemClick}
+                  >
+                    <DashboardOutlined className={styles.dropdownIcon} />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/coordinator/dashboard"
+                    className={styles.dropdownItem}
+                    onClick={handleMenuItemClick}
+                  >
+                    <DashboardOutlined className={styles.dropdownIcon} />
+                    <span>Coordinator Dashboard</span>
+                  </Link>
+                </li>
+              </>
             )}
 
             {/* Settings */}

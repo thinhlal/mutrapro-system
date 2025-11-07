@@ -52,6 +52,8 @@ export const API_ENDPOINTS = {
   },
 
   USER: {
+    // Controller: GET /users (get all users)
+    GET_ALL: `${IDENTITY_PATH}/users`,
     // Controller: /users/{id}/full (users + users_auth)
     FULL: id => `${IDENTITY_PATH}/users/${id}/full`,
     // Controller: /users/{id}/full (users + users_auth)
