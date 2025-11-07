@@ -1,6 +1,6 @@
 
 import { create } from 'zustand';
-import * as notationService from '../services/notationService';
+import { getAllNotationInstruments } from '../services/notationInstrumentService';
 
 export const useInstrumentStore = create((set, get) => ({
   // --- State ---
@@ -11,12 +11,13 @@ export const useInstrumentStore = create((set, get) => ({
   // --- Actions ---
 
   /**
-   * Fetch all notation instruments
+   * Fetch all notation instruments (active only for public users)
    */
   fetchInstruments: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await notationService.getNotationInstruments();
+      // includeInactive = false để chỉ lấy active instruments cho public users
+      const response = await getAllNotationInstruments(null, false);
       set({
         instruments: response.data || [],
         loading: false,

@@ -205,7 +205,7 @@ const UserManagement = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 180,
+      width: 280,
       render: (_, record) => (
         <Space>
           <Button

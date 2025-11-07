@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -9,8 +9,11 @@ import {
   ContainerOutlined,
   TeamOutlined,
   SettingOutlined,
+  BarsOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme, Avatar, Dropdown } from 'antd';
+import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './AdminLayout.module.css';
 
 const { Header, Sider, Content } = Layout;
@@ -28,6 +31,11 @@ const menuItems = [
     label: <Link to="/admin/users">User Management</Link>,
   },
   {
+    key: '/admin/notation-instruments',
+    icon: <BarsOutlined />,
+    label: <Link to="/admin/notation-instruments">Notation Instruments</Link>,
+  },
+  {
     key: '/admin/contracts',
     icon: <ContainerOutlined />,
     label: <Link to="/admin/contracts">Contracts</Link>,
@@ -42,29 +50,47 @@ const menuItems = [
     icon: <SettingOutlined />,
     label: <Link to="/admin/settings">Settings</Link>,
   },
-  {
-    key: 'profile',
-    icon: <UserOutlined />,
-    label: <Link to="/profile">Profile</Link>,
-  },
 ];
-
-// Dropdown menu cho User Avatar
-const userMenu = (
-  <Menu>
-    <Menu.Item key="profile">
-      <Link to="/profile">My Profile</Link>
-    </Menu.Item>
-    <Menu.Item key="logout">Logout</Menu.Item>
-  </Menu>
-);
 
 const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await logout();
+      message.success('Đăng xuất thành công');
+      navigate('/login');
+    } catch (error) {
+      message.error('Lỗi khi đăng xuất');
+      setLoggingOut(false);
+    }
+  };
+
+  // Dropdown menu cho User Avatar
+  const userMenu = (
+    <Menu>
+      <Menu.Item key="profile" icon={<UserOutlined />}>
+        <Link to="/admin/profile">My Profile</Link>
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item
+        key="logout"
+        icon={<LogoutOutlined />}
+        onClick={handleLogout}
+        disabled={loggingOut}
+      >
+        {loggingOut ? 'Logging out...' : 'Logout'}
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
     <Layout className={styles.adminLayout}>
@@ -94,7 +120,9 @@ const AdminLayout = () => {
             <Dropdown overlay={userMenu} trigger={['click']}>
               <a onClick={e => e.preventDefault()}>
                 <Avatar icon={<UserOutlined />} />
-                <span className={styles.userName}>Admin Name</span>
+                <span className={styles.userName}>
+                  {user?.fullName || user?.email || 'Admin'}
+                </span>
               </a>
             </Dropdown>
           </div>
