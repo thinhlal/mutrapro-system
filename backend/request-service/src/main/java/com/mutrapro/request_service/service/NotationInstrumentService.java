@@ -105,12 +105,14 @@ public class NotationInstrumentService {
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             validateImageFile(request.getImage());
             try {
+                // Upload with public-read ACL so images can be accessed directly
                 String s3Url = s3Service.uploadFile(
                         request.getImage().getInputStream(),
                         request.getImage().getOriginalFilename(),
                         request.getImage().getContentType(),
                         request.getImage().getSize(),
-                        "instruments"
+                        "instruments",
+                        true  // isPublic = true for instrument images
                 );
                 instrument.setImage(s3Url);
             } catch (IOException e) {
@@ -141,13 +143,14 @@ public class NotationInstrumentService {
         validateImageFile(imageFile);
         
         try {
-            // Upload to S3
+            // Upload to S3 with public-read ACL so images can be accessed directly
             String s3Url = s3Service.uploadFile(
                     imageFile.getInputStream(),
                     imageFile.getOriginalFilename(),
                     imageFile.getContentType(),
                     imageFile.getSize(),
-                    "instruments"  // folder prefix
+                    "instruments",  // folder prefix
+                    true  // isPublic = true for instrument images
             );
             
             // Update instrument image URL

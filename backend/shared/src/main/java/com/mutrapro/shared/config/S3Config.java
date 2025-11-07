@@ -9,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @ConditionalOnProperty(name = "aws.s3.enabled", havingValue = "true", matchIfMissing = false)
@@ -36,8 +37,29 @@ public class S3Config {
     }
 
     @Bean
-    public S3Service s3Service(S3Client s3Client, @Value("${aws.s3.bucket-name:mutrapro-dev-files}") String bucketName) {
-        return new S3Service(s3Client, bucketName);
+    public S3Presigner s3Presigner(
+            @Value("${aws.s3.region:ap-southeast-1}") String region,
+            @Value("${aws.s3.access-key:}") String accessKey,
+            @Value("${aws.s3.secret-key:}") String secretKey) {
+        
+        // Validate that access-key and secret-key are not empty
+        if (accessKey == null || accessKey.trim().isEmpty()) {
+            throw new IllegalStateException("AWS S3 access-key cannot be blank. Please configure aws.s3.access-key or set aws.s3.enabled=false to disable S3.");
+        }
+        if (secretKey == null || secretKey.trim().isEmpty()) {
+            throw new IllegalStateException("AWS S3 secret-key cannot be blank. Please configure aws.s3.secret-key or set aws.s3.enabled=false to disable S3.");
+        }
+        
+        return S3Presigner.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)))
+                .build();
+    }
+
+    @Bean
+    public S3Service s3Service(S3Client s3Client, S3Presigner s3Presigner, @Value("${aws.s3.bucket-name:mutrapro-dev-files}") String bucketName) {
+        return new S3Service(s3Client, s3Presigner, bucketName);
     }
 }
 
