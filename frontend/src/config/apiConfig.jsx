@@ -52,6 +52,8 @@ export const API_ENDPOINTS = {
   },
 
   USER: {
+    // Controller: GET /users (get all users)
+    GET_ALL: `${IDENTITY_PATH}/users`,
     // Controller: /users/{id}/full (users + users_auth)
     FULL: id => `${IDENTITY_PATH}/users/${id}/full`,
     // Controller: /users/{id}/full (users + users_auth)
@@ -111,6 +113,18 @@ export const API_ENDPOINTS = {
   // === Request Service (Quản lý Notation, Requests) ===
   REQUEST: {
     NOTATION_INSTRUMENTS: `${REQUEST_PATH}/notation-instruments`,
+  },
+
+  // === Notation Instruments Management ===
+  NOTATION_INSTRUMENTS: {
+    // GET /notation-instruments?usage=transcription|arrangement|both&includeInactive=true
+    GET_ALL: `${REQUEST_PATH}/notation-instruments`,
+    // POST /notation-instruments (with multipart/form-data)
+    CREATE: `${REQUEST_PATH}/notation-instruments`,
+    // PUT /notation-instruments/{id} (with multipart/form-data)
+    UPDATE: id => `${REQUEST_PATH}/notation-instruments/${id}`,
+    // POST /notation-instruments/{id}/image
+    UPLOAD_IMAGE: id => `${REQUEST_PATH}/notation-instruments/${id}/image`,
   },
 };
 

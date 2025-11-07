@@ -4,6 +4,19 @@ import axiosInstance from '../utils/axiosInstance';
 import axiosInstancePublic from '../utils/axiosInstancePublic';
 
 /**
+ * Get all users (SYSTEM_ADMIN only)
+ * Endpoint: GET /api/users
+ */
+export const getAllUsers = async () => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.USER.GET_ALL);
+    return response.data; // ApiResponse<List<FullUserResponse>>
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách users' };
+  }
+};
+
+/**
  * Get user by ID (basic info from users_auth table)
  * Endpoint: GET /api/users/{id}
  */

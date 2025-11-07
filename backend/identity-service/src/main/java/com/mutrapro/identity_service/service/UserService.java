@@ -14,6 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * User Service implementation với proper exception handling
  */
@@ -30,9 +33,38 @@ public class UserService {
     // ===== PUBLIC API METHODS =====
     
     /**
+     * Lấy danh sách tất cả users (chỉ SYSTEM_ADMIN)
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public List<FullUserResponse> getAllUsers() {
+        log.info("Getting all users");
+        List<UsersAuth> usersAuthList = usersAuthRepository.findAll();
+        
+        return usersAuthList.stream()
+            .map(userAuth -> {
+                User user = userRepository.findByUserId(userAuth.getUserId()).orElse(null);
+                return FullUserResponse.builder()
+                    .userId(userAuth.getUserId())
+                    .fullName(user != null ? user.getFullName() : null)
+                    .phone(user != null ? user.getPhone() : null)
+                    .address(user != null ? user.getAddress() : null)
+                    .avatarUrl(user != null ? user.getAvatarUrl() : null)
+                    .active(user != null && user.isActive())
+                    .email(userAuth.getEmail())
+                    .role(userAuth.getRole().name())
+                    .emailVerified(userAuth.isEmailVerified())
+                    .authProvider(userAuth.getAuthProvider())
+                    .authProviderId(userAuth.getAuthProviderId())
+                    .isNoPassword(!userAuth.isHasLocalPassword())
+                    .build();
+            })
+            .collect(Collectors.toList());
+    }
+    
+    /**
      * Tìm user theo ID và trả về UserResponse
      */
-    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
     public UserResponse findById(String id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> UserNotFoundException.byId(id));
@@ -46,7 +78,7 @@ public class UserService {
      * Method này chỉ dùng để update profile sau khi user đã được tạo
      */
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UserResponse createUser(CreateUserRequest request) {
         throw new UnsupportedOperationException(
             "User creation not supported via this endpoint. Users must be created via registration flow."
@@ -57,7 +89,7 @@ public class UserService {
      * Cập nhật user
      */
     @Transactional
-    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN') or authentication.name == @userRepository.findById(#id).orElse(null)?.email")
     public UserResponse updateUser(String id, UpdateUserRequest request) {
         log.info("Updating user with ID: {}", id);
         
@@ -76,7 +108,7 @@ public class UserService {
      * Xóa user
      */
     @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public void deleteUser(String id) {
         log.info("Deleting user with ID: {}", id);
         
