@@ -46,6 +46,8 @@ import ContractsList from './pages/ContractsList/ContractsList';
 
 // Admin Pages
 import UserManagement from './pages/UserManagement/UserManagement';
+import NotationInstruments from './pages/NotationInstruments/NotationInstruments';
+import AdminProfile from './pages/AdminProfile/AdminProfile';
 
 import './App.css';
 
@@ -195,9 +197,14 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
+            <Route
+              path="notation-instruments"
+              element={<NotationInstruments />}
+            />
             <Route path="contracts" element={<ContractsList />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="settings" element={<Dashboard />} />
+            <Route path="profile" element={<AdminProfile />} />
           </Route>
 
           {/* --- FALLBACK ROUTE --- */}

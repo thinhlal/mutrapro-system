@@ -1,0 +1,18 @@
+.container {
+  padding: 0;
+}
+
+.container :global(.ant-table-wrapper) {
+  background: white;
+}
+
+.container :global(.ant-upload-list-picture-card-container) {
+  width: 104px;
+  height: 104px;
+}
+
+.container :global(.ant-descriptions-bordered .ant-descriptions-item-label) {
+  font-weight: 600;
+  width: 200px;
+}
+

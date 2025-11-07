@@ -114,6 +114,18 @@ export const API_ENDPOINTS = {
   REQUEST: {
     NOTATION_INSTRUMENTS: `${REQUEST_PATH}/notation-instruments`,
   },
+
+  // === Notation Instruments Management ===
+  NOTATION_INSTRUMENTS: {
+    // GET /notation-instruments?usage=transcription|arrangement|both&includeInactive=true
+    GET_ALL: `${REQUEST_PATH}/notation-instruments`,
+    // POST /notation-instruments (with multipart/form-data)
+    CREATE: `${REQUEST_PATH}/notation-instruments`,
+    // PUT /notation-instruments/{id} (with multipart/form-data)
+    UPDATE: id => `${REQUEST_PATH}/notation-instruments/${id}`,
+    // POST /notation-instruments/{id}/image
+    UPLOAD_IMAGE: id => `${REQUEST_PATH}/notation-instruments/${id}/image`,
+  },
 };
 
 // Log configuration in development
