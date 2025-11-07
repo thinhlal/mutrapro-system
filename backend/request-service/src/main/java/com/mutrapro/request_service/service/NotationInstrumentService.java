@@ -1,6 +1,7 @@
 package com.mutrapro.request_service.service;
 
 import com.mutrapro.request_service.dto.request.CreateNotationInstrumentRequest;
+import com.mutrapro.request_service.dto.request.UpdateNotationInstrumentRequest;
 import com.mutrapro.request_service.entity.NotationInstrument;
 import com.mutrapro.request_service.enums.NotationInstrumentUsage;
 import com.mutrapro.request_service.repository.NotationInstrumentRepository;
@@ -164,6 +165,68 @@ public class NotationInstrumentService {
             log.error("Error reading image file: {}", e.getMessage(), e);
             throw new RuntimeException("Error reading image file: " + e.getMessage(), e);
         }
+    }
+
+    @Transactional
+    public NotationInstrumentResponse updateInstrument(String instrumentId, UpdateNotationInstrumentRequest request) {
+        // Find instrument
+        NotationInstrument instrument = notationInstrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> NotationInstrumentNotFoundException.byId(instrumentId));
+        
+        // Update instrumentName if provided
+        if (request.getInstrumentName() != null && !request.getInstrumentName().trim().isEmpty()) {
+            // Check if new name already exists (excluding current instrument)
+            notationInstrumentRepository.findByInstrumentNameIgnoreCase(request.getInstrumentName())
+                    .ifPresent(existing -> {
+                        // Only throw error if it's a different instrument
+                        if (!existing.getInstrumentId().equals(instrumentId)) {
+                            throw NotationInstrumentDuplicateException.create(request.getInstrumentName());
+                        }
+                    });
+            instrument.setInstrumentName(request.getInstrumentName().trim());
+        }
+        
+        // Update usage if provided
+        if (request.getUsage() != null) {
+            instrument.setUsage(request.getUsage());
+        }
+        
+        // Update isActive if provided
+        if (request.getIsActive() != null) {
+            instrument.setActive(request.getIsActive());
+        }
+        
+        // Update image if provided
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            validateImageFile(request.getImage());
+            try {
+                // Upload new image with public-read ACL
+                String s3Url = s3Service.uploadFile(
+                        request.getImage().getInputStream(),
+                        request.getImage().getOriginalFilename(),
+                        request.getImage().getContentType(),
+                        request.getImage().getSize(),
+                        "instruments",
+                        true  // isPublic = true for instrument images
+                );
+                instrument.setImage(s3Url);
+                log.info("Image updated for instrument: instrumentId={}, newImageUrl={}", instrumentId, s3Url);
+            } catch (IOException e) {
+                log.error("Error reading image file during update: {}", e.getMessage(), e);
+                throw new RuntimeException("Error reading image file: " + e.getMessage(), e);
+            }
+        }
+        
+        NotationInstrument saved = notationInstrumentRepository.save(instrument);
+        log.info("Updated instrument: instrumentId={}, instrumentName={}", saved.getInstrumentId(), saved.getInstrumentName());
+        
+        return NotationInstrumentResponse.builder()
+                .instrumentId(saved.getInstrumentId())
+                .instrumentName(saved.getInstrumentName())
+                .usage(saved.getUsage())
+                .isActive(saved.isActive())
+                .image(saved.getImage())
+                .build();
     }
 
     private void validateImageFile(MultipartFile file) {

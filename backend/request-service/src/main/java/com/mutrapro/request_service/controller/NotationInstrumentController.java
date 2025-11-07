@@ -1,6 +1,7 @@
 package com.mutrapro.request_service.controller;
 
 import com.mutrapro.request_service.dto.request.CreateNotationInstrumentRequest;
+import com.mutrapro.request_service.dto.request.UpdateNotationInstrumentRequest;
 import com.mutrapro.request_service.dto.response.ImageUploadResponse;
 import com.mutrapro.request_service.dto.response.NotationInstrumentResponse;
 import com.mutrapro.request_service.enums.NotationInstrumentUsage;
@@ -55,6 +56,20 @@ public class NotationInstrumentController {
                 .message("Notation instrument created successfully")
                 .data(created)
                 .statusCode(201)
+                .build();
+    }
+
+    @PutMapping(value = "/{instrumentId}", consumes = {"multipart/form-data"})
+    @Operation(summary = "Cập nhật thông tin nhạc cụ ký âm (có thể update image cùng lúc)")
+    public ApiResponse<NotationInstrumentResponse> updateInstrument(
+            @Parameter(description = "ID của nhạc cụ ký âm")
+            @PathVariable String instrumentId,
+            @Valid @ModelAttribute UpdateNotationInstrumentRequest request) {
+        log.info("Updating instrument: instrumentId={}", instrumentId);
+        NotationInstrumentResponse updated = service.updateInstrument(instrumentId, request);
+        return ApiResponse.<NotationInstrumentResponse>builder()
+                .message("Instrument updated successfully")
+                .data(updated)
                 .build();
     }
 
