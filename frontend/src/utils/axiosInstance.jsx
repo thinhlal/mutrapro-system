@@ -28,9 +28,15 @@ const processQueue = (error, token = null) => {
 // Request interceptor - CHỈ LOG LỖI, KHÔNG LOG SUCCESS
 axiosInstance.interceptors.request.use(
   config => {
-    const token = getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const SKIP_AUTH_HEADER_URLS = [API_ENDPOINTS.AUTH.REFRESH];
+
+    const isSkipAuthHeader = SKIP_AUTH_HEADER_URLS.includes(config.url);
+
+    if (!isSkipAuthHeader) {
+      const token = getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

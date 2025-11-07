@@ -16,11 +16,28 @@ spring:
   sql:
     init:
       mode: never
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:project-service-file-consumer}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "*"
 
 logging:
   level:
     root: INFO
+    com.mutrapro.project_service: INFO
 
 # JWT Configuration - Must match auth-service signerKey
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
+
+# Event Topics Configuration
+app:
+  event-topics:
+    mappings:
+      file.uploaded: ${KAFKA_TOPIC_FILE_UPLOADED:file-uploaded}

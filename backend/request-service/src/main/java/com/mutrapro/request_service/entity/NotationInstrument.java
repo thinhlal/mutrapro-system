@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "notation_instruments")
 @Getter
@@ -34,6 +37,10 @@ public class NotationInstrument extends BaseEntity<String> {
 
     @Column(name = "image", length = 500)
     String image;  // URL hoặc path đến hình ảnh của nhạc cụ
+
+    @OneToMany(mappedBy = "notationInstrument", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<RequestNotationInstrument> requestNotationInstruments = new ArrayList<>();
 }
 
 

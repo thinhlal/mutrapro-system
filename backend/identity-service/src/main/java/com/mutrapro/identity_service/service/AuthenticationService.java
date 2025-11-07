@@ -458,6 +458,7 @@ public class AuthenticationService {
                 .jwtID(jti) // Add JWT ID claim
                 .claim("type", "access")
                 .claim("scope", usersAuth.getRole())
+                .claim("userId", usersAuth.getUserId())  // Add userId as claim
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -488,6 +489,7 @@ public class AuthenticationService {
                 .jwtID(jti)
                 .claim("type", "refresh")
                 .claim("scope", usersAuth.getRole())
+                .claim("userId", usersAuth.getUserId())  // Add userId as claim
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());

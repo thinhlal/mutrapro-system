@@ -49,20 +49,46 @@ public class FileUploadService {
     @NonFinal
     @Value("${file.upload.allowed-audio-types}")
     String allowedAudioTypes;
+    
+    @NonFinal
+    @Value("${file.upload.allowed-sheet-music-types}")
+    String allowedSheetMusicTypes;
 
+    /**
+     * Upload audio file (for transcription or reference)
+     */
     public void uploadAudioFile(MultipartFile file, String requestId) {
-        validateFile(file);
-        
+        validateAudioFile(file);
+        uploadFile(file, requestId, "audio", "audio");
+    }
+    
+    /**
+     * Upload sheet music file (PDF, MusicXML, MIDI for arrangement)
+     */
+    public void uploadSheetMusicFile(MultipartFile file, String requestId) {
+        validateSheetMusicFile(file);
+        uploadFile(file, requestId, "sheet_music", "sheet-music");
+    }
+    
+    /**
+     * Generic file upload method
+     * @param file file to upload
+     * @param requestId service request ID
+     * @param contentType content type enum value (audio, sheet_music, etc.)
+     * @param folderPrefix S3 folder prefix (audio, sheet-music, etc.)
+     */
+    private void uploadFile(MultipartFile file, String requestId, String contentType, String folderPrefix) {
         String userId = getCurrentUserId();
         
         try {
-            // Upload to S3
+            // Upload to S3 (private file, not public)
             String s3Url = s3Service.uploadFile(
                     file.getInputStream(),
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),
-                    "audio"  // folder prefix
+                    folderPrefix,
+                    false  // isPublic = false for customer uploads
             );
             
             // file_id sẽ được project-service generate khi tạo file record
@@ -74,8 +100,8 @@ public class FileUploadService {
                     .fileSize(file.getSize())
                     .mimeType(file.getContentType())
                     .fileSource("customer_upload")  // file_source_type enum
-                    .contentType("audio")  // content_type enum
-                    .description("Audio file uploaded by customer")
+                    .contentType(contentType)  // content_type enum: audio, sheet_music, etc.
+                    .description(String.format("%s file uploaded by customer", contentType))
                     .uploadDate(Instant.now())
                     .createdBy(userId)
                     .requestId(requestId)  // Link với service request
@@ -87,7 +113,7 @@ public class FileUploadService {
             // aggregateType là "service-request" vì đây là luồng phụ trong service request
             var eventPayload = objectMapper.valueToTree(fileEvent);
             OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateId(UUID.fromString(requestId))
+                    .aggregateId(UUID.fromString(requestId))  // requestId is UUID string format
                     .aggregateType("service-request")
                     .eventType("file.uploaded")
                     .eventPayload(eventPayload)
@@ -95,7 +121,8 @@ public class FileUploadService {
                     .build();
             
             outboxEventRepository.save(outboxEvent);
-            log.info("File uploaded to S3 and event saved to outbox: s3Url={}, outboxId={}", s3Url, outboxEvent.getOutboxId());
+            log.info("File uploaded to S3 and event saved to outbox: contentType={}, s3Url={}, outboxId={}", 
+                    contentType, s3Url, outboxEvent.getOutboxId());
         } catch (IOException e) {
             log.error("Error reading file: {}", e.getMessage(), e);
             throw FileReadException.create(e.getMessage(), e);
@@ -105,7 +132,15 @@ public class FileUploadService {
         }
     }
 
-    private void validateFile(MultipartFile file) {
+    private void validateAudioFile(MultipartFile file) {
+        validateFile(file, allowedAudioTypes, "audio");
+    }
+    
+    private void validateSheetMusicFile(MultipartFile file) {
+        validateFile(file, allowedSheetMusicTypes, "sheet music");
+    }
+    
+    private void validateFile(MultipartFile file, String allowedTypesConfig, String fileTypeName) {
         if (file == null || file.isEmpty()) {
             throw FileRequiredException.create();
         }
@@ -115,16 +150,23 @@ public class FileUploadService {
         }
         
         String contentType = file.getContentType();
-        List<String> allowedTypes = Arrays.asList(allowedAudioTypes.split(","));
+        List<String> allowedTypes = Arrays.asList(allowedTypesConfig.split(","));
         
         if (contentType == null || !allowedTypes.contains(contentType)) {
-            throw FileTypeNotAllowedException.create(contentType, allowedAudioTypes);
+            throw FileTypeNotAllowedException.create(contentType, allowedTypesConfig);
         }
     }
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            // Get userId from claim (preferred) or fallback to subject (email) for backward compatibility
+            String userId = jwt.getClaimAsString("userId");
+            if (userId != null && !userId.isEmpty()) {
+                return userId;
+            }
+            // Fallback: if userId claim is not present, use subject (should not happen with new tokens)
+            log.warn("userId claim not found in JWT, falling back to subject. Token may be outdated.");
             return jwt.getSubject();
         }
         throw UserNotAuthenticatedException.create();

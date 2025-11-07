@@ -45,6 +45,7 @@ file:
     max-size: 104857600  # 100MB
     allowed-audio-types: audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a
     allowed-image-types: image/jpeg,image/jpg,image/png
+    allowed-sheet-music-types: application/pdf,application/xml,text/xml,audio/midi,audio/x-midi,audio/mid
 
 # AWS S3 Configuration
 aws:

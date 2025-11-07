@@ -3,6 +3,8 @@ server:
 
 app:
   api-prefix: ${API_PREFIX:/api/v1}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
 
 management:
   endpoints:
@@ -22,15 +24,6 @@ spring:
         webflux:
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-          globalcors:
-            cors-configurations:
-              '[/**]':
-                allowedOrigins:
-                  - "http://localhost:5173"
-                  - "http://127.0.0.1:5173"
-                allowedMethods: "*"
-                allowedHeaders: "*"
-                allowCredentials: true
           routes:
             # Identity Service
             - id: identity-service
@@ -90,5 +83,3 @@ spring:
 
 jwt:
   signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}
-
-

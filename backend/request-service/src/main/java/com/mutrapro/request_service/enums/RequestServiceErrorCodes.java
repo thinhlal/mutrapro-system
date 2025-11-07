@@ -48,6 +48,21 @@ public enum RequestServiceErrorCodes implements ErrorCode {
     INSTRUMENT_NAME_DUPLICATE("REQUEST_6007", 409,
         "https://docs.mutrapro.com/errors/REQUEST_6007",
         "Instrument name already exists",
+        Retryable.NON_TRANSIENT),
+    
+    INSTRUMENTS_REQUIRED("REQUEST_6008", 400,
+        "https://docs.mutrapro.com/errors/REQUEST_6008",
+        "At least one notation instrument is required for this request type",
+        Retryable.NON_TRANSIENT),
+    
+    INSTRUMENT_USAGE_NOT_COMPATIBLE("REQUEST_6009", 400,
+        "https://docs.mutrapro.com/errors/REQUEST_6009",
+        "Instrument usage is not compatible with request type",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_TYPE_NOT_SUPPORTED_FOR_REQUEST("REQUEST_6010", 400,
+        "https://docs.mutrapro.com/errors/REQUEST_6010",
+        "File type is not supported for this request type",
         Retryable.NON_TRANSIENT);
 
     private final String code;

@@ -7,6 +7,7 @@ import com.mutrapro.identity_service.dto.response.VerificationResponse;
 import com.mutrapro.identity_service.dto.response.VerificationStatusResponse;
 import com.mutrapro.identity_service.entity.EmailVerification;
 import com.mutrapro.identity_service.entity.OutboxEvent;
+import com.mutrapro.identity_service.entity.User;
 import com.mutrapro.identity_service.entity.UsersAuth;
 import com.mutrapro.identity_service.enums.VerificationChannel;
 import com.mutrapro.identity_service.enums.VerificationStatus;
@@ -131,7 +132,7 @@ public class EmailVerificationService {
 
         // Get user full name
         String fullName = userRepository.findById(usersAuth.getUserId())
-                .map(user -> user.getFullName())
+                .map(User::getFullName)
                 .orElse(usersAuth.getEmail());
         
         // Save email verification event to outbox

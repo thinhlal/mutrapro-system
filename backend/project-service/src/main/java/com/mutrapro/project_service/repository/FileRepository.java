@@ -1,0 +1,24 @@
+package com.mutrapro.project_service.repository;
+
+import com.mutrapro.project_service.entity.File;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface FileRepository extends JpaRepository<File, UUID> {
+
+    List<File> findByRequestId(String requestId);
+
+    List<File> findByAssignmentId(UUID assignmentId);
+
+    List<File> findByBookingId(UUID bookingId);
+
+    List<File> findByCreatedBy(String createdBy);
+
+    Optional<File> findByFilePath(String filePath);  // For idempotency check
+}
+
