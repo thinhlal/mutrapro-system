@@ -1,0 +1,13 @@
+.userManagement {
+  padding: 0;
+}
+
+.userManagement :global(.ant-table-wrapper) {
+  background: white;
+}
+
+.userManagement :global(.ant-descriptions-bordered .ant-descriptions-item-label) {
+  font-weight: 600;
+  width: 200px;
+}
+

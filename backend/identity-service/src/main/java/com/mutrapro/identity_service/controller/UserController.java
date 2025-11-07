@@ -7,6 +7,9 @@ import com.mutrapro.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +23,19 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     
     private final UserService userService;
+    
+    /**
+     * Get all users (SYSTEM_ADMIN only)
+     */
+    @GetMapping
+    public ApiResponse<List<FullUserResponse>> getAllUsers() {
+        log.info("Getting all users");
+        List<FullUserResponse> users = userService.getAllUsers();
+        return ApiResponse.<List<FullUserResponse>>builder()
+            .message("Users retrieved successfully")
+            .data(users)
+            .build();
+    }
     
     /**
      * Get user by ID

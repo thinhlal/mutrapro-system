@@ -12,6 +12,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 
 // Layouts
 import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
+import AdminLayout from './layouts/AdminLayout/AdminLayout';
 
 // Customer Pages
 import HomePage from './pages/HomePage/HomePage';
@@ -43,6 +44,9 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import ContractBuilder from './pages/ContractBuilder/ContractBuilder';
 import ContractsList from './pages/ContractsList/ContractsList';
 
+// Admin Pages
+import UserManagement from './pages/UserManagement/UserManagement';
+
 import './App.css';
 
 function App() {
@@ -69,12 +73,12 @@ function App() {
           <Route path="/authenticate" element={<AuthenticatePage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* --- PROTECTED CUSTOMER ROUTES --- */}
+          {/* --- PROTECTED CUSTOMER ROUTES (All authenticated users) --- */}
           <Route
             path="/profile"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <ProfilePage />
               </ProtectedRoute>
@@ -84,7 +88,7 @@ function App() {
             path="/profile/notifications"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <NotificationsPage />
               </ProtectedRoute>
@@ -94,7 +98,7 @@ function App() {
             path="/profile/subscription"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <SubscriptionPage />
               </ProtectedRoute>
@@ -104,7 +108,7 @@ function App() {
             path="/editor"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <NotationEditor />
               </ProtectedRoute>
@@ -114,19 +118,19 @@ function App() {
             path="/request-service"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <DiscoverProsPage />
               </ProtectedRoute>
             }
           />
 
-          {/* --- PROTECTED QUOTE ROUTES --- */}
+          {/* --- PROTECTED QUOTE ROUTES (All authenticated users) --- */}
           <Route
             path="/transcription/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <TranscriptionQuotePage />
               </ProtectedRoute>
@@ -136,7 +140,7 @@ function App() {
             path="/arrangement/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <ArrangementQuotePage />
               </ProtectedRoute>
@@ -146,7 +150,7 @@ function App() {
             path="/recording/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <RecordingQuotePage />
               </ProtectedRoute>
@@ -156,7 +160,7 @@ function App() {
             path="/checkout/review"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'COORDINATOR', 'ADMIN']}
+                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
               >
                 <ReviewOrderPage />
               </ProtectedRoute>
@@ -167,7 +171,7 @@ function App() {
           <Route
             path="/coordinator"
             element={
-              <ProtectedRoute allowedRoles={['COORDINATOR', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}>
                 <CoordinatorLayout />
               </ProtectedRoute>
             }
@@ -177,6 +181,23 @@ function App() {
             <Route path="contact-builder" element={<ContractBuilder />} />
             <Route path="contracts-list" element={<ContractsList />} />
             <Route path="task" element={<Tasks />} />
+          </Route>
+
+          {/* --- ADMIN ROUTES (PROTECTED) --- */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['SYSTEM_ADMIN']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="contracts" element={<ContractsList />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="settings" element={<Dashboard />} />
           </Route>
 
           {/* --- FALLBACK ROUTE --- */}
