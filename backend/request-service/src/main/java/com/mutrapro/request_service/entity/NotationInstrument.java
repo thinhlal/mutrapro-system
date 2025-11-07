@@ -31,7 +31,9 @@ public class NotationInstrument extends BaseEntity<String> {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     boolean isActive = true;
-    
+
+    @Column(name = "image", length = 500)
+    String image;  // URL hoặc path đến hình ảnh của nhạc cụ
 }
 
 

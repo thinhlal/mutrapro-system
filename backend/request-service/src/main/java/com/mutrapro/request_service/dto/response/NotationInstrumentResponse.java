@@ -14,6 +14,7 @@ public class NotationInstrumentResponse {
     String instrumentName;
     NotationInstrumentUsage usage;
     boolean isActive;
+    String image;  // URL hoặc path đến hình ảnh của nhạc cụ
 }
 
 

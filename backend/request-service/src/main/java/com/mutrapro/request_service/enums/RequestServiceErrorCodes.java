@@ -38,6 +38,16 @@ public enum RequestServiceErrorCodes implements ErrorCode {
     USER_NOT_AUTHENTICATED("REQUEST_6005", 401,
         "https://docs.mutrapro.com/errors/REQUEST_6005",
         "User not authenticated",
+        Retryable.NON_TRANSIENT),
+    
+    RESOURCE_NOT_FOUND("REQUEST_6006", 404,
+        "https://docs.mutrapro.com/errors/REQUEST_6006",
+        "Resource not found",
+        Retryable.NON_TRANSIENT),
+    
+    INSTRUMENT_NAME_DUPLICATE("REQUEST_6007", 409,
+        "https://docs.mutrapro.com/errors/REQUEST_6007",
+        "Instrument name already exists",
         Retryable.NON_TRANSIENT);
 
     private final String code;

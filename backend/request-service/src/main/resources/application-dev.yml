@@ -44,6 +44,7 @@ file:
   upload:
     max-size: 104857600  # 100MB
     allowed-audio-types: audio/mpeg,audio/mp3,audio/wav,audio/wave,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a
+    allowed-image-types: image/jpeg,image/jpg,image/png
 
 # AWS S3 Configuration
 aws:
