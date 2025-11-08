@@ -6,13 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.UUID;
@@ -46,79 +46,60 @@ public class S3Service {
      * @param contentType MIME type
      * @param contentLength file size
      * @param folderPrefix folder prefix (e.g., "instruments", "audio")
-     * @param isPublic if true, set ACL to public-read (requires bucket to allow public ACLs or bucket policy)
+     * @param isPublic if true, return public URL (requires bucket policy for public access), otherwise return pre-signed URL
      * @return S3 URL (public URL if isPublic=true, otherwise pre-signed URL)
      * 
-     * IMPORTANT: For isPublic=true to work, you need to configure your S3 bucket:
-     * 1. Option A: Disable "Block public access" settings for ACLs (less secure)
-     * 2. Option B: Use Bucket Policy instead of ACLs (recommended):
-     *    {
-     *      "Version": "2012-10-17",
-     *      "Statement": [{
-     *        "Effect": "Allow",
-     *        "Principal": "*",
-     *        "Action": "s3:GetObject",
-     *        "Resource": "arn:aws:s3:::bucket-name/folder-prefix/*"
-     *      }]
-     *    }
-     * 
-     * If bucket blocks public ACLs and no policy exists, upload will fail.
+     * NOTE: For isPublic=true to work, you need to configure bucket policy to allow public read access:
+     * {
+     *   "Version": "2012-10-17",
+     *   "Statement": [{
+     *     "Effect": "Allow",
+     *     "Principal": "*",
+     *     "Action": "s3:GetObject",
+     *     "Resource": "arn:aws:s3:::bucket-name/folder-prefix/*"
+     *   }]
+     * }
      */
     public String uploadFile(InputStream inputStream, String fileName, String contentType, long contentLength, String folderPrefix, boolean isPublic) {
+        // Read input stream into byte array
+        byte[] fileContent;
         try {
-            String fileKey = generateFileKey(fileName, folderPrefix);
-            
-            PutObjectRequest.Builder putObjectRequestBuilder = PutObjectRequest.builder()
+            fileContent = inputStream.readAllBytes();
+        } catch (IOException e) {
+            log.error("Error reading file content: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to read file content: " + e.getMessage(), e);
+        }
+        
+        String fileKey = generateFileKey(fileName, folderPrefix);
+        
+        // Upload file without ACL (rely on bucket policy for public access if needed)
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileKey)
                     .contentType(contentType)
-                    .contentLength(contentLength);
+                    .contentLength((long) fileContent.length)
+                    .build();
             
-            // Set ACL to public-read if requested
-            // NOTE: This requires bucket to allow public ACLs OR bucket policy to allow public access
-            if (isPublic) {
-                try {
-                    putObjectRequestBuilder.acl(ObjectCannedACL.PUBLIC_READ);
-                } catch (Exception e) {
-                    log.warn("Failed to set public-read ACL (bucket may block public ACLs). " +
-                            "Ensure bucket policy allows public access for folder: {}. Error: {}", 
-                            folderPrefix, e.getMessage());
-                    // Continue without ACL - will rely on bucket policy if configured
-                }
-            }
-
-            s3Client.putObject(putObjectRequestBuilder.build(), RequestBody.fromInputStream(inputStream, contentLength));
-            
-            String fileUrl;
-            if (isPublic) {
-                // Return public URL
-                // NOTE: This URL will only work if:
-                // 1. ACL public-read was successfully set, OR
-                // 2. Bucket policy allows public read access
-                fileUrl = String.format("https://%s.s3.amazonaws.com/%s", bucketName, fileKey);
-                log.info("File uploaded as public. URL will be accessible only if bucket allows public access via ACL or policy.");
-            } else {
-                // Return pre-signed URL (valid for 7 days) for private files
-                fileUrl = getPreSignedUrl(fileKey, Duration.ofDays(7));
-            }
-            
-            log.info("File uploaded successfully to S3: {} (public: {})", fileUrl, isPublic);
-            return fileUrl;
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(fileContent));
         } catch (S3Exception e) {
-            String errorMessage = e.getMessage();
-            if (isPublic && (errorMessage.contains("AccessControlListNotSupported") || 
-                           errorMessage.contains("AccessDenied") ||
-                           errorMessage.contains("InvalidRequest"))) {
-                log.error("Failed to upload public file. Bucket may block public ACLs. " +
-                         "Please configure bucket policy to allow public read access for folder: {}. " +
-                         "Error: {}", folderPrefix, errorMessage);
-                throw new RuntimeException(
-                    "Failed to upload public file. Please configure S3 bucket policy to allow public access. " +
-                    "See documentation for bucket policy configuration.", e);
-            }
-            log.error("Error uploading file to S3: {}", errorMessage, e);
-            throw new RuntimeException("Failed to upload file to S3: " + errorMessage, e);
+            log.error("Error uploading file to S3: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to upload file to S3: " + e.getMessage(), e);
         }
+        
+        // Generate URL
+        String fileUrl;
+        if (isPublic) {
+            // Return public URL (will work only if bucket policy allows public access)
+            fileUrl = String.format("https://%s.s3.amazonaws.com/%s", bucketName, fileKey);
+            log.info("File uploaded. Public URL returned. Ensure bucket policy allows public access for folder: {}", folderPrefix);
+        } else {
+            // Return pre-signed URL (valid for 7 days) for private files
+            fileUrl = getPreSignedUrl(fileKey, Duration.ofDays(7));
+        }
+        
+        log.info("File uploaded successfully to S3: {} (public: {})", fileUrl, isPublic);
+        return fileUrl;
     }
 
     /**

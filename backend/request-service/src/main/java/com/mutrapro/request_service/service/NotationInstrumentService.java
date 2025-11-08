@@ -44,12 +44,17 @@ public class NotationInstrumentService {
     @Value("${file.upload.allowed-image-types:image/jpeg,image/jpg,image/png}")
     String allowedImageTypes;
 
-    public List<NotationInstrumentResponse> getActiveInstruments(NotationInstrumentUsage usage) {
+    public List<NotationInstrumentResponse> getInstruments(NotationInstrumentUsage usage, boolean includeInactive) {
         List<NotationInstrument> instruments;
         
         if (usage == null) {
-            log.debug("Fetching all active notation instruments");
-            instruments = notationInstrumentRepository.findByIsActiveTrue();
+            if (includeInactive) {
+                log.debug("Fetching all notation instruments (including inactive)");
+                instruments = notationInstrumentRepository.findAll();
+            } else {
+                log.debug("Fetching all active notation instruments");
+                instruments = notationInstrumentRepository.findByIsActiveTrue();
+            }
         } else {
             List<NotationInstrumentUsage> usagesToQuery;
             switch (usage) {
@@ -72,8 +77,14 @@ public class NotationInstrumentService {
                 default:
                     usagesToQuery = List.of(usage);
             }
-            log.debug("Fetching active notation instruments for usage: {} (querying: {})", usage, usagesToQuery);
-            instruments = notationInstrumentRepository.findByIsActiveTrueAndUsageIn(usagesToQuery);
+            
+            if (includeInactive) {
+                log.debug("Fetching all notation instruments (including inactive) for usage: {} (querying: {})", usage, usagesToQuery);
+                instruments = notationInstrumentRepository.findByUsageIn(usagesToQuery);
+            } else {
+                log.debug("Fetching active notation instruments for usage: {} (querying: {})", usage, usagesToQuery);
+                instruments = notationInstrumentRepository.findByIsActiveTrueAndUsageIn(usagesToQuery);
+            }
         }
         
         return instruments.stream()

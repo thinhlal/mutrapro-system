@@ -32,12 +32,14 @@ public class NotationInstrumentController {
     NotationInstrumentService service;
 
     @GetMapping
-    @Operation(summary = "Danh sách nhạc cụ ký âm (có thể filter theo usage: transcription, arrangement, both)")
+    @Operation(summary = "Danh sách nhạc cụ ký âm (có thể filter theo usage và lấy cả inactive)")
     public ApiResponse<List<NotationInstrumentResponse>> listInstruments(
-            @Parameter(description = "Filter theo usage: transcription (lấy transcription + both), arrangement (lấy arrangement + both), both (lấy tất cả). Nếu không truyền thì trả về tất cả active")
-            @RequestParam(required = false) NotationInstrumentUsage usage) {
-        log.info("Listing active notation instruments with usage filter: {}", usage);
-        List<NotationInstrumentResponse> items = service.getActiveInstruments(usage);
+            @Parameter(description = "Filter theo usage: transcription (lấy transcription + both), arrangement (lấy arrangement + both), both (lấy tất cả). Nếu không truyền thì trả về tất cả")
+            @RequestParam(required = false) NotationInstrumentUsage usage,
+            @Parameter(description = "Nếu true, lấy cả inactive instruments. Mặc định là false (chỉ lấy active)")
+            @RequestParam(required = false, defaultValue = "false") Boolean includeInactive) {
+        log.info("Listing notation instruments with usage filter: {}, includeInactive: {}", usage, includeInactive);
+        List<NotationInstrumentResponse> items = service.getInstruments(usage, includeInactive);
         return ApiResponse.<List<NotationInstrumentResponse>>builder()
                 .message("Notation instruments retrieved successfully")
                 .data(items)

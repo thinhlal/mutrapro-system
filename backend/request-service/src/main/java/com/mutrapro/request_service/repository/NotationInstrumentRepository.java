@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface NotationInstrumentRepository extends JpaRepository<NotationInstrument, String> {
     List<NotationInstrument> findByIsActiveTrueAndUsageIn(List<NotationInstrumentUsage> usages);
     List<NotationInstrument> findByIsActiveTrue();
+    List<NotationInstrument> findByUsageIn(List<NotationInstrumentUsage> usages);
     
     /**
      * Tìm instrument theo tên (case-insensitive)
