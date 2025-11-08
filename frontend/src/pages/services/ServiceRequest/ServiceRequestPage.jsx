@@ -18,7 +18,9 @@ export default function ServiceRequestPage() {
   const serviceTypeFromNav = location?.state?.serviceType;
 
   const [selectedType, setSelectedType] = useState(serviceTypeFromNav || null); // transcription | arrangement | arrangement_with_recording | recording
+  const [formData, setFormData] = useState(null); // Store form data để gửi sau
   const uploadRef = useRef(null);
+  const formRef = useRef(null);
 
   useEffect(() => {
     if (serviceTypeFromNav) {
@@ -26,13 +28,9 @@ export default function ServiceRequestPage() {
     }
   }, [serviceTypeFromNav]);
 
-  const handleCreated = useCallback(type => {
-    setSelectedType(type);
-    // scroll tới khu vực upload sau khi tạo yêu cầu
-    requestAnimationFrame(() => {
-      const el = uploadRef.current || document.getElementById('quote-uploader');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  // Nhận form data từ RequestServiceForm (không submit API)
+  const handleFormComplete = useCallback((data) => {
+    setFormData(data);
   }, []);
 
   return (
@@ -89,29 +87,44 @@ export default function ServiceRequestPage() {
 
       <div className={styles.contentGrid}>
         <RequestServiceForm
-          onCreated={handleCreated}
+          onFormComplete={handleFormComplete}
           serviceType={selectedType}
+          formRef={formRef}
         />
 
         <div ref={uploadRef}>
           {selectedType === 'transcription' && (
-            <TranscriptionUploader serviceType={selectedType} />
+            <TranscriptionUploader 
+              serviceType={selectedType} 
+              formData={formData}
+            />
           )}
           {selectedType === 'arrangement' && (
-            <ArrangementUploader variant="pure" serviceType={selectedType} />
+            <ArrangementUploader 
+              variant="pure" 
+              serviceType={selectedType}
+              formData={formData}
+            />
           )}
           {selectedType === 'arrangement_with_recording' && (
             <ArrangementUploader
               variant="with_recording"
               serviceType={selectedType}
+              formData={formData}
             />
           )}
           {selectedType === 'recording' && (
-            <RecordingUploader serviceType={selectedType} />
+            <RecordingUploader 
+              serviceType={selectedType}
+              formData={formData}
+            />
           )}
 
           {!selectedType && (
-            <TranscriptionUploader serviceType={selectedType} />
+            <TranscriptionUploader 
+              serviceType={selectedType}
+              formData={formData}
+            />
           )}
         </div>
       </div>

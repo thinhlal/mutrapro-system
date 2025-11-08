@@ -115,6 +115,18 @@ export const API_ENDPOINTS = {
     NOTATION_INSTRUMENTS: `${REQUEST_PATH}/notation-instruments`,
   },
 
+  // === Service Requests Management ===
+  SERVICE_REQUESTS: {
+    // GET /api/v1/requests/requests (theo Postman - path có 2 lần requests)
+    GET_ALL: `${REQUEST_PATH}/requests`,
+    // POST /api/v1/requests/requests
+    CREATE: `${REQUEST_PATH}/requests`,
+    // PUT /api/v1/requests/requests/{requestId}/assign
+    ASSIGN: requestId => `${REQUEST_PATH}/requests/${requestId}/assign`,
+    // GET /api/v1/requests/requests/{requestId}
+    GET_BY_ID: requestId => `${REQUEST_PATH}/requests/${requestId}`,
+  },
+
   // === Notation Instruments Management ===
   NOTATION_INSTRUMENTS: {
     // GET /notation-instruments?usage=transcription|arrangement|both&includeInactive=true

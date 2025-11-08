@@ -1,6 +1,9 @@
-import { useMemo } from 'react';
-import { Form, Input, Button, message, Tag } from 'antd';
+import { useMemo, useEffect } from 'react';
+import { Form, Input, Tag, InputNumber } from 'antd';
+import { useAuth } from '../../../contexts/AuthContext';
 import styles from './RequestServiceForm.module.css';
+
+const { TextArea } = Input;
 
 const SERVICE_LABELS = {
   transcription: 'Transcription (Sound → Sheet)',
@@ -9,13 +12,30 @@ const SERVICE_LABELS = {
   recording: 'Recording (Studio Booking)',
 };
 
-export default function RequestServiceForm({ onCreated, serviceType }) {
+export default function RequestServiceForm({ onFormComplete, serviceType, formRef }) {
   const [form] = Form.useForm();
+  const { user } = useAuth();
 
-  const onFinish = async values => {
-    // TODO: call API create service-request nếu có; hiện tại demo UI
-    message.success('Your request has been created!');
-    onCreated?.(serviceType || values.serviceType);
+  // Expose form instance to parent via ref
+  useEffect(() => {
+    if (formRef) {
+      formRef.current = form;
+    }
+  }, [form, formRef]);
+
+  // Khi form values thay đổi, callback về parent (không submit API)
+  const handleValuesChange = (changedValues, allValues) => {
+    // Callback về parent với data đầy đủ
+    const formData = {
+      requestType: serviceType || 'transcription',
+      title: allValues.title || '',
+      description: allValues.description || '',
+      tempoPercentage: allValues.tempoPercentage || 100,
+      contactName: allValues.contactName || user?.fullName || '',
+      contactPhone: allValues.contactPhone || '',
+      contactEmail: allValues.contactEmail || user?.email || '',
+    };
+    onFormComplete?.(formData);
   };
 
   const requiredMsg = useMemo(
@@ -34,31 +54,62 @@ export default function RequestServiceForm({ onCreated, serviceType }) {
           Create Your Service Request
         </h2>
         <p className={styles.desc}>
-          Tell us what you need. After creating the request, you'll be prompted
-          to upload the right files.
+          Tell us what you need. After filling the form, please upload your files below.
         </p>
 
         <Form
           form={form}
           layout="vertical"
-          onFinish={onFinish}
-          initialValues={{ serviceType: serviceType || 'transcription' }}
+          onValuesChange={handleValuesChange}
+          initialValues={{ 
+            serviceType: serviceType || 'transcription',
+            tempoPercentage: 100,
+            contactName: user?.fullName || '',
+            contactEmail: user?.email || '',
+          }}
           className={styles.form}
         >
-          <Form.Item label="Full Name" name="fullName" rules={[requiredMsg]}>
-            <Input size="large" placeholder="e.g., John Doe" />
+          <Form.Item label="Title" name="title" rules={[requiredMsg]}>
+            <Input size="large" placeholder="e.g., Transcribe Song ABC" />
+          </Form.Item>
+
+          <Form.Item label="Description" name="description" rules={[requiredMsg]}>
+            <TextArea
+              rows={4}
+              placeholder="Describe your request in detail..."
+            />
+          </Form.Item>
+
+          <Form.Item label="Contact Name" name="contactName" rules={[requiredMsg]}>
+            <Input size="large" placeholder="Your full name" />
           </Form.Item>
 
           <Form.Item
-            label="Email"
-            name="email"
+            label="Contact Email"
+            name="contactEmail"
             rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
           >
             <Input size="large" placeholder="you@example.com" />
           </Form.Item>
 
-          <Form.Item label="Phone" name="phone" rules={[requiredMsg]}>
+          <Form.Item label="Contact Phone" name="contactPhone" rules={[requiredMsg]}>
             <Input size="large" placeholder="+84 ..." />
+          </Form.Item>
+
+          <Form.Item 
+            label="Tempo Percentage" 
+            name="tempoPercentage"
+            tooltip="Adjust playback speed (100 = normal speed)"
+          >
+            <InputNumber
+              size="large"
+              min={50}
+              max={200}
+              step={5}
+              style={{ width: '100%' }}
+              formatter={value => `${value}%`}
+              parser={value => value.replace('%', '')}
+            />
           </Form.Item>
 
           {serviceType && (
@@ -68,25 +119,10 @@ export default function RequestServiceForm({ onCreated, serviceType }) {
               </Tag>
             </Form.Item>
           )}
-
-          <Form.Item label="Notes (optional)" name="notes">
-            <Input.TextArea
-              rows={3}
-              placeholder="Any details we should know?"
-            />
-          </Form.Item>
-
-          {/* <div className={styles.actions}>
-            <Button
-              className={styles.ctaBtn}
-              type="primary"
-              size="large"
-              htmlType="submit"
-            >
-              Create Request
-            </Button>
-          </div> */}
         </Form>
+        <p className={styles.nextStep} style={{ marginTop: 16, textAlign: 'center', color: '#888' }}>
+          ↓ After filling the form, please upload your files below ↓
+        </p>
       </div>
     </section>
   );

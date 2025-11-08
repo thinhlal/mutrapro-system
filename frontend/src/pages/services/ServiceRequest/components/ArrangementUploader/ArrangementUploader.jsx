@@ -13,7 +13,7 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function ArrangementUploader({ variant = 'pure', serviceType }) {
+export default function ArrangementUploader({ variant = 'pure', serviceType, formData }) {
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
 
@@ -29,6 +29,13 @@ export default function ArrangementUploader({ variant = 'pure', serviceType }) {
       message.warning('Please upload your original notation.');
       return;
     }
+
+    // Validate form data
+    if (!formData || !formData.title || !formData.contactName) {
+      message.warning('Please fill in the form above before uploading files.');
+      return;
+    }
+
     const state = {
       sourceType: 'upload',
       fileName: file.name,
@@ -40,6 +47,8 @@ export default function ArrangementUploader({ variant = 'pure', serviceType }) {
         (variant === 'with_recording'
           ? 'arrangement_with_recording'
           : 'arrangement'),
+      formData: formData, // Truyền form data xuống Quote Page
+      uploadedFile: file, // Truyền file object để upload sau
     };
     navigate('/arrangement/quote', { state });
   };
