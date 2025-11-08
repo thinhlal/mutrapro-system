@@ -104,6 +104,7 @@ Table notation_instruments {
   instrument_id uuid [pk, default: `gen_random_uuid()`]
   instrument_name varchar(100) [not null]
   usage notation_instrument_usage [default: 'both']
+  base_price bigint [default: 0, note: 'Giá cơ bản cho mỗi nhạc cụ (VND)']
   is_active boolean [default: true]
 
   Note: 'Danh mục nhạc cụ ảo dùng trong ký âm/notation trên máy (không phải thiết bị thật)'

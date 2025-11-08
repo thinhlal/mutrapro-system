@@ -92,6 +92,7 @@ public class NotationInstrumentService {
                         .instrumentId(e.getInstrumentId())
                         .instrumentName(e.getInstrumentName())
                         .usage(e.getUsage())
+                        .basePrice(e.getBasePrice())
                         .isActive(e.isActive())
                         .image(e.getImage())
                         .build())
@@ -110,6 +111,7 @@ public class NotationInstrumentService {
         NotationInstrument instrument = NotationInstrument.builder()
                 .instrumentName(request.getInstrumentName())
                 .usage(request.getUsage())
+                .basePrice(request.getBasePrice() != null ? request.getBasePrice() : 0L)
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
         
@@ -140,6 +142,7 @@ public class NotationInstrumentService {
                 .instrumentId(saved.getInstrumentId())
                 .instrumentName(saved.getInstrumentName())
                 .usage(saved.getUsage())
+                .basePrice(saved.getBasePrice())
                 .isActive(saved.isActive())
                 .image(saved.getImage())
                 .build();
@@ -202,6 +205,11 @@ public class NotationInstrumentService {
             instrument.setUsage(request.getUsage());
         }
         
+        // Update basePrice if provided
+        if (request.getBasePrice() != null) {
+            instrument.setBasePrice(request.getBasePrice());
+        }
+        
         // Update isActive if provided
         if (request.getIsActive() != null) {
             instrument.setActive(request.getIsActive());
@@ -235,6 +243,7 @@ public class NotationInstrumentService {
                 .instrumentId(saved.getInstrumentId())
                 .instrumentName(saved.getInstrumentName())
                 .usage(saved.getUsage())
+                .basePrice(saved.getBasePrice())
                 .isActive(saved.isActive())
                 .image(saved.getImage())
                 .build();

@@ -32,6 +32,10 @@ public class NotationInstrument extends BaseEntity<String> {
     NotationInstrumentUsage usage;
 
     @Builder.Default
+    @Column(name = "base_price", nullable = false)
+    Long basePrice = 0L;
+
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     boolean isActive = true;
 

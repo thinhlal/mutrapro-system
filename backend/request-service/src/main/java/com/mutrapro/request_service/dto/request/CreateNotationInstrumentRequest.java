@@ -23,6 +23,8 @@ public class CreateNotationInstrumentRequest {
     @NotNull(message = "Usage is required")
     NotationInstrumentUsage usage;
     
+    Long basePrice;  // Optional - default 0
+    
     Boolean isActive;
     
     MultipartFile image;  // Optional image file

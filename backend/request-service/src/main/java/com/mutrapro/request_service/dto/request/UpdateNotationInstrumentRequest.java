@@ -19,6 +19,8 @@ public class UpdateNotationInstrumentRequest {
     
     NotationInstrumentUsage usage;  // Optional
     
+    Long basePrice;  // Optional
+    
     Boolean isActive;  // Optional
     
     MultipartFile image;  // Optional - có thể update image cùng lúc
