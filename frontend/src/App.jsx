@@ -40,8 +40,8 @@ import DiscoverProsPage from './pages/professionals/Discover/DiscoverProsPage';
 
 // Services Pages
 import ServiceRequestPage from './pages/services/ServiceRequest/ServiceRequestPage';
-import TranscriptionQuotePage from './pages/services/quotes/Transcription/TranscriptionQuotePage';
-import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePage';
+import TranscriptionQuotePage from './pages/services/quotes/Transcription/TranscriptionQuotePageSimplified';
+import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePageSimplified';
 import RecordingQuotePage from './pages/services/quotes/Recording/RecordingQuotePage';
 import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage';
 
@@ -60,6 +60,7 @@ import ContractsList from './pages/contracts/List/ContractsList';
 import UserManagement from './pages/admin/UserManagement/UserManagement';
 import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
 import AdminProfile from './pages/admin/Profile/AdminProfile';
+import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
 
 import './App.css';
 
@@ -209,6 +210,10 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
+            <Route
+              path="service-requests"
+              element={<ServiceRequestManagement />}
+            />
             <Route
               path="notation-instruments"
               element={<NotationInstruments />}

@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url('../../assets/images/LoginPage/Classical_Music-495872600.jpg') center/cover no-repeat;
+  background: url('../../../assets/images/LoginPage/Classical_Music-495872600.jpg') center/cover no-repeat;
   color: #e6e6f0;
   overflow: hidden;
 }

@@ -13,7 +13,7 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function RecordingUploader({ serviceType }) {
+export default function RecordingUploader({ serviceType, formData }) {
   const [files, setFiles] = useState([]);
   const navigate = useNavigate();
 
@@ -24,13 +24,24 @@ export default function RecordingUploader({ serviceType }) {
   const clearAll = () => setFiles([]);
 
   const onContinue = () => {
+    // Validate form data
+    if (!formData || !formData.title || !formData.contactName) {
+      message.warning('Please fill in the form above before continuing.');
+      return;
+    }
+
     const payload = files.map(f => ({
       fileName: f.name,
       fileType: f.type || 'unknown',
       size: f.size || 0,
     }));
     navigate('/recording/quote', {
-      state: { files: payload, serviceType: serviceType || 'recording' },
+      state: { 
+        files: payload, 
+        serviceType: serviceType || 'recording',
+        formData: formData, // Truyền form data xuống Quote Page
+        uploadedFiles: files, // Truyền file objects để upload sau
+      },
     });
   };
 

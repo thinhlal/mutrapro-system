@@ -21,7 +21,7 @@ const toMMSS = (s = 0) =>
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function TranscriptionUploader({ serviceType }) {
+export default function TranscriptionUploader({ serviceType, formData }) {
   const [linkValue, setLinkValue] = useState('');
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
@@ -67,6 +67,12 @@ export default function TranscriptionUploader({ serviceType }) {
       return;
     }
 
+    // Validate form data
+    if (!formData || !formData.title || !formData.contactName) {
+      message.warning('Please fill in the form above before uploading files.');
+      return;
+    }
+
     const state = {
       sourceType: file ? 'upload' : 'url',
       fileName: file ? file.name : '',
@@ -74,6 +80,8 @@ export default function TranscriptionUploader({ serviceType }) {
       durationSec: 0,
       blobUrl: '',
       serviceType: serviceType || 'transcription',
+      formData: formData, // Truyền form data xuống Quote Page
+      uploadedFile: file, // Truyền file object để upload sau
     };
 
     try {
