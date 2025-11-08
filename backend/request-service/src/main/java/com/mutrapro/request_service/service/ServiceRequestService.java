@@ -327,6 +327,29 @@ public class ServiceRequestService {
     }
     
     /**
+     * Lấy danh sách request mà user hiện tại đã tạo
+     * @param status Optional filter theo status, nếu null thì lấy tất cả
+     * @return Danh sách ServiceRequestResponse
+     */
+    public List<ServiceRequestResponse> getUserRequests(RequestStatus status) {
+        String userId = getCurrentUserId();
+        
+        List<ServiceRequest> requests;
+        if (status != null) {
+            requests = serviceRequestRepository.findByUserIdAndStatus(userId, status);
+        } else {
+            requests = serviceRequestRepository.findByUserId(userId);
+        }
+        
+        log.info("Retrieved {} requests for user: userId={}, status={}", 
+                requests.size(), userId, status != null ? status.name() : "all");
+        
+        return requests.stream()
+                .map(serviceRequestMapper::toServiceRequestResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Manager nhận trách nhiệm về service request
      * 
      * @param requestId ID của service request

@@ -8,6 +8,7 @@ import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.request_service.service.ServiceRequestService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -42,6 +43,20 @@ public class ServiceRequestController {
                 .message("Service request created successfully")
                 .data(created)
                 .statusCode(201)
+                .build();
+    }
+
+    @GetMapping("/my-requests")
+    @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status)")
+    public ApiResponse<List<ServiceRequestResponse>> getUserRequests(
+            @Parameter(description = "Filter theo status (pending, in_progress, completed, cancelled). Nếu không truyền thì trả về tất cả")
+            @RequestParam(required = false) RequestStatus status) {
+        log.info("Getting user requests with status filter: {}", status != null ? status.name() : "all");
+        List<ServiceRequestResponse> requests = serviceRequestService.getUserRequests(status);
+        return ApiResponse.<List<ServiceRequestResponse>>builder()
+                .message("User requests retrieved successfully")
+                .data(requests)
+                .statusCode(200)
                 .build();
     }
 
