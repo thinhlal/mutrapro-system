@@ -14,40 +14,52 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
 
-// Customer Pages
-import HomePage from './pages/HomePage/HomePage';
-import LoginPage from './pages/LoginPage/LoginPage';
-import PricingPage from './pages/PricingPage/PricingPage';
-import SingersPage from './pages/SingersPage/SingersPage';
-import ProfilePage from './pages/ProfilePage/ProfilePage';
-import NotificationsPage from './pages/NotificationsPage/NotificationsPage';
-import SubscriptionPage from './pages/SubscriptionPage/SubscriptionPage';
-import ServicesPage from './pages/ServicesPage/ServicesPage';
-import RegisterPage from './pages/RegisterPage/RegisterPage';
-import NotationEditor from './pages/NotationEditor/NotationEditor';
-import ServiceRequestPage from './pages/ServiceRequestPage/ServiceRequestPage';
-import DiscoverProsPage from './pages/DiscoverProsPage/DiscoverProsPage';
-import SingerDetailPage from './pages/SingerDetailPage/SingerDetailPage';
-import TranscriptionPage from './pages/TranscriptionPage/TranscriptionPage';
-import TranscriptionQuotePage from './pages/TranscriptionQuote/TranscriptionQuotePage';
-import ReviewOrderPage from './pages/ReviewOrderPage/ReviewOrderPage';
-import RecordingQuotePage from './pages/RecordingQuotePage/RecordingQuotePage';
-import ArrangementQuotePage from './pages/ArrangementQuotePage/ArrangementQuotePage';
-import UnauthorizedPage from './pages/UnauthorizedPage/UnauthorizedPage';
-import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage';
-import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
-import AuthenticatePage from './pages/AuthenticationPage/AuthenticatePage';
+// Public Pages
+import HomePage from './pages/public/Home/HomePage';
+import PricingPage from './pages/public/Pricing/PricingPage';
+import ServicesPage from './pages/public/Services/ServicesPage';
+import TranscriptionPage from './pages/public/Transcription/TranscriptionPage';
 
-// Coordinator Pages
-import Tasks from './pages/Task/Task';
-import Dashboard from './pages/Dashboard/Dashboard';
-import ContractBuilder from './pages/ContractBuilder/ContractBuilder';
-import ContractsList from './pages/ContractsList/ContractsList';
+// Auth Pages
+import LoginPage from './pages/auth/Login/LoginPage';
+import RegisterPage from './pages/auth/Register/RegisterPage';
+import VerifyEmailPage from './pages/auth/VerifyEmail/VerifyEmailPage';
+import ResetPasswordPage from './pages/auth/ResetPassword/ResetPasswordPage';
+import UnauthorizedPage from './pages/auth/Unauthorized/UnauthorizedPage';
+import AuthenticatePage from './pages/auth/AuthenticatePage';
+
+// User Pages
+import ProfilePage from './pages/user/Profile/ProfilePage';
+import NotificationsPage from './pages/user/Notifications/NotificationsPage';
+import SubscriptionPage from './pages/user/Subscription/SubscriptionPage';
+
+// Professionals Pages
+import SingersPage from './pages/professionals/Singers/List/SingersPage';
+import SingerDetailPage from './pages/professionals/Singers/Detail/SingerDetailPage';
+import DiscoverProsPage from './pages/professionals/Discover/DiscoverProsPage';
+
+// Services Pages
+import ServiceRequestPage from './pages/services/ServiceRequest/ServiceRequestPage';
+import TranscriptionQuotePage from './pages/services/quotes/Transcription/TranscriptionQuotePage';
+import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePage';
+import RecordingQuotePage from './pages/services/quotes/Recording/RecordingQuotePage';
+import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage';
+
+// Work Pages
+import NotationEditor from './pages/work/NotationEditor/NotationEditor';
+import Tasks from './pages/work/Tasks/Task';
+
+// Dashboard
+import Dashboard from './pages/dashboard/Overview/Dashboard';
+
+// Contracts Pages
+import ContractBuilder from './pages/contracts/Builder/ContractBuilder';
+import ContractsList from './pages/contracts/List/ContractsList';
 
 // Admin Pages
-import UserManagement from './pages/UserManagement/UserManagement';
-import NotationInstruments from './pages/NotationInstruments/NotationInstruments';
-import AdminProfile from './pages/AdminProfile/AdminProfile';
+import UserManagement from './pages/admin/UserManagement/UserManagement';
+import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
+import AdminProfile from './pages/admin/Profile/AdminProfile';
 
 import './App.css';
 
