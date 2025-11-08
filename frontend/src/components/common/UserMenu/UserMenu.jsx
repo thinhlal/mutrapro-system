@@ -149,7 +149,7 @@ function UserMenu() {
             </li>
 
             {/* Dashboard for Coordinator/Admin */}
-            {user?.role === 'SERVICE_COORDINATOR' && (
+            {user?.role === 'MANAGER' && (
               <li>
                 <Link
                   to="/coordinator/dashboard"

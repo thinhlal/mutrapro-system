@@ -33,7 +33,7 @@ const AdminProfile = () => {
   const getRoleColor = role => {
     const colors = {
       SYSTEM_ADMIN: 'red',
-      SERVICE_COORDINATOR: 'blue',
+      MANAGER: 'blue',
       CUSTOMER: 'green',
     };
     return colors[role] || 'default';
@@ -42,7 +42,7 @@ const AdminProfile = () => {
   const getRoleDisplayName = role => {
     const names = {
       SYSTEM_ADMIN: 'System Administrator',
-      SERVICE_COORDINATOR: 'Service Coordinator',
+      MANAGER: 'Manager',
       CUSTOMER: 'Customer',
     };
     return names[role] || role;

@@ -121,10 +121,10 @@ const UserManagement = () => {
   const getRoleColor = role => {
     const colors = {
       SYSTEM_ADMIN: 'red',
-      SERVICE_COORDINATOR: 'blue',
+      MANAGER: 'blue',
       CUSTOMER: 'green',
-      TRANSCRIPTION_SPECIALIST: 'purple',
-      ARRANGEMENT_SPECIALIST: 'orange',
+      TRANSCRIPTION: 'purple',
+      ARRANGEMENT: 'orange',
       RECORDING_ARTIST: 'cyan',
     };
     return colors[role] || 'default';
@@ -134,10 +134,10 @@ const UserManagement = () => {
   const getRoleDisplayName = role => {
     const names = {
       SYSTEM_ADMIN: 'System Admin',
-      SERVICE_COORDINATOR: 'Coordinator',
+      MANAGER: 'Manager',
       CUSTOMER: 'Customer',
-      TRANSCRIPTION_SPECIALIST: 'Transcription Specialist',
-      ARRANGEMENT_SPECIALIST: 'Arrangement Specialist',
+      TRANSCRIPTION: 'Transcription',
+      ARRANGEMENT: 'Arrangement',
       RECORDING_ARTIST: 'Recording Artist',
     };
     return names[role] || role;
@@ -166,10 +166,10 @@ const UserManagement = () => {
       ),
       filters: [
         { text: 'System Admin', value: 'SYSTEM_ADMIN' },
-        { text: 'Coordinator', value: 'SERVICE_COORDINATOR' },
+        { text: 'Manager', value: 'MANAGER' },
         { text: 'Customer', value: 'CUSTOMER' },
-        { text: 'Transcription Specialist', value: 'TRANSCRIPTION_SPECIALIST' },
-        { text: 'Arrangement Specialist', value: 'ARRANGEMENT_SPECIALIST' },
+        { text: 'Transcription', value: 'TRANSCRIPTION' },
+        { text: 'Arrangement', value: 'ARRANGEMENT' },
         { text: 'Recording Artist', value: 'RECORDING_ARTIST' },
       ],
       onFilter: (value, record) => record.role === value,

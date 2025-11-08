@@ -92,7 +92,7 @@ function App() {
             path="/profile"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ProfilePage />
               </ProtectedRoute>
@@ -102,7 +102,7 @@ function App() {
             path="/profile/notifications"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <NotificationsPage />
               </ProtectedRoute>
@@ -112,7 +112,7 @@ function App() {
             path="/profile/subscription"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <SubscriptionPage />
               </ProtectedRoute>
@@ -122,7 +122,7 @@ function App() {
             path="/editor"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <NotationEditor />
               </ProtectedRoute>
@@ -132,7 +132,7 @@ function App() {
             path="/request-service"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <DiscoverProsPage />
               </ProtectedRoute>
@@ -144,7 +144,7 @@ function App() {
             path="/transcription/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <TranscriptionQuotePage />
               </ProtectedRoute>
@@ -154,7 +154,7 @@ function App() {
             path="/arrangement/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ArrangementQuotePage />
               </ProtectedRoute>
@@ -164,7 +164,7 @@ function App() {
             path="/recording/quote"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <RecordingQuotePage />
               </ProtectedRoute>
@@ -174,7 +174,7 @@ function App() {
             path="/checkout/review"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ReviewOrderPage />
               </ProtectedRoute>
@@ -185,7 +185,7 @@ function App() {
           <Route
             path="/coordinator"
             element={
-              <ProtectedRoute allowedRoles={['SERVICE_COORDINATOR', 'SYSTEM_ADMIN']}>
+              <ProtectedRoute allowedRoles={['MANAGER', 'SYSTEM_ADMIN']}>
                 <CoordinatorLayout />
               </ProtectedRoute>
             }
