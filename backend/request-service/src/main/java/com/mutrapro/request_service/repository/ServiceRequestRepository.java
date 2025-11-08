@@ -19,5 +19,21 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     List<ServiceRequest> findByStatus(RequestStatus status);
     
     Optional<ServiceRequest> findByRequestId(String requestId);
+    
+    // Filter theo managerUserId
+    List<ServiceRequest> findByManagerUserId(String managerUserId);
+    
+    // Filter theo status và requestType
+    List<ServiceRequest> findByStatusAndRequestType(RequestStatus status, ServiceType requestType);
+    
+    // Filter theo status và managerUserId
+    List<ServiceRequest> findByStatusAndManagerUserId(RequestStatus status, String managerUserId);
+    
+    // Filter theo requestType và managerUserId
+    List<ServiceRequest> findByRequestTypeAndManagerUserId(ServiceType requestType, String managerUserId);
+    
+    // Filter theo cả 3 điều kiện
+    List<ServiceRequest> findByStatusAndRequestTypeAndManagerUserId(
+            RequestStatus status, ServiceType requestType, String managerUserId);
 }
 

@@ -63,6 +63,16 @@ public enum RequestServiceErrorCodes implements ErrorCode {
     FILE_TYPE_NOT_SUPPORTED_FOR_REQUEST("REQUEST_6010", 400,
         "https://docs.mutrapro.com/errors/REQUEST_6010",
         "File type is not supported for this request type",
+        Retryable.NON_TRANSIENT),
+    
+    CANNOT_ASSIGN_TO_OTHER_MANAGER("REQUEST_6011", 403,
+        "https://docs.mutrapro.com/errors/REQUEST_6011",
+        "Manager can only assign requests to themselves when self-assigning",
+        Retryable.NON_TRANSIENT),
+    
+    REQUEST_ALREADY_HAS_MANAGER("REQUEST_6012", 409,
+        "https://docs.mutrapro.com/errors/REQUEST_6012",
+        "Service request already has a manager assigned",
         Retryable.NON_TRANSIENT);
 
     private final String code;

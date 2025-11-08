@@ -1,5 +1,6 @@
 package com.mutrapro.request_service.service;
 
+import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
 import com.mutrapro.request_service.entity.NotationInstrument;
@@ -8,11 +9,15 @@ import com.mutrapro.request_service.entity.ServiceRequest;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.request_service.enums.NotationInstrumentUsage;
+import com.mutrapro.request_service.exception.CannotAssignToOtherManagerException;
 import com.mutrapro.request_service.exception.FileTypeNotSupportedForRequestException;
 import com.mutrapro.request_service.exception.InstrumentUsageNotCompatibleException;
 import com.mutrapro.request_service.exception.InstrumentsRequiredException;
 import com.mutrapro.request_service.exception.NotationInstrumentNotFoundException;
+import com.mutrapro.request_service.exception.RequestAlreadyHasManagerException;
+import com.mutrapro.request_service.exception.ServiceRequestNotFoundException;
 import com.mutrapro.request_service.exception.UserNotAuthenticatedException;
+import com.mutrapro.request_service.mapper.ServiceRequestMapper;
 import com.mutrapro.request_service.repository.NotationInstrumentRepository;
 import com.mutrapro.request_service.repository.ServiceRequestRepository;
 import lombok.AccessLevel;
@@ -41,6 +46,7 @@ public class ServiceRequestService {
     ServiceRequestRepository serviceRequestRepository;
     NotationInstrumentRepository notationInstrumentRepository;
     FileUploadService fileUploadService;
+    ServiceRequestMapper serviceRequestMapper;
     
     @NonFinal
     @Value("${file.upload.allowed-audio-types}")
@@ -182,31 +188,8 @@ public class ServiceRequestService {
                     requestInstruments.size(), saved.getRequestId());
         }
         
-        // Build response - get instrument IDs from the managed entity
-        // Note: In same transaction, collection is already populated after save
-        List<String> savedInstrumentIds = saved.getNotationInstruments().stream()
-                .map(req -> req.getNotationInstrument().getInstrumentId())
-                .collect(Collectors.toList());
-        
-        return ServiceRequestResponse.builder()
-                .requestId(saved.getRequestId())
-                .userId(saved.getUserId())
-                .managerUserId(saved.getManagerUserId())
-                .requestType(saved.getRequestType())
-                .contactName(saved.getContactName())
-                .contactPhone(saved.getContactPhone())
-                .contactEmail(saved.getContactEmail())
-                .musicOptions(saved.getMusicOptions())
-                .tempoPercentage(saved.getTempoPercentage())
-                .hasVocalist(saved.getHasVocalist())
-                .externalGuestCount(saved.getExternalGuestCount())
-                .title(saved.getTitle())
-                .description(saved.getDescription())
-                .status(saved.getStatus())
-                .createdAt(saved.getCreatedAt())
-                .updatedAt(saved.getUpdatedAt())
-                .instrumentIds(savedInstrumentIds)
-                .build();
+        // Build response using MapStruct mapper
+        return serviceRequestMapper.toServiceRequestResponse(saved);
     }
 
     private String getCurrentUserId() {
@@ -292,6 +275,109 @@ public class ServiceRequestService {
             case arrangement_with_recording -> "audio files (MP3, WAV, M4A, etc.) or sheet music files (PDF, MusicXML, MIDI)";
             case recording -> "no files required";
         };
+    }
+    
+    /**
+     * Lấy tất cả service requests với các filter tùy chọn
+     * 
+     * @param status Filter theo status (optional)
+     * @param requestType Filter theo request type (optional)
+     * @param managerUserId Filter theo manager user ID (optional)
+     * @return Danh sách service requests
+     */
+    public List<ServiceRequestResponse> getAllServiceRequests(
+            RequestStatus status, 
+            ServiceType requestType, 
+            String managerUserId) {
+        List<ServiceRequest> requests;
+        
+        if (status != null && requestType != null && managerUserId != null) {
+            // Filter theo cả 3 tham số
+            requests = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
+                    status, requestType, managerUserId);
+        } else if (status != null && requestType != null) {
+            // Filter theo status và requestType
+            requests = serviceRequestRepository.findByStatusAndRequestType(status, requestType);
+        } else if (status != null && managerUserId != null) {
+            // Filter theo status và managerUserId
+            requests = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId);
+        } else if (requestType != null && managerUserId != null) {
+            // Filter theo requestType và managerUserId
+            requests = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId);
+        } else if (status != null) {
+            // Filter theo status
+            requests = serviceRequestRepository.findByStatus(status);
+        } else if (requestType != null) {
+            // Filter theo requestType
+            requests = serviceRequestRepository.findByRequestType(requestType);
+        } else if (managerUserId != null) {
+            // Filter theo managerUserId
+            requests = serviceRequestRepository.findByManagerUserId(managerUserId);
+        } else {
+            // Lấy tất cả
+            requests = serviceRequestRepository.findAll();
+        }
+        
+        log.info("Retrieved {} service requests with filters: status={}, requestType={}, managerUserId={}", 
+                requests.size(), status, requestType, managerUserId);
+        
+        return requests.stream()
+                .map(serviceRequestMapper::toServiceRequestResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Manager nhận trách nhiệm về service request
+     * 
+     * @param requestId ID của service request
+     * @param assignRequest Request chứa managerId (có thể null để tự nhận)
+     * @return ServiceRequestResponse sau khi assign
+     */
+    @Transactional
+    public ServiceRequestResponse assignManager(String requestId, AssignManagerRequest assignRequest) {
+        // Tìm service request
+        ServiceRequest serviceRequest = serviceRequestRepository.findByRequestId(requestId)
+                .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
+        
+        // Lấy user ID hiện tại
+        String currentUserId = getCurrentUserId();
+        
+        // Xác định manager ID
+        String managerId;
+        if (assignRequest != null && assignRequest.getManagerId() != null 
+                && !assignRequest.getManagerId().trim().isEmpty()) {
+            // Có managerId trong request - kiểm tra xem có phải là chính mình không
+            String requestedManagerId = assignRequest.getManagerId().trim();
+            if (!requestedManagerId.equals(currentUserId)) {
+                // Manager cố gắng assign cho người khác - không cho phép
+                throw CannotAssignToOtherManagerException.create(requestedManagerId, currentUserId);
+            }
+            managerId = requestedManagerId;
+        } else {
+            // Manager tự nhận trách nhiệm (sử dụng user hiện tại)
+            managerId = currentUserId;
+        }
+        
+        // Kiểm tra xem request đã có manager chưa
+        if (serviceRequest.getManagerUserId() != null) {
+            // Nếu đã có manager và không phải là manager hiện tại
+            if (!serviceRequest.getManagerUserId().equals(managerId)) {
+                // Request đã có manager khác - không cho phép reassign
+                throw RequestAlreadyHasManagerException.create(requestId, serviceRequest.getManagerUserId());
+            }
+            // Nếu đã có manager và là chính manager hiện tại - không cần làm gì, chỉ return response
+            log.info("Service request {} already assigned to current manager {}", requestId, managerId);
+            return serviceRequestMapper.toServiceRequestResponse(serviceRequest);
+        }
+        
+        // Assign manager (request chưa có manager)
+        serviceRequest.setManagerUserId(managerId);
+        ServiceRequest saved = serviceRequestRepository.save(serviceRequest);
+        
+        log.info("Assigned manager {} to service request: requestId={}", 
+                managerId, requestId);
+        
+        return serviceRequestMapper.toServiceRequestResponse(saved);
     }
     
 }
