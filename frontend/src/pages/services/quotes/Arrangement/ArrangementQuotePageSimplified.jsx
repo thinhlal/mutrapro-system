@@ -4,9 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
-  Select,
   Empty,
-  Spin,
   message,
   Card,
   Descriptions,
@@ -14,10 +12,11 @@ import {
   Space,
   Tag,
 } from 'antd';
-import { EyeOutlined, SendOutlined, FileOutlined } from '@ant-design/icons';
+import { EyeOutlined, SendOutlined, FileOutlined, SelectOutlined } from '@ant-design/icons';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
+import InstrumentSelectionModal from '../../../../components/common/InstrumentSelectionModal/InstrumentSelectionModal';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import styles from './ArrangementQuotePage.module.css';
@@ -37,6 +36,7 @@ export default function ArrangementQuotePageSimplified() {
 
   // Instrument selection (NHIỀU INSTRUMENTS)
   const [selectedInstruments, setSelectedInstruments] = useState([]);
+  const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -47,6 +47,13 @@ export default function ArrangementQuotePageSimplified() {
     fetchInstruments,
     getInstrumentsByUsage,
   } = useInstrumentStore();
+
+  const arrangementInstruments = getInstrumentsByUsage('arrangement');
+  
+  // Calculate total price
+  const totalPrice = instrumentsData
+    .filter(inst => selectedInstruments.includes(inst.instrumentId))
+    .reduce((sum, inst) => sum + (inst.basePrice || 0), 0);
 
   useEffect(() => {
     fetchInstruments();
@@ -66,6 +73,10 @@ export default function ArrangementQuotePageSimplified() {
     );
   }
 
+  const handleInstrumentSelect = instrumentIds => {
+    setSelectedInstruments(instrumentIds);
+  };
+
   const handleReview = () => {
     if (!selectedInstruments || selectedInstruments.length === 0) {
       message.warning('Please select at least one instrument');
@@ -78,7 +89,14 @@ export default function ArrangementQuotePageSimplified() {
     try {
       setSubmitting(true);
 
-      // Prepare data để gửi API
+      // Tạo object chứa giá của từng instrument
+      const instrumentPrices = {};
+      selectedInstruments.forEach(id => {
+        const inst = instrumentsData.find(i => i.instrumentId === id);
+        instrumentPrices[id] = inst?.basePrice || 0;
+      });
+
+      // Prepare data để gửi API - GỬI KÈM GIÁ
       const requestData = {
         requestType: 'arrangement',
         title: formData.title,
@@ -88,6 +106,8 @@ export default function ArrangementQuotePageSimplified() {
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
         instrumentIds: selectedInstruments, // NHIỀU INSTRUMENTS
+        instrumentPrices: instrumentPrices, // Gửi kèm giá từng instrument
+        totalPrice: totalPrice, // Tổng giá
         files: uploadedFile ? [uploadedFile] : [],
       };
 
@@ -125,42 +145,55 @@ export default function ArrangementQuotePageSimplified() {
         </Card>
 
         <Card title="Select Instruments (Required - Multiple Selection)">
-          <Spin spinning={instrumentsLoading}>
-            <Select
-              mode="multiple"
-              placeholder="Select instruments"
-              value={selectedInstruments}
-              onChange={setSelectedInstruments}
-              style={{ width: '100%' }}
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            <Button
+              type="primary"
               size="large"
-              options={getInstrumentsByUsage('arrangement').map(inst => ({
-                value: inst.instrumentId,
-                label: inst.instrumentName,
-              }))}
-              tagRender={props => (
-                <Tag closable={props.closable} onClose={props.onClose} color="blue">
-                  {props.label}
-                </Tag>
-              )}
-              notFoundContent={
-                instrumentsError ? (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={instrumentsError}
-                  />
-                ) : (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Không có nhạc cụ nào"
-                  />
-                )
-              }
-            />
-            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              You can select multiple instruments for arrangement
-            </Text>
-          </Spin>
+              icon={<SelectOutlined />}
+              onClick={() => setInstrumentModalVisible(true)}
+              block
+            >
+              {selectedInstruments.length > 0
+                ? `Selected: ${selectedInstruments.length} instruments ($${totalPrice.toFixed(2)})`
+                : 'Select Instruments'}
+            </Button>
+
+            {selectedInstruments.length > 0 && (
+              <Card size="small" style={{ background: '#f0f7ff' }}>
+                <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                    Selected Instruments:
+                  </div>
+                  <Space wrap>
+                    {selectedInstruments.map(id => {
+                      const inst = instrumentsData.find(i => i.instrumentId === id);
+                      return inst ? (
+                        <Tag key={id} color="blue" style={{ fontSize: 13, padding: '4px 12px' }}>
+                          {inst.instrumentName} - ${Number(inst.basePrice || 0).toFixed(2)}
+                        </Tag>
+                      ) : null;
+                    })}
+                  </Space>
+                  <div style={{ marginTop: 8, fontWeight: 600, fontSize: 16, color: '#52c41a' }}>
+                    Total: ${totalPrice.toFixed(2)}
+                  </div>
+                </Space>
+              </Card>
+            )}
+          </Space>
         </Card>
+
+        {/* Instrument Selection Modal */}
+        <InstrumentSelectionModal
+          visible={instrumentModalVisible}
+          onCancel={() => setInstrumentModalVisible(false)}
+          instruments={arrangementInstruments}
+          loading={instrumentsLoading}
+          selectedInstruments={selectedInstruments}
+          onSelect={handleInstrumentSelect}
+          multipleSelection={true}
+          title="Select Instruments for Arrangement (Multiple)"
+        />
 
         <div style={{ marginTop: 24, textAlign: 'right' }}>
           <Space>
@@ -218,16 +251,22 @@ export default function ArrangementQuotePageSimplified() {
             </Descriptions.Item>
             <Descriptions.Item label="File">{fileName}</Descriptions.Item>
             <Descriptions.Item label="Instruments">
-              <Space wrap>
+              <Space wrap direction="vertical" size={4}>
                 {selectedInstruments.map(id => {
                   const inst = instrumentsData.find(i => i.instrumentId === id);
-                  return (
-                    <Tag key={id} color="blue">
-                      {inst?.instrumentName || id}
-                    </Tag>
-                  );
+                  return inst ? (
+                    <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 300 }}>
+                      <span>{inst.instrumentName}</span>
+                      <Tag color="green">${Number(inst.basePrice || 0).toFixed(2)}</Tag>
+                    </div>
+                  ) : null;
                 })}
               </Space>
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Price">
+              <span style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
+                ${totalPrice.toFixed(2)}
+              </span>
             </Descriptions.Item>
           </Descriptions>
         </Modal>

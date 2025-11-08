@@ -4,19 +4,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Button,
-  Select,
   Empty,
-  Spin,
   message,
   Card,
   Descriptions,
   Modal,
   Space,
+  Tag,
 } from 'antd';
-import { EyeOutlined, SendOutlined } from '@ant-design/icons';
+import { EyeOutlined, SendOutlined, SelectOutlined } from '@ant-design/icons';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
+import InstrumentSelectionModal from '../../../../components/common/InstrumentSelectionModal/InstrumentSelectionModal';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import styles from './TranscriptionQuotePage.module.css';
@@ -107,6 +107,7 @@ export default function TranscriptionQuotePageSimplified() {
 
   // Instrument selection (CHỈ 1 INSTRUMENT)
   const [selectedInstrument, setSelectedInstrument] = useState(null);
+  const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -117,6 +118,11 @@ export default function TranscriptionQuotePageSimplified() {
     fetchInstruments,
     getInstrumentsByUsage,
   } = useInstrumentStore();
+
+  const transcriptionInstruments = getInstrumentsByUsage('transcription');
+  const selectedInstrumentData = instrumentsData.find(
+    i => i.instrumentId === selectedInstrument
+  );
 
   useEffect(() => {
     fetchInstruments();
@@ -136,6 +142,11 @@ export default function TranscriptionQuotePageSimplified() {
     );
   }
 
+  const handleInstrumentSelect = instrumentId => {
+    setSelectedInstrument(instrumentId);
+    setInstrumentModalVisible(false);
+  };
+
   const handleReview = () => {
     if (!selectedInstrument) {
       message.warning('Please select an instrument');
@@ -148,7 +159,9 @@ export default function TranscriptionQuotePageSimplified() {
     try {
       setSubmitting(true);
 
-      // Prepare data để gửi API
+      const instrumentPrice = selectedInstrumentData?.basePrice || 0;
+
+      // Prepare data để gửi API - GỬI KÈM GIÁ
       const requestData = {
         requestType: 'transcription',
         title: formData.title,
@@ -158,6 +171,10 @@ export default function TranscriptionQuotePageSimplified() {
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
         instrumentIds: [selectedInstrument], // CHỈ 1 INSTRUMENT
+        instrumentPrices: {
+          [selectedInstrument]: instrumentPrice, // Gửi kèm giá
+        },
+        totalPrice: instrumentPrice, // Tổng giá
         files: uploadedFile ? [uploadedFile] : [],
       };
 
@@ -193,34 +210,59 @@ export default function TranscriptionQuotePageSimplified() {
         </Card>
 
         <Card title="Select Instrument (Required)">
-          <Spin spinning={instrumentsLoading}>
-            <Select
-              showSearch
-              placeholder="Select ONE instrument"
-              value={selectedInstrument}
-              onChange={setSelectedInstrument}
-              style={{ width: '100%' }}
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            <Button
+              type="primary"
               size="large"
-              options={getInstrumentsByUsage('transcription').map(inst => ({
-                value: inst.instrumentId,
-                label: inst.instrumentName,
-              }))}
-              notFoundContent={
-                instrumentsError ? (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={instrumentsError}
-                  />
-                ) : (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Không có nhạc cụ nào"
-                  />
-                )
-              }
-            />
-          </Spin>
+              icon={<SelectOutlined />}
+              onClick={() => setInstrumentModalVisible(true)}
+              block
+            >
+              {selectedInstrument
+                ? 'Change Instrument'
+                : 'Select Instrument'}
+            </Button>
+
+            {selectedInstrument && selectedInstrumentData && (
+              <Card size="small" style={{ background: '#f0f7ff' }}>
+                <Space align="center" size={16}>
+                  {selectedInstrumentData.image && (
+                    <img
+                      src={selectedInstrumentData.image}
+                      alt={selectedInstrumentData.instrumentName}
+                      style={{
+                        width: 60,
+                        height: 60,
+                        objectFit: 'cover',
+                        borderRadius: 4,
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 16 }}>
+                      {selectedInstrumentData.instrumentName}
+                    </div>
+                    <Tag color="green" style={{ marginTop: 4 }}>
+                      ${Number(selectedInstrumentData.basePrice || 0).toFixed(2)}
+                    </Tag>
+                  </div>
+                </Space>
+              </Card>
+            )}
+          </Space>
         </Card>
+
+        {/* Instrument Selection Modal */}
+        <InstrumentSelectionModal
+          visible={instrumentModalVisible}
+          onCancel={() => setInstrumentModalVisible(false)}
+          instruments={transcriptionInstruments}
+          loading={instrumentsLoading}
+          selectedInstruments={selectedInstrument}
+          onSelect={handleInstrumentSelect}
+          multipleSelection={false}
+          title="Select ONE Instrument for Transcription"
+        />
 
         <div style={{ marginTop: 24, textAlign: 'right' }}>
           <Space>
@@ -278,8 +320,17 @@ export default function TranscriptionQuotePageSimplified() {
             </Descriptions.Item>
             <Descriptions.Item label="File">{fileName}</Descriptions.Item>
             <Descriptions.Item label="Instrument">
-              {instrumentsData.find(i => i.instrumentId === selectedInstrument)
-                ?.instrumentName || 'N/A'}
+              {selectedInstrumentData?.instrumentName || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Instrument Price">
+              <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
+                ${Number(selectedInstrumentData?.basePrice || 0).toFixed(2)}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Price">
+              <span style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
+                ${Number(selectedInstrumentData?.basePrice || 0).toFixed(2)}
+              </span>
             </Descriptions.Item>
           </Descriptions>
         </Modal>

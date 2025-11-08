@@ -215,6 +215,18 @@ export default function ServiceRequestManagement() {
       ),
     },
     {
+      title: 'Total Price',
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+      width: 120,
+      render: price => (
+        <span style={{ fontWeight: 500, color: '#52c41a' }}>
+          ${price ? Number(price).toFixed(2) : '0.00'}
+        </span>
+      ),
+      sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),
+    },
+    {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -383,6 +395,11 @@ export default function ServiceRequestManagement() {
             <Descriptions.Item label="Status">
               <Tag color={STATUS_COLORS[selectedRequest.status] || 'default'}>
                 {selectedRequest.status?.toUpperCase() || 'UNKNOWN'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Total Price">
+              <Tag color="green" style={{ fontSize: 16, padding: '6px 16px' }}>
+                ${Number(selectedRequest.totalPrice || 0).toFixed(2)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Has Vocalist">

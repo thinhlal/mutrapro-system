@@ -78,6 +78,7 @@ const NotationInstruments = () => {
       instrumentName: instrument.instrumentName,
       usage: instrument.usage,
       active: instrument.active,
+      basePrice: instrument.basePrice,
     });
     setModalVisible(true);
   };
@@ -90,6 +91,7 @@ const NotationInstruments = () => {
 
       formData.append('instrumentName', values.instrumentName);
       formData.append('usage', values.usage);
+      formData.append('basePrice', values.basePrice || 0);
 
       if (editMode) {
         formData.append('isActive', values.active !== undefined ? values.active : true);
@@ -212,6 +214,18 @@ const NotationInstruments = () => {
       sorter: (a, b) => a.instrumentName.localeCompare(b.instrumentName),
     },
     {
+      title: 'Base Price',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      width: 120,
+      render: price => (
+        <span style={{ fontWeight: 500, color: '#52c41a' }}>
+          ${price ? Number(price).toFixed(2) : '0.00'}
+        </span>
+      ),
+      sorter: (a, b) => (a.basePrice || 0) - (b.basePrice || 0),
+    },
+    {
       title: 'Usage',
       dataIndex: 'usage',
       key: 'usage',
@@ -324,6 +338,22 @@ const NotationInstruments = () => {
               <Option value="arrangement">Arrangement</Option>
               <Option value="both">Both</Option>
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Base Price (USD)"
+            name="basePrice"
+            rules={[
+              { required: true, message: 'Please input base price!' },
+              { type: 'number', min: 0, message: 'Price must be positive!' },
+            ]}
+          >
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="e.g., 50.00"
+              prefix="$"
+            />
           </Form.Item>
 
           {editMode && (
