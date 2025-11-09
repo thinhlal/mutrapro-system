@@ -18,9 +18,10 @@
 
 .slant {
   position: absolute;
-  right: -56px;
-  top: 0;
+  right: -50px;
+  top: -8px;
   bottom: 0;
+  height: 440px;
   width: 20%;
   background: #fff;
   transform: skewX(-12deg);

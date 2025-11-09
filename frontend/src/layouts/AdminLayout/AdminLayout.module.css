@@ -1,3 +1,7 @@
+:global(.ant-menu .ant-menu-item .ant-menu-title-content a) {
+  text-decoration: none !important;
+}
+
 .adminLayout {
   min-height: 100vh;
 }
@@ -43,4 +47,3 @@
   padding: 24px;
   min-height: 280px;
 }
-

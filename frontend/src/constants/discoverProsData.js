@@ -11,7 +11,7 @@ export const PROS_CATEGORIES = [
     serviceType: 'transcription',
     image: ImgMixing,
     description:
-      'Transform your audio into professional sheet music. Our experts will transcribe your songs with accuracy and attention to detail.',
+      'Transform your audio into professional sheet music. Our experts will transcribe your songs.',
   },
   {
     id: 'arrangement',
@@ -24,12 +24,12 @@ export const PROS_CATEGORIES = [
   },
   {
     id: 'arrangement-with-recording',
-    title: 'Arrangement with Recording',
+    title: 'Arrangement / Record',
     href: '/detail-service',
     serviceType: 'arrangement_with_recording',
     image: ImgBeatmaker,
     description:
-      'Complete arrangement service with professional recording. Get both the arrangement and a polished vocal recording.',
+      'Complete arrangement service with recording. Get both the arrangement and a vocal recording.',
   },
   {
     id: 'recording',

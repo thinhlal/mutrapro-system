@@ -12,7 +12,11 @@ const SERVICE_LABELS = {
   recording: 'Recording (Studio Booking)',
 };
 
-export default function RequestServiceForm({ onFormComplete, serviceType, formRef }) {
+export default function RequestServiceForm({
+  onFormComplete,
+  serviceType,
+  formRef,
+}) {
   const [form] = Form.useForm();
   const { user } = useAuth();
 
@@ -54,14 +58,15 @@ export default function RequestServiceForm({ onFormComplete, serviceType, formRe
           Create Your Service Request
         </h2>
         <p className={styles.desc}>
-          Tell us what you need. After filling the form, please upload your files below.
+          Tell us what you need. After filling the form, please upload your
+          files.
         </p>
 
         <Form
           form={form}
           layout="vertical"
           onValuesChange={handleValuesChange}
-          initialValues={{ 
+          initialValues={{
             serviceType: serviceType || 'transcription',
             tempoPercentage: 100,
             contactName: user?.fullName || '',
@@ -73,14 +78,22 @@ export default function RequestServiceForm({ onFormComplete, serviceType, formRe
             <Input size="large" placeholder="e.g., Transcribe Song ABC" />
           </Form.Item>
 
-          <Form.Item label="Description" name="description" rules={[requiredMsg]}>
+          <Form.Item
+            label="Description"
+            name="description"
+            rules={[requiredMsg]}
+          >
             <TextArea
               rows={4}
               placeholder="Describe your request in detail..."
             />
           </Form.Item>
 
-          <Form.Item label="Contact Name" name="contactName" rules={[requiredMsg]}>
+          <Form.Item
+            label="Contact Name"
+            name="contactName"
+            rules={[requiredMsg]}
+          >
             <Input size="large" placeholder="Your full name" />
           </Form.Item>
 
@@ -92,12 +105,16 @@ export default function RequestServiceForm({ onFormComplete, serviceType, formRe
             <Input size="large" placeholder="you@example.com" />
           </Form.Item>
 
-          <Form.Item label="Contact Phone" name="contactPhone" rules={[requiredMsg]}>
+          <Form.Item
+            label="Contact Phone"
+            name="contactPhone"
+            rules={[requiredMsg]}
+          >
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
-          <Form.Item 
-            label="Tempo Percentage" 
+          <Form.Item
+            label="Tempo Percentage"
             name="tempoPercentage"
             tooltip="Adjust playback speed (100 = normal speed)"
           >
@@ -120,8 +137,11 @@ export default function RequestServiceForm({ onFormComplete, serviceType, formRe
             </Form.Item>
           )}
         </Form>
-        <p className={styles.nextStep} style={{ marginTop: 16, textAlign: 'center', color: '#888' }}>
-          ↓ After filling the form, please upload your files below ↓
+        <p
+          className={styles.nextStep}
+          style={{ marginTop: 16, textAlign: 'center', color: '#888' }}
+        >
+          After filling the form, please upload your files.
         </p>
       </div>
     </section>

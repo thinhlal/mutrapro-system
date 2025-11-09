@@ -1,4 +1,4 @@
-import TrustImage from '../../../../../assets/images/DiscoverPros/SoundBetter.jpg';
+import TrustImage from '../../../../../assets/images/DiscoverPros/what-is-headroom.jpg';
 import { Typography } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
 import styles from './ProsTrustSection.module.css';
