@@ -11,7 +11,7 @@ import ProtectedRoute from './components/HandleRoutes/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
 // Layouts
-import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
+import ManagerLayout from './layouts/ManagerLayout/ManagerLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
 
 // Public Pages
@@ -193,12 +193,12 @@ function App() {
             }
           />
 
-          {/* --- COORDINATOR ROUTES (PROTECTED) --- */}
+          {/* --- MANAGER ROUTES (PROTECTED) --- */}
           <Route
-            path="/coordinator"
+            path="/manager"
             element={
               <ProtectedRoute allowedRoles={['MANAGER', 'SYSTEM_ADMIN']}>
-                <CoordinatorLayout />
+                <ManagerLayout />
               </ProtectedRoute>
             }
           >

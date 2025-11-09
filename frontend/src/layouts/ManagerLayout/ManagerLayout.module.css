@@ -1,4 +1,4 @@
-.coordinatorLayout {
+.managerLayout {
   min-height: 100vh;
 }
 
@@ -43,3 +43,4 @@
   padding: 24px;
   min-height: 280px;
 }
+

@@ -9,31 +9,31 @@ import {
   ContainerOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown } from 'antd';
-import styles from './CoordinatorLayout.module.css';
+import styles from './ManagerLayout.module.css';
 
 const { Header, Sider, Content } = Layout;
 
 // Menu items Sidebar
 const menuItems = [
   {
-    key: '/coordinator/dashboard',
+    key: '/manager/dashboard',
     icon: <DashboardOutlined />,
-    label: <Link to="/coordinator/dashboard">Dashboard</Link>,
+    label: <Link to="/manager/dashboard">Dashboard</Link>,
   },
   {
-    key: '/coordinator/contact-builder',
+    key: '/manager/contact-builder',
     icon: <ContainerOutlined />,
-    label: <Link to="/coordinator/contact-builder">Contact Builder</Link>,
+    label: <Link to="/manager/contact-builder">Contact Builder</Link>,
   },
   {
-    key: '/coordinator/contracts-list',
+    key: '/manager/contracts-list',
     icon: <ContainerOutlined />,
-    label: <Link to="/coordinator/contracts-list">Contracts</Link>,
+    label: <Link to="/manager/contracts-list">Contracts</Link>,
   },
   {
-    key: '/coordinator/task',
+    key: '/manager/task',
     icon: <UnorderedListOutlined />,
-    label: <Link to="/coordinator/task">Task</Link>,
+    label: <Link to="/manager/task">Task</Link>,
   },
   {
     key: '3',
@@ -52,7 +52,7 @@ const userMenu = (
   </Menu>
 );
 
-const CoordinatorLayout = () => {
+const ManagerLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const {
@@ -60,10 +60,10 @@ const CoordinatorLayout = () => {
   } = theme.useToken();
 
   return (
-    <Layout className={styles.coordinatorLayout}>
+    <Layout className={styles.managerLayout}>
       <Sider trigger={null} collapsible collapsed={collapsed}>
         <div className={styles.logo}>
-          {collapsed ? 'MTP' : 'MuTraPro Admin'}
+          {collapsed ? 'MTP' : 'MuTraPro Manager'}
         </div>
         <Menu
           theme="dark"
@@ -87,7 +87,7 @@ const CoordinatorLayout = () => {
             <Dropdown overlay={userMenu} trigger={['click']}>
               <a onClick={e => e.preventDefault()}>
                 <Avatar icon={<UserOutlined />} />
-                <span className={styles.userName}>Coordinator Name</span>
+                <span className={styles.userName}>Manager Name</span>
               </a>
             </Dropdown>
           </div>
@@ -106,4 +106,5 @@ const CoordinatorLayout = () => {
   );
 };
 
-export default CoordinatorLayout;
+export default ManagerLayout;
+
