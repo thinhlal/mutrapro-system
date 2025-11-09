@@ -82,7 +82,9 @@ function WaveformViewer({ src }) {
         style={{ background: '#1f1f1f', borderRadius: 8, cursor: 'pointer' }}
         title="Click để Play/Pause"
       />
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
+      <div
+        style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}
+      >
         <Button size="small" onClick={() => wsRef.current?.playPause()}>
           {isPlaying ? 'Pause' : 'Play'}
         </Button>
@@ -218,9 +220,7 @@ export default function TranscriptionQuotePageSimplified() {
               onClick={() => setInstrumentModalVisible(true)}
               block
             >
-              {selectedInstrument
-                ? 'Change Instrument'
-                : 'Select Instrument'}
+              {selectedInstrument ? 'Change Instrument' : 'Select Instrument'}
             </Button>
 
             {selectedInstrument && selectedInstrumentData && (
@@ -243,7 +243,8 @@ export default function TranscriptionQuotePageSimplified() {
                       {selectedInstrumentData.instrumentName}
                     </div>
                     <Tag color="green" style={{ marginTop: 4 }}>
-                      ${Number(selectedInstrumentData.basePrice || 0).toFixed(2)}
+                      $
+                      {Number(selectedInstrumentData.basePrice || 0).toFixed(2)}
                     </Tag>
                   </div>
                 </Space>
@@ -269,7 +270,6 @@ export default function TranscriptionQuotePageSimplified() {
             <Button onClick={() => navigate(-1)}>Back</Button>
             <Button
               type="primary"
-              size="large"
               icon={<EyeOutlined />}
               onClick={handleReview}
               disabled={!selectedInstrument}
@@ -284,7 +284,7 @@ export default function TranscriptionQuotePageSimplified() {
           title="Review Your Request"
           open={reviewModalVisible}
           onCancel={() => setReviewModalVisible(false)}
-          width={700}
+          width={1000}
           footer={[
             <Button key="back" onClick={() => setReviewModalVisible(false)}>
               Edit
@@ -301,8 +301,12 @@ export default function TranscriptionQuotePageSimplified() {
           ]}
         >
           <Descriptions bordered column={1}>
-            <Descriptions.Item label="Service Type">Transcription</Descriptions.Item>
-            <Descriptions.Item label="Title">{formData.title}</Descriptions.Item>
+            <Descriptions.Item label="Service Type">
+              Transcription
+            </Descriptions.Item>
+            <Descriptions.Item label="Title">
+              {formData.title}
+            </Descriptions.Item>
             <Descriptions.Item label="Description">
               {formData.description}
             </Descriptions.Item>
@@ -340,4 +344,3 @@ export default function TranscriptionQuotePageSimplified() {
     </>
   );
 }
-

@@ -100,7 +100,7 @@ const AdminLayout = () => {
 
   return (
     <Layout className={styles.adminLayout}>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
+      <Sider trigger={null} collapsible collapsed={collapsed} width={240}>
         <div className={styles.logo}>
           {collapsed ? 'MTP' : 'MuTraPro Admin'}
         </div>
@@ -148,4 +148,3 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
-

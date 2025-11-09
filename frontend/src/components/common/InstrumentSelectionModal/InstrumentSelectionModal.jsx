@@ -40,28 +40,30 @@ const InstrumentSelectionModal = ({
         .filter(inst => selectedInstruments.includes(inst.instrumentId))
         .reduce((sum, inst) => sum + (inst.basePrice || 0), 0)
     : instruments.find(inst => inst.instrumentId === selectedInstruments)
-          ?.basePrice || 0;
+        ?.basePrice || 0;
 
   const selectedCount = multipleSelection
     ? selectedInstruments.length
     : selectedInstruments
-    ? 1
-    : 0;
+      ? 1
+      : 0;
 
   return (
     <Modal
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <span>{title}</span>
-          <div style={{ fontSize: 14, fontWeight: 'normal' }}>
+          <div style={{ fontSize: 18, fontWeight: 'normal' }}>
             {selectedCount > 0 && (
               <>
-                <Tag color="blue">
-                  {selectedCount} selected
-                </Tag>
-                <Tag color="green">
-                  Total: ${totalPrice.toFixed(2)}
-                </Tag>
+                <Tag color="blue">{selectedCount} selected</Tag>
+                <Tag color="green">Total: ${totalPrice.toFixed(2)}</Tag>
               </>
             )}
           </div>
@@ -70,8 +72,14 @@ const InstrumentSelectionModal = ({
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={900}
-      bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+      width={1200}
+      styles={{
+        body: {
+          maxHeight: '70vh',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        },
+      }}
     >
       <Spin spinning={loading}>
         {instruments.length === 0 ? (
@@ -82,7 +90,7 @@ const InstrumentSelectionModal = ({
               <Col xs={24} sm={12} md={8} key={instrument.instrumentId}>
                 <Badge.Ribbon
                   text={
-                    <span style={{ fontSize: 12 }}>
+                    <span style={{ fontSize: 18 }}>
                       ${Number(instrument.basePrice || 0).toFixed(2)}
                     </span>
                   }
@@ -140,14 +148,28 @@ const InstrumentSelectionModal = ({
           </Row>
         )}
       </Spin>
-      
+
       {!multipleSelection && (
-        <div style={{ marginTop: 16, textAlign: 'center', color: '#888', fontSize: 13 }}>
+        <div
+          style={{
+            marginTop: 16,
+            textAlign: 'center',
+            color: '#888',
+            fontSize: 13,
+          }}
+        >
           Click on an instrument to select it
         </div>
       )}
       {multipleSelection && (
-        <div style={{ marginTop: 16, textAlign: 'center', color: '#888', fontSize: 13 }}>
+        <div
+          style={{
+            marginTop: 16,
+            textAlign: 'center',
+            color: '#888',
+            fontSize: 13,
+          }}
+        >
           You can select multiple instruments. Click to toggle selection.
         </div>
       )}
@@ -156,4 +178,3 @@ const InstrumentSelectionModal = ({
 };
 
 export default InstrumentSelectionModal;
-

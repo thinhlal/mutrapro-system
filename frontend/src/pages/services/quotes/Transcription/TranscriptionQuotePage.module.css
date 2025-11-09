@@ -1,7 +1,9 @@
 .wrap {
-  max-width: 1100px;
-  margin: 10rem auto;
-  padding: 0 16px;
+  max-width: 1200px;
+  margin: 12rem auto;
+  padding: 16px;
+  border-radius: 12px; /* optional cho mềm */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 .row {
   display: grid;

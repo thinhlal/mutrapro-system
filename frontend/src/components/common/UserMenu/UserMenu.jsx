@@ -191,12 +191,12 @@ function UserMenu() {
             {/* Settings */}
             <li>
               <Link
-                to="/settings"
+                to="/profile/notifications"
                 className={styles.dropdownItem}
                 onClick={handleMenuItemClick}
               >
                 <SettingOutlined className={styles.dropdownIcon} />
-                <span>Settings</span>
+                <span>Notifications</span>
               </Link>
             </li>
           </ul>
