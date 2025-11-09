@@ -152,3 +152,27 @@ export const getMyAssignedRequests = async (userId, additionalFilters = {}) => {
   }
 };
 
+/**
+ * Lấy danh sách requests mà user hiện tại đã tạo
+ * GET /requests/my-requests?status=
+ * 
+ * @param {Object} filters - Các filter tùy chọn
+ * @param {string} filters.status - Trạng thái: pending, contract_sent, contract_signed, approved, in_progress, completed, cancelled, rejected
+ * 
+ * @returns {Promise} ApiResponse với danh sách requests của user
+ */
+export const getMyRequests = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+
+    if (filters.status) params.append('status', filters.status);
+
+    const url = `${API_ENDPOINTS.SERVICE_REQUESTS.MY_REQUESTS}${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    const response = await axiosInstance.get(url);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách requests của bạn' };
+  }
+};
+

@@ -125,6 +125,8 @@ export const API_ENDPOINTS = {
     ASSIGN: requestId => `${REQUEST_PATH}/requests/${requestId}/assign`,
     // GET /api/v1/requests/requests/{requestId}
     GET_BY_ID: requestId => `${REQUEST_PATH}/requests/${requestId}`,
+    // GET /api/v1/requests/requests/my-requests?status=
+    MY_REQUESTS: `${REQUEST_PATH}/requests/my-requests`,
   },
 
   // === Notation Instruments Management ===
