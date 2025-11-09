@@ -129,9 +129,14 @@ export default function ServiceRequestManagement() {
 
   // Assign request
   const handleAssign = async requestId => {
+    if (!user?.id) {
+      message.error('User ID not found');
+      return;
+    }
+
     try {
       setAssigning(prev => ({ ...prev, [requestId]: true }));
-      const response = await assignServiceRequest(requestId);
+      const response = await assignServiceRequest(requestId, user.id);
 
       if (response?.status === 'success') {
         message.success('Request assigned successfully!');
@@ -233,14 +238,24 @@ export default function ServiceRequestManagement() {
       width: 150,
       render: date => new Date(date).toLocaleDateString('vi-VN'),
     },
-    // Tạm ẩn vì API chưa có field này
-    // {
-    //   title: 'Assigned To',
-    //   dataIndex: 'assignedToName',
-    //   key: 'assignedToName',
-    //   width: 150,
-    //   render: name => name || <Tag>Unassigned</Tag>,
-    // },
+    {
+      title: 'Assigned To',
+      dataIndex: 'managerUserId',
+      key: 'managerUserId',
+      width: 150,
+      render: (managerId, record) => {
+        if (managerId) {
+          // Nếu có manager ID, hiển thị badge
+          const isCurrentUser = managerId === user?.id;
+          return (
+            <Tag color={isCurrentUser ? 'green' : 'blue'}>
+              {isCurrentUser ? 'You' : 'Assigned'}
+            </Tag>
+          );
+        }
+        return <Tag color="default">Unassigned</Tag>;
+      },
+    },
     {
       title: 'Actions',
       key: 'actions',
@@ -255,8 +270,7 @@ export default function ServiceRequestManagement() {
           >
             View
           </Button>
-          {/* Tạm ẩn assign button - sẽ implement sau */}
-          {/* {!record.assignedTo && (
+          {!record.managerUserId && (
             <Button
               type="primary"
               size="small"
@@ -266,7 +280,7 @@ export default function ServiceRequestManagement() {
             >
               Assign to Me
             </Button>
-          )} */}
+          )}
         </Space>
       ),
     },
@@ -352,21 +366,20 @@ export default function ServiceRequestManagement() {
           <Button key="close" onClick={() => setDetailModalVisible(false)}>
             Close
           </Button>,
-          // Tạm ẩn assign button
-          // !selectedRequest?.assignedTo && (
-          //   <Button
-          //     key="assign"
-          //     type="primary"
-          //     icon={<CheckCircleOutlined />}
-          //     loading={assigning[selectedRequest?.id]}
-          //     onClick={() => {
-          //       handleAssign(selectedRequest.id);
-          //       setDetailModalVisible(false);
-          //     }}
-          //   >
-          //     Assign to Me
-          //   </Button>
-          // ),
+          !selectedRequest?.managerUserId && (
+            <Button
+              key="assign"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              loading={assigning[selectedRequest?.id]}
+              onClick={() => {
+                handleAssign(selectedRequest.id);
+                setDetailModalVisible(false);
+              }}
+            >
+              Assign to Me
+            </Button>
+          ),
         ]}
         width={800}
       >
@@ -420,11 +433,15 @@ export default function ServiceRequestManagement() {
             <Descriptions.Item label="Contact Phone">
               {selectedRequest.contactPhone}
             </Descriptions.Item>
-            {/* <Descriptions.Item label="Assigned To">
-              {selectedRequest.assignedToName || (
-                <Tag>Unassigned</Tag>
+            <Descriptions.Item label="Assigned To">
+              {selectedRequest.managerUserId ? (
+                <Tag color={selectedRequest.managerUserId === user?.id ? 'green' : 'blue'}>
+                  {selectedRequest.managerUserId === user?.id ? 'You' : 'Assigned to Manager'}
+                </Tag>
+              ) : (
+                <Tag color="default">Unassigned</Tag>
               )}
-            </Descriptions.Item> */}
+            </Descriptions.Item>
             <Descriptions.Item label="Created At">
               {new Date(selectedRequest.createdAt).toLocaleString('vi-VN')}
             </Descriptions.Item>

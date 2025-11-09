@@ -1,0 +1,21 @@
+.container {
+  padding: 0;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.profileInfo h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+

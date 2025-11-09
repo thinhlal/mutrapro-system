@@ -120,12 +120,16 @@ export const getServiceRequestById = async requestId => {
  * PUT /requests/{requestId}/assign
  * 
  * @param {string} requestId - ID của request
+ * @param {string} managerId - ID của manager
  * @returns {Promise} ApiResponse
  */
-export const assignServiceRequest = async requestId => {
+export const assignServiceRequest = async (requestId, managerId) => {
   try {
     const response = await axiosInstance.put(
-      API_ENDPOINTS.SERVICE_REQUESTS.ASSIGN(requestId)
+      API_ENDPOINTS.SERVICE_REQUESTS.ASSIGN(requestId),
+      {
+        managerId: managerId
+      }
     );
     return response.data;
   } catch (error) {
