@@ -36,6 +36,8 @@ public class CreateServiceRequestRequest {
     
     BigDecimal tempoPercentage;  // Optional - VD: 80.00, 50.00 (tốc độ phát cho transcription)
     
+    BigDecimal durationMinutes;  // Optional - Độ dài audio file (phút) - dùng để tính giá transcription
+    
     Boolean hasVocalist;  // Optional - Customer có chọn ca sĩ cho arrangement_with_recording
     
     Integer externalGuestCount;  // Optional - Số người customer mang theo cho studio booking

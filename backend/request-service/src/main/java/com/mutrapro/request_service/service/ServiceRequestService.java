@@ -70,6 +70,7 @@ public class ServiceRequestService {
                 .contactEmail(request.getContactEmail())
                 .musicOptions(request.getMusicOptions())
                 .tempoPercentage(request.getTempoPercentage())
+                .durationMinutes(request.getDurationMinutes())  // Lưu độ dài audio (phút)
                 .hasVocalist(request.getHasVocalist() != null ? request.getHasVocalist() : false)
                 .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
                 .title(request.getTitle())

@@ -60,6 +60,9 @@ public class ServiceRequest extends BaseEntity<String> {
     @Column(name = "tempo_percentage", precision = 5, scale = 2)
     BigDecimal tempoPercentage;  // VD: 80.00, 50.00 (tốc độ phát cho transcription)
 
+    @Column(name = "duration_minutes", precision = 10, scale = 2)
+    BigDecimal durationMinutes;  // Độ dài audio file (phút) - dùng để tính giá transcription
+
     @Builder.Default
     @Column(name = "has_vocalist", nullable = false)
     Boolean hasVocalist = false;  // Customer có chọn ca sĩ cho arrangement_with_recording

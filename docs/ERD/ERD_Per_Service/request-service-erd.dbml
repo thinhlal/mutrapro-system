@@ -36,13 +36,14 @@ Table service_requests {
   
   music_options jsonb
   tempo_percentage decimal(5,2)
+  duration_minutes decimal(10,2) [note: 'Độ dài audio file (phút) - dùng để tính giá transcription']
   has_vocalist boolean [default: false]
   external_guest_count integer [default: 0]
   title varchar(200)
   description text [not null]
   status request_status [default: 'pending']
   
-  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). has_vocalist: true nếu customer chọn ca sĩ. music_options: NULL cho transcription. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
+  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). duration_minutes: độ dài audio file (phút) - dùng để tính giá transcription. has_vocalist: true nếu customer chọn ca sĩ. music_options: NULL cho transcription. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
   
   indexes {
     user_id

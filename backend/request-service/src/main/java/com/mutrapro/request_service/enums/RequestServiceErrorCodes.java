@@ -73,6 +73,11 @@ public enum RequestServiceErrorCodes implements ErrorCode {
     REQUEST_ALREADY_HAS_MANAGER("REQUEST_6012", 409,
         "https://docs.mutrapro.com/errors/REQUEST_6012",
         "Service request already has a manager assigned",
+        Retryable.NON_TRANSIENT),
+    
+    DUPLICATE_RESOURCE("REQUEST_6013", 409,
+        "https://docs.mutrapro.com/errors/REQUEST_6013",
+        "Resource already exists",
         Retryable.NON_TRANSIENT);
 
     private final String code;

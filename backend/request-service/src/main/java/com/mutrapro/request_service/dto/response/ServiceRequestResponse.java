@@ -32,6 +32,7 @@ public class ServiceRequestResponse {
     String contactEmail;
     JsonNode musicOptions;
     BigDecimal tempoPercentage;
+    BigDecimal durationMinutes;  // Độ dài audio file (phút)
     Boolean hasVocalist;
     Integer externalGuestCount;
     String title;
