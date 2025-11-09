@@ -6,6 +6,7 @@ import axiosInstancePublic from '../../utils/axiosInstancePublic';
 import { setItem } from '../../services/localStorageService';
 import { toast } from 'react-hot-toast';
 import LoadingScreen from '../../components/LoadingScreen/LoadingScreen';
+import { getRoleBasedRedirectPath } from '../../utils/roleRedirect';
 
 export default function AuthenticatePage() {
   const navigate = useNavigate();
@@ -61,8 +62,12 @@ export default function AuthenticatePage() {
       });
 
       toast.success('Login successfully!');
+      
+      // Determine redirect path based on user role
+      const redirectPath = getRoleBasedRedirectPath(auth.role);
+      
       setTimeout(() => {
-        navigate('/');
+        navigate(redirectPath);
       }, 1000);
     } catch (err) {
       console.error('Authentication Error: ', err);

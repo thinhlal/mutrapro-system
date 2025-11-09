@@ -11,7 +11,7 @@ import ProtectedRoute from './components/HandleRoutes/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 
 // Layouts
-import CoordinatorLayout from './layouts/CoordinatorLayout/CoordinatorLayout';
+import ManagerLayout from './layouts/ManagerLayout/ManagerLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
 
 // Public Pages
@@ -32,6 +32,7 @@ import AuthenticatePage from './pages/auth/AuthenticatePage';
 import ProfilePage from './pages/user/Profile/ProfilePage';
 import NotificationsPage from './pages/user/Notifications/NotificationsPage';
 import SubscriptionPage from './pages/user/Subscription/SubscriptionPage';
+import MyRequestsPage from './pages/user/MyRequests/MyRequestsPage';
 
 // Professionals Pages
 import SingersPage from './pages/professionals/Singers/List/SingersPage';
@@ -61,6 +62,9 @@ import UserManagement from './pages/admin/UserManagement/UserManagement';
 import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
 import AdminProfile from './pages/admin/Profile/AdminProfile';
 import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
+
+// Manager Pages
+import ManagerProfile from './pages/manager/Profile/ManagerProfile';
 
 import './App.css';
 
@@ -96,6 +100,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/my-requests"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <MyRequestsPage />
               </ProtectedRoute>
             }
           />
@@ -182,20 +196,25 @@ function App() {
             }
           />
 
-          {/* --- COORDINATOR ROUTES (PROTECTED) --- */}
+          {/* --- MANAGER ROUTES (PROTECTED) --- */}
           <Route
-            path="/coordinator"
+            path="/manager"
             element={
               <ProtectedRoute allowedRoles={['MANAGER', 'SYSTEM_ADMIN']}>
-                <CoordinatorLayout />
+                <ManagerLayout />
               </ProtectedRoute>
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route
+              path="service-requests"
+              element={<ServiceRequestManagement />}
+            />
             <Route path="contact-builder" element={<ContractBuilder />} />
             <Route path="contracts-list" element={<ContractsList />} />
             <Route path="task" element={<Tasks />} />
+            <Route path="profile" element={<ManagerProfile />} />
           </Route>
 
           {/* --- ADMIN ROUTES (PROTECTED) --- */}

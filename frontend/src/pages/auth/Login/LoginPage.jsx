@@ -4,6 +4,7 @@ import styles from './LoginPage.module.css';
 import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../../contexts/AuthContext';
 import { OAuthConfig } from '../../../config/OAuthConfig';
+import { getRoleBasedRedirectPath } from '../../../utils/roleRedirect';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -28,13 +29,17 @@ function LoginPage() {
     setSuccessMessage('');
 
     try {
-      await logIn(email, password);
+      const response = await logIn(email, password);
 
       setSuccessMessage('Login successful! Redirecting...');
 
-      // Redirect to the page user tried to access, or home page
+      // Determine redirect path based on user role
+      const userRole = response?.user?.role;
+      const redirectPath = getRoleBasedRedirectPath(userRole, from);
+
+      // Redirect to role-based dashboard or requested page
       setTimeout(() => {
-        navigate(from, { replace: true });
+        navigate(redirectPath, { replace: true });
       }, 500);
     } catch (error) {
       // Check if error is email not verified

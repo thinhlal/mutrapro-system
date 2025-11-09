@@ -148,16 +148,16 @@ function UserMenu() {
               </Link>
             </li>
 
-            {/* Dashboard for Coordinator/Admin */}
+            {/* Dashboard for Manager/Admin */}
             {user?.role === 'MANAGER' && (
               <li>
                 <Link
-                  to="/coordinator/dashboard"
+                  to="/manager/dashboard"
                   className={styles.dropdownItem}
                   onClick={handleMenuItemClick}
                 >
                   <DashboardOutlined className={styles.dropdownIcon} />
-                  <span>Coordinator Dashboard</span>
+                  <span>Manager Dashboard</span>
                 </Link>
               </li>
             )}
@@ -177,12 +177,12 @@ function UserMenu() {
                 </li>
                 <li>
                   <Link
-                    to="/coordinator/dashboard"
+                    to="/manager/dashboard"
                     className={styles.dropdownItem}
                     onClick={handleMenuItemClick}
                   >
                     <DashboardOutlined className={styles.dropdownIcon} />
-                    <span>Coordinator Dashboard</span>
+                    <span>Manager Dashboard</span>
                   </Link>
                 </li>
               </>
