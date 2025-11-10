@@ -163,7 +163,7 @@ function App() {
 
           {/* --- PROTECTED QUOTE ROUTES (All authenticated users) --- */}
           <Route
-            path="/transcription/quote"
+            path="/services/quotes/transcription"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
@@ -173,7 +173,7 @@ function App() {
             }
           />
           <Route
-            path="/arrangement/quote"
+            path="/services/quotes/arrangement"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
@@ -183,7 +183,7 @@ function App() {
             }
           />
           <Route
-            path="/recording/quote"
+            path="/services/quotes/recording"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}

@@ -1,15 +1,18 @@
 import { useState, useCallback } from 'react';
-import { Input, Upload, Button, Tooltip, message, Tag, Space } from 'antd';
+import { Upload, Button, Tooltip, message, Tag, Space, InputNumber } from 'antd';
 import {
   InboxOutlined,
-  LinkOutlined,
   ArrowRightOutlined,
   FileTextOutlined,
   DeleteOutlined,
+  ClockCircleOutlined,
+  PlusOutlined,
+  MinusOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './TranscriptionUploader.module.css';
 import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
+import { createServiceRequest } from '../../../../../services/serviceRequestService';
 
 const { Dragger } = Upload;
 
@@ -22,10 +25,11 @@ const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
 export default function TranscriptionUploader({ serviceType, formData }) {
-  const [linkValue, setLinkValue] = useState('');
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
-  const [durationSec, setDurationSec] = useState(null); // null = chưa đo, number = đã đo
+  const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
+  const [adjustedDurationMinutes, setAdjustedDurationMinutes] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const beforeUpload = useCallback(() => false, []);
@@ -33,20 +37,23 @@ export default function TranscriptionUploader({ serviceType, formData }) {
   const onDraggerChange = async ({ fileList }) => {
     const f = fileList?.[0]?.originFileObj || null;
     if (!f) {
-      // đã xoá
       clearFile();
       return;
     }
+    
     setFile(f);
     const url = URL.createObjectURL(f);
     setBlobUrl(url);
 
-    // Đo duration (nếu fail vẫn ok)
+    // Đo duration và set mặc định
     try {
       const sec = await getMediaDurationSec(f);
-      setDurationSec(sec);
+      const minutes = parseFloat((sec / 60).toFixed(2));
+      setDetectedDurationMinutes(minutes);
+      setAdjustedDurationMinutes(minutes); // Mặc định = detected duration
     } catch {
-      setDurationSec(0);
+      setDetectedDurationMinutes(0);
+      setAdjustedDurationMinutes(0);
     }
   };
 
@@ -58,57 +65,53 @@ export default function TranscriptionUploader({ serviceType, formData }) {
     }
     setFile(null);
     setBlobUrl('');
-    setDurationSec(null);
+    setDetectedDurationMinutes(0);
+    setAdjustedDurationMinutes(0);
   };
 
-  const goQuote = async () => {
-    if (!file && !linkValue.trim()) {
-      message.warning('Please paste a link or upload a file.');
+  const handleDurationChange = (value) => {
+    if (value && value > 0) {
+      setAdjustedDurationMinutes(parseFloat(value));
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!file) {
+      message.warning('Please upload a file.');
       return;
     }
 
     // Validate form data
     if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Please fill in the form above before uploading files.');
+      message.warning('Please fill in the form above before submitting.');
       return;
     }
 
-    const state = {
-      sourceType: file ? 'upload' : 'url',
-      fileName: file ? file.name : '',
-      url: file ? '' : linkValue.trim(),
-      durationSec: 0,
-      blobUrl: '',
-      serviceType: serviceType || 'transcription',
-      formData: formData, // Truyền form data xuống Quote Page
-      uploadedFile: file, // Truyền file object để upload sau
-    };
-
-    try {
-      if (file) {
-        // nếu chưa đo xong thì đo nốt; nếu đã có thì dùng luôn
-        const sec =
-          typeof durationSec === 'number'
-            ? durationSec
-            : await getMediaDurationSec(file);
-        state.durationSec = sec || 0;
-        state.blobUrl = blobUrl || URL.createObjectURL(file);
-      } else if (state.url) {
-        state.durationSec = await getMediaDurationSec(state.url);
-      }
-    } catch {
-      // giữ durationSec = 0 rồi điều hướng
+    // Validate instruments
+    if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
+      message.warning('Please select at least one instrument.');
+      return;
     }
 
-    // Navigate đến route tương ứng với service type
-    const routeMap = {
-      transcription: '/transcription/quote',
-      arrangement: '/arrangement/quote',
-      arrangement_with_recording: '/arrangement/quote',
-      recording: '/recording/quote',
-    };
-    const targetRoute = routeMap[serviceType] || '/transcription/quote';
-    navigate(targetRoute, { state });
+    // Validate duration
+    if (adjustedDurationMinutes <= 0) {
+      message.warning('Please set a valid duration.');
+      return;
+    }
+
+    // Navigate to quote page with state
+    navigate('/services/quotes/transcription', {
+      state: {
+        formData: {
+          ...formData,
+          durationMinutes: adjustedDurationMinutes,
+        },
+        uploadedFile: file,
+        blobUrl: blobUrl,
+        fileName: file.name,
+        serviceType: serviceType || 'transcription',
+      },
+    });
   };
 
   return (
@@ -172,7 +175,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
         {/* Hiển thị file đã chọn */}
         {file && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
+            <Space direction="vertical" style={{ width: '100%' }} size={16}>
               <div className={styles.fileLine}>
                 <Space wrap>
                   <FileTextOutlined />
@@ -180,8 +183,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Duration:{' '}
-                    {durationSec == null ? '…' : toMMSS(durationSec || 0)}
+                    • Detected Duration: {detectedDurationMinutes} minutes
                   </span>
                 </Space>
                 <Button
@@ -195,30 +197,84 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                 </Button>
               </div>
 
+              {/* Audio Player */}
               {blobUrl &&
                 (file.type?.startsWith('audio/') ||
                   file.type?.startsWith('video/')) && (
-                  <audio
-                    controls
-                    src={blobUrl}
-                    className={styles.audioPreview}
-                    aria-label="Audio preview"
-                  />
+                  <div style={{ marginTop: 16 }}>
+                    <audio
+                      controls
+                      src={blobUrl}
+                      style={{ width: '100%' }}
+                      aria-label="Audio preview"
+                    />
+                  </div>
                 )}
+
+              {/* Duration Adjustment */}
+              {detectedDurationMinutes > 0 && (
+                <div style={{ padding: '16px 0', marginTop: 16 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <ClockCircleOutlined style={{ marginRight: 8 }} />
+                    <span style={{ fontWeight: 600 }}>Adjust Duration (Minutes):</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Button
+                      icon={<MinusOutlined />}
+                      onClick={() => handleDurationChange(Math.max(0.5, adjustedDurationMinutes - 0.5))}
+                      disabled={adjustedDurationMinutes <= 0.5}
+                    >
+                      -0.5
+                    </Button>
+                    
+                    <InputNumber
+                      min={0.1}
+                      max={999}
+                      step={0.1}
+                      value={adjustedDurationMinutes}
+                      onChange={handleDurationChange}
+                      precision={2}
+                      style={{ width: 120 }}
+                      addonAfter="min"
+                    />
+                    
+                    <Button
+                      icon={<PlusOutlined />}
+                      onClick={() => handleDurationChange(adjustedDurationMinutes + 0.5)}
+                    >
+                      +0.5
+                    </Button>
+                    
+                    <Button
+                      type="link"
+                      onClick={() => setAdjustedDurationMinutes(detectedDurationMinutes)}
+                    >
+                      Reset to {detectedDurationMinutes} min
+                    </Button>
+                  </div>
+                  
+                  <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
+                    💡 Adjust the duration for billing purposes (detected: {detectedDurationMinutes} minutes)
+                  </div>
+                </div>
+              )}
             </Space>
           </div>
         )}
 
         <div className={styles.actionRow}>
-          <Tooltip title="Get pricing instantly" zIndex={0}>
+          <Tooltip title="Submit your transcription request" zIndex={0}>
             <Button
               type="primary"
               size="large"
               className={styles.ctaBtn}
-              onClick={goQuote}
+              onClick={handleSubmit}
               htmlType="button"
+              loading={submitting}
+              disabled={!file || !formData || adjustedDurationMinutes <= 0}
             >
-              Get an Instant Quote <ArrowRightOutlined />
+              Submit Request <ArrowRightOutlined />
             </Button>
           </Tooltip>
         </div>

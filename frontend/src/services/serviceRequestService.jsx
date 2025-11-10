@@ -8,14 +8,18 @@ import axiosInstance from '../utils/axiosInstance';
  * Content-Type: multipart/form-data
  * 
  * @param {Object} requestData - Dữ liệu request
- * @param {string} requestData.requestType - 'transcription' | 'arrangement'
- * @param {string} requestData.description - Mô tả yêu cầu
+ * @param {string} requestData.requestType - 'transcription' | 'arrangement' | 'arrangement_with_recording' | 'recording'
  * @param {string} requestData.title - Tiêu đề
- * @param {number} requestData.tempoPercentage - Tốc độ tempo (%)
- * @param {Array<string>} requestData.instrumentIds - Danh sách ID nhạc cụ
+ * @param {string} requestData.description - Mô tả yêu cầu
  * @param {string} requestData.contactName - Tên liên hệ
  * @param {string} requestData.contactPhone - Số điện thoại
  * @param {string} requestData.contactEmail - Email liên hệ
+ * @param {number} requestData.tempoPercentage - Tốc độ tempo (%) (optional, default 100)
+ * @param {number} requestData.durationMinutes - Thời lượng (phút)
+ * @param {Array<string>} requestData.instrumentIds - Danh sách ID nhạc cụ
+ * @param {boolean} requestData.hasVocalist - Có ca sĩ không (optional)
+ * @param {number} requestData.externalGuestCount - Số lượng khách mời (optional)
+ * @param {any} requestData.musicOptions - Các tùy chọn khác (optional)
  * @param {Array<File>} requestData.files - Danh sách files upload
  * 
  * @returns {Promise} ApiResponse
@@ -24,14 +28,31 @@ export const createServiceRequest = async requestData => {
   try {
     const formData = new FormData();
 
-    // Thêm các field text
+    // Required fields
     formData.append('requestType', requestData.requestType);
-    formData.append('description', requestData.description);
     formData.append('title', requestData.title);
-    formData.append('tempoPercentage', requestData.tempoPercentage);
+    formData.append('description', requestData.description);
     formData.append('contactName', requestData.contactName);
     formData.append('contactPhone', requestData.contactPhone);
     formData.append('contactEmail', requestData.contactEmail);
+    formData.append('durationMinutes', requestData.durationMinutes || 0);
+
+    // Optional fields
+    if (requestData.tempoPercentage !== undefined) {
+      formData.append('tempoPercentage', requestData.tempoPercentage);
+    }
+    
+    if (requestData.hasVocalist !== undefined) {
+      formData.append('hasVocalist', requestData.hasVocalist);
+    }
+    
+    if (requestData.externalGuestCount !== undefined) {
+      formData.append('externalGuestCount', requestData.externalGuestCount);
+    }
+    
+    if (requestData.musicOptions) {
+      formData.append('musicOptions', JSON.stringify(requestData.musicOptions));
+    }
 
     // Thêm instrumentIds (array)
     if (requestData.instrumentIds && requestData.instrumentIds.length > 0) {

@@ -1,6 +1,9 @@
-import { useMemo, useEffect } from 'react';
-import { Form, Input, Tag, InputNumber } from 'antd';
+import { useMemo, useEffect, useState } from 'react';
+import { Form, Input, Tag, InputNumber, Button, Space } from 'antd';
+import { SelectOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useInstrumentStore } from '../../../stores/useInstrumentStore';
+import InstrumentSelectionModal from '../../modal/InstrumentSelectionModal/InstrumentSelectionModal';
 import styles from './RequestServiceForm.module.css';
 
 const { TextArea } = Input;
@@ -19,6 +22,22 @@ export default function RequestServiceForm({
 }) {
   const [form] = Form.useForm();
   const { user } = useAuth();
+  
+  // Instrument selection
+  const [selectedInstruments, setSelectedInstruments] = useState([]);
+  const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
+  
+  const {
+    instruments: instrumentsData,
+    loading: instrumentsLoading,
+    fetchInstruments,
+    getInstrumentsByUsage,
+  } = useInstrumentStore();
+  
+  // Fetch instruments when component mounts
+  useEffect(() => {
+    fetchInstruments();
+  }, [fetchInstruments]);
 
   // Expose form instance to parent via ref
   useEffect(() => {
@@ -27,7 +46,21 @@ export default function RequestServiceForm({
     }
   }, [form, formRef]);
 
-  // Khi form values thay đổi, callback về parent (không submit API)
+  // Determine if service needs instrument selection and whether it's multiple or single
+  const needsInstruments = serviceType && serviceType !== 'recording';
+  const multipleInstruments = serviceType === 'arrangement' || serviceType === 'arrangement_with_recording';
+  
+  // Get instruments based on service type
+  const availableInstruments = useMemo(() => {
+    if (serviceType === 'transcription') {
+      return getInstrumentsByUsage('transcription');
+    } else if (serviceType === 'arrangement' || serviceType === 'arrangement_with_recording') {
+      return getInstrumentsByUsage('arrangement');
+    }
+    return [];
+  }, [serviceType, getInstrumentsByUsage, instrumentsData]);
+
+  // Khi form values thay đổi hoặc instruments thay đổi, callback về parent
   const handleValuesChange = (changedValues, allValues) => {
     // Callback về parent với data đầy đủ
     const formData = {
@@ -38,8 +71,29 @@ export default function RequestServiceForm({
       contactName: allValues.contactName || user?.fullName || '',
       contactPhone: allValues.contactPhone || '',
       contactEmail: allValues.contactEmail || user?.email || '',
+      instrumentIds: selectedInstruments, // Thêm instrumentIds
+      // Optional fields based on service type
+      hasVocalist: allValues.hasVocalist || false,
+      externalGuestCount: allValues.externalGuestCount || 0,
+      musicOptions: allValues.musicOptions || null,
     };
     onFormComplete?.(formData);
+  };
+  
+  // Khi instruments thay đổi, cũng callback lại
+  useEffect(() => {
+    if (form) {
+      const allValues = form.getFieldsValue();
+      handleValuesChange({}, allValues);
+    }
+  }, [selectedInstruments]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  const handleInstrumentSelect = (instrumentIds) => {
+    setSelectedInstruments(multipleInstruments ? instrumentIds : [instrumentIds]);
+    if (!multipleInstruments) {
+      // Single selection - close modal immediately
+      setInstrumentModalVisible(false);
+    }
   };
 
   const requiredMsg = useMemo(
@@ -136,6 +190,44 @@ export default function RequestServiceForm({
               </Tag>
             </Form.Item>
           )}
+
+          {/* Instrument Selection - Only for transcription, arrangement, arrangement_with_recording */}
+          {needsInstruments && (
+            <Form.Item 
+              label={multipleInstruments ? "Select Instruments (Multiple)" : "Select Instrument"} 
+              required
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                <Button
+                  type="primary"
+                  icon={<SelectOutlined />}
+                  onClick={() => setInstrumentModalVisible(true)}
+                  size="large"
+                  block
+                  loading={instrumentsLoading}
+                >
+                  {selectedInstruments.length > 0
+                    ? `${selectedInstruments.length} instrument(s) selected`
+                    : 'Select Instruments'}
+                </Button>
+                
+                {selectedInstruments.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <Space wrap>
+                      {selectedInstruments.map(id => {
+                        const inst = instrumentsData.find(i => i.instrumentId === id);
+                        return inst ? (
+                          <Tag key={id} color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+                            {inst.instrumentName}
+                          </Tag>
+                        ) : null;
+                      })}
+                    </Space>
+                  </div>
+                )}
+              </Space>
+            </Form.Item>
+          )}
         </Form>
         <p
           className={styles.nextStep}
@@ -144,6 +236,20 @@ export default function RequestServiceForm({
           After filling the form, please upload your files.
         </p>
       </div>
+
+      {/* Instrument Selection Modal */}
+      {needsInstruments && (
+        <InstrumentSelectionModal
+          visible={instrumentModalVisible}
+          onCancel={() => setInstrumentModalVisible(false)}
+          instruments={availableInstruments}
+          loading={instrumentsLoading}
+          selectedInstruments={multipleInstruments ? selectedInstruments : selectedInstruments[0]}
+          onSelect={handleInstrumentSelect}
+          multipleSelection={multipleInstruments}
+          title={multipleInstruments ? "Select Instruments (Multiple)" : "Select One Instrument"}
+        />
+      )}
     </section>
   );
 }
