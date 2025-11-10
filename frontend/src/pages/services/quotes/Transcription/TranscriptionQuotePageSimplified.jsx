@@ -1,5 +1,5 @@
-// Simplified TranscriptionQuotePage - chỉ chọn instruments
-import { useState, useEffect, useRef } from 'react';
+// TranscriptionQuotePageSimplified - Hiển thị báo giá và submit cuối cùng
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
@@ -9,91 +9,26 @@ import {
   Card,
   Space,
   Tag,
+  Spin,
+  Alert,
+  Descriptions,
+  Divider,
 } from 'antd';
-import { EyeOutlined, SelectOutlined } from '@ant-design/icons';
+import { 
+  EyeOutlined, 
+  DollarOutlined, 
+  CheckCircleOutlined,
+  ArrowRightOutlined,
+} from '@ant-design/icons';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
-import InstrumentSelectionModal from '../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
-import ReviewRequestModal from '../../../../components/modal/ReviewRequestModal/ReviewRequestModal';
-import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
+import { calculatePrice, formatPrice } from '../../../../services/pricingMatrixService';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
+import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import styles from './TranscriptionQuotePage.module.css';
-import WaveSurfer from 'wavesurfer.js';
 
 const { Title, Text } = Typography;
-
-const toMMSS = s =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
-    Math.floor(s % 60)
-  ).padStart(2, '0')}`;
-
-function WaveformViewer({ src }) {
-  const containerRef = useRef(null);
-  const wsRef = useRef(null);
-  const [isPlaying, setPlaying] = useState(false);
-  const [cur, setCur] = useState(0);
-  const [dur, setDur] = useState(0);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const ws = WaveSurfer.create({
-      container: containerRef.current,
-      height: 80,
-      waveColor: '#bcd6ff',
-      progressColor: '#3b82f6',
-      cursorColor: '#ec8a1c',
-      barWidth: 2,
-      barGap: 1,
-      responsive: true,
-    });
-    wsRef.current = ws;
-
-    ws.load(src).catch(error => {
-      if (error.name !== 'AbortError') {
-        console.error('Failed to load audio:', error);
-      }
-    });
-
-    ws.on('ready', () => setDur(ws.getDuration()));
-    ws.on('audioprocess', () => setCur(ws.getCurrentTime()));
-    ws.on('play', () => setPlaying(true));
-    ws.on('pause', () => setPlaying(false));
-    ws.on('finish', () => setPlaying(false));
-
-    return () => {
-      try {
-        ws.destroy();
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Wavesurfer cleanup error:', error);
-        }
-      }
-    };
-  }, [src]);
-
-  return (
-    <div>
-      <div
-        ref={containerRef}
-        onClick={() => wsRef.current?.playPause()}
-        style={{ background: '#1f1f1f', borderRadius: 8, cursor: 'pointer' }}
-        title="Click để Play/Pause"
-      />
-      <div
-        style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}
-      >
-        <Button size="small" onClick={() => wsRef.current?.playPause()}>
-          {isPlaying ? 'Pause' : 'Play'}
-        </Button>
-        <Text type="secondary">
-          {toMMSS(cur)} / {toMMSS(dur)}
-        </Text>
-      </div>
-    </div>
-  );
-}
 
 export default function TranscriptionQuotePageSimplified() {
   const location = useLocation();
@@ -103,38 +38,22 @@ export default function TranscriptionQuotePageSimplified() {
   // Data từ previous pages
   const formData = navState.formData || {};
   const uploadedFile = navState.uploadedFile;
-  const playSrc = navState.blobUrl || navState.url;
   const fileName = navState.fileName || 'Untitled';
+  const serviceType = navState.serviceType || 'transcription';
+  const blobUrl = navState.blobUrl;
 
-  // Instrument selection (CHỈ 1 INSTRUMENT)
-  const [selectedInstrument, setSelectedInstrument] = useState(null);
-  const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [priceData, setPriceData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const {
-    instruments: instrumentsData,
-    loading: instrumentsLoading,
-    error: instrumentsError,
-    fetchInstruments,
-    getInstrumentsByUsage,
-  } = useInstrumentStore();
-
-  const transcriptionInstruments = getInstrumentsByUsage('transcription');
-  const selectedInstrumentData = instrumentsData.find(
-    i => i.instrumentId === selectedInstrument
-  );
-
-  useEffect(() => {
-    fetchInstruments();
-  }, [fetchInstruments]);
+  const { instruments: instrumentsData } = useInstrumentStore();
 
   // Validate
-  if (!formData || !formData.title) {
+  if (!formData || !formData.title || !formData.durationMinutes) {
     return (
       <div className={styles.wrap}>
         <Header />
-        <Empty description="Missing form data. Please go back and fill the form." />
+        <Empty description="Missing data. Please go back and complete the form." />
         <Button type="primary" onClick={() => navigate('/detail-service')}>
           Go Back
         </Button>
@@ -143,39 +62,43 @@ export default function TranscriptionQuotePageSimplified() {
     );
   }
 
-  const handleInstrumentSelect = instrumentId => {
-    setSelectedInstrument(instrumentId);
-    setInstrumentModalVisible(false);
-  };
+  // Fetch price calculation
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        setLoading(true);
+        const response = await calculatePrice(serviceType, formData.durationMinutes);
+        if (response.status === 'success' && response.data) {
+          setPriceData(response.data);
+        }
+      } catch (error) {
+        console.error('Error calculating price:', error);
+        message.error('Không thể tính toán giá. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleReview = () => {
-    if (!selectedInstrument) {
-      message.warning('Please select an instrument');
-      return;
-    }
-    setReviewModalVisible(true);
-  };
+    fetchPrice();
+  }, [serviceType, formData.durationMinutes]);
 
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
 
-      const instrumentPrice = selectedInstrumentData?.basePrice || 0;
-
-      // Prepare data để gửi API - GỬI KÈM GIÁ
       const requestData = {
-        requestType: 'transcription',
+        requestType: serviceType,
         title: formData.title,
         description: formData.description,
-        tempoPercentage: formData.tempoPercentage,
+        tempoPercentage: formData.tempoPercentage || 100,
         contactName: formData.contactName,
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
-        instrumentIds: [selectedInstrument], // CHỈ 1 INSTRUMENT
-        instrumentPrices: {
-          [selectedInstrument]: instrumentPrice, // Gửi kèm giá
-        },
-        totalPrice: instrumentPrice, // Tổng giá
+        instrumentIds: formData.instrumentIds || [],
+        durationMinutes: formData.durationMinutes,
+        hasVocalist: formData.hasVocalist || false,
+        externalGuestCount: formData.externalGuestCount || 0,
+        musicOptions: formData.musicOptions || null,
         files: uploadedFile ? [uploadedFile] : [],
       };
 
@@ -183,7 +106,7 @@ export default function TranscriptionQuotePageSimplified() {
 
       if (response?.status === 'success') {
         message.success('Service request created successfully!');
-        navigate('/'); // Hoặc navigate đến trang success
+        navigate('/');
       } else {
         throw new Error(response?.message || 'Failed to create request');
       }
@@ -199,98 +122,138 @@ export default function TranscriptionQuotePageSimplified() {
     <>
       <Header />
       <div className={styles.wrap}>
-        <Title level={2}>Review & Select Instrument</Title>
+        <Title level={2}>Review Your Quote</Title>
 
-        <Card title="File Preview" style={{ marginBottom: 24 }}>
-          <Text strong>File: {fileName}</Text>
-          {playSrc && (
+        {/* Service Info */}
+        <Card title="Service Details" style={{ marginBottom: 24 }}>
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Service Type">
+              <Tag color="blue">{serviceType}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Title">{formData.title}</Descriptions.Item>
+            <Descriptions.Item label="Description">
+              {formData.description}
+            </Descriptions.Item>
+            <Descriptions.Item label="Duration">
+              <Tag color="green">{formData.durationMinutes} minutes</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="File">{fileName}</Descriptions.Item>
+            {formData.instrumentIds && formData.instrumentIds.length > 0 && (
+              <Descriptions.Item label="Instruments">
+                <Space wrap>
+                  {formData.instrumentIds.map(id => {
+                    const inst = instrumentsData.find(i => i.instrumentId === id);
+                    return inst ? (
+                      <Tag key={id} color="purple">
+                        {inst.instrumentName}
+                      </Tag>
+                    ) : null;
+                  })}
+                </Space>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+
+          {/* Audio Preview */}
+          {blobUrl && (
             <div style={{ marginTop: 16 }}>
-              <WaveformViewer src={playSrc} />
+              <Text strong>Preview:</Text>
+              <audio
+                controls
+                src={blobUrl}
+                style={{ width: '100%', marginTop: 8 }}
+              />
             </div>
           )}
         </Card>
 
-        <Card title="Select Instrument (Required)">
-          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+        {/* Price Calculation */}
+        <Card 
+          title={
+            <span>
+              <DollarOutlined /> Price Calculation
+            </span>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin tip="Calculating price..." />
+            </div>
+          ) : priceData ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={16}>
+              <Alert
+                message="Estimated Total"
+                description={
+                  <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
+                    {formatPrice(priceData.totalPrice, priceData.currency)}
+                  </div>
+                }
+                type="success"
+                showIcon
+                icon={<DollarOutlined />}
+              />
+
+              <Divider style={{ margin: '12px 0' }} />
+
+              <div>
+                <Text type="secondary">Breakdown:</Text>
+                <div style={{ marginTop: 8 }}>
+                  <Descriptions column={1} size="small">
+                    <Descriptions.Item label="Base Rate">
+                      {formatPrice(priceData.basePrice, priceData.currency)} / minute
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Duration">
+                      {formData.durationMinutes} minutes
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Subtotal">
+                      {formatPrice(priceData.totalPrice, priceData.currency)}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </div>
+              </div>
+
+              {priceData.notes && (
+                <Alert
+                  message="Note"
+                  description={priceData.notes}
+                  type="info"
+                  showIcon
+                />
+              )}
+            </Space>
+          ) : (
+            <Empty description="Unable to calculate price" />
+          )}
+        </Card>
+
+        {/* Contact Info */}
+        <Card title="Contact Information" style={{ marginBottom: 24 }}>
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Name">{formData.contactName}</Descriptions.Item>
+            <Descriptions.Item label="Email">{formData.contactEmail}</Descriptions.Item>
+            <Descriptions.Item label="Phone">{formData.contactPhone}</Descriptions.Item>
+          </Descriptions>
+        </Card>
+
+        {/* Actions */}
+        <div style={{ textAlign: 'right' }}>
+          <Space size={16}>
+            <Button size="large" onClick={() => navigate(-1)}>
+              Go Back
+            </Button>
             <Button
               type="primary"
               size="large"
-              icon={<SelectOutlined />}
-              onClick={() => setInstrumentModalVisible(true)}
-              block
+              icon={<CheckCircleOutlined />}
+              onClick={handleSubmit}
+              loading={submitting}
+              disabled={loading || !priceData}
             >
-              {selectedInstrument ? 'Change Instrument' : 'Select Instrument'}
-            </Button>
-
-            {selectedInstrument && selectedInstrumentData && (
-              <Card size="small" style={{ background: '#f0f7ff' }}>
-                <Space align="center" size={16}>
-                  {selectedInstrumentData.image && (
-                    <img
-                      src={selectedInstrumentData.image}
-                      alt={selectedInstrumentData.instrumentName}
-                      style={{
-                        width: 60,
-                        height: 60,
-                        objectFit: 'cover',
-                        borderRadius: 4,
-                      }}
-                    />
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 16 }}>
-                      {selectedInstrumentData.instrumentName}
-                    </div>
-                    <Tag color="green" style={{ marginTop: 4 }}>
-                      $
-                      {Number(selectedInstrumentData.basePrice || 0).toFixed(2)}
-                    </Tag>
-                  </div>
-                </Space>
-              </Card>
-            )}
-          </Space>
-        </Card>
-
-        {/* Instrument Selection Modal */}
-        <InstrumentSelectionModal
-          visible={instrumentModalVisible}
-          onCancel={() => setInstrumentModalVisible(false)}
-          instruments={transcriptionInstruments}
-          loading={instrumentsLoading}
-          selectedInstruments={selectedInstrument}
-          onSelect={handleInstrumentSelect}
-          multipleSelection={false}
-          title="Select ONE Instrument for Transcription"
-        />
-
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <Space>
-            <Button onClick={() => navigate(-1)}>Back</Button>
-            <Button
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={handleReview}
-              disabled={!selectedInstrument}
-            >
-              Review Request
+              Confirm & Submit Request <ArrowRightOutlined />
             </Button>
           </Space>
         </div>
-
-        {/* Review Modal */}
-        <ReviewRequestModal
-          visible={reviewModalVisible}
-          onCancel={() => setReviewModalVisible(false)}
-          onSubmit={handleSubmit}
-          loading={submitting}
-          formData={formData}
-          fileName={fileName}
-          serviceType="transcription"
-          selectedInstruments={selectedInstrument ? [selectedInstrument] : []}
-          instrumentsData={instrumentsData}
-          totalPrice={selectedInstrumentData?.basePrice || 0}
-        />
       </div>
       <Footer />
       <BackToTop />

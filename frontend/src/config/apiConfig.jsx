@@ -117,7 +117,7 @@ export const API_ENDPOINTS = {
 
   // === Service Requests Management ===
   SERVICE_REQUESTS: {
-    // GET /api/v1/requests/requests (theo Postman - path có 2 lần requests)
+    // GET /api/v1/requests/requests
     GET_ALL: `${REQUEST_PATH}/requests`,
     // POST /api/v1/requests/requests
     CREATE: `${REQUEST_PATH}/requests`,
@@ -145,6 +145,11 @@ export const API_ENDPOINTS = {
   PRICING: {
     // GET /pricing-matrix
     GET_ALL: `${REQUEST_PATH}/pricing-matrix`,
+    // GET /pricing-matrix/{serviceType}
+    GET_BY_SERVICE_TYPE: serviceType => `${REQUEST_PATH}/pricing-matrix/${serviceType}`,
+    // GET /pricing-matrix/calculate/{serviceType}?durationMinutes=X
+    CALCULATE: (serviceType, durationMinutes) => 
+      `${REQUEST_PATH}/pricing-matrix/calculate/${serviceType}?durationMinutes=${durationMinutes}`,
   },
 };
 
