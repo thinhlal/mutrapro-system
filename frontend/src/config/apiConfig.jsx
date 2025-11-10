@@ -140,6 +140,12 @@ export const API_ENDPOINTS = {
     // POST /notation-instruments/{id}/image
     UPLOAD_IMAGE: id => `${REQUEST_PATH}/notation-instruments/${id}/image`,
   },
+
+  // === Pricing Management ===
+  PRICING: {
+    // GET /pricing-matrix
+    GET_ALL: `${REQUEST_PATH}/pricing-matrix`,
+  },
 };
 
 // Log configuration in development
