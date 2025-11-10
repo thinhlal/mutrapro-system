@@ -24,6 +24,7 @@ const PROJECT_PATH = `${API_PREFIX}/projects`;
 const BILLING_PATH = `${API_PREFIX}/billing`; 
 const REQUEST_PATH = `${API_PREFIX}/requests`;
 const CHAT_PATH = `${API_PREFIX}/chat`;
+const NOTIFICATIONS_PATH = `${API_PREFIX}/notifications`;
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -168,6 +169,23 @@ export const API_ENDPOINTS = {
     // GET /pricing-matrix/calculate/{serviceType}?durationMinutes=X
     CALCULATE: (serviceType, durationMinutes) => 
       `${REQUEST_PATH}/pricing-matrix/calculate/${serviceType}?durationMinutes=${durationMinutes}`,
+  },
+
+  // === Notification Service (Quản lý Thông báo) ===
+  NOTIFICATIONS: {
+    // GET /api/v1/notifications/notifications (sau Gateway strip → /notifications)
+    GET_ALL_NOTIFICATIONS: `${NOTIFICATIONS_PATH}/notifications`,
+    // GET /api/v1/notifications/notifications/latest (sau Gateway strip → /notifications/latest)
+    GET_LATEST: `${NOTIFICATIONS_PATH}/notifications/latest`,
+    // GET /api/v1/notifications/notifications/unread-count (sau Gateway strip → /notifications/unread-count)
+    GET_UNREAD_COUNT: `${NOTIFICATIONS_PATH}/notifications/unread-count`,
+    // POST /api/v1/notifications/notifications/{notificationId}/read (sau Gateway strip → /notifications/{notificationId}/read)
+    MARK_AS_READ: notificationId => `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
+    // POST /api/v1/notifications/notifications/mark-all-read (sau Gateway strip → /notifications/mark-all-read)
+    MARK_ALL_AS_READ: `${NOTIFICATIONS_PATH}/notifications/mark-all-read`,
+    // WebSocket (for real-time notifications)
+    // Frontend: /api/v1/notifications/notifications-ws → Gateway strip → /notifications-ws → Backend: /notifications-ws
+    WS_ENDPOINT: `${NOTIFICATIONS_PATH}/notifications-ws`,
   },
 };
 

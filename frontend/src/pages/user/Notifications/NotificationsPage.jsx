@@ -1,111 +1,267 @@
-import React, { useState } from 'react';
-import { Switch, List, Typography, Tabs, Badge, Empty, Button } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { List, Typography, Tabs, Badge, Empty, Button, Spin, Pagination, message } from 'antd';
 import {
   BellOutlined,
-  SettingOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
-  WarningOutlined,
-  DeleteOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
+import notificationService from '../../../services/notificationService';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/vi';
 import styles from './NotificationsPage.module.css';
+
+// Configure dayjs
+dayjs.extend(relativeTime);
+dayjs.locale('vi');
 
 const { Title, Text } = Typography;
 
+/**
+ * Notifications Page
+ * Hiển thị danh sách tất cả notifications với pagination
+ */
 const NotificationsPage = () => {
-  const [activeTab, setActiveTab] = useState('inbox');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('all');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [page, setPage] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  const notificationSettings = [
-    {
-      id: 1,
-      title: 'Email Notifications',
-      description: 'Receive email updates about your orders and account',
-      enabled: true,
-    },
-    {
-      id: 2,
-      title: 'Order Updates',
-      description: 'Get notified when your order status changes',
-      enabled: true,
-    },
-    {
-      id: 3,
-      title: 'Promotional Emails',
-      description: 'Receive emails about special offers and promotions',
-      enabled: false,
-    },
-    {
-      id: 4,
-      title: 'Newsletter',
-      description: 'Subscribe to our monthly newsletter',
-      enabled: false,
-    },
-  ];
+  /**
+   * Fetch notifications từ API
+   */
+  const fetchNotifications = useCallback(async (pageNum = 0) => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getNotifications(pageNum, pageSize);
+      const pageData = response.data || response;
+      
+      setNotifications(pageData.content || []);
+      setTotalElements(pageData.totalElements || 0);
+      setPage(pageNum);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      message.error('Không thể tải thông báo');
+    } finally {
+      setLoading(false);
+    }
+  }, [pageSize]);
 
-  const systemNotifications = [
-    {
-      id: 1,
-      type: 'success',
-      title: 'Order Completed',
-      message: 'Your transcription order #12345 has been completed successfully.',
-      time: '2 hours ago',
-      read: false,
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'New Feature Available',
-      message: 'We have added a new AI-powered transcription feature. Check it out!',
-      time: '1 day ago',
-      read: false,
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'Payment Method Expiring',
-      message: 'Your credit card ending in 4242 will expire soon. Please update your payment method.',
-      time: '2 days ago',
-      read: true,
-    },
-    {
-      id: 4,
-      type: 'info',
-      title: 'System Maintenance',
-      message: 'Scheduled maintenance will be performed on Dec 15, 2024 from 2:00 AM to 4:00 AM EST.',
-      time: '3 days ago',
-      read: true,
-    },
-    {
-      id: 5,
-      type: 'success',
-      title: 'Welcome to MutraPro!',
-      message: 'Thank you for joining us. Get started by uploading your first audio file.',
-      time: '1 week ago',
-      read: true,
-    },
-  ];
+  /**
+   * Fetch unread count
+   */
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await notificationService.getUnreadCount();
+      setUnreadCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, []);
 
+  /**
+   * Mark notification as read
+   */
+  const handleMarkAsRead = useCallback(async (notificationId) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(n =>
+          n.notificationId === notificationId
+            ? { ...n, isRead: true }
+            : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      message.success('Đã đánh dấu đã đọc');
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+      message.error('Không thể đánh dấu đã đọc');
+    }
+  }, []);
+
+  /**
+   * Mark all as read
+   */
+  const handleMarkAllAsRead = useCallback(async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, isRead: true }))
+      );
+      setUnreadCount(0);
+      message.success('Đã đánh dấu tất cả thông báo');
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      message.error('Không thể đánh dấu tất cả');
+    }
+  }, []);
+
+  /**
+   * Handle notification click
+   */
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if unread
+    if (!notification.isRead) {
+      await handleMarkAsRead(notification.notificationId);
+    }
+    
+    // Navigate to action URL
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
+
+  /**
+   * Format notification time
+   */
+  const formatTime = (timestamp) => {
+    try {
+      if (!timestamp) return '';
+      return dayjs(timestamp).fromNow();
+    } catch {
+      return '';
+    }
+  };
+
+  /**
+   * Get notification icon based on type
+   */
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'success':
-        return <CheckCircleOutlined className={`${styles.notifIcon} ${styles.success}`} />;
-      case 'warning':
-        return <WarningOutlined className={`${styles.notifIcon} ${styles.warning}`} />;
-      case 'info':
+      case 'CHAT_ROOM_CREATED':
+        return <BellOutlined className={`${styles.notifIcon} ${styles.info}`} />;
       default:
         return <InfoCircleOutlined className={`${styles.notifIcon} ${styles.info}`} />;
     }
   };
 
-  const unreadCount = systemNotifications.filter(n => !n.read).length;
+  /**
+   * Filter notifications based on active tab
+   */
+  const filteredNotifications = notifications.filter(notification => {
+    if (activeTab === 'unread') {
+      return !notification.isRead;
+    }
+    return true; // 'all' tab
+  });
+
+  /**
+   * Load initial data
+   */
+  useEffect(() => {
+    fetchNotifications(0);
+    fetchUnreadCount();
+  }, [fetchNotifications, fetchUnreadCount]);
+
+  /**
+   * Handle page change
+   */
+  const handlePageChange = (newPage, newPageSize) => {
+    setPageSize(newPageSize);
+    fetchNotifications(newPage - 1); // Ant Design Pagination is 1-based, API is 0-based
+  };
 
   const tabItems = [
     {
-      key: 'inbox',
+      key: 'all',
       label: (
         <span>
-          <BellOutlined /> Inbox
+          <BellOutlined /> Tất cả
+        </span>
+      ),
+      children: (
+        <div className={styles.inboxContent}>
+          {loading && notifications.length === 0 ? (
+            <div className={styles.loadingContainer}>
+              <Spin tip="Đang tải thông báo..." />
+            </div>
+          ) : filteredNotifications.length > 0 ? (
+            <>
+              <div className={styles.inboxHeader}>
+                <Text type="secondary">
+                  {unreadCount > 0 ? (
+                    <>Bạn có {unreadCount} thông báo chưa đọc</>
+                  ) : (
+                    <>Tất cả thông báo đã được đọc</>
+                  )}
+                </Text>
+                {unreadCount > 0 && (
+                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                    Đánh dấu tất cả đã đọc
+                  </Button>
+                )}
+              </div>
+              <List
+                itemLayout="horizontal"
+                dataSource={filteredNotifications}
+                loading={loading}
+                renderItem={(notification) => (
+                  <List.Item
+                    className={`${styles.notificationItem} ${
+                      !notification.isRead ? styles.unread : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <List.Item.Meta
+                      avatar={getNotificationIcon(notification.type)}
+                      title={
+                        <div className={styles.notifHeader}>
+                          <span className={styles.notifTitle}>{notification.title}</span>
+                          {!notification.isRead && (
+                            <Badge status="processing" className={styles.unreadBadge} />
+                          )}
+                        </div>
+                      }
+                      description={
+                        <div>
+                          <p className={styles.notifMessage}>{notification.content}</p>
+                          <Text type="secondary" className={styles.notifTime}>
+                            {formatTime(notification.createdAt)}
+                          </Text>
+                        </div>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+              {totalElements > pageSize && (
+                <div className={styles.paginationContainer}>
+                  <Pagination
+                    current={page + 1}
+                    total={totalElements}
+                    pageSize={pageSize}
+                    onChange={handlePageChange}
+                    showSizeChanger
+                    showTotal={(total, range) =>
+                      `${range[0]}-${range[1]} của ${total} thông báo`
+                    }
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <Empty
+              description="Không có thông báo nào"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'unread',
+      label: (
+        <span>
+          <BellOutlined /> Chưa đọc
           {unreadCount > 0 && (
             <Badge count={unreadCount} className={styles.tabBadge} />
           )}
@@ -113,44 +269,45 @@ const NotificationsPage = () => {
       ),
       children: (
         <div className={styles.inboxContent}>
-          {systemNotifications.length > 0 ? (
+          {loading && notifications.length === 0 ? (
+            <div className={styles.loadingContainer}>
+              <Spin tip="Đang tải thông báo..." />
+            </div>
+          ) : filteredNotifications.length > 0 ? (
             <>
               <div className={styles.inboxHeader}>
                 <Text type="secondary">
-                  You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+                  Bạn có {unreadCount} thông báo chưa đọc
                 </Text>
-                <Button type="link" size="small">
-                  Mark all as read
-                </Button>
+                {unreadCount > 0 && (
+                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                    Đánh dấu tất cả đã đọc
+                  </Button>
+                )}
               </div>
               <List
                 itemLayout="horizontal"
-                dataSource={systemNotifications}
-                renderItem={(item) => (
+                dataSource={filteredNotifications}
+                loading={loading}
+                renderItem={(notification) => (
                   <List.Item
-                    className={`${styles.notificationItem} ${!item.read ? styles.unread : ''}`}
-                    actions={[
-                      <Button
-                        type="text"
-                        icon={<DeleteOutlined />}
-                        size="small"
-                        danger
-                      />,
-                    ]}
+                    className={`${styles.notificationItem} ${styles.unread}`}
+                    onClick={() => handleNotificationClick(notification)}
+                    style={{ cursor: 'pointer' }}
                   >
                     <List.Item.Meta
-                      avatar={getNotificationIcon(item.type)}
+                      avatar={getNotificationIcon(notification.type)}
                       title={
                         <div className={styles.notifHeader}>
-                          <span className={styles.notifTitle}>{item.title}</span>
-                          {!item.read && <Badge status="processing" />}
+                          <span className={styles.notifTitle}>{notification.title}</span>
+                          <Badge status="processing" className={styles.unreadBadge} />
                         </div>
                       }
                       description={
                         <div>
-                          <p className={styles.notifMessage}>{item.message}</p>
+                          <p className={styles.notifMessage}>{notification.content}</p>
                           <Text type="secondary" className={styles.notifTime}>
-                            {item.time}
+                            {formatTime(notification.createdAt)}
                           </Text>
                         </div>
                       }
@@ -161,42 +318,10 @@ const NotificationsPage = () => {
             </>
           ) : (
             <Empty
-              description="No notifications yet"
+              description="Không có thông báo chưa đọc"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           )}
-        </div>
-      ),
-    },
-    {
-      key: 'settings',
-      label: (
-        <span>
-          <SettingOutlined /> Settings
-        </span>
-      ),
-      children: (
-        <div className={styles.settingsContent}>
-          <Text type="secondary" className={styles.settingsDesc}>
-            Manage your notification preferences
-          </Text>
-          <div className={styles.settingsList}>
-            <List
-              itemLayout="horizontal"
-              dataSource={notificationSettings}
-              renderItem={(item) => (
-                <List.Item
-                  className={styles.listItem}
-                  extra={<Switch defaultChecked={item.enabled} />}
-                >
-                  <List.Item.Meta
-                    title={<span className={styles.settingTitle}>{item.title}</span>}
-                    description={item.description}
-                  />
-                </List.Item>
-              )}
-            />
-          </div>
         </div>
       ),
     },
@@ -205,7 +330,7 @@ const NotificationsPage = () => {
   return (
     <ProfileLayout>
       <div className={styles.notificationsContent}>
-        <Title level={2}>Notifications</Title>
+        <Title level={2}>Thông báo</Title>
         
         <Tabs
           activeKey={activeTab}
@@ -219,4 +344,3 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
-

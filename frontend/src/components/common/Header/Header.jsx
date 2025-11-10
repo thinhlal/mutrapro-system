@@ -6,6 +6,7 @@ import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import UserMenu from '../UserMenu/UserMenu';
+import NotificationBell from '../../NotificationBell/NotificationBell';
 import styles from './Header.module.css';
 import logo from '../../../assets/images/Logo/Logotip-Positiu.svg';
 
@@ -111,7 +112,10 @@ function Header() {
         style={{ marginTop: '1rem' }}
       >
         {isAuthenticated ? (
-          <UserMenu />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <NotificationBell />
+            <UserMenu />
+          </div>
         ) : (
           <div className="d-flex gap-4 align-items-center">
             <Link

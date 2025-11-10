@@ -17,8 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import java.util.ArrayList;
+import java.util.Collections;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -83,9 +86,20 @@ public class ChatMessageService {
         verifyParticipantAccess(roomId, userId);
         
         Pageable pageable = PageRequest.of(page, size);
-        Page<ChatMessage> messages = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+        // Query DESC để page 0 là tin nhắn mới nhất (đúng cho pagination)
+        Page<ChatMessage> messagesPage = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
         
-        return messages.map(chatMessageMapper::toResponse);
+        // Reverse content để trả về ASC (cũ nhất -> mới nhất) cho frontend
+        // Frontend cần tin nhắn mới nhất ở dưới cùng (bottom của chat)
+        List<ChatMessage> messagesList = new ArrayList<>(messagesPage.getContent());
+        Collections.reverse(messagesList);
+        
+        // Map to response và tạo Page mới với content đã reverse
+        List<ChatMessageResponse> responses = messagesList.stream()
+                .map(chatMessageMapper::toResponse)
+                .collect(Collectors.toList());
+        
+        return new PageImpl<>(responses, pageable, messagesPage.getTotalElements());
     }
 
     @Transactional(readOnly = true)

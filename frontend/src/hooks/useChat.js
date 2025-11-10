@@ -35,16 +35,17 @@ export const useChat = (roomId) => {
       setLoading(true);
       const response = await chatService.getMessages(roomId, pageNum, 50);
       
-      // Extract data from ApiResponse wrapper
       const pageData = response.data || response;
+      const messagesList = pageData.content || [];
       
       if (pageNum === 0) {
-        setMessages(pageData.content || []);
+        // Lần đầu load: Backend trả về ASC (cũ nhất -> mới nhất)
+        setMessages(messagesList);
         isInitialLoad.current = false;
         setTimeout(scrollToBottom, 100);
       } else {
-        // Prepend older messages
-        setMessages((prev) => [...(pageData.content || []), ...prev]);
+        // Load more: Prepend older messages vào đầu
+        setMessages((prev) => [...messagesList, ...prev]);
       }
 
       setHasMore(!pageData.last);
@@ -75,7 +76,8 @@ export const useChat = (roomId) => {
       const exists = prev.some((m) => m.messageId === message.messageId);
       if (exists) return prev;
       
-      // Add new message
+      // Backend đảm bảo tin nhắn mới có sentAt mới nhất, chỉ cần append vào cuối
+      // (Messages đã được sort ASC từ backend: cũ nhất -> mới nhất)
       return [...prev, message];
     });
 

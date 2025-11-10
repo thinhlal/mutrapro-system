@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../../components/NotificationBell/NotificationBell';
 import styles from './AdminLayout.module.css';
 
 const { Header, Sider, Content } = Layout;
@@ -122,7 +123,8 @@ const AdminLayout = () => {
             onClick={() => setCollapsed(!collapsed)}
             className={styles.triggerButton}
           />
-          <div className={styles.headerRight}>
+          <div className={styles.headerRight} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <NotificationBell />
             <Dropdown overlay={userMenu} trigger={['click']}>
               <a onClick={e => e.preventDefault()}>
                 <Avatar icon={<UserOutlined />} />
