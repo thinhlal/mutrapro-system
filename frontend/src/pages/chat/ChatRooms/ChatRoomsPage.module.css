@@ -1,0 +1,111 @@
+.chatRoomsPage {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 24px 0;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.titleIcon {
+  color: #1890ff;
+}
+
+.totalUnreadBadge {
+  margin-top: 4px;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #8c8c8c;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.searchSection {
+  margin-bottom: 24px;
+}
+
+.searchInput {
+  max-width: 500px;
+  border-radius: 24px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px;
+}
+
+.emptyContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 12px;
+}
+
+.roomsList {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 16px 0;
+  }
+
+  .headerContent {
+    padding: 0 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .searchInput {
+    max-width: 100%;
+  }
+}
+

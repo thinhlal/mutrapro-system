@@ -4,6 +4,7 @@ import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
 import com.mutrapro.request_service.entity.NotationInstrument;
+import com.mutrapro.request_service.entity.OutboxEvent;
 import com.mutrapro.request_service.entity.RequestNotationInstrument;
 import com.mutrapro.request_service.entity.ServiceRequest;
 import com.mutrapro.request_service.enums.RequestStatus;
@@ -19,7 +20,10 @@ import com.mutrapro.request_service.exception.ServiceRequestNotFoundException;
 import com.mutrapro.request_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.request_service.mapper.ServiceRequestMapper;
 import com.mutrapro.request_service.repository.NotationInstrumentRepository;
+import com.mutrapro.request_service.repository.OutboxEventRepository;
 import com.mutrapro.request_service.repository.ServiceRequestRepository;
+import com.mutrapro.shared.event.RequestAssignedEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,8 +37,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,8 +51,10 @@ public class ServiceRequestService {
 
     ServiceRequestRepository serviceRequestRepository;
     NotationInstrumentRepository notationInstrumentRepository;
+    OutboxEventRepository outboxEventRepository;
     FileUploadService fileUploadService;
     ServiceRequestMapper serviceRequestMapper;
+    ObjectMapper objectMapper;
     
     @NonFinal
     @Value("${file.upload.allowed-audio-types}")
@@ -401,7 +409,51 @@ public class ServiceRequestService {
         log.info("Assigned manager {} to service request: requestId={}", 
                 managerId, requestId);
         
+        // Publish RequestAssignedEvent để Chat Service tạo room
+        publishRequestAssignedEvent(saved, managerId);
+        
         return serviceRequestMapper.toServiceRequestResponse(saved);
+    }
+    
+    /**
+     * Publish RequestAssignedEvent khi manager được assign
+     * Chat Service sẽ lắng nghe và tự động tạo chat room
+     */
+    private void publishRequestAssignedEvent(ServiceRequest request, String managerId) {
+        try {
+            // Create event
+            RequestAssignedEvent event = RequestAssignedEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .requestId(request.getRequestId())
+                    .title(request.getTitle())
+                    .ownerId(request.getUserId())  // customer userId
+                    .ownerName(null)  // Chat Service sẽ fetch từ Identity Service nếu cần
+                    .managerId(managerId)
+                    .managerName(null)  // Chat Service sẽ fetch từ Identity Service nếu cần
+                    .timestamp(Instant.now())
+                    .build();
+            
+            // Save to outbox for guaranteed delivery
+            var eventPayload = objectMapper.valueToTree(event);
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateType("ServiceRequest")
+                    .aggregateId(UUID.randomUUID())  // Generate new UUID for outbox
+                    .eventType("request.assigned")
+                    .eventPayload(eventPayload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            
+            log.info("RequestAssignedEvent saved to outbox: requestId={}, managerId={}", 
+                    request.getRequestId(), managerId);
+            
+        } catch (Exception e) {
+            log.error("Failed to publish RequestAssignedEvent: requestId={}, error={}", 
+                    request.getRequestId(), e.getMessage(), e);
+            // Không throw exception - request đã assign thành công
+            // Event sẽ được retry hoặc có thể tạo room thủ công
+        }
     }
     
 }

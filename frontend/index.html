@@ -9,6 +9,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Polyfill for SockJS compatibility with Vite -->
+    <script>
+      window.global = window;
+      window.process = { env: {} };
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

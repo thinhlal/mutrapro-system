@@ -45,7 +45,8 @@ public class SecurityConfig {
             "/identity/users/verification-status",
             "/*/swagger-ui/**",
             "/*/swagger-ui.html",
-            "/*/v3/api-docs/**"
+            "/*/v3/api-docs/**",
+            "/chat/ws/**"  // WebSocket for chat service
     };
 
     @Bean

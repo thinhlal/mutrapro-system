@@ -81,5 +81,13 @@ spring:
               filters:
                 - StripPrefix=3
 
+            # Chat Service
+            - id: chat-service
+              uri: ${CHAT_URI:http://chat-service:8088}
+              predicates:
+                - Path=${app.api-prefix}/chat/**
+              filters:
+                - StripPrefix=3
+
 jwt:
   signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}

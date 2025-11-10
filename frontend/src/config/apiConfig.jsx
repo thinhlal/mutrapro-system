@@ -23,6 +23,7 @@ const IDENTITY_PATH = `${API_PREFIX}/identity`;
 const PROJECT_PATH = `${API_PREFIX}/projects`; 
 const BILLING_PATH = `${API_PREFIX}/billing`; 
 const REQUEST_PATH = `${API_PREFIX}/requests`;
+const CHAT_PATH = `${API_PREFIX}/chat`;
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -139,6 +140,23 @@ export const API_ENDPOINTS = {
     UPDATE: id => `${REQUEST_PATH}/notation-instruments/${id}`,
     // POST /notation-instruments/{id}/image
     UPLOAD_IMAGE: id => `${REQUEST_PATH}/notation-instruments/${id}/image`,
+  },
+
+  // === Chat Service (Quản lý Chat Rooms & Messages) ===
+  CHAT: {
+    // Chat Rooms
+    GET_ALL_ROOMS: `${CHAT_PATH}/chat-rooms`,
+    GET_ROOM: roomId => `${CHAT_PATH}/chat-rooms/${roomId}`,
+    CREATE_ROOM: `${CHAT_PATH}/chat-rooms`,
+    ADD_PARTICIPANT: roomId => `${CHAT_PATH}/chat-rooms/${roomId}/participants`,
+    REMOVE_PARTICIPANT: (roomId, userId) => `${CHAT_PATH}/chat-rooms/${roomId}/participants/${userId}`,
+    
+    // Messages (read-only via REST, send via WebSocket)
+    GET_MESSAGES: roomId => `${CHAT_PATH}/messages/room/${roomId}`,
+    GET_RECENT_MESSAGES: (roomId, sinceTimestamp) => `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
+    
+    // WebSocket (for real-time messaging)
+    WS_ENDPOINT: `${CHAT_PATH}/ws`,
   },
 };
 

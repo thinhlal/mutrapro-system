@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: mutrapro
+  labels:
+    app: chat-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+        version: v1
+    spec:
+      containers:
+      - name: chat-service
+        image: mutrapro/chat-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8088
+          protocol: TCP
+        - name: websocket
+          containerPort: 8088
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://postgres-service:5432/chat_db"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mutrapro-secrets
+              key: chat-db-username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mutrapro-secrets
+              key: chat-db-password
+        - name: SPRING_REDIS_HOST
+          value: "redis-service"
+        - name: SPRING_REDIS_PORT
+          value: "6379"
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service:9092"
+        - name: JWT_SIGNER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: mutrapro-secrets
+              key: jwt-signer-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8088
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8088
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: mutrapro
+  labels:
+    app: chat-service
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8088
+    targetPort: 8088
+    protocol: TCP
+  - name: websocket
+    port: 8088
+    targetPort: 8088
+    protocol: TCP
+  selector:
+    app: chat-service
+

@@ -63,3 +63,4 @@ app:
   event-topics:
     mappings:
       file.uploaded: file-uploaded
+      request.assigned: request-events

@@ -163,6 +163,27 @@ services:
       - mutrapro-network
     restart: unless-stopped
 
+  # Chat Service
+  chat-service:
+    build:
+      context: ./backend
+      dockerfile: ./chat-service/Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chat_db
+      - SPRING_DATASOURCE_USERNAME=chat_service_user
+      - SPRING_DATASOURCE_PASSWORD=chat_service_password
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JWT_SIGNER_KEY=QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - mutrapro-network
+    restart: unless-stopped
+
   # Frontend
   frontend:
     build:

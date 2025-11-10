@@ -1,0 +1,33 @@
+package com.mutrapro.shared.event;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Event từ Chat Service khi chat room được tạo
+ * Notification Service lắng nghe để gửi thông báo cho participants
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChatRoomCreatedEvent implements Serializable {
+    
+    UUID eventId;
+    String roomId;
+    String roomType;        // REQUEST_CHAT, PROJECT_CHAT, etc
+    String contextId;       // request_id, project_id
+    String roomName;
+    
+    String ownerId;
+    String[] participantIds;
+    
+    Instant timestamp;
+}
+

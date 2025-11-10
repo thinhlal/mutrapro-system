@@ -50,6 +50,10 @@ import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage
 import NotationEditor from './pages/work/NotationEditor/NotationEditor';
 import Tasks from './pages/work/Tasks/Task';
 
+// Chat Pages
+import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
+import ChatConversationPage from './pages/chat/ChatConversation/ChatConversationPage';
+
 // Dashboard
 import Dashboard from './pages/dashboard/Overview/Dashboard';
 
@@ -153,6 +157,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* --- CHAT ROUTES --- */}
+          <Route path="/chat" element={<ChatRoomsPage />} />
+          <Route path="/chat/:roomId" element={<ChatConversationPage />} />
 
           {/* --- PROTECTED QUOTE ROUTES (All authenticated users) --- */}
           <Route
