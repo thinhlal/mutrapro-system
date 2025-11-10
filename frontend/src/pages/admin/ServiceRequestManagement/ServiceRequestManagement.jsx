@@ -9,8 +9,6 @@ import {
   message,
   Card,
   Typography,
-  Modal,
-  Descriptions,
   Badge,
 } from 'antd';
 import {
@@ -24,6 +22,7 @@ import {
   assignServiceRequest,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
+import ServiceRequestDetailModal from '../../../components/modal/ServiceRequestDetailModal/ServiceRequestDetailModal';
 import styles from './ServiceRequestManagement.module.css';
 
 const { Title } = Typography;
@@ -358,99 +357,17 @@ export default function ServiceRequestManagement() {
       </Card>
 
       {/* Detail Modal */}
-      <Modal
-        title="Request Details"
-        open={detailModalVisible}
+      <ServiceRequestDetailModal
+        visible={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Close
-          </Button>,
-          !selectedRequest?.managerUserId && (
-            <Button
-              key="assign"
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              loading={assigning[selectedRequest?.id]}
-              onClick={() => {
-                handleAssign(selectedRequest.id);
-                setDetailModalVisible(false);
-              }}
-            >
-              Assign to Me
-            </Button>
-          ),
-        ]}
-        width={800}
-      >
-        {selectedRequest && (
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="Request ID">
-              <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                {selectedRequest.id}
-              </span>
-            </Descriptions.Item>
-            <Descriptions.Item label="User ID">
-              {selectedRequest.userId}
-            </Descriptions.Item>
-            <Descriptions.Item label="Title">
-              {selectedRequest.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Description">
-              {selectedRequest.description}
-            </Descriptions.Item>
-            <Descriptions.Item label="Type">
-              <Tag color="cyan">
-                {REQUEST_TYPE_LABELS[selectedRequest.requestType] ||
-                  selectedRequest.requestType}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={STATUS_COLORS[selectedRequest.status] || 'default'}>
-                {selectedRequest.status?.toUpperCase() || 'UNKNOWN'}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Total Price">
-              <Tag color="green" style={{ fontSize: 16, padding: '6px 16px' }}>
-                ${Number(selectedRequest.totalPrice || 0).toFixed(2)}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Has Vocalist">
-              {selectedRequest.hasVocalist ? 'Yes' : 'No'}
-            </Descriptions.Item>
-            <Descriptions.Item label="External Guest Count">
-              {selectedRequest.externalGuestCount || 0}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tempo Percentage">
-              {selectedRequest.tempoPercentage}%
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Name">
-              {selectedRequest.contactName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Email">
-              {selectedRequest.contactEmail}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Phone">
-              {selectedRequest.contactPhone}
-            </Descriptions.Item>
-            <Descriptions.Item label="Assigned To">
-              {selectedRequest.managerUserId ? (
-                <Tag color={selectedRequest.managerUserId === user?.id ? 'green' : 'blue'}>
-                  {selectedRequest.managerUserId === user?.id ? 'You' : 'Assigned to Manager'}
-                </Tag>
-              ) : (
-                <Tag color="default">Unassigned</Tag>
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Created At">
-              {new Date(selectedRequest.createdAt).toLocaleString('vi-VN')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Updated At">
-              {new Date(selectedRequest.updatedAt).toLocaleString('vi-VN')}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
+        request={selectedRequest}
+        currentUserId={user?.id}
+        onAssign={requestId => {
+          handleAssign(requestId);
+          setDetailModalVisible(false);
+        }}
+        isAssigning={assigning[selectedRequest?.id]}
+      />
     </div>
   );
 }

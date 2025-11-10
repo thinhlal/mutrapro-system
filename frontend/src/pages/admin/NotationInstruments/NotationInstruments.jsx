@@ -4,12 +4,7 @@ import {
   Button,
   Space,
   Tag,
-  Modal,
   Form,
-  Input,
-  Select,
-  Switch,
-  Upload,
   message,
   Card,
   Image,
@@ -18,16 +13,14 @@ import {
   PlusOutlined,
   EditOutlined,
   ReloadOutlined,
-  UploadOutlined,
 } from '@ant-design/icons';
 import {
   getAllNotationInstruments,
   createNotationInstrument,
   updateNotationInstrument,
 } from '../../../services/notationInstrumentService';
+import InstrumentFormModal from '../../../components/modal/InstrumentFormModal/InstrumentFormModal';
 import styles from './NotationInstruments.module.css';
-
-const { Option } = Select;
 
 const NotationInstruments = () => {
   const [instruments, setInstruments] = useState([]);
@@ -35,8 +28,6 @@ const NotationInstruments = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedInstrument, setSelectedInstrument] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [form] = Form.useForm();
 
   // Fetch all instruments
@@ -62,8 +53,6 @@ const NotationInstruments = () => {
   const handleCreate = () => {
     setEditMode(false);
     setSelectedInstrument(null);
-    setImageFile(null);
-    setImagePreview(null);
     form.resetFields();
     setModalVisible(true);
   };
@@ -72,8 +61,6 @@ const NotationInstruments = () => {
   const handleEdit = instrument => {
     setEditMode(true);
     setSelectedInstrument(instrument);
-    setImageFile(null);
-    setImagePreview(instrument.image);
     form.setFieldsValue({
       instrumentName: instrument.instrumentName,
       usage: instrument.usage,
@@ -84,9 +71,8 @@ const NotationInstruments = () => {
   };
 
   // Handle form submit
-  const handleSubmit = async () => {
+  const handleSubmit = async (values, imageFile) => {
     try {
-      const values = await form.validateFields();
       const formData = new FormData();
 
       formData.append('instrumentName', values.instrumentName);
@@ -119,19 +105,6 @@ const NotationInstruments = () => {
     }
   };
 
-  // Handle image change
-  const handleImageChange = info => {
-    const file = info.file.originFileObj || info.file;
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = e => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // Get usage color
   const getUsageColor = usage => {
     const colors = {
@@ -150,26 +123,6 @@ const NotationInstruments = () => {
       both: 'Both',
     };
     return names[usage] || usage;
-  };
-
-  // Upload props
-  const uploadProps = {
-    beforeUpload: file => {
-      const isImage = file.type.startsWith('image/');
-      if (!isImage) {
-        message.error('Chỉ có thể upload file ảnh!');
-        return false;
-      }
-      const isLt5M = file.size / 1024 / 1024 < 5;
-      if (!isLt5M) {
-        message.error('Ảnh phải nhỏ hơn 5MB!');
-        return false;
-      }
-      return false;
-    },
-    onChange: handleImageChange,
-    maxCount: 1,
-    accept: 'image/*',
   };
 
   // Table columns
@@ -309,83 +262,14 @@ const NotationInstruments = () => {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Modal
-        title={editMode ? 'Edit Instrument' : 'Create New Instrument'}
-        open={modalVisible}
-        onOk={handleSubmit}
+      <InstrumentFormModal
+        visible={modalVisible}
         onCancel={() => setModalVisible(false)}
-        width={600}
-        okText={editMode ? 'Update' : 'Create'}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="Instrument Name"
-            name="instrumentName"
-            rules={[
-              { required: true, message: 'Please input instrument name!' },
-            ]}
-          >
-            <Input placeholder="e.g., Piano, Guitar, Violin" />
-          </Form.Item>
-
-          <Form.Item
-            label="Usage"
-            name="usage"
-            rules={[{ required: true, message: 'Please select usage!' }]}
-          >
-            <Select placeholder="Select usage type">
-              <Option value="transcription">Transcription</Option>
-              <Option value="arrangement">Arrangement</Option>
-              <Option value="both">Both</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Base Price (USD)"
-            name="basePrice"
-            rules={[
-              { required: true, message: 'Please input base price!' },
-              { type: 'number', min: 0, message: 'Price must be positive!' },
-            ]}
-          >
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="e.g., 50.00"
-              prefix="$"
-            />
-          </Form.Item>
-
-          {editMode && (
-            <Form.Item
-              label="Active"
-              name="active"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          )}
-
-          <Form.Item label="Instrument Image">
-            <Upload {...uploadProps} listType="picture-card">
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
-            </Upload>
-            {imagePreview && (
-              <div style={{ marginTop: 10 }}>
-                <Image
-                  src={imagePreview}
-                  alt="Preview"
-                  width={200}
-                  style={{ borderRadius: 4 }}
-                />
-              </div>
-            )}
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleSubmit}
+        editMode={editMode}
+        initialData={selectedInstrument}
+        form={form}
+      />
     </div>
   );
 };

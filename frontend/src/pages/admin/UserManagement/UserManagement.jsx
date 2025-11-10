@@ -4,15 +4,10 @@ import {
   Button,
   Space,
   Tag,
-  Modal,
   Form,
-  Input,
-  Select,
-  Switch,
   message,
   Popconfirm,
   Card,
-  Descriptions,
 } from 'antd';
 import {
   EditOutlined,
@@ -26,9 +21,9 @@ import {
   updateFullUser,
   deleteUser,
 } from '../../../services/userService';
+import UserEditModal from '../../../components/modal/UserEditModal/UserEditModal';
+import UserDetailModal from '../../../components/modal/UserDetailModal/UserDetailModal';
 import styles from './UserManagement.module.css';
-
-const { Option } = Select;
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -88,9 +83,8 @@ const UserManagement = () => {
   };
 
   // Handle update user
-  const handleUpdate = async () => {
+  const handleUpdate = async values => {
     try {
-      const values = await form.validateFields();
       await updateFullUser(selectedUser.userId, {
         fullName: values.fullName,
         phone: values.phone,
@@ -267,106 +261,19 @@ const UserManagement = () => {
       </Card>
 
       {/* Edit User Modal */}
-      <Modal
-        title="Edit User"
-        open={editModalVisible}
-        onOk={handleUpdate}
+      <UserEditModal
+        visible={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
-        width={600}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="Full Name"
-            name="fullName"
-            rules={[{ required: true, message: 'Please input full name!' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item label="Phone" name="phone">
-            <Input />
-          </Form.Item>
-
-          <Form.Item label="Address" name="address">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item label="Email Verified" name="emailVerified" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-
-          <Form.Item label="Active" name="active" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleUpdate}
+        form={form}
+      />
 
       {/* View User Details Modal */}
-      <Modal
-        title="User Details"
-        open={viewModalVisible}
+      <UserDetailModal
+        visible={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            Close
-          </Button>,
-        ]}
-        width={700}
-      >
-        {selectedUser && (
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="User ID">
-              {selectedUser.userId}
-            </Descriptions.Item>
-            <Descriptions.Item label="Full Name">
-              {selectedUser.fullName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email">
-              {selectedUser.email}
-            </Descriptions.Item>
-            <Descriptions.Item label="Phone">
-              {selectedUser.phone || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Address">
-              {selectedUser.address || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Role">
-              <Tag color={getRoleColor(selectedUser.role)}>
-                {getRoleDisplayName(selectedUser.role)}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={selectedUser.active ? 'success' : 'error'}>
-                {selectedUser.active ? 'Active' : 'Inactive'}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Email Verified">
-              <Tag color={selectedUser.emailVerified ? 'success' : 'warning'}>
-                {selectedUser.emailVerified ? 'Verified' : 'Unverified'}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Auth Provider">
-              <Tag
-                color={
-                  selectedUser.authProvider === 'LOCAL' ? 'default' : 'blue'
-                }
-              >
-                {selectedUser.authProvider}
-              </Tag>
-            </Descriptions.Item>
-            {selectedUser.authProviderId && (
-              <Descriptions.Item label="Provider ID">
-                {selectedUser.authProviderId}
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="Has Password">
-              <Tag color={selectedUser.isNoPassword ? 'warning' : 'success'}>
-                {selectedUser.isNoPassword ? 'No' : 'Yes'}
-              </Tag>
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
+        user={selectedUser}
+      />
     </div>
   );
 };

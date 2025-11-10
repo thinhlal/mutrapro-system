@@ -7,16 +7,15 @@ import {
   Empty,
   message,
   Card,
-  Descriptions,
-  Modal,
   Space,
   Tag,
 } from 'antd';
-import { EyeOutlined, SendOutlined, SelectOutlined } from '@ant-design/icons';
+import { EyeOutlined, SelectOutlined } from '@ant-design/icons';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
-import InstrumentSelectionModal from '../../../../components/common/InstrumentSelectionModal/InstrumentSelectionModal';
+import InstrumentSelectionModal from '../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
+import ReviewRequestModal from '../../../../components/modal/ReviewRequestModal/ReviewRequestModal';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import styles from './TranscriptionQuotePage.module.css';
@@ -280,64 +279,18 @@ export default function TranscriptionQuotePageSimplified() {
         </div>
 
         {/* Review Modal */}
-        <Modal
-          title="Review Your Request"
-          open={reviewModalVisible}
+        <ReviewRequestModal
+          visible={reviewModalVisible}
           onCancel={() => setReviewModalVisible(false)}
-          width={1000}
-          footer={[
-            <Button key="back" onClick={() => setReviewModalVisible(false)}>
-              Edit
-            </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              icon={<SendOutlined />}
-              loading={submitting}
-              onClick={handleSubmit}
-            >
-              Create Request
-            </Button>,
-          ]}
-        >
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="Service Type">
-              Transcription
-            </Descriptions.Item>
-            <Descriptions.Item label="Title">
-              {formData.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Description">
-              {formData.description}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Name">
-              {formData.contactName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Email">
-              {formData.contactEmail}
-            </Descriptions.Item>
-            <Descriptions.Item label="Contact Phone">
-              {formData.contactPhone}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tempo Percentage">
-              {formData.tempoPercentage}%
-            </Descriptions.Item>
-            <Descriptions.Item label="File">{fileName}</Descriptions.Item>
-            <Descriptions.Item label="Instrument">
-              {selectedInstrumentData?.instrumentName || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Instrument Price">
-              <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
-                ${Number(selectedInstrumentData?.basePrice || 0).toFixed(2)}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Total Price">
-              <span style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
-                ${Number(selectedInstrumentData?.basePrice || 0).toFixed(2)}
-              </span>
-            </Descriptions.Item>
-          </Descriptions>
-        </Modal>
+          onSubmit={handleSubmit}
+          loading={submitting}
+          formData={formData}
+          fileName={fileName}
+          serviceType="transcription"
+          selectedInstruments={selectedInstrument ? [selectedInstrument] : []}
+          instrumentsData={instrumentsData}
+          totalPrice={selectedInstrumentData?.basePrice || 0}
+        />
       </div>
       <Footer />
       <BackToTop />
