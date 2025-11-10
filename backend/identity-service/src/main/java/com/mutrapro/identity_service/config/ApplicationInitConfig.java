@@ -97,15 +97,18 @@ public class ApplicationInitConfig {
             if (usersAuthRepository.findByEmail("admin@admin.com").isEmpty()) {
                 UsersAuth usersAuth = UsersAuth.builder()
                         .email("admin@admin.com")
-                        .passwordHash(passwordEncoder.encode("admin@admin.com"))
+                        .passwordHash(passwordEncoder.encode("12345678"))
                         .role(Role.SYSTEM_ADMIN)
                         .emailVerified(true)
+                        .status("active")
+                        .authProvider("LOCAL")
+                        .hasLocalPassword(true)
                         .build();
                 usersAuth = usersAuthRepository.save(usersAuth);
                 
                 User user = User.builder()
                         .userId(usersAuth.getUserId())
-                        .fullName("Admin User")
+                        .fullName("System Administrator")
                         .isActive(true)
                         .build();
                 userRepository.save(user);

@@ -58,7 +58,7 @@ public class UsersAuth extends BaseEntity<String> {
     
     // Convenience methods
     public boolean isActive() {
-        return !"active".equals(status);
+        return "active".equals(status);
     }
     
     public void setActive(boolean active) {

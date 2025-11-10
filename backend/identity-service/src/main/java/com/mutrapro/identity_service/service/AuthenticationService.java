@@ -187,7 +187,7 @@ public class AuthenticationService {
                 .findByEmail(request.getEmail())
                 .orElseThrow(() -> UserNotFoundException.byEmail(request.getEmail()));
 
-        if (user.isActive()) {
+        if (!user.isActive()) {
             throw UserDisabledException.create();
         }
 
@@ -255,7 +255,7 @@ public class AuthenticationService {
         UsersAuth user = usersAuthRepository.findByEmail(userEmail)
                 .orElseThrow(() -> UserNotFoundException.byEmail(userEmail));
         
-        if (user.isActive()) {
+        if (!user.isActive()) {
             throw UserDisabledException.create();
         }
 
