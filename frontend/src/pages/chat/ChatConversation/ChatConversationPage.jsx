@@ -147,7 +147,7 @@ const ChatConversationPage = () => {
           </div>
         ) : messages.length === 0 ? (
           <div className={styles.emptyMessages}>
-            <p>Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện! 💬</p>
+            <p>Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
           </div>
         ) : (
           <div className={styles.messagesList}>

@@ -17,7 +17,7 @@ const SECTION_KEYS = new Map([
   ['/request-service', 'request'],
   ['/pricing', 'pricing'],
   ['/reviews', 'reviews'],
-  ['/about', 'about'],
+  ['/chat', 'chat'],
   ['/notifications', 'notifications'],
 ]);
 
@@ -153,7 +153,7 @@ function Header() {
               {navLink('/request-service', 'request', 'Request Service')}
               {navLink('/pricing', 'pricing', 'Pricing')}
               {navLink('/reviews', 'reviews', 'Reviews')}
-              {navLink('/about', 'about', 'About us')}
+              {navLink('/chat', 'chat', 'Chat')}
               {navLink('/notifications', 'notifications', 'Notifications')}
             </Nav>
 
@@ -249,13 +249,13 @@ function Header() {
               </Nav.Link>
               <Nav.Link
                 as={Link}
-                to="/about"
+                to="/chat"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'about',
+                  [styles.active]: activeKey === 'chat',
                 })}
                 onClick={closeMobileMenu}
               >
-                About us
+                Chat
               </Nav.Link>
               <Nav.Link
                 as={Link}

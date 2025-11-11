@@ -7,13 +7,13 @@
   border-bottom: 1px solid #f0f0f0;
   position: sticky;
   top: 0;
-  z-index: 10;
 }
 
 .backButton {
   color: #262626;
   font-size: 18px;
   flex-shrink: 0;
+  display: none; /* Hide on desktop, sidebar is always visible */
 }
 
 .avatar {
@@ -63,6 +63,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .backButton {
+    display: inline-flex; /* Show on mobile */
+  }
+
   .chatHeader {
     padding: 12px;
   }

@@ -13,6 +13,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 // Layouts
 import ManagerLayout from './layouts/ManagerLayout/ManagerLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
+import ChatLayout from './layouts/ChatLayout/ChatLayout';
 
 // Public Pages
 import HomePage from './pages/public/Home/HomePage';
@@ -51,9 +52,9 @@ import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage
 import NotationEditor from './pages/work/NotationEditor/NotationEditor';
 import Tasks from './pages/work/Tasks/Task';
 
-// Chat Pages
-import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
-import ChatConversationPage from './pages/chat/ChatConversation/ChatConversationPage';
+// Chat Pages (not used directly anymore, used in ChatLayout)
+// import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
+// import ChatConversationPage from './pages/chat/ChatConversation/ChatConversationPage';
 
 // Dashboard
 import Dashboard from './pages/dashboard/Overview/Dashboard';
@@ -169,8 +170,26 @@ function App() {
             }
           />
           {/* --- CHAT ROUTES --- */}
-          <Route path="/chat" element={<ChatRoomsPage />} />
-          <Route path="/chat/:roomId" element={<ChatConversationPage />} />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <ChatLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/:roomId"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <ChatLayout />
+              </ProtectedRoute>
+            }
+          />
 
           {/* --- PROTECTED QUOTE ROUTES (All authenticated users) --- */}
           <Route
