@@ -78,6 +78,11 @@ public enum RequestServiceErrorCodes implements ErrorCode {
     DUPLICATE_RESOURCE("REQUEST_6013", 409,
         "https://docs.mutrapro.com/errors/REQUEST_6013",
         "Resource already exists",
+        Retryable.NON_TRANSIENT),
+    
+    DURATION_REQUIRED("REQUEST_6014", 400,
+        "https://docs.mutrapro.com/errors/REQUEST_6014",
+        "Duration minutes is required for transcription",
         Retryable.NON_TRANSIENT);
 
     private final String code;

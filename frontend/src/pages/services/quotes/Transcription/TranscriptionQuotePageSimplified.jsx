@@ -86,6 +86,22 @@ export default function TranscriptionQuotePageSimplified() {
     try {
       setSubmitting(true);
 
+      // Validate duration for transcription
+      if (serviceType === 'transcription') {
+        if (!formData.durationMinutes || formData.durationMinutes <= 0) {
+          message.error('Thời lượng phải là số dương (phút) cho transcription.');
+          setSubmitting(false);
+          return;
+        }
+        
+        // Validate file is required for transcription
+        if (!uploadedFile) {
+          message.error('File audio là bắt buộc cho transcription.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const requestData = {
         requestType: serviceType,
         title: formData.title,

@@ -11,6 +11,8 @@ import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.request_service.enums.NotationInstrumentUsage;
 import com.mutrapro.request_service.exception.CannotAssignToOtherManagerException;
+import com.mutrapro.request_service.exception.DurationRequiredException;
+import com.mutrapro.request_service.exception.FileRequiredException;
 import com.mutrapro.request_service.exception.FileTypeNotSupportedForRequestException;
 import com.mutrapro.request_service.exception.InstrumentUsageNotCompatibleException;
 import com.mutrapro.request_service.exception.InstrumentsRequiredException;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -69,6 +72,33 @@ public class ServiceRequestService {
         // Get current authenticated user
         String userId = getCurrentUserId();
         
+        ServiceType requestType = request.getRequestType();
+        
+        // Validate transcription-specific requirements and prepare duration
+        BigDecimal durationMinutes = request.getDurationMinutes();
+        if (requestType == ServiceType.transcription) {
+            // Files are required for transcription
+            List<MultipartFile> files = request.getFiles();
+            if (files == null || files.isEmpty() || files.stream().allMatch(f -> f == null || f.isEmpty())) {
+                throw FileRequiredException.create();
+            }
+            
+            // Duration minutes is required for transcription
+            if (durationMinutes == null) {
+                throw DurationRequiredException.create();
+            }
+            
+            // Duration must be positive
+            if (durationMinutes.compareTo(BigDecimal.ZERO) <= 0) {
+                throw DurationRequiredException.create();
+            }
+        }
+        
+        // Round duration to 2 decimal places if provided and has more than 2 decimal places
+        if (durationMinutes != null && durationMinutes.scale() > 2) {
+            durationMinutes = durationMinutes.setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        
         // Create ServiceRequest entity
         ServiceRequest serviceRequest = ServiceRequest.builder()
                 .userId(userId)
@@ -78,7 +108,7 @@ public class ServiceRequestService {
                 .contactEmail(request.getContactEmail())
                 .musicOptions(request.getMusicOptions())
                 .tempoPercentage(request.getTempoPercentage())
-                .durationMinutes(request.getDurationMinutes())  // Lưu độ dài audio (phút)
+                .durationMinutes(durationMinutes)  // Lưu độ dài audio (phút) - đã làm tròn nếu cần
                 .hasVocalist(request.getHasVocalist() != null ? request.getHasVocalist() : false)
                 .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
                 .title(request.getTitle())
@@ -94,7 +124,6 @@ public class ServiceRequestService {
         List<MultipartFile> files = request.getFiles();
         if (files != null && !files.isEmpty()) {
             String requestIdStr = saved.getRequestId();
-            ServiceType requestType = request.getRequestType();
             
             // Validate all files first before uploading
             for (MultipartFile file : files) {
@@ -138,7 +167,6 @@ public class ServiceRequestService {
         
         // Validate and save selected instruments
         List<String> instrumentIds = request.getInstrumentIds();
-        ServiceType requestType = request.getRequestType();
         
         // Transcription and Arrangement require at least one instrument
         if (requestType == ServiceType.transcription || requestType == ServiceType.arrangement) {

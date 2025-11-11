@@ -48,7 +48,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
     // Đo duration và set mặc định
     try {
       const sec = await getMediaDurationSec(f);
-      const minutes = parseFloat((sec / 60).toFixed(2));
+      const minutes = parseFloat((sec / 60).toFixed(2)); // Làm tròn 2 chữ số sau dấu phẩy
       setDetectedDurationMinutes(minutes);
       setAdjustedDurationMinutes(minutes); // Mặc định = detected duration
     } catch {
@@ -70,32 +70,34 @@ export default function TranscriptionUploader({ serviceType, formData }) {
   };
 
   const handleDurationChange = (value) => {
-    if (value && value > 0) {
-      setAdjustedDurationMinutes(parseFloat(value));
+    if (value != null && value > 0) {
+      // Cho phép số thập phân với 2 chữ số sau dấu phẩy
+      const roundedValue = parseFloat(Number(value).toFixed(2));
+      setAdjustedDurationMinutes(roundedValue);
     }
   };
 
   const handleSubmit = () => {
     if (!file) {
-      message.warning('Please upload a file.');
+      message.warning('Vui lòng tải lên file audio.');
       return;
     }
 
     // Validate form data
     if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Please fill in the form above before submitting.');
+      message.warning('Vui lòng điền đầy đủ thông tin form phía trên.');
       return;
     }
 
     // Validate instruments
     if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
-      message.warning('Please select at least one instrument.');
+      message.warning('Vui lòng chọn ít nhất một nhạc cụ.');
       return;
     }
 
-    // Validate duration
-    if (adjustedDurationMinutes <= 0) {
-      message.warning('Please set a valid duration.');
+    // Validate duration - phải là số dương
+    if (!adjustedDurationMinutes || adjustedDurationMinutes <= 0) {
+      message.warning('Vui lòng nhập thời lượng hợp lệ (phút).');
       return;
     }
 
@@ -222,16 +224,16 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Button
                       icon={<MinusOutlined />}
-                      onClick={() => handleDurationChange(Math.max(0.5, adjustedDurationMinutes - 0.5))}
-                      disabled={adjustedDurationMinutes <= 0.5}
+                      onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                      disabled={adjustedDurationMinutes <= 0.01}
                     >
-                      -0.5
+                      -0.01
                     </Button>
                     
                     <InputNumber
-                      min={0.1}
+                      min={0.01}
                       max={999}
-                      step={0.1}
+                      step={0.01}
                       value={adjustedDurationMinutes}
                       onChange={handleDurationChange}
                       precision={2}
@@ -241,9 +243,9 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                     
                     <Button
                       icon={<PlusOutlined />}
-                      onClick={() => handleDurationChange(adjustedDurationMinutes + 0.5)}
+                      onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
                     >
-                      +0.5
+                      +0.01
                     </Button>
                     
                     <Button
@@ -255,7 +257,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   </div>
                   
                   <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                    💡 Adjust the duration for billing purposes (detected: {detectedDurationMinutes} minutes)
+                    💡 Điều chỉnh thời lượng để tính giá (phát hiện: {detectedDurationMinutes} phút). Cho phép số thập phân 2 chữ số.
                   </div>
                 </div>
               )}
