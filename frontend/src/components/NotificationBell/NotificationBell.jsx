@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Dropdown, List, Button, Empty, Spin, Typography } from 'antd';
+import { Badge, Drawer, List, Button, Empty, Spin, Typography, Divider } from 'antd';
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -50,13 +50,18 @@ const NotificationBell = () => {
   };
 
   /**
-   * Handle dropdown visibility change
+   * Handle drawer open
    */
-  const handleVisibleChange = (v) => {
-    setVisible(v);
-    if (v) {
-      fetchLatestNotifications();
-    }
+  const handleOpenDrawer = () => {
+    setVisible(true);
+    fetchLatestNotifications();
+  };
+
+  /**
+   * Handle drawer close
+   */
+  const handleCloseDrawer = () => {
+    setVisible(false);
   };
 
   /**
@@ -71,109 +76,110 @@ const NotificationBell = () => {
     }
   };
 
-  /**
-   * Dropdown menu content
-   */
-  const menu = (
-    <div className={styles.notificationDropdown}>
-      {/* Header */}
-      <div className={styles.header}>
-        <Title level={5} style={{ margin: 0 }}>
-          Thông báo
-          {!connected && (
-            <span className={styles.offlineIndicator}> (Offline)</span>
-          )}
-        </Title>
-        {unreadCount > 0 && (
-          <Button
-            type="text"
-            size="small"
-            icon={<CheckOutlined />}
-            onClick={markAllAsRead}
-          >
-            Đánh dấu tất cả
-          </Button>
-        )}
-      </div>
-
-      {/* Notifications List */}
-      <div className={styles.notificationList}>
-        {loading ? (
-          <div className={styles.loadingContainer}>
-            <Spin tip="Đang tải..." />
-          </div>
-        ) : notifications.length === 0 ? (
-          <Empty
-            description="Không có thông báo"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        ) : (
-          <List
-            dataSource={notifications}
-            renderItem={(notification) => (
-              <List.Item
-                key={notification.notificationId}
-                className={`${styles.notificationItem} ${
-                  !notification.isRead ? styles.unread : ''
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <div className={styles.notificationContent}>
-                  <div className={styles.notificationHeader}>
-                    <Text strong className={styles.title}>
-                      {notification.title}
-                    </Text>
-                    {!notification.isRead && (
-                      <span className={styles.unreadDot} />
-                    )}
-                  </div>
-                  <Text type="secondary" className={styles.content}>
-                    {notification.content}
-                  </Text>
-                  <Text type="secondary" className={styles.time}>
-                    {formatTime(notification.createdAt)}
-                  </Text>
-                </div>
-              </List.Item>
-            )}
-          />
-        )}
-      </div>
-
-      {/* Footer */}
-      {notifications.length > 0 && (
-        <div className={styles.footer}>
-          <Button type="link" onClick={() => {
-            navigate('/profile/notifications');
-            setVisible(false);
-          }}>
-            Xem tất cả thông báo
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-
   return (
-    <Dropdown
-      dropdownRender={() => (
-        <div className={styles.notificationDropdownOverlay}>
-          {menu}
-        </div>
-      )}
-      trigger={['click']}
-      open={visible}
-      onOpenChange={handleVisibleChange}
-      placement="bottomRight"
-    >
+    <>
       <Badge count={unreadCount} overflowCount={99} offset={[-5, 5]}>
         <Button
           type="text"
           icon={<BellOutlined style={{ fontSize: '20px' }} />}
           className={styles.bellButton}
+          onClick={handleOpenDrawer}
         />
       </Badge>
-    </Dropdown>
+
+      <Drawer
+        title={
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerTitle}>
+              <BellOutlined className={styles.drawerIcon} />
+              <span>Thông báo</span>
+              {!connected && (
+                <span className={styles.offlineIndicator}> (Offline)</span>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <Button
+                type="text"
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={markAllAsRead}
+                className={styles.markAllButton}
+              >
+                Đánh dấu tất cả
+              </Button>
+            )}
+          </div>
+        }
+        placement="right"
+        onClose={handleCloseDrawer}
+        open={visible}
+        width={720}
+        className={styles.notificationDrawer}
+      >
+        {/* Notifications List */}
+        <div className={styles.notificationList}>
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <Spin tip="Đang tải..." size="large" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <Empty
+              description="Không có thông báo"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ marginTop: '60px' }}
+            />
+          ) : (
+            <>
+              <List
+                dataSource={notifications}
+                renderItem={(notification) => (
+                  <List.Item
+                    key={notification.notificationId}
+                    className={`${styles.notificationItem} ${
+                      !notification.isRead ? styles.unread : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className={styles.notificationContent}>
+                      <div className={styles.notificationHeader}>
+                        <Text strong className={styles.title}>
+                          {notification.title}
+                        </Text>
+                        {!notification.isRead && (
+                          <span className={styles.unreadDot} />
+                        )}
+                      </div>
+                      <Text type="secondary" className={styles.content}>
+                        {notification.content}
+                      </Text>
+                      <Text type="secondary" className={styles.time}>
+                        {formatTime(notification.createdAt)}
+                      </Text>
+                    </div>
+                  </List.Item>
+                )}
+              />
+              
+              <Divider style={{ margin: '12px 0' }} />
+              
+              <div className={styles.footer}>
+                <Button 
+                  type="primary" 
+                  block
+                  onClick={() => {
+                    navigate('/notifications');
+                    handleCloseDrawer();
+                  }}
+                  className={styles.viewAllButton}
+                >
+                  Xem tất cả thông báo
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Drawer>
+    </>
   );
 };
 
