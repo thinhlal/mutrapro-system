@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.service;
 
+import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.project_service.enums.FileSourceType;
@@ -12,6 +13,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,6 +53,21 @@ public class FileService {
                 saved.getFileId(), saved.getFileName(), saved.getRequestId(), event.getEventId());
         
         return saved;
+    }
+
+    public List<FileInfoResponse> getFilesByRequestId(String requestId) {
+        List<File> files = fileRepository.findByRequestId(requestId);
+        return files.stream()
+                .map(f -> FileInfoResponse.builder()
+                        .fileId(f.getFileId().toString())
+                        .fileName(f.getFileName())
+                        .filePath(f.getFilePath())
+                        .fileSize(f.getFileSize())
+                        .mimeType(f.getMimeType())
+                        .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                        .uploadDate(f.getUploadDate())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
 

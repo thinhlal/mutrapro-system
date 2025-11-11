@@ -64,3 +64,13 @@ app:
     mappings:
       file.uploaded: file-uploaded
       request.assigned: request-events
+
+# Project Service Configuration
+project:
+  service:
+    base-url: http://localhost:8082
+
+# Identity Service Configuration
+identity:
+  service:
+    base-url: http://localhost:8081

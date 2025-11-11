@@ -41,5 +41,7 @@ public class ServiceRequestResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<String> instrumentIds;  // Danh sách instrument IDs đã chọn
+    List<FileInfoResponse> files;  // Danh sách files đã upload
+    ManagerInfoResponse managerInfo;
 }
 

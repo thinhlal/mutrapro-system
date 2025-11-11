@@ -1,0 +1,71 @@
+.detailWrapper {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.headerSection {
+  margin-bottom: 2rem;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.detailCard {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.requestTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+  flex: 1;
+}
+
+.typeTag {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+.statusTag {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .detailWrapper {
+    padding: 1rem;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+  }
+
+  .requestTitle {
+    font-size: 1.25rem;
+  }
+}
+

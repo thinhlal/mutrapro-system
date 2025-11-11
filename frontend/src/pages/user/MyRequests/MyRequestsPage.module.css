@@ -146,12 +146,18 @@
   border-top: 1px solid var(--border-color);
   font-size: 12px;
   color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .dateInfo {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.viewDetailBtn {
+  margin-left: auto;
 }
 
 /* Responsive */

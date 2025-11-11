@@ -19,6 +19,8 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
+const toMMSS = (s = 0) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
 export default function RecordingUploader({ serviceType, formData }) {
   const [files, setFiles] = useState([]);
   const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
@@ -161,7 +163,7 @@ export default function RecordingUploader({ serviceType, formData }) {
               <span style={{ fontWeight: 600 }}>Session Duration (Minutes):</span>
               {detectedDurationMinutes > 0 && (
                 <Tag color="cyan" style={{ marginLeft: 8 }}>
-                  Detected: {detectedDurationMinutes} min
+                  Detected: {detectedDurationMinutes} min (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
                 </Tag>
               )}
             </div>
@@ -169,16 +171,16 @@ export default function RecordingUploader({ serviceType, formData }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Button
                 icon={<MinusOutlined />}
-                onClick={() => handleDurationChange(Math.max(0.5, adjustedDurationMinutes - 0.5))}
-                disabled={adjustedDurationMinutes <= 0.5}
+                onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                disabled={adjustedDurationMinutes <= 0.01}
               >
-                -0.5
+                -0.01
               </Button>
               
               <InputNumber
-                min={0.1}
+                min={0.01}
                 max={999}
-                step={0.1}
+                step={0.01}
                 value={adjustedDurationMinutes}
                 onChange={handleDurationChange}
                 precision={2}
@@ -188,9 +190,9 @@ export default function RecordingUploader({ serviceType, formData }) {
               
               <Button
                 icon={<PlusOutlined />}
-                onClick={() => handleDurationChange(adjustedDurationMinutes + 0.5)}
+                onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
               >
-                +0.5
+                +0.01
               </Button>
               
               {detectedDurationMinutes > 0 && (
@@ -203,8 +205,8 @@ export default function RecordingUploader({ serviceType, formData }) {
               )}
             </div>
             
-            <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-              💡 Estimate the recording session duration for billing purposes
+            <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
+              Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
             </div>
           </div>
         </div>

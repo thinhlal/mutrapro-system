@@ -185,7 +185,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Detected Duration: {detectedDurationMinutes} minutes
+                    • Detected Duration: {detectedDurationMinutes} minutes (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
                   </span>
                 </Space>
                 <Button
@@ -257,7 +257,10 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   </div>
                   
                   <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                    💡 Điều chỉnh thời lượng để tính giá (phát hiện: {detectedDurationMinutes} phút). Cho phép số thập phân 2 chữ số.
+                    💡 Điều chỉnh thời lượng để tính giá (phát hiện: {detectedDurationMinutes} phút ~ {toMMSS(Math.round(detectedDurationMinutes * 60))}). Cho phép số thập phân 2 chữ số.
+                  </div>
+                  <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
+                    Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
                   </div>
                 </div>
               )}

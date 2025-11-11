@@ -33,6 +33,7 @@ import ProfilePage from './pages/user/Profile/ProfilePage';
 import NotificationsPage from './pages/user/Notifications/NotificationsPage';
 import SubscriptionPage from './pages/user/Subscription/SubscriptionPage';
 import MyRequestsPage from './pages/user/MyRequests/MyRequestsPage';
+import RequestDetailPage from './pages/user/RequestDetail/RequestDetailPage';
 
 // Professionals Pages
 import SingersPage from './pages/professionals/Singers/List/SingersPage';
@@ -114,6 +115,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <MyRequestsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/my-requests/:requestId"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <RequestDetailPage />
               </ProtectedRoute>
             }
           />

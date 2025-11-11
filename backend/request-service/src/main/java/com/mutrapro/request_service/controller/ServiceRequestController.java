@@ -77,6 +77,20 @@ public class ServiceRequestController {
                 .build();
     }
 
+    @GetMapping("/{requestId}")
+    @Operation(summary = "Lấy chi tiết một service request theo requestId")
+    public ApiResponse<ServiceRequestResponse> getServiceRequestById(
+            @Parameter(description = "ID của request")
+            @PathVariable String requestId) {
+        log.info("Getting service request by id: requestId={}", requestId);
+        ServiceRequestResponse request = serviceRequestService.getServiceRequestById(requestId);
+        return ApiResponse.<ServiceRequestResponse>builder()
+                .message("Service request retrieved successfully")
+                .data(request)
+                .statusCode(200)
+                .build();
+    }
+
     @PutMapping("/{requestId}/assign")
     @Operation(summary = "Manager nhận trách nhiệm về service request (có thể tự nhận hoặc assign cho manager khác)")
     public ApiResponse<ServiceRequestResponse> assignManager(

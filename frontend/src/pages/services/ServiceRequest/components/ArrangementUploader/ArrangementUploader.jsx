@@ -124,6 +124,8 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
     });
   };
 
+  const toMMSS = (s = 0) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
   return (
     <section
       id="arrangement-uploader"
@@ -207,7 +209,7 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
                   <span style={{ fontWeight: 600 }}>Adjust Duration (Minutes):</span>
                   {isAudioFile && detectedDurationMinutes > 0 && (
                     <Tag color="cyan" style={{ marginLeft: 8 }}>
-                      Detected: {detectedDurationMinutes} min
+                      Detected: {detectedDurationMinutes} min (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
                     </Tag>
                   )}
                 </div>
@@ -215,16 +217,16 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Button
                     icon={<MinusOutlined />}
-                    onClick={() => handleDurationChange(Math.max(0.5, adjustedDurationMinutes - 0.5))}
-                    disabled={adjustedDurationMinutes <= 0.5}
+                    onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                    disabled={adjustedDurationMinutes <= 0.01}
                   >
-                    -0.5
+                    -0.01
                   </Button>
                   
                   <InputNumber
-                    min={0.1}
+                    min={0.01}
                     max={999}
-                    step={0.1}
+                    step={0.01}
                     value={adjustedDurationMinutes}
                     onChange={handleDurationChange}
                     precision={2}
@@ -234,9 +236,9 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
                   
                   <Button
                     icon={<PlusOutlined />}
-                    onClick={() => handleDurationChange(adjustedDurationMinutes + 0.5)}
+                    onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
                   >
-                    +0.5
+                    +0.01
                   </Button>
                   
                   {isAudioFile && detectedDurationMinutes > 0 && (
@@ -247,6 +249,10 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
                       Reset to {detectedDurationMinutes} min
                     </Button>
                   )}
+                </div>
+                
+                <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
+                  Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
                 </div>
                 
                 <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>

@@ -1,7 +1,11 @@
 package com.mutrapro.request_service.service;
 
+import com.mutrapro.request_service.client.IdentityServiceFeignClient;
+import com.mutrapro.request_service.client.ProjectServiceFeignClient;
 import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
+import com.mutrapro.request_service.dto.response.FileInfoResponse;
+import com.mutrapro.request_service.dto.response.ManagerInfoResponse;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
 import com.mutrapro.request_service.entity.NotationInstrument;
 import com.mutrapro.request_service.entity.OutboxEvent;
@@ -24,6 +28,7 @@ import com.mutrapro.request_service.mapper.ServiceRequestMapper;
 import com.mutrapro.request_service.repository.NotationInstrumentRepository;
 import com.mutrapro.request_service.repository.OutboxEventRepository;
 import com.mutrapro.request_service.repository.ServiceRequestRepository;
+import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.RequestAssignedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
@@ -41,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +64,8 @@ public class ServiceRequestService {
     FileUploadService fileUploadService;
     ServiceRequestMapper serviceRequestMapper;
     ObjectMapper objectMapper;
+    ProjectServiceFeignClient projectServiceFeignClient;
+    IdentityServiceFeignClient identityServiceFeignClient;
     
     @NonFinal
     @Value("${file.upload.allowed-audio-types}")
@@ -361,6 +369,60 @@ public class ServiceRequestService {
         return requests.stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy chi tiết một service request theo requestId
+     * @param requestId ID của request
+     * @return ServiceRequestResponse
+     */
+    public ServiceRequestResponse getServiceRequestById(String requestId) {
+        ServiceRequest serviceRequest = serviceRequestRepository.findByRequestId(requestId)
+                .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
+        
+        log.info("Retrieved service request: requestId={}", requestId);
+        
+        ServiceRequestResponse response = serviceRequestMapper.toServiceRequestResponse(serviceRequest);
+        
+        // Fetch manager info from identity-service if available
+        String managerUserId = serviceRequest.getManagerUserId();
+        if (managerUserId != null && !managerUserId.isBlank()) {
+            try {
+                ApiResponse<ManagerInfoResponse> managerResponse =
+                        identityServiceFeignClient.getFullUserById(managerUserId);
+                if (managerResponse != null && "success".equals(managerResponse.getStatus())
+                        && managerResponse.getData() != null) {
+                    response.setManagerInfo(managerResponse.getData());
+                } else {
+                    response.setManagerInfo(null);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch manager info for managerUserId={}: {}", managerUserId, e.getMessage());
+                response.setManagerInfo(null);
+            }
+        } else {
+            response.setManagerInfo(null);
+        }
+        
+        // Fetch files from project-service using Feign client
+        try {
+            ApiResponse<List<FileInfoResponse>> filesResponse = 
+                    projectServiceFeignClient.getFilesByRequestId(requestId);
+            
+            if (filesResponse != null && filesResponse.getStatus() != null && 
+                filesResponse.getStatus().equals("success") && filesResponse.getData() != null) {
+                response.setFiles(filesResponse.getData());
+                log.debug("Fetched {} files for requestId={}", filesResponse.getData().size(), requestId);
+            } else {
+                response.setFiles(new ArrayList<>());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch files for requestId={}: {}", requestId, e.getMessage());
+            // Set empty list nếu lỗi, không throw exception
+            response.setFiles(new ArrayList<>());
+        }
+        
+        return response;
     }
     
     /**
