@@ -104,3 +104,20 @@ export const getMyManagedContracts = async () => {
   }
 };
 
+/**
+ * Lấy tất cả contracts (dùng endpoint my-managed-contracts cho manager/admin)
+ * GET /contracts/my-managed-contracts
+ * 
+ * @returns {Promise} ApiResponse với danh sách contracts
+ */
+export const getAllContracts = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.MY_MANAGED_CONTRACTS
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+  }
+};
+

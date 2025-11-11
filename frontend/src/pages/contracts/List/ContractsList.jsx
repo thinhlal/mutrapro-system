@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Table,
   Input,
@@ -11,6 +11,7 @@ import {
   message,
   Tooltip,
   Typography,
+  Spin,
 } from 'antd';
 import {
   EyeOutlined,
@@ -21,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './ContractsList.module.css';
+import { getAllContracts } from '../../../services/contractService';
 
 // ===== Enums (phù hợp với ContractBuilder) =====
 const CONTRACT_TYPES = [
@@ -42,107 +44,19 @@ const CURRENCIES = [
   { label: 'USD', value: 'USD' },
 ];
 
-// ===== Mock Data (bám DB contracts v3.2) =====
-// Lưu ý: thêm vài field tiện hiển thị như customer_name, service_name.
-const MOCK_CONTRACTS = [
-  {
-    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a01',
-    request_id: 'req-0001',
-    customer_id: 'cus-001',
-    manager_id: 'mgr-01',
-    contract_number: 'CTR-20251017-A12B',
-    contract_type: 'transcription',
-    status: 'draft',
-    created_at: '2025-10-16T12:05:00Z',
-    sent_to_customer_at: null,
-    customer_reviewed_at: null,
-    signed_at: null,
-    expires_at: null,
-    file_id: null,
-    notes: 'First draft.',
-    total_price: 2000000,
-    currency: 'VND',
-    deposit_percent: 40,
-    deposit_amount: 800000,
-    final_amount: 1200000,
-    expected_start_date: '2025-10-18T00:00:00Z',
-    due_date: '2025-10-25T00:00:00Z',
-    sla_days: 7,
-    auto_due_date: true,
-    // convenience
-    customer_name: 'Nguyễn A',
-    service_name: 'Piano Transcription',
-  },
-  {
-    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a02',
-    request_id: 'req-0002',
-    customer_id: 'cus-002',
-    manager_id: 'mgr-01',
-    contract_number: 'CTR-20251016-FF21',
-    contract_type: 'arrangement',
-    status: 'sent',
-    created_at: '2025-10-16T09:00:00Z',
-    sent_to_customer_at: '2025-10-16T10:00:00Z',
-    signed_at: null,
-    total_price: 3500000,
-    currency: 'VND',
-    deposit_percent: 50,
-    deposit_amount: 1750000,
-    final_amount: 1750000,
-    expected_start_date: '2025-10-19T00:00:00Z',
-    due_date: '2025-10-26T00:00:00Z',
-    sla_days: 7,
-    auto_due_date: true,
-    customer_name: 'Trần B',
-    service_name: 'Full Arrangement',
-  },
-  {
-    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a03',
-    request_id: 'req-0003',
-    customer_id: 'cus-003',
-    manager_id: 'mgr-02',
-    contract_number: 'CTR-20251012-9ACD',
-    contract_type: 'recording',
-    status: 'signed',
-    created_at: '2025-10-12T07:30:00Z',
-    sent_to_customer_at: '2025-10-12T08:00:00Z',
-    customer_reviewed_at: '2025-10-12T12:00:00Z',
-    signed_at: '2025-10-13T09:00:00Z',
-    total_price: 2500,
-    currency: 'USD',
-    deposit_percent: 40,
-    deposit_amount: 1000,
-    final_amount: 1500,
-    expected_start_date: '2025-10-14T00:00:00Z',
-    due_date: '2025-10-21T00:00:00Z',
-    sla_days: 7,
-    auto_due_date: true,
-    customer_name: 'Pham C',
-    service_name: 'Studio Recording',
-  },
-  {
-    contract_id: 'f2e0a2d1-5c2b-4a9d-9f11-01c9b2aa1a04',
-    request_id: 'req-0004',
-    customer_id: 'cus-004',
-    manager_id: 'mgr-02',
-    contract_number: 'CTR-20250930-1B3F',
-    contract_type: 'bundle',
-    status: 'expired',
-    created_at: '2025-09-30T11:00:00Z',
-    expires_at: '2025-10-15T00:00:00Z',
-    total_price: 9000000,
-    currency: 'VND',
-    deposit_percent: 30,
-    deposit_amount: 2700000,
-    final_amount: 6300000,
-    expected_start_date: '2025-10-01T00:00:00Z',
-    due_date: '2025-10-12T00:00:00Z',
-    sla_days: 11,
-    auto_due_date: true,
-    customer_name: 'Lê D',
-    service_name: 'T+A+R Package',
-  },
-];
+// Helper function để map contract type sang service name
+const getServiceName = (contractType) => {
+  if (!contractType) return 'N/A';
+  const typeMap = {
+    transcription: 'Transcription',
+    arrangement: 'Arrangement',
+    arrangement_with_recording: 'Arrangement with Recording',
+    recording: 'Recording',
+    bundle: 'Bundle (T+A+R)',
+  };
+  const typeLower = contractType.toLowerCase();
+  return typeMap[typeLower] || contractType;
+};
 
 // helpers
 const fmtMoney = (n, cur) =>
@@ -167,22 +81,47 @@ export default function ContractsList() {
   const [status, setStatus] = useState();
   const [currency, setCurrency] = useState();
   const [dateRange, setDateRange] = useState([]);
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch contracts từ API
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getAllContracts();
+        setContracts(response.data || []);
+      } catch (err) {
+        console.error('Error fetching contracts:', err);
+        setError(err.message || 'Lỗi khi tải danh sách contracts');
+        message.error(err.message || 'Lỗi khi tải danh sách contracts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContracts();
+  }, []);
 
   const data = useMemo(() => {
-    return MOCK_CONTRACTS.filter(c => {
+    return contracts.filter(c => {
+      const contractType = c.contractType?.toLowerCase() || '';
+      const statusLower = c.status?.toLowerCase() || '';
       const q =
-        (c.contract_number || '').toLowerCase() +
+        (c.contractNumber || '').toLowerCase() +
         ' ' +
-        (c.customer_name || '').toLowerCase() +
+        (c.nameSnapshot || '').toLowerCase() +
         ' ' +
-        (c.service_name || '').toLowerCase();
+        getServiceName(c.contractType).toLowerCase();
       const passSearch = q.includes((search || '').toLowerCase().trim());
-      const passType = type ? c.contract_type === type : true;
-      const passStatus = status ? c.status === status : true;
+      const passType = type ? contractType === type.toLowerCase() : true;
+      const passStatus = status ? statusLower === status.toLowerCase() : true;
       const passCur = currency ? c.currency === currency : true;
       const passDate =
         dateRange?.length === 2
-          ? dayjs(c.created_at).isBetween(
+          ? dayjs(c.createdAt).isBetween(
               dateRange[0],
               dateRange[1],
               'day',
@@ -191,45 +130,45 @@ export default function ContractsList() {
           : true;
       return passSearch && passType && passStatus && passCur && passDate;
     });
-  }, [search, type, status, currency, dateRange]);
+  }, [contracts, search, type, status, currency, dateRange]);
 
   const columns = [
     {
       title: 'Contract No',
-      dataIndex: 'contract_number',
-      key: 'contract_number',
+      dataIndex: 'contractNumber',
+      key: 'contractNumber',
       width: 190,
       render: (v, r) => (
         <Space direction="vertical" size={0}>
           <Text strong>{v}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Req: {r.request_id}
+            Req: {r.requestId}
           </Text>
         </Space>
       ),
-      sorter: (a, b) => (a.contract_number || '').localeCompare(b.contract_number || ''),
+      sorter: (a, b) => (a.contractNumber || '').localeCompare(b.contractNumber || ''),
     },
     {
       title: 'Customer / Service',
       key: 'customer',
       render: (_, r) => (
         <div>
-          <Text>{r.customer_name}</Text>
-          <div className={styles.sub}>{r.service_name}</div>
+          <Text>{r.nameSnapshot || 'N/A'}</Text>
+          <div className={styles.sub}>{getServiceName(r.contractType)}</div>
         </div>
       ),
       width: 220,
     },
     {
       title: 'Type',
-      dataIndex: 'contract_type',
-      key: 'contract_type',
+      dataIndex: 'contractType',
+      key: 'contractType',
       width: 140,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => rec.contract_type === val,
+      onFilter: (val, rec) => (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
       render: v => (
         <Tag color="processing">
-          {CONTRACT_TYPES.find(x => x.value === v)?.label || v}
+          {getServiceName(v)}
         </Tag>
       ),
     },
@@ -238,20 +177,25 @@ export default function ContractsList() {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: v => (
-        <Tag color={statusColor[v] || 'default'}>{v.toUpperCase()}</Tag>
-      ),
+      render: v => {
+        const statusLower = v?.toLowerCase() || 'draft';
+        return (
+          <Tag color={statusColor[statusLower] || 'default'}>
+            {statusLower.toUpperCase()}
+          </Tag>
+        );
+      },
       filters: CONTRACT_STATUS.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => rec.status === val,
+      onFilter: (val, rec) => (rec.status?.toLowerCase() || '') === val.toLowerCase(),
     },
     {
       title: 'Created',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 140,
       render: v => dayjs(v).format('YYYY-MM-DD'),
       sorter: (a, b) =>
-        dayjs(a.created_at).valueOf() - dayjs(b.created_at).valueOf(),
+        dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf(),
     },
     {
       title: 'Price',
@@ -260,16 +204,16 @@ export default function ContractsList() {
       render: (_, r) => (
         <div>
           <div>
-            <Text strong>{fmtMoney(r.total_price, r.currency)}</Text>{' '}
+            <Text strong>{fmtMoney(Number(r.totalPrice || 0), r.currency)}</Text>{' '}
             <Tag>{r.currency}</Tag>
           </div>
           <div className={styles.sub}>
-            Deposit {r.deposit_percent}% ={' '}
-            {fmtMoney(r.deposit_amount, r.currency)}
+            Deposit {Number(r.depositPercent || 0)}% ={' '}
+            {fmtMoney(Number(r.depositAmount || 0), r.currency)}
           </div>
         </div>
       ),
-      sorter: (a, b) => (a.total_price || 0) - (b.total_price || 0),
+      sorter: (a, b) => Number(a.totalPrice || 0) - Number(b.totalPrice || 0),
     },
     {
       title: 'Timeline',
@@ -279,12 +223,12 @@ export default function ContractsList() {
         <div className={styles.timeline}>
           <div>
             <span className={styles.sub}>Start</span>{' '}
-            {dayjs(r.expected_start_date).format('YYYY-MM-DD')}
+            {dayjs(r.expectedStartDate).format('YYYY-MM-DD')}
           </div>
           <div>
             <span className={styles.sub}>Due</span>{' '}
-            {dayjs(r.due_date).format('YYYY-MM-DD')}{' '}
-            <span className={styles.sub}>({r.sla_days}d)</span>
+            {dayjs(r.dueDate).format('YYYY-MM-DD')}{' '}
+            <span className={styles.sub}>({r.slaDays || 0}d)</span>
           </div>
         </div>
       ),
@@ -310,7 +254,7 @@ export default function ContractsList() {
             okText="Delete"
             okButtonProps={{ danger: true }}
             onConfirm={() =>
-              message.success(`Deleted ${r.contract_number} (UI only)`)
+              message.success(`Deleted ${r.contractNumber} (UI only)`)
             }
           >
             <Button danger icon={<DeleteOutlined />} />
@@ -361,13 +305,23 @@ export default function ContractsList() {
         </Space>
         <Button
           icon={<ReloadOutlined />}
-          onClick={() => {
+          onClick={async () => {
             setSearch('');
             setType();
             setStatus();
             setCurrency();
             setDateRange([]);
-            message.success('Filters cleared');
+            // Reload data
+            try {
+              setLoading(true);
+              const response = await getAllContracts();
+              setContracts(response.data || []);
+              message.success('Đã làm mới danh sách');
+            } catch (err) {
+              message.error('Lỗi khi làm mới danh sách');
+            } finally {
+              setLoading(false);
+            }
           }}
         >
           Reset
@@ -375,15 +329,43 @@ export default function ContractsList() {
       </div>
 
       {/* Table */}
-      <Table
-        rowKey="contract_id"
-        columns={columns}
-        dataSource={data}
-        bordered
-        size="middle"
-        pagination={{ pageSize: 8, showSizeChanger: false }}
-        scroll={{ x: 1000 }}
-      />
+      <Spin spinning={loading}>
+        {error ? (
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <Typography.Text type="danger">{error}</Typography.Text>
+            <br />
+            <Button
+              type="primary"
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  setError(null);
+                  const response = await getAllContracts();
+                  setContracts(response.data || []);
+                } catch (err) {
+                  setError(err.message || 'Lỗi khi tải danh sách contracts');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{ marginTop: '10px' }}
+            >
+              Thử lại
+            </Button>
+          </div>
+        ) : (
+          <Table
+            rowKey="contractId"
+            columns={columns}
+            dataSource={data}
+            bordered
+            size="middle"
+            pagination={{ pageSize: 8, showSizeChanger: false }}
+            scroll={{ x: 1000 }}
+            loading={loading}
+          />
+        )}
+      </Spin>
     </div>
   );
 }
