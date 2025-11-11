@@ -99,6 +99,32 @@ public class NotationInstrumentService {
                         .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy danh sách instruments theo list IDs
+     * @param instrumentIds danh sách IDs
+     * @return List<NotationInstrumentResponse>
+     */
+    public List<NotationInstrumentResponse> getInstrumentsByIds(List<String> instrumentIds) {
+        if (instrumentIds == null || instrumentIds.isEmpty()) {
+            log.debug("Empty instrument IDs list, returning empty list");
+            return List.of();
+        }
+        
+        log.debug("Fetching instruments by IDs: {}", instrumentIds);
+        List<NotationInstrument> instruments = notationInstrumentRepository.findByInstrumentIdIn(instrumentIds);
+        
+        return instruments.stream()
+                .map(e -> NotationInstrumentResponse.builder()
+                        .instrumentId(e.getInstrumentId())
+                        .instrumentName(e.getInstrumentName())
+                        .usage(e.getUsage())
+                        .basePrice(e.getBasePrice())
+                        .isActive(e.isActive())
+                        .image(e.getImage())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public NotationInstrumentResponse createInstrument(CreateNotationInstrumentRequest request) {
         // Check if instrument name already exists (case-insensitive)

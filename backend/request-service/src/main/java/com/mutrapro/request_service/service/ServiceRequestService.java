@@ -409,13 +409,61 @@ public class ServiceRequestService {
      * @param requestId ID của request
      * @return ServiceRequestResponse
      */
+    @Transactional(readOnly = true)
     public ServiceRequestResponse getServiceRequestById(String requestId) {
         ServiceRequest serviceRequest = serviceRequestRepository.findByRequestId(requestId)
                 .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
         
-        log.info("Retrieved service request: requestId={}", requestId);
+        // Trigger lazy loading of notationInstruments to ensure they are loaded
+        // This is needed because @OneToMany uses LAZY fetching by default
+        List<String> instrumentIds = new ArrayList<>();
+        int instrumentsCount = 0;
         
+        try {
+            if (serviceRequest.getNotationInstruments() != null) {
+                instrumentsCount = serviceRequest.getNotationInstruments().size(); // Trigger lazy load
+                log.debug("Found {} notation instruments for requestId={}", instrumentsCount, requestId);
+                
+                // Extract instrument IDs and trigger lazy load of nested NotationInstrument entities
+                for (RequestNotationInstrument reqInst : serviceRequest.getNotationInstruments()) {
+                    try {
+                        if (reqInst != null) {
+                            // Trigger lazy load of NotationInstrument
+                            NotationInstrument notationInstrument = reqInst.getNotationInstrument();
+                            if (notationInstrument != null) {
+                                String instrumentId = notationInstrument.getInstrumentId();
+                                if (instrumentId != null && !instrumentId.isBlank()) {
+                                    instrumentIds.add(instrumentId);
+                                    log.debug("Extracted instrument ID: {}", instrumentId);
+                                }
+                            } else {
+                                log.warn("NotationInstrument is null for RequestNotationInstrument in requestId={}", requestId);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error accessing NotationInstrument for requestId={}: {}", requestId, e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error loading notationInstruments for requestId={}: {}", requestId, e.getMessage(), e);
+        }
+        
+        log.info("Retrieved service request: requestId={}, instrumentsCount={}, extractedIds={}", 
+                requestId, instrumentsCount, instrumentIds.size());
+        
+        // Map entity to response DTO
         ServiceRequestResponse response = serviceRequestMapper.toServiceRequestResponse(serviceRequest);
+        
+        // Always manually set instrumentIds (don't rely on @AfterMapping)
+        // This ensures the field is always set correctly, even if mapper fails
+        if (instrumentIds.isEmpty()) {
+            response.setInstrumentIds(List.of());
+            log.debug("Set empty instrumentIds list for requestId={}", requestId);
+        } else {
+            response.setInstrumentIds(instrumentIds);
+            log.info("Set instrumentIds for requestId={}, count={}, ids={}", requestId, instrumentIds.size(), instrumentIds);
+        }
         
         // Fetch manager info from identity-service if available
         String managerUserId = serviceRequest.getManagerUserId();

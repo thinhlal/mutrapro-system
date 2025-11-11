@@ -229,7 +229,7 @@ function App() {
               path="service-requests"
               element={<ServiceRequestManagement />}
             />
-            <Route path="contact-builder" element={<ContractBuilder />} />
+            <Route path="contract-builder" element={<ContractBuilder />} />
             <Route path="contracts-list" element={<ContractsList />} />
             <Route path="task" element={<Tasks />} />
             <Route path="profile" element={<ManagerProfile />} />

@@ -7,3 +7,4 @@ com.mutrapro.shared.config.AuditorAwareConfig
 com.mutrapro.shared.config.JwtSecurityConfig
 com.mutrapro.shared.config.S3Config
 com.mutrapro.shared.config.FeignAutoConfiguration
+com.mutrapro.shared.config.WebSocketAuthInterceptorAutoConfiguration

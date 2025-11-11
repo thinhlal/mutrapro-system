@@ -18,6 +18,13 @@ public interface NotationInstrumentRepository extends JpaRepository<NotationInst
      * @return Optional<NotationInstrument>
      */
     Optional<NotationInstrument> findByInstrumentNameIgnoreCase(String instrumentName);
+    
+    /**
+     * Tìm instruments theo list IDs
+     * @param instrumentIds danh sách IDs
+     * @return List<NotationInstrument>
+     */
+    List<NotationInstrument> findByInstrumentIdIn(List<String> instrumentIds);
 }
 
 

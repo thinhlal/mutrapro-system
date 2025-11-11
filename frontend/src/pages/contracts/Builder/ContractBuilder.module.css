@@ -1,8 +1,24 @@
 .page {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   min-height: 100vh;
+  align-items: start;
+  padding: 12px;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: sticky;
+  top: 12px;
 }
 
 .doc {
@@ -93,55 +109,114 @@
 
 .card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.06);
-  padding: 16px;
+    0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 12px;
+}
+
+.formCard {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 36px);
+  padding: 10px !important;
+}
+
+.formCardContent {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  margin-top: -4px;
+}
+
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  height: 100%;
+  padding: 16px !important; /* Khôi phục padding gốc cho preview */
+  border-radius: 14px !important; /* Khôi phục border-radius gốc */
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
+  gap: 8px 12px;
 }
 
 .fullRow {
   grid-column: 1 / -1 !important;
 }
 
+/* Compact form styling - chỉ áp dụng cho form bên trái */
+.formCard :global(.ant-form-item) {
+  margin-bottom: 8px !important;
+}
+
+.formCard :global(.ant-divider) {
+  margin: 8px 0 !important;
+}
+
+.formCard :global(.ant-divider-horizontal.ant-divider-with-text) {
+  margin: 10px 0 !important;
+}
+
+.formCard :global(.ant-form-item-label) {
+  padding-bottom: 2px !important;
+}
+
+.formCard :global(.ant-form-item-label > label) {
+  font-size: 13px !important;
+  height: auto !important;
+}
+
+.formCard :global(.ant-input),
+.formCard :global(.ant-input-number),
+.formCard :global(.ant-picker),
+.formCard :global(.ant-select-selector),
+.formCard :global(textarea.ant-input) {
+  font-size: 13px !important;
+}
+
+.formCard :global(.ant-btn) {
+  font-size: 13px !important;
+  height: 32px !important;
+  padding: 4px 12px !important;
+}
+
 .previewToolbar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  flex-shrink: 0;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #eee;
-  border-top-left-radius: 12px;
+  padding: 8px 8px 12px 8px; /* Khôi phục padding gốc */
+  margin-bottom: 0;
+  border-top-left-radius: 12px; /* Khôi phục border-radius */
   border-top-right-radius: 12px;
-  padding: 8px 8px 12px 8px;
 }
 
 .preview {
-  padding: 16px;
-  overflow: auto;
-  max-height: calc(100vh - 180px);
+  padding: 16px; /* Khôi phục padding gốc */
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 12px; /* Khôi phục margin gốc cho preview */
 }
 .brand {
   font-weight: 700;
 }
 .tagline,
 .meta {
-  font-size: 12px;
+  font-size: 12px; /* Khôi phục font-size gốc */
   color: #666;
 }
 
@@ -151,20 +226,20 @@
   background: #fff;
   color: #111;
   border: 1px solid #eaeaea;
-  border-radius: 12px;
-  padding: 24px;
-  line-height: 1.6;
+  border-radius: 12px; /* Khôi phục border-radius gốc */
+  padding: 24px; /* Khôi phục padding gốc */
+  line-height: 1.6; /* Khôi phục line-height gốc */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 .docTitle {
-  font-size: 22px;
-  margin: 0 0 8px 0;
+  font-size: 22px; /* Khôi phục font-size gốc */
+  margin: 0 0 8px 0; /* Khôi phục margin gốc */
 }
 
 .signRow {
   display: flex;
-  gap: 40px;
-  margin-top: 40px;
+  gap: 40px; /* Khôi phục gap gốc */
+  margin-top: 40px; /* Khôi phục margin-top gốc */
 }
 .sigLabel {
   font-size: 13px;
@@ -182,16 +257,69 @@
   color: #777;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1400px) {
+  .page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  
+  .previewSection {
+    position: static;
+    top: auto;
+  }
+  
+  .formCard,
+  .previewCard {
+    max-height: none;
+  }
+  
   .formGrid {
     grid-template-columns: 1fr;
   }
-  .preview {
-    max-height: none;
-  }
+}
+
+/* Disabled input styling - Normal color but still disabled */
+.disabledInput :global(.ant-input[disabled]) {
+  color: rgba(0, 0, 0, 0.85) !important;
+  background-color: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.disabledInput :global(.ant-input-number.ant-input-number-disabled) {
+  background-color: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.disabledInput :global(.ant-input-number.ant-input-number-disabled .ant-input-number-input) {
+  color: rgba(0, 0, 0, 0.85) !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
+}
+
+.disabledInput :global(.ant-input-number.ant-input-number-disabled .ant-input-number-input-wrap input) {
+  color: rgba(0, 0, 0, 0.85) !important;
+  cursor: not-allowed !important;
+}
+
+.disabledInput :global(.ant-picker.ant-picker-disabled) {
+  background-color: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.disabledInput :global(.ant-picker.ant-picker-disabled .ant-picker-input > input) {
+  color: rgba(0, 0, 0, 0.85) !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
 }
 
 /* Print */
+
 @media print {
   .page {
     display: block;

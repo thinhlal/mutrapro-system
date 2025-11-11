@@ -15,6 +15,7 @@ import {
   EyeOutlined,
   CheckCircleOutlined,
   ReloadOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import {
   getAllServiceRequests,
@@ -22,6 +23,7 @@ import {
   assignServiceRequest,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import ServiceRequestDetailModal from '../../../components/modal/ServiceRequestDetailModal/ServiceRequestDetailModal';
 import styles from './ServiceRequestManagement.module.css';
 
@@ -57,6 +59,7 @@ export default function ServiceRequestManagement() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch tất cả requests
   const fetchAllRequests = async () => {
@@ -159,6 +162,13 @@ export default function ServiceRequestManagement() {
     setDetailModalVisible(true);
   };
 
+  // Navigate đến Contract Builder với requestId
+  const handleCreateContract = record => {
+    const requestId = record.requestId || record.id;
+    // Navigate đến contract builder với requestId trong query params
+    navigate(`/manager/contract-builder?requestId=${requestId}`);
+  };
+
   useEffect(() => {
     fetchAllRequests();
     fetchMyRequests();
@@ -258,30 +268,45 @@ export default function ServiceRequestManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 180,
+      width: 220,
       fixed: 'right',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
-            View
-          </Button>
-          {!record.managerUserId && (
+      render: (_, record) => {
+        const isAssignedToMe = record.managerUserId === user?.id;
+        const hasManager = !!record.managerUserId;
+        
+        return (
+          <Space>
             <Button
-              type="primary"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              loading={assigning[record.id]}
-              onClick={() => handleAssign(record.id)}
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
             >
-              Assign to Me
+              View
             </Button>
-          )}
-        </Space>
-      ),
+            {!hasManager && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckCircleOutlined />}
+                loading={assigning[record.id]}
+                onClick={() => handleAssign(record.id)}
+              >
+                Assign to Me
+              </Button>
+            )}
+            {isAssignedToMe && (
+              <Button
+                type="default"
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={() => handleCreateContract(record)}
+              >
+                Create Contract
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -341,7 +366,7 @@ export default function ServiceRequestManagement() {
             key="my"
           >
             <Table
-              columns={columns.filter(col => col.key !== 'actions')}
+              columns={columns}
               dataSource={myRequests}
               rowKey="id"
               loading={loadingMy}
@@ -367,6 +392,7 @@ export default function ServiceRequestManagement() {
           setDetailModalVisible(false);
         }}
         isAssigning={assigning[selectedRequest?.id]}
+        onCreateContract={handleCreateContract}
       />
     </div>
   );

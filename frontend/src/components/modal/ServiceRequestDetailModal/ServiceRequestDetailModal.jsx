@@ -1,5 +1,5 @@
 import { Modal, Button, Descriptions, Tag } from 'antd';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 
 const STATUS_COLORS = {
@@ -25,6 +25,7 @@ export default function ServiceRequestDetailModal({
   currentUserId,
   onAssign,
   isAssigning = false,
+  onCreateContract,
 }) {
   if (!request) return null;
 
@@ -49,6 +50,19 @@ export default function ServiceRequestDetailModal({
             onClick={() => onAssign(request.id)}
           >
             Assign to Me
+          </Button>
+        ),
+        isAssignedToCurrentUser && onCreateContract && (
+          <Button
+            key="createContract"
+            type="default"
+            icon={<FileTextOutlined />}
+            onClick={() => {
+              onCreateContract(request);
+              onCancel();
+            }}
+          >
+            Create Contract
           </Button>
         ),
       ]}
@@ -125,5 +139,6 @@ ServiceRequestDetailModal.propTypes = {
   currentUserId: PropTypes.string,
   onAssign: PropTypes.func,
   isAssigning: PropTypes.bool,
+  onCreateContract: PropTypes.func,
 };
 

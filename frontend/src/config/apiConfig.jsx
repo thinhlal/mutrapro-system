@@ -11,6 +11,10 @@ export const API_CONFIG = {
   // Google OAuth config
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
 
+  // Company/Party A info for contracts
+  PARTY_A_NAME: import.meta.env.VITE_PARTY_A_NAME || 'MuTraPro Studio Co., Ltd',
+  PARTY_A_ADDRESS: import.meta.env.VITE_PARTY_A_ADDRESS || '',
+
   // Environment
   IS_DEV: import.meta.env.DEV,
   IS_PROD: import.meta.env.PROD,
@@ -74,7 +78,7 @@ export const API_ENDPOINTS = {
     CREATE_PASSWORD: `${IDENTITY_PATH}/auth/reset-password`,
   },
 
-  // === Project Service (Quản lý File, Folder, Tag) ===
+  // === Project Service (Quản lý File, Folder, Tag, Contract) ===
   // Giả định các controller bên trong project-service giữ nguyên đường dẫn
   FILES: {
     MY_FILES: `${PROJECT_PATH}/files/my-files`,
@@ -82,6 +86,19 @@ export const API_ENDPOINTS = {
     DOWNLOAD: fileId => `${PROJECT_PATH}/file/download/${fileId}`,
     GET_URL: fileId => `${PROJECT_PATH}/file/url/${fileId}`,
     GET_BY_REQUEST_ID: requestId => `${PROJECT_PATH}/files/by-request/${requestId}`,
+  },
+
+  CONTRACTS: {
+    // POST /api/v1/projects/contracts/from-request/{requestId}
+    CREATE_FROM_REQUEST: requestId => `${PROJECT_PATH}/contracts/from-request/${requestId}`,
+    // GET /api/v1/projects/contracts/{contractId}
+    GET_BY_ID: contractId => `${PROJECT_PATH}/contracts/${contractId}`,
+    // GET /api/v1/projects/contracts/by-request/{requestId}
+    GET_BY_REQUEST_ID: requestId => `${PROJECT_PATH}/contracts/by-request/${requestId}`,
+    // GET /api/v1/projects/contracts/my-contracts
+    MY_CONTRACTS: `${PROJECT_PATH}/contracts/my-contracts`,
+    // GET /api/v1/projects/contracts/my-managed-contracts
+    MY_MANAGED_CONTRACTS: `${PROJECT_PATH}/contracts/my-managed-contracts`,
   },
 
   FOLDERS: {
@@ -136,6 +153,8 @@ export const API_ENDPOINTS = {
   NOTATION_INSTRUMENTS: {
     // GET /notation-instruments?usage=transcription|arrangement|both&includeInactive=true
     GET_ALL: `${REQUEST_PATH}/notation-instruments`,
+    // GET /notation-instruments/by-ids?ids=id1&ids=id2
+    GET_BY_IDS: `${REQUEST_PATH}/notation-instruments/by-ids`,
     // POST /notation-instruments (with multipart/form-data)
     CREATE: `${REQUEST_PATH}/notation-instruments`,
     // PUT /notation-instruments/{id} (with multipart/form-data)

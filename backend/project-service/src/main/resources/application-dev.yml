@@ -45,3 +45,8 @@ app:
   event-topics:
     mappings:
       file.uploaded: file-uploaded
+
+# Request Service Configuration
+request:
+  service:
+    base-url: http://localhost:8084

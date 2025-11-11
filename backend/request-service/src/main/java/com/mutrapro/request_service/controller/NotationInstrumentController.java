@@ -46,6 +46,19 @@ public class NotationInstrumentController {
                 .build();
     }
 
+    @GetMapping("/by-ids")
+    @Operation(summary = "Lấy danh sách nhạc cụ ký âm theo list IDs")
+    public ApiResponse<List<NotationInstrumentResponse>> getInstrumentsByIds(
+            @Parameter(description = "Danh sách IDs của instruments (comma-separated hoặc multiple params)")
+            @RequestParam("ids") List<String> instrumentIds) {
+        log.info("Fetching instruments by IDs: {}", instrumentIds);
+        List<NotationInstrumentResponse> items = service.getInstrumentsByIds(instrumentIds);
+        return ApiResponse.<List<NotationInstrumentResponse>>builder()
+                .message("Instruments retrieved successfully")
+                .data(items)
+                .build();
+    }
+
     @PostMapping(consumes = {"multipart/form-data"})
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Tạo nhạc cụ ký âm mới (có thể upload ảnh cùng lúc)")
