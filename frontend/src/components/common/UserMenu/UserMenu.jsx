@@ -184,18 +184,6 @@ function UserMenu() {
               </>
             )}
 
-            {/* Notifications */}
-            <li>
-              <Link
-                to="/profile/notifications"
-                className={styles.dropdownItem}
-                onClick={handleMenuItemClick}
-              >
-                <BellOutlined className={styles.dropdownIcon} />
-                <span>Notifications</span>
-              </Link>
-            </li>
-
             {/* My requests */}
             <li>
               <Link

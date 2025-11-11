@@ -11,21 +11,31 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
-.notificationDropdown {
-  width: 400px;
-  max-height: 600px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.header {
+/* Drawer Header */
+.drawerHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  width: 100%;
+  padding-right: 24px;
+}
+
+.drawerTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.drawerIcon {
+  font-size: 20px;
+  color: #f97316;
+}
+
+.markAllButton {
+  color: #1890ff;
+  font-size: 13px;
 }
 
 .offlineIndicator {
@@ -35,7 +45,7 @@
 }
 
 .notificationList {
-  max-height: 450px;
+  height: calc(100vh - 120px);
   overflow-y: auto;
 }
 
@@ -46,30 +56,43 @@
   padding: 40px;
 }
 
+/* ===== Item trong List ===== */
 .notificationItem {
-  padding: 12px 16px;
+  /* KHÔNG padding ở đây nữa */
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+  border-radius: 8px; /* để item có bo tròn tổng thể */
 }
 
-.notificationItem:hover {
-  background-color: #f5f5f5;
-}
-
-.notificationItem.unread {
-  background-color: #e6f7ff;
-}
-
-.notificationItem.unread:hover {
-  background-color: #bae7ff;
-}
-
+/* phần nội dung thật sự */
 .notificationContent {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 16px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+/* hover chỉ ăn trong vùng content */
+.notificationContent:hover {
+  background-color: #f5f5f5;
+}
+
+/* trạng thái chưa đọc */
+.notificationItem.unread .notificationContent {
+  background-color: #fff7ed;
+  border-left: 4px solid #f97316;
+  /* đẩy nội dung ra lại cho cân vì có border-left */
+  padding-left: 12px;
+}
+
+/* hover khi chưa đọc */
+.notificationItem.unread .notificationContent:hover {
+  background-color: #ffedd5;
 }
 
 .notificationHeader {
@@ -87,9 +110,20 @@
 .unreadDot {
   width: 8px;
   height: 8px;
-  background-color: #1890ff;
+  background-color: #f97316;
   border-radius: 50%;
   flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .content {
@@ -108,9 +142,7 @@
 }
 
 .footer {
-  text-align: center;
-  padding: 12px;
-  border-top: 1px solid #f0f0f0;
+  padding: 12px 0;
 }
 
 /* Scrollbar styling */
@@ -131,3 +163,29 @@
   background: #555;
 }
 
+/* Drawer customization */
+:global(.notificationDrawer .ant-drawer-header) {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+:global(.notificationDrawer .ant-drawer-body) {
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+:global(.notificationDrawer .ant-drawer-title) {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* List styling - bỏ padding mặc định của antd */
+:global(.notificationDrawer .ant-list-item) {
+  padding: 0;
+  border: none;
+}
+
+/* Empty state */
+:global(.notificationDrawer .ant-empty) {
+  margin: 60px 0;
+}

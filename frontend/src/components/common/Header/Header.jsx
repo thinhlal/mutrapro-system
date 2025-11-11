@@ -18,7 +18,7 @@ const SECTION_KEYS = new Map([
   ['/pricing', 'pricing'],
   ['/reviews', 'reviews'],
   ['/about', 'about'],
-  ['/contact', 'contact'],
+  ['/notifications', 'notifications'],
 ]);
 
 const SERVICE_FLOW_ROUTES = [
@@ -154,7 +154,7 @@ function Header() {
               {navLink('/pricing', 'pricing', 'Pricing')}
               {navLink('/reviews', 'reviews', 'Reviews')}
               {navLink('/about', 'about', 'About us')}
-              {navLink('/contact', 'contact', 'Contact')}
+              {navLink('/notifications', 'notifications', 'Notifications')}
             </Nav>
 
             {/* CTA */}
@@ -259,13 +259,13 @@ function Header() {
               </Nav.Link>
               <Nav.Link
                 as={Link}
-                to="/contact"
+                to="/notifications"
                 className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'contact',
+                  [styles.active]: activeKey === 'notifications',
                 })}
                 onClick={closeMobileMenu}
               >
-                Contact
+                Notifications
               </Nav.Link>
             </Nav>
 

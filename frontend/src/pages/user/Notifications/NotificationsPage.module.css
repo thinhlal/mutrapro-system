@@ -1,5 +1,6 @@
 :root {
   --background-card: #ffffff;
+  --background-page: #f8f9fa;
   --text-primary: #222222;
   --text-secondary: #666666;
   --border-color: #e0e0e0;
@@ -9,15 +10,104 @@
   --info-color: #1890ff;
 }
 
-.notificationsContent {
+/* Page Wrapper */
+.pageWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-page);
+}
+
+/* Page Container */
+.pageContainer {
+  flex: 1;
+  padding: 48px 24px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 150px auto;
+}
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.headerIcon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.headerText {
+  flex: 1;
+}
+
+.pageTitle {
+  margin: 0 !important;
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  line-height: 1.2 !important;
+}
+
+.pageSubtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  display: block;
+}
+
+/* Notification Card */
+.notificationCard {
   background-color: var(--background-card);
-  padding: 24px 32px;
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-color);
 }
 
+.notificationsContent {
+  width: 100%;
+}
+
 .notificationTabs {
-  margin-top: 24px;
+  margin-top: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 24px 16px;
+  }
+
+  .pageHeader {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .headerIcon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+    border-radius: 12px;
+  }
+
+  .pageTitle {
+    font-size: 28px !important;
+  }
+
+  .pageSubtitle {
+    font-size: 14px;
+  }
 }
 
 .tabBadge {
@@ -33,25 +123,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  background-color: #f9fafb;
-  border-radius: 6px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: linear-gradient(to right, #f9fafb, #ffffff);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .notificationItem {
-  padding: 16px !important;
+  padding: 20px !important;
   border-bottom: 1px solid var(--border-color) !important;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .notificationItem:hover {
   background-color: #fafafa;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .notificationItem.unread {
   background-color: #fff7ed;
+  border-left: 4px solid var(--accent-color);
 }
 
 .notificationItem.unread:hover {
@@ -63,20 +160,30 @@
 }
 
 .notifIcon {
-  font-size: 24px;
-  margin-right: 8px;
+  font-size: 28px;
+  margin-right: 12px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background-color: #f0f9ff;
 }
 
 .notifIcon.success {
   color: var(--success-color);
+  background-color: #f0fdf4;
 }
 
 .notifIcon.warning {
   color: var(--warning-color);
+  background-color: #fffbeb;
 }
 
 .notifIcon.info {
   color: var(--info-color);
+  background-color: #f0f9ff;
 }
 
 .notifHeader {
@@ -153,9 +260,34 @@
 /* Tabs customization */
 :global(.ant-tabs-tab) {
   font-weight: 500;
+  font-size: 15px;
+  padding: 12px 16px;
 }
 
 :global(.ant-tabs-tab-active) {
   font-weight: 600;
+}
+
+:global(.ant-tabs-tab:hover) {
+  color: var(--accent-color);
+}
+
+/* Empty State */
+:global(.ant-empty) {
+  padding: 60px 20px;
+}
+
+/* List Item Meta */
+:global(.ant-list-item-meta-avatar) {
+  margin-right: 16px;
+}
+
+:global(.ant-list-item-meta-title) {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+:global(.ant-list-item-meta-description) {
+  font-size: 14px;
 }
 

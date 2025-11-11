@@ -129,7 +129,7 @@ function App() {
             }
           />
           <Route
-            path="/profile/notifications"
+            path="/notifications"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}

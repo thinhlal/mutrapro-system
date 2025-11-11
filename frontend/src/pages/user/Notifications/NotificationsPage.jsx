@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { List, Typography, Tabs, Badge, Empty, Button, Spin, Pagination, message } from 'antd';
+import { List, Typography, Tabs, Badge, Empty, Button, Spin, Pagination, message, Card } from 'antd';
 import {
   BellOutlined,
   CheckCircleOutlined,
@@ -7,7 +7,8 @@ import {
   CheckOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
+import Header from '../../../components/common/Header/Header';
+import Footer from '../../../components/common/Footer/Footer';
 import notificationService from '../../../services/notificationService';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -328,18 +329,36 @@ const NotificationsPage = () => {
   ];
 
   return (
-    <ProfileLayout>
-      <div className={styles.notificationsContent}>
-        <Title level={2}>Thông báo</Title>
-        
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          className={styles.notificationTabs}
-        />
+    <div className={styles.pageWrapper}>
+      <Header />
+      
+      <div className={styles.pageContainer}>
+        <div className={styles.notificationsContent}>
+          <div className={styles.pageHeader}>
+            <div className={styles.headerIcon}>
+              <BellOutlined />
+            </div>
+            <div className={styles.headerText}>
+              <Title level={1} className={styles.pageTitle}>Thông báo</Title>
+              <Text type="secondary" className={styles.pageSubtitle}>
+                Quản lý và theo dõi tất cả thông báo của bạn
+              </Text>
+            </div>
+          </div>
+          
+          <Card className={styles.notificationCard}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={tabItems}
+              className={styles.notificationTabs}
+            />
+          </Card>
+        </div>
       </div>
-    </ProfileLayout>
+      
+      <Footer />
+    </div>
   );
 };
 
