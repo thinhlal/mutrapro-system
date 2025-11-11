@@ -38,6 +38,16 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     USER_NOT_AUTHENTICATED("CONTRACT_7005", 401,
         "https://docs.mutrapro.com/errors/CONTRACT_7005",
         "User not authenticated",
+        Retryable.NON_TRANSIENT),
+    
+    CONTRACT_EXPIRED("CONTRACT_7006", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7006",
+        "Contract has expired and cannot be signed",
+        Retryable.NON_TRANSIENT),
+    
+    CONTRACT_ALREADY_SIGNED("CONTRACT_7007", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7007",
+        "Cannot modify a signed contract",
         Retryable.NON_TRANSIENT);
 
     private final String code;

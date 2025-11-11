@@ -23,9 +23,27 @@ import { getServiceRequestById, getNotationInstrumentsByIds, calculatePricing } 
 import { createContractFromRequest } from '../../../services/contractService';
 import { API_CONFIG } from '../../../config/apiConfig';
 import { getDefaultTermsAndConditions, getDefaultSpecialClauses, replaceTemplateVariables } from './contractTemplates';
+import { formatDurationMMSS } from '../../../utils/timeUtils';
 import styles from './ContractBuilder.module.css';
 
 const { Title } = Typography;
+
+// Helper function để format description, thay thế "X.XX phút" bằng format mm:ss
+const formatDescriptionDuration = (description) => {
+  if (!description) return description;
+  
+  // Tìm pattern: số thập phân + " phút" hoặc "phút" (ví dụ: "4.38 phút", "5.5 phút", "4.38phút")
+  // Pattern này sẽ match cả trường hợp có khoảng trắng hoặc không có
+  const pattern = /(\d+\.?\d*)\s*phút/gi;
+  
+  return description.replace(pattern, (match, minutes) => {
+    const minutesNum = parseFloat(minutes);
+    if (!isNaN(minutesNum) && minutesNum > 0) {
+      return formatDurationMMSS(minutesNum);
+    }
+    return match;
+  });
+};
 
 // Map ServiceType to ContractType
 const mapServiceTypeToContractType = serviceType => {
@@ -839,7 +857,7 @@ const ContractBuilder = () => {
                           </span>
                           {item.description && (
                             <span style={{ color: '#666', marginLeft: '8px' }}>
-                              ({item.description})
+                              ({formatDescriptionDuration(item.description)})
                             </span>
                           )}
                         </div>

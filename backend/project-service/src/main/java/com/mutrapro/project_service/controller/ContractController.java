@@ -2,6 +2,7 @@ package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.service.ContractService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -91,6 +92,26 @@ public class ContractController {
         return ApiResponse.<List<ContractResponse>>builder()
                 .message("Contracts retrieved successfully")
                 .data(contracts)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PutMapping("/{contractId}/status")
+    @Operation(summary = "Update contract status (sent, reviewed, signed, expired)")
+    public ApiResponse<ContractResponse> updateContractStatus(
+            @Parameter(description = "ID của contract")
+            @PathVariable UUID contractId,
+            @Parameter(description = "Status mới (sent, reviewed, signed, expired)")
+            @RequestParam ContractStatus status,
+            @Parameter(description = "Số ngày để expires (chỉ áp dụng khi status = sent, mặc định 7 ngày)")
+            @RequestParam(required = false) Integer expiresInDays) {
+        log.info("Updating contract status: contractId={}, status={}, expiresInDays={}", 
+            contractId, status, expiresInDays);
+        ContractResponse contract = contractService.updateContractStatus(contractId, status, expiresInDays);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract status updated successfully")
+                .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

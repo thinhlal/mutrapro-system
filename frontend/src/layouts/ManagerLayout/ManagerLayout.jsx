@@ -30,11 +30,6 @@ const menuItems = [
     label: <Link to="/manager/service-requests">Service Requests</Link>,
   },
   {
-    key: '/manager/contact-builder',
-    icon: <ContainerOutlined />,
-    label: <Link to="/manager/contact-builder">Contact Builder</Link>,
-  },
-  {
     key: '/manager/contracts-list',
     icon: <ContainerOutlined />,
     label: <Link to="/manager/contracts-list">Contracts</Link>,

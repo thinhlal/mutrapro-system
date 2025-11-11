@@ -13,24 +13,54 @@ import RequestServiceForm from '../../../components/common/RequestServiceForm/Re
 import BackToTop from '../../../components/common/BackToTop/BackToTop';
 import Footer from '../../../components/common/Footer/Footer';
 
+const STORAGE_KEY = 'serviceRequestFormData';
+const STORAGE_KEY_TYPE = 'serviceRequestType';
+
 export default function ServiceRequestPage() {
   const location = useLocation();
   const serviceTypeFromNav = location?.state?.serviceType;
 
-  const [selectedType, setSelectedType] = useState(serviceTypeFromNav || null); // transcription | arrangement | arrangement_with_recording | recording
-  const [formData, setFormData] = useState(null); // Store form data để gửi sau
+  // Khôi phục từ sessionStorage hoặc dùng giá trị từ navigation
+  const [selectedType, setSelectedType] = useState(() => {
+    const storedType = sessionStorage.getItem(STORAGE_KEY_TYPE);
+    return serviceTypeFromNav || storedType || null;
+  });
+  const [formData, setFormData] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const uploadRef = useRef(null);
   const formRef = useRef(null);
 
   useEffect(() => {
     if (serviceTypeFromNav) {
       setSelectedType(serviceTypeFromNav);
+      sessionStorage.setItem(STORAGE_KEY_TYPE, serviceTypeFromNav);
     }
   }, [serviceTypeFromNav]);
+
+  // Lưu selectedType vào sessionStorage khi thay đổi
+  useEffect(() => {
+    if (selectedType) {
+      sessionStorage.setItem(STORAGE_KEY_TYPE, selectedType);
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY_TYPE);
+    }
+  }, [selectedType]);
 
   // Nhận form data từ RequestServiceForm (không submit API)
   const handleFormComplete = useCallback((data) => {
     setFormData(data);
+    // Lưu vào sessionStorage
+    if (data) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
   }, []);
 
   return (
@@ -90,6 +120,7 @@ export default function ServiceRequestPage() {
           onFormComplete={handleFormComplete}
           serviceType={selectedType}
           formRef={formRef}
+          initialFormData={formData}
         />
 
         <div ref={uploadRef}>

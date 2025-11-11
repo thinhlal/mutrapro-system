@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Upload, Button, Tooltip, message, Tag, Space, InputNumber } from 'antd';
+import { Upload, Button, Tooltip, Tag, Space, InputNumber, Alert } from 'antd';
 import {
   InboxOutlined,
   ArrowRightOutlined,
@@ -30,6 +30,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
   const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
   const [adjustedDurationMinutes, setAdjustedDurationMinutes] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
   const navigate = useNavigate();
 
   const beforeUpload = useCallback(() => false, []);
@@ -78,26 +79,43 @@ export default function TranscriptionUploader({ serviceType, formData }) {
   };
 
   const handleSubmit = () => {
+    // Clear error message trước khi validation
+    setErrorMessage(null);
+
     if (!file) {
-      message.warning('Vui lòng tải lên file audio.');
+      setErrorMessage('Vui lòng tải lên file audio.');
       return;
     }
 
     // Validate form data
     if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Vui lòng điền đầy đủ thông tin form phía trên.');
+      setErrorMessage('Vui lòng điền đầy đủ thông tin form phía trên.');
       return;
     }
 
-    // Validate instruments
-    if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
-      message.warning('Vui lòng chọn ít nhất một nhạc cụ.');
+    // Validate instruments - transcription chỉ chọn được 1 nhạc cụ
+    const instrumentIds = formData.instrumentIds;
+    const isInstrumentIdsValid = 
+      instrumentIds !== undefined && 
+      instrumentIds !== null && 
+      Array.isArray(instrumentIds) && 
+      instrumentIds.length === 1;
+    
+    if (!isInstrumentIdsValid) {
+      setErrorMessage('Vui lòng chọn một nhạc cụ.');
+      // Scroll to error message
+      setTimeout(() => {
+        const errorElement = document.getElementById('transcription-error-alert');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
       return;
     }
 
     // Validate duration - phải là số dương
     if (!adjustedDurationMinutes || adjustedDurationMinutes <= 0) {
-      message.warning('Vui lòng nhập thời lượng hợp lệ (phút).');
+      setErrorMessage('Vui lòng nhập thời lượng hợp lệ (phút).');
       return;
     }
 
@@ -266,6 +284,19 @@ export default function TranscriptionUploader({ serviceType, formData }) {
               )}
             </Space>
           </div>
+        )}
+
+        {/* Error Alert */}
+        {errorMessage && (
+          <Alert
+            id="transcription-error-alert"
+            message={errorMessage}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setErrorMessage(null)}
+            style={{ marginBottom: 16 }}
+          />
         )}
 
         <div className={styles.actionRow}>

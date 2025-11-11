@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { Form, Input, Tag, InputNumber, Button, Space } from 'antd';
 import { SelectOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -19,12 +19,15 @@ export default function RequestServiceForm({
   onFormComplete,
   serviceType,
   formRef,
+  initialFormData,
 }) {
   const [form] = Form.useForm();
   const { user } = useAuth();
   
-  // Instrument selection
-  const [selectedInstruments, setSelectedInstruments] = useState([]);
+  // Instrument selection - khôi phục từ initialFormData nếu có
+  const [selectedInstruments, setSelectedInstruments] = useState(() => {
+    return initialFormData?.instrumentIds || [];
+  });
   const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
   
   const {
@@ -45,6 +48,43 @@ export default function RequestServiceForm({
       formRef.current = form;
     }
   }, [form, formRef]);
+
+  // Khôi phục form values từ initialFormData - chỉ một lần khi mount
+  const hasInitializedRef = useRef(false);
+  const lastServiceTypeRef = useRef(serviceType);
+  
+  useEffect(() => {
+    const serviceTypeChanged = lastServiceTypeRef.current !== serviceType;
+    
+    // Reset flag nếu serviceType thay đổi
+    if (serviceTypeChanged) {
+      hasInitializedRef.current = false;
+      lastServiceTypeRef.current = serviceType;
+    }
+    
+    // Restore khi có initialFormData và chưa initialize
+    if (initialFormData && form && !hasInitializedRef.current) {
+      const formValues = {
+        title: initialFormData.title || '',
+        description: initialFormData.description || '',
+        tempoPercentage: initialFormData.tempoPercentage || 100,
+        contactName: initialFormData.contactName || user?.fullName || '',
+        contactPhone: initialFormData.contactPhone || '',
+        contactEmail: initialFormData.contactEmail || user?.email || '',
+        hasVocalist: initialFormData.hasVocalist || false,
+        externalGuestCount: initialFormData.externalGuestCount || 0,
+        musicOptions: initialFormData.musicOptions || null,
+      };
+      form.setFieldsValue(formValues);
+      
+      // Khôi phục selectedInstruments
+      if (initialFormData.instrumentIds && initialFormData.instrumentIds.length > 0) {
+        setSelectedInstruments(initialFormData.instrumentIds);
+      }
+      
+      hasInitializedRef.current = true;
+    }
+  }, [initialFormData, serviceType, form, user]);
 
   // Determine if service needs instrument selection and whether it's multiple or single
   const needsInstruments = serviceType && serviceType !== 'recording';

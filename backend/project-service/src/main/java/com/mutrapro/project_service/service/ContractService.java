@@ -9,6 +9,8 @@ import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
+import com.mutrapro.project_service.exception.ContractAlreadySignedException;
+import com.mutrapro.project_service.exception.ContractExpiredException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidRequestIdException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
@@ -176,8 +178,39 @@ public class ContractService {
     }
     
     /**
+     * Check và update expired contracts
+     * Contracts đã hết hạn (expiresAt <= now) nhưng chưa signed sẽ được set status = expired
+     */
+    @Transactional
+    public int checkAndUpdateExpiredContracts() {
+        Instant now = Instant.now();
+        List<Contract> expiredContracts = contractRepository.findExpiredContracts(now);
+        
+        if (expiredContracts.isEmpty()) {
+            log.debug("No expired contracts found");
+            return 0;
+        }
+        
+        int updatedCount = 0;
+        for (Contract contract : expiredContracts) {
+            // Chỉ update nếu contract chưa được signed
+            if (contract.getSignedAt() == null && contract.getStatus() != ContractStatus.signed) {
+                contract.setStatus(ContractStatus.expired);
+                contractRepository.save(contract);
+                updatedCount++;
+                log.info("Contract expired: contractId={}, contractNumber={}, expiresAt={}", 
+                    contract.getContractId(), contract.getContractNumber(), contract.getExpiresAt());
+            }
+        }
+        
+        log.info("Updated {} expired contracts", updatedCount);
+        return updatedCount;
+    }
+    
+    /**
      * Lấy contract theo ID
      */
+    @Transactional(readOnly = true)
     public ContractResponse getContractById(UUID contractId) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId.toString()));
@@ -187,6 +220,7 @@ public class ContractService {
     /**
      * Lấy danh sách contracts theo requestId
      */
+    @Transactional(readOnly = true)
     public List<ContractResponse> getContractsByRequestId(String requestId) {
         List<Contract> contracts = contractRepository.findByRequestId(requestId);
         return contracts.stream()
@@ -197,6 +231,7 @@ public class ContractService {
     /**
      * Lấy danh sách contracts của user hiện tại
      */
+    @Transactional(readOnly = true)
     public List<ContractResponse> getMyContracts() {
         String userId = getCurrentUserId();
         List<Contract> contracts = contractRepository.findByUserId(userId);
@@ -208,6 +243,7 @@ public class ContractService {
     /**
      * Lấy danh sách contracts được quản lý bởi manager hiện tại
      */
+    @Transactional(readOnly = true)
     public List<ContractResponse> getMyManagedContracts() {
         String managerId = getCurrentUserId();
         List<Contract> contracts = contractRepository.findByManagerUserId(managerId);
@@ -254,6 +290,88 @@ public class ContractService {
             case recording -> 7;
             case bundle -> 21;  // Full package (T+A+R)
         };
+    }
+    
+    /**
+     * Update contract status
+     * Khi status được set thành "sent", tự động set expiresAt (7 ngày sau khi sent)
+     * Khi status được set thành "signed", check xem contract có hết hạn chưa
+     * @param contractId ID của contract
+     * @param newStatus Status mới
+     * @param expiresInDays Số ngày để expires (mặc định 7 ngày, chỉ áp dụng khi status = sent)
+     * @return ContractResponse
+     */
+    @Transactional
+    public ContractResponse updateContractStatus(UUID contractId, ContractStatus newStatus, Integer expiresInDays) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId.toString()));
+        
+        // Validate status transition
+        ContractStatus currentStatus = contract.getStatus();
+        
+        // Nếu đang update thành "sent"
+        if (newStatus == ContractStatus.sent) {
+            contract.setStatus(ContractStatus.sent);
+            contract.setSentToCustomerAt(Instant.now());
+            
+            // Tự động set expiresAt nếu chưa có (mặc định 7 ngày sau khi sent)
+            // Nếu đã có expiresAt từ khi tạo, giữ nguyên
+            // Nếu expiresInDays được chỉ định, update lại expiresAt
+            if (expiresInDays != null) {
+                // Nếu có expiresInDays, update lại expiresAt
+                contract.setExpiresAt(Instant.now().plusSeconds(expiresInDays * 24L * 60 * 60));
+                log.info("Set expiresAt for contract: contractId={}, expiresAt={}, expiresInDays={}", 
+                    contractId, contract.getExpiresAt(), expiresInDays);
+            } else if (contract.getExpiresAt() == null) {
+                // Nếu chưa có expiresAt, set mặc định 7 ngày
+                int days = 7; // Mặc định 7 ngày
+                contract.setExpiresAt(Instant.now().plusSeconds(days * 24L * 60 * 60));
+                log.info("Set expiresAt for contract (default): contractId={}, expiresAt={}, expiresInDays={}", 
+                    contractId, contract.getExpiresAt(), days);
+            } else {
+                // Nếu đã có expiresAt, giữ nguyên
+                log.info("Contract already has expiresAt: contractId={}, expiresAt={}", 
+                    contractId, contract.getExpiresAt());
+            }
+        }
+        // Nếu đang update thành "reviewed"
+        else if (newStatus == ContractStatus.reviewed) {
+            contract.setStatus(ContractStatus.reviewed);
+            contract.setCustomerReviewedAt(Instant.now());
+        }
+        // Nếu đang update thành "signed"
+        else if (newStatus == ContractStatus.signed) {
+            // Check xem contract có hết hạn chưa
+            if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(Instant.now())) {
+                throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
+            }
+            
+            contract.setStatus(ContractStatus.signed);
+            contract.setSignedAt(Instant.now());
+            
+            // Nếu chưa có customerReviewedAt, set nó
+            if (contract.getCustomerReviewedAt() == null) {
+                contract.setCustomerReviewedAt(Instant.now());
+            }
+        }
+        // Nếu đang update thành "expired"
+        else if (newStatus == ContractStatus.expired) {
+            // Chỉ cho phép set expired nếu chưa signed
+            if (contract.getStatus() == ContractStatus.signed || contract.getSignedAt() != null) {
+                throw ContractAlreadySignedException.cannotExpire(contract.getContractId());
+            }
+            contract.setStatus(ContractStatus.expired);
+        }
+        // Các status khác (draft)
+        else {
+            contract.setStatus(newStatus);
+        }
+        
+        Contract saved = contractRepository.save(contract);
+        log.info("Updated contract status: contractId={}, from={}, to={}", 
+            contractId, currentStatus, newStatus);
+        
+        return contractMapper.toResponse(saved);
     }
     
     /**

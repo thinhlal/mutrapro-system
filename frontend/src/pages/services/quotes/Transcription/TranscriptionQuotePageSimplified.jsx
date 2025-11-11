@@ -26,6 +26,7 @@ import BackToTop from '../../../../components/common/BackToTop/BackToTop';
 import { calculatePrice, formatPrice } from '../../../../services/pricingMatrixService';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
+import { formatDurationMMSS } from '../../../../utils/timeUtils';
 import styles from './TranscriptionQuotePage.module.css';
 
 const { Title, Text } = Typography;
@@ -151,7 +152,7 @@ export default function TranscriptionQuotePageSimplified() {
               {formData.description}
             </Descriptions.Item>
             <Descriptions.Item label="Duration">
-              <Tag color="green">{formData.durationMinutes} minutes</Tag>
+              <Tag color="green">{formatDurationMMSS(formData.durationMinutes)}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="File">{fileName}</Descriptions.Item>
             {formData.instrumentIds && formData.instrumentIds.length > 0 && (
@@ -220,7 +221,7 @@ export default function TranscriptionQuotePageSimplified() {
                       {formatPrice(priceData.basePrice, priceData.currency)} / minute
                     </Descriptions.Item>
                     <Descriptions.Item label="Duration">
-                      {formData.durationMinutes} minutes
+                      {formatDurationMMSS(formData.durationMinutes)}
                     </Descriptions.Item>
                     <Descriptions.Item label="Subtotal">
                       {formatPrice(priceData.totalPrice, priceData.currency)}

@@ -399,7 +399,17 @@ public class ServiceRequestService {
         log.info("Retrieved {} service requests with filters: status={}, requestType={}, managerUserId={}", 
                 requests.size(), status, requestType, managerUserId);
         
-        return requests.stream()
+        // Sort theo createdAt giảm dần (mới nhất lên đầu)
+        List<ServiceRequest> sortedRequests = requests.stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // DESC
+                })
+                .collect(Collectors.toList());
+        
+        return sortedRequests.stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
     }
@@ -524,7 +534,17 @@ public class ServiceRequestService {
         log.info("Retrieved {} requests for user: userId={}, status={}", 
                 requests.size(), userId, status != null ? status.name() : "all");
         
-        return requests.stream()
+        // Sort theo createdAt giảm dần (mới nhất lên đầu)
+        List<ServiceRequest> sortedRequests = requests.stream()
+                .sorted((a, b) -> {
+                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                    if (a.getCreatedAt() == null) return 1;
+                    if (b.getCreatedAt() == null) return -1;
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // DESC
+                })
+                .collect(Collectors.toList());
+        
+        return sortedRequests.stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
     }

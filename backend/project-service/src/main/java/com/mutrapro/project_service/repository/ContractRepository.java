@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,5 +29,16 @@ public interface ContractRepository extends JpaRepository<Contract, UUID> {
     List<Contract> findByRequestIdAndStatus(@Param("requestId") String requestId, @Param("status") ContractStatus status);
     
     boolean existsByRequestId(String requestId);
+    
+    /**
+     * Tìm contracts đã hết hạn (expiresAt <= now) nhưng chưa có status là expired
+     * và chưa được signed
+     */
+    @Query("SELECT c FROM Contract c WHERE c.expiresAt IS NOT NULL " +
+           "AND c.expiresAt <= :now " +
+           "AND c.status != com.mutrapro.project_service.enums.ContractStatus.expired " +
+           "AND c.status != com.mutrapro.project_service.enums.ContractStatus.signed " +
+           "AND c.signedAt IS NULL")
+    List<Contract> findExpiredContracts(@Param("now") Instant now);
 }
 
