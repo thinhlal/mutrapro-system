@@ -6,8 +6,10 @@ import styles from './UserMenu.module.css';
 import {
   UserOutlined,
   LogoutOutlined,
-  SettingOutlined,
+  SettingOutlined, // nếu không dùng nữa thì xoá
   DashboardOutlined,
+  BellOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 
 function UserMenu() {
@@ -16,7 +18,6 @@ function UserMenu() {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = event => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -33,7 +34,6 @@ function UserMenu() {
     };
   }, [isOpen]);
 
-  // Close menu on Escape key
   useEffect(() => {
     const handleEscape = event => {
       if (event.key === 'Escape') {
@@ -68,13 +68,11 @@ function UserMenu() {
     setIsOpen(prev => !prev);
   };
 
-  // Get initials from email for avatar
   const getInitials = email => {
     if (!email) return 'U';
     return email.charAt(0).toUpperCase();
   };
 
-  // Get display name
   const getDisplayName = () => {
     if (user?.fullName) return user.fullName;
     if (user?.email) return user.email.split('@')[0];
@@ -83,7 +81,6 @@ function UserMenu() {
 
   return (
     <div className={styles.userMenu} ref={menuRef}>
-      {/* Avatar Button */}
       <button
         className={styles.avatarButton}
         onClick={toggleMenu}
@@ -110,7 +107,6 @@ function UserMenu() {
         </div>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className={styles.dropdown}>
           <div className={styles.dropdownHeader}>
@@ -148,7 +144,7 @@ function UserMenu() {
               </Link>
             </li>
 
-            {/* Dashboard for Manager/Admin */}
+            {/* Manager Dashboard */}
             {user?.role === 'MANAGER' && (
               <li>
                 <Link
@@ -162,7 +158,7 @@ function UserMenu() {
               </li>
             )}
 
-            {/* Admin Dashboard */}
+            {/* Admin Dashboard + Manager */}
             {user?.role === 'SYSTEM_ADMIN' && (
               <>
                 <li>
@@ -188,22 +184,33 @@ function UserMenu() {
               </>
             )}
 
-            {/* Settings */}
+            {/* Notifications */}
             <li>
               <Link
                 to="/profile/notifications"
                 className={styles.dropdownItem}
                 onClick={handleMenuItemClick}
               >
-                <SettingOutlined className={styles.dropdownIcon} />
+                <BellOutlined className={styles.dropdownIcon} />
                 <span>Notifications</span>
+              </Link>
+            </li>
+
+            {/* My requests */}
+            <li>
+              <Link
+                to="/profile/my-requests"
+                className={styles.dropdownItem}
+                onClick={handleMenuItemClick}
+              >
+                <FileTextOutlined className={styles.dropdownIcon} />
+                <span>My Requests</span>
               </Link>
             </li>
           </ul>
 
           <div className={styles.dropdownDivider} />
 
-          {/* Logout */}
           <button
             className={styles.dropdownItemLogout}
             onClick={handleLogout}
