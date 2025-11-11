@@ -6,6 +6,7 @@ import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.FileInfoResponse;
 import com.mutrapro.request_service.dto.response.ManagerInfoResponse;
+import com.mutrapro.request_service.dto.response.PriceCalculationResponse;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
 import com.mutrapro.request_service.entity.NotationInstrument;
 import com.mutrapro.request_service.entity.OutboxEvent;
@@ -66,6 +67,7 @@ public class ServiceRequestService {
     ObjectMapper objectMapper;
     ProjectServiceFeignClient projectServiceFeignClient;
     IdentityServiceFeignClient identityServiceFeignClient;
+    PricingMatrixService pricingMatrixService;
     
     @NonFinal
     @Value("${file.upload.allowed-audio-types}")
@@ -116,13 +118,27 @@ public class ServiceRequestService {
                 .contactEmail(request.getContactEmail())
                 .musicOptions(request.getMusicOptions())
                 .tempoPercentage(request.getTempoPercentage())
-                .durationMinutes(durationMinutes)  // Lưu độ dài audio (phút) - đã làm tròn nếu cần
+                .durationMinutes(request.getDurationMinutes())  // Lưu độ dài audio (phút)
                 .hasVocalist(request.getHasVocalist() != null ? request.getHasVocalist() : false)
                 .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .status(RequestStatus.pending)
                 .build();
+
+        // Tính và gắn total price snapshot cho transcription
+        try {
+            if (requestType == ServiceType.transcription && request.getDurationMinutes() != null
+                    && request.getDurationMinutes().compareTo(BigDecimal.ZERO) > 0) {
+                PriceCalculationResponse calc = pricingMatrixService.calculateTranscriptionPrice(request.getDurationMinutes());
+                if (calc != null && calc.getTotalPrice() != null) {
+                    serviceRequest.setTotalPrice(calc.getTotalPrice());
+                    serviceRequest.setCurrency(calc.getCurrency());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate snapshot price for request: {} - {}", requestType, e.getMessage());
+        }
         
         ServiceRequest saved = serviceRequestRepository.save(serviceRequest);
         log.info("Created service request: requestId={}, userId={}, requestType={}", 
@@ -227,10 +243,27 @@ public class ServiceRequestService {
             
             // Add to ServiceRequest's collection (bidirectional relationship)
             saved.getNotationInstruments().addAll(requestInstruments);
+            
+            // Calculate flat surcharge from instruments' basePrice
+            long instrumentSum = instruments.stream()
+                    .mapToLong(NotationInstrument::getBasePrice)
+                    .sum();
+            if (instrumentSum > 0) {
+                BigDecimal surcharge = BigDecimal.valueOf(instrumentSum).setScale(2, java.math.RoundingMode.HALF_UP);
+                if (saved.getTotalPrice() == null) {
+                    saved.setTotalPrice(surcharge);
+                } else {
+                    saved.setTotalPrice(saved.getTotalPrice().add(surcharge).setScale(2, java.math.RoundingMode.HALF_UP));
+                }
+                if (saved.getCurrency() == null) {
+                    saved.setCurrency(com.mutrapro.request_service.enums.CurrencyType.VND);
+                }
+            }
+            
             serviceRequestRepository.save(saved);
             
-            log.info("Saved {} instrument selections for request: {}", 
-                    requestInstruments.size(), saved.getRequestId());
+            log.info("Saved {} instrument selections for request: {} (surcharge={})", 
+                    requestInstruments.size(), saved.getRequestId(), instrumentSum);
         }
         
         // Build response using MapStruct mapper

@@ -1,6 +1,7 @@
 package com.mutrapro.request_service.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.shared.entity.BaseEntity;
@@ -81,6 +82,13 @@ public class ServiceRequest extends BaseEntity<String> {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     RequestStatus status = RequestStatus.pending;
+
+    @Column(name = "total_price", precision = 12, scale = 2)
+    BigDecimal totalPrice;  // Snapshot tổng giá tại thời điểm tạo/cập nhật
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", length = 10)
+    CurrencyType currency;  // Loại tiền tệ của totalPrice
 
     @OneToMany(mappedBy = "serviceRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

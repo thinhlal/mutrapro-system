@@ -2,6 +2,7 @@ package com.mutrapro.request_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import lombok.AllArgsConstructor;
@@ -43,5 +44,7 @@ public class ServiceRequestResponse {
     List<String> instrumentIds;  // Danh sách instrument IDs đã chọn
     List<FileInfoResponse> files;  // Danh sách files đã upload
     ManagerInfoResponse managerInfo;
+    BigDecimal totalPrice;
+    CurrencyType currency;
 }
 
