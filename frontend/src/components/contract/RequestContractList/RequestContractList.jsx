@@ -17,7 +17,9 @@ import {
   StopOutlined,
   InfoCircleOutlined,
   FormOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import styles from './RequestContractList.module.css';
 
@@ -31,6 +33,7 @@ const RequestContractList = ({
   onCancel,
   formatDate,
 }) => {
+  const navigate = useNavigate();
   const [cancelReasonModalVisible, setCancelReasonModalVisible] =
     useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
@@ -126,6 +129,15 @@ const RequestContractList = ({
                 size="small"
                 style={{ width: '100%' }}
               >
+                {/* View Details Button - Always visible */}
+                <Button
+                  icon={<EyeOutlined />}
+                  onClick={() => navigate(`/user/contracts/${contract.contractId}`)}
+                  style={{ marginBottom: canCustomerAction || canSign ? 8 : 0 }}
+                >
+                  View Details
+                </Button>
+
                 {canCustomerAction && (
                   <Space wrap>
                     <Button

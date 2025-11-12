@@ -371,8 +371,11 @@ export default function ContractsList() {
 
         return (
           <Space>
-            <Tooltip title="View">
-              <Button icon={<EyeOutlined />} />
+            <Tooltip title="View Details">
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/user/contracts/${r.contractId}`)}
+              />
             </Tooltip>
             {!isCustomer && (
               <>
@@ -428,9 +431,9 @@ export default function ContractsList() {
                   </Tooltip>
                 )}
                 {canEdit && (
-                  <Tooltip title="Edit">
-                    <Button icon={<EditOutlined />} type="primary" ghost />
-                  </Tooltip>
+                <Tooltip title="Edit">
+                  <Button icon={<EditOutlined />} type="primary" ghost />
+                </Tooltip>
                 )}
                 {canManagerCancel && (
                   <Tooltip
