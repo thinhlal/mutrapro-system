@@ -99,6 +99,12 @@ export const API_ENDPOINTS = {
     MY_CONTRACTS: `${PROJECT_PATH}/contracts/my-contracts`,
     // GET /api/v1/projects/contracts/my-managed-contracts
     MY_MANAGED_CONTRACTS: `${PROJECT_PATH}/contracts/my-managed-contracts`,
+    // POST /api/v1/projects/contracts/{contractId}/approve
+    APPROVE: contractId => `${PROJECT_PATH}/contracts/${contractId}/approve`,
+    // POST /api/v1/projects/contracts/{contractId}/request-change
+    REQUEST_CHANGE: contractId => `${PROJECT_PATH}/contracts/${contractId}/request-change`,
+    // POST /api/v1/projects/contracts/{contractId}/cancel
+    CANCEL: contractId => `${PROJECT_PATH}/contracts/${contractId}/cancel`,
   },
 
   FOLDERS: {

@@ -134,5 +134,9 @@ public class Contract {
 
     @Column(name = "email_snapshot", nullable = false, length = 255)
     String emailSnapshot;
+
+    // Customer action reasons
+    @Column(name = "cancellation_reason", columnDefinition = "text")
+    String cancellationReason;  // Lý do hủy/từ chối từ khách hàng
 }
 

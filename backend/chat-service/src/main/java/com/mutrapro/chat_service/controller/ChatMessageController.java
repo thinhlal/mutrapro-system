@@ -1,10 +1,12 @@
 package com.mutrapro.chat_service.controller;
 
+import com.mutrapro.chat_service.dto.request.SendMessageRequest;
 import com.mutrapro.chat_service.dto.response.ChatMessageResponse;
 import com.mutrapro.chat_service.service.ChatMessageService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -51,6 +53,18 @@ public class ChatMessageController {
         return ApiResponse.<List<ChatMessageResponse>>builder()
                 .message("Recent messages retrieved successfully")
                 .data(responses)
+                .statusCode(200)
+                .build();
+    }
+
+    @PostMapping("/system")
+    @Operation(summary = "Gửi system message vào chat room (dùng cho các service khác, không cần authentication)")
+    public ApiResponse<ChatMessageResponse> sendSystemMessage(@Valid @RequestBody SendMessageRequest request) {
+        log.info("Sending system message: roomId={}, type={}", request.getRoomId(), request.getMessageType());
+        ChatMessageResponse response = chatMessageService.sendSystemMessage(request);
+        return ApiResponse.<ChatMessageResponse>builder()
+                .message("System message sent successfully")
+                .data(response)
                 .statusCode(200)
                 .build();
     }

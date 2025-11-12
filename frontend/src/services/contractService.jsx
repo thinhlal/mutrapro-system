@@ -121,3 +121,61 @@ export const getAllContracts = async () => {
   }
 };
 
+/**
+ * Customer approve contract
+ * POST /contracts/{contractId}/approve
+ * 
+ * @param {string} contractId - ID của contract
+ * @returns {Promise} ApiResponse với contract đã approve
+ */
+export const approveContract = async contractId => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.APPROVE(contractId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi approve contract' };
+  }
+};
+
+/**
+ * Customer request change contract
+ * POST /contracts/{contractId}/request-change
+ * 
+ * @param {string} contractId - ID của contract
+ * @param {string} reason - Lý do yêu cầu chỉnh sửa
+ * @returns {Promise} ApiResponse với contract đã request change
+ */
+export const requestChangeContract = async (contractId, reason) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.REQUEST_CHANGE(contractId),
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi yêu cầu chỉnh sửa contract' };
+  }
+};
+
+/**
+ * Customer cancel contract
+ * POST /contracts/{contractId}/cancel
+ * 
+ * @param {string} contractId - ID của contract
+ * @param {string} reason - Lý do hủy contract
+ * @returns {Promise} ApiResponse với contract đã hủy
+ */
+export const cancelContract = async (contractId, reason) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.CANCEL(contractId),
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi hủy contract' };
+  }
+};
+

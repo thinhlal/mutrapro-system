@@ -1,9 +1,11 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
+import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.service.ContractService;
+import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -110,6 +112,72 @@ public class ContractController {
         ContractResponse contract = contractService.updateContractStatus(contractId, status, expiresInDays);
         return ApiResponse.<ContractResponse>builder()
                 .message("Contract status updated successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/approve")
+    @Operation(summary = "Customer approve contract (chỉ cho phép khi status = SENT)")
+    public ApiResponse<ContractResponse> approveContract(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId) {
+        log.info("Customer approving contract: contractId={}", contractId);
+        ContractResponse contract = contractService.approveContract(contractId);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract approved successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/request-change")
+    @Operation(summary = "Customer request change contract (chỉ cho phép khi status = SENT)")
+    public ApiResponse<ContractResponse> requestChangeContract(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Valid @RequestBody CustomerActionRequest request) {
+        log.info("Customer requesting change for contract: contractId={}, reason={}", 
+            contractId, request.getReason());
+        ContractResponse contract = contractService.requestChangeContract(contractId, request);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract change requested successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/cancel")
+    @Operation(summary = "Customer cancel contract (chỉ cho phép khi status = SENT, không cho phép khi đã APPROVED hoặc đã có thanh toán)")
+    public ApiResponse<ContractResponse> cancelContract(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Valid @RequestBody CustomerActionRequest request) {
+        log.info("Customer canceling contract: contractId={}, reason={}", 
+            contractId, request.getReason());
+        ContractResponse contract = contractService.cancelContract(contractId, request);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract canceled successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/cancel-by-manager")
+    @Operation(summary = "Manager cancel contract (cho phép khi DRAFT hoặc SENT, không cho phép khi đã APPROVED/SIGNED. Khi SENT sẽ thông báo cho customer)")
+    public ApiResponse<ContractResponse> cancelContractByManager(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Valid @RequestBody CustomerActionRequest request) {
+        log.info("Manager canceling contract: contractId={}, reason={}", 
+            contractId, request.getReason());
+        ContractResponse contract = contractService.cancelContractByManager(contractId, request);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract canceled by manager successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

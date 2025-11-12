@@ -41,3 +41,13 @@ app:
   event-topics:
     mappings:
       file.uploaded: ${KAFKA_TOPIC_FILE_UPLOADED:file-uploaded}
+
+# Request Service Configuration
+request:
+  service:
+    base-url: ${REQUEST_SERVICE_URL:http://request-service:8084}
+
+# Chat Service Configuration
+chat:
+  service:
+    base-url: ${CHAT_SERVICE_URL:http://chat-service:8088}

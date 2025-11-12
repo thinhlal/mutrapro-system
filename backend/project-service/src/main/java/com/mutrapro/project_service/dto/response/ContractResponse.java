@@ -86,5 +86,8 @@ public class ContractResponse {
     String phoneSnapshot;
     
     String emailSnapshot;
+    
+    // Customer action reason
+    String cancellationReason;
 }
 

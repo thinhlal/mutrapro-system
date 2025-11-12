@@ -48,6 +48,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     CONTRACT_ALREADY_SIGNED("CONTRACT_7007", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7007",
         "Cannot modify a signed contract",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_CONTRACT_STATUS("CONTRACT_7008", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7008",
+        "Invalid contract status for the requested action",
         Retryable.NON_TRANSIENT);
 
     private final String code;
