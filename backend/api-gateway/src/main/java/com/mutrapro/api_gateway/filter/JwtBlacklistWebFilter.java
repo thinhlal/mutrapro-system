@@ -47,7 +47,7 @@ public class JwtBlacklistWebFilter implements WebFilter, Ordered {
 
                     String key = "blacklist:jti:" + jti;
                     return redis.hasKey(key)
-                            .timeout(Duration.ofMillis(150))
+                            .timeout(Duration.ofMillis(550))
                             .flatMap(blacklisted -> {
                                 if (Boolean.TRUE.equals(blacklisted)) {
                                     return Mono.error(
