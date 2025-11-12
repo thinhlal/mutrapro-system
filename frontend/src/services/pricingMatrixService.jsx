@@ -5,7 +5,7 @@ import axiosInstance from '../utils/axiosInstance';
 /**
  * Lấy danh sách pricing matrix
  * GET /pricing-matrix
- * 
+ *
  * @returns {Promise} ApiResponse với danh sách pricing
  * Response format:
  * {
@@ -45,14 +45,14 @@ export const getPricingMatrix = async () => {
  */
 export const formatPrice = (price, currency = 'VND') => {
   if (!price) return '';
-  
+
   if (currency === 'VND') {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(price);
   }
-  
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
@@ -67,13 +67,15 @@ export const formatPrice = (price, currency = 'VND') => {
  */
 export const getPricingByServiceType = (pricingData, serviceType) => {
   if (!pricingData || !Array.isArray(pricingData)) return null;
-  return pricingData.find(item => item.serviceType === serviceType && item.active);
+  return pricingData.find(
+    item => item.serviceType === serviceType && item.active
+  );
 };
 
 /**
  * Lấy chi tiết pricing của một serviceType cụ thể
  * GET /pricing-matrix/{serviceType}
- * 
+ *
  * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording, recording
  * @returns {Promise} ApiResponse với pricing detail
  * Response format:
@@ -95,14 +97,18 @@ export const getPricingByServiceType = (pricingData, serviceType) => {
  *   timestamp: string
  * }
  */
-export const getPricingDetail = async (serviceType) => {
+export const getPricingDetail = async serviceType => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.PRICING.GET_BY_SERVICE_TYPE(serviceType)
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: `Lỗi khi lấy thông tin giá của ${serviceType}` };
+    throw (
+      error.response?.data || {
+        message: `Lỗi khi lấy thông tin giá của ${serviceType}`,
+      }
+    );
   }
 };
 
@@ -119,7 +125,10 @@ export const calculatePrice = async (serviceType, durationMinutes) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: `Lỗi khi tính toán giá ${serviceType}` };
+    throw (
+      error.response?.data || {
+        message: `Lỗi khi tính toán giá ${serviceType}`,
+      }
+    );
   }
 };
-

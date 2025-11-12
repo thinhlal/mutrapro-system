@@ -31,12 +31,12 @@ class WebSocketService {
             const wsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT.WS_ENDPOINT}`;
             return new SockJS(wsUrl);
           },
-          
+
           connectHeaders: {
             Authorization: `Bearer ${token}`,
           },
 
-          debug: (str) => {
+          debug: str => {
             if (import.meta.env.DEV) {
               console.log('[STOMP Debug]:', str);
             }
@@ -53,13 +53,13 @@ class WebSocketService {
             resolve();
           },
 
-          onStompError: (frame) => {
+          onStompError: frame => {
             console.error('❌ STOMP Error:', frame.headers['message']);
             console.error('Error details:', frame.body);
             reject(new Error(frame.headers['message']));
           },
 
-          onWebSocketError: (error) => {
+          onWebSocketError: error => {
             console.error('❌ WebSocket Error:', error);
             reject(error);
           },
@@ -86,10 +86,12 @@ class WebSocketService {
   handleReconnect(token) {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`🔄 Reconnecting... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
+      console.log(
+        `🔄 Reconnecting... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+      );
+
       setTimeout(() => {
-        this.connect(token).catch((error) => {
+        this.connect(token).catch(error => {
           console.error('❌ Reconnection failed:', error);
         });
       }, this.reconnectDelay * this.reconnectAttempts);
@@ -110,14 +112,14 @@ class WebSocketService {
     }
 
     const destination = `/topic/chat/${roomId}`;
-    
+
     // Unsubscribe if already subscribed
     if (this.subscriptions.has(roomId)) {
       this.unsubscribeFromRoom(roomId);
     }
 
     try {
-      const subscription = this.client.subscribe(destination, (message) => {
+      const subscription = this.client.subscribe(destination, message => {
         try {
           const data = JSON.parse(message.body);
           callback(data);
@@ -129,7 +131,7 @@ class WebSocketService {
       this.subscriptions.set(roomId, subscription);
       this.messageCallbacks.set(roomId, callback);
       console.log(`✅ Subscribed to room: ${roomId}`);
-      
+
       return subscription;
     } catch (error) {
       console.error(`❌ Failed to subscribe to room ${roomId}:`, error);
@@ -204,4 +206,3 @@ class WebSocketService {
 // Export singleton instance
 const websocketService = new WebSocketService();
 export default websocketService;
-

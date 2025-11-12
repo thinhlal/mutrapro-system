@@ -19,7 +19,11 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function ArrangementUploader({ variant = 'pure', serviceType, formData }) {
+export default function ArrangementUploader({
+  variant = 'pure',
+  serviceType,
+  formData,
+}) {
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
   const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
@@ -29,24 +33,25 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
   const navigate = useNavigate();
 
   const beforeUpload = useCallback(() => false, []);
-  
+
   const onChange = async ({ fileList }) => {
     const f = fileList?.[0]?.originFileObj || null;
     if (!f) {
       clearFile();
       return;
     }
-    
+
     setFile(f);
-    
+
     // Check if it's audio/video file
-    const isAudio = f.type?.startsWith('audio/') || f.type?.startsWith('video/');
+    const isAudio =
+      f.type?.startsWith('audio/') || f.type?.startsWith('video/');
     setIsAudioFile(isAudio);
-    
+
     if (isAudio) {
       const url = URL.createObjectURL(f);
       setBlobUrl(url);
-      
+
       try {
         const sec = await getMediaDurationSec(f);
         const minutes = parseFloat((sec / 60).toFixed(2));
@@ -62,7 +67,7 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
       setAdjustedDurationMinutes(3);
     }
   };
-  
+
   const clearFile = () => {
     if (blobUrl) {
       try {
@@ -76,7 +81,7 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
     setIsAudioFile(false);
   };
 
-  const handleDurationChange = (value) => {
+  const handleDurationChange = value => {
     if (value && value > 0) {
       setAdjustedDurationMinutes(parseFloat(value));
     }
@@ -106,7 +111,11 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
       return;
     }
 
-    const actualServiceType = serviceType || (variant === 'with_recording' ? 'arrangement_with_recording' : 'arrangement');
+    const actualServiceType =
+      serviceType ||
+      (variant === 'with_recording'
+        ? 'arrangement_with_recording'
+        : 'arrangement');
 
     // Navigate to quote page with state
     navigate('/services/quotes/arrangement', {
@@ -124,7 +133,8 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
     });
   };
 
-  const toMMSS = (s = 0) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const toMMSS = (s = 0) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   return (
     <section
@@ -207,23 +217,30 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
               <div style={{ padding: '16px 0', marginTop: 16 }}>
                 <div style={{ marginBottom: 12 }}>
                   <ClockCircleOutlined style={{ marginRight: 8 }} />
-                  <span style={{ fontWeight: 600 }}>Adjust Duration (Minutes):</span>
+                  <span style={{ fontWeight: 600 }}>
+                    Adjust Duration (Minutes):
+                  </span>
                   {isAudioFile && detectedDurationMinutes > 0 && (
                     <Tag color="cyan" style={{ marginLeft: 8 }}>
-                      Detected: {detectedDurationMinutes} min (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                      Detected: {detectedDurationMinutes} min (~{' '}
+                      {toMMSS(Math.round(detectedDurationMinutes * 60))})
                     </Tag>
                   )}
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Button
                     icon={<MinusOutlined />}
-                    onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                    onClick={() =>
+                      handleDurationChange(
+                        Math.max(0.01, adjustedDurationMinutes - 0.01)
+                      )
+                    }
                     disabled={adjustedDurationMinutes <= 0.01}
                   >
                     -0.01
                   </Button>
-                  
+
                   <InputNumber
                     min={0.01}
                     max={999}
@@ -234,30 +251,39 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
                     style={{ width: 120 }}
                     addonAfter="min"
                   />
-                  
+
                   <Button
                     icon={<PlusOutlined />}
-                    onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
+                    onClick={() =>
+                      handleDurationChange(adjustedDurationMinutes + 0.01)
+                    }
                   >
                     +0.01
                   </Button>
-                  
+
                   {isAudioFile && detectedDurationMinutes > 0 && (
                     <Button
                       type="link"
-                      onClick={() => setAdjustedDurationMinutes(detectedDurationMinutes)}
+                      onClick={() =>
+                        setAdjustedDurationMinutes(detectedDurationMinutes)
+                      }
                     >
                       Reset to {detectedDurationMinutes} min
                     </Button>
                   )}
                 </div>
-                
+
                 <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-                  Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
+                  Hiện tại: {adjustedDurationMinutes} phút (~{' '}
+                  {toMMSS(Math.round(adjustedDurationMinutes * 60))})
                 </div>
-                
+
                 <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                  💡 {isAudioFile ? 'Adjust the detected duration' : 'Estimate the duration'} for billing purposes
+                  💡{' '}
+                  {isAudioFile
+                    ? 'Adjust the detected duration'
+                    : 'Estimate the duration'}{' '}
+                  for billing purposes
                 </div>
               </div>
             </Space>

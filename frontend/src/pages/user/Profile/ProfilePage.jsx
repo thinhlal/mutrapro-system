@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Avatar,
-  Button,
-  Input,
-  message,
-  Spin,
-} from 'antd';
+import { Avatar, Button, Input, message, Spin } from 'antd';
 import {
   EditOutlined,
   UserOutlined,
@@ -189,7 +183,7 @@ const ProfileContent = () => {
   return (
     <div className={styles.profileContentWrapper}>
       <h1 className={styles.pageTitle}>Profile</h1>
-      
+
       <div className={styles.infoGrid}>
         <div className={styles.leftColumn}>
           <div className={styles.avatarContainer}>
@@ -448,12 +442,9 @@ const ProfileContent = () => {
             </div>
           </div>
         ) : (
-          <div
-            className={`${styles.valueContainer} ${styles.aboutMeInput}`}
-          >
+          <div className={`${styles.valueContainer} ${styles.aboutMeInput}`}>
             <span>
-              {userProfile?.about ||
-                'Add here some information about yourself'}
+              {userProfile?.about || 'Add here some information about yourself'}
             </span>
             <EditOutlined
               className={styles.editIcon}

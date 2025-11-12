@@ -41,7 +41,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
       clearFile();
       return;
     }
-    
+
     setFile(f);
     const url = URL.createObjectURL(f);
     setBlobUrl(url);
@@ -70,7 +70,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
     setAdjustedDurationMinutes(0);
   };
 
-  const handleDurationChange = (value) => {
+  const handleDurationChange = value => {
     if (value != null && value > 0) {
       // Cho phép số thập phân với 2 chữ số sau dấu phẩy
       const roundedValue = parseFloat(Number(value).toFixed(2));
@@ -95,17 +95,19 @@ export default function TranscriptionUploader({ serviceType, formData }) {
 
     // Validate instruments - transcription chỉ chọn được 1 nhạc cụ
     const instrumentIds = formData.instrumentIds;
-    const isInstrumentIdsValid = 
-      instrumentIds !== undefined && 
-      instrumentIds !== null && 
-      Array.isArray(instrumentIds) && 
+    const isInstrumentIdsValid =
+      instrumentIds !== undefined &&
+      instrumentIds !== null &&
+      Array.isArray(instrumentIds) &&
       instrumentIds.length === 1;
-    
+
     if (!isInstrumentIdsValid) {
       setErrorMessage('Vui lòng chọn một nhạc cụ.');
       // Scroll to error message
       setTimeout(() => {
-        const errorElement = document.getElementById('transcription-error-alert');
+        const errorElement = document.getElementById(
+          'transcription-error-alert'
+        );
         if (errorElement) {
           errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -204,7 +206,8 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Detected Duration: {detectedDurationMinutes} minutes (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                    • Detected Duration: {detectedDurationMinutes} minutes (~{' '}
+                    {toMMSS(Math.round(detectedDurationMinutes * 60))})
                   </span>
                 </Space>
                 <Button
@@ -237,18 +240,26 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                 <div style={{ padding: '16px 0', marginTop: 16 }}>
                   <div style={{ marginBottom: 12 }}>
                     <ClockCircleOutlined style={{ marginRight: 8 }} />
-                    <span style={{ fontWeight: 600 }}>Adjust Duration (Minutes):</span>
+                    <span style={{ fontWeight: 600 }}>
+                      Adjust Duration (Minutes):
+                    </span>
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                  >
                     <Button
                       icon={<MinusOutlined />}
-                      onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                      onClick={() =>
+                        handleDurationChange(
+                          Math.max(0.01, adjustedDurationMinutes - 0.01)
+                        )
+                      }
                       disabled={adjustedDurationMinutes <= 0.01}
                     >
                       -0.01
                     </Button>
-                    
+
                     <InputNumber
                       min={0.01}
                       max={999}
@@ -259,27 +270,35 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                       style={{ width: 120 }}
                       addonAfter="min"
                     />
-                    
+
                     <Button
                       icon={<PlusOutlined />}
-                      onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
+                      onClick={() =>
+                        handleDurationChange(adjustedDurationMinutes + 0.01)
+                      }
                     >
                       +0.01
                     </Button>
-                    
+
                     <Button
                       type="link"
-                      onClick={() => setAdjustedDurationMinutes(detectedDurationMinutes)}
+                      onClick={() =>
+                        setAdjustedDurationMinutes(detectedDurationMinutes)
+                      }
                     >
                       Reset to {detectedDurationMinutes} min
                     </Button>
                   </div>
-                  
+
                   <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                    💡 Điều chỉnh thời lượng để tính giá (phát hiện: {detectedDurationMinutes} phút ~ {toMMSS(Math.round(detectedDurationMinutes * 60))}). Cho phép số thập phân 2 chữ số.
+                    💡 Điều chỉnh thời lượng để tính giá (phát hiện:{' '}
+                    {detectedDurationMinutes} phút ~{' '}
+                    {toMMSS(Math.round(detectedDurationMinutes * 60))}). Cho
+                    phép số thập phân 2 chữ số.
                   </div>
                   <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
-                    Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
+                    Hiện tại: {adjustedDurationMinutes} phút (~{' '}
+                    {toMMSS(Math.round(adjustedDurationMinutes * 60))})
                   </div>
                 </div>
               )}

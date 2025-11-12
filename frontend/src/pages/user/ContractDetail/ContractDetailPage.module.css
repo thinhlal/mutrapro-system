@@ -1,0 +1,399 @@
+.page {
+  display: grid;
+  grid-template-columns: minmax(300px, 400px) 1fr;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow-x: hidden; /* Ngăn tràn ngang toàn page */
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 48px); /* ✨ Min height để 2 cột ít nhất bằng viewport */
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 48px); /* ✨ Min height để match với info section */
+  position: sticky;
+  top: 16px;
+  align-self: start; /* ✨ Sticky position */
+}
+
+.infoCard {
+  flex: 1; /* ✨ Chiếm toàn bộ không gian */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
+}
+
+/* Đảm bảo Card body cũng flex */
+.infoCard :global(.ant-card-body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px; /* ✨ Compact padding */
+}
+
+/* Fix Descriptions overflow */
+.infoCard :global(.ant-descriptions-item-label),
+.infoCard :global(.ant-descriptions-item-content) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.infoCard :global(.ant-descriptions-item-content) {
+  overflow: hidden;
+}
+
+/* Fix table trong Descriptions để không tràn */
+.infoCard :global(.ant-descriptions-bordered .ant-descriptions-item-label),
+.infoCard :global(.ant-descriptions-bordered .ant-descriptions-item-content) {
+  padding: 8px 12px;
+  max-width: 0; /* Force table cell to wrap */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all; /* Break long IDs */
+}
+
+/* Fix Tag overflow */
+.infoCard :global(.ant-tag) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fix Typography Text copyable button */
+.infoCard :global(.ant-typography-copy) {
+  flex-shrink: 0;
+}
+
+/* Fix Alert và Button không tràn + Compact Alert */
+.infoCard :global(.ant-alert) {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 8px 12px; /* ✨ Giảm padding từ default 16px */
+  font-size: 13px; /* ✨ Font nhỏ hơn */
+}
+
+.infoCard :global(.ant-alert-message) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  font-size: 13px; /* ✨ Message nhỏ hơn */
+  margin-bottom: 2px; /* ✨ Giảm khoảng cách */
+  font-weight: 600;
+}
+
+.infoCard :global(.ant-alert-description) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  font-size: 12px; /* ✨ Description nhỏ hơn */
+  line-height: 1.4;
+}
+
+.infoCard :global(.ant-alert-icon) {
+  font-size: 16px; /* ✨ Icon nhỏ hơn */
+}
+
+/* Alert action button nhỏ hơn */
+.infoCard :global(.ant-alert-action) {
+  margin-left: 8px;
+}
+
+.infoCard :global(.ant-alert-action .ant-btn-sm) {
+  font-size: 12px;
+  padding: 0 8px;
+  height: 24px;
+}
+
+.infoCard :global(.ant-btn) {
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+/* Đảm bảo Space component không tràn */
+.infoCard :global(.ant-space) {
+  max-width: 100%;
+}
+
+.previewCard {
+  flex: 1; /* ✨ Chiếm toàn bộ không gian */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ✨ Chặn overflow để content scroll bên trong */
+}
+
+/* Đảm bảo Card body cũng flex cho preview */
+.previewCard :global(.ant-card-body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0; /* ✨ No padding, toolbar và preview tự quản lý */
+}
+
+.previewToolbar {
+  flex-shrink: 0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+  padding: 12px;
+  margin-bottom: 0;
+}
+
+.preview {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.tagline {
+  font-size: 13px;
+  color: #666;
+}
+
+.meta {
+  font-size: 12px;
+  color: #666;
+  text-align: right;
+}
+
+.doc {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  color: #111;
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  padding: 32px;
+  line-height: 1.7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.docTitle {
+  font-size: 24px;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+  color: #1890ff;
+}
+
+.doc h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.doc p {
+  margin-bottom: 12px;
+  color: #555;
+}
+
+.signRow {
+  display: flex;
+  gap: 60px;
+  margin-top: 48px;
+  justify-content: space-around;
+}
+
+.sigLabel {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.sigLine {
+  height: 2px;
+  background: #333;
+  width: 280px;
+  margin-bottom: 8px;
+}
+
+.sigHint {
+  font-size: 12px;
+  color: #777;
+  font-style: italic;
+}
+
+/* Company Seal */
+.seal {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 130px;
+  height: 130px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  transform: rotate(-8deg);
+  user-select: none;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.seal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 3px solid currentColor;
+  box-shadow: inset 0 0 0 7px rgba(255, 255, 255, 0.7);
+}
+
+.sealInner {
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(0.5px);
+  border: 2px dashed currentColor;
+}
+
+.sealText {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-align: center;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.sealDate {
+  font-size: 10px;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+
+.seal_red {
+  color: #c62828;
+}
+
+.seal_blue {
+  color: #1565c0;
+}
+
+/* Watermark */
+.watermark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  font-size: 96px;
+  font-weight: 900;
+  color: #c62828;
+  opacity: 0.07;
+  transform: rotate(-25deg);
+  text-transform: uppercase;
+}
+
+@media print {
+  .watermark {
+    opacity: 0.05;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .infoSection,
+  .previewSection {
+    min-height: auto; /* ✨ Mobile để height auto */
+  }
+
+  .previewSection {
+    position: static;
+    top: auto;
+    align-self: auto;
+  }
+
+  .infoCard,
+  .previewCard {
+    min-height: auto; /* ✨ Mobile không cần min-height */
+  }
+}
+
+/* Print */
+@media print {
+  .page {
+    display: block;
+    background: #fff;
+    padding: 0;
+  }
+
+  .infoSection {
+    display: none;
+  }
+
+  .previewCard {
+    box-shadow: none;
+    border-radius: 0;
+    max-height: none;
+  }
+
+  .previewToolbar {
+    display: none;
+  }
+
+  .preview {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .doc {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 0;
+    padding: 20px;
+  }
+
+  .watermark {
+    opacity: 0.05;
+  }
+}
+

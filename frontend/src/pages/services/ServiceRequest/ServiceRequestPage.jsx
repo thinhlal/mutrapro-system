@@ -53,7 +53,7 @@ export default function ServiceRequestPage() {
   }, [selectedType]);
 
   // Nhận form data từ RequestServiceForm (không submit API)
-  const handleFormComplete = useCallback((data) => {
+  const handleFormComplete = useCallback(data => {
     setFormData(data);
     // Lưu vào sessionStorage
     if (data) {
@@ -125,14 +125,14 @@ export default function ServiceRequestPage() {
 
         <div ref={uploadRef}>
           {selectedType === 'transcription' && (
-            <TranscriptionUploader 
-              serviceType={selectedType} 
+            <TranscriptionUploader
+              serviceType={selectedType}
               formData={formData}
             />
           )}
           {selectedType === 'arrangement' && (
-            <ArrangementUploader 
-              variant="pure" 
+            <ArrangementUploader
+              variant="pure"
               serviceType={selectedType}
               formData={formData}
             />
@@ -145,14 +145,11 @@ export default function ServiceRequestPage() {
             />
           )}
           {selectedType === 'recording' && (
-            <RecordingUploader 
-              serviceType={selectedType}
-              formData={formData}
-            />
+            <RecordingUploader serviceType={selectedType} formData={formData} />
           )}
 
           {!selectedType && (
-            <TranscriptionUploader 
+            <TranscriptionUploader
               serviceType={selectedType}
               formData={formData}
             />

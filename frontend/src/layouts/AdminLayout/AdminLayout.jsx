@@ -123,7 +123,10 @@ const AdminLayout = () => {
             onClick={() => setCollapsed(!collapsed)}
             className={styles.triggerButton}
           />
-          <div className={styles.headerRight} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div
+            className={styles.headerRight}
+            style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
+          >
             <NotificationBell />
             <Dropdown overlay={userMenu} trigger={['click']}>
               <a onClick={e => e.preventDefault()}>

@@ -64,11 +64,15 @@ export default function ReviewRequestModal({
         {serviceType === 'transcription' && selectedInstruments.length > 0 && (
           <>
             <Descriptions.Item label="Instrument">
-              {getInstrumentData(selectedInstruments[0])?.instrumentName || 'N/A'}
+              {getInstrumentData(selectedInstruments[0])?.instrumentName ||
+                'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Instrument Price">
               <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
-                ${Number(getInstrumentData(selectedInstruments[0])?.basePrice || 0).toFixed(2)}
+                $
+                {Number(
+                  getInstrumentData(selectedInstruments[0])?.basePrice || 0
+                ).toFixed(2)}
               </Tag>
             </Descriptions.Item>
           </>
@@ -122,4 +126,3 @@ ReviewRequestModal.propTypes = {
   instrumentsData: PropTypes.array,
   totalPrice: PropTypes.number,
 };
-

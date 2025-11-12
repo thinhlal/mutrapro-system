@@ -239,9 +239,17 @@ export const getDefaultSpecialClauses = contractType => {
 export const replaceTemplateVariables = (text, formValues) => {
   if (!text) return text;
   return text
-    .replace(/\{free_revisions_included\}/g, formValues?.free_revisions_included || 1)
-    .replace(/\{additional_revision_fee_vnd\}/g, formValues?.additional_revision_fee_vnd || 0)
+    .replace(
+      /\{free_revisions_included\}/g,
+      formValues?.free_revisions_included || 1
+    )
+    .replace(
+      /\{additional_revision_fee_vnd\}/g,
+      formValues?.additional_revision_fee_vnd || 0
+    )
     .replace(/\{deposit_percent\}/g, formValues?.deposit_percent || 40)
-    .replace(/\{final_amount\}/g, formValues?.final_amount?.toLocaleString() || '0');
+    .replace(
+      /\{final_amount\}/g,
+      formValues?.final_amount?.toLocaleString() || '0'
+    );
 };
-

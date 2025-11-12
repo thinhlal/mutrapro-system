@@ -23,7 +23,10 @@ import {
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
-import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../../../constants/index';
+import {
+  FEMALE_SINGERS_DATA,
+  MALE_SINGERS_DATA,
+} from '../../../../constants/index';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import styles from './TranscriptionQuotePage.module.css';
 

@@ -1,0 +1,16 @@
+.contractListCard {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contractCard {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.contractCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.contractCard:last-child {
+  margin-bottom: 0 !important;
+}

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Card, 
-  Descriptions, 
-  Tag, 
-  Button, 
-  Spin, 
-  Empty, 
+import {
+  Card,
+  Descriptions,
+  Tag,
+  Button,
+  Spin,
+  Empty,
   message,
   Space,
-   Divider,
+  Divider,
   Modal,
-  Input
+  Input,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -21,20 +21,19 @@ import {
   SyncOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
-  CheckOutlined,
-  EditOutlined,
-  StopOutlined,
 } from '@ant-design/icons';
 import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
-import { 
-  getContractsByRequestId, 
-  approveContract, 
-  requestChangeContract, 
-  cancelContract 
+import {
+  getContractsByRequestId,
+  approveContract,
+  signContract,
+  requestChangeContract,
+  cancelContract,
 } from '../../../services/contractService';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
+import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
 import styles from './RequestDetailPage.module.css';
 
 const { TextArea } = Input;
@@ -47,11 +46,13 @@ const RequestDetailPage = () => {
   const [contracts, setContracts] = useState([]);
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [requestChangeModalVisible, setRequestChangeModalVisible] = useState(false);
+  const [requestChangeModalVisible, setRequestChangeModalVisible] =
+    useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [changeReason, setChangeReason] = useState('');
-  const { instruments: instrumentsData, fetchInstruments } = useInstrumentStore();
+  const { instruments: instrumentsData, fetchInstruments } =
+    useInstrumentStore();
 
   useEffect(() => {
     fetchInstruments();
@@ -62,7 +63,7 @@ const RequestDetailPage = () => {
       try {
         setLoading(true);
         const response = await getServiceRequestById(requestId);
-        
+
         if (response.status === 'success' && response.data) {
           setRequest(response.data);
           console.log('Request data:', response.data);
@@ -104,11 +105,12 @@ const RequestDetailPage = () => {
     loadContracts();
   }, [requestId]);
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = status => {
     const hasManager = !!request?.managerUserId;
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
+<<<<<<< HEAD
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
@@ -117,10 +119,24 @@ const RequestDetailPage = () => {
         icon: <CheckCircleOutlined />,
         text: 'Approved - pending deployment',
       },
+=======
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
+        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
+      },
+>>>>>>> main
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
+      },
+      contract_approved: {
+        color: 'cyan',
+        icon: <CheckCircleOutlined />,
+        text: 'Đã duyệt hợp đồng - Chờ ký',
       },
       contract_signed: {
         color: 'geekblue',
@@ -151,7 +167,7 @@ const RequestDetailPage = () => {
     return configs[status] || { color: 'default', icon: null, text: status };
   };
 
-  const getRequestTypeText = (type) => {
+  const getRequestTypeText = type => {
     const types = {
       transcription: 'Transcription',
       arrangement: 'Arrangement',
@@ -161,7 +177,7 @@ const RequestDetailPage = () => {
     return types[type] || type;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', {
@@ -189,6 +205,7 @@ const RequestDetailPage = () => {
     return 'Not assigned • Pending';
   };
 
+<<<<<<< HEAD
   const getContractStatusColor = (status) => {
     const statusLower = status?.toLowerCase() || '';
     const colorMap = {
@@ -222,6 +239,9 @@ const RequestDetailPage = () => {
   };
 
   const handleApproveContract = async (contractId) => {
+=======
+  const handleApproveContract = async contractId => {
+>>>>>>> main
     try {
       setActionLoading(true);
       await approveContract(contractId);
@@ -233,6 +253,25 @@ const RequestDetailPage = () => {
       }
     } catch (error) {
       message.error(error.message || 'Lỗi khi duyệt contract');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSignContract = async contractId => {
+    try {
+      setActionLoading(true);
+      await signContract(contractId);
+      message.success(
+        'Đã ký contract thành công! Có thể bắt đầu thực hiện công việc.'
+      );
+      // Reload contracts
+      const response = await getContractsByRequestId(requestId);
+      if (response.status === 'success' && response.data) {
+        setContracts(response.data || []);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi ký contract');
     } finally {
       setActionLoading(false);
     }
@@ -262,7 +301,7 @@ const RequestDetailPage = () => {
     }
   };
 
-  const handleCancelContract = async (reason) => {
+  const handleCancelContract = async reason => {
     if (!selectedContract) return;
     try {
       setActionLoading(true);
@@ -280,6 +319,16 @@ const RequestDetailPage = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleOpenRequestChangeModal = contract => {
+    setSelectedContract(contract);
+    setRequestChangeModalVisible(true);
+  };
+
+  const handleOpenCancelModal = contract => {
+    setSelectedContract(contract);
+    setCancelModalVisible(true);
   };
 
   if (loading) {
@@ -324,8 +373,8 @@ const RequestDetailPage = () => {
               <Tag color="blue" className={styles.typeTag}>
                 {getRequestTypeText(request.requestType)}
               </Tag>
-              <Tag 
-                color={statusConfig.color} 
+              <Tag
+                color={statusConfig.color}
                 icon={statusConfig.icon}
                 className={styles.statusTag}
               >
@@ -369,12 +418,14 @@ const RequestDetailPage = () => {
               </Descriptions.Item>
             )}
 
-            {request.tempoPercentage && request.requestType === 'transcription' && (
-              <Descriptions.Item label="Tempo">
-                <Tag>{request.tempoPercentage}%</Tag>
-              </Descriptions.Item>
-            )}
+            {request.tempoPercentage &&
+              request.requestType === 'transcription' && (
+                <Descriptions.Item label="Tempo">
+                  <Tag>{request.tempoPercentage}%</Tag>
+                </Descriptions.Item>
+              )}
 
+<<<<<<< HEAD
             {request.hasVocalist !== undefined && request.requestType !== 'transcription' && (
               <Descriptions.Item label="Vocalist">
                 {request.hasVocalist ? (
@@ -384,6 +435,18 @@ const RequestDetailPage = () => {
                 )}
               </Descriptions.Item>
             )}
+=======
+            {request.hasVocalist !== undefined &&
+              request.requestType !== 'transcription' && (
+                <Descriptions.Item label="Ca sĩ">
+                  {request.hasVocalist ? (
+                    <Tag color="green">Có</Tag>
+                  ) : (
+                    <Tag color="default">Không</Tag>
+                  )}
+                </Descriptions.Item>
+              )}
+>>>>>>> main
 
             {request.externalGuestCount > 0 && (
               <Descriptions.Item label="Guests">
@@ -394,8 +457,10 @@ const RequestDetailPage = () => {
             {request.instrumentIds && request.instrumentIds.length > 0 && (
               <Descriptions.Item label="Instruments">
                 <Space wrap>
-                  {request.instrumentIds.map((id) => {
-                    const inst = instrumentsData.find(i => i.instrumentId === id);
+                  {request.instrumentIds.map(id => {
+                    const inst = instrumentsData.find(
+                      i => i.instrumentId === id
+                    );
                     return inst ? (
                       <Tag key={id} color="purple">
                         {inst.instrumentName}
@@ -413,6 +478,7 @@ const RequestDetailPage = () => {
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
+<<<<<<< HEAD
                   <div><strong>Name:</strong> {request.managerInfo.fullName || 'N/A'}</div>
                   <div><strong>Email:</strong> {request.managerInfo.email || 'N/A'}</div>
                   {request.managerInfo.phone && (
@@ -420,6 +486,24 @@ const RequestDetailPage = () => {
                   )}
                   {request.managerInfo.role && (
                     <div><strong>Role:</strong> {request.managerInfo.role}</div>
+=======
+                  <div>
+                    <strong>Tên:</strong>{' '}
+                    {request.managerInfo.fullName || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {request.managerInfo.email || 'N/A'}
+                  </div>
+                  {request.managerInfo.phone && (
+                    <div>
+                      <strong>Điện thoại:</strong> {request.managerInfo.phone}
+                    </div>
+                  )}
+                  {request.managerInfo.role && (
+                    <div>
+                      <strong>Vai trò:</strong> {request.managerInfo.role}
+                    </div>
+>>>>>>> main
                   )}
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
@@ -429,7 +513,9 @@ const RequestDetailPage = () => {
             ) : request.managerUserId ? (
               <Descriptions.Item label="Manager">
                 <div>
-                  <div><strong>ID:</strong> {request.managerUserId}</div>
+                  <div>
+                    <strong>ID:</strong> {request.managerUserId}
+                  </div>
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
                   </div>
@@ -446,13 +532,15 @@ const RequestDetailPage = () => {
             {request.files && request.files.length > 0 && (
               <Descriptions.Item label="Uploaded Files">
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  {request.files.map((file) => (
+                  {request.files.map(file => (
                     <div key={file.fileId} style={{ marginBottom: 8 }}>
                       <Tag color="cyan" style={{ marginRight: 8 }}>
                         {file.fileName}
                       </Tag>
                       <span style={{ fontSize: '12px', color: '#888' }}>
-                        {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
+                        {file.fileSize
+                          ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB`
+                          : ''}
                         {file.mimeType && ` • ${file.mimeType}`}
                       </span>
                       {file.filePath && (
@@ -483,6 +571,7 @@ const RequestDetailPage = () => {
         </Card>
 
         {/* Contracts Section */}
+<<<<<<< HEAD
         {loadingContracts ? (
           <Card style={{ marginTop: 16 }}>
             <Spin />
@@ -622,6 +711,18 @@ const RequestDetailPage = () => {
             })}
           </Card>
         ) : null}
+=======
+        <RequestContractList
+          contracts={contracts}
+          loading={loadingContracts}
+          actionLoading={actionLoading}
+          onApprove={handleApproveContract}
+          onSign={handleSignContract}
+          onRequestChange={handleOpenRequestChangeModal}
+          onCancel={handleOpenCancelModal}
+          formatDate={formatDate}
+        />
+>>>>>>> main
 
         {/* Cancel Contract Modal */}
         <CancelContractModal
@@ -632,6 +733,7 @@ const RequestDetailPage = () => {
           }}
           onConfirm={handleCancelContract}
           loading={actionLoading}
+          isManager={false}
         />
 
         {/* Request Change Modal */}
@@ -651,14 +753,19 @@ const RequestDetailPage = () => {
         >
           <div style={{ marginBottom: 16 }}>
             <p>
+<<<<<<< HEAD
               Please enter the reason you want to change contract <strong>{selectedContract?.contractNumber}</strong>
+=======
+              Vui lòng nhập lý do bạn muốn chỉnh sửa contract{' '}
+              <strong>{selectedContract?.contractNumber}</strong>
+>>>>>>> main
             </p>
           </div>
           <TextArea
             rows={4}
             placeholder="Please enter the reason for requesting changes (minimum 10 characters)..."
             value={changeReason}
-            onChange={(e) => setChangeReason(e.target.value)}
+            onChange={e => setChangeReason(e.target.value)}
             showCount
             maxLength={500}
           />
@@ -669,4 +776,3 @@ const RequestDetailPage = () => {
 };
 
 export default RequestDetailPage;
-

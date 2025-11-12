@@ -71,7 +71,7 @@ const apiClient = axios.create({
 });
 
 // Add JWT token to all requests
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -100,12 +100,14 @@ export default apiClient;
 ## 💡 Features
 
 ### ChatRoomsPage
+
 - ✅ Hiển thị danh sách tất cả chat rooms
 - ✅ Search/filter rooms
 - ✅ Badge hiển thị unread messages
 - ✅ Click vào room để mở conversation
 
 ### ChatConversationPage
+
 - ✅ Real-time messaging với WebSocket/STOMP
 - ✅ Load messages history với pagination
 - ✅ Auto-scroll to bottom khi có message mới
@@ -116,6 +118,7 @@ export default apiClient;
 ## 🎨 UI Components
 
 ### ChatRoomCard
+
 - Avatar của room
 - Room name và type
 - Last message preview
@@ -123,6 +126,7 @@ export default apiClient;
 - Participant count
 
 ### MessageBubble
+
 - Hỗ trợ nhiều message types
 - Own vs Other message styling
 - Timestamp
@@ -130,6 +134,7 @@ export default apiClient;
 - Avatar cho sender
 
 ### MessageInput
+
 - Textarea với auto-resize
 - Send button
 - File attachment button (TODO)
@@ -137,6 +142,7 @@ export default apiClient;
 - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
 
 ### ChatHeader
+
 - Back button
 - Room info
 - Connection status
@@ -163,17 +169,20 @@ navigate('/chat/{roomId}');
 ## 🐛 Troubleshooting
 
 ### WebSocket không kết nối được:
+
 1. Kiểm tra Chat Service đang chạy
 2. Kiểm tra CORS configuration trên backend
 3. Kiểm tra JWT token còn valid
 4. Xem console logs để debug
 
 ### Messages không hiển thị:
+
 1. Kiểm tra network tab xem API calls có thành công không
 2. Kiểm tra WebSocket connection status
 3. Xem console logs
 
 ### Styling issues:
+
 1. Đảm bảo CSS modules được enable trong Vite config
 2. Kiểm tra class names trong browser DevTools
 
@@ -196,4 +205,3 @@ navigate('/chat/{roomId}');
 - [SockJS Client](https://github.com/sockjs/sockjs-client)
 - [Ant Design Components](https://ant.design/components/overview/)
 - [React Hooks](https://reactjs.org/docs/hooks-intro.html)
-

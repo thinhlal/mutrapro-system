@@ -28,12 +28,12 @@ class NotificationWebSocketService {
             console.log('🔔 Connecting to notification WebSocket:', wsUrl);
             return new SockJS(wsUrl);
           },
-          
+
           connectHeaders: {
             Authorization: `Bearer ${token}`,
           },
 
-          debug: (str) => {
+          debug: str => {
             if (import.meta.env.DEV) {
               console.log('[Notification STOMP]:', str);
             }
@@ -50,12 +50,15 @@ class NotificationWebSocketService {
             resolve();
           },
 
-          onStompError: (frame) => {
-            console.error('❌ Notification STOMP Error:', frame.headers['message']);
+          onStompError: frame => {
+            console.error(
+              '❌ Notification STOMP Error:',
+              frame.headers['message']
+            );
             reject(new Error(frame.headers['message']));
           },
 
-          onWebSocketError: (error) => {
+          onWebSocketError: error => {
             console.error('❌ Notification WebSocket Error:', error);
             reject(error);
           },
@@ -81,10 +84,12 @@ class NotificationWebSocketService {
   handleReconnect(token) {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`🔄 Reconnecting notifications... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
+      console.log(
+        `🔄 Reconnecting notifications... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+      );
+
       setTimeout(() => {
-        this.connect(token).catch((error) => {
+        this.connect(token).catch(error => {
           console.error('❌ Notification reconnection failed:', error);
         });
       }, this.reconnectDelay * this.reconnectAttempts);
@@ -103,9 +108,9 @@ class NotificationWebSocketService {
     }
 
     const destination = '/user/queue/notifications';
-    
+
     try {
-      const subscription = this.client.subscribe(destination, (message) => {
+      const subscription = this.client.subscribe(destination, message => {
         try {
           const data = JSON.parse(message.body);
           console.log('🔔 New notification received:', data);
@@ -117,7 +122,7 @@ class NotificationWebSocketService {
 
       this.subscriptions.set('notifications', subscription);
       console.log('✅ Subscribed to notifications');
-      
+
       return subscription;
     } catch (error) {
       console.error('❌ Failed to subscribe to notifications:', error);
@@ -142,7 +147,7 @@ class NotificationWebSocketService {
    */
   disconnect() {
     if (this.client) {
-      this.subscriptions.forEach((subscription) => {
+      this.subscriptions.forEach(subscription => {
         subscription.unsubscribe();
       });
       this.subscriptions.clear();
@@ -163,4 +168,3 @@ class NotificationWebSocketService {
 // Export singleton instance
 const notificationWebSocketService = new NotificationWebSocketService();
 export default notificationWebSocketService;
-

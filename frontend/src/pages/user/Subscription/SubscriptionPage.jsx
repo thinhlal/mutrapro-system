@@ -62,7 +62,9 @@ const SubscriptionPage = () => {
           <Card>
             <div className={styles.planHeader}>
               <div>
-                <Title level={4} style={{ marginBottom: 8 }}>Current Plan</Title>
+                <Title level={4} style={{ marginBottom: 8 }}>
+                  Current Plan
+                </Title>
                 <Title level={3} style={{ marginBottom: 0 }}>
                   {currentPlan.name}
                 </Title>
@@ -85,7 +87,7 @@ const SubscriptionPage = () => {
         </Title>
 
         <div className={styles.plansGrid}>
-          {plans.map((plan) => (
+          {plans.map(plan => (
             <Card
               key={plan.id}
               className={`${styles.planCard} ${plan.recommended ? styles.recommended : ''}`}
@@ -127,4 +129,3 @@ const SubscriptionPage = () => {
 };
 
 export default SubscriptionPage;
-

@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Badge, Drawer, List, Button, Empty, Spin, Typography, Divider } from 'antd';
+import {
+  Badge,
+  Drawer,
+  List,
+  Button,
+  Empty,
+  Spin,
+  Typography,
+  Divider,
+} from 'antd';
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -21,7 +30,7 @@ const { Text, Title } = Typography;
 const NotificationBell = () => {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
-  
+
   const {
     unreadCount,
     notifications,
@@ -35,17 +44,17 @@ const NotificationBell = () => {
   /**
    * Handle notification click
    */
-  const handleNotificationClick = async (notification) => {
+  const handleNotificationClick = async notification => {
     // Mark as read if unread
     if (!notification.isRead) {
       await markAsRead(notification.notificationId);
     }
-    
+
     // Navigate to action URL
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
     }
-    
+
     setVisible(false);
   };
 
@@ -67,7 +76,7 @@ const NotificationBell = () => {
   /**
    * Format notification time
    */
-  const formatTime = (timestamp) => {
+  const formatTime = timestamp => {
     try {
       if (!timestamp) return '';
       return dayjs(timestamp).fromNow();
@@ -132,7 +141,7 @@ const NotificationBell = () => {
             <>
               <List
                 dataSource={notifications}
-                renderItem={(notification) => (
+                renderItem={notification => (
                   <List.Item
                     key={notification.notificationId}
                     className={`${styles.notificationItem} ${
@@ -159,12 +168,12 @@ const NotificationBell = () => {
                   </List.Item>
                 )}
               />
-              
+
               <Divider style={{ margin: '12px 0' }} />
-              
+
               <div className={styles.footer}>
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   block
                   onClick={() => {
                     navigate('/notifications');
@@ -184,4 +193,3 @@ const NotificationBell = () => {
 };
 
 export default NotificationBell;
-

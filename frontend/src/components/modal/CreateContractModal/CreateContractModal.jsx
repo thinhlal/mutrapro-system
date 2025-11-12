@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  DatePicker,
+  Switch,
+  message,
+} from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { createContractFromRequest } from '../../../services/contractService';
@@ -27,7 +36,8 @@ const mapServiceTypeToContractType = serviceType => {
   const type = serviceType.toLowerCase();
   if (type === 'transcription') return 'transcription';
   if (type === 'arrangement') return 'arrangement';
-  if (type === 'arrangement_with_recording') return 'arrangement_with_recording';
+  if (type === 'arrangement_with_recording')
+    return 'arrangement_with_recording';
   if (type === 'recording') return 'recording';
   return 'transcription';
 };
@@ -44,17 +54,24 @@ export default function CreateContractModal({
   // Auto-fill form khi serviceRequest thay đổi
   useEffect(() => {
     if (visible && serviceRequest) {
-      const contractType = mapServiceTypeToContractType(serviceRequest.requestType);
+      const contractType = mapServiceTypeToContractType(
+        serviceRequest.requestType
+      );
       const totalPrice = serviceRequest.totalPrice || 0;
       const currency = serviceRequest.currency || 'VND';
       const depositPercent = 40; // Default 40%
-      
+
       // Calculate default SLA days based on contract type
-      const defaultSlaDays = contractType === 'transcription' ? 7 
-        : contractType === 'arrangement' ? 14 
-        : contractType === 'arrangement_with_recording' ? 21
-        : contractType === 'recording' ? 7 
-        : 21; // bundle
+      const defaultSlaDays =
+        contractType === 'transcription'
+          ? 7
+          : contractType === 'arrangement'
+            ? 14
+            : contractType === 'arrangement_with_recording'
+              ? 21
+              : contractType === 'recording'
+                ? 7
+                : 21; // bundle
 
       form.setFieldsValue({
         contractType: contractType,
@@ -77,7 +94,7 @@ export default function CreateContractModal({
 
     try {
       setLoading(true);
-      
+
       // Format data for API
       const contractData = {
         contractType: values.contractType,
@@ -86,8 +103,8 @@ export default function CreateContractModal({
         depositPercent: values.depositPercent || 40,
         slaDays: values.slaDays,
         autoDueDate: values.autoDueDate !== false, // Default true
-        expectedStartDate: values.expectedStartDate 
-          ? values.expectedStartDate.toISOString() 
+        expectedStartDate: values.expectedStartDate
+          ? values.expectedStartDate.toISOString()
           : new Date().toISOString(),
         termsAndConditions: values.termsAndConditions,
         specialClauses: values.specialClauses,
@@ -97,8 +114,11 @@ export default function CreateContractModal({
         expiresAt: values.expiresAt ? values.expiresAt.toISOString() : null,
       };
 
-      const response = await createContractFromRequest(serviceRequest.requestId || serviceRequest.id, contractData);
-      
+      const response = await createContractFromRequest(
+        serviceRequest.requestId || serviceRequest.id,
+        contractData
+      );
+
       if (response?.status === 'success') {
         message.success('Contract created successfully!');
         form.resetFields();
@@ -109,7 +129,11 @@ export default function CreateContractModal({
       }
     } catch (error) {
       console.error('Error creating contract:', error);
-      message.error(error?.message || error?.response?.data?.message || 'Failed to create contract');
+      message.error(
+        error?.message ||
+          error?.response?.data?.message ||
+          'Failed to create contract'
+      );
     } finally {
       setLoading(false);
     }
@@ -122,12 +146,15 @@ export default function CreateContractModal({
 
   // Auto-calculate deposit amount and final amount
   const handleValuesChange = (changedValues, allValues) => {
-    if (changedValues.totalPrice !== undefined || changedValues.depositPercent !== undefined) {
+    if (
+      changedValues.totalPrice !== undefined ||
+      changedValues.depositPercent !== undefined
+    ) {
       const totalPrice = allValues.totalPrice || 0;
       const depositPercent = allValues.depositPercent || 40;
       const depositAmount = (totalPrice * depositPercent) / 100;
       const finalAmount = totalPrice - depositAmount;
-      
+
       form.setFieldsValue({
         depositAmount: depositAmount,
         finalAmount: finalAmount,
@@ -185,7 +212,9 @@ export default function CreateContractModal({
             min={0}
             step={1000}
             style={{ width: '100%' }}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            formatter={value =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+            }
             parser={value => value.replace(/\$\s?|(,*)/g, '')}
           />
         </Form.Item>
@@ -195,12 +224,7 @@ export default function CreateContractModal({
           label="Deposit Percent (%)"
           rules={[{ required: true, message: 'Please enter deposit percent' }]}
         >
-          <InputNumber
-            min={0}
-            max={100}
-            step={1}
-            style={{ width: '100%' }}
-          />
+          <InputNumber min={0} max={100} step={1} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
@@ -210,25 +234,23 @@ export default function CreateContractModal({
           <InputNumber
             disabled
             style={{ width: '100%' }}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            formatter={value =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+            }
           />
         </Form.Item>
 
-        <Form.Item
-          name="finalAmount"
-          label="Final Amount (Auto-calculated)"
-        >
+        <Form.Item name="finalAmount" label="Final Amount (Auto-calculated)">
           <InputNumber
             disabled
             style={{ width: '100%' }}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            formatter={value =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+            }
           />
         </Form.Item>
 
-        <Form.Item
-          name="expectedStartDate"
-          label="Expected Start Date"
-        >
+        <Form.Item name="expectedStartDate" label="Expected Start Date">
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
 
@@ -237,11 +259,7 @@ export default function CreateContractModal({
           label="SLA Days"
           rules={[{ required: true, message: 'Please enter SLA days' }]}
         >
-          <InputNumber
-            min={1}
-            max={120}
-            style={{ width: '100%' }}
-          />
+          <InputNumber min={1} max={120} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
@@ -252,15 +270,8 @@ export default function CreateContractModal({
           <Switch />
         </Form.Item>
 
-        <Form.Item
-          name="freeRevisionsIncluded"
-          label="Free Revisions Included"
-        >
-          <InputNumber
-            min={0}
-            max={10}
-            style={{ width: '100%' }}
-          />
+        <Form.Item name="freeRevisionsIncluded" label="Free Revisions Included">
+          <InputNumber min={0} max={10} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
@@ -271,40 +282,27 @@ export default function CreateContractModal({
             min={0}
             step={1000}
             style={{ width: '100%' }}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            formatter={value =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+            }
             parser={value => value.replace(/\$\s?|(,*)/g, '')}
           />
         </Form.Item>
 
-        <Form.Item
-          name="termsAndConditions"
-          label="Terms and Conditions"
-        >
+        <Form.Item name="termsAndConditions" label="Terms and Conditions">
           <TextArea rows={4} placeholder="Enter terms and conditions..." />
         </Form.Item>
 
-        <Form.Item
-          name="specialClauses"
-          label="Special Clauses"
-        >
+        <Form.Item name="specialClauses" label="Special Clauses">
           <TextArea rows={3} placeholder="Enter special clauses..." />
         </Form.Item>
 
-        <Form.Item
-          name="notes"
-          label="Internal Notes"
-        >
+        <Form.Item name="notes" label="Internal Notes">
           <TextArea rows={2} placeholder="Enter internal notes..." />
         </Form.Item>
 
-        <Form.Item
-          name="expiresAt"
-          label="Expires At (Optional)"
-        >
-          <DatePicker
-            showTime
-            style={{ width: '100%' }}
-          />
+        <Form.Item name="expiresAt" label="Expires At (Optional)">
+          <DatePicker showTime style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
@@ -350,4 +348,3 @@ CreateContractModal.propTypes = {
   onSuccess: PropTypes.func,
   serviceRequest: PropTypes.object,
 };
-

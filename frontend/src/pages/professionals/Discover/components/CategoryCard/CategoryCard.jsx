@@ -11,25 +11,27 @@ export default function CategoryCard({ item }) {
   };
 
   // Map serviceType to display name
-  const getServiceTypeName = (serviceType) => {
+  const getServiceTypeName = serviceType => {
     if (!serviceType) return '';
-    
+
     const serviceTypeMap = {
-      'transcription': 'Transcription',
-      'arrangement': 'Arrangement',
-      'arrangement_with_recording': 'Arrangement / Record',
-      'recording': 'Recording',
-      'orchestration': 'Orchestration',
-      'mixing': 'Mixing',
-      'mastering': 'Mastering',
-      'composition': 'Composition',
-      'notation': 'Notation',
-      'consultation': 'Consultation',
-      'lesson': 'Lesson',
+      transcription: 'Transcription',
+      arrangement: 'Arrangement',
+      arrangement_with_recording: 'Arrangement / Record',
+      recording: 'Recording',
+      orchestration: 'Orchestration',
+      mixing: 'Mixing',
+      mastering: 'Mastering',
+      composition: 'Composition',
+      notation: 'Notation',
+      consultation: 'Consultation',
+      lesson: 'Lesson',
     };
-    
-    return serviceTypeMap[serviceType.toLowerCase()] || 
-           serviceType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+    return (
+      serviceTypeMap[serviceType.toLowerCase()] ||
+      serviceType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    );
   };
 
   // Get description from API pricing if available, otherwise use default
@@ -42,10 +44,10 @@ export default function CategoryCard({ item }) {
 
   const getPriceDisplay = () => {
     if (!item.pricing) return null;
-    
+
     const { basePrice, currency, unitType } = item.pricing;
     const unitLabel = unitType === 'per_minute' ? '/phút' : '/bài';
-    
+
     return `${formatPrice(basePrice, currency)}${unitLabel}`;
   };
 
@@ -74,7 +76,9 @@ export default function CategoryCard({ item }) {
               <img src={item.image} alt={item.title} className={styles.img} />
               <div className={styles.overlay} />
               <div className={styles.content}>
-                <div className={styles.title}>{getServiceTypeName(item.serviceType)}</div>
+                <div className={styles.title}>
+                  {getServiceTypeName(item.serviceType)}
+                </div>
                 <p className={styles.description}>{getDescription()}</p>
               </div>
             </div>

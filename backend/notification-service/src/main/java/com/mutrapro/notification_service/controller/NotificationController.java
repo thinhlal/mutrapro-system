@@ -1,16 +1,19 @@
 package com.mutrapro.notification_service.controller;
 
+import com.mutrapro.notification_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.dto.response.UnreadCountResponse;
 import com.mutrapro.notification_service.service.NotificationService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -122,6 +125,35 @@ public class NotificationController {
                 .message(String.format("Marked %d notifications as read", count))
                 .data(count)
                 .statusCode(200)
+                .build();
+    }
+    
+    /**
+     * Create notification (for service-to-service calls)
+     */
+    @PostMapping
+    @Operation(summary = "Tạo notification mới (service-to-service)")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<NotificationResponse> createNotification(
+            @Valid @RequestBody CreateNotificationRequest request) {
+        log.info("Creating notification: userId={}, type={}, title={}", 
+                request.getUserId(), request.getType(), request.getTitle());
+        
+        NotificationResponse notification = notificationService.createNotification(
+                request.getUserId(),
+                request.getType(),
+                request.getTitle(),
+                request.getContent(),
+                request.getReferenceId(),
+                request.getReferenceType(),
+                request.getActionUrl()
+        );
+        
+        return ApiResponse.<NotificationResponse>builder()
+                .message("Notification created successfully")
+                .data(notification)
+                .statusCode(HttpStatus.CREATED.value())
+                .status("success")
                 .build();
     }
     

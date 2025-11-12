@@ -97,7 +97,12 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error) {
       console.error('Update user error:', error);
+<<<<<<< HEAD
       const errorMsg = error.message || error.error || 'Unable to update user';
+=======
+      const errorMsg =
+        error.message || error.error || 'Không thể cập nhật người dùng';
+>>>>>>> main
       message.error(errorMsg, 5); // Show error for 5 seconds
     }
   };
@@ -281,4 +286,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-

@@ -27,17 +27,19 @@ const ChatRoomsPage = () => {
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = rooms.filter((room) =>
-      room.roomName?.toLowerCase().includes(query) ||
-      room.description?.toLowerCase().includes(query) ||
-      room.contextId?.toLowerCase().includes(query)
+    const filtered = rooms.filter(
+      room =>
+        room.roomName?.toLowerCase().includes(query) ||
+        room.description?.toLowerCase().includes(query) ||
+        room.contextId?.toLowerCase().includes(query)
     );
 
     setFilteredRooms(filtered);
   }, [rooms, searchQuery]);
 
   // Calculate total unread messages
-  const totalUnread = rooms?.reduce((sum, room) => sum + (room.unreadCount || 0), 0) || 0;
+  const totalUnread =
+    rooms?.reduce((sum, room) => sum + (room.unreadCount || 0), 0) || 0;
 
   return (
     <div className={styles.chatRoomsPage}>
@@ -65,7 +67,7 @@ const ChatRoomsPage = () => {
             placeholder="Tìm kiếm cuộc trò chuyện..."
             prefix={<SearchOutlined />}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className={styles.searchInput}
           />
         </div>
@@ -79,15 +81,21 @@ const ChatRoomsPage = () => {
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
+<<<<<<< HEAD
                 searchQuery 
                   ? "No matching conversations found" 
                   : "No conversations yet"
+=======
+                searchQuery
+                  ? 'Không tìm thấy cuộc trò chuyện phù hợp'
+                  : 'Chưa có cuộc trò chuyện nào'
+>>>>>>> main
               }
             />
           </div>
         ) : (
           <div className={styles.roomsList}>
-            {filteredRooms.map((room) => (
+            {filteredRooms.map(room => (
               <ChatRoomCard key={room.roomId} room={room} />
             ))}
           </div>
@@ -98,4 +106,3 @@ const ChatRoomsPage = () => {
 };
 
 export default ChatRoomsPage;
-

@@ -9,9 +9,12 @@ import { API_ENDPOINTS } from '../config/apiConfig';
  * Get all notifications (paginated)
  */
 export const getNotifications = async (page = 0, size = 20) => {
-  const response = await axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS, {
-    params: { page, size }
-  });
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS,
+    {
+      params: { page, size },
+    }
+  );
   return response.data;
 };
 
@@ -19,9 +22,12 @@ export const getNotifications = async (page = 0, size = 20) => {
  * Get latest notifications (for dropdown)
  */
 export const getLatestNotifications = async (limit = 10) => {
-  const response = await axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS.GET_LATEST, {
-    params: { limit }
-  });
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.NOTIFICATIONS.GET_LATEST,
+    {
+      params: { limit },
+    }
+  );
   return response.data;
 };
 
@@ -29,15 +35,19 @@ export const getLatestNotifications = async (limit = 10) => {
  * Get unread notification count
  */
 export const getUnreadCount = async () => {
-  const response = await axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS.GET_UNREAD_COUNT);
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.NOTIFICATIONS.GET_UNREAD_COUNT
+  );
   return response.data;
 };
 
 /**
  * Mark notification as read
  */
-export const markAsRead = async (notificationId) => {
-  const response = await axiosInstance.post(API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(notificationId));
+export const markAsRead = async notificationId => {
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(notificationId)
+  );
   return response.data;
 };
 
@@ -45,7 +55,9 @@ export const markAsRead = async (notificationId) => {
  * Mark all notifications as read
  */
 export const markAllAsRead = async () => {
-  const response = await axiosInstance.post(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ
+  );
   return response.data;
 };
 
@@ -56,4 +68,3 @@ export default {
   markAsRead,
   markAllAsRead,
 };
-

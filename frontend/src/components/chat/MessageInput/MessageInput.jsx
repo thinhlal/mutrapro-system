@@ -1,6 +1,10 @@
 import { useState, useRef } from 'react';
 import { Input, Button, Upload } from 'antd';
-import { SendOutlined, PaperClipOutlined, SmileOutlined } from '@ant-design/icons';
+import {
+  SendOutlined,
+  PaperClipOutlined,
+  SmileOutlined,
+} from '@ant-design/icons';
 import styles from './MessageInput.module.css';
 
 const { TextArea } = Input;
@@ -21,7 +25,7 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     // Send on Enter, new line on Shift+Enter
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -29,7 +33,7 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
     }
   };
 
-  const handleUpload = (file) => {
+  const handleUpload = file => {
     // TODO: Implement file upload
     console.log('File upload:', file);
     return false; // Prevent default upload
@@ -43,9 +47,9 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
           showUploadList={false}
           disabled={disabled || sending}
         >
-          <Button 
-            type="text" 
-            icon={<PaperClipOutlined />} 
+          <Button
+            type="text"
+            icon={<PaperClipOutlined />}
             disabled={disabled || sending}
             className={styles.actionButton}
           />
@@ -54,7 +58,7 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
         <TextArea
           ref={inputRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={e => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)"
           autoSize={{ minRows: 1, maxRows: 4 }}
@@ -85,4 +89,3 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
 };
 
 export default MessageInput;
-

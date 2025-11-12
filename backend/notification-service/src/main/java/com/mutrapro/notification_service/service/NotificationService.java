@@ -1,8 +1,8 @@
 package com.mutrapro.notification_service.service;
 
 import com.mutrapro.notification_service.entity.Notification;
-import com.mutrapro.notification_service.enums.NotificationType;
 import com.mutrapro.notification_service.mapper.NotificationMapper;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.notification_service.repository.NotificationRepository;
 import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.exception.NotificationNotFoundException;
@@ -30,7 +30,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
     private final SimpMessagingTemplate messagingTemplate;
-    
+
     /**
      * Tạo notification cho chat room mới (từ Kafka event)
      */
@@ -76,28 +76,38 @@ public class NotificationService {
             }
         }
     }
+
     
     /**
-     * Gửi notification real-time qua WebSocket
+     * Tạo notification mới (từ API call)
      */
-    private void sendRealTimeNotification(String userId, Notification notification) {
-        try {
-            NotificationResponse response = notificationMapper.toResponse(notification);
-            
-            // Gửi đến user-specific queue
-            messagingTemplate.convertAndSendToUser(
-                userId,
-                "/queue/notifications",
-                response
-            );
-            
-            log.debug("Real-time notification sent: userId={}, notificationId={}", 
-                    userId, notification.getNotificationId());
-        } catch (Exception e) {
-            log.error("Failed to send real-time notification: userId={}, error={}", 
-                    userId, e.getMessage(), e);
-            // Không throw exception - notification đã được lưu vào DB
-        }
+    @Transactional
+    public NotificationResponse createNotification(String userId, NotificationType type, 
+                                                   String title, String content,
+                                                   String referenceId, String referenceType, 
+                                                   String actionUrl) {
+        log.info("Creating notification: userId={}, type={}, title={}", userId, type, title);
+        
+        Notification notification = Notification.builder()
+                .userId(userId)
+                .type(type)
+                .title(title)
+                .content(content)
+                .referenceId(referenceId)
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+        
+        Notification saved = notificationRepository.save(notification);
+        
+        // Gửi real-time qua WebSocket
+        sendRealTimeNotification(userId, saved);
+        
+        log.info("Notification created: notificationId={}, userId={}", 
+                saved.getNotificationId(), userId);
+        
+        return notificationMapper.toResponse(saved);
     }
     
     /**
@@ -172,6 +182,29 @@ public class NotificationService {
                 userId, unreadNotifications.size());
         
         return unreadNotifications.size();
+    }
+
+    /**
+     * Gửi notification real-time qua WebSocket
+     */
+    private void sendRealTimeNotification(String userId, Notification notification) {
+        try {
+            NotificationResponse response = notificationMapper.toResponse(notification);
+            
+            // Gửi đến user-specific queue
+            messagingTemplate.convertAndSendToUser(
+                userId,
+                "/queue/notifications",
+                response
+            );
+            
+            log.debug("Real-time notification sent: userId={}, notificationId={}", 
+                    userId, notification.getNotificationId());
+        } catch (Exception e) {
+            log.error("Failed to send real-time notification: userId={}, error={}", 
+                    userId, e.getMessage(), e);
+            // Không throw exception - notification đã được lưu vào DB
+        }
     }
 }
 

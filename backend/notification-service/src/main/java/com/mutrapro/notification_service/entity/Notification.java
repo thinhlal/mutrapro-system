@@ -1,6 +1,6 @@
 package com.mutrapro.notification_service.entity;
 
-import com.mutrapro.notification_service.enums.NotificationType;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

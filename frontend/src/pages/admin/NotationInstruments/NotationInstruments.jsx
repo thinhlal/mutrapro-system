@@ -1,19 +1,6 @@
 import { useState, useEffect } from 'react';
-import {
-  Table,
-  Button,
-  Space,
-  Tag,
-  Form,
-  message,
-  Card,
-  Image,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { Table, Button, Space, Tag, Form, message, Card, Image } from 'antd';
+import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   getAllNotationInstruments,
   createNotationInstrument,
@@ -80,7 +67,10 @@ const NotationInstruments = () => {
       formData.append('basePrice', values.basePrice || 0);
 
       if (editMode) {
-        formData.append('isActive', values.active !== undefined ? values.active : true);
+        formData.append(
+          'isActive',
+          values.active !== undefined ? values.active : true
+        );
       }
 
       if (imageFile) {
@@ -275,4 +265,3 @@ const NotationInstruments = () => {
 };
 
 export default NotationInstruments;
-

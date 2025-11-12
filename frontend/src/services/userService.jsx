@@ -38,14 +38,14 @@ export const getUserById = async userId => {
 export const getUserProfile = async userId => {
   try {
     console.log('getUserProfile', userId);
-    const response = await axiosInstance.get(
-      API_ENDPOINTS.USER.FULL(userId)
-    );
+    const response = await axiosInstance.get(API_ENDPOINTS.USER.FULL(userId));
     console.log('getUserProfile', response.data);
     return response.data; // ApiResponse<FullUserResponse>
   } catch (error) {
     console.log(error);
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin người dùng' }
+    );
   }
 };
 
@@ -57,7 +57,9 @@ export const updateFullUser = async (userId, payload) => {
     );
     return response.data; // ApiResponse<FullUserResponse>
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật thông tin đầy đủ' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi cập nhật thông tin đầy đủ' }
+    );
   }
 };
 

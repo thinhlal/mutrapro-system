@@ -1,12 +1,7 @@
 import { Modal, Form, Input, Switch } from 'antd';
 import PropTypes from 'prop-types';
 
-export default function UserEditModal({
-  visible,
-  onCancel,
-  onSubmit,
-  form,
-}) {
+export default function UserEditModal({ visible, onCancel, onSubmit, form }) {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
@@ -72,4 +67,3 @@ UserEditModal.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   form: PropTypes.object.isRequired,
 };
-

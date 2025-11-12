@@ -12,18 +12,26 @@ import {
   Tooltip,
   Typography,
   Spin,
+  Modal,
+  Alert,
 } from 'antd';
 import {
   EyeOutlined,
   EditOutlined,
-  DeleteOutlined,
   ReloadOutlined,
-  FilePdfOutlined,
   StopOutlined,
+  SendOutlined,
+  CopyOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './ContractsList.module.css';
-import { getAllContracts, cancelContract } from '../../../services/contractService';
+import {
+  getAllContracts,
+  cancelContract,
+  sendContractToCustomer,
+} from '../../../services/contractService';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 
@@ -52,7 +60,7 @@ const CURRENCIES = [
 ];
 
 // Helper function để map contract type sang service name
-const getServiceName = (contractType) => {
+const getServiceName = contractType => {
   if (!contractType) return 'N/A';
   const typeMap = {
     transcription: 'Transcription',
@@ -83,6 +91,29 @@ const statusColor = {
   expired: 'volcano',
 };
 
+const statusText = {
+  draft: 'Draft',
+  sent: 'Đã gửi',
+  approved: 'Đã duyệt',
+  signed: 'Đã ký',
+  rejected_by_customer: 'Bị từ chối',
+  need_revision: 'Cần chỉnh sửa',
+  canceled_by_customer: 'Đã hủy',
+  canceled_by_manager: 'Đã thu hồi',
+  expired: 'Hết hạn',
+};
+
+// Helper functions for status
+const getStatusColor = status => {
+  const statusLower = status?.toLowerCase() || '';
+  return statusColor[statusLower] || 'default';
+};
+
+const getStatusText = status => {
+  const statusLower = status?.toLowerCase() || '';
+  return statusText[statusLower] || status;
+};
+
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
@@ -98,8 +129,14 @@ export default function ContractsList() {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [revisionModalVisible, setRevisionModalVisible] = useState(false);
+  const [revisionContract, setRevisionContract] = useState(null);
+  const [cancelReasonModalVisible, setCancelReasonModalVisible] =
+    useState(false);
+  const [canceledContract, setCanceledContract] = useState(null);
   const auth = useAuth();
   const currentUser = auth?.user;
+  const navigate = useNavigate();
 
   // Fetch contracts từ API
   useEffect(() => {
@@ -148,7 +185,29 @@ export default function ContractsList() {
     });
   }, [contracts, search, type, status, currency, dateRange]);
 
-  const handleCancelContract = async (reason) => {
+  const handleSendContract = async contractId => {
+    try {
+      setActionLoading(true);
+      await sendContractToCustomer(contractId, 7); // 7 days expiry
+      message.success('Đã gửi contract cho customer thành công');
+      // Reload contracts
+      try {
+        setLoading(true);
+        const response = await getAllContracts();
+        setContracts(response.data || []);
+      } catch (err) {
+        console.error('Error reloading contracts:', err);
+      } finally {
+        setLoading(false);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi gửi contract');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelContract = async reason => {
     if (!selectedContract) return;
     try {
       setActionLoading(true);
@@ -187,7 +246,8 @@ export default function ContractsList() {
           </Text>
         </Space>
       ),
-      sorter: (a, b) => (a.contractNumber || '').localeCompare(b.contractNumber || ''),
+      sorter: (a, b) =>
+        (a.contractNumber || '').localeCompare(b.contractNumber || ''),
     },
     {
       title: 'Customer / Service',
@@ -206,12 +266,9 @@ export default function ContractsList() {
       key: 'contractType',
       width: 220,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
-      render: v => (
-        <Tag color="processing">
-          {getServiceName(v)}
-        </Tag>
-      ),
+      onFilter: (val, rec) =>
+        (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
+      render: v => <Tag color="processing">{getServiceName(v)}</Tag>,
     },
     {
       title: 'Status',
@@ -227,7 +284,8 @@ export default function ContractsList() {
         );
       },
       filters: CONTRACT_STATUS.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => (rec.status?.toLowerCase() || '') === val.toLowerCase(),
+      onFilter: (val, rec) =>
+        (rec.status?.toLowerCase() || '') === val.toLowerCase(),
     },
     {
       title: 'Created',
@@ -245,7 +303,9 @@ export default function ContractsList() {
       render: (_, r) => (
         <div>
           <div>
-            <Text strong>{fmtMoney(Number(r.totalPrice || 0), r.currency)}</Text>{' '}
+            <Text strong>
+              {fmtMoney(Number(r.totalPrice || 0), r.currency)}
+            </Text>{' '}
             <Tag>{r.currency}</Tag>
           </div>
           <div className={styles.sub}>
@@ -264,11 +324,21 @@ export default function ContractsList() {
         <div className={styles.timeline}>
           <div>
             <span className={styles.sub}>Start</span>{' '}
-            {dayjs(r.expectedStartDate).format('YYYY-MM-DD')}
+            {r.expectedStartDate ? (
+              dayjs(r.expectedStartDate).format('YYYY-MM-DD')
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>Khi ký</span>
+            )}
           </div>
           <div>
             <span className={styles.sub}>Due</span>{' '}
-            {dayjs(r.dueDate).format('YYYY-MM-DD')}{' '}
+            {r.dueDate ? (
+              dayjs(r.dueDate).format('YYYY-MM-DD')
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                +{r.slaDays || 0}d
+              </span>
+            )}{' '}
             <span className={styles.sub}>({r.slaDays || 0}d)</span>
           </div>
         </div>
@@ -280,37 +350,113 @@ export default function ContractsList() {
       fixed: 'right',
       width: 180,
       render: (_, r) => {
-        const isSent = r.status?.toLowerCase() === 'sent';
+        const statusLower = r.status?.toLowerCase() || '';
+        const isDraft = statusLower === 'draft';
+        const isSent = statusLower === 'sent';
+        const isApproved = statusLower === 'approved';
+        const isSigned = statusLower === 'signed';
+        const isNeedRevision = statusLower === 'need_revision';
+        const isCanceledByCustomer = statusLower === 'canceled_by_customer';
+        const isCanceledByManager = statusLower === 'canceled_by_manager';
+        const isExpired = statusLower === 'expired';
+        const isCanceled = isCanceledByCustomer || isCanceledByManager;
         const isCustomer = currentUser?.role === 'CUSTOMER';
         const isOwner = currentUser && r.userId && r.userId === currentUser.id;
-        const canCancel = isSent && isCustomer && isOwner;
+        const canCustomerCancel = isSent && isCustomer && isOwner; // Customer có thể hủy contract SENT của mình
+        const canManagerCancel = (isDraft || isSent) && !isCustomer; // Manager có thể hủy DRAFT hoặc thu hồi SENT
+        const canSend = isDraft && !isCustomer; // Manager có thể gửi contract DRAFT
+        const canRevise = isNeedRevision && !isCustomer; // Manager có thể xem lý do và tạo contract mới
+        const canViewCancelReason = isCanceled && r.cancellationReason; // Bất kỳ ai cũng có thể xem lý do hủy
+        const canEdit = isDraft && !isCustomer; // Chỉ edit được khi DRAFT, sau khi sent thì không edit được nữa
 
         return (
           <Space>
-            <Tooltip title="View">
-              <Button icon={<EyeOutlined />} />
+            <Tooltip title="View Details">
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/user/contracts/${r.contractId}`)}
+              />
             </Tooltip>
             {!isCustomer && (
               <>
+                {canSend && (
+                  <Popconfirm
+                    title="Gửi contract này cho customer?"
+                    description="Contract sẽ được gửi với thời hạn 7 ngày."
+                    okText="Gửi"
+                    cancelText="Hủy"
+                    onConfirm={() => handleSendContract(r.contractId)}
+                  >
+                    <Tooltip title="Gửi cho customer">
+                      <Button
+                        type="primary"
+                        icon={<SendOutlined />}
+                        loading={actionLoading}
+                      >
+                        Gửi
+                      </Button>
+                    </Tooltip>
+                  </Popconfirm>
+                )}
+                {canRevise && (
+                  <Tooltip title="Xem lý do yêu cầu sửa">
+                    <Button
+                      type="primary"
+                      icon={<InfoCircleOutlined />}
+                      onClick={() => {
+                        setRevisionContract(r);
+                        setRevisionModalVisible(true);
+                      }}
+                      style={{
+                        backgroundColor: '#fa8c16',
+                        borderColor: '#fa8c16',
+                      }}
+                    >
+                      Xem lý do
+                    </Button>
+                  </Tooltip>
+                )}
+                {canViewCancelReason && (
+                  <Tooltip title="Xem lý do hủy">
+                    <Button
+                      icon={<InfoCircleOutlined />}
+                      onClick={() => {
+                        setCanceledContract(r);
+                        setCancelReasonModalVisible(true);
+                      }}
+                      style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
+                    >
+                      Lý do hủy
+                    </Button>
+                  </Tooltip>
+                )}
+                {canEdit && (
                 <Tooltip title="Edit">
                   <Button icon={<EditOutlined />} type="primary" ghost />
                 </Tooltip>
-                <Tooltip title="Export PDF">
-                  <Button icon={<FilePdfOutlined />} />
-                </Tooltip>
-                <Popconfirm
-                  title="Delete this contract?"
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={() =>
-                    message.success(`Deleted ${r.contractNumber} (UI only)`)
-                  }
-                >
-                  <Button danger icon={<DeleteOutlined />} />
-                </Popconfirm>
+                )}
+                {canManagerCancel && (
+                  <Tooltip
+                    title={
+                      isDraft ? 'Hủy contract DRAFT' : 'Thu hồi contract đã gửi'
+                    }
+                  >
+                    <Button
+                      danger
+                      icon={<StopOutlined />}
+                      onClick={() => {
+                        setSelectedContract(r);
+                        setCancelModalVisible(true);
+                      }}
+                      loading={actionLoading}
+                    >
+                      {isDraft ? 'Hủy' : 'Thu hồi'}
+                    </Button>
+                  </Tooltip>
+                )}
               </>
             )}
-            {canCancel && (
+            {canCustomerCancel && (
               <Tooltip title="Hủy contract">
                 <Button
                   danger
@@ -443,7 +589,272 @@ export default function ContractsList() {
         }}
         onConfirm={handleCancelContract}
         loading={actionLoading}
+        isManager={currentUser?.role !== 'CUSTOMER'}
+        isDraft={selectedContract?.status?.toLowerCase() === 'draft'}
       />
+
+      {/* Revision Request Modal */}
+      <Modal
+        title={
+          <Space>
+            <InfoCircleOutlined style={{ color: '#fa8c16' }} />
+            <span>Lý do yêu cầu chỉnh sửa Contract</span>
+          </Space>
+        }
+        open={revisionModalVisible}
+        onCancel={() => {
+          setRevisionModalVisible(false);
+          setRevisionContract(null);
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setRevisionModalVisible(false);
+              setRevisionContract(null);
+            }}
+          >
+            Đóng
+          </Button>,
+          <Button
+            key="create"
+            type="primary"
+            icon={<CopyOutlined />}
+            onClick={() => {
+              // Navigate đến ContractBuilder với requestId và pass contract data qua state
+              navigate(
+                `/manager/contract-builder?requestId=${revisionContract.requestId}`,
+                {
+                  state: {
+                    copyFromContract: {
+                      contractId: revisionContract.contractId,
+                      contractType: revisionContract.contractType,
+                      totalPrice: revisionContract.totalPrice,
+                      depositPercent: revisionContract.depositPercent,
+                      slaDays: revisionContract.slaDays,
+                      freeRevisionsIncluded:
+                        revisionContract.freeRevisionsIncluded,
+                      revisionDeadlineDays:
+                        revisionContract.revisionDeadlineDays,
+                      additionalRevisionFeeVnd:
+                        revisionContract.additionalRevisionFeeVnd,
+                      termsAndConditions: revisionContract.termsAndConditions,
+                      specialClauses: revisionContract.specialClauses,
+                      notes: revisionContract.notes,
+                      cancellationReason: revisionContract.cancellationReason,
+                    },
+                  },
+                }
+              );
+            }}
+          >
+            Tạo Contract Mới
+          </Button>,
+        ]}
+        width={700}
+      >
+        {revisionContract && (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Alert
+              message="Customer đã yêu cầu chỉnh sửa contract này"
+              description="Vui lòng xem lý do bên dưới và tạo contract mới với nội dung đã điều chỉnh."
+              type="warning"
+              showIcon
+            />
+
+            <div>
+              <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
+                  <div>
+                    <strong>Contract Number:</strong>{' '}
+                    {revisionContract.contractNumber}
+                  </div>
+                  <div>
+                    <strong>Customer:</strong> {revisionContract.nameSnapshot}
+                  </div>
+                  <div>
+                    <strong>Service Type:</strong>{' '}
+                    {getServiceName(revisionContract.contractType)}
+                  </div>
+                  <div>
+                    <strong>Price:</strong>{' '}
+                    {fmtMoney(
+                      Number(revisionContract.totalPrice || 0),
+                      revisionContract.currency
+                    )}{' '}
+                    {revisionContract.currency}
+                  </div>
+                  <div>
+                    <strong>SLA:</strong> {revisionContract.slaDays} ngày
+                  </div>
+                </Space>
+              </div>
+            </div>
+
+            <div>
+              <Typography.Title level={5}>
+                Lý do yêu cầu chỉnh sửa:
+              </Typography.Title>
+              <div
+                style={{
+                  padding: '16px',
+                  background: '#fff7e6',
+                  border: '1px solid #ffd591',
+                  borderRadius: '4px',
+                  whiteSpace: 'pre-wrap',
+                  minHeight: '80px',
+                }}
+              >
+                {revisionContract.cancellationReason || 'Không có lý do cụ thể'}
+              </div>
+            </div>
+
+            <Alert
+              message="Hướng dẫn"
+              description={
+                <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
+                  <li>Đọc kỹ lý do yêu cầu chỉnh sửa từ customer</li>
+                  <li>
+                    Click "Tạo Contract Mới" để tạo contract với thông tin đã
+                    điều chỉnh
+                  </li>
+                  <li>Sau khi tạo xong, gửi contract mới cho customer</li>
+                </ul>
+              }
+              type="info"
+              showIcon
+            />
+          </Space>
+        )}
+      </Modal>
+
+      {/* Cancellation Reason Modal */}
+      <Modal
+        title={
+          <Space>
+            <InfoCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Lý do hủy Contract</span>
+          </Space>
+        }
+        open={cancelReasonModalVisible}
+        onCancel={() => {
+          setCancelReasonModalVisible(false);
+          setCanceledContract(null);
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setCancelReasonModalVisible(false);
+              setCanceledContract(null);
+            }}
+          >
+            Đóng
+          </Button>,
+        ]}
+        width={700}
+      >
+        {canceledContract && (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Alert
+              message={
+                canceledContract.status?.toLowerCase() ===
+                'canceled_by_customer'
+                  ? 'Contract đã bị hủy bởi Customer'
+                  : 'Contract đã bị hủy bởi Manager'
+              }
+              description="Xem lý do hủy bên dưới."
+              type="error"
+              showIcon
+            />
+
+            <div>
+              <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
+                  <div>
+                    <strong>Contract Number:</strong>{' '}
+                    {canceledContract.contractNumber}
+                  </div>
+                  <div>
+                    <strong>Customer:</strong> {canceledContract.nameSnapshot}
+                  </div>
+                  <div>
+                    <strong>Service Type:</strong>{' '}
+                    {getServiceName(canceledContract.contractType)}
+                  </div>
+                  <div>
+                    <strong>Price:</strong>{' '}
+                    {fmtMoney(
+                      Number(canceledContract.totalPrice || 0),
+                      canceledContract.currency
+                    )}{' '}
+                    {canceledContract.currency}
+                  </div>
+                  <div>
+                    <strong>SLA:</strong> {canceledContract.slaDays} ngày
+                  </div>
+                  <div>
+                    <strong>Status:</strong>{' '}
+                    <Tag color={getStatusColor(canceledContract.status)}>
+                      {getStatusText(canceledContract.status)}
+                    </Tag>
+                  </div>
+                </Space>
+              </div>
+            </div>
+
+            <div>
+              <Typography.Title level={5}>Lý do hủy:</Typography.Title>
+              <div
+                style={{
+                  padding: '16px',
+                  background: '#fff1f0',
+                  border: '1px solid #ffccc7',
+                  borderRadius: '4px',
+                  whiteSpace: 'pre-wrap',
+                  minHeight: '80px',
+                }}
+              >
+                {canceledContract.cancellationReason || 'Không có lý do cụ thể'}
+              </div>
+            </div>
+
+            <Alert
+              message="Thông tin"
+              description={
+                canceledContract.status?.toLowerCase() ===
+                'canceled_by_customer'
+                  ? 'Contract này đã bị customer hủy. Bạn có thể liên hệ với customer để biết thêm chi tiết hoặc tạo contract mới nếu cần.'
+                  : 'Contract này đã bị manager hủy. Nếu cần thiết, bạn có thể tạo contract mới cho request này.'
+              }
+              type="info"
+              showIcon
+            />
+          </Space>
+        )}
+      </Modal>
     </div>
   );
 }

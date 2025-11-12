@@ -22,9 +22,8 @@ export const getRoleBasedRedirectPath = (role, fallback = '/') => {
  * @param {Object} user - User object with role
  * @returns {string|null} Redirect path or null if no redirect needed
  */
-export const getRedirectPathForUser = (user) => {
+export const getRedirectPathForUser = user => {
   if (!user || !user.role) return null;
-  
+
   return getRoleBasedRedirectPath(user.role);
 };
-

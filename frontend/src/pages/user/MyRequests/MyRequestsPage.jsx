@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, Spin, Empty, Tag, Card, message, Button } from 'antd';
-import { 
-  FileTextOutlined, 
+import {
+  FileTextOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -31,9 +31,12 @@ const MyRequestsContent = () => {
       const isPendingNoManager = status === 'pending_no_manager';
       const isPendingHasManager = status === 'pending_has_manager';
 
-      const filters = (isPendingNoManager || isPendingHasManager)
-        ? { status: 'pending' }
-        : (status ? { status } : {});
+      const filters =
+        isPendingNoManager || isPendingHasManager
+          ? { status: 'pending' }
+          : status
+            ? { status }
+            : {};
 
       const response = await getMyRequests(filters);
       if (response.status === 'success') {
@@ -44,7 +47,9 @@ const MyRequestsContent = () => {
           data = data.filter(r => !!r.managerUserId);
         }
         // Sort newest first by createdAt
-        data = data.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        data = data
+          .slice()
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setRequests(data);
       } else {
         message.error('Không thể tải danh sách requests');
@@ -61,7 +66,7 @@ const MyRequestsContent = () => {
     loadRequests(selectedStatus);
   }, [selectedStatus]);
 
-  const handleStatusChange = (value) => {
+  const handleStatusChange = value => {
     setSelectedStatus(value);
   };
 
@@ -69,6 +74,7 @@ const MyRequestsContent = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
+<<<<<<< HEAD
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
@@ -77,10 +83,24 @@ const MyRequestsContent = () => {
         icon: <CheckCircleOutlined />,
         text: 'Approved - pending deployment',
       },
+=======
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
+        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
+      },
+>>>>>>> main
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
+      },
+      contract_approved: {
+        color: 'cyan',
+        icon: <CheckCircleOutlined />,
+        text: 'Đã duyệt hợp đồng - Chờ ký',
       },
       contract_signed: {
         color: 'geekblue',
@@ -111,7 +131,7 @@ const MyRequestsContent = () => {
     return configs[status] || { color: 'default', icon: null, text: status };
   };
 
-  const getRequestTypeText = (type) => {
+  const getRequestTypeText = type => {
     const types = {
       transcription: 'Transcription',
       arrangement: 'Arrangement',
@@ -119,7 +139,7 @@ const MyRequestsContent = () => {
     return types[type] || type;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', {
@@ -149,6 +169,7 @@ const MyRequestsContent = () => {
           onChange={handleStatusChange}
           allowClear
         >
+<<<<<<< HEAD
           <Option value="">All</Option>
           <Option value="pending_no_manager">Waiting for manager</Option>
           <Option value="pending_has_manager">Assigned - pending</Option>
@@ -159,6 +180,18 @@ const MyRequestsContent = () => {
           <Option value="completed">Completed</Option>
           <Option value="cancelled">Cancelled</Option>
           <Option value="rejected">Rejected</Option>
+=======
+          <Option value="">Tất cả</Option>
+          <Option value="pending_no_manager">Chờ manager nhận</Option>
+          <Option value="pending_has_manager">Đã gán - chờ xử lý</Option>
+          <Option value="contract_sent">Đã gửi hợp đồng</Option>
+          <Option value="contract_approved">Đã duyệt hợp đồng - Chờ ký</Option>
+          <Option value="contract_signed">Đã ký hợp đồng</Option>
+          <Option value="in_progress">Đang thực hiện</Option>
+          <Option value="completed">Hoàn thành</Option>
+          <Option value="cancelled">Đã hủy</Option>
+          <Option value="rejected">Bị từ chối</Option>
+>>>>>>> main
         </Select>
       </div>
 
@@ -168,14 +201,22 @@ const MyRequestsContent = () => {
           <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       ) : requests.length === 0 ? (
+<<<<<<< HEAD
         <Empty 
           description="No requests"
+=======
+        <Empty
+          description="Không có requests nào"
+>>>>>>> main
           className={styles.emptyState}
         />
       ) : (
         <div className={styles.requestsList}>
-          {requests.map((request) => {
-            const statusConfig = getStatusConfig(request.status, !!request.managerUserId);
+          {requests.map(request => {
+            const statusConfig = getStatusConfig(
+              request.status,
+              !!request.managerUserId
+            );
             return (
               <Card
                 key={request.requestId}
@@ -186,11 +227,17 @@ const MyRequestsContent = () => {
                   <div className={styles.titleSection}>
                     <h3 className={styles.requestTitle}>{request.title}</h3>
                     <Tag color="blue" className={styles.typeTag}>
+<<<<<<< HEAD
                       {request.requestType === 'transcription' ? 'Transcription' : 'Arrangement'}
+=======
+                      {request.requestType === 'transcription'
+                        ? 'Phiên âm'
+                        : 'Biên soạn'}
+>>>>>>> main
                     </Tag>
                   </div>
-                  <Tag 
-                    color={statusConfig.color} 
+                  <Tag
+                    color={statusConfig.color}
                     icon={statusConfig.icon}
                     className={styles.statusTag}
                   >
@@ -215,13 +262,17 @@ const MyRequestsContent = () => {
 
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Email:</span>
-                    <span className={styles.infoValue}>{request.contactEmail}</span>
+                    <span className={styles.infoValue}>
+                      {request.contactEmail}
+                    </span>
                   </div>
 
                   {request.tempoPercentage && (
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Tempo:</span>
-                      <span className={styles.infoValue}>{request.tempoPercentage}%</span>
+                      <span className={styles.infoValue}>
+                        {request.tempoPercentage}%
+                      </span>
                     </div>
                   )}
 
@@ -237,7 +288,12 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardFooter}>
                   <div className={styles.dateInfo}>
+<<<<<<< HEAD
                     <ClockCircleOutlined /> Created: {formatDate(request.createdAt)}
+=======
+                    <ClockCircleOutlined /> Tạo lúc:{' '}
+                    {formatDate(request.createdAt)}
+>>>>>>> main
                   </div>
                   <div className={styles.dateInfo}>
                     Updated: {formatDate(request.updatedAt)}
@@ -245,7 +301,13 @@ const MyRequestsContent = () => {
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
+<<<<<<< HEAD
                     onClick={() => navigate(`/my-requests/${request.requestId}`)}
+=======
+                    onClick={() =>
+                      navigate(`/profile/my-requests/${request.requestId}`)
+                    }
+>>>>>>> main
                     className={styles.viewDetailBtn}
                   >
                     View Details
@@ -269,4 +331,3 @@ const MyRequestsPage = () => {
 };
 
 export default MyRequestsPage;
-

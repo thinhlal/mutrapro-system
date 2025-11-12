@@ -5,8 +5,7 @@ export const API_CONFIG = {
     import.meta.env.VITE_API_BACK_END_ENDPOINT || 'http://localhost:8080',
 
   // Tiền tố API chung được định nghĩa trong Gateway
-  API_PREFIX: 
-    import.meta.env.VITE_API_PREFIX || '/api/v1',
+  API_PREFIX: import.meta.env.VITE_API_PREFIX || '/api/v1',
 
   // Google OAuth config
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
@@ -24,8 +23,8 @@ export const API_CONFIG = {
 // Các đường dẫn này được định nghĩa trong cấu hình routes của api-gateway
 const { API_PREFIX } = API_CONFIG;
 const IDENTITY_PATH = `${API_PREFIX}/identity`;
-const PROJECT_PATH = `${API_PREFIX}/projects`; 
-const BILLING_PATH = `${API_PREFIX}/billing`; 
+const PROJECT_PATH = `${API_PREFIX}/projects`;
+const BILLING_PATH = `${API_PREFIX}/billing`;
 const REQUEST_PATH = `${API_PREFIX}/requests`;
 const CHAT_PATH = `${API_PREFIX}/chat`;
 const NOTIFICATIONS_PATH = `${API_PREFIX}/notifications`;
@@ -85,24 +84,33 @@ export const API_ENDPOINTS = {
     UPLOAD: `${PROJECT_PATH}/file/upload`,
     DOWNLOAD: fileId => `${PROJECT_PATH}/file/download/${fileId}`,
     GET_URL: fileId => `${PROJECT_PATH}/file/url/${fileId}`,
-    GET_BY_REQUEST_ID: requestId => `${PROJECT_PATH}/files/by-request/${requestId}`,
+    GET_BY_REQUEST_ID: requestId =>
+      `${PROJECT_PATH}/files/by-request/${requestId}`,
   },
 
   CONTRACTS: {
+    BASE: `${PROJECT_PATH}/contracts`,
     // POST /api/v1/projects/contracts/from-request/{requestId}
-    CREATE_FROM_REQUEST: requestId => `${PROJECT_PATH}/contracts/from-request/${requestId}`,
+    CREATE_FROM_REQUEST: requestId =>
+      `${PROJECT_PATH}/contracts/from-request/${requestId}`,
     // GET /api/v1/projects/contracts/{contractId}
     GET_BY_ID: contractId => `${PROJECT_PATH}/contracts/${contractId}`,
     // GET /api/v1/projects/contracts/by-request/{requestId}
-    GET_BY_REQUEST_ID: requestId => `${PROJECT_PATH}/contracts/by-request/${requestId}`,
+    GET_BY_REQUEST_ID: requestId =>
+      `${PROJECT_PATH}/contracts/by-request/${requestId}`,
     // GET /api/v1/projects/contracts/my-contracts
     MY_CONTRACTS: `${PROJECT_PATH}/contracts/my-contracts`,
     // GET /api/v1/projects/contracts/my-managed-contracts
     MY_MANAGED_CONTRACTS: `${PROJECT_PATH}/contracts/my-managed-contracts`,
+    // POST /api/v1/projects/contracts/{contractId}/send
+    SEND: contractId => `${PROJECT_PATH}/contracts/${contractId}/send`,
     // POST /api/v1/projects/contracts/{contractId}/approve
     APPROVE: contractId => `${PROJECT_PATH}/contracts/${contractId}/approve`,
+    // POST /api/v1/projects/contracts/{contractId}/sign
+    SIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/sign`,
     // POST /api/v1/projects/contracts/{contractId}/request-change
-    REQUEST_CHANGE: contractId => `${PROJECT_PATH}/contracts/${contractId}/request-change`,
+    REQUEST_CHANGE: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/request-change`,
     // POST /api/v1/projects/contracts/{contractId}/cancel
     CANCEL: contractId => `${PROJECT_PATH}/contracts/${contractId}/cancel`,
   },
@@ -176,12 +184,14 @@ export const API_ENDPOINTS = {
     GET_ROOM: roomId => `${CHAT_PATH}/chat-rooms/${roomId}`,
     CREATE_ROOM: `${CHAT_PATH}/chat-rooms`,
     ADD_PARTICIPANT: roomId => `${CHAT_PATH}/chat-rooms/${roomId}/participants`,
-    REMOVE_PARTICIPANT: (roomId, userId) => `${CHAT_PATH}/chat-rooms/${roomId}/participants/${userId}`,
-    
+    REMOVE_PARTICIPANT: (roomId, userId) =>
+      `${CHAT_PATH}/chat-rooms/${roomId}/participants/${userId}`,
+
     // Messages (read-only via REST, send via WebSocket)
     GET_MESSAGES: roomId => `${CHAT_PATH}/messages/room/${roomId}`,
-    GET_RECENT_MESSAGES: (roomId, sinceTimestamp) => `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
-    
+    GET_RECENT_MESSAGES: (roomId, sinceTimestamp) =>
+      `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
+
     // WebSocket (for real-time messaging)
     WS_ENDPOINT: `${CHAT_PATH}/ws`,
   },
@@ -191,9 +201,10 @@ export const API_ENDPOINTS = {
     // GET /pricing-matrix
     GET_ALL: `${REQUEST_PATH}/pricing-matrix`,
     // GET /pricing-matrix/{serviceType}
-    GET_BY_SERVICE_TYPE: serviceType => `${REQUEST_PATH}/pricing-matrix/${serviceType}`,
+    GET_BY_SERVICE_TYPE: serviceType =>
+      `${REQUEST_PATH}/pricing-matrix/${serviceType}`,
     // GET /pricing-matrix/calculate/{serviceType}?durationMinutes=X
-    CALCULATE: (serviceType, durationMinutes) => 
+    CALCULATE: (serviceType, durationMinutes) =>
       `${REQUEST_PATH}/pricing-matrix/calculate/${serviceType}?durationMinutes=${durationMinutes}`,
   },
 
@@ -206,7 +217,8 @@ export const API_ENDPOINTS = {
     // GET /api/v1/notifications/notifications/unread-count (sau Gateway strip → /notifications/unread-count)
     GET_UNREAD_COUNT: `${NOTIFICATIONS_PATH}/notifications/unread-count`,
     // POST /api/v1/notifications/notifications/{notificationId}/read (sau Gateway strip → /notifications/{notificationId}/read)
-    MARK_AS_READ: notificationId => `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
+    MARK_AS_READ: notificationId =>
+      `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
     // POST /api/v1/notifications/notifications/mark-all-read (sau Gateway strip → /notifications/mark-all-read)
     MARK_ALL_AS_READ: `${NOTIFICATIONS_PATH}/notifications/mark-all-read`,
     // WebSocket (for real-time notifications)

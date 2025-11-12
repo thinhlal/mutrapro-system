@@ -161,7 +161,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -310,7 +311,7 @@
   .chatContainer:has(.mainContent:not(.emptyConversation)) .sidebar {
     display: none;
   }
-  
+
   .chatContainer {
     box-shadow: none;
   }
@@ -339,4 +340,3 @@
     font-size: 12px;
   }
 }
-
