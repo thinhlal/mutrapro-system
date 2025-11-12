@@ -4,7 +4,7 @@
   --title: clamp(36px, 6vw, 84px);
   --sub: clamp(16px, 1.6vw + 8px, 28px);
   --pill-radius: 999px;
-  --brand: #5d19b7; 
+  --brand: #5d19b7;
   --btn: #ff6a00;
   --btn-hover: #ff8127;
   --card-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);

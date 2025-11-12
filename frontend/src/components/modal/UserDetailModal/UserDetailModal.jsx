@@ -42,9 +42,7 @@ export default function UserDetailModal({ visible, onCancel, user }) {
     >
       <Descriptions bordered column={1}>
         <Descriptions.Item label="User ID">{user.userId}</Descriptions.Item>
-        <Descriptions.Item label="Full Name">
-          {user.fullName}
-        </Descriptions.Item>
+        <Descriptions.Item label="Full Name">{user.fullName}</Descriptions.Item>
         <Descriptions.Item label="Email">{user.email}</Descriptions.Item>
         <Descriptions.Item label="Phone">
           {user.phone || 'N/A'}
@@ -92,4 +90,3 @@ UserDetailModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   user: PropTypes.object,
 };
-

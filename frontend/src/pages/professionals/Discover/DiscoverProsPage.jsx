@@ -20,20 +20,20 @@ export default function DiscoverProsPage() {
       try {
         setLoading(true);
         const response = await getPricingMatrix();
-        
+
         if (response.status === 'success' && response.data) {
           // Merge pricing data with display data from constants
           const mergedCategories = PROS_CATEGORIES.map(category => {
             const pricing = response.data.find(
               p => p.serviceType === category.serviceType && p.active
             );
-            
+
             return {
               ...category,
               pricing: pricing || null,
             };
           });
-          
+
           setCategories(mergedCategories);
         } else {
           // Fallback to original data without pricing
@@ -90,9 +90,7 @@ export default function DiscoverProsPage() {
               <Spin size="large" tip="Đang tải dữ liệu..." />
             </div>
           ) : (
-            categories.map(item => (
-              <CategoryCard key={item.id} item={item} />
-            ))
+            categories.map(item => <CategoryCard key={item.id} item={item} />)
           )}
         </div>
       </section>

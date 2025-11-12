@@ -76,7 +76,7 @@ const ChatConversationPage = () => {
   };
 
   // Handle send message
-  const handleSendMessage = async (content) => {
+  const handleSendMessage = async content => {
     try {
       await sendMessage(content);
     } catch (error) {
@@ -109,7 +109,7 @@ const ChatConversationPage = () => {
     <div className={styles.chatConversationPage}>
       <ChatHeader room={room} connected={connected} />
 
-      <div 
+      <div
         className={styles.messagesContainer}
         ref={messagesContainerRef}
         onScroll={handleScroll}
@@ -130,8 +130,8 @@ const ChatConversationPage = () => {
         {/* Load More Button */}
         {hasMore && (
           <div className={styles.loadMoreContainer}>
-            <Button 
-              onClick={loadMoreMessages} 
+            <Button
+              onClick={loadMoreMessages}
               loading={loading}
               icon={<ReloadOutlined />}
             >
@@ -151,7 +151,7 @@ const ChatConversationPage = () => {
           </div>
         ) : (
           <div className={styles.messagesList}>
-            {messages.map((message) => (
+            {messages.map(message => (
               <MessageBubble
                 key={message.messageId}
                 message={message}
@@ -173,4 +173,3 @@ const ChatConversationPage = () => {
 };
 
 export default ChatConversationPage;
-

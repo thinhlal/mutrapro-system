@@ -31,10 +31,11 @@ const RequestContractList = ({
   onCancel,
   formatDate,
 }) => {
-  const [cancelReasonModalVisible, setCancelReasonModalVisible] = useState(false);
+  const [cancelReasonModalVisible, setCancelReasonModalVisible] =
+    useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
 
-  const getContractStatusColor = (status) => {
+  const getContractStatusColor = status => {
     const statusLower = status?.toLowerCase() || '';
     const colorMap = {
       draft: 'default',
@@ -50,7 +51,7 @@ const RequestContractList = ({
     return colorMap[statusLower] || 'default';
   };
 
-  const getContractStatusText = (status) => {
+  const getContractStatusText = status => {
     const statusLower = status?.toLowerCase() || '';
     const textMap = {
       draft: 'Draft',
@@ -81,29 +82,27 @@ const RequestContractList = ({
   }
 
   return (
-    <Card 
-      title="Contracts" 
+    <Card
+      title="Contracts"
       style={{ marginTop: 16 }}
-      extra={
-        <Tag color="blue">{contracts.length} contract(s)</Tag>
-      }
+      extra={<Tag color="blue">{contracts.length} contract(s)</Tag>}
       className={styles.contractListCard}
     >
-      {contracts.map((contract) => {
+      {contracts.map(contract => {
         const currentStatus = contract.status?.toLowerCase();
         const isSent = currentStatus === 'sent';
         const isApproved = currentStatus === 'approved';
         const isCanceled = currentStatus === 'canceled_by_customer';
         const isCanceledByManager = currentStatus === 'canceled_by_manager';
         const isNeedRevision = currentStatus === 'need_revision';
-        
+
         // Contract đã từng được gửi cho customer
         // (Backend đã filter, chỉ trả về contracts có sentToCustomerAt cho customer)
         const wasSentToCustomer = !!contract.sentToCustomerAt;
-        
+
         // Chỉ cho phép customer action khi status = SENT
         const canCustomerAction = isSent;
-        
+
         // Cho phép customer ký khi status = APPROVED
         const canSign = isApproved;
 
@@ -122,7 +121,11 @@ const RequestContractList = ({
               </Space>
             }
             extra={
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: '100%' }}
+              >
                 {canCustomerAction && (
                   <Space wrap>
                     <Button
@@ -172,8 +175,8 @@ const RequestContractList = ({
                 {isCanceledByManager && (
                   <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
                     <strong>
-                      {wasSentToCustomer 
-                        ? 'Đã thu hồi bởi manager (contract đã từng được gửi cho bạn)' 
+                      {wasSentToCustomer
+                        ? 'Đã thu hồi bởi manager (contract đã từng được gửi cho bạn)'
                         : 'Đã hủy bởi manager'}
                     </strong>
                     {contract.cancellationReason && (
@@ -191,7 +194,13 @@ const RequestContractList = ({
                       </Button>
                     )}
                     {wasSentToCustomer && contract.sentToCustomerAt && (
-                      <div style={{ marginTop: 4, fontSize: '11px', color: '#999' }}>
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontSize: '11px',
+                          color: '#999',
+                        }}
+                      >
                         Đã gửi lúc: {formatDate(contract.sentToCustomerAt)}
                       </div>
                     )}
@@ -233,11 +242,12 @@ const RequestContractList = ({
                 {contract.contractType || 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Giá trị">
-                {contract.totalPrice?.toLocaleString() || 0} {contract.currency || 'VND'}
+                {contract.totalPrice?.toLocaleString() || 0}{' '}
+                {contract.currency || 'VND'}
               </Descriptions.Item>
               <Descriptions.Item label="Đặt cọc">
-                {contract.depositAmount?.toLocaleString() || 0} {contract.currency || 'VND'} 
-                ({contract.depositPercent || 0}%)
+                {contract.depositAmount?.toLocaleString() || 0}{' '}
+                {contract.currency || 'VND'}({contract.depositPercent || 0}%)
               </Descriptions.Item>
               <Descriptions.Item label="SLA">
                 {contract.slaDays || 0} ngày
@@ -261,10 +271,17 @@ const RequestContractList = ({
       <Modal
         title={
           <Space>
-            <InfoCircleOutlined style={{ color: selectedContract?.status?.toLowerCase() === 'need_revision' ? '#fa8c16' : '#ff4d4f' }} />
+            <InfoCircleOutlined
+              style={{
+                color:
+                  selectedContract?.status?.toLowerCase() === 'need_revision'
+                    ? '#fa8c16'
+                    : '#ff4d4f',
+              }}
+            />
             <span>
-              {selectedContract?.status?.toLowerCase() === 'need_revision' 
-                ? 'Lý do yêu cầu chỉnh sửa' 
+              {selectedContract?.status?.toLowerCase() === 'need_revision'
+                ? 'Lý do yêu cầu chỉnh sửa'
                 : 'Lý do hủy Contract'}
             </span>
           </Space>
@@ -293,27 +310,54 @@ const RequestContractList = ({
               message={
                 selectedContract.status?.toLowerCase() === 'need_revision'
                   ? 'Bạn đã yêu cầu chỉnh sửa contract này'
-                  : selectedContract.status?.toLowerCase() === 'canceled_by_customer'
-                  ? 'Bạn đã hủy contract này'
-                  : 'Contract đã bị hủy bởi Manager'
+                  : selectedContract.status?.toLowerCase() ===
+                      'canceled_by_customer'
+                    ? 'Bạn đã hủy contract này'
+                    : 'Contract đã bị hủy bởi Manager'
               }
-              type={selectedContract.status?.toLowerCase() === 'need_revision' ? 'warning' : 'error'}
+              type={
+                selectedContract.status?.toLowerCase() === 'need_revision'
+                  ? 'warning'
+                  : 'error'
+              }
               showIcon
             />
 
             <div>
               <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
-              <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div><strong>Contract Number:</strong> {selectedContract.contractNumber}</div>
-                  <div><strong>Loại dịch vụ:</strong> {selectedContract.contractType}</div>
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
                   <div>
-                    <strong>Giá trị:</strong> {selectedContract.totalPrice?.toLocaleString() || 0} {selectedContract.currency || 'VND'}
+                    <strong>Contract Number:</strong>{' '}
+                    {selectedContract.contractNumber}
                   </div>
-                  <div><strong>SLA:</strong> {selectedContract.slaDays} ngày</div>
+                  <div>
+                    <strong>Loại dịch vụ:</strong>{' '}
+                    {selectedContract.contractType}
+                  </div>
+                  <div>
+                    <strong>Giá trị:</strong>{' '}
+                    {selectedContract.totalPrice?.toLocaleString() || 0}{' '}
+                    {selectedContract.currency || 'VND'}
+                  </div>
+                  <div>
+                    <strong>SLA:</strong> {selectedContract.slaDays} ngày
+                  </div>
                   <div>
                     <strong>Status:</strong>{' '}
-                    <Tag color={getContractStatusColor(selectedContract.status)}>
+                    <Tag
+                      color={getContractStatusColor(selectedContract.status)}
+                    >
                       {getContractStatusText(selectedContract.status)}
                     </Tag>
                   </div>
@@ -323,16 +367,24 @@ const RequestContractList = ({
 
             <div>
               <Typography.Title level={5}>
-                {selectedContract.status?.toLowerCase() === 'need_revision' ? 'Lý do yêu cầu sửa:' : 'Lý do hủy:'}
+                {selectedContract.status?.toLowerCase() === 'need_revision'
+                  ? 'Lý do yêu cầu sửa:'
+                  : 'Lý do hủy:'}
               </Typography.Title>
-              <div 
-                style={{ 
-                  padding: '16px', 
-                  background: selectedContract.status?.toLowerCase() === 'need_revision' ? '#fff7e6' : '#fff1f0',
-                  border: selectedContract.status?.toLowerCase() === 'need_revision' ? '1px solid #ffd591' : '1px solid #ffccc7',
+              <div
+                style={{
+                  padding: '16px',
+                  background:
+                    selectedContract.status?.toLowerCase() === 'need_revision'
+                      ? '#fff7e6'
+                      : '#fff1f0',
+                  border:
+                    selectedContract.status?.toLowerCase() === 'need_revision'
+                      ? '1px solid #ffd591'
+                      : '1px solid #ffccc7',
                   borderRadius: '4px',
                   whiteSpace: 'pre-wrap',
-                  minHeight: '80px'
+                  minHeight: '80px',
                 }}
               >
                 {selectedContract.cancellationReason || 'Không có lý do cụ thể'}
@@ -363,4 +415,3 @@ RequestContractList.defaultProps = {
 };
 
 export default RequestContractList;
-

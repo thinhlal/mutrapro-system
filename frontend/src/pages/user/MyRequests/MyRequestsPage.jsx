@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, Spin, Empty, Tag, Card, message, Button } from 'antd';
-import { 
-  FileTextOutlined, 
+import {
+  FileTextOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -31,9 +31,12 @@ const MyRequestsContent = () => {
       const isPendingNoManager = status === 'pending_no_manager';
       const isPendingHasManager = status === 'pending_has_manager';
 
-      const filters = (isPendingNoManager || isPendingHasManager)
-        ? { status: 'pending' }
-        : (status ? { status } : {});
+      const filters =
+        isPendingNoManager || isPendingHasManager
+          ? { status: 'pending' }
+          : status
+            ? { status }
+            : {};
 
       const response = await getMyRequests(filters);
       if (response.status === 'success') {
@@ -44,7 +47,9 @@ const MyRequestsContent = () => {
           data = data.filter(r => !!r.managerUserId);
         }
         // Sort newest first by createdAt
-        data = data.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        data = data
+          .slice()
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setRequests(data);
       } else {
         message.error('Không thể tải danh sách requests');
@@ -61,7 +66,7 @@ const MyRequestsContent = () => {
     loadRequests(selectedStatus);
   }, [selectedStatus]);
 
-  const handleStatusChange = (value) => {
+  const handleStatusChange = value => {
     setSelectedStatus(value);
   };
 
@@ -69,7 +74,11 @@ const MyRequestsContent = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-        icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
         text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
       },
       contract_sent: {
@@ -111,7 +120,7 @@ const MyRequestsContent = () => {
     return configs[status] || { color: 'default', icon: null, text: status };
   };
 
-  const getRequestTypeText = (type) => {
+  const getRequestTypeText = type => {
     const types = {
       transcription: 'Phiên âm',
       arrangement: 'Biên soạn',
@@ -119,7 +128,7 @@ const MyRequestsContent = () => {
     return types[type] || type;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', {
@@ -168,14 +177,17 @@ const MyRequestsContent = () => {
           <p style={{ marginTop: '1rem' }}>Đang tải...</p>
         </div>
       ) : requests.length === 0 ? (
-        <Empty 
+        <Empty
           description="Không có requests nào"
           className={styles.emptyState}
         />
       ) : (
         <div className={styles.requestsList}>
-          {requests.map((request) => {
-            const statusConfig = getStatusConfig(request.status, !!request.managerUserId);
+          {requests.map(request => {
+            const statusConfig = getStatusConfig(
+              request.status,
+              !!request.managerUserId
+            );
             return (
               <Card
                 key={request.requestId}
@@ -186,11 +198,13 @@ const MyRequestsContent = () => {
                   <div className={styles.titleSection}>
                     <h3 className={styles.requestTitle}>{request.title}</h3>
                     <Tag color="blue" className={styles.typeTag}>
-                      {request.requestType === 'transcription' ? 'Phiên âm' : 'Biên soạn'}
+                      {request.requestType === 'transcription'
+                        ? 'Phiên âm'
+                        : 'Biên soạn'}
                     </Tag>
                   </div>
-                  <Tag 
-                    color={statusConfig.color} 
+                  <Tag
+                    color={statusConfig.color}
                     icon={statusConfig.icon}
                     className={styles.statusTag}
                   >
@@ -215,13 +229,17 @@ const MyRequestsContent = () => {
 
                   <div className={styles.infoRow}>
                     <span className={styles.infoLabel}>Email:</span>
-                    <span className={styles.infoValue}>{request.contactEmail}</span>
+                    <span className={styles.infoValue}>
+                      {request.contactEmail}
+                    </span>
                   </div>
 
                   {request.tempoPercentage && (
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Tempo:</span>
-                      <span className={styles.infoValue}>{request.tempoPercentage}%</span>
+                      <span className={styles.infoValue}>
+                        {request.tempoPercentage}%
+                      </span>
                     </div>
                   )}
 
@@ -237,7 +255,8 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardFooter}>
                   <div className={styles.dateInfo}>
-                    <ClockCircleOutlined /> Tạo lúc: {formatDate(request.createdAt)}
+                    <ClockCircleOutlined /> Tạo lúc:{' '}
+                    {formatDate(request.createdAt)}
                   </div>
                   <div className={styles.dateInfo}>
                     Cập nhật: {formatDate(request.updatedAt)}
@@ -245,7 +264,9 @@ const MyRequestsContent = () => {
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
-                    onClick={() => navigate(`/profile/my-requests/${request.requestId}`)}
+                    onClick={() =>
+                      navigate(`/profile/my-requests/${request.requestId}`)
+                    }
                     className={styles.viewDetailBtn}
                   >
                     Xem chi tiết
@@ -269,4 +290,3 @@ const MyRequestsPage = () => {
 };
 
 export default MyRequestsPage;
-

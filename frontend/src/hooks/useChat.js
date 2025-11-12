@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
  * Custom hook for managing chat functionality
  * @param {string} roomId - Chat room ID
  */
-export const useChat = (roomId) => {
+export const useChat = roomId => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -28,35 +28,38 @@ export const useChat = (roomId) => {
   /**
    * Load messages from server
    */
-  const loadMessages = useCallback(async (pageNum = 0) => {
-    if (!roomId) return;
+  const loadMessages = useCallback(
+    async (pageNum = 0) => {
+      if (!roomId) return;
 
-    try {
-      setLoading(true);
-      const response = await chatService.getMessages(roomId, pageNum, 50);
-      
-      const pageData = response.data || response;
-      const messagesList = pageData.content || [];
-      
-      if (pageNum === 0) {
-        // Lần đầu load: Backend trả về ASC (cũ nhất -> mới nhất)
-        setMessages(messagesList);
-        isInitialLoad.current = false;
-        setTimeout(scrollToBottom, 100);
-      } else {
-        // Load more: Prepend older messages vào đầu
-        setMessages((prev) => [...messagesList, ...prev]);
+      try {
+        setLoading(true);
+        const response = await chatService.getMessages(roomId, pageNum, 50);
+
+        const pageData = response.data || response;
+        const messagesList = pageData.content || [];
+
+        if (pageNum === 0) {
+          // Lần đầu load: Backend trả về ASC (cũ nhất -> mới nhất)
+          setMessages(messagesList);
+          isInitialLoad.current = false;
+          setTimeout(scrollToBottom, 100);
+        } else {
+          // Load more: Prepend older messages vào đầu
+          setMessages(prev => [...messagesList, ...prev]);
+        }
+
+        setHasMore(!pageData.last);
+        setPage(pageNum);
+      } catch (error) {
+        console.error('Failed to load messages:', error);
+        toast.error('Không thể tải tin nhắn');
+      } finally {
+        setLoading(false);
       }
-
-      setHasMore(!pageData.last);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      toast.error('Không thể tải tin nhắn');
-    } finally {
-      setLoading(false);
-    }
-  }, [roomId, scrollToBottom]);
+    },
+    [roomId, scrollToBottom]
+  );
 
   /**
    * Load more messages (pagination)
@@ -70,51 +73,56 @@ export const useChat = (roomId) => {
   /**
    * Handle incoming real-time message
    */
-  const handleIncomingMessage = useCallback((message) => {
-    setMessages((prev) => {
-      // Check if message already exists
-      const exists = prev.some((m) => m.messageId === message.messageId);
-      if (exists) return prev;
-      
-      // Backend đảm bảo tin nhắn mới có sentAt mới nhất, chỉ cần append vào cuối
-      // (Messages đã được sort ASC từ backend: cũ nhất -> mới nhất)
-      return [...prev, message];
-    });
+  const handleIncomingMessage = useCallback(
+    message => {
+      setMessages(prev => {
+        // Check if message already exists
+        const exists = prev.some(m => m.messageId === message.messageId);
+        if (exists) return prev;
 
-    // Auto scroll to bottom for new messages
-    setTimeout(scrollToBottom, 100);
-  }, [scrollToBottom]);
+        // Backend đảm bảo tin nhắn mới có sentAt mới nhất, chỉ cần append vào cuối
+        // (Messages đã được sort ASC từ backend: cũ nhất -> mới nhất)
+        return [...prev, message];
+      });
+
+      // Auto scroll to bottom for new messages
+      setTimeout(scrollToBottom, 100);
+    },
+    [scrollToBottom]
+  );
 
   /**
    * Send a message via WebSocket
    */
-  const sendMessage = useCallback(async (content, messageType = 'TEXT', metadata = null) => {
-    if (!roomId || !content.trim()) return;
+  const sendMessage = useCallback(
+    async (content, messageType = 'TEXT', metadata = null) => {
+      if (!roomId || !content.trim()) return;
 
-    try {
-      setSending(true);
+      try {
+        setSending(true);
 
-      const messageData = {
-        roomId,
-        content: content.trim(),
-        messageType,
-        metadata,
-      };
+        const messageData = {
+          roomId,
+          content: content.trim(),
+          messageType,
+          metadata,
+        };
 
-      // Send via WebSocket (backend will broadcast to all subscribers)
-      websocketService.sendMessage(roomId, messageData);
+        // Send via WebSocket (backend will broadcast to all subscribers)
+        websocketService.sendMessage(roomId, messageData);
 
-      // Note: Don't add message here, wait for WebSocket broadcast
-      // This ensures consistent message ordering across all clients
-      
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      toast.error('Không thể gửi tin nhắn');
-      throw error;
-    } finally {
-      setSending(false);
-    }
-  }, [roomId]);
+        // Note: Don't add message here, wait for WebSocket broadcast
+        // This ensures consistent message ordering across all clients
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        toast.error('Không thể gửi tin nhắn');
+        throw error;
+      } finally {
+        setSending(false);
+      }
+    },
+    [roomId]
+  );
 
   /**
    * Connect to WebSocket and subscribe to room
@@ -141,7 +149,7 @@ export const useChat = (roomId) => {
         websocketService.subscribeToRoom(roomId, handleIncomingMessage);
         subscribed = true;
         setConnected(true);
-        
+
         console.log(`✅ Connected to chat room: ${roomId}`);
       } catch (error) {
         console.error('Failed to setup WebSocket:', error);
@@ -214,4 +222,3 @@ export const useChatRooms = () => {
 };
 
 export default useChat;
-

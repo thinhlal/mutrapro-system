@@ -23,20 +23,20 @@ export default function RequestServiceForm({
 }) {
   const [form] = Form.useForm();
   const { user } = useAuth();
-  
+
   // Instrument selection - khôi phục từ initialFormData nếu có
   const [selectedInstruments, setSelectedInstruments] = useState(() => {
     return initialFormData?.instrumentIds || [];
   });
   const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
-  
+
   const {
     instruments: instrumentsData,
     loading: instrumentsLoading,
     fetchInstruments,
     getInstrumentsByUsage,
   } = useInstrumentStore();
-  
+
   // Fetch instruments when component mounts
   useEffect(() => {
     fetchInstruments();
@@ -52,16 +52,16 @@ export default function RequestServiceForm({
   // Khôi phục form values từ initialFormData - chỉ một lần khi mount
   const hasInitializedRef = useRef(false);
   const lastServiceTypeRef = useRef(serviceType);
-  
+
   useEffect(() => {
     const serviceTypeChanged = lastServiceTypeRef.current !== serviceType;
-    
+
     // Reset flag nếu serviceType thay đổi
     if (serviceTypeChanged) {
       hasInitializedRef.current = false;
       lastServiceTypeRef.current = serviceType;
     }
-    
+
     // Restore khi có initialFormData và chưa initialize
     if (initialFormData && form && !hasInitializedRef.current) {
       const formValues = {
@@ -76,25 +76,33 @@ export default function RequestServiceForm({
         musicOptions: initialFormData.musicOptions || null,
       };
       form.setFieldsValue(formValues);
-      
+
       // Khôi phục selectedInstruments
-      if (initialFormData.instrumentIds && initialFormData.instrumentIds.length > 0) {
+      if (
+        initialFormData.instrumentIds &&
+        initialFormData.instrumentIds.length > 0
+      ) {
         setSelectedInstruments(initialFormData.instrumentIds);
       }
-      
+
       hasInitializedRef.current = true;
     }
   }, [initialFormData, serviceType, form, user]);
 
   // Determine if service needs instrument selection and whether it's multiple or single
   const needsInstruments = serviceType && serviceType !== 'recording';
-  const multipleInstruments = serviceType === 'arrangement' || serviceType === 'arrangement_with_recording';
-  
+  const multipleInstruments =
+    serviceType === 'arrangement' ||
+    serviceType === 'arrangement_with_recording';
+
   // Get instruments based on service type
   const availableInstruments = useMemo(() => {
     if (serviceType === 'transcription') {
       return getInstrumentsByUsage('transcription');
-    } else if (serviceType === 'arrangement' || serviceType === 'arrangement_with_recording') {
+    } else if (
+      serviceType === 'arrangement' ||
+      serviceType === 'arrangement_with_recording'
+    ) {
       return getInstrumentsByUsage('arrangement');
     }
     return [];
@@ -119,7 +127,7 @@ export default function RequestServiceForm({
     };
     onFormComplete?.(formData);
   };
-  
+
   // Khi instruments thay đổi, cũng callback lại
   useEffect(() => {
     if (form) {
@@ -127,9 +135,11 @@ export default function RequestServiceForm({
       handleValuesChange({}, allValues);
     }
   }, [selectedInstruments]); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  const handleInstrumentSelect = (instrumentIds) => {
-    setSelectedInstruments(multipleInstruments ? instrumentIds : [instrumentIds]);
+
+  const handleInstrumentSelect = instrumentIds => {
+    setSelectedInstruments(
+      multipleInstruments ? instrumentIds : [instrumentIds]
+    );
     if (!multipleInstruments) {
       // Single selection - close modal immediately
       setInstrumentModalVisible(false);
@@ -233,8 +243,12 @@ export default function RequestServiceForm({
 
           {/* Instrument Selection - Only for transcription, arrangement, arrangement_with_recording */}
           {needsInstruments && (
-            <Form.Item 
-              label={multipleInstruments ? "Select Instruments (Multiple)" : "Select Instrument"} 
+            <Form.Item
+              label={
+                multipleInstruments
+                  ? 'Select Instruments (Multiple)'
+                  : 'Select Instrument'
+              }
               required
             >
               <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -250,14 +264,20 @@ export default function RequestServiceForm({
                     ? `${selectedInstruments.length} instrument(s) selected`
                     : 'Select Instruments'}
                 </Button>
-                
+
                 {selectedInstruments.length > 0 && (
                   <div style={{ marginTop: 8 }}>
                     <Space wrap>
                       {selectedInstruments.map(id => {
-                        const inst = instrumentsData.find(i => i.instrumentId === id);
+                        const inst = instrumentsData.find(
+                          i => i.instrumentId === id
+                        );
                         return inst ? (
-                          <Tag key={id} color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+                          <Tag
+                            key={id}
+                            color="blue"
+                            style={{ fontSize: 14, padding: '4px 12px' }}
+                          >
                             {inst.instrumentName}
                           </Tag>
                         ) : null;
@@ -284,10 +304,16 @@ export default function RequestServiceForm({
           onCancel={() => setInstrumentModalVisible(false)}
           instruments={availableInstruments}
           loading={instrumentsLoading}
-          selectedInstruments={multipleInstruments ? selectedInstruments : selectedInstruments[0]}
+          selectedInstruments={
+            multipleInstruments ? selectedInstruments : selectedInstruments[0]
+          }
           onSelect={handleInstrumentSelect}
           multipleSelection={multipleInstruments}
-          title={multipleInstruments ? "Select Instruments (Multiple)" : "Select One Instrument"}
+          title={
+            multipleInstruments
+              ? 'Select Instruments (Multiple)'
+              : 'Select One Instrument'
+          }
         />
       )}
     </section>

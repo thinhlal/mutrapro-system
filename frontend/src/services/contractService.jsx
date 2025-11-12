@@ -4,7 +4,7 @@ import axiosInstance from '../utils/axiosInstance';
 /**
  * Tạo contract từ service request
  * POST /contracts/from-request/{requestId}
- * 
+ *
  * @param {string} requestId - ID của service request
  * @param {Object} contractData - Thông tin contract
  * @param {string} contractData.contractType - Loại contract: transcription, arrangement, recording, bundle
@@ -37,7 +37,7 @@ export const createContractFromRequest = async (requestId, contractData) => {
 /**
  * Lấy chi tiết contract theo ID
  * GET /contracts/{contractId}
- * 
+ *
  * @param {string} contractId - ID của contract
  * @returns {Promise} ApiResponse với chi tiết contract
  */
@@ -55,7 +55,7 @@ export const getContractById = async contractId => {
 /**
  * Lấy danh sách contracts theo requestId
  * GET /contracts/by-request/{requestId}
- * 
+ *
  * @param {string} requestId - ID của service request
  * @returns {Promise} ApiResponse với danh sách contracts
  */
@@ -66,14 +66,16 @@ export const getContractsByRequestId = async requestId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+    );
   }
 };
 
 /**
  * Lấy danh sách contracts của user hiện tại
  * GET /contracts/my-contracts
- * 
+ *
  * @returns {Promise} ApiResponse với danh sách contracts
  */
 export const getMyContracts = async () => {
@@ -83,14 +85,16 @@ export const getMyContracts = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+    );
   }
 };
 
 /**
  * Lấy danh sách contracts được quản lý bởi manager hiện tại
  * GET /contracts/my-managed-contracts
- * 
+ *
  * @returns {Promise} ApiResponse với danh sách contracts
  */
 export const getMyManagedContracts = async () => {
@@ -100,14 +104,16 @@ export const getMyManagedContracts = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+    );
   }
 };
 
 /**
  * Lấy tất cả contracts (dùng endpoint my-managed-contracts cho manager/admin)
  * GET /contracts/my-managed-contracts
- * 
+ *
  * @returns {Promise} ApiResponse với danh sách contracts
  */
 export const getAllContracts = async () => {
@@ -117,14 +123,16 @@ export const getAllContracts = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách contracts' }
+    );
   }
 };
 
 /**
  * Manager gửi contract cho customer
  * POST /contracts/{contractId}/send
- * 
+ *
  * @param {string} contractId - ID của contract
  * @param {number} expiresInDays - Số ngày hết hạn (mặc định 7 ngày)
  * @returns {Promise} ApiResponse với contract đã gửi
@@ -138,14 +146,16 @@ export const sendContractToCustomer = async (contractId, expiresInDays = 7) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi gửi contract cho customer' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi gửi contract cho customer' }
+    );
   }
 };
 
 /**
  * Customer approve contract
  * POST /contracts/{contractId}/approve
- * 
+ *
  * @param {string} contractId - ID của contract
  * @returns {Promise} ApiResponse với contract đã approve
  */
@@ -174,7 +184,7 @@ export const signContract = async contractId => {
 /**
  * Customer request change contract
  * POST /contracts/{contractId}/request-change
- * 
+ *
  * @param {string} contractId - ID của contract
  * @param {string} reason - Lý do yêu cầu chỉnh sửa
  * @returns {Promise} ApiResponse với contract đã request change
@@ -187,14 +197,16 @@ export const requestChangeContract = async (contractId, reason) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi yêu cầu chỉnh sửa contract' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi yêu cầu chỉnh sửa contract' }
+    );
   }
 };
 
 /**
  * Customer cancel contract
  * POST /contracts/{contractId}/cancel
- * 
+ *
  * @param {string} contractId - ID của contract
  * @param {string} reason - Lý do hủy contract
  * @returns {Promise} ApiResponse với contract đã hủy
@@ -210,4 +222,3 @@ export const cancelContract = async (contractId, reason) => {
     throw error.response?.data || { message: 'Lỗi khi hủy contract' };
   }
 };
-

@@ -4,7 +4,14 @@ import { ExclamationCircleOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 
-const CancelContractModal = ({ visible, onCancel, onConfirm, loading, isManager = false, isDraft = false }) => {
+const CancelContractModal = ({
+  visible,
+  onCancel,
+  onConfirm,
+  loading,
+  isManager = false,
+  isDraft = false,
+}) => {
   const [form] = Form.useForm();
 
   const handleOk = async () => {
@@ -30,12 +37,14 @@ const CancelContractModal = ({ visible, onCancel, onConfirm, loading, isManager 
   const actionType = isManager ? (isDraft ? 'cancel' : 'revoke') : 'cancel';
   const actionText = actionType === 'revoke' ? 'thu hồi' : 'hủy';
   const actionTextCapitalized = actionType === 'revoke' ? 'Thu hồi' : 'Hủy';
-  
+
   return (
     <Modal
       title={
         <span>
-          <ExclamationCircleOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+          <ExclamationCircleOutlined
+            style={{ color: '#ff4d4f', marginRight: 8 }}
+          />
           {actionTextCapitalized} Contract
         </span>
       }
@@ -54,11 +63,22 @@ const CancelContractModal = ({ visible, onCancel, onConfirm, loading, isManager 
         </p>
         <p style={{ color: '#666', fontSize: '14px' }}>
           {isManager && isDraft ? (
-            <>Sau khi hủy, contract DRAFT sẽ chuyển sang trạng thái <strong>CANCELED_BY_MANAGER</strong>.</>
+            <>
+              Sau khi hủy, contract DRAFT sẽ chuyển sang trạng thái{' '}
+              <strong>CANCELED_BY_MANAGER</strong>.
+            </>
           ) : isManager ? (
-            <>Sau khi thu hồi, contract sẽ chuyển sang trạng thái <strong>CANCELED_BY_MANAGER</strong> và customer sẽ nhận được thông báo về việc thu hồi này.</>
+            <>
+              Sau khi thu hồi, contract sẽ chuyển sang trạng thái{' '}
+              <strong>CANCELED_BY_MANAGER</strong> và customer sẽ nhận được
+              thông báo về việc thu hồi này.
+            </>
           ) : (
-            <>Sau khi hủy, contract sẽ chuyển sang trạng thái <strong>CANCELED_BY_CUSTOMER</strong> và manager sẽ nhận được thông báo về việc hủy này.</>
+            <>
+              Sau khi hủy, contract sẽ chuyển sang trạng thái{' '}
+              <strong>CANCELED_BY_CUSTOMER</strong> và manager sẽ nhận được
+              thông báo về việc hủy này.
+            </>
           )}
         </p>
       </div>
@@ -68,8 +88,14 @@ const CancelContractModal = ({ visible, onCancel, onConfirm, loading, isManager 
           name="reason"
           label={`Lý do ${actionText}`}
           rules={[
-            { required: true, message: `Vui lòng nhập lý do ${actionText} contract` },
-            { min: 10, message: `Lý do ${actionText} phải có ít nhất 10 ký tự` },
+            {
+              required: true,
+              message: `Vui lòng nhập lý do ${actionText} contract`,
+            },
+            {
+              min: 10,
+              message: `Lý do ${actionText} phải có ít nhất 10 ký tự`,
+            },
           ]}
         >
           <TextArea
@@ -85,4 +111,3 @@ const CancelContractModal = ({ visible, onCancel, onConfirm, loading, isManager 
 };
 
 export default CancelContractModal;
-

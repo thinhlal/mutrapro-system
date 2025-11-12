@@ -72,11 +72,15 @@ export const register = async registerData => {
 export const logout = async token => {
   try {
     // Token (accessToken) sẽ được gửi trong body
-    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.LOGOUT, {
-      token,
-    }, {
-      withCredentials: true,
-    });
+    const response = await axiosInstancePublic.post(
+      API_ENDPOINTS.AUTH.LOGOUT,
+      {
+        token,
+      },
+      {
+        withCredentials: true,
+      }
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi logout' };
@@ -90,9 +94,13 @@ export const logout = async token => {
  */
 export const refreshToken = async () => {
   try {
-    const response = await axiosInstancePublic.post(API_ENDPOINTS.AUTH.REFRESH, {}, {
-      withCredentials: true,
-    });
+    const response = await axiosInstancePublic.post(
+      API_ENDPOINTS.AUTH.REFRESH,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
     // Backend trả về response.data là ApiResponse<AuthenticationResponse>
     return response.data;
   } catch (error) {
@@ -105,11 +113,15 @@ export const refreshToken = async () => {
  */
 export const introspect = async token => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.AUTH.INTROSPECT, {
-      token,
-    }, {
-      withCredentials: true,
-    });
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.AUTH.INTROSPECT,
+      {
+        token,
+      },
+      {
+        withCredentials: true,
+      }
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi introspect token' };

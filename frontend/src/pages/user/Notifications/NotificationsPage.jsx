@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { List, Typography, Tabs, Badge, Empty, Button, Spin, Pagination, message, Card } from 'antd';
+import {
+  List,
+  Typography,
+  Tabs,
+  Badge,
+  Empty,
+  Button,
+  Spin,
+  Pagination,
+  message,
+  Card,
+} from 'antd';
 import {
   BellOutlined,
   CheckCircleOutlined,
@@ -38,22 +49,28 @@ const NotificationsPage = () => {
   /**
    * Fetch notifications từ API
    */
-  const fetchNotifications = useCallback(async (pageNum = 0) => {
-    try {
-      setLoading(true);
-      const response = await notificationService.getNotifications(pageNum, pageSize);
-      const pageData = response.data || response;
-      
-      setNotifications(pageData.content || []);
-      setTotalElements(pageData.totalElements || 0);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      message.error('Không thể tải thông báo');
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSize]);
+  const fetchNotifications = useCallback(
+    async (pageNum = 0) => {
+      try {
+        setLoading(true);
+        const response = await notificationService.getNotifications(
+          pageNum,
+          pageSize
+        );
+        const pageData = response.data || response;
+
+        setNotifications(pageData.content || []);
+        setTotalElements(pageData.totalElements || 0);
+        setPage(pageNum);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        message.error('Không thể tải thông báo');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pageSize]
+  );
 
   /**
    * Fetch unread count
@@ -70,14 +87,12 @@ const NotificationsPage = () => {
   /**
    * Mark notification as read
    */
-  const handleMarkAsRead = useCallback(async (notificationId) => {
+  const handleMarkAsRead = useCallback(async notificationId => {
     try {
       await notificationService.markAsRead(notificationId);
       setNotifications(prev =>
         prev.map(n =>
-          n.notificationId === notificationId
-            ? { ...n, isRead: true }
-            : n
+          n.notificationId === notificationId ? { ...n, isRead: true } : n
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -94,9 +109,7 @@ const NotificationsPage = () => {
   const handleMarkAllAsRead = useCallback(async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, isRead: true }))
-      );
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
       message.success('Đã đánh dấu tất cả thông báo');
     } catch (error) {
@@ -108,12 +121,12 @@ const NotificationsPage = () => {
   /**
    * Handle notification click
    */
-  const handleNotificationClick = async (notification) => {
+  const handleNotificationClick = async notification => {
     // Mark as read if unread
     if (!notification.isRead) {
       await handleMarkAsRead(notification.notificationId);
     }
-    
+
     // Navigate to action URL
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
@@ -123,7 +136,7 @@ const NotificationsPage = () => {
   /**
    * Format notification time
    */
-  const formatTime = (timestamp) => {
+  const formatTime = timestamp => {
     try {
       if (!timestamp) return '';
       return dayjs(timestamp).fromNow();
@@ -135,12 +148,18 @@ const NotificationsPage = () => {
   /**
    * Get notification icon based on type
    */
-  const getNotificationIcon = (type) => {
+  const getNotificationIcon = type => {
     switch (type) {
       case 'CHAT_ROOM_CREATED':
-        return <BellOutlined className={`${styles.notifIcon} ${styles.info}`} />;
+        return (
+          <BellOutlined className={`${styles.notifIcon} ${styles.info}`} />
+        );
       default:
-        return <InfoCircleOutlined className={`${styles.notifIcon} ${styles.info}`} />;
+        return (
+          <InfoCircleOutlined
+            className={`${styles.notifIcon} ${styles.info}`}
+          />
+        );
     }
   };
 
@@ -195,7 +214,11 @@ const NotificationsPage = () => {
                   )}
                 </Text>
                 {unreadCount > 0 && (
-                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={handleMarkAllAsRead}
+                  >
                     Đánh dấu tất cả đã đọc
                   </Button>
                 )}
@@ -204,7 +227,7 @@ const NotificationsPage = () => {
                 itemLayout="horizontal"
                 dataSource={filteredNotifications}
                 loading={loading}
-                renderItem={(notification) => (
+                renderItem={notification => (
                   <List.Item
                     className={`${styles.notificationItem} ${
                       !notification.isRead ? styles.unread : ''
@@ -216,15 +239,22 @@ const NotificationsPage = () => {
                       avatar={getNotificationIcon(notification.type)}
                       title={
                         <div className={styles.notifHeader}>
-                          <span className={styles.notifTitle}>{notification.title}</span>
+                          <span className={styles.notifTitle}>
+                            {notification.title}
+                          </span>
                           {!notification.isRead && (
-                            <Badge status="processing" className={styles.unreadBadge} />
+                            <Badge
+                              status="processing"
+                              className={styles.unreadBadge}
+                            />
                           )}
                         </div>
                       }
                       description={
                         <div>
-                          <p className={styles.notifMessage}>{notification.content}</p>
+                          <p className={styles.notifMessage}>
+                            {notification.content}
+                          </p>
                           <Text type="secondary" className={styles.notifTime}>
                             {formatTime(notification.createdAt)}
                           </Text>
@@ -281,7 +311,11 @@ const NotificationsPage = () => {
                   Bạn có {unreadCount} thông báo chưa đọc
                 </Text>
                 {unreadCount > 0 && (
-                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={handleMarkAllAsRead}
+                  >
                     Đánh dấu tất cả đã đọc
                   </Button>
                 )}
@@ -290,7 +324,7 @@ const NotificationsPage = () => {
                 itemLayout="horizontal"
                 dataSource={filteredNotifications}
                 loading={loading}
-                renderItem={(notification) => (
+                renderItem={notification => (
                   <List.Item
                     className={`${styles.notificationItem} ${styles.unread}`}
                     onClick={() => handleNotificationClick(notification)}
@@ -300,13 +334,20 @@ const NotificationsPage = () => {
                       avatar={getNotificationIcon(notification.type)}
                       title={
                         <div className={styles.notifHeader}>
-                          <span className={styles.notifTitle}>{notification.title}</span>
-                          <Badge status="processing" className={styles.unreadBadge} />
+                          <span className={styles.notifTitle}>
+                            {notification.title}
+                          </span>
+                          <Badge
+                            status="processing"
+                            className={styles.unreadBadge}
+                          />
                         </div>
                       }
                       description={
                         <div>
-                          <p className={styles.notifMessage}>{notification.content}</p>
+                          <p className={styles.notifMessage}>
+                            {notification.content}
+                          </p>
                           <Text type="secondary" className={styles.notifTime}>
                             {formatTime(notification.createdAt)}
                           </Text>
@@ -331,7 +372,7 @@ const NotificationsPage = () => {
   return (
     <div className={styles.pageWrapper}>
       <Header />
-      
+
       <div className={styles.pageContainer}>
         <div className={styles.notificationsContent}>
           <div className={styles.pageHeader}>
@@ -339,13 +380,15 @@ const NotificationsPage = () => {
               <BellOutlined />
             </div>
             <div className={styles.headerText}>
-              <Title level={1} className={styles.pageTitle}>Thông báo</Title>
+              <Title level={1} className={styles.pageTitle}>
+                Thông báo
+              </Title>
               <Text type="secondary" className={styles.pageSubtitle}>
                 Quản lý và theo dõi tất cả thông báo của bạn
               </Text>
             </div>
           </div>
-          
+
           <Card className={styles.notificationCard}>
             <Tabs
               activeKey={activeTab}
@@ -356,7 +399,7 @@ const NotificationsPage = () => {
           </Card>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );

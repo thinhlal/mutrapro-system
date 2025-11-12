@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Typography } from 'antd';
-import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../../../constants/index';
+import {
+  FEMALE_SINGERS_DATA,
+  MALE_SINGERS_DATA,
+} from '../../../../constants/index';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import SingerCard from './components/SingerCard/SingerCard';

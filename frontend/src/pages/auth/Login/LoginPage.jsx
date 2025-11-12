@@ -50,7 +50,10 @@ function LoginPage() {
           navigate(`/verify-email?email=${encodeURIComponent(email)}`);
         }, 2000);
       } else if (error.errorCode === 'AUTH_5016') {
-        setErrors({ general: 'Account does not have a password. Please login with Google or create a password in Profile.' });
+        setErrors({
+          general:
+            'Account does not have a password. Please login with Google or create a password in Profile.',
+        });
       } else {
         setErrors({ general: error.message || 'Incorrect email or password' });
       }
@@ -110,7 +113,7 @@ function LoginPage() {
             {successMessage && (
               <div className={styles.successMessage}>{successMessage}</div>
             )}
-            
+
             {errors.general && (
               <div className={styles.errorMessage}>{errors.general}</div>
             )}
@@ -151,7 +154,8 @@ function LoginPage() {
                 value={password}
                 onChange={e => {
                   setPassword(e.target.value);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                  if (errors.password)
+                    setErrors(prev => ({ ...prev, password: '' }));
                 }}
                 disabled={loading}
               />
@@ -190,7 +194,11 @@ function LoginPage() {
             </div>
 
             <div className={styles.socialRow}>
-              <button type="button" className={styles.socialButton} onClick={handleGoogleLogin}>
+              <button
+                type="button"
+                className={styles.socialButton}
+                onClick={handleGoogleLogin}
+              >
                 <GoogleIcon />
                 <span>Continue with Google</span>
               </button>

@@ -141,4 +141,3 @@ ServiceRequestDetailModal.propTypes = {
   isAssigning: PropTypes.bool,
   onCreateContract: PropTypes.func,
 };
-

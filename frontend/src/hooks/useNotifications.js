@@ -45,19 +45,17 @@ export const useNotifications = () => {
   /**
    * Mark notification as read
    */
-  const markAsRead = useCallback(async (notificationId) => {
+  const markAsRead = useCallback(async notificationId => {
     try {
       await notificationService.markAsRead(notificationId);
-      
+
       // Update local state
       setNotifications(prev =>
         prev.map(n =>
-          n.notificationId === notificationId
-            ? { ...n, isRead: true }
-            : n
+          n.notificationId === notificationId ? { ...n, isRead: true } : n
         )
       );
-      
+
       // Decrease unread count
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -71,13 +69,11 @@ export const useNotifications = () => {
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationService.markAllAsRead();
-      
+
       // Update local state
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, isRead: true }))
-      );
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      
+
       toast.success('Đã đánh dấu tất cả thông báo');
     } catch (error) {
       console.error('Failed to mark all as read:', error);
@@ -88,15 +84,15 @@ export const useNotifications = () => {
   /**
    * Handle incoming real-time notification
    */
-  const handleNewNotification = useCallback((notification) => {
+  const handleNewNotification = useCallback(notification => {
     console.log('📬 New notification received:', notification);
-    
+
     // Add to list
     setNotifications(prev => [notification, ...prev].slice(0, 10));
-    
+
     // Increase unread count
     setUnreadCount(prev => prev + 1);
-    
+
     // Show toast notification
     toast.success(notification.title, {
       duration: 4000,
@@ -109,7 +105,7 @@ export const useNotifications = () => {
    */
   useEffect(() => {
     if (isInitialized.current) return;
-    
+
     const token = getItem('accessToken');
     if (!token) {
       console.warn('No authentication token found');
@@ -124,9 +120,11 @@ export const useNotifications = () => {
         }
 
         // Subscribe to notifications
-        notificationWebSocketService.subscribeToNotifications(handleNewNotification);
+        notificationWebSocketService.subscribeToNotifications(
+          handleNewNotification
+        );
         setConnected(true);
-        
+
         console.log('✅ Notification WebSocket setup complete');
         isInitialized.current = true;
       } catch (error) {
@@ -152,7 +150,7 @@ export const useNotifications = () => {
 
     // Periodic refresh (every 30 seconds) - backup for WebSocket
     const interval = setInterval(fetchUnreadCount, 30000);
-    
+
     return () => clearInterval(interval);
   }, [fetchUnreadCount, fetchLatestNotifications]);
 
@@ -168,4 +166,3 @@ export const useNotifications = () => {
 };
 
 export default useNotifications;
-

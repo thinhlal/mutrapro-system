@@ -26,7 +26,11 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './ContractsList.module.css';
-import { getAllContracts, cancelContract, sendContractToCustomer } from '../../../services/contractService';
+import {
+  getAllContracts,
+  cancelContract,
+  sendContractToCustomer,
+} from '../../../services/contractService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
@@ -56,7 +60,7 @@ const CURRENCIES = [
 ];
 
 // Helper function để map contract type sang service name
-const getServiceName = (contractType) => {
+const getServiceName = contractType => {
   if (!contractType) return 'N/A';
   const typeMap = {
     transcription: 'Transcription',
@@ -100,12 +104,12 @@ const statusText = {
 };
 
 // Helper functions for status
-const getStatusColor = (status) => {
+const getStatusColor = status => {
   const statusLower = status?.toLowerCase() || '';
   return statusColor[statusLower] || 'default';
 };
 
-const getStatusText = (status) => {
+const getStatusText = status => {
   const statusLower = status?.toLowerCase() || '';
   return statusText[statusLower] || status;
 };
@@ -127,7 +131,8 @@ export default function ContractsList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [revisionContract, setRevisionContract] = useState(null);
-  const [cancelReasonModalVisible, setCancelReasonModalVisible] = useState(false);
+  const [cancelReasonModalVisible, setCancelReasonModalVisible] =
+    useState(false);
   const [canceledContract, setCanceledContract] = useState(null);
   const auth = useAuth();
   const currentUser = auth?.user;
@@ -180,7 +185,7 @@ export default function ContractsList() {
     });
   }, [contracts, search, type, status, currency, dateRange]);
 
-  const handleSendContract = async (contractId) => {
+  const handleSendContract = async contractId => {
     try {
       setActionLoading(true);
       await sendContractToCustomer(contractId, 7); // 7 days expiry
@@ -202,7 +207,7 @@ export default function ContractsList() {
     }
   };
 
-  const handleCancelContract = async (reason) => {
+  const handleCancelContract = async reason => {
     if (!selectedContract) return;
     try {
       setActionLoading(true);
@@ -241,7 +246,8 @@ export default function ContractsList() {
           </Text>
         </Space>
       ),
-      sorter: (a, b) => (a.contractNumber || '').localeCompare(b.contractNumber || ''),
+      sorter: (a, b) =>
+        (a.contractNumber || '').localeCompare(b.contractNumber || ''),
     },
     {
       title: 'Customer / Service',
@@ -260,12 +266,9 @@ export default function ContractsList() {
       key: 'contractType',
       width: 140,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
-      render: v => (
-        <Tag color="processing">
-          {getServiceName(v)}
-        </Tag>
-      ),
+      onFilter: (val, rec) =>
+        (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
+      render: v => <Tag color="processing">{getServiceName(v)}</Tag>,
     },
     {
       title: 'Status',
@@ -281,7 +284,8 @@ export default function ContractsList() {
         );
       },
       filters: CONTRACT_STATUS.map(x => ({ text: x.label, value: x.value })),
-      onFilter: (val, rec) => (rec.status?.toLowerCase() || '') === val.toLowerCase(),
+      onFilter: (val, rec) =>
+        (rec.status?.toLowerCase() || '') === val.toLowerCase(),
     },
     {
       title: 'Created',
@@ -299,7 +303,9 @@ export default function ContractsList() {
       render: (_, r) => (
         <div>
           <div>
-            <Text strong>{fmtMoney(Number(r.totalPrice || 0), r.currency)}</Text>{' '}
+            <Text strong>
+              {fmtMoney(Number(r.totalPrice || 0), r.currency)}
+            </Text>{' '}
             <Tag>{r.currency}</Tag>
           </div>
           <div className={styles.sub}>
@@ -318,17 +324,21 @@ export default function ContractsList() {
         <div className={styles.timeline}>
           <div>
             <span className={styles.sub}>Start</span>{' '}
-            {r.expectedStartDate 
-              ? dayjs(r.expectedStartDate).format('YYYY-MM-DD')
-              : <span style={{ fontStyle: 'italic', color: '#999' }}>Khi ký</span>
-            }
+            {r.expectedStartDate ? (
+              dayjs(r.expectedStartDate).format('YYYY-MM-DD')
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>Khi ký</span>
+            )}
           </div>
           <div>
             <span className={styles.sub}>Due</span>{' '}
-            {r.dueDate 
-              ? dayjs(r.dueDate).format('YYYY-MM-DD')
-              : <span style={{ fontStyle: 'italic', color: '#999' }}>+{r.slaDays || 0}d</span>
-            }{' '}
+            {r.dueDate ? (
+              dayjs(r.dueDate).format('YYYY-MM-DD')
+            ) : (
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                +{r.slaDays || 0}d
+              </span>
+            )}{' '}
             <span className={styles.sub}>({r.slaDays || 0}d)</span>
           </div>
         </div>
@@ -394,7 +404,10 @@ export default function ContractsList() {
                         setRevisionContract(r);
                         setRevisionModalVisible(true);
                       }}
-                      style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+                      style={{
+                        backgroundColor: '#fa8c16',
+                        borderColor: '#fa8c16',
+                      }}
                     >
                       Xem lý do
                     </Button>
@@ -420,7 +433,11 @@ export default function ContractsList() {
                   </Tooltip>
                 )}
                 {canManagerCancel && (
-                  <Tooltip title={isDraft ? "Hủy contract DRAFT" : "Thu hồi contract đã gửi"}>
+                  <Tooltip
+                    title={
+                      isDraft ? 'Hủy contract DRAFT' : 'Thu hồi contract đã gửi'
+                    }
+                  >
                     <Button
                       danger
                       icon={<StopOutlined />}
@@ -602,24 +619,30 @@ export default function ContractsList() {
             icon={<CopyOutlined />}
             onClick={() => {
               // Navigate đến ContractBuilder với requestId và pass contract data qua state
-              navigate(`/manager/contract-builder?requestId=${revisionContract.requestId}`, {
-                state: {
-                  copyFromContract: {
-                    contractId: revisionContract.contractId,
-                    contractType: revisionContract.contractType,
-                    totalPrice: revisionContract.totalPrice,
-                    depositPercent: revisionContract.depositPercent,
-                    slaDays: revisionContract.slaDays,
-                    freeRevisionsIncluded: revisionContract.freeRevisionsIncluded,
-                    revisionDeadlineDays: revisionContract.revisionDeadlineDays,
-                    additionalRevisionFeeVnd: revisionContract.additionalRevisionFeeVnd,
-                    termsAndConditions: revisionContract.termsAndConditions,
-                    specialClauses: revisionContract.specialClauses,
-                    notes: revisionContract.notes,
-                    cancellationReason: revisionContract.cancellationReason,
-                  }
+              navigate(
+                `/manager/contract-builder?requestId=${revisionContract.requestId}`,
+                {
+                  state: {
+                    copyFromContract: {
+                      contractId: revisionContract.contractId,
+                      contractType: revisionContract.contractType,
+                      totalPrice: revisionContract.totalPrice,
+                      depositPercent: revisionContract.depositPercent,
+                      slaDays: revisionContract.slaDays,
+                      freeRevisionsIncluded:
+                        revisionContract.freeRevisionsIncluded,
+                      revisionDeadlineDays:
+                        revisionContract.revisionDeadlineDays,
+                      additionalRevisionFeeVnd:
+                        revisionContract.additionalRevisionFeeVnd,
+                      termsAndConditions: revisionContract.termsAndConditions,
+                      specialClauses: revisionContract.specialClauses,
+                      notes: revisionContract.notes,
+                      cancellationReason: revisionContract.cancellationReason,
+                    },
+                  },
                 }
-              });
+              );
             }}
           >
             Tạo Contract Mới
@@ -638,29 +661,56 @@ export default function ContractsList() {
 
             <div>
               <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
-              <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div><strong>Contract Number:</strong> {revisionContract.contractNumber}</div>
-                  <div><strong>Customer:</strong> {revisionContract.nameSnapshot}</div>
-                  <div><strong>Service Type:</strong> {getServiceName(revisionContract.contractType)}</div>
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
                   <div>
-                    <strong>Price:</strong> {fmtMoney(Number(revisionContract.totalPrice || 0), revisionContract.currency)} {revisionContract.currency}
+                    <strong>Contract Number:</strong>{' '}
+                    {revisionContract.contractNumber}
                   </div>
-                  <div><strong>SLA:</strong> {revisionContract.slaDays} ngày</div>
+                  <div>
+                    <strong>Customer:</strong> {revisionContract.nameSnapshot}
+                  </div>
+                  <div>
+                    <strong>Service Type:</strong>{' '}
+                    {getServiceName(revisionContract.contractType)}
+                  </div>
+                  <div>
+                    <strong>Price:</strong>{' '}
+                    {fmtMoney(
+                      Number(revisionContract.totalPrice || 0),
+                      revisionContract.currency
+                    )}{' '}
+                    {revisionContract.currency}
+                  </div>
+                  <div>
+                    <strong>SLA:</strong> {revisionContract.slaDays} ngày
+                  </div>
                 </Space>
               </div>
             </div>
 
             <div>
-              <Typography.Title level={5}>Lý do yêu cầu chỉnh sửa:</Typography.Title>
-              <div 
-                style={{ 
-                  padding: '16px', 
-                  background: '#fff7e6', 
+              <Typography.Title level={5}>
+                Lý do yêu cầu chỉnh sửa:
+              </Typography.Title>
+              <div
+                style={{
+                  padding: '16px',
+                  background: '#fff7e6',
                   border: '1px solid #ffd591',
                   borderRadius: '4px',
                   whiteSpace: 'pre-wrap',
-                  minHeight: '80px'
+                  minHeight: '80px',
                 }}
               >
                 {revisionContract.cancellationReason || 'Không có lý do cụ thể'}
@@ -672,7 +722,10 @@ export default function ContractsList() {
               description={
                 <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
                   <li>Đọc kỹ lý do yêu cầu chỉnh sửa từ customer</li>
-                  <li>Click "Tạo Contract Mới" để tạo contract với thông tin đã điều chỉnh</li>
+                  <li>
+                    Click "Tạo Contract Mới" để tạo contract với thông tin đã
+                    điều chỉnh
+                  </li>
                   <li>Sau khi tạo xong, gửi contract mới cho customer</li>
                 </ul>
               }
@@ -713,7 +766,8 @@ export default function ContractsList() {
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Alert
               message={
-                canceledContract.status?.toLowerCase() === 'canceled_by_customer'
+                canceledContract.status?.toLowerCase() ===
+                'canceled_by_customer'
                   ? 'Contract đã bị hủy bởi Customer'
                   : 'Contract đã bị hủy bởi Manager'
               }
@@ -724,15 +778,40 @@ export default function ContractsList() {
 
             <div>
               <Typography.Title level={5}>Thông tin Contract:</Typography.Title>
-              <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <div><strong>Contract Number:</strong> {canceledContract.contractNumber}</div>
-                  <div><strong>Customer:</strong> {canceledContract.nameSnapshot}</div>
-                  <div><strong>Service Type:</strong> {getServiceName(canceledContract.contractType)}</div>
+              <div
+                style={{
+                  padding: '12px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
                   <div>
-                    <strong>Price:</strong> {fmtMoney(Number(canceledContract.totalPrice || 0), canceledContract.currency)} {canceledContract.currency}
+                    <strong>Contract Number:</strong>{' '}
+                    {canceledContract.contractNumber}
                   </div>
-                  <div><strong>SLA:</strong> {canceledContract.slaDays} ngày</div>
+                  <div>
+                    <strong>Customer:</strong> {canceledContract.nameSnapshot}
+                  </div>
+                  <div>
+                    <strong>Service Type:</strong>{' '}
+                    {getServiceName(canceledContract.contractType)}
+                  </div>
+                  <div>
+                    <strong>Price:</strong>{' '}
+                    {fmtMoney(
+                      Number(canceledContract.totalPrice || 0),
+                      canceledContract.currency
+                    )}{' '}
+                    {canceledContract.currency}
+                  </div>
+                  <div>
+                    <strong>SLA:</strong> {canceledContract.slaDays} ngày
+                  </div>
                   <div>
                     <strong>Status:</strong>{' '}
                     <Tag color={getStatusColor(canceledContract.status)}>
@@ -745,14 +824,14 @@ export default function ContractsList() {
 
             <div>
               <Typography.Title level={5}>Lý do hủy:</Typography.Title>
-              <div 
-                style={{ 
-                  padding: '16px', 
-                  background: '#fff1f0', 
+              <div
+                style={{
+                  padding: '16px',
+                  background: '#fff1f0',
                   border: '1px solid #ffccc7',
                   borderRadius: '4px',
                   whiteSpace: 'pre-wrap',
-                  minHeight: '80px'
+                  minHeight: '80px',
                 }}
               >
                 {canceledContract.cancellationReason || 'Không có lý do cụ thể'}
@@ -762,7 +841,8 @@ export default function ContractsList() {
             <Alert
               message="Thông tin"
               description={
-                canceledContract.status?.toLowerCase() === 'canceled_by_customer'
+                canceledContract.status?.toLowerCase() ===
+                'canceled_by_customer'
                   ? 'Contract này đã bị customer hủy. Bạn có thể liên hệ với customer để biết thêm chi tiết hoặc tạo contract mới nếu cần.'
                   : 'Contract này đã bị manager hủy. Nếu cần thiết, bạn có thể tạo contract mới cho request này.'
               }

@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Card,
-  Descriptions,
-  Avatar,
-  Button,
-  Space,
-  Tag,
-  message,
-} from 'antd';
+import { Card, Descriptions, Avatar, Button, Space, Tag, message } from 'antd';
 import { UserOutlined, EditOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -112,4 +104,3 @@ const AdminProfile = () => {
 };
 
 export default AdminProfile;
-

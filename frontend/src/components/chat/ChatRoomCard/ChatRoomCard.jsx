@@ -15,31 +15,31 @@ const ChatRoomCard = ({ room }) => {
   };
 
   // Get room type display text
-  const getRoomTypeText = (type) => {
+  const getRoomTypeText = type => {
     const types = {
       REQUEST_CHAT: 'Yêu cầu dịch vụ',
       PROJECT_CHAT: 'Dự án',
       REVISION_CHAT: 'Chỉnh sửa',
       SUPPORT_CHAT: 'Hỗ trợ',
-      DIRECT_MESSAGE: 'Tin nhắn'
+      DIRECT_MESSAGE: 'Tin nhắn',
     };
     return types[type] || type;
   };
 
   // Get room type color
-  const getRoomTypeColor = (type) => {
+  const getRoomTypeColor = type => {
     const colors = {
       REQUEST_CHAT: '#1890ff',
       PROJECT_CHAT: '#52c41a',
       REVISION_CHAT: '#faad14',
       SUPPORT_CHAT: '#722ed1',
-      DIRECT_MESSAGE: '#eb2f96'
+      DIRECT_MESSAGE: '#eb2f96',
     };
     return colors[type] || '#1890ff';
   };
 
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
@@ -52,7 +52,7 @@ const ChatRoomCard = ({ room }) => {
     if (diffMins < 60) return `${diffMins} phút trước`;
     if (diffHours < 24) return `${diffHours} giờ trước`;
     if (diffDays < 7) return `${diffDays} ngày trước`;
-    
+
     return date.toLocaleDateString('vi-VN');
   };
 
@@ -60,7 +60,11 @@ const ChatRoomCard = ({ room }) => {
     <div className={styles.chatRoomCard} onClick={handleClick}>
       <div className={styles.roomAvatar}>
         <Badge dot={room.unreadCount > 0} offset={[-5, 5]}>
-          <Avatar size={50} icon={<MessageOutlined />} style={{ backgroundColor: getRoomTypeColor(room.roomType) }} />
+          <Avatar
+            size={50}
+            icon={<MessageOutlined />}
+            style={{ backgroundColor: getRoomTypeColor(room.roomType) }}
+          />
         </Badge>
       </div>
 
@@ -71,7 +75,10 @@ const ChatRoomCard = ({ room }) => {
         </div>
 
         <div className={styles.roomDetails}>
-          <span className={styles.roomType} style={{ color: getRoomTypeColor(room.roomType) }}>
+          <span
+            className={styles.roomType}
+            style={{ color: getRoomTypeColor(room.roomType) }}
+          >
             {getRoomTypeText(room.roomType)}
           </span>
           {room.description && (
@@ -81,8 +88,12 @@ const ChatRoomCard = ({ room }) => {
 
         {room.lastMessage && (
           <div className={styles.lastMessage}>
-            <span className={styles.senderName}>{room.lastMessage.senderName}:</span>
-            <span className={styles.messageContent}>{room.lastMessage.content}</span>
+            <span className={styles.senderName}>
+              {room.lastMessage.senderName}:
+            </span>
+            <span className={styles.messageContent}>
+              {room.lastMessage.content}
+            </span>
           </div>
         )}
 
@@ -100,4 +111,3 @@ const ChatRoomCard = ({ room }) => {
 };
 
 export default ChatRoomCard;
-

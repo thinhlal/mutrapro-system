@@ -262,17 +262,17 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
   }
-  
+
   .previewSection {
     position: static;
     top: auto;
   }
-  
+
   .formCard,
   .previewCard {
     max-height: none;
   }
-  
+
   .formGrid {
     grid-template-columns: 1fr;
   }
@@ -294,13 +294,19 @@
   opacity: 1 !important;
 }
 
-.disabledInput :global(.ant-input-number.ant-input-number-disabled .ant-input-number-input) {
+.disabledInput
+  :global(.ant-input-number.ant-input-number-disabled .ant-input-number-input) {
   color: rgba(0, 0, 0, 0.85) !important;
   cursor: not-allowed !important;
   background-color: transparent !important;
 }
 
-.disabledInput :global(.ant-input-number.ant-input-number-disabled .ant-input-number-input-wrap input) {
+.disabledInput
+  :global(
+    .ant-input-number.ant-input-number-disabled
+      .ant-input-number-input-wrap
+      input
+  ) {
   color: rgba(0, 0, 0, 0.85) !important;
   cursor: not-allowed !important;
 }
@@ -312,7 +318,8 @@
   opacity: 1 !important;
 }
 
-.disabledInput :global(.ant-picker.ant-picker-disabled .ant-picker-input > input) {
+.disabledInput
+  :global(.ant-picker.ant-picker-disabled .ant-picker-input > input) {
   color: rgba(0, 0, 0, 0.85) !important;
   cursor: not-allowed !important;
   background-color: transparent !important;

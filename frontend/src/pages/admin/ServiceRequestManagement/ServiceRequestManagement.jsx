@@ -75,8 +75,10 @@ export default function ServiceRequestManagement() {
 
       if (response?.status === 'success') {
         // API trả về array trực tiếp trong data, không có content
-        const data = Array.isArray(response.data) ? response.data : (response.data?.content || []);
-        
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.content || [];
+
         // Map field names từ API sang frontend format
         const mappedData = data.map(item => ({
           ...item,
@@ -85,7 +87,7 @@ export default function ServiceRequestManagement() {
           contactEmail: item.contactEmail || item.userId || 'N/A',
           contactPhone: item.contactPhone || 'N/A',
         }));
-        
+
         setAllRequests(mappedData);
       }
     } catch (error) {
@@ -108,8 +110,10 @@ export default function ServiceRequestManagement() {
 
       if (response?.status === 'success') {
         // API trả về array trực tiếp trong data
-        const data = Array.isArray(response.data) ? response.data : (response.data?.content || []);
-        
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.content || [];
+
         // Map field names
         const mappedData = data.map(item => ({
           ...item,
@@ -118,7 +122,7 @@ export default function ServiceRequestManagement() {
           contactEmail: item.contactEmail || item.userId || 'N/A',
           contactPhone: item.contactPhone || 'N/A',
         }));
-        
+
         setMyRequests(mappedData);
       }
     } catch (error) {
@@ -273,7 +277,7 @@ export default function ServiceRequestManagement() {
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
         const hasManager = !!record.managerUserId;
-        
+
         return (
           <Space>
             <Button
@@ -397,4 +401,3 @@ export default function ServiceRequestManagement() {
     </div>
   );
 }
-

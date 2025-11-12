@@ -18,7 +18,7 @@ export const getChatRooms = async () => {
 /**
  * Get chat room by ID
  */
-export const getChatRoomById = async (roomId) => {
+export const getChatRoomById = async roomId => {
   const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ROOM(roomId));
   return response.data;
 };
@@ -26,8 +26,11 @@ export const getChatRoomById = async (roomId) => {
 /**
  * Create a new chat room (manual - for SUPPORT_CHAT or DIRECT_MESSAGE only)
  */
-export const createChatRoom = async (data) => {
-  const response = await axiosInstance.post(API_ENDPOINTS.CHAT.CREATE_ROOM, data);
+export const createChatRoom = async data => {
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.CHAT.CREATE_ROOM,
+    data
+  );
   return response.data;
 };
 
@@ -35,7 +38,10 @@ export const createChatRoom = async (data) => {
  * Add participant to chat room
  */
 export const addParticipant = async (roomId, data) => {
-  const response = await axiosInstance.post(API_ENDPOINTS.CHAT.ADD_PARTICIPANT(roomId), data);
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.CHAT.ADD_PARTICIPANT(roomId),
+    data
+  );
   return response.data;
 };
 
@@ -43,7 +49,9 @@ export const addParticipant = async (roomId, data) => {
  * Remove participant from chat room
  */
 export const removeParticipant = async (roomId, userId) => {
-  const response = await axiosInstance.delete(API_ENDPOINTS.CHAT.REMOVE_PARTICIPANT(roomId, userId));
+  const response = await axiosInstance.delete(
+    API_ENDPOINTS.CHAT.REMOVE_PARTICIPANT(roomId, userId)
+  );
   return response.data;
 };
 
@@ -54,9 +62,12 @@ export const removeParticipant = async (roomId, userId) => {
  * Note: To send messages, use WebSocket via websocketService.sendMessage()
  */
 export const getMessages = async (roomId, page = 0, size = 50) => {
-  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_MESSAGES(roomId), {
-    params: { page, size }
-  });
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.CHAT.GET_MESSAGES(roomId),
+    {
+      params: { page, size },
+    }
+  );
   return response.data;
 };
 
@@ -64,7 +75,9 @@ export const getMessages = async (roomId, page = 0, size = 50) => {
  * Get recent messages since a specific timestamp (for sync after reconnect)
  */
 export const getRecentMessages = async (roomId, sinceTimestamp) => {
-  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_RECENT_MESSAGES(roomId, sinceTimestamp));
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.CHAT.GET_RECENT_MESSAGES(roomId, sinceTimestamp)
+  );
   return response.data;
 };
 
@@ -77,4 +90,3 @@ export default {
   getMessages,
   getRecentMessages,
 };
-

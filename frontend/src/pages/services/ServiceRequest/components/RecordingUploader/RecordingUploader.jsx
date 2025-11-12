@@ -19,7 +19,8 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-const toMMSS = (s = 0) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const toMMSS = (s = 0) =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 export default function RecordingUploader({ serviceType, formData }) {
   const [files, setFiles] = useState([]);
@@ -29,11 +30,11 @@ export default function RecordingUploader({ serviceType, formData }) {
   const navigate = useNavigate();
 
   const beforeUpload = useCallback(() => false, []);
-  
+
   const onChange = async ({ fileList }) => {
     const fileObjs = fileList.map(it => it.originFileObj).filter(Boolean);
     setFiles(fileObjs);
-    
+
     // If has audio files, try to detect duration from first file
     if (fileObjs.length > 0 && fileObjs[0].type?.startsWith('audio/')) {
       try {
@@ -46,14 +47,14 @@ export default function RecordingUploader({ serviceType, formData }) {
       }
     }
   };
-  
+
   const clearAll = () => {
     setFiles([]);
     setDetectedDurationMinutes(0);
     setAdjustedDurationMinutes(5);
   };
 
-  const handleDurationChange = (value) => {
+  const handleDurationChange = value => {
     if (value && value > 0) {
       setAdjustedDurationMinutes(parseFloat(value));
     }
@@ -162,23 +163,30 @@ export default function RecordingUploader({ serviceType, formData }) {
           <div style={{ padding: '16px 0' }}>
             <div style={{ marginBottom: 12 }}>
               <ClockCircleOutlined style={{ marginRight: 8 }} />
-              <span style={{ fontWeight: 600 }}>Session Duration (Minutes):</span>
+              <span style={{ fontWeight: 600 }}>
+                Session Duration (Minutes):
+              </span>
               {detectedDurationMinutes > 0 && (
                 <Tag color="cyan" style={{ marginLeft: 8 }}>
-                  Detected: {detectedDurationMinutes} min (~ {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                  Detected: {detectedDurationMinutes} min (~{' '}
+                  {toMMSS(Math.round(detectedDurationMinutes * 60))})
                 </Tag>
               )}
             </div>
-            
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Button
                 icon={<MinusOutlined />}
-                onClick={() => handleDurationChange(Math.max(0.01, adjustedDurationMinutes - 0.01))}
+                onClick={() =>
+                  handleDurationChange(
+                    Math.max(0.01, adjustedDurationMinutes - 0.01)
+                  )
+                }
                 disabled={adjustedDurationMinutes <= 0.01}
               >
                 -0.01
               </Button>
-              
+
               <InputNumber
                 min={0.01}
                 max={999}
@@ -189,26 +197,31 @@ export default function RecordingUploader({ serviceType, formData }) {
                 style={{ width: 120 }}
                 addonAfter="min"
               />
-              
+
               <Button
                 icon={<PlusOutlined />}
-                onClick={() => handleDurationChange(adjustedDurationMinutes + 0.01)}
+                onClick={() =>
+                  handleDurationChange(adjustedDurationMinutes + 0.01)
+                }
               >
                 +0.01
               </Button>
-              
+
               {detectedDurationMinutes > 0 && (
                 <Button
                   type="link"
-                  onClick={() => setAdjustedDurationMinutes(detectedDurationMinutes)}
+                  onClick={() =>
+                    setAdjustedDurationMinutes(detectedDurationMinutes)
+                  }
                 >
                   Reset to {detectedDurationMinutes} min
                 </Button>
               )}
             </div>
-            
+
             <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-              Hiện tại: {adjustedDurationMinutes} phút (~ {toMMSS(Math.round(adjustedDurationMinutes * 60))})
+              Hiện tại: {adjustedDurationMinutes} phút (~{' '}
+              {toMMSS(Math.round(adjustedDurationMinutes * 60))})
             </div>
           </div>
         </div>

@@ -156,7 +156,7 @@ function RegisterPage() {
             {successMessage && (
               <div className={styles.successMessage}>{successMessage}</div>
             )}
-            
+
             {errors.general && (
               <div className={styles.errorMessage}>{errors.general}</div>
             )}

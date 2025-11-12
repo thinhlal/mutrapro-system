@@ -1,11 +1,12 @@
-  /* Layout */
+/* Layout */
 .pageWrapper {
   position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url('../../../assets/images/LoginPage/Classical_Music-495872600.jpg') center/cover no-repeat;
+  background: url('../../../assets/images/LoginPage/Classical_Music-495872600.jpg')
+    center/cover no-repeat;
   color: #e6e6f0;
   overflow: hidden;
 }
@@ -20,8 +21,8 @@
   backdrop-filter: blur(5px);
   background: rgba(0, 0, 0, 0.6);
   z-index: 1;
-  
-}.gradientBg {
+}
+.gradientBg {
   position: absolute;
   inset: -10% -10% -10% -10%;
   /* Đã đổi màu conic-gradient sang các tông màu nóng */

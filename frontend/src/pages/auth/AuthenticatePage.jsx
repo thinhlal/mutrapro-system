@@ -38,7 +38,7 @@ export default function AuthenticatePage() {
     try {
       setIsLoading(true);
       const response = await axiosInstancePublic.post(
-        API_ENDPOINTS.AUTH.GOOGLE_LOGIN_WITH_CODE(code),
+        API_ENDPOINTS.AUTH.GOOGLE_LOGIN_WITH_CODE(code)
       );
       const payload = response?.data;
       const auth = payload?.data;
@@ -53,19 +53,20 @@ export default function AuthenticatePage() {
         fullName: auth.fullName,
         isNoPassword: auth.isNoPassword,
       });
-      if (updateUser) updateUser({
-        id: auth.userId,
-        email: auth.email,
-        role: auth.role,
-        fullName: auth.fullName,
-        isNoPassword: auth.isNoPassword,
-      });
+      if (updateUser)
+        updateUser({
+          id: auth.userId,
+          email: auth.email,
+          role: auth.role,
+          fullName: auth.fullName,
+          isNoPassword: auth.isNoPassword,
+        });
 
       toast.success('Login successfully!');
-      
+
       // Determine redirect path based on user role
       const redirectPath = getRoleBasedRedirectPath(auth.role);
-      
+
       setTimeout(() => {
         navigate(redirectPath);
       }, 1000);

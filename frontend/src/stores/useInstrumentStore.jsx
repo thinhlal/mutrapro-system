@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { getAllNotationInstruments } from '../services/notationInstrumentService';
 
@@ -70,4 +69,3 @@ export const useInstrumentStore = create((set, get) => ({
     set({ error: null });
   },
 }));
-

@@ -7,7 +7,10 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {string} usage - Filter by usage: transcription|arrangement|both
  * @param {boolean} includeInactive - Include inactive instruments (for admin)
  */
-export const getAllNotationInstruments = async (usage = null, includeInactive = true) => {
+export const getAllNotationInstruments = async (
+  usage = null,
+  includeInactive = true
+) => {
   try {
     const params = { includeInactive };
     if (usage) {
@@ -19,9 +22,7 @@ export const getAllNotationInstruments = async (usage = null, includeInactive = 
     );
     return response.data;
   } catch (error) {
-    throw (
-      error.response?.data || { message: 'Lỗi khi lấy danh sách nhạc cụ' }
-    );
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách nhạc cụ' };
   }
 };
 
@@ -92,4 +93,3 @@ export const uploadInstrumentImage = async (instrumentId, imageFile) => {
     throw error.response?.data || { message: 'Lỗi khi upload hình ảnh' };
   }
 };
-

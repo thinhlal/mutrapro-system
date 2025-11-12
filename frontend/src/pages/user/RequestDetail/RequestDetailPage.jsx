@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Card, 
-  Descriptions, 
-  Tag, 
-  Button, 
-  Spin, 
-  Empty, 
+import {
+  Card,
+  Descriptions,
+  Tag,
+  Button,
+  Spin,
+  Empty,
   message,
   Space,
-   Divider,
+  Divider,
   Modal,
-  Input
+  Input,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -25,12 +25,12 @@ import {
 import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
-import { 
-  getContractsByRequestId, 
-  approveContract, 
+import {
+  getContractsByRequestId,
+  approveContract,
   signContract,
-  requestChangeContract, 
-  cancelContract 
+  requestChangeContract,
+  cancelContract,
 } from '../../../services/contractService';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
@@ -46,11 +46,13 @@ const RequestDetailPage = () => {
   const [contracts, setContracts] = useState([]);
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [requestChangeModalVisible, setRequestChangeModalVisible] = useState(false);
+  const [requestChangeModalVisible, setRequestChangeModalVisible] =
+    useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [changeReason, setChangeReason] = useState('');
-  const { instruments: instrumentsData, fetchInstruments } = useInstrumentStore();
+  const { instruments: instrumentsData, fetchInstruments } =
+    useInstrumentStore();
 
   useEffect(() => {
     fetchInstruments();
@@ -61,7 +63,7 @@ const RequestDetailPage = () => {
       try {
         setLoading(true);
         const response = await getServiceRequestById(requestId);
-        
+
         if (response.status === 'success' && response.data) {
           setRequest(response.data);
           console.log('Request data:', response.data);
@@ -103,12 +105,16 @@ const RequestDetailPage = () => {
     loadContracts();
   }, [requestId]);
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = status => {
     const hasManager = !!request?.managerUserId;
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-        icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
         text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
       },
       contract_sent: {
@@ -150,7 +156,7 @@ const RequestDetailPage = () => {
     return configs[status] || { color: 'default', icon: null, text: status };
   };
 
-  const getRequestTypeText = (type) => {
+  const getRequestTypeText = type => {
     const types = {
       transcription: 'Phiên âm',
       arrangement: 'Biên soạn',
@@ -160,7 +166,7 @@ const RequestDetailPage = () => {
     return types[type] || type;
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', {
@@ -188,7 +194,7 @@ const RequestDetailPage = () => {
     return 'Chưa được gán • Chờ xử lý';
   };
 
-  const handleApproveContract = async (contractId) => {
+  const handleApproveContract = async contractId => {
     try {
       setActionLoading(true);
       await approveContract(contractId);
@@ -205,11 +211,13 @@ const RequestDetailPage = () => {
     }
   };
 
-  const handleSignContract = async (contractId) => {
+  const handleSignContract = async contractId => {
     try {
       setActionLoading(true);
       await signContract(contractId);
-      message.success('Đã ký contract thành công! Có thể bắt đầu thực hiện công việc.');
+      message.success(
+        'Đã ký contract thành công! Có thể bắt đầu thực hiện công việc.'
+      );
       // Reload contracts
       const response = await getContractsByRequestId(requestId);
       if (response.status === 'success' && response.data) {
@@ -246,7 +254,7 @@ const RequestDetailPage = () => {
     }
   };
 
-  const handleCancelContract = async (reason) => {
+  const handleCancelContract = async reason => {
     if (!selectedContract) return;
     try {
       setActionLoading(true);
@@ -266,12 +274,12 @@ const RequestDetailPage = () => {
     }
   };
 
-  const handleOpenRequestChangeModal = (contract) => {
+  const handleOpenRequestChangeModal = contract => {
     setSelectedContract(contract);
     setRequestChangeModalVisible(true);
   };
 
-  const handleOpenCancelModal = (contract) => {
+  const handleOpenCancelModal = contract => {
     setSelectedContract(contract);
     setCancelModalVisible(true);
   };
@@ -318,8 +326,8 @@ const RequestDetailPage = () => {
               <Tag color="blue" className={styles.typeTag}>
                 {getRequestTypeText(request.requestType)}
               </Tag>
-              <Tag 
-                color={statusConfig.color} 
+              <Tag
+                color={statusConfig.color}
                 icon={statusConfig.icon}
                 className={styles.statusTag}
               >
@@ -363,21 +371,23 @@ const RequestDetailPage = () => {
               </Descriptions.Item>
             )}
 
-            {request.tempoPercentage && request.requestType === 'transcription' && (
-              <Descriptions.Item label="Tempo">
-                <Tag>{request.tempoPercentage}%</Tag>
-              </Descriptions.Item>
-            )}
+            {request.tempoPercentage &&
+              request.requestType === 'transcription' && (
+                <Descriptions.Item label="Tempo">
+                  <Tag>{request.tempoPercentage}%</Tag>
+                </Descriptions.Item>
+              )}
 
-            {request.hasVocalist !== undefined && request.requestType !== 'transcription' && (
-              <Descriptions.Item label="Ca sĩ">
-                {request.hasVocalist ? (
-                  <Tag color="green">Có</Tag>
-                ) : (
-                  <Tag color="default">Không</Tag>
-                )}
-              </Descriptions.Item>
-            )}
+            {request.hasVocalist !== undefined &&
+              request.requestType !== 'transcription' && (
+                <Descriptions.Item label="Ca sĩ">
+                  {request.hasVocalist ? (
+                    <Tag color="green">Có</Tag>
+                  ) : (
+                    <Tag color="default">Không</Tag>
+                  )}
+                </Descriptions.Item>
+              )}
 
             {request.externalGuestCount > 0 && (
               <Descriptions.Item label="Khách mời">
@@ -388,8 +398,10 @@ const RequestDetailPage = () => {
             {request.instrumentIds && request.instrumentIds.length > 0 && (
               <Descriptions.Item label="Nhạc cụ">
                 <Space wrap>
-                  {request.instrumentIds.map((id) => {
-                    const inst = instrumentsData.find(i => i.instrumentId === id);
+                  {request.instrumentIds.map(id => {
+                    const inst = instrumentsData.find(
+                      i => i.instrumentId === id
+                    );
                     return inst ? (
                       <Tag key={id} color="purple">
                         {inst.instrumentName}
@@ -407,13 +419,22 @@ const RequestDetailPage = () => {
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
-                  <div><strong>Tên:</strong> {request.managerInfo.fullName || 'N/A'}</div>
-                  <div><strong>Email:</strong> {request.managerInfo.email || 'N/A'}</div>
+                  <div>
+                    <strong>Tên:</strong>{' '}
+                    {request.managerInfo.fullName || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {request.managerInfo.email || 'N/A'}
+                  </div>
                   {request.managerInfo.phone && (
-                    <div><strong>Điện thoại:</strong> {request.managerInfo.phone}</div>
+                    <div>
+                      <strong>Điện thoại:</strong> {request.managerInfo.phone}
+                    </div>
                   )}
                   {request.managerInfo.role && (
-                    <div><strong>Vai trò:</strong> {request.managerInfo.role}</div>
+                    <div>
+                      <strong>Vai trò:</strong> {request.managerInfo.role}
+                    </div>
                   )}
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
@@ -423,7 +444,9 @@ const RequestDetailPage = () => {
             ) : request.managerUserId ? (
               <Descriptions.Item label="Manager">
                 <div>
-                  <div><strong>ID:</strong> {request.managerUserId}</div>
+                  <div>
+                    <strong>ID:</strong> {request.managerUserId}
+                  </div>
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
                   </div>
@@ -440,13 +463,15 @@ const RequestDetailPage = () => {
             {request.files && request.files.length > 0 && (
               <Descriptions.Item label="Files đã upload">
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  {request.files.map((file) => (
+                  {request.files.map(file => (
                     <div key={file.fileId} style={{ marginBottom: 8 }}>
                       <Tag color="cyan" style={{ marginRight: 8 }}>
                         {file.fileName}
                       </Tag>
                       <span style={{ fontSize: '12px', color: '#888' }}>
-                        {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
+                        {file.fileSize
+                          ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB`
+                          : ''}
                         {file.mimeType && ` • ${file.mimeType}`}
                       </span>
                       {file.filePath && (
@@ -517,14 +542,15 @@ const RequestDetailPage = () => {
         >
           <div style={{ marginBottom: 16 }}>
             <p>
-              Vui lòng nhập lý do bạn muốn chỉnh sửa contract <strong>{selectedContract?.contractNumber}</strong>
+              Vui lòng nhập lý do bạn muốn chỉnh sửa contract{' '}
+              <strong>{selectedContract?.contractNumber}</strong>
             </p>
           </div>
           <TextArea
             rows={4}
             placeholder="Vui lòng nhập lý do yêu cầu chỉnh sửa (tối thiểu 10 ký tự)..."
             value={changeReason}
-            onChange={(e) => setChangeReason(e.target.value)}
+            onChange={e => setChangeReason(e.target.value)}
             showCount
             maxLength={500}
           />
@@ -535,4 +561,3 @@ const RequestDetailPage = () => {
 };
 
 export default RequestDetailPage;
-

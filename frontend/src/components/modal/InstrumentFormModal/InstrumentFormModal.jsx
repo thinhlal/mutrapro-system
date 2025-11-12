@@ -91,9 +91,7 @@ export default function InstrumentFormModal({
         <Form.Item
           label="Instrument Name"
           name="instrumentName"
-          rules={[
-            { required: true, message: 'Please input instrument name!' },
-          ]}
+          rules={[{ required: true, message: 'Please input instrument name!' }]}
         >
           <Input placeholder="e.g., Piano, Guitar, Violin" />
         </Form.Item>
@@ -143,11 +141,7 @@ export default function InstrumentFormModal({
         </Form.Item>
 
         {editMode && (
-          <Form.Item
-            label="Active"
-            name="active"
-            valuePropName="checked"
-          >
+          <Form.Item label="Active" name="active" valuePropName="checked">
             <Switch />
           </Form.Item>
         )}
@@ -183,4 +177,3 @@ InstrumentFormModal.propTypes = {
   initialData: PropTypes.object,
   form: PropTypes.object.isRequired,
 };
-

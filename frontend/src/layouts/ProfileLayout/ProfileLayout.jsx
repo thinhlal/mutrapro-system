@@ -16,13 +16,13 @@ const ProfileLayout = ({ children }) => {
     { label: 'Subscription', path: '/profile/subscription' },
   ];
 
-  const handleNavClick = (item) => {
+  const handleNavClick = item => {
     if (item.path) {
       navigate(item.path);
     }
   };
 
-  const isActive = (path) => {
+  const isActive = path => {
     return location.pathname === path;
   };
 
@@ -33,7 +33,12 @@ const ProfileLayout = ({ children }) => {
         <nav className={styles.sideNav}>
           {navItems.map((item, index) => {
             if (item.type === 'separator') {
-              return <div key={`separator-${index}`} className={styles.navSeparator}></div>;
+              return (
+                <div
+                  key={`separator-${index}`}
+                  className={styles.navSeparator}
+                ></div>
+              );
             }
 
             return (
@@ -48,9 +53,7 @@ const ProfileLayout = ({ children }) => {
           })}
         </nav>
 
-        <main className={styles.mainContent}>
-          {children}
-        </main>
+        <main className={styles.mainContent}>{children}</main>
       </div>
 
       {/* <Footer /> */}
@@ -59,4 +62,3 @@ const ProfileLayout = ({ children }) => {
 };
 
 export default ProfileLayout;
-

@@ -14,16 +14,19 @@ import {
   Descriptions,
   Divider,
 } from 'antd';
-import { 
-  EyeOutlined, 
-  DollarOutlined, 
+import {
+  EyeOutlined,
+  DollarOutlined,
   CheckCircleOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
-import { calculatePrice, formatPrice } from '../../../../services/pricingMatrixService';
+import {
+  calculatePrice,
+  formatPrice,
+} from '../../../../services/pricingMatrixService';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
 import { formatDurationMMSS } from '../../../../utils/timeUtils';
@@ -68,7 +71,10 @@ export default function TranscriptionQuotePageSimplified() {
     const fetchPrice = async () => {
       try {
         setLoading(true);
-        const response = await calculatePrice(serviceType, formData.durationMinutes);
+        const response = await calculatePrice(
+          serviceType,
+          formData.durationMinutes
+        );
         if (response.status === 'success' && response.data) {
           setPriceData(response.data);
         }
@@ -90,11 +96,13 @@ export default function TranscriptionQuotePageSimplified() {
       // Validate duration for transcription
       if (serviceType === 'transcription') {
         if (!formData.durationMinutes || formData.durationMinutes <= 0) {
-          message.error('Thời lượng phải là số dương (phút) cho transcription.');
+          message.error(
+            'Thời lượng phải là số dương (phút) cho transcription.'
+          );
           setSubmitting(false);
           return;
         }
-        
+
         // Validate file is required for transcription
         if (!uploadedFile) {
           message.error('File audio là bắt buộc cho transcription.');
@@ -147,19 +155,25 @@ export default function TranscriptionQuotePageSimplified() {
             <Descriptions.Item label="Service Type">
               <Tag color="blue">{serviceType}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Title">{formData.title}</Descriptions.Item>
+            <Descriptions.Item label="Title">
+              {formData.title}
+            </Descriptions.Item>
             <Descriptions.Item label="Description">
               {formData.description}
             </Descriptions.Item>
             <Descriptions.Item label="Duration">
-              <Tag color="green">{formatDurationMMSS(formData.durationMinutes)}</Tag>
+              <Tag color="green">
+                {formatDurationMMSS(formData.durationMinutes)}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="File">{fileName}</Descriptions.Item>
             {formData.instrumentIds && formData.instrumentIds.length > 0 && (
               <Descriptions.Item label="Instruments">
                 <Space wrap>
                   {formData.instrumentIds.map(id => {
-                    const inst = instrumentsData.find(i => i.instrumentId === id);
+                    const inst = instrumentsData.find(
+                      i => i.instrumentId === id
+                    );
                     return inst ? (
                       <Tag key={id} color="purple">
                         {inst.instrumentName}
@@ -185,7 +199,7 @@ export default function TranscriptionQuotePageSimplified() {
         </Card>
 
         {/* Price Calculation */}
-        <Card 
+        <Card
           title={
             <span>
               <DollarOutlined /> Price Calculation
@@ -202,7 +216,13 @@ export default function TranscriptionQuotePageSimplified() {
               <Alert
                 message="Estimated Total"
                 description={
-                  <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 'bold',
+                      color: '#52c41a',
+                    }}
+                  >
                     {formatPrice(priceData.totalPrice, priceData.currency)}
                   </div>
                 }
@@ -218,7 +238,8 @@ export default function TranscriptionQuotePageSimplified() {
                 <div style={{ marginTop: 8 }}>
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="Base Rate">
-                      {formatPrice(priceData.basePrice, priceData.currency)} / minute
+                      {formatPrice(priceData.basePrice, priceData.currency)} /
+                      minute
                     </Descriptions.Item>
                     <Descriptions.Item label="Duration">
                       {formatDurationMMSS(formData.durationMinutes)}
@@ -247,9 +268,15 @@ export default function TranscriptionQuotePageSimplified() {
         {/* Contact Info */}
         <Card title="Contact Information" style={{ marginBottom: 24 }}>
           <Descriptions column={1} bordered>
-            <Descriptions.Item label="Name">{formData.contactName}</Descriptions.Item>
-            <Descriptions.Item label="Email">{formData.contactEmail}</Descriptions.Item>
-            <Descriptions.Item label="Phone">{formData.contactPhone}</Descriptions.Item>
+            <Descriptions.Item label="Name">
+              {formData.contactName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email">
+              {formData.contactEmail}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phone">
+              {formData.contactPhone}
+            </Descriptions.Item>
           </Descriptions>
         </Card>
 

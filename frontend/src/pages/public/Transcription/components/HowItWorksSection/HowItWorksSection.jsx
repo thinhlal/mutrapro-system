@@ -1,4 +1,7 @@
-import { HOW_IT_WORKS_STEPS, HOW_IT_WORKS_ICONS } from '../../../../../constants';
+import {
+  HOW_IT_WORKS_STEPS,
+  HOW_IT_WORKS_ICONS,
+} from '../../../../../constants';
 import { useScrollActiveIndex, useClientSide } from '../../../../../hooks';
 import styles from './HowItWorksSection.module.css';
 
