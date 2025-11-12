@@ -257,7 +257,7 @@ const MyRequestsContent = () => {
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
-                    onClick={() => navigate(`/profile/my-requests/${request.requestId}`)}
+                    onClick={() => navigate(`/my-requests/${request.requestId}`)}
                     className={styles.viewDetailBtn}
                   >
                     View Details
