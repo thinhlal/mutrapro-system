@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface FileRepository extends JpaRepository<File, UUID> {
+public interface FileRepository extends JpaRepository<File, String> {
 
     List<File> findByRequestId(String requestId);
 

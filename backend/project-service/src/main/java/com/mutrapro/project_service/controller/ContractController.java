@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -45,7 +44,7 @@ public class ContractController {
     @Operation(summary = "Lấy chi tiết contract theo ID")
     public ApiResponse<ContractResponse> getContractById(
             @Parameter(description = "ID của contract")
-            @PathVariable UUID contractId) {
+            @PathVariable String contractId) {
         log.info("Getting contract by id: contractId={}", contractId);
         ContractResponse contract = contractService.getContractById(contractId);
         return ApiResponse.<ContractResponse>builder()
@@ -101,7 +100,7 @@ public class ContractController {
     @Operation(summary = "Update contract status (sent, reviewed, signed, expired)")
     public ApiResponse<ContractResponse> updateContractStatus(
             @Parameter(description = "ID của contract")
-            @PathVariable UUID contractId,
+            @PathVariable String contractId,
             @Parameter(description = "Status mới (sent, reviewed, signed, expired)")
             @RequestParam ContractStatus status,
             @Parameter(description = "Số ngày để expires (chỉ áp dụng khi status = sent, mặc định 7 ngày)")

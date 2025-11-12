@@ -211,9 +211,9 @@ public class ContractService {
      * Lấy contract theo ID
      */
     @Transactional(readOnly = true)
-    public ContractResponse getContractById(UUID contractId) {
+    public ContractResponse getContractById(String contractId) {
         Contract contract = contractRepository.findById(contractId)
-            .orElseThrow(() -> ContractNotFoundException.byId(contractId.toString()));
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         return contractMapper.toResponse(contract);
     }
     
@@ -302,9 +302,9 @@ public class ContractService {
      * @return ContractResponse
      */
     @Transactional
-    public ContractResponse updateContractStatus(UUID contractId, ContractStatus newStatus, Integer expiresInDays) {
+    public ContractResponse updateContractStatus(String contractId, ContractStatus newStatus, Integer expiresInDays) {
         Contract contract = contractRepository.findById(contractId)
-            .orElseThrow(() -> ContractNotFoundException.byId(contractId.toString()));
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
         // Validate status transition
         ContractStatus currentStatus = contract.getStatus();

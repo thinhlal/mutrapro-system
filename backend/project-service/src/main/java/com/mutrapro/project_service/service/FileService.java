@@ -59,7 +59,7 @@ public class FileService {
         List<File> files = fileRepository.findByRequestId(requestId);
         return files.stream()
                 .map(f -> FileInfoResponse.builder()
-                        .fileId(f.getFileId().toString())
+                        .fileId(f.getFileId())
                         .fileName(f.getFileName())
                         .filePath(f.getFilePath())
                         .fileSize(f.getFileSize())
