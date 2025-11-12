@@ -12,7 +12,7 @@ const ProfileLayout = ({ children }) => {
     { label: 'Back to app', path: '/', type: 'link' },
     { type: 'separator' },
     { label: 'Profile', path: '/profile' },
-    { label: 'My Requests', path: '/profile/my-requests' },
+    { label: 'My Requests', path: '/my-requests' },
     { label: 'Subscription', path: '/profile/subscription' },
   ];
 

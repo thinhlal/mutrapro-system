@@ -153,7 +153,7 @@ export default function ContractsList() {
     try {
       setActionLoading(true);
       await cancelContract(selectedContract.contractId, reason);
-      message.success('Đã hủy contract thành công');
+      message.success('Contract cancelled successfully');
       setCancelModalVisible(false);
       setSelectedContract(null);
       // Reload contracts
@@ -204,7 +204,7 @@ export default function ContractsList() {
       title: 'Type',
       dataIndex: 'contractType',
       key: 'contractType',
-      width: 140,
+      width: 220,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
       onFilter: (val, rec) => (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
       render: v => (
@@ -217,7 +217,7 @@ export default function ContractsList() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 180,
       render: v => {
         const statusLower = v?.toLowerCase() || 'draft';
         return (
@@ -278,7 +278,7 @@ export default function ContractsList() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 280,
+      width: 180,
       render: (_, r) => {
         const isSent = r.status?.toLowerCase() === 'sent';
         const isCustomer = currentUser?.role === 'CUSTOMER';
@@ -334,7 +334,7 @@ export default function ContractsList() {
   return (
     <div className={styles.container}>
       <div>
-        <Typography.Title level={4} style={{ marginBottom: 8 }}>
+        <Typography.Title level={2} style={{ marginBottom: 24 }}>
           Contract List
         </Typography.Title>
       </div>
@@ -383,9 +383,9 @@ export default function ContractsList() {
               setLoading(true);
               const response = await getAllContracts();
               setContracts(response.data || []);
-              message.success('Đã làm mới danh sách');
+              message.success('List refreshed successfully');
             } catch (err) {
-              message.error('Lỗi khi làm mới danh sách');
+              message.error('Error refreshing list');
             } finally {
               setLoading(false);
             }

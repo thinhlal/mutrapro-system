@@ -1,6 +1,6 @@
 :root {
   --background-card: #ffffff;
-  --background-page: #f8f9fa;
+  --background-page: #ffffff;
   --text-primary: #222222;
   --text-secondary: #666666;
   --border-color: #e0e0e0;
@@ -13,18 +13,20 @@
 /* Page Wrapper */
 .pageWrapper {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--background-page);
+  background-color: #fff;
 }
 
 /* Page Container */
 .pageContainer {
   flex: 1;
-  padding: 48px 24px;
-  max-width: 1200px;
+  padding-top: 200px;
+  max-width: 1400px;
   width: 100%;
-  margin: 150px auto;
+  margin: 0px auto;
+  background-color: #fff;
 }
 
 /* Page Header */

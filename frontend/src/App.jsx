@@ -110,7 +110,7 @@ function App() {
             }
           />
           <Route
-            path="/profile/my-requests"
+            path="/my-requests"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
@@ -120,7 +120,7 @@ function App() {
             }
           />
           <Route
-            path="/profile/my-requests/:requestId"
+            path="/my-requests/:requestId"
             element={
               <ProtectedRoute
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}

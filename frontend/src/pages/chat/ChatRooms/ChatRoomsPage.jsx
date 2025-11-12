@@ -72,7 +72,7 @@ const ChatRoomsPage = () => {
 
         {loading ? (
           <div className={styles.loadingContainer}>
-            <Spin size="large" spinning tip="Đang tải danh sách chat..." />
+            <Spin size="large" spinning tip="Loading chat list..." />
           </div>
         ) : filteredRooms.length === 0 ? (
           <div className={styles.emptyContainer}>
@@ -80,8 +80,8 @@ const ChatRoomsPage = () => {
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 searchQuery 
-                  ? "Không tìm thấy cuộc trò chuyện phù hợp" 
-                  : "Chưa có cuộc trò chuyện nào"
+                  ? "No matching conversations found" 
+                  : "No conversations yet"
               }
             />
           </div>

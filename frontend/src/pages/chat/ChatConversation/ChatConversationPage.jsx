@@ -87,7 +87,7 @@ const ChatConversationPage = () => {
   if (loadingRoom) {
     return (
       <div className={styles.loadingContainer}>
-        <Spin size="large" tip="Đang tải cuộc trò chuyện..." />
+        <Spin size="large" tip="Loading conversation..." />
       </div>
     );
   }
@@ -96,8 +96,8 @@ const ChatConversationPage = () => {
     return (
       <div className={styles.errorContainer}>
         <Alert
-          message="Không tìm thấy cuộc trò chuyện"
-          description="Cuộc trò chuyện này không tồn tại hoặc bạn không có quyền truy cập."
+          message="Conversation not found"
+          description="This conversation does not exist or you do not have access."
           type="error"
           showIcon
         />
@@ -118,8 +118,8 @@ const ChatConversationPage = () => {
         {!connected && (
           <div className={styles.alertContainer}>
             <Alert
-              message="Mất kết nối"
-              description="Đang cố gắng kết nối lại..."
+              message="Connection Lost"
+              description="Trying to reconnect..."
               type="warning"
               showIcon
               closable
@@ -143,11 +143,11 @@ const ChatConversationPage = () => {
         {/* Messages List */}
         {loading && messages.length === 0 ? (
           <div className={styles.loadingMessages}>
-            <Spin tip="Đang tải tin nhắn..." />
+            <Spin tip="Loading messages..." />
           </div>
         ) : messages.length === 0 ? (
           <div className={styles.emptyMessages}>
-            <p>Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
+            <p>No messages yet. Start the conversation!</p>
           </div>
         ) : (
           <div className={styles.messagesList}>

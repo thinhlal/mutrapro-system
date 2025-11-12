@@ -180,7 +180,7 @@ const ProfileContent = () => {
       <div className={styles.profileContentWrapper}>
         <div style={{ textAlign: 'center', padding: '4rem' }}>
           <Spin size="large" />
-          <p style={{ marginTop: '1rem' }}>Đang tải thông tin...</p>
+          <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       </div>
     );
@@ -209,17 +209,17 @@ const ProfileContent = () => {
                   className={styles.changePasswordButton}
                   onClick={() => setShowCreatePasswordForm(true)}
                 >
-                  Tạo mật khẩu
+                  Create Password
                 </Button>
               ) : (
                 <div className={styles.editContainer}>
                   <Input.Password
-                    placeholder="Nhập mật khẩu mới"
+                    placeholder="Enter new password"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                   />
                   <Input.Password
-                    placeholder="Xác nhận mật khẩu"
+                    placeholder="Confirm password"
                     style={{ marginTop: 8 }}
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
@@ -261,7 +261,7 @@ const ProfileContent = () => {
                         }
                       }}
                     >
-                      Lưu mật khẩu
+                      Save Password
                     </Button>
                     <Button
                       icon={<CloseOutlined />}
@@ -273,7 +273,7 @@ const ProfileContent = () => {
                       }}
                       style={{ marginLeft: 8 }}
                     >
-                      Hủy
+                      Cancel
                     </Button>
                   </div>
                 </div>
@@ -295,7 +295,7 @@ const ProfileContent = () => {
                 <Input
                   value={editForm.fullName}
                   onChange={e => handleChange('fullName', e.target.value)}
-                  placeholder="Nhập họ tên"
+                  placeholder="Enter full name"
                 />
                 <div className={styles.editActions}>
                   <Button
@@ -318,7 +318,7 @@ const ProfileContent = () => {
               </div>
             ) : (
               <div className={styles.valueContainer}>
-                <span>{userProfile?.fullName || 'Chưa cập nhật'}</span>
+                <span>{userProfile?.fullName || 'Not updated'}</span>
                 <EditOutlined
                   className={styles.editIcon}
                   onClick={() => handleEdit('fullName')}
@@ -331,7 +331,7 @@ const ProfileContent = () => {
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Email</label>
             <div className={styles.valueContainer}>
-              <span>{authUser?.email || 'Chưa có email'}</span>
+              <span>{authUser?.email || 'No email'}</span>
             </div>
           </div>
 
@@ -343,7 +343,7 @@ const ProfileContent = () => {
                 <Input
                   value={editForm.phone}
                   onChange={e => handleChange('phone', e.target.value)}
-                  placeholder="Nhập số điện thoại"
+                  placeholder="Enter phone number"
                 />
                 <div className={styles.editActions}>
                   <Button
@@ -366,7 +366,7 @@ const ProfileContent = () => {
               </div>
             ) : (
               <div className={styles.valueContainer}>
-                <span>{userProfile?.phone || 'Chưa cập nhật'}</span>
+                <span>{userProfile?.phone || 'Not updated'}</span>
                 <EditOutlined
                   className={styles.editIcon}
                   onClick={() => handleEdit('phone')}
@@ -383,7 +383,7 @@ const ProfileContent = () => {
                 <Input
                   value={editForm.address}
                   onChange={e => handleChange('address', e.target.value)}
-                  placeholder="Nhập địa chỉ"
+                  placeholder="Enter address"
                 />
                 <div className={styles.editActions}>
                   <Button
@@ -406,7 +406,7 @@ const ProfileContent = () => {
               </div>
             ) : (
               <div className={styles.valueContainer}>
-                <span>{userProfile?.address || 'Chưa cập nhật'}</span>
+                <span>{userProfile?.address || 'Not updated'}</span>
                 <EditOutlined
                   className={styles.editIcon}
                   onClick={() => handleEdit('address')}
@@ -425,7 +425,7 @@ const ProfileContent = () => {
             <TextArea
               value={editForm.about}
               onChange={e => handleChange('about', e.target.value)}
-              placeholder="Thêm thông tin về bản thân"
+              placeholder="Add information about yourself"
               rows={4}
             />
             <div className={styles.editActions}>

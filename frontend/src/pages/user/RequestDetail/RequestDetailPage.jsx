@@ -68,12 +68,12 @@ const RequestDetailPage = () => {
           console.log('Request data:', response.data);
         } else {
           message.error('Không thể tải chi tiết request');
-          navigate('/profile/my-requests');
+          navigate('/my-requests');
         }
       } catch (error) {
         console.error('Error loading request:', error);
         message.error(error.message || 'Lỗi khi tải chi tiết request');
-        navigate('/profile/my-requests');
+        navigate('/my-requests');
       } finally {
         setLoading(false);
       }
@@ -110,42 +110,42 @@ const RequestDetailPage = () => {
       pending: {
         color: hasManager ? 'gold' : 'default',
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
-        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
+        text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
       approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt - chờ triển khai',
+        text: 'Approved - pending deployment',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
-        text: 'Đã gửi hợp đồng',
+        text: 'Contract sent',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
-        text: 'Đã ký hợp đồng',
+        text: 'Contract signed',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
-        text: 'Đang thực hiện',
+        text: 'In progress',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
-        text: 'Hoàn thành',
+        text: 'Completed',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
-        text: 'Đã hủy',
+        text: 'Cancelled',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
-        text: 'Bị từ chối',
+        text: 'Rejected',
       },
     };
     return configs[status] || { color: 'default', icon: null, text: status };
@@ -153,10 +153,10 @@ const RequestDetailPage = () => {
 
   const getRequestTypeText = (type) => {
     const types = {
-      transcription: 'Phiên âm',
-      arrangement: 'Biên soạn',
-      arrangement_with_recording: 'Biên soạn với thu âm',
-      recording: 'Thu âm',
+      transcription: 'Transcription',
+      arrangement: 'Arrangement',
+      arrangement_with_recording: 'Arrangement with Recording',
+      recording: 'Recording',
     };
     return types[type] || type;
   };
@@ -178,15 +178,15 @@ const RequestDetailPage = () => {
     const hasManager = !!request.managerUserId;
     const status = request.status;
     if (hasManager) {
-      if (status === 'completed') return 'Hoàn thành';
-      if (status === 'cancelled' || status === 'rejected') return 'Đã đóng';
-      // pending/approved/... nhưng đã có manager
-      return 'Manager đang xử lý';
+      if (status === 'completed') return 'Completed';
+      if (status === 'cancelled' || status === 'rejected') return 'Closed';
+      // pending/approved/... but has manager
+      return 'Manager processing';
     }
-    // Chưa có manager
-    if (status === 'completed') return 'Hoàn thành';
-    if (status === 'cancelled' || status === 'rejected') return 'Đã đóng';
-    return 'Chưa được gán • Chờ xử lý';
+    // No manager yet
+    if (status === 'completed') return 'Completed';
+    if (status === 'cancelled' || status === 'rejected') return 'Closed';
+    return 'Not assigned • Pending';
   };
 
   const getContractStatusColor = (status) => {
@@ -209,14 +209,14 @@ const RequestDetailPage = () => {
     const statusLower = status?.toLowerCase() || '';
     const textMap = {
       draft: 'Draft',
-      sent: 'Đã gửi',
-      approved: 'Đã duyệt',
-      signed: 'Đã ký',
-      rejected_by_customer: 'Bị từ chối',
-      need_revision: 'Cần chỉnh sửa',
-      canceled_by_customer: 'Đã hủy',
-      canceled_by_manager: 'Đã thu hồi',
-      expired: 'Hết hạn',
+      sent: 'Sent',
+      approved: 'Approved',
+      signed: 'Signed',
+      rejected_by_customer: 'Rejected',
+      need_revision: 'Need Revision',
+      canceled_by_customer: 'Cancelled',
+      canceled_by_manager: 'Recalled',
+      expired: 'Expired',
     };
     return textMap[statusLower] || status;
   };
@@ -287,7 +287,7 @@ const RequestDetailPage = () => {
       <ProfileLayout>
         <div className={styles.loadingContainer}>
           <Spin size="large" />
-          <p style={{ marginTop: '1rem' }}>Đang tải...</p>
+          <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       </ProfileLayout>
     );
@@ -296,7 +296,7 @@ const RequestDetailPage = () => {
   if (!request) {
     return (
       <ProfileLayout>
-        <Empty description="Không tìm thấy request" />
+        <Empty description="Request not found" />
       </ProfileLayout>
     );
   }
@@ -309,12 +309,12 @@ const RequestDetailPage = () => {
         <div className={styles.headerSection}>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/profile/my-requests')}
+            onClick={() => navigate('/my-requests')}
             style={{ marginBottom: '1rem' }}
           >
-            Quay lại
+            Back
           </Button>
-          <h1 className={styles.pageTitle}>Chi tiết Request</h1>
+          <h1 className={styles.pageTitle}>Request Detail</h1>
         </div>
 
         <Card className={styles.detailCard}>
@@ -343,29 +343,29 @@ const RequestDetailPage = () => {
               </span>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Tiêu đề">
+            <Descriptions.Item label="Title">
               {request.title || 'N/A'}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Mô tả">
-              {request.description || 'Không có mô tả'}
+            <Descriptions.Item label="Description">
+              {request.description || 'No description'}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Tên liên hệ">
+            <Descriptions.Item label="Contact Name">
               {request.contactName || 'N/A'}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Email liên hệ">
+            <Descriptions.Item label="Contact Email">
               {request.contactEmail || 'N/A'}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Số điện thoại">
+            <Descriptions.Item label="Phone Number">
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
             {request.durationMinutes && (
-              <Descriptions.Item label="Thời lượng">
-                <Tag color="green">{request.durationMinutes} phút</Tag>
+              <Descriptions.Item label="Duration">
+                <Tag color="green">{request.durationMinutes} minutes</Tag>
               </Descriptions.Item>
             )}
 
@@ -376,23 +376,23 @@ const RequestDetailPage = () => {
             )}
 
             {request.hasVocalist !== undefined && request.requestType !== 'transcription' && (
-              <Descriptions.Item label="Ca sĩ">
+              <Descriptions.Item label="Vocalist">
                 {request.hasVocalist ? (
-                  <Tag color="green">Có</Tag>
+                  <Tag color="green">Yes</Tag>
                 ) : (
-                  <Tag color="default">Không</Tag>
+                  <Tag color="default">No</Tag>
                 )}
               </Descriptions.Item>
             )}
 
             {request.externalGuestCount > 0 && (
-              <Descriptions.Item label="Khách mời">
-                <Tag>{request.externalGuestCount} người</Tag>
+              <Descriptions.Item label="Guests">
+                <Tag>{request.externalGuestCount} {request.externalGuestCount === 1 ? 'person' : 'people'}</Tag>
               </Descriptions.Item>
             )}
 
             {request.instrumentIds && request.instrumentIds.length > 0 && (
-              <Descriptions.Item label="Nhạc cụ">
+              <Descriptions.Item label="Instruments">
                 <Space wrap>
                   {request.instrumentIds.map((id) => {
                     const inst = instrumentsData.find(i => i.instrumentId === id);
@@ -413,13 +413,13 @@ const RequestDetailPage = () => {
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
-                  <div><strong>Tên:</strong> {request.managerInfo.fullName || 'N/A'}</div>
+                  <div><strong>Name:</strong> {request.managerInfo.fullName || 'N/A'}</div>
                   <div><strong>Email:</strong> {request.managerInfo.email || 'N/A'}</div>
                   {request.managerInfo.phone && (
-                    <div><strong>Điện thoại:</strong> {request.managerInfo.phone}</div>
+                    <div><strong>Phone:</strong> {request.managerInfo.phone}</div>
                   )}
                   {request.managerInfo.role && (
-                    <div><strong>Vai trò:</strong> {request.managerInfo.role}</div>
+                    <div><strong>Role:</strong> {request.managerInfo.role}</div>
                   )}
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
@@ -444,7 +444,7 @@ const RequestDetailPage = () => {
             )}
 
             {request.files && request.files.length > 0 && (
-              <Descriptions.Item label="Files đã upload">
+              <Descriptions.Item label="Uploaded Files">
                 <Space direction="vertical" style={{ width: '100%' }}>
                   {request.files.map((file) => (
                     <div key={file.fileId} style={{ marginBottom: 8 }}>
@@ -462,7 +462,7 @@ const RequestDetailPage = () => {
                           onClick={() => window.open(file.filePath, '_blank')}
                           style={{ padding: 0, marginLeft: 8 }}
                         >
-                          Xem file
+                          View file
                         </Button>
                       )}
                     </div>
@@ -471,12 +471,12 @@ const RequestDetailPage = () => {
               </Descriptions.Item>
             )}
 
-            <Descriptions.Item label="Thời gian tạo">
+            <Descriptions.Item label="Created At">
               <ClockCircleOutlined style={{ marginRight: 8 }} />
               {formatDate(request.createdAt)}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Cập nhật lần cuối">
+            <Descriptions.Item label="Last Updated">
               {formatDate(request.updatedAt)}
             </Descriptions.Item>
           </Descriptions>
@@ -535,7 +535,7 @@ const RequestDetailPage = () => {
                             onClick={() => handleApproveContract(contract.contractId)}
                             loading={actionLoading}
                           >
-                            Duyệt
+                            Approve
                           </Button>
                           <Button
                             icon={<EditOutlined />}
@@ -545,7 +545,7 @@ const RequestDetailPage = () => {
                             }}
                             loading={actionLoading}
                           >
-                            Yêu cầu chỉnh sửa
+                            Request Change
                           </Button>
                           <Button
                             danger
@@ -556,7 +556,7 @@ const RequestDetailPage = () => {
                             }}
                             loading={actionLoading}
                           >
-                            Hủy
+                            Cancel
                           </Button>
                         </>
                       )}
@@ -564,55 +564,55 @@ const RequestDetailPage = () => {
                         <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
                           <strong>
                             {wasSentToCustomer 
-                              ? 'Đã thu hồi bởi manager (contract đã từng được gửi cho bạn)' 
-                              : 'Đã hủy bởi manager'}
+                              ? 'Recalled by manager (contract was previously sent to you)' 
+                              : 'Cancelled by manager'}
                           </strong>
                           {contract.cancellationReason && (
                             <div style={{ marginTop: 4 }}>
-                              <strong>Lý do:</strong> {contract.cancellationReason}
+                              <strong>Reason:</strong> {contract.cancellationReason}
                             </div>
                           )}
                           {wasSentToCustomer && contract.sentToCustomerAt && (
                             <div style={{ marginTop: 4, fontSize: '11px', color: '#999' }}>
-                              Đã gửi lúc: {formatDate(contract.sentToCustomerAt)}
+                              Sent at: {formatDate(contract.sentToCustomerAt)}
                             </div>
                           )}
                         </div>
                       )}
                       {isNeedRevision && contract.cancellationReason && (
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          <strong>Lý do:</strong> {contract.cancellationReason}
+                          <strong>Reason:</strong> {contract.cancellationReason}
                         </div>
                       )}
                       {isCanceled && contract.cancellationReason && (
                         <div style={{ fontSize: '12px', color: '#666' }}>
-                          <strong>Lý do hủy:</strong> {contract.cancellationReason}
+                          <strong>Cancellation Reason:</strong> {contract.cancellationReason}
                         </div>
                       )}
                     </Space>
                   }
                 >
                   <Descriptions column={2} size="small">
-                    <Descriptions.Item label="Loại contract">
+                    <Descriptions.Item label="Contract Type">
                       {contract.contractType || 'N/A'}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Giá trị">
+                    <Descriptions.Item label="Total Value">
                       {contract.totalPrice?.toLocaleString() || 0} {contract.currency || 'VND'}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Đặt cọc">
+                    <Descriptions.Item label="Deposit">
                       {contract.depositAmount?.toLocaleString() || 0} {contract.currency || 'VND'} 
                       ({contract.depositPercent || 0}%)
                     </Descriptions.Item>
                     <Descriptions.Item label="SLA">
-                      {contract.slaDays || 0} ngày
+                      {contract.slaDays || 0} days
                     </Descriptions.Item>
                     {contract.createdAt && (
-                      <Descriptions.Item label="Ngày tạo">
+                      <Descriptions.Item label="Created Date">
                         {formatDate(contract.createdAt)}
                       </Descriptions.Item>
                     )}
                     {contract.expiresAt && (
-                      <Descriptions.Item label="Hết hạn">
+                      <Descriptions.Item label="Expires At">
                         {formatDate(contract.expiresAt)}
                       </Descriptions.Item>
                     )}
@@ -636,7 +636,7 @@ const RequestDetailPage = () => {
 
         {/* Request Change Modal */}
         <Modal
-          title="Yêu cầu chỉnh sửa Contract"
+          title="Request Contract Change"
           open={requestChangeModalVisible}
           onOk={handleRequestChange}
           onCancel={() => {
@@ -645,18 +645,18 @@ const RequestDetailPage = () => {
             setSelectedContract(null);
           }}
           confirmLoading={actionLoading}
-          okText="Gửi yêu cầu"
-          cancelText="Đóng"
+          okText="Send Request"
+          cancelText="Close"
           width={600}
         >
           <div style={{ marginBottom: 16 }}>
             <p>
-              Vui lòng nhập lý do bạn muốn chỉnh sửa contract <strong>{selectedContract?.contractNumber}</strong>
+              Please enter the reason you want to change contract <strong>{selectedContract?.contractNumber}</strong>
             </p>
           </div>
           <TextArea
             rows={4}
-            placeholder="Vui lòng nhập lý do yêu cầu chỉnh sửa (tối thiểu 10 ký tự)..."
+            placeholder="Please enter the reason for requesting changes (minimum 10 characters)..."
             value={changeReason}
             onChange={(e) => setChangeReason(e.target.value)}
             showCount

@@ -187,7 +187,7 @@ function UserMenu() {
             {/* My requests */}
             <li>
               <Link
-                to="/profile/my-requests"
+                to="/my-requests"
                 className={styles.dropdownItem}
                 onClick={handleMenuItemClick}
               >

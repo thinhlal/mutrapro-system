@@ -42,7 +42,7 @@ const UserManagement = () => {
         setUsers(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách người dùng');
+      message.error(error.message || 'Unable to load user list');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ const UserManagement = () => {
       });
       setEditModalVisible(true);
     } catch (error) {
-      message.error('Không thể tải thông tin người dùng');
+      message.error('Unable to load user information');
     }
   };
 
@@ -78,7 +78,7 @@ const UserManagement = () => {
       setSelectedUser(response.data);
       setViewModalVisible(true);
     } catch (error) {
-      message.error('Không thể tải thông tin người dùng');
+      message.error('Unable to load user information');
     }
   };
 
@@ -92,12 +92,12 @@ const UserManagement = () => {
         emailVerified: values.emailVerified,
         isActive: values.active,
       });
-      message.success('Cập nhật người dùng thành công');
+      message.success('User updated successfully');
       setEditModalVisible(false);
       fetchUsers();
     } catch (error) {
       console.error('Update user error:', error);
-      const errorMsg = error.message || error.error || 'Không thể cập nhật người dùng';
+      const errorMsg = error.message || error.error || 'Unable to update user';
       message.error(errorMsg, 5); // Show error for 5 seconds
     }
   };
@@ -106,10 +106,10 @@ const UserManagement = () => {
   const handleDelete = async userId => {
     try {
       await deleteUser(userId);
-      message.success('Xóa người dùng thành công');
+      message.success('User deleted successfully');
       fetchUsers();
     } catch (error) {
-      message.error(error.message || 'Không thể xóa người dùng');
+      message.error(error.message || 'Unable to delete user');
     }
   };
 

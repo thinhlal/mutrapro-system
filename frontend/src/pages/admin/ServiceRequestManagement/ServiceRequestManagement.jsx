@@ -180,7 +180,7 @@ export default function ServiceRequestManagement() {
       title: 'Request ID',
       dataIndex: 'id',
       key: 'id',
-      width: 250,
+      width: 130,
       ellipsis: true,
       render: text => (
         <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
@@ -251,7 +251,7 @@ export default function ServiceRequestManagement() {
       title: 'Assigned To',
       dataIndex: 'managerUserId',
       key: 'managerUserId',
-      width: 150,
+      width: 130,
       render: (managerId, record) => {
         if (managerId) {
           // Nếu có manager ID, hiển thị badge

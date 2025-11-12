@@ -67,12 +67,12 @@ const ChatLayout = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Vừa xong';
-    if (diffMins < 60) return `${diffMins} phút`;
-    if (diffHours < 24) return `${diffHours} giờ`;
-    if (diffDays < 7) return `${diffDays} ngày`;
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
     
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit' });
   };
 
   const handleRoomClick = (room) => {
@@ -96,7 +96,7 @@ const ChatLayout = () => {
             </div>
             <div className={styles.searchBox}>
               <Input
-                placeholder="Tìm kiếm cuộc trò chuyện..."
+                placeholder="Search conversations..."
                 prefix={<SearchOutlined />}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -108,7 +108,7 @@ const ChatLayout = () => {
           <div className={styles.roomsList}>
             {loading ? (
               <div className={styles.loadingContainer}>
-                <Spin tip="Đang tải..." />
+                <Spin tip="Loading..." />
               </div>
             ) : filteredRooms.length === 0 ? (
               <div className={styles.emptyContainer}>
@@ -116,8 +116,8 @@ const ChatLayout = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
                     searchQuery 
-                      ? "Không tìm thấy cuộc trò chuyện" 
-                      : "Chưa có cuộc trò chuyện nào"
+                      ? "No conversations found" 
+                      : "No conversations yet"
                   }
                 />
               </div>
@@ -153,7 +153,7 @@ const ChatLayout = () => {
                             {room.lastMessage.content}
                           </>
                         ) : (
-                          room.description || 'Chưa có tin nhắn'
+                          room.description || 'No messages yet'
                         )}
                       </p>
                       {room.unreadCount > 0 && (
@@ -173,8 +173,8 @@ const ChatLayout = () => {
               <ChatConversationPage />
           ) : (
             <div className={styles.emptyConversation}>
-              <h3>Chọn một cuộc trò chuyện</h3>
-              <p>Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu nhắn tin</p>
+              <h3>Select a conversation</h3>
+              <p>Choose a conversation from the list on the left to start messaging</p>
             </div>
           )}
           </div>

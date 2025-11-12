@@ -9,17 +9,17 @@ function UnauthorizedPage() {
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.errorCode}>403</div>
-        <h1 className={styles.title}>Không có quyền truy cập</h1>
+        <h1 className={styles.title}>Access Denied</h1>
         <p className={styles.message}>
-          Bạn không có quyền truy cập vào trang này. Vui lòng liên hệ quản trị
-          viên nếu bạn cho rằng đây là lỗi.
+          You do not have permission to access this page. Please contact the
+          administrator if you believe this is an error.
         </p>
         <div className={styles.actions}>
           <button onClick={() => navigate(-1)} className={styles.backButton}>
-            Quay lại
+            Go Back
           </button>
           <button onClick={() => navigate('/')} className={styles.homeButton}>
-            Về trang chủ
+            Home Page
           </button>
         </div>
       </div>

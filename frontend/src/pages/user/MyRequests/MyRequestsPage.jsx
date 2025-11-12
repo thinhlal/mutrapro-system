@@ -70,42 +70,42 @@ const MyRequestsContent = () => {
       pending: {
         color: hasManager ? 'gold' : 'default',
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
-        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
+        text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
       approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt - chờ triển khai',
+        text: 'Approved - pending deployment',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
-        text: 'Đã gửi hợp đồng',
+        text: 'Contract sent',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
-        text: 'Đã ký hợp đồng',
+        text: 'Contract signed',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
-        text: 'Đang thực hiện',
+        text: 'In progress',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
-        text: 'Hoàn thành',
+        text: 'Completed',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
-        text: 'Đã hủy',
+        text: 'Cancelled',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
-        text: 'Bị từ chối',
+        text: 'Rejected',
       },
     };
     return configs[status] || { color: 'default', icon: null, text: status };
@@ -113,8 +113,8 @@ const MyRequestsContent = () => {
 
   const getRequestTypeText = (type) => {
     const types = {
-      transcription: 'Phiên âm',
-      arrangement: 'Biên soạn',
+      transcription: 'Transcription',
+      arrangement: 'Arrangement',
     };
     return types[type] || type;
   };
@@ -136,40 +136,40 @@ const MyRequestsContent = () => {
       <div className={styles.headerSection}>
         <h1 className={styles.pageTitle}>My Requests</h1>
         <p className={styles.pageDescription}>
-          Quản lý các yêu cầu dịch vụ của bạn
+          Manage your service requests
         </p>
       </div>
 
       <div className={styles.filterSection}>
-        <label className={styles.filterLabel}>Lọc theo trạng thái:</label>
+        <label className={styles.filterLabel}>Filter by status:</label>
         <Select
           style={{ width: 280 }}
-          placeholder="Tất cả trạng thái"
+          placeholder="All status"
           value={selectedStatus || undefined}
           onChange={handleStatusChange}
           allowClear
         >
-          <Option value="">Tất cả</Option>
-          <Option value="pending_no_manager">Chờ manager nhận</Option>
-          <Option value="pending_has_manager">Đã gán - chờ xử lý</Option>
-          <Option value="approved">Đã duyệt - chờ triển khai</Option>
-          <Option value="contract_sent">Đã gửi hợp đồng</Option>
-          <Option value="contract_signed">Đã ký hợp đồng</Option>
-          <Option value="in_progress">Đang thực hiện</Option>
-          <Option value="completed">Hoàn thành</Option>
-          <Option value="cancelled">Đã hủy</Option>
-          <Option value="rejected">Bị từ chối</Option>
+          <Option value="">All</Option>
+          <Option value="pending_no_manager">Waiting for manager</Option>
+          <Option value="pending_has_manager">Assigned - pending</Option>
+          <Option value="approved">Approved - pending deployment</Option>
+          <Option value="contract_sent">Contract sent</Option>
+          <Option value="contract_signed">Contract signed</Option>
+          <Option value="in_progress">In progress</Option>
+          <Option value="completed">Completed</Option>
+          <Option value="cancelled">Cancelled</Option>
+          <Option value="rejected">Rejected</Option>
         </Select>
       </div>
 
       {loading ? (
         <div className={styles.loadingContainer}>
           <Spin size="large" />
-          <p style={{ marginTop: '1rem' }}>Đang tải...</p>
+          <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       ) : requests.length === 0 ? (
         <Empty 
-          description="Không có requests nào"
+          description="No requests"
           className={styles.emptyState}
         />
       ) : (
@@ -186,7 +186,7 @@ const MyRequestsContent = () => {
                   <div className={styles.titleSection}>
                     <h3 className={styles.requestTitle}>{request.title}</h3>
                     <Tag color="blue" className={styles.typeTag}>
-                      {request.requestType === 'transcription' ? 'Phiên âm' : 'Biên soạn'}
+                      {request.requestType === 'transcription' ? 'Transcription' : 'Arrangement'}
                     </Tag>
                   </div>
                   <Tag 
@@ -200,14 +200,14 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardBody}>
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Mô tả:</span>
+                    <span className={styles.infoLabel}>Description:</span>
                     <span className={styles.infoValue}>
-                      {request.description || 'Không có mô tả'}
+                      {request.description || 'No description'}
                     </span>
                   </div>
 
                   <div className={styles.infoRow}>
-                    <span className={styles.infoLabel}>Liên hệ:</span>
+                    <span className={styles.infoLabel}>Contact:</span>
                     <span className={styles.infoValue}>
                       {request.contactName} - {request.contactPhone}
                     </span>
@@ -227,9 +227,9 @@ const MyRequestsContent = () => {
 
                   {request.externalGuestCount > 0 && (
                     <div className={styles.infoRow}>
-                      <span className={styles.infoLabel}>Khách mời:</span>
+                      <span className={styles.infoLabel}>Guests:</span>
                       <span className={styles.infoValue}>
-                        {request.externalGuestCount} người
+                        {request.externalGuestCount} {request.externalGuestCount === 1 ? 'person' : 'people'}
                       </span>
                     </div>
                   )}
@@ -237,18 +237,18 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardFooter}>
                   <div className={styles.dateInfo}>
-                    <ClockCircleOutlined /> Tạo lúc: {formatDate(request.createdAt)}
+                    <ClockCircleOutlined /> Created: {formatDate(request.createdAt)}
                   </div>
                   <div className={styles.dateInfo}>
-                    Cập nhật: {formatDate(request.updatedAt)}
+                    Updated: {formatDate(request.updatedAt)}
                   </div>
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
-                    onClick={() => navigate(`/profile/my-requests/${request.requestId}`)}
+                    onClick={() => navigate(`/my-requests/${request.requestId}`)}
                     className={styles.viewDetailBtn}
                   >
-                    Xem chi tiết
+                    View Details
                   </Button>
                 </div>
               </Card>

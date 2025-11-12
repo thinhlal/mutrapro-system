@@ -175,94 +175,96 @@ const NotificationsPage = () => {
       key: 'all',
       label: (
         <span>
-          <BellOutlined /> Tất cả
+          <BellOutlined /> All
         </span>
       ),
       children: (
-        <div className={styles.inboxContent}>
-          {loading && notifications.length === 0 ? (
-            <div className={styles.loadingContainer}>
-              <Spin tip="Đang tải thông báo..." />
-            </div>
-          ) : filteredNotifications.length > 0 ? (
-            <>
-              <div className={styles.inboxHeader}>
-                <Text type="secondary">
-                  {unreadCount > 0 ? (
-                    <>Bạn có {unreadCount} thông báo chưa đọc</>
-                  ) : (
-                    <>Tất cả thông báo đã được đọc</>
-                  )}
-                </Text>
-                {unreadCount > 0 && (
-                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
-                    Đánh dấu tất cả đã đọc
-                  </Button>
-                )}
+        <>
+          <div className={styles.inboxContent}>
+            {loading && notifications.length === 0 ? (
+              <div className={styles.loadingContainer}>
+                <Spin tip="Loading notifications..." />
               </div>
-              <List
-                itemLayout="horizontal"
-                dataSource={filteredNotifications}
-                loading={loading}
-                renderItem={(notification) => (
-                  <List.Item
-                    className={`${styles.notificationItem} ${
-                      !notification.isRead ? styles.unread : ''
-                    }`}
-                    onClick={() => handleNotificationClick(notification)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <List.Item.Meta
-                      avatar={getNotificationIcon(notification.type)}
-                      title={
-                        <div className={styles.notifHeader}>
-                          <span className={styles.notifTitle}>{notification.title}</span>
-                          {!notification.isRead && (
-                            <Badge status="processing" className={styles.unreadBadge} />
-                          )}
-                        </div>
-                      }
-                      description={
-                        <div>
-                          <p className={styles.notifMessage}>{notification.content}</p>
-                          <Text type="secondary" className={styles.notifTime}>
-                            {formatTime(notification.createdAt)}
-                          </Text>
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-              {totalElements > pageSize && (
-                <div className={styles.paginationContainer}>
-                  <Pagination
-                    current={page + 1}
-                    total={totalElements}
-                    pageSize={pageSize}
-                    onChange={handlePageChange}
-                    showSizeChanger
-                    showTotal={(total, range) =>
-                      `${range[0]}-${range[1]} của ${total} thông báo`
-                    }
-                  />
+            ) : filteredNotifications.length > 0 ? (
+              <>
+                <div className={styles.inboxHeader}>
+                  <Text type="secondary">
+                    {unreadCount > 0 ? (
+                      <>You have {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}</>
+                    ) : (
+                      <>All notifications have been read</>
+                    )}
+                  </Text>
+                  {unreadCount > 0 && (
+                    <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                      Mark all as read
+                    </Button>
+                  )}
                 </div>
-              )}
-            </>
-          ) : (
-            <Empty
-              description="Không có thông báo nào"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
+                <List
+                  itemLayout="horizontal"
+                  dataSource={filteredNotifications}
+                  loading={loading}
+                  renderItem={(notification) => (
+                    <List.Item
+                      className={`${styles.notificationItem} ${
+                        !notification.isRead ? styles.unread : ''
+                      }`}
+                      onClick={() => handleNotificationClick(notification)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <List.Item.Meta
+                        avatar={getNotificationIcon(notification.type)}
+                        title={
+                          <div className={styles.notifHeader}>
+                            <span className={styles.notifTitle}>{notification.title}</span>
+                            {!notification.isRead && (
+                              <Badge status="processing" className={styles.unreadBadge} />
+                            )}
+                          </div>
+                        }
+                        description={
+                          <div>
+                            <p className={styles.notifMessage}>{notification.content}</p>
+                            <Text type="secondary" className={styles.notifTime}>
+                              {formatTime(notification.createdAt)}
+                            </Text>
+                          </div>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </>
+            ) : (
+              <Empty
+                description="No notifications"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
+          </div>
+          {totalElements > pageSize && filteredNotifications.length > 0 && (
+            <div className={styles.paginationContainer}>
+              <Pagination
+                current={page + 1}
+                total={totalElements}
+                pageSize={pageSize}
+                onChange={handlePageChange}
+                showSizeChanger
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} of ${total} ${total === 1 ? 'notification' : 'notifications'}`
+                }
+              />
+            </div>
           )}
-        </div>
+        </>
       ),
     },
     {
       key: 'unread',
       label: (
         <span>
-          <BellOutlined /> Chưa đọc
+          <BellOutlined /> Unread
           {unreadCount > 0 && (
             <Badge count={unreadCount} className={styles.tabBadge} />
           )}
@@ -272,17 +274,17 @@ const NotificationsPage = () => {
         <div className={styles.inboxContent}>
           {loading && notifications.length === 0 ? (
             <div className={styles.loadingContainer}>
-              <Spin tip="Đang tải thông báo..." />
+              <Spin tip="Loading notifications..." />
             </div>
           ) : filteredNotifications.length > 0 ? (
             <>
               <div className={styles.inboxHeader}>
                 <Text type="secondary">
-                  Bạn có {unreadCount} thông báo chưa đọc
+                  You have {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}
                 </Text>
                 {unreadCount > 0 && (
                   <Button type="link" size="small" onClick={handleMarkAllAsRead}>
-                    Đánh dấu tất cả đã đọc
+                    Mark all as read
                   </Button>
                 )}
               </div>
@@ -319,7 +321,7 @@ const NotificationsPage = () => {
             </>
           ) : (
             <Empty
-              description="Không có thông báo chưa đọc"
+              description="No unread notifications"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           )}
@@ -335,13 +337,10 @@ const NotificationsPage = () => {
       <div className={styles.pageContainer}>
         <div className={styles.notificationsContent}>
           <div className={styles.pageHeader}>
-            <div className={styles.headerIcon}>
-              <BellOutlined />
-            </div>
             <div className={styles.headerText}>
-              <Title level={1} className={styles.pageTitle}>Thông báo</Title>
+              <Title level={1} className={styles.pageTitle}>Notifications</Title>
               <Text type="secondary" className={styles.pageSubtitle}>
-                Quản lý và theo dõi tất cả thông báo của bạn
+                Manage and track all your notifications
               </Text>
             </div>
           </div>
