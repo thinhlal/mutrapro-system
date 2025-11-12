@@ -364,6 +364,17 @@ public class ContractService {
                 log.info("Contract already has expiresAt: contractId={}, expiresAt={}", 
                     contractId, contract.getExpiresAt());
             }
+            
+            // Cập nhật request status thành "contract_sent"
+            try {
+                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_sent");
+                log.info("Updated request status to contract_sent: requestId={}, contractId={}", 
+                    contract.getRequestId(), contractId);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to update request status to contract_sent: requestId={}, contractId={}, error={}", 
+                    contract.getRequestId(), contractId, e.getMessage(), e);
+            }
         }
         // Nếu đang update thành "signed"
         else if (newStatus == ContractStatus.signed) {
@@ -436,6 +447,20 @@ public class ContractService {
         
         Contract saved = contractRepository.save(contract);
         log.info("Customer approved contract: contractId={}, userId={}", contractId, currentUserId);
+        
+        // Cập nhật request status thành "contract_signed" hoặc "approved"
+        try {
+            // Nếu contract đã được signed, update request status thành "contract_signed"
+            // Nếu không, update thành "approved"
+            String requestStatus = "contract_signed"; // Mặc định là contract_signed khi customer approve
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), requestStatus);
+            log.info("Updated request status to {}: requestId={}, contractId={}", 
+                requestStatus, contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
         
         return contractMapper.toResponse(saved);
     }

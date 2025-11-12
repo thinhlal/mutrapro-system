@@ -105,5 +105,21 @@ public class ServiceRequestController {
                 .statusCode(200)
                 .build();
     }
+
+    @PutMapping("/{requestId}/status")
+    @Operation(summary = "Cập nhật status của service request (dùng cho các service khác như project-service)")
+    public ApiResponse<ServiceRequestResponse> updateRequestStatus(
+            @Parameter(description = "ID của request")
+            @PathVariable String requestId,
+            @Parameter(description = "Status mới")
+            @RequestParam RequestStatus status) {
+        log.info("Updating request status: requestId={}, status={}", requestId, status);
+        ServiceRequestResponse updated = serviceRequestService.updateRequestStatus(requestId, status);
+        return ApiResponse.<ServiceRequestResponse>builder()
+                .message("Request status updated successfully")
+                .data(updated)
+                .statusCode(200)
+                .build();
+    }
 }
 

@@ -550,6 +550,28 @@ public class ServiceRequestService {
     }
     
     /**
+     * Cập nhật status của service request
+     * 
+     * @param requestId ID của service request
+     * @param newStatus Status mới
+     * @return ServiceRequestResponse sau khi update
+     */
+    @Transactional
+    public ServiceRequestResponse updateRequestStatus(String requestId, RequestStatus newStatus) {
+        ServiceRequest request = serviceRequestRepository.findById(requestId)
+            .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
+        
+        RequestStatus oldStatus = request.getStatus();
+        request.setStatus(newStatus);
+        
+        ServiceRequest saved = serviceRequestRepository.save(request);
+        log.info("Updated request status: requestId={}, from={}, to={}", 
+            requestId, oldStatus, newStatus);
+        
+        return serviceRequestMapper.toServiceRequestResponse(saved);
+    }
+    
+    /**
      * Manager nhận trách nhiệm về service request
      * 
      * @param requestId ID của service request
