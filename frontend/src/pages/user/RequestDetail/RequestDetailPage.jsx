@@ -110,24 +110,9 @@ const RequestDetailPage = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-<<<<<<< HEAD
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
-      approved: {
-        color: 'cyan',
-        icon: <CheckCircleOutlined />,
-        text: 'Approved - pending deployment',
-      },
-=======
-        icon: hasManager ? (
-          <ClockCircleOutlined />
-        ) : (
-          <ExclamationCircleOutlined />
-        ),
-        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
-      },
->>>>>>> main
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
@@ -205,43 +190,7 @@ const RequestDetailPage = () => {
     return 'Not assigned • Pending';
   };
 
-<<<<<<< HEAD
-  const getContractStatusColor = (status) => {
-    const statusLower = status?.toLowerCase() || '';
-    const colorMap = {
-      draft: 'default',
-      sent: 'geekblue',
-      approved: 'green',
-      signed: 'green',
-      rejected_by_customer: 'red',
-      need_revision: 'orange',
-      canceled_by_customer: 'default',
-      canceled_by_manager: 'orange',
-      expired: 'volcano',
-    };
-    return colorMap[statusLower] || 'default';
-  };
-
-  const getContractStatusText = (status) => {
-    const statusLower = status?.toLowerCase() || '';
-    const textMap = {
-      draft: 'Draft',
-      sent: 'Sent',
-      approved: 'Approved',
-      signed: 'Signed',
-      rejected_by_customer: 'Rejected',
-      need_revision: 'Need Revision',
-      canceled_by_customer: 'Cancelled',
-      canceled_by_manager: 'Recalled',
-      expired: 'Expired',
-    };
-    return textMap[statusLower] || status;
-  };
-
-  const handleApproveContract = async (contractId) => {
-=======
   const handleApproveContract = async contractId => {
->>>>>>> main
     try {
       setActionLoading(true);
       await approveContract(contractId);
@@ -425,7 +374,6 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-<<<<<<< HEAD
             {request.hasVocalist !== undefined && request.requestType !== 'transcription' && (
               <Descriptions.Item label="Vocalist">
                 {request.hasVocalist ? (
@@ -435,18 +383,6 @@ const RequestDetailPage = () => {
                 )}
               </Descriptions.Item>
             )}
-=======
-            {request.hasVocalist !== undefined &&
-              request.requestType !== 'transcription' && (
-                <Descriptions.Item label="Ca sĩ">
-                  {request.hasVocalist ? (
-                    <Tag color="green">Có</Tag>
-                  ) : (
-                    <Tag color="default">Không</Tag>
-                  )}
-                </Descriptions.Item>
-              )}
->>>>>>> main
 
             {request.externalGuestCount > 0 && (
               <Descriptions.Item label="Guests">
@@ -478,7 +414,6 @@ const RequestDetailPage = () => {
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
-<<<<<<< HEAD
                   <div><strong>Name:</strong> {request.managerInfo.fullName || 'N/A'}</div>
                   <div><strong>Email:</strong> {request.managerInfo.email || 'N/A'}</div>
                   {request.managerInfo.phone && (
@@ -486,24 +421,6 @@ const RequestDetailPage = () => {
                   )}
                   {request.managerInfo.role && (
                     <div><strong>Role:</strong> {request.managerInfo.role}</div>
-=======
-                  <div>
-                    <strong>Tên:</strong>{' '}
-                    {request.managerInfo.fullName || 'N/A'}
-                  </div>
-                  <div>
-                    <strong>Email:</strong> {request.managerInfo.email || 'N/A'}
-                  </div>
-                  {request.managerInfo.phone && (
-                    <div>
-                      <strong>Điện thoại:</strong> {request.managerInfo.phone}
-                    </div>
-                  )}
-                  {request.managerInfo.role && (
-                    <div>
-                      <strong>Vai trò:</strong> {request.managerInfo.role}
-                    </div>
->>>>>>> main
                   )}
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
@@ -571,147 +488,6 @@ const RequestDetailPage = () => {
         </Card>
 
         {/* Contracts Section */}
-<<<<<<< HEAD
-        {loadingContracts ? (
-          <Card style={{ marginTop: 16 }}>
-            <Spin />
-          </Card>
-        ) : contracts.length > 0 ? (
-          <Card 
-            title="Contracts" 
-            style={{ marginTop: 16 }}
-            extra={
-              <Tag color="blue">{contracts.length} contract(s)</Tag>
-            }
-          >
-            {contracts.map((contract) => {
-              const currentStatus = contract.status?.toLowerCase();
-              const isSent = currentStatus === 'sent';
-              const isApproved = currentStatus === 'approved';
-              const isCanceled = currentStatus === 'canceled_by_customer';
-              const isCanceledByManager = currentStatus === 'canceled_by_manager';
-              const isNeedRevision = currentStatus === 'need_revision';
-              
-              // Contract đã từng được gửi cho customer (check sentToCustomerAt thay vì chỉ check status)
-              // Vì khi manager hủy, status sẽ thành canceled_by_manager, nhưng sentToCustomerAt vẫn giữ nguyên
-              const wasSentToCustomer = !!contract.sentToCustomerAt;
-              
-              // Chỉ cho phép customer action khi:
-              // - Status hiện tại = SENT (chưa bị hủy)
-              // - VÀ không bị manager hủy
-              const canCustomerAction = isSent && !isCanceledByManager;
-
-              return (
-                <Card
-                  key={contract.contractId}
-                  type="inner"
-                  style={{ marginBottom: 16 }}
-                  title={
-                    <Space>
-                      <span>{contract.contractNumber}</span>
-                      <Tag color={getContractStatusColor(contract.status)}>
-                        {getContractStatusText(contract.status)}
-                      </Tag>
-                    </Space>
-                  }
-                  extra={
-                    <Space>
-                      {canCustomerAction && (
-                        <>
-                          <Button
-                            type="primary"
-                            icon={<CheckOutlined />}
-                            onClick={() => handleApproveContract(contract.contractId)}
-                            loading={actionLoading}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            icon={<EditOutlined />}
-                            onClick={() => {
-                              setSelectedContract(contract);
-                              setRequestChangeModalVisible(true);
-                            }}
-                            loading={actionLoading}
-                          >
-                            Request Change
-                          </Button>
-                          <Button
-                            danger
-                            icon={<StopOutlined />}
-                            onClick={() => {
-                              setSelectedContract(contract);
-                              setCancelModalVisible(true);
-                            }}
-                            loading={actionLoading}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      )}
-                      {isCanceledByManager && (
-                        <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
-                          <strong>
-                            {wasSentToCustomer 
-                              ? 'Recalled by manager (contract was previously sent to you)' 
-                              : 'Cancelled by manager'}
-                          </strong>
-                          {contract.cancellationReason && (
-                            <div style={{ marginTop: 4 }}>
-                              <strong>Reason:</strong> {contract.cancellationReason}
-                            </div>
-                          )}
-                          {wasSentToCustomer && contract.sentToCustomerAt && (
-                            <div style={{ marginTop: 4, fontSize: '11px', color: '#999' }}>
-                              Sent at: {formatDate(contract.sentToCustomerAt)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {isNeedRevision && contract.cancellationReason && (
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          <strong>Reason:</strong> {contract.cancellationReason}
-                        </div>
-                      )}
-                      {isCanceled && contract.cancellationReason && (
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          <strong>Cancellation Reason:</strong> {contract.cancellationReason}
-                        </div>
-                      )}
-                    </Space>
-                  }
-                >
-                  <Descriptions column={2} size="small">
-                    <Descriptions.Item label="Contract Type">
-                      {contract.contractType || 'N/A'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Total Value">
-                      {contract.totalPrice?.toLocaleString() || 0} {contract.currency || 'VND'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Deposit">
-                      {contract.depositAmount?.toLocaleString() || 0} {contract.currency || 'VND'} 
-                      ({contract.depositPercent || 0}%)
-                    </Descriptions.Item>
-                    <Descriptions.Item label="SLA">
-                      {contract.slaDays || 0} days
-                    </Descriptions.Item>
-                    {contract.createdAt && (
-                      <Descriptions.Item label="Created Date">
-                        {formatDate(contract.createdAt)}
-                      </Descriptions.Item>
-                    )}
-                    {contract.expiresAt && (
-                      <Descriptions.Item label="Expires At">
-                        {formatDate(contract.expiresAt)}
-                      </Descriptions.Item>
-                    )}
-                  </Descriptions>
-                </Card>
-              );
-            })}
-          </Card>
-        ) : null}
-=======
         <RequestContractList
           contracts={contracts}
           loading={loadingContracts}
@@ -722,7 +498,6 @@ const RequestDetailPage = () => {
           onCancel={handleOpenCancelModal}
           formatDate={formatDate}
         />
->>>>>>> main
 
         {/* Cancel Contract Modal */}
         <CancelContractModal
@@ -753,12 +528,7 @@ const RequestDetailPage = () => {
         >
           <div style={{ marginBottom: 16 }}>
             <p>
-<<<<<<< HEAD
               Please enter the reason you want to change contract <strong>{selectedContract?.contractNumber}</strong>
-=======
-              Vui lòng nhập lý do bạn muốn chỉnh sửa contract{' '}
-              <strong>{selectedContract?.contractNumber}</strong>
->>>>>>> main
             </p>
           </div>
           <TextArea

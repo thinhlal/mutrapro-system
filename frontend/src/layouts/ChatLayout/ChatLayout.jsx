@@ -69,24 +69,12 @@ const ChatLayout = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-<<<<<<< HEAD
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     
     return date.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit' });
-=======
-    if (diffMins < 1) return 'Vừa xong';
-    if (diffMins < 60) return `${diffMins} phút`;
-    if (diffHours < 24) return `${diffHours} giờ`;
-    if (diffDays < 7) return `${diffDays} ngày`;
-
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-    });
->>>>>>> main
   };
 
   const handleRoomClick = room => {
@@ -101,94 +89,37 @@ const ChatLayout = () => {
         <div className={styles.chatContainer}>
           {/* Left Sidebar - Chat Rooms List */}
           <div className={styles.sidebar}>
-<<<<<<< HEAD
-          <div className={styles.sidebarHeader}>
-            <div className={styles.headerTitle}>
-              <h2>Chats</h2>
-              {totalUnread > 0 && (
-                <Badge count={totalUnread} className={styles.totalUnreadBadge} />
-              )}
-            </div>
-            <div className={styles.searchBox}>
-              <Input
-                placeholder="Search conversations..."
-                prefix={<SearchOutlined />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
-          </div>
-
-          <div className={styles.roomsList}>
-            {loading ? (
-              <div className={styles.loadingContainer}>
-                <Spin tip="Loading..." />
-              </div>
-            ) : filteredRooms.length === 0 ? (
-              <div className={styles.emptyContainer}>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    searchQuery 
-                      ? "No conversations found" 
-                      : "No conversations yet"
-                  }
-=======
             <div className={styles.sidebarHeader}>
               <div className={styles.headerTitle}>
                 <h2>Chats</h2>
                 {totalUnread > 0 && (
-                  <Badge
-                    count={totalUnread}
-                    className={styles.totalUnreadBadge}
-                  />
+                  <Badge count={totalUnread} className={styles.totalUnreadBadge} />
                 )}
               </div>
               <div className={styles.searchBox}>
                 <Input
-                  placeholder="Tìm kiếm cuộc trò chuyện..."
+                  placeholder="Search conversations..."
                   prefix={<SearchOutlined />}
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className={styles.searchInput}
->>>>>>> main
                 />
               </div>
             </div>
 
-<<<<<<< HEAD
-                  <div className={styles.roomInfo}>
-                    <div className={styles.roomTop}>
-                      <h4 className={styles.roomName}>{room.roomName || 'Chat Room'}</h4>
-                      <span className={styles.roomTime}>{formatDate(room.updatedAt)}</span>
-                    </div>
-                    
-                    <div className={styles.roomBottom}>
-                      <p className={styles.lastMessage}>
-                        {room.lastMessage ? (
-                          <>
-                            <span className={styles.senderName}>{room.lastMessage.senderName}:</span>{' '}
-                            {room.lastMessage.content}
-                          </>
-                        ) : (
-                          room.description || 'No messages yet'
-                        )}
-                      </p>
-=======
             <div className={styles.roomsList}>
               {loading ? (
                 <div className={styles.loadingContainer}>
-                  <Spin tip="Đang tải..." />
+                  <Spin tip="Loading..." />
                 </div>
               ) : filteredRooms.length === 0 ? (
                 <div className={styles.emptyContainer}>
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description={
-                      searchQuery
-                        ? 'Không tìm thấy cuộc trò chuyện'
-                        : 'Chưa có cuộc trò chuyện nào'
+                      searchQuery 
+                        ? "No conversations found" 
+                        : "No conversations yet"
                     }
                   />
                 </div>
@@ -207,7 +138,6 @@ const ChatLayout = () => {
                           backgroundColor: getRoomTypeColor(room.roomType),
                         }}
                       />
->>>>>>> main
                       {room.unreadCount > 0 && (
                         <span className={styles.unreadDot}></span>
                       )}
@@ -233,7 +163,7 @@ const ChatLayout = () => {
                               {room.lastMessage.content}
                             </>
                           ) : (
-                            room.description || 'Chưa có tin nhắn'
+                            room.description || 'No messages yet'
                           )}
                         </p>
                         {room.unreadCount > 0 && (
@@ -254,24 +184,12 @@ const ChatLayout = () => {
           <div className={styles.mainContent}>
             {roomId ? (
               <ChatConversationPage />
-<<<<<<< HEAD
-          ) : (
-            <div className={styles.emptyConversation}>
-              <h3>Select a conversation</h3>
-              <p>Choose a conversation from the list on the left to start messaging</p>
-            </div>
-          )}
-=======
             ) : (
               <div className={styles.emptyConversation}>
-                <h3>Chọn một cuộc trò chuyện</h3>
-                <p>
-                  Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu nhắn
-                  tin
-                </p>
+                <h3>Select a conversation</h3>
+                <p>Choose a conversation from the list on the left to start messaging</p>
               </div>
             )}
->>>>>>> main
           </div>
         </div>
       </div>

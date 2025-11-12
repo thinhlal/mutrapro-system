@@ -74,24 +74,9 @@ const MyRequestsContent = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-<<<<<<< HEAD
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
-      approved: {
-        color: 'cyan',
-        icon: <CheckCircleOutlined />,
-        text: 'Approved - pending deployment',
-      },
-=======
-        icon: hasManager ? (
-          <ClockCircleOutlined />
-        ) : (
-          <ExclamationCircleOutlined />
-        ),
-        text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
-      },
->>>>>>> main
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
@@ -169,29 +154,16 @@ const MyRequestsContent = () => {
           onChange={handleStatusChange}
           allowClear
         >
-<<<<<<< HEAD
           <Option value="">All</Option>
           <Option value="pending_no_manager">Waiting for manager</Option>
           <Option value="pending_has_manager">Assigned - pending</Option>
-          <Option value="approved">Approved - pending deployment</Option>
           <Option value="contract_sent">Contract sent</Option>
+          <Option value="contract_approved">Contract approved - awaiting signature</Option>
           <Option value="contract_signed">Contract signed</Option>
           <Option value="in_progress">In progress</Option>
           <Option value="completed">Completed</Option>
           <Option value="cancelled">Cancelled</Option>
           <Option value="rejected">Rejected</Option>
-=======
-          <Option value="">Tất cả</Option>
-          <Option value="pending_no_manager">Chờ manager nhận</Option>
-          <Option value="pending_has_manager">Đã gán - chờ xử lý</Option>
-          <Option value="contract_sent">Đã gửi hợp đồng</Option>
-          <Option value="contract_approved">Đã duyệt hợp đồng - Chờ ký</Option>
-          <Option value="contract_signed">Đã ký hợp đồng</Option>
-          <Option value="in_progress">Đang thực hiện</Option>
-          <Option value="completed">Hoàn thành</Option>
-          <Option value="cancelled">Đã hủy</Option>
-          <Option value="rejected">Bị từ chối</Option>
->>>>>>> main
         </Select>
       </div>
 
@@ -201,13 +173,8 @@ const MyRequestsContent = () => {
           <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       ) : requests.length === 0 ? (
-<<<<<<< HEAD
         <Empty 
           description="No requests"
-=======
-        <Empty
-          description="Không có requests nào"
->>>>>>> main
           className={styles.emptyState}
         />
       ) : (
@@ -227,13 +194,7 @@ const MyRequestsContent = () => {
                   <div className={styles.titleSection}>
                     <h3 className={styles.requestTitle}>{request.title}</h3>
                     <Tag color="blue" className={styles.typeTag}>
-<<<<<<< HEAD
                       {request.requestType === 'transcription' ? 'Transcription' : 'Arrangement'}
-=======
-                      {request.requestType === 'transcription'
-                        ? 'Phiên âm'
-                        : 'Biên soạn'}
->>>>>>> main
                     </Tag>
                   </div>
                   <Tag
@@ -288,12 +249,7 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardFooter}>
                   <div className={styles.dateInfo}>
-<<<<<<< HEAD
                     <ClockCircleOutlined /> Created: {formatDate(request.createdAt)}
-=======
-                    <ClockCircleOutlined /> Tạo lúc:{' '}
-                    {formatDate(request.createdAt)}
->>>>>>> main
                   </div>
                   <div className={styles.dateInfo}>
                     Updated: {formatDate(request.updatedAt)}
@@ -301,13 +257,7 @@ const MyRequestsContent = () => {
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
-<<<<<<< HEAD
-                    onClick={() => navigate(`/my-requests/${request.requestId}`)}
-=======
-                    onClick={() =>
-                      navigate(`/profile/my-requests/${request.requestId}`)
-                    }
->>>>>>> main
+                    onClick={() => navigate(`/profile/my-requests/${request.requestId}`)}
                     className={styles.viewDetailBtn}
                   >
                     View Details

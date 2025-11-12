@@ -81,15 +81,9 @@ const ChatRoomsPage = () => {
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-<<<<<<< HEAD
                 searchQuery 
                   ? "No matching conversations found" 
                   : "No conversations yet"
-=======
-                searchQuery
-                  ? 'Không tìm thấy cuộc trò chuyện phù hợp'
-                  : 'Chưa có cuộc trò chuyện nào'
->>>>>>> main
               }
             />
           </div>

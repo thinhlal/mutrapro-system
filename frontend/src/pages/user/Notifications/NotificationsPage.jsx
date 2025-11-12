@@ -198,7 +198,6 @@ const NotificationsPage = () => {
         </span>
       ),
       children: (
-<<<<<<< HEAD
         <>
           <div className={styles.inboxContent}>
             {loading && notifications.length === 0 ? (
@@ -220,86 +219,6 @@ const NotificationsPage = () => {
                       Mark all as read
                     </Button>
                   )}
-=======
-        <div className={styles.inboxContent}>
-          {loading && notifications.length === 0 ? (
-            <div className={styles.loadingContainer}>
-              <Spin tip="Đang tải thông báo..." />
-            </div>
-          ) : filteredNotifications.length > 0 ? (
-            <>
-              <div className={styles.inboxHeader}>
-                <Text type="secondary">
-                  {unreadCount > 0 ? (
-                    <>Bạn có {unreadCount} thông báo chưa đọc</>
-                  ) : (
-                    <>Tất cả thông báo đã được đọc</>
-                  )}
-                </Text>
-                {unreadCount > 0 && (
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={handleMarkAllAsRead}
-                  >
-                    Đánh dấu tất cả đã đọc
-                  </Button>
-                )}
-              </div>
-              <List
-                itemLayout="horizontal"
-                dataSource={filteredNotifications}
-                loading={loading}
-                renderItem={notification => (
-                  <List.Item
-                    className={`${styles.notificationItem} ${
-                      !notification.isRead ? styles.unread : ''
-                    }`}
-                    onClick={() => handleNotificationClick(notification)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <List.Item.Meta
-                      avatar={getNotificationIcon(notification.type)}
-                      title={
-                        <div className={styles.notifHeader}>
-                          <span className={styles.notifTitle}>
-                            {notification.title}
-                          </span>
-                          {!notification.isRead && (
-                            <Badge
-                              status="processing"
-                              className={styles.unreadBadge}
-                            />
-                          )}
-                        </div>
-                      }
-                      description={
-                        <div>
-                          <p className={styles.notifMessage}>
-                            {notification.content}
-                          </p>
-                          <Text type="secondary" className={styles.notifTime}>
-                            {formatTime(notification.createdAt)}
-                          </Text>
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-              {totalElements > pageSize && (
-                <div className={styles.paginationContainer}>
-                  <Pagination
-                    current={page + 1}
-                    total={totalElements}
-                    pageSize={pageSize}
-                    onChange={handlePageChange}
-                    showSizeChanger
-                    showTotal={(total, range) =>
-                      `${range[0]}-${range[1]} của ${total} thông báo`
-                    }
-                  />
->>>>>>> main
                 </div>
                 <List
                   itemLayout="horizontal"
@@ -383,17 +302,8 @@ const NotificationsPage = () => {
                   You have {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}
                 </Text>
                 {unreadCount > 0 && (
-<<<<<<< HEAD
                   <Button type="link" size="small" onClick={handleMarkAllAsRead}>
                     Mark all as read
-=======
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={handleMarkAllAsRead}
-                  >
-                    Đánh dấu tất cả đã đọc
->>>>>>> main
                   </Button>
                 )}
               </div>
@@ -454,13 +364,7 @@ const NotificationsPage = () => {
         <div className={styles.notificationsContent}>
           <div className={styles.pageHeader}>
             <div className={styles.headerText}>
-<<<<<<< HEAD
               <Title level={1} className={styles.pageTitle}>Notifications</Title>
-=======
-              <Title level={1} className={styles.pageTitle}>
-                Thông báo
-              </Title>
->>>>>>> main
               <Text type="secondary" className={styles.pageSubtitle}>
                 Manage and track all your notifications
               </Text>
