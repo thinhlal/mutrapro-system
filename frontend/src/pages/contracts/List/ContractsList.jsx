@@ -19,10 +19,13 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   FilePdfOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './ContractsList.module.css';
-import { getAllContracts } from '../../../services/contractService';
+import { getAllContracts, cancelContract } from '../../../services/contractService';
+import { useAuth } from '../../../contexts/AuthContext';
+import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 
 // ===== Enums (phù hợp với ContractBuilder) =====
 const CONTRACT_TYPES = [
@@ -35,8 +38,12 @@ const CONTRACT_TYPES = [
 const CONTRACT_STATUS = [
   { label: 'Draft', value: 'draft' },
   { label: 'Sent', value: 'sent' },
-  { label: 'Reviewed', value: 'reviewed' },
+  { label: 'Approved', value: 'approved' },
   { label: 'Signed', value: 'signed' },
+  { label: 'Rejected by Customer', value: 'rejected_by_customer' },
+  { label: 'Need Revision', value: 'need_revision' },
+  { label: 'Canceled by Customer', value: 'canceled_by_customer' },
+  { label: 'Canceled by Manager', value: 'canceled_by_manager' },
   { label: 'Expired', value: 'expired' },
 ];
 const CURRENCIES = [
@@ -67,8 +74,12 @@ const fmtMoney = (n, cur) =>
 const statusColor = {
   draft: 'default',
   sent: 'geekblue',
-  reviewed: 'gold',
+  approved: 'green',
   signed: 'green',
+  rejected_by_customer: 'red',
+  need_revision: 'orange',
+  canceled_by_customer: 'default',
+  canceled_by_manager: 'orange',
   expired: 'volcano',
 };
 
@@ -84,6 +95,11 @@ export default function ContractsList() {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const auth = useAuth();
+  const currentUser = auth?.user;
 
   // Fetch contracts từ API
   useEffect(() => {
@@ -131,6 +147,31 @@ export default function ContractsList() {
       return passSearch && passType && passStatus && passCur && passDate;
     });
   }, [contracts, search, type, status, currency, dateRange]);
+
+  const handleCancelContract = async (reason) => {
+    if (!selectedContract) return;
+    try {
+      setActionLoading(true);
+      await cancelContract(selectedContract.contractId, reason);
+      message.success('Đã hủy contract thành công');
+      setCancelModalVisible(false);
+      setSelectedContract(null);
+      // Reload contracts
+      try {
+        setLoading(true);
+        const response = await getAllContracts();
+        setContracts(response.data || []);
+      } catch (err) {
+        console.error('Error reloading contracts:', err);
+      } finally {
+        setLoading(false);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi hủy contract');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const columns = [
     {
@@ -237,30 +278,56 @@ export default function ContractsList() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 220,
-      render: (_, r) => (
-        <Space>
-          <Tooltip title="View">
-            <Button icon={<EyeOutlined />} />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button icon={<EditOutlined />} type="primary" ghost />
-          </Tooltip>
-          <Tooltip title="Export PDF">
-            <Button icon={<FilePdfOutlined />} />
-          </Tooltip>
-          <Popconfirm
-            title="Delete this contract?"
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() =>
-              message.success(`Deleted ${r.contractNumber} (UI only)`)
-            }
-          >
-            <Button danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+      width: 280,
+      render: (_, r) => {
+        const isSent = r.status?.toLowerCase() === 'sent';
+        const isCustomer = currentUser?.role === 'CUSTOMER';
+        const isOwner = currentUser && r.userId && r.userId === currentUser.id;
+        const canCancel = isSent && isCustomer && isOwner;
+
+        return (
+          <Space>
+            <Tooltip title="View">
+              <Button icon={<EyeOutlined />} />
+            </Tooltip>
+            {!isCustomer && (
+              <>
+                <Tooltip title="Edit">
+                  <Button icon={<EditOutlined />} type="primary" ghost />
+                </Tooltip>
+                <Tooltip title="Export PDF">
+                  <Button icon={<FilePdfOutlined />} />
+                </Tooltip>
+                <Popconfirm
+                  title="Delete this contract?"
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={() =>
+                    message.success(`Deleted ${r.contractNumber} (UI only)`)
+                  }
+                >
+                  <Button danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </>
+            )}
+            {canCancel && (
+              <Tooltip title="Hủy contract">
+                <Button
+                  danger
+                  icon={<StopOutlined />}
+                  onClick={() => {
+                    setSelectedContract(r);
+                    setCancelModalVisible(true);
+                  }}
+                  loading={actionLoading}
+                >
+                  Hủy
+                </Button>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -366,6 +433,17 @@ export default function ContractsList() {
           />
         )}
       </Spin>
+
+      {/* Cancel Contract Modal */}
+      <CancelContractModal
+        visible={cancelModalVisible}
+        onCancel={() => {
+          setCancelModalVisible(false);
+          setSelectedContract(null);
+        }}
+        onConfirm={handleCancelContract}
+        loading={actionLoading}
+      />
     </div>
   );
 }

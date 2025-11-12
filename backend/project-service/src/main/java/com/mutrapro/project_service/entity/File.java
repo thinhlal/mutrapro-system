@@ -31,7 +31,7 @@ public class File {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "file_id", nullable = false)
-    UUID fileId;
+    String fileId;
 
     // Source references (one of these will be NULL)
     @Column(name = "request_id")

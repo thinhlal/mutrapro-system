@@ -50,3 +50,8 @@ app:
 request:
   service:
     base-url: http://localhost:8084
+
+# Chat Service Configuration
+chat:
+  service:
+    base-url: http://localhost:8088

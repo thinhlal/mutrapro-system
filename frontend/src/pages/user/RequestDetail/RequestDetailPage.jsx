@@ -9,7 +9,9 @@ import {
   Empty, 
   message,
   Space,
-  Divider
+   Divider,
+  Modal,
+  Input
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -19,17 +21,36 @@ import {
   SyncOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
+  CheckOutlined,
+  EditOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
+import { 
+  getContractsByRequestId, 
+  approveContract, 
+  requestChangeContract, 
+  cancelContract 
+} from '../../../services/contractService';
+import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import styles from './RequestDetailPage.module.css';
+
+const { TextArea } = Input;
 
 const RequestDetailPage = () => {
   const { requestId } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [contracts, setContracts] = useState([]);
+  const [loadingContracts, setLoadingContracts] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [requestChangeModalVisible, setRequestChangeModalVisible] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [changeReason, setChangeReason] = useState('');
   const { instruments: instrumentsData, fetchInstruments } = useInstrumentStore();
 
   useEffect(() => {
@@ -62,6 +83,26 @@ const RequestDetailPage = () => {
       loadRequest();
     }
   }, [requestId, navigate]);
+
+  useEffect(() => {
+    const loadContracts = async () => {
+      if (!requestId) return;
+      try {
+        setLoadingContracts(true);
+        const response = await getContractsByRequestId(requestId);
+        if (response.status === 'success' && response.data) {
+          setContracts(response.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading contracts:', error);
+        // Không hiển thị error nếu chưa có contract
+      } finally {
+        setLoadingContracts(false);
+      }
+    };
+
+    loadContracts();
+  }, [requestId]);
 
   const getStatusConfig = (status) => {
     const hasManager = !!request?.managerUserId;
@@ -146,6 +187,99 @@ const RequestDetailPage = () => {
     if (status === 'completed') return 'Hoàn thành';
     if (status === 'cancelled' || status === 'rejected') return 'Đã đóng';
     return 'Chưa được gán • Chờ xử lý';
+  };
+
+  const getContractStatusColor = (status) => {
+    const statusLower = status?.toLowerCase() || '';
+    const colorMap = {
+      draft: 'default',
+      sent: 'geekblue',
+      approved: 'green',
+      signed: 'green',
+      rejected_by_customer: 'red',
+      need_revision: 'orange',
+      canceled_by_customer: 'default',
+      canceled_by_manager: 'orange',
+      expired: 'volcano',
+    };
+    return colorMap[statusLower] || 'default';
+  };
+
+  const getContractStatusText = (status) => {
+    const statusLower = status?.toLowerCase() || '';
+    const textMap = {
+      draft: 'Draft',
+      sent: 'Đã gửi',
+      approved: 'Đã duyệt',
+      signed: 'Đã ký',
+      rejected_by_customer: 'Bị từ chối',
+      need_revision: 'Cần chỉnh sửa',
+      canceled_by_customer: 'Đã hủy',
+      canceled_by_manager: 'Đã thu hồi',
+      expired: 'Hết hạn',
+    };
+    return textMap[statusLower] || status;
+  };
+
+  const handleApproveContract = async (contractId) => {
+    try {
+      setActionLoading(true);
+      await approveContract(contractId);
+      message.success('Đã duyệt contract thành công');
+      // Reload contracts
+      const response = await getContractsByRequestId(requestId);
+      if (response.status === 'success' && response.data) {
+        setContracts(response.data || []);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi duyệt contract');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRequestChange = async () => {
+    if (!selectedContract || !changeReason.trim()) {
+      message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      await requestChangeContract(selectedContract.contractId, changeReason);
+      message.success('Đã gửi yêu cầu chỉnh sửa contract');
+      setRequestChangeModalVisible(false);
+      setChangeReason('');
+      setSelectedContract(null);
+      // Reload contracts
+      const response = await getContractsByRequestId(requestId);
+      if (response.status === 'success' && response.data) {
+        setContracts(response.data || []);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi yêu cầu chỉnh sửa contract');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelContract = async (reason) => {
+    if (!selectedContract) return;
+    try {
+      setActionLoading(true);
+      await cancelContract(selectedContract.contractId, reason);
+      message.success('Đã hủy contract thành công');
+      setCancelModalVisible(false);
+      setSelectedContract(null);
+      // Reload contracts
+      const response = await getContractsByRequestId(requestId);
+      if (response.status === 'success' && response.data) {
+        setContracts(response.data || []);
+      }
+    } catch (error) {
+      message.error(error.message || 'Lỗi khi hủy contract');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -347,6 +481,188 @@ const RequestDetailPage = () => {
             </Descriptions.Item>
           </Descriptions>
         </Card>
+
+        {/* Contracts Section */}
+        {loadingContracts ? (
+          <Card style={{ marginTop: 16 }}>
+            <Spin />
+          </Card>
+        ) : contracts.length > 0 ? (
+          <Card 
+            title="Contracts" 
+            style={{ marginTop: 16 }}
+            extra={
+              <Tag color="blue">{contracts.length} contract(s)</Tag>
+            }
+          >
+            {contracts.map((contract) => {
+              const currentStatus = contract.status?.toLowerCase();
+              const isSent = currentStatus === 'sent';
+              const isApproved = currentStatus === 'approved';
+              const isCanceled = currentStatus === 'canceled_by_customer';
+              const isCanceledByManager = currentStatus === 'canceled_by_manager';
+              const isNeedRevision = currentStatus === 'need_revision';
+              
+              // Contract đã từng được gửi cho customer (check sentToCustomerAt thay vì chỉ check status)
+              // Vì khi manager hủy, status sẽ thành canceled_by_manager, nhưng sentToCustomerAt vẫn giữ nguyên
+              const wasSentToCustomer = !!contract.sentToCustomerAt;
+              
+              // Chỉ cho phép customer action khi:
+              // - Status hiện tại = SENT (chưa bị hủy)
+              // - VÀ không bị manager hủy
+              const canCustomerAction = isSent && !isCanceledByManager;
+
+              return (
+                <Card
+                  key={contract.contractId}
+                  type="inner"
+                  style={{ marginBottom: 16 }}
+                  title={
+                    <Space>
+                      <span>{contract.contractNumber}</span>
+                      <Tag color={getContractStatusColor(contract.status)}>
+                        {getContractStatusText(contract.status)}
+                      </Tag>
+                    </Space>
+                  }
+                  extra={
+                    <Space>
+                      {canCustomerAction && (
+                        <>
+                          <Button
+                            type="primary"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleApproveContract(contract.contractId)}
+                            loading={actionLoading}
+                          >
+                            Duyệt
+                          </Button>
+                          <Button
+                            icon={<EditOutlined />}
+                            onClick={() => {
+                              setSelectedContract(contract);
+                              setRequestChangeModalVisible(true);
+                            }}
+                            loading={actionLoading}
+                          >
+                            Yêu cầu chỉnh sửa
+                          </Button>
+                          <Button
+                            danger
+                            icon={<StopOutlined />}
+                            onClick={() => {
+                              setSelectedContract(contract);
+                              setCancelModalVisible(true);
+                            }}
+                            loading={actionLoading}
+                          >
+                            Hủy
+                          </Button>
+                        </>
+                      )}
+                      {isCanceledByManager && (
+                        <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
+                          <strong>
+                            {wasSentToCustomer 
+                              ? 'Đã thu hồi bởi manager (contract đã từng được gửi cho bạn)' 
+                              : 'Đã hủy bởi manager'}
+                          </strong>
+                          {contract.cancellationReason && (
+                            <div style={{ marginTop: 4 }}>
+                              <strong>Lý do:</strong> {contract.cancellationReason}
+                            </div>
+                          )}
+                          {wasSentToCustomer && contract.sentToCustomerAt && (
+                            <div style={{ marginTop: 4, fontSize: '11px', color: '#999' }}>
+                              Đã gửi lúc: {formatDate(contract.sentToCustomerAt)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {isNeedRevision && contract.cancellationReason && (
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          <strong>Lý do:</strong> {contract.cancellationReason}
+                        </div>
+                      )}
+                      {isCanceled && contract.cancellationReason && (
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          <strong>Lý do hủy:</strong> {contract.cancellationReason}
+                        </div>
+                      )}
+                    </Space>
+                  }
+                >
+                  <Descriptions column={2} size="small">
+                    <Descriptions.Item label="Loại contract">
+                      {contract.contractType || 'N/A'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Giá trị">
+                      {contract.totalPrice?.toLocaleString() || 0} {contract.currency || 'VND'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Đặt cọc">
+                      {contract.depositAmount?.toLocaleString() || 0} {contract.currency || 'VND'} 
+                      ({contract.depositPercent || 0}%)
+                    </Descriptions.Item>
+                    <Descriptions.Item label="SLA">
+                      {contract.slaDays || 0} ngày
+                    </Descriptions.Item>
+                    {contract.createdAt && (
+                      <Descriptions.Item label="Ngày tạo">
+                        {formatDate(contract.createdAt)}
+                      </Descriptions.Item>
+                    )}
+                    {contract.expiresAt && (
+                      <Descriptions.Item label="Hết hạn">
+                        {formatDate(contract.expiresAt)}
+                      </Descriptions.Item>
+                    )}
+                  </Descriptions>
+                </Card>
+              );
+            })}
+          </Card>
+        ) : null}
+
+        {/* Cancel Contract Modal */}
+        <CancelContractModal
+          visible={cancelModalVisible}
+          onCancel={() => {
+            setCancelModalVisible(false);
+            setSelectedContract(null);
+          }}
+          onConfirm={handleCancelContract}
+          loading={actionLoading}
+        />
+
+        {/* Request Change Modal */}
+        <Modal
+          title="Yêu cầu chỉnh sửa Contract"
+          open={requestChangeModalVisible}
+          onOk={handleRequestChange}
+          onCancel={() => {
+            setRequestChangeModalVisible(false);
+            setChangeReason('');
+            setSelectedContract(null);
+          }}
+          confirmLoading={actionLoading}
+          okText="Gửi yêu cầu"
+          cancelText="Đóng"
+          width={600}
+        >
+          <div style={{ marginBottom: 16 }}>
+            <p>
+              Vui lòng nhập lý do bạn muốn chỉnh sửa contract <strong>{selectedContract?.contractNumber}</strong>
+            </p>
+          </div>
+          <TextArea
+            rows={4}
+            placeholder="Vui lòng nhập lý do yêu cầu chỉnh sửa (tối thiểu 10 ký tự)..."
+            value={changeReason}
+            onChange={(e) => setChangeReason(e.target.value)}
+            showCount
+            maxLength={500}
+          />
+        </Modal>
       </div>
     </ProfileLayout>
   );

@@ -11,7 +11,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -22,7 +21,7 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 public class ContractResponse {
     
-    UUID contractId;
+    String contractId;
     
     String requestId;
     
@@ -50,7 +49,7 @@ public class ContractResponse {
     
     Instant expiresAt;
     
-    UUID fileId;
+    String fileId;
     
     String notes;
     
@@ -87,5 +86,8 @@ public class ContractResponse {
     String phoneSnapshot;
     
     String emailSnapshot;
+    
+    // Customer action reason
+    String cancellationReason;
 }
 

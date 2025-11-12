@@ -9,7 +9,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "contracts", indexes = {
@@ -32,7 +31,7 @@ public class Contract {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "contract_id", nullable = false)
-    UUID contractId;
+    String contractId;
 
     // Soft references to other services
     @Column(name = "request_id", nullable = false)
@@ -78,8 +77,8 @@ public class Contract {
     @Column(name = "expires_at")
     Instant expiresAt;
 
-    @Column(name = "file_id")
-    UUID fileId;  // Reference to files.file_id (Contract PDF file)
+    @Column(name = "file_id", length = 36)
+    String fileId;  // Reference to files.file_id (Contract PDF file)
 
     @Column(name = "notes", columnDefinition = "text")
     String notes;
@@ -135,5 +134,9 @@ public class Contract {
 
     @Column(name = "email_snapshot", nullable = false, length = 255)
     String emailSnapshot;
+
+    // Customer action reasons
+    @Column(name = "cancellation_reason", columnDefinition = "text")
+    String cancellationReason;  // Lý do hủy/từ chối từ khách hàng
 }
 

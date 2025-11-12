@@ -5,6 +5,8 @@ import com.mutrapro.shared.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Feign Client để gọi request-service
@@ -22,5 +24,14 @@ public interface RequestServiceFeignClient {
      */
     @GetMapping("/{requestId}")
     ApiResponse<ServiceRequestInfoResponse> getServiceRequestById(@PathVariable("requestId") String requestId);
+
+    /**
+     * Cập nhật status của service request
+     * PUT /requests/{requestId}/status?status={status}
+     */
+    @PutMapping("/{requestId}/status")
+    ApiResponse<ServiceRequestInfoResponse> updateRequestStatus(
+        @PathVariable("requestId") String requestId,
+        @RequestParam("status") String status);
 }
 

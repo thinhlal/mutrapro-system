@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.springframework.security.core.Authentication;
@@ -42,6 +43,7 @@ public class ChatMessageService {
     ChatRoomRepository chatRoomRepository;
     ChatParticipantRepository chatParticipantRepository;
     ChatMessageMapper chatMessageMapper;
+    SimpMessagingTemplate messagingTemplate;
 
     /**
      * Send message with explicit user info (called by WebSocketChatController)
@@ -76,6 +78,48 @@ public class ChatMessageService {
         
         // Note: WebSocketChatController handles broadcasting to subscribers
         return chatMessageMapper.toResponse(savedMessage);
+    }
+
+    /**
+     * Send system message (không cần verify participant, dùng cho các service khác)
+     * System message thường là: contract canceled, status update, etc.
+     */
+    @Transactional
+    public ChatMessageResponse sendSystemMessage(SendMessageRequest request) {
+        // Verify room exists
+        ChatRoom chatRoom = chatRoomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> ChatRoomNotFoundException.byId(request.getRoomId()));
+        
+        // Create system message (không cần senderId/userName vì là system message)
+        ChatMessage message = ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .senderId("SYSTEM")  // System message
+                .senderName("SYSTEM")
+                .messageType(request.getMessageType())
+                .content(request.getContent())
+                .metadata(request.getMetadata())
+                .status(MessageStatus.SENT)
+                .sentAt(Instant.now())
+                .build();
+        
+        ChatMessage savedMessage = chatMessageRepository.save(message);
+        ChatMessageResponse response = chatMessageMapper.toResponse(savedMessage);
+        
+        log.info("System message sent: messageId={}, roomId={}, type={}", 
+                savedMessage.getMessageId(), request.getRoomId(), request.getMessageType());
+        
+        // Broadcast system message via WebSocket để user nhận real-time
+        try {
+            messagingTemplate.convertAndSend("/topic/chat/" + request.getRoomId(), response);
+            log.info("System message broadcasted to room: roomId={}, messageId={}", 
+                    request.getRoomId(), savedMessage.getMessageId());
+        } catch (Exception e) {
+            log.error("Failed to broadcast system message: roomId={}, error={}", 
+                    request.getRoomId(), e.getMessage(), e);
+            // Không throw exception - message đã được lưu vào database
+        }
+        
+        return response;
     }
 
     @Transactional(readOnly = true)

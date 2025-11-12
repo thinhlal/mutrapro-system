@@ -150,24 +150,25 @@ export default function ArrangementUploader({ variant = 'pure', serviceType, for
           </div>
         </div>
 
-        <div className={styles.dragRow}>
-          <Dragger
-            name="file"
-            multiple={false}
-            beforeUpload={beforeUpload}
-            accept=".musicxml,.xml,.midi,.mid,.pdf"
-            className={styles.dragger}
-            itemRender={() => null}
-            onChange={onChange}
-            disabled={!!file}
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">Drag & drop your notation here</p>
-            <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
-          </Dragger>
-        </div>
+        {!file && (
+          <div className={styles.dragRow}>
+            <Dragger
+              name="file"
+              multiple={false}
+              beforeUpload={beforeUpload}
+              accept=".musicxml,.xml,.midi,.mid,.pdf"
+              className={styles.dragger}
+              itemRender={() => null}
+              onChange={onChange}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">Drag & drop your notation here</p>
+              <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
+            </Dragger>
+          </div>
+        )}
 
         {file && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
