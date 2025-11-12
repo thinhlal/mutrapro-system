@@ -109,23 +109,25 @@ export default function RecordingUploader({ serviceType, formData }) {
           </div>
         </div>
 
-        <div className={styles.dragRow}>
-          <Dragger
-            name="files"
-            multiple
-            beforeUpload={beforeUpload}
-            accept="audio/*,video/*,.midi,.mid,.musicxml,.xml,.pdf,.txt"
-            className={styles.dragger}
-            itemRender={() => null}
-            onChange={onChange}
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">Drag & drop optional references</p>
-            <p className="ant-upload-hint">Lyrics / guide audio / notation</p>
-          </Dragger>
-        </div>
+        {files.length === 0 && (
+          <div className={styles.dragRow}>
+            <Dragger
+              name="files"
+              multiple
+              beforeUpload={beforeUpload}
+              accept="audio/*,video/*,.midi,.mid,.musicxml,.xml,.pdf,.txt"
+              className={styles.dragger}
+              itemRender={() => null}
+              onChange={onChange}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">Drag & drop optional references</p>
+              <p className="ant-upload-hint">Lyrics / guide audio / notation</p>
+            </Dragger>
+          </div>
+        )}
 
         {files.length > 0 && (
           <div className={styles.selectedBox} role="status" aria-live="polite">
