@@ -258,7 +258,7 @@ export default function ContractsList() {
           <div className={styles.sub}>{getServiceName(r.contractType)}</div>
         </div>
       ),
-      width: 220,
+      width: 200,
     },
     {
       title: 'Type',
@@ -319,7 +319,7 @@ export default function ContractsList() {
     {
       title: 'Timeline',
       key: 'timeline',
-      width: 220,
+      width: 200,
       render: (_, r) => (
         <div className={styles.timeline}>
           <div>
@@ -348,7 +348,7 @@ export default function ContractsList() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 180,
+      width: 270,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';

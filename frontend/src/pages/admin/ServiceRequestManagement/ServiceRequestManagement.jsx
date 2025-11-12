@@ -272,7 +272,7 @@ export default function ServiceRequestManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 220,
+      width: 250,
       fixed: 'right',
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
