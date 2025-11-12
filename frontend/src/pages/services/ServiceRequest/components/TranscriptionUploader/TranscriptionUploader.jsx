@@ -171,26 +171,27 @@ export default function TranscriptionUploader({ serviceType, formData }) {
           disabled={!!file} 
         /> */}
 
-        <div className={styles.dragRow}>
-          <Dragger
-            name="file"
-            multiple={false}
-            beforeUpload={beforeUpload}
-            accept="audio/*,video/*,.midi,.mid,.musicxml,.xml"
-            className={styles.dragger}
-            itemRender={() => null}
-            onChange={onDraggerChange}
-            disabled={!!file} // đã có file thì khoá dragger để tránh nhầm
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">
-              Drag & drop your music files to upload
-            </p>
-            <p className="ant-upload-hint">or click to browse</p>
-          </Dragger>
-        </div>
+        {!file && (
+          <div className={styles.dragRow}>
+            <Dragger
+              name="file"
+              multiple={false}
+              beforeUpload={beforeUpload}
+              accept="audio/*,video/*,.midi,.mid,.musicxml,.xml"
+              className={styles.dragger}
+              itemRender={() => null}
+              onChange={onDraggerChange}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Drag & drop your music files to upload
+              </p>
+              <p className="ant-upload-hint">or click to browse</p>
+            </Dragger>
+          </div>
+        )}
 
         {/* Hiển thị file đã chọn */}
         {file && (
