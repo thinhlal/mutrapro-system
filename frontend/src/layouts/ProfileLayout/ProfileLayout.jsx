@@ -53,7 +53,7 @@ const ProfileLayout = ({ children }) => {
         </main>
       </div>
 
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

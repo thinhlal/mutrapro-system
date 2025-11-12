@@ -96,7 +96,9 @@ const UserManagement = () => {
       setEditModalVisible(false);
       fetchUsers();
     } catch (error) {
-      message.error(error.message || 'Không thể cập nhật người dùng');
+      console.error('Update user error:', error);
+      const errorMsg = error.message || error.error || 'Không thể cập nhật người dùng';
+      message.error(errorMsg, 5); // Show error for 5 seconds
     }
   };
 

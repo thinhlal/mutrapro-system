@@ -33,8 +33,17 @@ export default function UserEditModal({
           <Input />
         </Form.Item>
 
-        <Form.Item label="Phone" name="phone">
-          <Input />
+        <Form.Item
+          label="Phone"
+          name="phone"
+          rules={[
+            {
+              pattern: /^\d{10}$/,
+              message: 'Phone number must be exactly 10 digits!',
+            },
+          ]}
+        >
+          <Input placeholder="Enter 10 digit phone number" maxLength={10} />
         </Form.Item>
 
         <Form.Item label="Address" name="address">
