@@ -17,8 +17,9 @@
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
     'Segoe UI Symbol', 'Noto Color Emoji';
-  margin-top: 8rem;
   overflow: hidden;
+  padding-top: 144px;
+  height: 100vh;
 }
 
 .sideNav {
