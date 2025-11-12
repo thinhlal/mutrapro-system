@@ -182,7 +182,7 @@ export const getMyAssignedRequests = async (userId, additionalFilters = {}) => {
  * GET /requests/my-requests?status=
  * 
  * @param {Object} filters - Các filter tùy chọn
- * @param {string} filters.status - Trạng thái: pending, contract_sent, contract_signed, approved, in_progress, completed, cancelled, rejected
+ * @param {string} filters.status - Trạng thái: pending, contract_sent, contract_approved, contract_signed, in_progress, completed, cancelled, rejected
  * 
  * @returns {Promise} ApiResponse với danh sách requests của user
  */

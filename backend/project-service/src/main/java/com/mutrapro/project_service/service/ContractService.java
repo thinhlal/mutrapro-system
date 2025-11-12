@@ -2,8 +2,11 @@ package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.ChatServiceFeignClient;
+import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
+import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -13,11 +16,11 @@ import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
-import com.mutrapro.project_service.exception.ContractAlreadySignedException;
 import com.mutrapro.project_service.exception.ContractExpiredException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidContractStatusException;
 import com.mutrapro.project_service.exception.InvalidRequestIdException;
+import com.mutrapro.project_service.exception.InvalidRequestStatusException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
@@ -52,6 +55,7 @@ public class ContractService {
     ContractMapper contractMapper;
     RequestServiceFeignClient requestServiceFeignClient;
     ChatServiceFeignClient chatServiceFeignClient;
+    NotificationServiceFeignClient notificationServiceFeignClient;
 
     /**
      * Tạo contract từ service request
@@ -81,6 +85,14 @@ public class ContractService {
         }
         
         ServiceRequestInfoResponse serviceRequest = serviceRequestResponse.getData();
+        
+        // Kiểm tra request status - không cho tạo contract nếu request đã cancelled/completed/rejected
+        String requestStatus = serviceRequest.getStatus();
+        if ("cancelled".equalsIgnoreCase(requestStatus) 
+            || "completed".equalsIgnoreCase(requestStatus) 
+            || "rejected".equalsIgnoreCase(requestStatus)) {
+            throw InvalidRequestStatusException.cannotCreateContract(requestId, requestStatus);
+        }
         
         // Kiểm tra xem request đã có manager chưa
         if (serviceRequest.getManagerUserId() == null || serviceRequest.getManagerUserId().isBlank()) {
@@ -152,13 +164,10 @@ public class ContractService {
         // Revision deadline days - lấy từ request
         Integer revisionDeadlineDays = createRequest.getRevisionDeadlineDays();
         
-        // Tính due date nếu auto_due_date = true
-        Instant expectedStartDate = Instant.now();
-        
+        // KHÔNG set expectedStartDate và dueDate lúc tạo contract
+        // Chỉ set khi customer KÝ để đảm bảo tính đúng từ ngày ký
+        Instant expectedStartDate = null;
         Instant dueDate = null;
-        if (createRequest.getAutoDueDate()) {
-            dueDate = expectedStartDate.plusSeconds(slaDays * 24L * 60 * 60);
-        }
         
         // Tạo contract entity
         Contract contract = Contract.builder()
@@ -215,13 +224,29 @@ public class ContractService {
         
         int updatedCount = 0;
         for (Contract contract : expiredContracts) {
-            // Chỉ update nếu contract chưa được signed
-            if (contract.getSignedAt() == null && contract.getStatus() != ContractStatus.signed) {
+            ContractStatus currentStatus = contract.getStatus();
+            
+            // Chỉ update những contract đang ở trạng thái SENT hoặc APPROVED
+            // (những trạng thái đang chờ customer phản hồi/và duyệt nhưng chưa ký)
+            if (currentStatus == ContractStatus.sent || currentStatus == ContractStatus.approved) {
                 contract.setStatus(ContractStatus.expired);
                 contractRepository.save(contract);
+                
+                // Update request status về cancelled (customer không phản hồi)
+                try {
+                    requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "cancelled");
+                    log.info("Updated request status to cancelled: requestId={}", contract.getRequestId());
+                } catch (Exception e) {
+                    log.error("Failed to update request status for expired contract: contractId={}, requestId={}", 
+                        contract.getContractId(), contract.getRequestId(), e);
+                }
+                
                 updatedCount++;
-                log.info("Contract expired: contractId={}, contractNumber={}, expiresAt={}", 
-                    contract.getContractId(), contract.getContractNumber(), contract.getExpiresAt());
+                log.info("Contract expired: contractId={}, contractNumber={}, status={}, expiresAt={}", 
+                    contract.getContractId(), contract.getContractNumber(), currentStatus, contract.getExpiresAt());
+            } else {
+                log.debug("Skipping contract expiration (not in SENT/APPROVED status): contractId={}, status={}", 
+                    contract.getContractId(), currentStatus);
             }
         }
         
@@ -240,11 +265,122 @@ public class ContractService {
     }
     
     /**
+     * Manager send contract cho customer
+     * Chỉ cho phép send khi contract ở trạng thái DRAFT
+     * @param contractId ID của contract
+     * @param expiresInDays Số ngày hết hạn (mặc định 7 ngày)
+     * @return ContractResponse
+     */
+    @Transactional
+    public ContractResponse sendContractToCustomer(String contractId, Integer expiresInDays) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra quyền: chỉ manager của contract mới được send
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.equals(contract.getManagerUserId())) {
+            throw UnauthorizedException.create(
+                "Only the contract manager can send this contract");
+        }
+        
+        // Kiểm tra status: chỉ cho phép send khi status = DRAFT
+        if (contract.getStatus() != ContractStatus.draft) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId, contract.getStatus(),
+                "Chỉ có thể gửi contract khi đang ở trạng thái DRAFT");
+        }
+        
+        // Update status thành SENT
+        contract.setStatus(ContractStatus.sent);
+        contract.setSentToCustomerAt(Instant.now());
+        
+        // Set expiresAt (mặc định 7 ngày nếu chưa có)
+        if (expiresInDays != null && expiresInDays > 0) {
+            contract.setExpiresAt(Instant.now().plusSeconds(expiresInDays * 24L * 60 * 60));
+            log.info("Set expiresAt for contract: contractId={}, expiresInDays={}", contractId, expiresInDays);
+        } else if (contract.getExpiresAt() == null) {
+            // Mặc định 7 ngày nếu không chỉ định và chưa có
+            int defaultDays = 7;
+            contract.setExpiresAt(Instant.now().plusSeconds(defaultDays * 24L * 60 * 60));
+            log.info("Set expiresAt for contract (default 7 days): contractId={}", contractId);
+        }
+        
+        Contract saved = contractRepository.save(contract);
+        log.info("Manager sent contract to customer: contractId={}, managerId={}, customerId={}", 
+            contractId, currentUserId, contract.getUserId());
+        
+        // Cập nhật request status thành "contract_sent"
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_sent");
+            log.info("Updated request status to contract_sent: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to update request status to contract_sent: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi notification cho customer
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getUserId())
+                    .type(NotificationType.CONTRACT_SENT)
+                    .title("Contract mới đã được gửi")
+                    .content(String.format("Contract #%s đã được gửi cho bạn. Vui lòng xem xét và phản hồi.", 
+                            contract.getContractNumber()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/user/requests/" + contract.getRequestId())
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to customer: userId={}, contractId={}", 
+                    contract.getUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "📄 Manager đã gửi contract #%s cho bạn. Vui lòng xem xét và phản hồi trong vòng %d ngày.",
+            contract.getContractNumber(),
+            expiresInDays != null ? expiresInDays : 7
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        
+        return contractMapper.toResponse(saved);
+    }
+    
+    /**
      * Lấy danh sách contracts theo requestId
+     * - Nếu user là CUSTOMER: chỉ trả về contracts đã được gửi cho customer (sentToCustomerAt != null)
+     * - Nếu user là MANAGER/ADMIN: trả về tất cả contracts
      */
     @Transactional(readOnly = true)
     public List<ContractResponse> getContractsByRequestId(String requestId) {
         List<Contract> contracts = contractRepository.findByRequestId(requestId);
+        
+        // Lấy role của user hiện tại
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isCustomer = userRoles.stream()
+            .anyMatch(role -> role.equalsIgnoreCase("CUSTOMER"));
+        boolean isManagerOrAdmin = userRoles.stream()
+            .anyMatch(role -> role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("ADMIN"));
+        
+        // Nếu là customer: chỉ hiển thị contracts đã được gửi cho customer
+        // Ẩn tất cả contracts chưa được gửi (sentToCustomerAt == null)
+        // Bao gồm: DRAFT, CANCELED_BY_MANAGER (chưa sent), và bất kỳ status nào chưa sent
+        if (isCustomer && !isManagerOrAdmin) {
+            contracts = contracts.stream()
+                .filter(contract -> {
+                    // Chỉ hiển thị nếu contract đã được gửi cho customer
+                    // sentToCustomerAt != null
+                    return contract.getSentToCustomerAt() != null;
+                })
+                .collect(Collectors.toList());
+        }
+        
         return contracts.stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());
@@ -272,143 +408,6 @@ public class ContractService {
         return contracts.stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());
-    }
-    
-    /**
-     * Map ServiceType sang ContractType
-     */
-    private ContractType mapServiceTypeToContractType(String serviceType) {
-        if (serviceType == null) {
-            return ContractType.transcription;
-        }
-        
-        return switch (serviceType.toLowerCase()) {
-            case "transcription" -> ContractType.transcription;
-            case "arrangement" -> ContractType.arrangement;
-            case "arrangement_with_recording" -> ContractType.arrangement_with_recording;
-            case "recording" -> ContractType.recording;
-            default -> ContractType.transcription;
-        };
-    }
-    
-    /**
-     * Generate contract number: CTR-YYYYMMDD-XXXX
-     */
-    private String generateContractNumber(ContractType contractType) {
-        String prefix = "CTR";
-        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String random = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-        return String.format("%s-%s-%s", prefix, date, random);
-    }
-    
-    /**
-     * Get default SLA days based on contract type
-     */
-    private Integer getDefaultSlaDays(ContractType contractType) {
-        return switch (contractType) {
-            case transcription -> 7;
-            case arrangement -> 14;
-            case arrangement_with_recording -> 21;  // Arrangement + Recording takes longer
-            case recording -> 7;
-            case bundle -> 21;  // Full package (T+A+R)
-        };
-    }
-    
-    /**
-     * Update contract status
-     * Khi status được set thành "sent", tự động set expiresAt (7 ngày sau khi sent)
-     * Khi status được set thành "signed", check xem contract có hết hạn chưa
-     * @param contractId ID của contract
-     * @param newStatus Status mới
-     * @param expiresInDays Số ngày để expires (mặc định 7 ngày, chỉ áp dụng khi status = sent)
-     * @return ContractResponse
-     */
-    @Transactional
-    public ContractResponse updateContractStatus(String contractId, ContractStatus newStatus, Integer expiresInDays) {
-        Contract contract = contractRepository.findById(contractId)
-            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
-        
-        // Validate status transition
-        ContractStatus currentStatus = contract.getStatus();
-        
-        // Không cho phép update status nếu contract đã bị cancel hoặc reject
-        if (currentStatus == ContractStatus.canceled_by_customer 
-            || currentStatus == ContractStatus.canceled_by_manager
-            || currentStatus == ContractStatus.rejected_by_customer) {
-            throw InvalidContractStatusException.cannotUpdate(
-                contractId, currentStatus, 
-                "Không thể cập nhật status của contract đã bị hủy hoặc từ chối");
-        }
-        
-        // Nếu đang update thành "sent"
-        if (newStatus == ContractStatus.sent) {
-            contract.setStatus(ContractStatus.sent);
-            contract.setSentToCustomerAt(Instant.now());
-            
-            // Tự động set expiresAt nếu chưa có (mặc định 7 ngày sau khi sent)
-            // Nếu đã có expiresAt từ khi tạo, giữ nguyên
-            // Nếu expiresInDays được chỉ định, update lại expiresAt
-            if (expiresInDays != null) {
-                // Nếu có expiresInDays, update lại expiresAt
-                contract.setExpiresAt(Instant.now().plusSeconds(expiresInDays * 24L * 60 * 60));
-                log.info("Set expiresAt for contract: contractId={}, expiresAt={}, expiresInDays={}", 
-                    contractId, contract.getExpiresAt(), expiresInDays);
-            } else if (contract.getExpiresAt() == null) {
-                // Nếu chưa có expiresAt, set mặc định 7 ngày
-                int days = 7; // Mặc định 7 ngày
-                contract.setExpiresAt(Instant.now().plusSeconds(days * 24L * 60 * 60));
-                log.info("Set expiresAt for contract (default): contractId={}, expiresAt={}, expiresInDays={}", 
-                    contractId, contract.getExpiresAt(), days);
-            } else {
-                // Nếu đã có expiresAt, giữ nguyên
-                log.info("Contract already has expiresAt: contractId={}, expiresAt={}", 
-                    contractId, contract.getExpiresAt());
-            }
-            
-            // Cập nhật request status thành "contract_sent"
-            try {
-                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_sent");
-                log.info("Updated request status to contract_sent: requestId={}, contractId={}", 
-                    contract.getRequestId(), contractId);
-            } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to update request status to contract_sent: requestId={}, contractId={}, error={}", 
-                    contract.getRequestId(), contractId, e.getMessage(), e);
-            }
-        }
-        // Nếu đang update thành "signed"
-        else if (newStatus == ContractStatus.signed) {
-            // Check xem contract có hết hạn chưa
-            if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(Instant.now())) {
-                throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
-            }
-            
-            contract.setStatus(ContractStatus.signed);
-            contract.setSignedAt(Instant.now());
-            
-            // Nếu chưa có customerReviewedAt, set nó
-            if (contract.getCustomerReviewedAt() == null) {
-                contract.setCustomerReviewedAt(Instant.now());
-            }
-        }
-        // Nếu đang update thành "expired"
-        else if (newStatus == ContractStatus.expired) {
-            // Chỉ cho phép set expired nếu chưa signed
-            if (contract.getStatus() == ContractStatus.signed || contract.getSignedAt() != null) {
-                throw ContractAlreadySignedException.cannotExpire(contract.getContractId());
-            }
-            contract.setStatus(ContractStatus.expired);
-        }
-        // Các status khác (draft)
-        else {
-            contract.setStatus(newStatus);
-        }
-        
-        Contract saved = contractRepository.save(contract);
-        log.info("Updated contract status: contractId={}, from={}, to={}", 
-            contractId, currentStatus, newStatus);
-        
-        return contractMapper.toResponse(saved);
     }
     
     /**
@@ -440,27 +439,146 @@ public class ContractService {
             throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
         }
         
-        // Update status
+        // Update status - CHỈ set APPROVED, chưa ký
         contract.setStatus(ContractStatus.approved);
         contract.setCustomerReviewedAt(Instant.now());
-        contract.setSignedAt(Instant.now());
+        // KHÔNG set signedAt ở đây - phải gọi signContract riêng
         
         Contract saved = contractRepository.save(contract);
         log.info("Customer approved contract: contractId={}, userId={}", contractId, currentUserId);
         
-        // Cập nhật request status thành "contract_signed" hoặc "approved"
+        // Cập nhật request status thành "contract_approved"
         try {
-            // Nếu contract đã được signed, update request status thành "contract_signed"
-            // Nếu không, update thành "approved"
-            String requestStatus = "contract_signed"; // Mặc định là contract_signed khi customer approve
-            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), requestStatus);
-            log.info("Updated request status to {}: requestId={}, contractId={}", 
-                requestStatus, contract.getRequestId(), contractId);
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_approved");
+            log.info("Updated request status to contract_approved: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
         } catch (Exception e) {
             // Log error nhưng không fail transaction
             log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
+        
+        // Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CONTRACT_APPROVED)
+                    .title("Contract đã được duyệt")
+                    .content(String.format("Customer đã duyệt contract #%s. Vui lòng chờ customer ký để bắt đầu thực hiện.", 
+                            contract.getContractNumber()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts-list")
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "✅ Customer đã duyệt contract #%s. Đang chờ ký để bắt đầu thực hiện.",
+            contract.getContractNumber()
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        
+        return contractMapper.toResponse(saved);
+    }
+    
+    /**
+     * Customer sign contract (ký hợp đồng)
+     * Chỉ cho phép khi contract ở trạng thái APPROVED
+     * @param contractId ID của contract
+     * @return ContractResponse
+     */
+    @Transactional
+    public ContractResponse signContract(String contractId) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra quyền: chỉ customer (owner) mới được sign
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.equals(contract.getUserId())) {
+            throw UnauthorizedException.create(
+                "Only the contract owner can sign this contract");
+        }
+        
+        // Kiểm tra status: chỉ cho phép sign khi status = APPROVED
+        if (contract.getStatus() != ContractStatus.approved) {
+            throw new InvalidContractStatusException(
+                String.format("Cannot sign contract with status %s. Contract must be APPROVED first.", 
+                    contract.getStatus()));
+        }
+        
+        // Check expired
+        if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(Instant.now())) {
+            throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
+        }
+        
+        // Update status và signedAt
+        contract.setStatus(ContractStatus.signed);
+        Instant signedAt = Instant.now();
+        contract.setSignedAt(signedAt);
+        
+        // Set expectedStartDate = ngày ký
+        contract.setExpectedStartDate(signedAt);
+        
+        // Tính lại dueDate từ ngày ký nếu auto_due_date = true
+        if (contract.getAutoDueDate() != null && contract.getAutoDueDate()) {
+            Integer slaDays = contract.getSlaDays();
+            if (slaDays != null && slaDays > 0) {
+                Instant newDueDate = signedAt.plusSeconds(slaDays * 24L * 60 * 60);
+                contract.setDueDate(newDueDate);
+                log.info("Set due date from signed date: contractId={}, signedAt={}, dueDate={}, slaDays={}", 
+                    contractId, signedAt, newDueDate, slaDays);
+            }
+        }
+        
+        Contract saved = contractRepository.save(contract);
+        log.info("Customer signed contract: contractId={}, userId={}, expectedStartDate={}, dueDate={}", 
+            contractId, currentUserId, contract.getExpectedStartDate(), contract.getDueDate());
+        
+        // Cập nhật request status thành "contract_signed"
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_signed");
+            log.info("Updated request status to contract_signed: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CONTRACT_APPROVED)
+                    .title("Contract đã được ký")
+                    .content(String.format("Customer đã ký contract #%s. Có thể bắt đầu thực hiện công việc.", 
+                            contract.getContractNumber()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts-list")
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "✍️ Customer đã ký contract #%s. Bắt đầu thực hiện công việc!",
+            contract.getContractNumber()
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
         return contractMapper.toResponse(saved);
     }
@@ -503,6 +621,45 @@ public class ContractService {
         Contract saved = contractRepository.save(contract);
         log.info("Customer requested change for contract: contractId={}, userId={}, reason={}", 
             contractId, currentUserId, request.getReason());
+        
+        // Update request status về "pending" để manager tạo contract mới
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "pending");
+            log.info("Updated request status to pending: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CONTRACT_NEED_REVISION)
+                    .title("Customer yêu cầu chỉnh sửa Contract")
+                    .content(String.format("Customer đã yêu cầu chỉnh sửa contract #%s. Lý do: %s", 
+                            contract.getContractNumber(), request.getReason()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts-list")
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "✏️ Customer yêu cầu chỉnh sửa contract #%s.\nLý do: %s",
+            contract.getContractNumber(),
+            request.getReason()
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
         return contractMapper.toResponse(saved);
     }
@@ -555,8 +712,44 @@ public class ContractService {
         log.info("Customer canceled contract: contractId={}, userId={}, reason={}", 
             contractId, currentUserId, request.getReason());
         
-        // TODO: Gửi notification cho manager
-        // sendNotificationToManager(contract, request.getReason());
+        // Update request status về "cancelled" vì customer đã hủy
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "cancelled");
+            log.info("Updated request status to cancelled: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CONTRACT_CANCELED_BY_CUSTOMER)
+                    .title("Customer đã hủy Contract")
+                    .content(String.format("Customer đã hủy contract #%s. Lý do: %s", 
+                            contract.getContractNumber(), request.getReason()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts-list")
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "❌ Customer đã hủy contract #%s.\nLý do: %s",
+            contract.getContractNumber(),
+            request.getReason()
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
         return contractMapper.toResponse(saved);
     }
@@ -611,54 +804,90 @@ public class ContractService {
         log.info("Manager canceled contract: contractId={}, managerId={}, reason={}, wasSent={}", 
             contractId, currentUserId, request.getReason(), wasSent);
         
-        // Nếu contract đã được gửi cho customer, gửi message vào chat room và notification
+        // Nếu contract đã được gửi cho customer, gửi system message và notification
         if (wasSent) {
+            // Gửi system message vào chat room
+            String systemMessage = String.format(
+                "🚫 Manager đã thu hồi contract #%s.\nLý do: %s",
+                contract.getContractNumber(),
+                request.getReason()
+            );
+            sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+            
+            // Gửi notification cho customer về việc manager hủy contract
             try {
-                // 1. Tìm chat room theo requestId
-                ApiResponse<ChatRoomResponse> roomResponse = 
-                    chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", contract.getRequestId());
+                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                        .userId(contract.getUserId())
+                        .type(NotificationType.CONTRACT_CANCELED_BY_MANAGER)
+                        .title("Contract đã bị thu hồi")
+                        .content(String.format("Manager đã thu hồi contract #%s. Lý do: %s", 
+                                contract.getContractNumber(), request.getReason()))
+                        .referenceId(contractId)
+                        .referenceType("CONTRACT")
+                        .actionUrl("/user/requests/" + contract.getRequestId())
+                        .build();
                 
-                if (roomResponse != null && "success".equals(roomResponse.getStatus()) 
-                    && roomResponse.getData() != null) {
-                    ChatRoomResponse roomData = roomResponse.getData();
-                    String roomId = roomData.getRoomId();
-                    
-                    if (roomId != null && !roomId.isBlank()) {
-                        // 2. Gửi system message vào chat room
-                        String messageContent = String.format(
-                            "Manager đã thu hồi/huỷ contract #%s vì: %s",
-                            contract.getContractNumber(),
-                            request.getReason()
-                        );
-                        
-                        SendSystemMessageRequest messageRequest = SendSystemMessageRequest.builder()
-                            .roomId(roomId)
-                            .messageType("SYSTEM")  // System message
-                            .content(messageContent)
-                            .build();
-                        
-                        chatServiceFeignClient.sendSystemMessage(messageRequest);
-                        log.info("Sent cancellation system message to chat room: roomId={}, contractId={}", 
-                            roomId, contractId);
-                    } else {
-                        log.warn("Chat room found but roomId is null: requestId={}", contract.getRequestId());
-                    }
-                } else {
-                    log.warn("Chat room not found for request: requestId={}", contract.getRequestId());
-                }
+                notificationServiceFeignClient.createNotification(notifRequest);
+                log.info("Sent notification to customer: userId={}, contractId={}", 
+                        contract.getUserId(), contractId);
             } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to send message to chat room for contract cancellation: contractId={}, error={}", 
-                    contractId, e.getMessage(), e);
+                log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                        contract.getUserId(), contractId, e.getMessage(), e);
             }
             
-            // TODO: Gửi notification cho customer về việc manager hủy contract
-            // sendNotificationToCustomer(contract, request.getReason(), "Manager đã hủy contract");
             log.info("Contract was SENT to customer before cancellation. Notification sent: contractId={}, customerId={}", 
                 contractId, contract.getUserId());
         }
         
+        // Update request status về "pending" để có thể tạo contract mới
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "pending");
+            log.info("Updated request status to pending after manager cancellation: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
         return contractMapper.toResponse(saved);
+    }
+    
+    /**
+     * Helper method để gửi system message vào chat room
+     */
+    private void sendSystemMessageToChat(String requestId, String message) {
+        try {
+            // 1. Tìm chat room theo requestId
+            ApiResponse<ChatRoomResponse> roomResponse = 
+                chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", requestId);
+            
+            if (roomResponse != null && "success".equals(roomResponse.getStatus()) 
+                && roomResponse.getData() != null) {
+                ChatRoomResponse roomData = roomResponse.getData();
+                String roomId = roomData.getRoomId();
+                
+                if (roomId != null && !roomId.isBlank()) {
+                    // 2. Gửi system message vào chat room
+                    SendSystemMessageRequest messageRequest = SendSystemMessageRequest.builder()
+                        .roomId(roomId)
+                        .messageType("SYSTEM")
+                        .content(message)
+                        .build();
+                    
+                    chatServiceFeignClient.sendSystemMessage(messageRequest);
+                    log.info("Sent system message to chat room: roomId={}, requestId={}", 
+                        roomId, requestId);
+                } else {
+                    log.warn("Chat room found but roomId is null: requestId={}", requestId);
+                }
+            } else {
+                log.warn("Chat room not found for request: requestId={}", requestId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to send system message to chat room: requestId={}, error={}", 
+                requestId, e.getMessage(), e);
+        }
     }
     
     /**
@@ -673,6 +902,65 @@ public class ContractService {
             }
             log.warn("userId claim not found in JWT, falling back to subject");
             return jwt.getSubject();
+        }
+        throw UserNotAuthenticatedException.create();
+    }
+    
+    /**
+     * Map ServiceType sang ContractType
+     */
+    private ContractType mapServiceTypeToContractType(String serviceType) {
+        if (serviceType == null) {
+            return ContractType.transcription;
+        }
+        
+        return switch (serviceType.toLowerCase()) {
+            case "transcription" -> ContractType.transcription;
+            case "arrangement" -> ContractType.arrangement;
+            case "arrangement_with_recording" -> ContractType.arrangement_with_recording;
+            case "recording" -> ContractType.recording;
+            default -> ContractType.transcription;
+        };
+    }
+    
+    /**
+     * Generate contract number: CTR-YYYYMMDD-XXXX
+     */
+    private String generateContractNumber(ContractType contractType) {
+        String prefix = "CTR";
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String random = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        return String.format("%s-%s-%s", prefix, date, random);
+    }
+    
+    /**
+     * Get default SLA days based on contract type
+     */
+    private Integer getDefaultSlaDays(ContractType contractType) {
+        return switch (contractType) {
+            case transcription -> 7;
+            case arrangement -> 14;
+            case arrangement_with_recording -> 21;  // Arrangement + Recording takes longer
+            case recording -> 7;
+            case bundle -> 21;  // Full package (T+A+R)
+        };
+    }
+    
+    /**
+     * Lấy danh sách roles của user hiện tại từ JWT
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getCurrentUserRoles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            Object rolesObject = jwt.getClaim("scope");
+            if (rolesObject instanceof String rolesString) {
+                return List.of(rolesString.split(" "));
+            } else if (rolesObject instanceof List) {
+                return (List<String>) rolesObject;
+            }
+            log.warn("roles/scope claim not found in JWT");
+            return List.of();
         }
         throw UserNotAuthenticatedException.create();
     }

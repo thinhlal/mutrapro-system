@@ -1,5 +1,6 @@
-package com.mutrapro.notification_service.dto.response;
+package com.mutrapro.project_service.dto.response;
 
+import com.mutrapro.shared.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,10 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-import com.mutrapro.shared.enums.NotificationType;
-
 /**
- * Response DTO for Notification
+ * Response DTO for Notification (from notification-service)
  */
 @Data
 @Builder

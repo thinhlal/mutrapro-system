@@ -89,6 +89,7 @@ export const API_ENDPOINTS = {
   },
 
   CONTRACTS: {
+    BASE: `${PROJECT_PATH}/contracts`,
     // POST /api/v1/projects/contracts/from-request/{requestId}
     CREATE_FROM_REQUEST: requestId => `${PROJECT_PATH}/contracts/from-request/${requestId}`,
     // GET /api/v1/projects/contracts/{contractId}
@@ -99,8 +100,12 @@ export const API_ENDPOINTS = {
     MY_CONTRACTS: `${PROJECT_PATH}/contracts/my-contracts`,
     // GET /api/v1/projects/contracts/my-managed-contracts
     MY_MANAGED_CONTRACTS: `${PROJECT_PATH}/contracts/my-managed-contracts`,
+    // POST /api/v1/projects/contracts/{contractId}/send
+    SEND: contractId => `${PROJECT_PATH}/contracts/${contractId}/send`,
     // POST /api/v1/projects/contracts/{contractId}/approve
     APPROVE: contractId => `${PROJECT_PATH}/contracts/${contractId}/approve`,
+    // POST /api/v1/projects/contracts/{contractId}/sign
+    SIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/sign`,
     // POST /api/v1/projects/contracts/{contractId}/request-change
     REQUEST_CHANGE: contractId => `${PROJECT_PATH}/contracts/${contractId}/request-change`,
     // POST /api/v1/projects/contracts/{contractId}/cancel

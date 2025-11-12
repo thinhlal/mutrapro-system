@@ -51,3 +51,8 @@ request:
 chat:
   service:
     base-url: ${CHAT_SERVICE_URL:http://chat-service:8088}
+
+# Notification Service Configuration
+notification:
+  service:
+    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8086}

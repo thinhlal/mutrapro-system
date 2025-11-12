@@ -25,6 +25,7 @@ public class ServiceRequestInfoResponse {
     String requestId;
     String userId;
     String managerUserId;
+    String status;       // pending, contract_sent, contract_approved, contract_signed, in_progress, completed, cancelled, rejected
     String requestType;  // transcription, arrangement, arrangement_with_recording, recording
     String contactName;
     String contactPhone;

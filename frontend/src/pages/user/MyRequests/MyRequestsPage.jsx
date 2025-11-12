@@ -72,15 +72,15 @@ const MyRequestsContent = () => {
         icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
         text: hasManager ? 'Đã gán - chờ xử lý' : 'Chờ manager nhận',
       },
-      approved: {
-        color: 'cyan',
-        icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt - chờ triển khai',
-      },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Đã gửi hợp đồng',
+      },
+      contract_approved: {
+        color: 'cyan',
+        icon: <CheckCircleOutlined />,
+        text: 'Đã duyệt hợp đồng - Chờ ký',
       },
       contract_signed: {
         color: 'geekblue',
@@ -152,8 +152,8 @@ const MyRequestsContent = () => {
           <Option value="">Tất cả</Option>
           <Option value="pending_no_manager">Chờ manager nhận</Option>
           <Option value="pending_has_manager">Đã gán - chờ xử lý</Option>
-          <Option value="approved">Đã duyệt - chờ triển khai</Option>
           <Option value="contract_sent">Đã gửi hợp đồng</Option>
+          <Option value="contract_approved">Đã duyệt hợp đồng - Chờ ký</Option>
           <Option value="contract_signed">Đã ký hợp đồng</Option>
           <Option value="in_progress">Đang thực hiện</Option>
           <Option value="completed">Hoàn thành</Option>

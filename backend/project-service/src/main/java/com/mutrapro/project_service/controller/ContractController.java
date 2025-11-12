@@ -3,7 +3,6 @@ package com.mutrapro.project_service.controller;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
-import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.service.ContractService;
 import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -98,20 +97,18 @@ public class ContractController {
                 .build();
     }
 
-    @PutMapping("/{contractId}/status")
-    @Operation(summary = "Update contract status (sent, reviewed, signed, expired)")
-    public ApiResponse<ContractResponse> updateContractStatus(
+    @PostMapping("/{contractId}/send")
+    @Operation(summary = "Manager gửi contract cho customer (chỉ cho phép khi status = DRAFT)")
+    public ApiResponse<ContractResponse> sendContractToCustomer(
             @Parameter(description = "ID của contract")
             @PathVariable String contractId,
-            @Parameter(description = "Status mới (sent, reviewed, signed, expired)")
-            @RequestParam ContractStatus status,
-            @Parameter(description = "Số ngày để expires (chỉ áp dụng khi status = sent, mặc định 7 ngày)")
+            @Parameter(description = "Số ngày hết hạn (mặc định 7 ngày)")
             @RequestParam(required = false) Integer expiresInDays) {
-        log.info("Updating contract status: contractId={}, status={}, expiresInDays={}", 
-            contractId, status, expiresInDays);
-        ContractResponse contract = contractService.updateContractStatus(contractId, status, expiresInDays);
+        log.info("Manager sending contract to customer: contractId={}, expiresInDays={}", 
+            contractId, expiresInDays);
+        ContractResponse contract = contractService.sendContractToCustomer(contractId, expiresInDays);
         return ApiResponse.<ContractResponse>builder()
-                .message("Contract status updated successfully")
+                .message("Contract sent to customer successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
@@ -127,6 +124,21 @@ public class ContractController {
         ContractResponse contract = contractService.approveContract(contractId);
         return ApiResponse.<ContractResponse>builder()
                 .message("Contract approved successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/sign")
+    @Operation(summary = "Customer sign contract (chỉ cho phép khi status = APPROVED)")
+    public ApiResponse<ContractResponse> signContract(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId) {
+        log.info("Customer signing contract: contractId={}", contractId);
+        ContractResponse contract = contractService.signContract(contractId);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract signed successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

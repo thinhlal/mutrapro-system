@@ -122,6 +122,27 @@ export const getAllContracts = async () => {
 };
 
 /**
+ * Manager gửi contract cho customer
+ * POST /contracts/{contractId}/send
+ * 
+ * @param {string} contractId - ID của contract
+ * @param {number} expiresInDays - Số ngày hết hạn (mặc định 7 ngày)
+ * @returns {Promise} ApiResponse với contract đã gửi
+ */
+export const sendContractToCustomer = async (contractId, expiresInDays = 7) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.SEND(contractId),
+      null,
+      { params: { expiresInDays } }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi gửi contract cho customer' };
+  }
+};
+
+/**
  * Customer approve contract
  * POST /contracts/{contractId}/approve
  * 
@@ -136,6 +157,17 @@ export const approveContract = async contractId => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi approve contract' };
+  }
+};
+
+export const signContract = async contractId => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.SIGN(contractId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi ký contract' };
   }
 };
 

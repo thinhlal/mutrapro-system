@@ -17,7 +17,7 @@ import {
   Tooltip,
 } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getServiceRequestById, getNotationInstrumentsByIds, calculatePricing } from '../../../services/serviceRequestService';
 import { createContractFromRequest } from '../../../services/contractService';
@@ -99,7 +99,9 @@ const ContractBuilder = () => {
   const previewRef = useRef(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const requestId = searchParams.get('requestId');
+  const copyFromContract = location.state?.copyFromContract; // Data từ contract cũ để copy
 
   const [loadingServiceRequest, setLoadingServiceRequest] = useState(false);
   const [serviceRequest, setServiceRequest] = useState(null);
@@ -216,6 +218,15 @@ const ContractBuilder = () => {
       if (response?.status === 'success' && response?.data) {
         const request = response.data;
         setServiceRequest(request);
+        
+        // Kiểm tra request status - không cho tạo contract nếu đã cancelled/completed/rejected
+        const requestStatus = request.status?.toLowerCase();
+        if (requestStatus === 'cancelled' || requestStatus === 'completed' || requestStatus === 'rejected') {
+          setError(`Không thể tạo contract: Request đã ở trạng thái "${request.status}"`);
+          message.error(`Không thể tạo contract cho request đã ${request.status}`);
+          setLoadingServiceRequest(false);
+          return;
+        }
 
         // Map ServiceType to ContractType
         const contractType = mapServiceTypeToContractType(request.requestType);
@@ -272,7 +283,35 @@ const ContractBuilder = () => {
 
         // Trigger recompute to calculate deposit and final amount
         setTimeout(() => {
+          // Nếu có copyFromContract, override các giá trị từ contract cũ
+          if (copyFromContract) {
+            const overrideValues = {};
+            
+            // Copy các giá trị từ contract cũ nếu có
+            if (copyFromContract.totalPrice !== undefined) overrideValues.total_price = copyFromContract.totalPrice;
+            if (copyFromContract.depositPercent !== undefined) overrideValues.deposit_percent = copyFromContract.depositPercent;
+            if (copyFromContract.slaDays !== undefined) overrideValues.sla_days = copyFromContract.slaDays;
+            if (copyFromContract.freeRevisionsIncluded !== undefined) overrideValues.free_revisions_included = copyFromContract.freeRevisionsIncluded;
+            if (copyFromContract.revisionDeadlineDays !== undefined) overrideValues.revision_deadline_days = copyFromContract.revisionDeadlineDays;
+            if (copyFromContract.additionalRevisionFeeVnd !== undefined) overrideValues.additional_revision_fee_vnd = copyFromContract.additionalRevisionFeeVnd;
+            if (copyFromContract.termsAndConditions) overrideValues.terms_and_conditions = copyFromContract.termsAndConditions;
+            if (copyFromContract.specialClauses) overrideValues.special_clauses = copyFromContract.specialClauses;
+            
+            // Append lý do yêu cầu sửa vào notes
+            let notesText = copyFromContract.notes || '';
+            if (copyFromContract.cancellationReason) {
+              notesText += (notesText ? '\n\n' : '') + `=== Lý do yêu cầu sửa từ contract ${copyFromContract.contractId} ===\n${copyFromContract.cancellationReason}`;
+            }
+            if (notesText) overrideValues.notes = notesText;
+
+            form.setFieldsValue(overrideValues);
+            message.success('Service request data loaded. Contract data copied from previous contract.');
+          } else {
+            message.success('Service request data loaded successfully');
+          }
+          
           recompute();
+          
           // After recompute, update terms & conditions with actual values if it's still default
           const currentTerms = form.getFieldValue('terms_and_conditions');
           const defaultTerms = getDefaultTermsAndConditions(contractType);
@@ -283,7 +322,6 @@ const ContractBuilder = () => {
             const termsWithValues = replaceTemplateVariables(defaultTerms, updatedValues);
             form.setFieldValue('terms_and_conditions', termsWithValues);
           }
-          message.success('Service request data loaded successfully');
         }, 100);
       } else {
         throw new Error('Failed to load service request');
@@ -341,7 +379,7 @@ const ContractBuilder = () => {
     }
   };
 
-  // auto-calc pricing & due_date (always auto from today)
+  // auto-calc pricing (due_date sẽ tự động tính khi customer ký)
   const recompute = () => {
     const v = form.getFieldsValue(true);
     const total = Number(v.total_price ?? 0);
@@ -354,11 +392,6 @@ const ContractBuilder = () => {
       deposit_amount: depositAmount,
       final_amount: finalAmount,
     });
-
-    // Always auto due date based on today
-    const start = dayjs();
-    const due = start.add(Number(v.sla_days || 0), 'day');
-    form.setFieldsValue({ due_date: due });
 
     // Update terms & conditions if it's still using default template
     // Only update if the current terms matches the default template structure
@@ -405,7 +438,6 @@ const ContractBuilder = () => {
 
     // Expected start optional: backend will default to now if null
     expected_start_date: null,
-    due_date: values.due_date ? dayjs(values.due_date).toISOString() : null,
     sla_days: Number(values.sla_days || 0),
     auto_due_date: true,
     free_revisions_included: Number(values.free_revisions_included || 1),
@@ -524,6 +556,26 @@ const ContractBuilder = () => {
     );
   }
 
+  // Hiển thị error nếu request status không hợp lệ
+  if (error) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.card} style={{ padding: '50px' }}>
+          <Alert
+            message="Không thể tạo Contract"
+            description={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Button type="primary" onClick={() => navigate('/manager/service-requests')}>
+            Quay lại Service Requests
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       {/* ====== LEFT SECTION: FORM ====== */}
@@ -563,6 +615,16 @@ const ContractBuilder = () => {
                 <Alert
                   message={`Creating contract for request: ${serviceRequest.title || serviceRequest.requestId}`}
                   type="info"
+                  showIcon
+                  style={{ marginBottom: 6, padding: '6px 8px' }}
+                  size="small"
+                />
+              )}
+              {copyFromContract && (
+                <Alert
+                  message="Tạo contract mới từ contract cũ"
+                  description={`Data đã được copy từ contract ${copyFromContract.contractId}. Lý do yêu cầu sửa đã được thêm vào phần Notes.`}
+                  type="warning"
                   showIcon
                   style={{ marginBottom: 6, padding: '6px 8px' }}
                   size="small"
@@ -611,7 +673,7 @@ const ContractBuilder = () => {
                 name="total_price"
                 label="Total Price (VND)"
                 rules={[{ required: true, message: 'Please enter total price' }]}
-                className={`${styles.fullRow} ${styles.disabledInput}`}
+                className={styles.disabledInput}
               >
                 <InputNumber min={0} step={1000} style={{ width: '100%' }} disabled />
               </Form.Item>
@@ -619,14 +681,13 @@ const ContractBuilder = () => {
                 name="deposit_percent"
                 label="Deposit %"
                 initialValue={40}
-                className={styles.fullRow}
               >
                 <InputNumber min={0} max={100} step={1} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="deposit_amount"
                 label="Deposit Amount"
-                className={`${styles.fullRow} ${styles.disabledInput}`}
+                className={styles.disabledInput}
               >
                 <InputNumber
                   min={0}
@@ -638,7 +699,7 @@ const ContractBuilder = () => {
               <Form.Item
                 name="final_amount"
                 label="Final Amount"
-                className={`${styles.fullRow} ${styles.disabledInput}`}
+                className={styles.disabledInput}
               >
                 <InputNumber
                   min={0}
@@ -648,13 +709,13 @@ const ContractBuilder = () => {
                 />
               </Form.Item>
 
-              <Divider className={styles.fullRow}>Timeline & SLA</Divider>
+              <Divider className={styles.fullRow}>Timeline & Revision Policy</Divider>
               <Form.Item
                 name="sla_days"
                 label={
                   <span>
                     SLA Days (Service Level Agreement){' '}
-                    <Tooltip title="Number of days to complete the work. Due Date will be automatically calculated = today + SLA Days">
+                    <Tooltip title="Number of days to complete the work. Due Date will be automatically calculated from signing date + SLA Days">
                       <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
                     </Tooltip>
                   </span>
@@ -667,14 +728,6 @@ const ContractBuilder = () => {
                   placeholder="Số ngày deadline"
                 />
               </Form.Item>
-              <Form.Item name="due_date" label="Due Date" className={styles.disabledInput}>
-                <DatePicker
-                  style={{ width: '100%' }}
-                  disabled
-                />
-              </Form.Item>
-
-              <Divider className={styles.fullRow}>Revision Policy</Divider>
               <Form.Item name="free_revisions_included" label="Free Revisions Included">
                 <InputNumber min={0} max={10} style={{ width: '100%' }} />
               </Form.Item>
@@ -769,15 +822,6 @@ const ContractBuilder = () => {
                   onClick={handleCreateContract}
                 >
                   Create Contract
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    form.resetFields();
-                    setData(null);
-                  }}
-                >
-                  Reset
                 </Button>
               </Space>
             </Form>
@@ -904,7 +948,9 @@ const ContractBuilder = () => {
                 <strong>SLA Days (Service Level Agreement):</strong> {data?.sla_days || 0} days
                 &nbsp;|&nbsp;
                 <strong>Due Date (Deadline):</strong>{' '}
-                {data?.due_date ? dayjs(data.due_date).format('YYYY-MM-DD') : '—'}
+                {data?.due_date 
+                  ? dayjs(data.due_date).format('YYYY-MM-DD') 
+                  : `Within ${data?.sla_days || 0} days from the date of signing the contract`}
               </p>
 
               {data?.terms_and_conditions && (
