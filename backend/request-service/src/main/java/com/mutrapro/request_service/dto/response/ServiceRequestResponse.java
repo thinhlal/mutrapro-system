@@ -46,5 +46,10 @@ public class ServiceRequestResponse {
     ManagerInfoResponse managerInfo;
     BigDecimal totalPrice;
     CurrencyType currency;
+    
+    // Contract info (enriched từ project-service)
+    Boolean hasContract;  // Có contract hay không
+    String contractId;    // Contract ID (nếu có)
+    String contractStatus; // Contract status (nếu có)
 }
 

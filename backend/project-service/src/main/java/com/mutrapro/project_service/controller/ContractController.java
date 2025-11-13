@@ -7,6 +7,7 @@ import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
+import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.service.ContractService;
 import com.mutrapro.project_service.service.ESignService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -90,6 +92,21 @@ public class ContractController {
         return ApiResponse.<List<ContractResponse>>builder()
                 .message("Contracts retrieved successfully")
                 .data(contracts)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/by-request-ids")
+    @Operation(summary = "Lấy thông tin contract cho nhiều requestIds (batch)")
+    public ApiResponse<Map<String, RequestContractInfo>> getContractInfoByRequestIds(
+            @Parameter(description = "Danh sách request IDs")
+            @RequestBody List<String> requestIds) {
+        log.info("Getting contract info for {} requestIds", requestIds != null ? requestIds.size() : 0);
+        Map<String, RequestContractInfo> contractInfo = contractService.getContractInfoByRequestIds(requestIds);
+        return ApiResponse.<Map<String, RequestContractInfo>>builder()
+                .message("Contract info retrieved successfully")
+                .data(contractInfo)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

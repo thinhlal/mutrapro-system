@@ -8,6 +8,7 @@ import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
 import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
@@ -53,7 +54,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -563,6 +566,54 @@ public class ContractService {
         return contracts.stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy thông tin contract cho nhiều requestIds
+     * hasContract = true nếu có ít nhất 1 contract active
+     * @param requestIds Danh sách request IDs
+     * @return Map với key là requestId, value là RequestContractInfo
+     */
+    @Transactional(readOnly = true)
+    public Map<String, RequestContractInfo> getContractInfoByRequestIds(List<String> requestIds) {
+        Map<String, RequestContractInfo> result = new HashMap<>();
+        
+        if (requestIds == null || requestIds.isEmpty()) {
+            return result;
+        }
+        
+        // 1 query duy nhất: Lấy contracts active hoặc latest cho tất cả requestIds
+        List<Contract> contracts = contractRepository.findActiveOrLatestContractsByRequestIds(requestIds);
+        
+        // Group by requestId (mỗi requestId chỉ lấy contract đầu tiên - đã sort)
+        Map<String, Contract> contractMap = new HashMap<>();
+        for (Contract contract : contracts) {
+            contractMap.putIfAbsent(contract.getRequestId(), contract);
+        }
+        
+        // Build result map
+        for (String requestId : requestIds) {
+            Contract contract = contractMap.get(requestId);
+            
+            boolean hasActiveContract = contract != null && (
+                contract.getStatus() == ContractStatus.draft 
+                || contract.getStatus() == ContractStatus.sent 
+                || contract.getStatus() == ContractStatus.approved 
+                || contract.getStatus() == ContractStatus.signed
+            );
+            
+            Contract displayContract = contract;
+            
+            result.put(requestId, RequestContractInfo.builder()
+                .requestId(requestId)
+                .hasContract(hasActiveContract)
+                .contractId(displayContract != null ? displayContract.getContractId() : null)
+                .contractStatus(displayContract != null && displayContract.getStatus() != null 
+                    ? displayContract.getStatus().name() : null)
+                .build());
+        }
+        
+        return result;
     }
     
     /**

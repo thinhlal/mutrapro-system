@@ -173,6 +173,22 @@ export default function ServiceRequestManagement() {
     navigate(`/manager/contract-builder?requestId=${requestId}`);
   };
 
+  // Refresh khi tab được focus lại (khi user quay lại từ contract builder)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Refresh danh sách khi tab được focus lại
+        fetchAllRequests();
+        fetchMyRequests();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   useEffect(() => {
     fetchAllRequests();
     fetchMyRequests();
@@ -277,6 +293,8 @@ export default function ServiceRequestManagement() {
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
         const hasManager = !!record.managerUserId;
+        // Sử dụng field hasContract từ response (đã được enrich từ backend)
+        const hasContract = record.hasContract === true;
 
         return (
           <Space>
@@ -298,7 +316,7 @@ export default function ServiceRequestManagement() {
                 Assign to Me
               </Button>
             )}
-            {isAssignedToMe && (
+            {isAssignedToMe && !hasContract && (
               <Button
                 type="default"
                 size="small"
@@ -307,6 +325,9 @@ export default function ServiceRequestManagement() {
               >
                 Create Contract
               </Button>
+            )}
+            {isAssignedToMe && hasContract && (
+              <Tag color="green">Contract Created</Tag>
             )}
           </Space>
         );

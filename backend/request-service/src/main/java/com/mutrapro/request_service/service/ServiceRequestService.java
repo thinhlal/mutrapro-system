@@ -7,6 +7,7 @@ import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.FileInfoResponse;
 import com.mutrapro.request_service.dto.response.ManagerInfoResponse;
 import com.mutrapro.request_service.dto.response.PriceCalculationResponse;
+import com.mutrapro.request_service.dto.response.RequestContractInfo;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
 import com.mutrapro.request_service.entity.NotationInstrument;
 import com.mutrapro.request_service.entity.OutboxEvent;
@@ -50,6 +51,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -409,9 +411,71 @@ public class ServiceRequestService {
                 })
                 .collect(Collectors.toList());
         
-        return sortedRequests.stream()
+        // Map sang response
+        List<ServiceRequestResponse> responses = sortedRequests.stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
+        
+        // Enrich với thông tin contract từ project-service
+        enrichWithContractInfo(responses);
+        
+        return responses;
+    }
+    
+    /**
+     * Enrich danh sách ServiceRequestResponse với thông tin contract từ project-service
+     */
+    private void enrichWithContractInfo(List<ServiceRequestResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return;
+        }
+        
+        try {
+            // Lấy danh sách requestIds
+            List<String> requestIds = responses.stream()
+                    .map(ServiceRequestResponse::getRequestId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toList());
+            
+            if (requestIds.isEmpty()) {
+                return;
+            }
+            
+            // Gọi project-service để lấy thông tin contract
+            ApiResponse<Map<String, RequestContractInfo>> contractInfoResponse = 
+                    projectServiceFeignClient.getContractInfoByRequestIds(requestIds);
+            
+            if (contractInfoResponse != null && "success".equals(contractInfoResponse.getStatus()) 
+                    && contractInfoResponse.getData() != null) {
+                Map<String, RequestContractInfo> contractInfoMap = contractInfoResponse.getData();
+                
+                // Enrich mỗi response với thông tin contract
+                responses.forEach(response -> {
+                    String requestId = response.getRequestId();
+                    if (requestId != null && contractInfoMap.containsKey(requestId)) {
+                        RequestContractInfo contractInfo = contractInfoMap.get(requestId);
+                        if (contractInfo != null) {
+                            response.setHasContract(contractInfo.getHasContract());
+                            response.setContractId(contractInfo.getContractId());
+                            response.setContractStatus(contractInfo.getContractStatus());
+                        }
+                    } else {
+                        // Nếu không có thông tin contract, set mặc định
+                        response.setHasContract(false);
+                        response.setContractId(null);
+                        response.setContractStatus(null);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            log.warn("Failed to enrich service requests with contract info: {}", e.getMessage());
+            // Nếu lỗi, set mặc định cho tất cả
+            responses.forEach(response -> {
+                response.setHasContract(false);
+                response.setContractId(null);
+                response.setContractStatus(null);
+            });
+        }
     }
     
     /**
