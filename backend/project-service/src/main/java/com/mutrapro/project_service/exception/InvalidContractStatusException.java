@@ -68,5 +68,17 @@ public class InvalidContractStatusException extends BusinessException {
             String.format("Cannot update contract. Only DRAFT contracts can be updated, but current status is: %s", currentStatus)
         );
     }
+
+    public static InvalidContractStatusException forSign(String contractId, String currentStatus) {
+        return new InvalidContractStatusException(
+            String.format("Cannot sign contract. Contract must be in APPROVED status, but current status is: %s", currentStatus)
+        );
+    }
+
+    public static InvalidContractStatusException forExpired(String contractId) {
+        return new InvalidContractStatusException(
+            String.format("Cannot sign contract. Contract %s has expired.", contractId)
+        );
+    }
 }
 

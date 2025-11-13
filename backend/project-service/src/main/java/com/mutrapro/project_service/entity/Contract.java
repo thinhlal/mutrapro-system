@@ -138,5 +138,15 @@ public class Contract {
     // Customer action reasons
     @Column(name = "cancellation_reason", columnDefinition = "text")
     String cancellationReason;  // Lý do hủy/từ chối từ khách hàng
+    
+    // E-Signature fields
+    @Column(name = "b_signature_s3_url", columnDefinition = "text")
+    String bSignatureS3Url;  // Customer signature image URL from S3
+    
+    @Column(name = "b_signed_at")
+    Instant bSignedAt;  // When customer actually signed (different from signedAt which is when approved)
+    
+    @Column(name = "updated_at")
+    Instant updatedAt;
 }
 

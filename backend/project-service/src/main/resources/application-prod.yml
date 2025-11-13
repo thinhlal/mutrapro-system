@@ -41,6 +41,8 @@ app:
   event-topics:
     mappings:
       file.uploaded: ${KAFKA_TOPIC_FILE_UPLOADED:file-uploaded}
+      contract.otp-email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
+      contract.signed-email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
 
 # Request Service Configuration
 request:
@@ -56,3 +58,19 @@ chat:
 notification:
   service:
     base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8086}
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: ${AWS_S3_ENABLED:true}
+    bucket-name: ${AWS_S3_BUCKET_NAME:mutrapro-prod-files}
+    region: ${AWS_S3_REGION:ap-southeast-1}
+    access-key: ${AWS_S3_ACCESS_KEY}
+    secret-key: ${AWS_S3_SECRET_KEY}
+
+# E-Signature Configuration
+esign:
+  otp:
+    expiration-minutes: ${ESIGN_OTP_EXPIRATION_MINUTES:5}
+    max-attempts: ${ESIGN_OTP_MAX_ATTEMPTS:3}
+    length: ${ESIGN_OTP_LENGTH:6}

@@ -58,7 +58,28 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     INVALID_REQUEST_STATUS("CONTRACT_7009", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7009",
         "Invalid request status for creating contract",
-        Retryable.NON_TRANSIENT);
+        Retryable.NON_TRANSIENT),
+    
+    // E-Signature Errors (7010-7019)
+    SIGN_SESSION_NOT_FOUND("CONTRACT_7010", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7010",
+        "Sign session not found or expired",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_OTP("CONTRACT_7011", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7011",
+        "Invalid or expired OTP code",
+        Retryable.NON_TRANSIENT),
+    
+    MAX_OTP_ATTEMPTS_EXCEEDED("CONTRACT_7012", 429,
+        "https://docs.mutrapro.com/errors/CONTRACT_7012",
+        "Maximum OTP verification attempts exceeded",
+        Retryable.NON_TRANSIENT),
+    
+    SIGNATURE_UPLOAD_FAILED("CONTRACT_7013", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7013",
+        "Failed to upload signature to storage",
+        Retryable.TRANSIENT);
 
     private final String code;
     private final int httpStatus;

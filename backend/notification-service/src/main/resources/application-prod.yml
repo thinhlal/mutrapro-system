@@ -49,6 +49,8 @@ app:
     mappings:
       email.verification: email-verification
       password.reset: password-reset
+      contract.otp-email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
+      contract.signed-email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
 
 logging:
   level:

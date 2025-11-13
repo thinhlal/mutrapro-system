@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
@@ -86,6 +87,15 @@ public class ContractResponse {
     String phoneSnapshot;
     
     String emailSnapshot;
+    
+    // E-Signature fields
+    @JsonProperty("bSignatureS3Url")
+    String bSignatureS3Url;  // Customer signature S3 URL
+    
+    @JsonProperty("bSignedAt")
+    Instant bSignedAt;  // When customer actually signed
+    
+    Instant updatedAt;  // Last update timestamp
     
     // Customer action reason
     String cancellationReason;

@@ -115,6 +115,13 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/contracts/${contractId}/request-change`,
     // POST /api/v1/projects/contracts/{contractId}/cancel
     CANCEL: contractId => `${PROJECT_PATH}/contracts/${contractId}/cancel`,
+    // POST /api/v1/projects/contracts/{contractId}/cancel-by-manager
+    CANCEL_BY_MANAGER: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/cancel-by-manager`,
+    // POST /api/v1/projects/contracts/{contractId}/init-esign
+    INIT_ESIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/init-esign`,
+    // POST /api/v1/projects/contracts/{contractId}/verify-otp
+    VERIFY_OTP: contractId => `${PROJECT_PATH}/contracts/${contractId}/verify-otp`,
   },
 
   FOLDERS: {

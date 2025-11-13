@@ -10,7 +10,6 @@ import {
   Typography,
   Divider,
   message,
-  Popconfirm,
 } from 'antd';
 import {
   CheckOutlined,
@@ -22,7 +21,12 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getContractById, approveContract, signContract } from '../../../services/contractService';
+import {
+  getContractById,
+  approveContract,
+  initESign,
+  verifyOTPAndSign,
+} from '../../../services/contractService';
 import {
   getServiceRequestById,
   getNotationInstrumentsByIds,
@@ -33,6 +37,8 @@ import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
 import ViewCancellationReasonModal from '../../../components/modal/ViewCancellationReasonModal/ViewCancellationReasonModal';
+import SignaturePadModal from '../../../components/modal/SignaturePadModal/SignaturePadModal';
+import OTPVerificationModal from '../../../components/modal/OTPVerificationModal/OTPVerificationModal';
 import styles from './ContractDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -86,6 +92,17 @@ const ContractDetailPage = () => {
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [viewReasonModalOpen, setViewReasonModalOpen] = useState(false);
 
+  // E-Signature modals and state
+  const [signaturePadModalOpen, setSignaturePadModalOpen] = useState(false);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [signatureData, setSignatureData] = useState(null);
+  const [eSignSession, setESignSession] = useState(null);
+  const [otpError, setOtpError] = useState(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpExpiresAt, setOtpExpiresAt] = useState(null);
+  const [maxOtpAttempts, setMaxOtpAttempts] = useState(3);
+
   // Pricing breakdown information
   const [pricingBreakdown, setPricingBreakdown] = useState({
     instruments: [], // Array of { instrumentId, instrumentName, basePrice }
@@ -106,7 +123,7 @@ const ContractDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
-        
+        console.log(response.data);
         // Load pricing breakdown if requestId is available
         if (response.data.requestId) {
           await loadPricingBreakdown(response.data.requestId);
@@ -204,21 +221,111 @@ const ContractDetailPage = () => {
     }
   };
 
-  // Handle sign
-  const handleSign = async () => {
+  const handleStartESign = () => {
+    setSignatureData(null);
+    setOtpError(null);
+    setESignSession(null);
+    setOtpExpiresAt(null);
+    setMaxOtpAttempts(3);
+    setSignaturePadModalOpen(true);
+  };
+
+  const handleSignatureConfirm = async signatureBase64 => {
     try {
-      setActionLoading(true);
-      const response = await signContract(contractId);
-      if (response?.status === 'success') {
-        message.success('Contract signed successfully!');
-        loadContract(); // Reload to get updated status
+      setSignatureLoading(true);
+      setSignatureData(signatureBase64);
+      const response = await initESign(contractId, signatureBase64);
+      if (response?.status === 'success' && response?.data) {
+        const session = response.data;
+        const expireAtMs = session.expireAt ? dayjs(session.expireAt).valueOf() : null;
+
+        setESignSession(session);
+        setOtpExpiresAt(expireAtMs);
+        setMaxOtpAttempts(session.maxAttempts || 3);
+        setOtpError(null);
+        setSignaturePadModalOpen(false);
+        setOtpModalOpen(true);
+
+        message.success(response.message || 'OTP has been sent to your email');
       }
     } catch (error) {
-      console.error('Error signing contract:', error);
-      message.error(error?.message || 'Failed to sign contract');
+      console.error('Error initializing e-signature:', error);
+      message.error(error?.message || 'Failed to initialize e-signature. Please try again.');
     } finally {
-      setActionLoading(false);
+      setSignatureLoading(false);
     }
+  };
+
+  const handleSignatureCancel = () => {
+    setSignaturePadModalOpen(false);
+    setSignatureData(null);
+    setSignatureLoading(false);
+  };
+
+  const handleVerifyOtp = async otpCode => {
+    if (!eSignSession?.sessionId) {
+      message.error('Signing session not found. Please restart the signing process.');
+      setOtpModalOpen(false);
+      return;
+    }
+
+    try {
+      setOtpLoading(true);
+      const response = await verifyOTPAndSign(contractId, eSignSession.sessionId, otpCode);
+      if (response?.status === 'success') {
+        message.success(response.message || 'Contract signed successfully!');
+        setOtpModalOpen(false);
+        setSignatureData(null);
+        setESignSession(null);
+        setOtpError(null);
+        setOtpExpiresAt(null);
+        loadContract();
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      const errorMessage = error?.message || 'Invalid OTP. Please try again.';
+      setOtpError(errorMessage);
+      message.error(errorMessage);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!signatureData) {
+      setOtpModalOpen(false);
+      setSignaturePadModalOpen(true);
+      return;
+    }
+
+    try {
+      setOtpLoading(true);
+      const response = await initESign(contractId, signatureData);
+      if (response?.status === 'success' && response?.data) {
+        const session = response.data;
+        const expireAtMs = session.expireAt ? dayjs(session.expireAt).valueOf() : null;
+
+        setESignSession(session);
+        setOtpExpiresAt(expireAtMs);
+        setMaxOtpAttempts(session.maxAttempts || 3);
+        setOtpError(null);
+
+        message.success(response.message || 'A new OTP has been sent to your email');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      message.error(error?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleOtpCancel = () => {
+    setOtpModalOpen(false);
+    setOtpError(null);
+    setESignSession(null);
+    setSignatureData(null);
+    setOtpExpiresAt(null);
   };
 
   // Handle cancel success
@@ -295,7 +402,7 @@ const ContractDetailPage = () => {
 
   const statusConfig = getStatusConfig(contract.status);
   const currentStatus = contract.status?.toLowerCase();
-  
+
   // Determine available actions based on status
   const isSent = currentStatus === 'sent';
   const isApproved = currentStatus === 'approved';
@@ -395,9 +502,9 @@ const ContractDetailPage = () => {
           {/* Contract Metadata */}
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="Contract ID">
-              <Text 
+              <Text
                 copyable={{ text: contract.contractId }}
-                style={{ 
+                style={{
                   fontSize: '12px',
                   wordBreak: 'break-all',
                   display: 'block'
@@ -514,30 +621,16 @@ const ContractDetailPage = () => {
             )}
 
             {canSign && (
-              <Popconfirm
-                title="Sign Contract"
-                description={
-                  <div style={{ maxWidth: 300 }}>
-                    Are you sure you want to sign this contract?
-                    <br />
-                    <strong>Note:</strong> After signing, the contract will take effect and cannot be canceled.
-                  </div>
-                }
-                onConfirm={handleSign}
-                okText="Confirm Sign"
-                cancelText="Cancel"
-                okButtonProps={{ loading: actionLoading }}
+              <Button
+                type="primary"
+                icon={<FormOutlined />}
+                onClick={handleStartESign}
+                loading={signatureLoading || otpLoading}
+                block
+                size="large"
               >
-                <Button
-                  type="primary"
-                  icon={<FormOutlined />}
-                  loading={actionLoading}
-                  block
-                  size="large"
-                >
-                  Sign Contract
-                </Button>
-              </Popconfirm>
+                E-Sign Contract
+              </Button>
             )}
 
             {canViewReason && (
@@ -607,103 +700,103 @@ const ContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0) && (
-                <div
-                  style={{
-                    marginBottom: '16px',
-                    padding: '12px',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ display: 'block', marginBottom: '8px' }}>
-                    Price Breakdown:
-                  </strong>
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <strong style={{ display: 'block', marginBottom: '8px' }}>
+                      Price Breakdown:
+                    </strong>
 
-                  {/* Transcription Details */}
-                  {pricingBreakdown.transcriptionDetails && (
-                    <div
-                      style={{
-                        marginBottom:
-                          pricingBreakdown.instruments.length > 0
-                            ? '12px'
-                            : '0',
-                      }}
-                    >
-                      {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                        (item, index) => (
-                          <div
-                            key={index}
-                            style={{ marginBottom: '4px', fontSize: '14px' }}
-                          >
-                            <span>{item.label}: </span>
-                            <span style={{ fontWeight: 'bold' }}>
-                              {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                              {contract.currency || 'VND'}
-                            </span>
-                            {item.description && (
-                              <span
-                                style={{ color: '#666', marginLeft: '8px' }}
-                              >
-                                ({formatDescriptionDuration(item.description)})
-                              </span>
-                            )}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-
-                  {/* Instruments */}
-                  {pricingBreakdown.instruments.length > 0 && (
-                    <div>
+                    {/* Transcription Details */}
+                    {pricingBreakdown.transcriptionDetails && (
                       <div
                         style={{
-                          marginBottom: '4px',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
+                          marginBottom:
+                            pricingBreakdown.instruments.length > 0
+                              ? '12px'
+                              : '0',
                         }}
                       >
-                        Instruments Surcharge:
+                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                          (item, index) => (
+                            <div
+                              key={index}
+                              style={{ marginBottom: '4px', fontSize: '14px' }}
+                            >
+                              <span>{item.label}: </span>
+                              <span style={{ fontWeight: 'bold' }}>
+                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
+                                {contract.currency || 'VND'}
+                              </span>
+                              {item.description && (
+                                <span
+                                  style={{ color: '#666', marginLeft: '8px' }}
+                                >
+                                  ({formatDescriptionDuration(item.description)})
+                                </span>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
-                      {pricingBreakdown.instruments.map((instr, index) => (
+                    )}
+
+                    {/* Instruments */}
+                    {pricingBreakdown.instruments.length > 0 && (
+                      <div>
                         <div
-                          key={index}
                           style={{
-                            marginLeft: '16px',
                             marginBottom: '4px',
                             fontSize: '14px',
+                            fontWeight: 'bold',
                           }}
                         >
-                          <span>• {instr.instrumentName}: </span>
-                          <span style={{ fontWeight: 'bold' }}>
-                            {instr.basePrice?.toLocaleString?.() ??
-                              instr.basePrice}{' '}
-                            {contract.currency || 'VND'}
-                          </span>
+                          Instruments Surcharge:
                         </div>
-                      ))}
-                      <div
-                        style={{
-                          marginTop: '4px',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
-                          borderTop: '1px solid #ddd',
-                          paddingTop: '4px',
-                        }}
-                      >
-                        Instruments Total:{' '}
-                        {pricingBreakdown.instruments
-                          .reduce(
-                            (sum, instr) => sum + (instr.basePrice || 0),
-                            0
-                          )
-                          .toLocaleString()}{' '}
-                        {contract.currency || 'VND'}
+                        {pricingBreakdown.instruments.map((instr, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              marginLeft: '16px',
+                              marginBottom: '4px',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <span>• {instr.instrumentName}: </span>
+                            <span style={{ fontWeight: 'bold' }}>
+                              {instr.basePrice?.toLocaleString?.() ??
+                                instr.basePrice}{' '}
+                              {contract.currency || 'VND'}
+                            </span>
+                          </div>
+                        ))}
+                        <div
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            borderTop: '1px solid #ddd',
+                            paddingTop: '4px',
+                          }}
+                        >
+                          Instruments Total:{' '}
+                          {pricingBreakdown.instruments
+                            .reduce(
+                              (sum, instr) => sum + (instr.basePrice || 0),
+                              0
+                            )
+                            .toLocaleString()}{' '}
+                          {contract.currency || 'VND'}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
 
               <p>
                 <strong>Currency:</strong> {contract.currency || 'VND'} &nbsp;|&nbsp;
@@ -716,13 +809,13 @@ const ContractDetailPage = () => {
               <p>
                 <strong>SLA Days:</strong> {contract.slaDays || 0} days &nbsp;|&nbsp;
                 <strong>Expected Start:</strong>{' '}
-                {contract.expectedStartDate 
+                {contract.expectedStartDate
                   ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
                   : <span style={{ fontStyle: 'italic', color: '#999' }}>Upon signing</span>
                 }
                 &nbsp;|&nbsp;
                 <strong>Due Date:</strong>{' '}
-                {contract.dueDate 
+                {contract.dueDate
                   ? dayjs(contract.dueDate).format('YYYY-MM-DD')
                   : <span style={{ fontStyle: 'italic', color: '#999' }}>+{contract.slaDays || 0} days from signing</span>
                 }
@@ -749,20 +842,20 @@ const ContractDetailPage = () => {
                   {isSigned ? (
                     <>
                       <div className={styles.signature}>
-                        <img 
-                          src="/images/signature.png" 
-                          alt="Party A Signature" 
-                          style={{ 
-                            height: '50px', 
+                        <img
+                          src="/images/signature.png"
+                          alt="Party A Signature"
+                          style={{
+                            height: '50px',
                             width: 'auto',
                             marginTop: '8px',
                             marginBottom: '8px',
                             display: 'block'
-                          }} 
+                          }}
                         />
                       </div>
-                      <div style={{ 
-                        marginTop: '4px', 
+                      <div style={{
+                        marginTop: '4px',
                         marginBottom: '8px',
                         fontSize: '14px',
                         fontWeight: '600',
@@ -785,11 +878,39 @@ const ContractDetailPage = () => {
                   <div className={styles.sigLabel}>Party B Representative</div>
                   {isSigned ? (
                     <>
-                      <div className={styles.sigLine} style={{ marginTop: '16px' }}>
+                      {contract.bSignatureS3Url ? (
+                        <div className={styles.signature} style={{ marginTop: '12px' }}>
+                          <img
+                            src={contract.bSignatureS3Url}
+                            alt="Party B Signature"
+                            style={{
+                              height: '50px',
+                              width: 'auto',
+                              marginTop: '8px',
+                              marginBottom: '8px',
+                              display: 'block'
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className={styles.sigLine} style={{ marginTop: '16px' }} />
+                      )}
+                      <div style={{
+                        marginTop: '4px',
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#333'
+                      }}>
                         {contract.nameSnapshot || 'Customer'}
                       </div>
-                      <div className={styles.sigHint}>
-                        Signed on: {contract.signedAt ? formatDate(contract.signedAt) : 'Pending'}
+                      <div className={styles.sigHint} style={{ marginTop: '4px' }}>
+                        Signed on:{' '}
+                        {contract.bSignedAt
+                          ? formatDate(contract.bSignedAt)
+                          : contract.signedAt
+                            ? formatDate(contract.signedAt)
+                            : 'Pending'}
                       </div>
                     </>
                   ) : (
@@ -806,6 +927,25 @@ const ContractDetailPage = () => {
       </div>
 
       {/* Modals */}
+      <SignaturePadModal
+        visible={signaturePadModalOpen}
+        onCancel={handleSignatureCancel}
+        onConfirm={handleSignatureConfirm}
+        loading={signatureLoading}
+      />
+
+      <OTPVerificationModal
+        visible={otpModalOpen}
+        onCancel={handleOtpCancel}
+        onVerify={handleVerifyOtp}
+        onResend={handleResendOtp}
+        loading={otpLoading}
+        error={otpError}
+        expiresAt={otpExpiresAt}
+        maxAttempts={maxOtpAttempts}
+        email={contract?.emailSnapshot || ''}
+      />
+
       <CancelContractModal
         open={cancelModalOpen}
         onCancel={() => setCancelModalOpen(false)}

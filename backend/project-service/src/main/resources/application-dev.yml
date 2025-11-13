@@ -45,6 +45,8 @@ app:
   event-topics:
     mappings:
       file.uploaded: file-uploaded
+      contract.otp-email: contract-otp-email
+      contract.signed-email: contract-signed-email
 
 # Request Service Configuration
 request:
@@ -60,3 +62,19 @@ chat:
 notification:
   service:
     base-url: http://localhost:8086
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    bucket-name: mutrapro-dev-files
+    region: ap-southeast-1
+    access-key: AKIAZ24ITCMNFIY2Z3VX
+    secret-key: 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
+
+# E-Signature Configuration
+esign:
+  otp:
+    expiration-minutes: 5
+    max-attempts: 3
+    length: 6

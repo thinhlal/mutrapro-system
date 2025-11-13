@@ -1,0 +1,55 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.canvasWrapper {
+  border: 2px solid #d9d9d9;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.canvasWrapper:hover {
+  border-color: #40a9ff;
+}
+
+.signatureCanvas {
+  width: 100%;
+  height: 250px;
+  cursor: crosshair;
+  display: block;
+}
+
+.hint {
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 13px;
+  margin-top: -8px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+@media (max-width: 576px) {
+  .signatureCanvas {
+    height: 200px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}
+

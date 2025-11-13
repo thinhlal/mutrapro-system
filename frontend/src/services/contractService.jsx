@@ -202,6 +202,47 @@ export const signContract = async contractId => {
 };
 
 /**
+ * Initialize E-signature process - send signature and get OTP
+ * POST /contracts/{contractId}/init-esign
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} signatureBase64 - Base64 encoded signature image
+ * @returns {Promise} ApiResponse with session info
+ */
+export const initESign = async (contractId, signatureBase64) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.INIT_ESIGN(contractId),
+      { signatureBase64 }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi khởi tạo chữ ký điện tử' };
+  }
+};
+
+/**
+ * Verify OTP and complete E-signature
+ * POST /contracts/{contractId}/verify-otp
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} sessionId - Session ID from init-esign
+ * @param {string} otpCode - 6-digit OTP code
+ * @returns {Promise} ApiResponse with signed contract
+ */
+export const verifyOTPAndSign = async (contractId, sessionId, otpCode) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.VERIFY_OTP(contractId),
+      { sessionId, otpCode }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi xác thực OTP' };
+  }
+};
+
+/**
  * Customer request change contract
  * POST /contracts/{contractId}/request-change
  *

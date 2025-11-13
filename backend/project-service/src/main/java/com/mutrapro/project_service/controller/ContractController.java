@@ -3,8 +3,12 @@ package com.mutrapro.project_service.controller;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.UpdateContractRequest;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
+import com.mutrapro.project_service.dto.request.InitESignRequest;
+import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.service.ContractService;
+import com.mutrapro.project_service.service.ESignService;
 import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +29,7 @@ import java.util.List;
 public class ContractController {
 
     private final ContractService contractService;
+    private final ESignService eSignService;
 
     @PostMapping("/from-request/{requestId}")
     @Operation(summary = "Tạo contract từ service request")
@@ -207,6 +212,45 @@ public class ContractController {
         ContractResponse contract = contractService.cancelContractByManager(contractId, request);
         return ApiResponse.<ContractResponse>builder()
                 .message("Contract canceled by manager successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    // E-Signature Endpoints
+    
+    @PostMapping("/{contractId}/init-esign")
+    @Operation(summary = "Initialize e-signature process: save signature temporarily and send OTP")
+    public ApiResponse<ESignInitResponse> initESign(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Valid @RequestBody InitESignRequest request) {
+        log.info("Initializing e-signature for contract: contractId={}", contractId);
+        ESignInitResponse response = eSignService.initESign(contractId, request);
+        return ApiResponse.<ESignInitResponse>builder()
+                .message("OTP sent successfully")
+                .data(response)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/verify-otp")
+    @Operation(summary = "Verify OTP and complete e-signature")
+    public ApiResponse<ContractResponse> verifyOTPAndSign(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Valid @RequestBody VerifyOTPRequest request) {
+        log.info("Verifying OTP and signing contract: contractId={}, sessionId={}", 
+            contractId, request.getSessionId());
+        eSignService.verifyOTPAndSign(contractId, request);
+        
+        // Get updated contract
+        ContractResponse contract = contractService.getContractById(contractId);
+        
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract signed successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
