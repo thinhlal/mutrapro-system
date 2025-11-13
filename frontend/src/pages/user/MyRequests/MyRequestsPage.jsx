@@ -74,7 +74,11 @@ const MyRequestsContent = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-        icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
       contract_sent: {
@@ -140,9 +144,7 @@ const MyRequestsContent = () => {
     <div className={styles.myRequestsContentWrapper}>
       <div className={styles.headerSection}>
         <h1 className={styles.pageTitle}>My Requests</h1>
-        <p className={styles.pageDescription}>
-          Manage your service requests
-        </p>
+        <p className={styles.pageDescription}>Manage your service requests</p>
       </div>
 
       <div className={styles.filterSection}>
@@ -158,7 +160,9 @@ const MyRequestsContent = () => {
           <Option value="pending_no_manager">Waiting for manager</Option>
           <Option value="pending_has_manager">Assigned - pending</Option>
           <Option value="contract_sent">Contract sent</Option>
-          <Option value="contract_approved">Contract approved - awaiting signature</Option>
+          <Option value="contract_approved">
+            Contract approved - awaiting signature
+          </Option>
           <Option value="contract_signed">Contract signed</Option>
           <Option value="in_progress">In progress</Option>
           <Option value="completed">Completed</Option>
@@ -173,10 +177,7 @@ const MyRequestsContent = () => {
           <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
       ) : requests.length === 0 ? (
-        <Empty 
-          description="No requests"
-          className={styles.emptyState}
-        />
+        <Empty description="No requests" className={styles.emptyState} />
       ) : (
         <div className={styles.requestsList}>
           {requests.map(request => {
@@ -194,7 +195,9 @@ const MyRequestsContent = () => {
                   <div className={styles.titleSection}>
                     <h3 className={styles.requestTitle}>{request.title}</h3>
                     <Tag color="blue" className={styles.typeTag}>
-                      {request.requestType === 'transcription' ? 'Transcription' : 'Arrangement'}
+                      {request.requestType === 'transcription'
+                        ? 'Transcription'
+                        : 'Arrangement'}
                     </Tag>
                   </div>
                   <Tag
@@ -241,7 +244,8 @@ const MyRequestsContent = () => {
                     <div className={styles.infoRow}>
                       <span className={styles.infoLabel}>Guests:</span>
                       <span className={styles.infoValue}>
-                        {request.externalGuestCount} {request.externalGuestCount === 1 ? 'person' : 'people'}
+                        {request.externalGuestCount}{' '}
+                        {request.externalGuestCount === 1 ? 'person' : 'people'}
                       </span>
                     </div>
                   )}
@@ -249,7 +253,8 @@ const MyRequestsContent = () => {
 
                 <div className={styles.cardFooter}>
                   <div className={styles.dateInfo}>
-                    <ClockCircleOutlined /> Created: {formatDate(request.createdAt)}
+                    <ClockCircleOutlined /> Created:{' '}
+                    {formatDate(request.createdAt)}
                   </div>
                   <div className={styles.dateInfo}>
                     Updated: {formatDate(request.updatedAt)}
@@ -257,7 +262,9 @@ const MyRequestsContent = () => {
                   <Button
                     type="primary"
                     icon={<EyeOutlined />}
-                    onClick={() => navigate(`/my-requests/${request.requestId}`)}
+                    onClick={() =>
+                      navigate(`/my-requests/${request.requestId}`)
+                    }
                     className={styles.viewDetailBtn}
                   >
                     View Details

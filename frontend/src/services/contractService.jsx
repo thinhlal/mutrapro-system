@@ -217,7 +217,9 @@ export const initESign = async (contractId, signatureBase64) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi khởi tạo chữ ký điện tử' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi khởi tạo chữ ký điện tử' }
+    );
   }
 };
 

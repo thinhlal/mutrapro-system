@@ -20,7 +20,9 @@
 .infoSection {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 48px); /* ✨ Min height để 2 cột ít nhất bằng viewport */
+  min-height: calc(
+    100vh - 48px
+  ); /* ✨ Min height để 2 cột ít nhất bằng viewport */
 }
 
 .previewSection {
@@ -409,4 +411,3 @@
     opacity: 0.05;
   }
 }
-

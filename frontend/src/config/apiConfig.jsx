@@ -119,9 +119,11 @@ export const API_ENDPOINTS = {
     CANCEL_BY_MANAGER: contractId =>
       `${PROJECT_PATH}/contracts/${contractId}/cancel-by-manager`,
     // POST /api/v1/projects/contracts/{contractId}/init-esign
-    INIT_ESIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/init-esign`,
+    INIT_ESIGN: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/init-esign`,
     // POST /api/v1/projects/contracts/{contractId}/verify-otp
-    VERIFY_OTP: contractId => `${PROJECT_PATH}/contracts/${contractId}/verify-otp`,
+    VERIFY_OTP: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/verify-otp`,
   },
 
   FOLDERS: {

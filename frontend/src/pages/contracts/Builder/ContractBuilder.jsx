@@ -17,14 +17,23 @@ import {
   Tooltip,
 } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { useSearchParams, useNavigate, useLocation, useParams } from 'react-router-dom';
+import {
+  useSearchParams,
+  useNavigate,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getServiceRequestById,
   getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
-import { createContractFromRequest, getContractById, updateContract } from '../../../services/contractService';
+import {
+  createContractFromRequest,
+  getContractById,
+  updateContract,
+} from '../../../services/contractService';
 import { API_CONFIG } from '../../../config/apiConfig';
 import {
   getDefaultTermsAndConditions,
@@ -410,13 +419,13 @@ const ContractBuilder = () => {
     try {
       setLoadingContract(true);
       setError(null);
-      
+
       const response = await getContractById(contractId);
-      
+
       if (response?.status === 'success' && response?.data) {
         const contract = response.data;
         setExistingContract(contract);
-        
+
         // Check if contract is in DRAFT status
         if (contract.status?.toLowerCase() !== 'draft') {
           setError('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
@@ -426,7 +435,7 @@ const ContractBuilder = () => {
           }, 2000);
           return;
         }
-        
+
         // Pre-fill form with existing contract data FIRST
         form.setFieldsValue({
           request_id: contract.requestId,
@@ -445,11 +454,14 @@ const ContractBuilder = () => {
           terms_and_conditions: contract.termsAndConditions,
           special_clauses: contract.specialClauses,
           notes: contract.notes,
-          expires_in_days: contract.expiresAt ? 
-            Math.ceil((new Date(contract.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : 
-            7,
+          expires_in_days: contract.expiresAt
+            ? Math.ceil(
+                (new Date(contract.expiresAt) - new Date()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : 7,
         });
-        
+
         // Prepare party info from contract data
         const newPartyInfo = {
           partyA: API_CONFIG.PARTY_A_NAME,
@@ -458,63 +470,78 @@ const ContractBuilder = () => {
           partyBPhone: contract.phoneSnapshot || '',
           partyBEmail: contract.emailSnapshot || '',
         };
-        
+
         // Load service request để lấy pricing breakdown
         if (contract.requestId) {
           try {
-            const requestResponse = await getServiceRequestById(contract.requestId);
-            if (requestResponse?.status === 'success' && requestResponse?.data) {
+            const requestResponse = await getServiceRequestById(
+              contract.requestId
+            );
+            if (
+              requestResponse?.status === 'success' &&
+              requestResponse?.data
+            ) {
               const request = requestResponse.data;
               setServiceRequest(request);
               await loadPricingBreakdown(request);
-              
+
               // Override party info with request data if available
-              if (request.contactName) newPartyInfo.partyB = request.contactName;
-              if (request.contactPhone) newPartyInfo.partyBPhone = request.contactPhone;
-              if (request.contactEmail) newPartyInfo.partyBEmail = request.contactEmail;
+              if (request.contactName)
+                newPartyInfo.partyB = request.contactName;
+              if (request.contactPhone)
+                newPartyInfo.partyBPhone = request.contactPhone;
+              if (request.contactEmail)
+                newPartyInfo.partyBEmail = request.contactEmail;
             }
           } catch (error) {
             console.warn('Failed to load service request:', error);
           }
         }
-        
+
         // Always set party info and update preview
         setPartyInfo(newPartyInfo);
-        
+
         // Force update preview after everything is loaded
         setTimeout(() => {
           const currentFormValues = form.getFieldsValue(true);
           // Build preview with current form values and new party info
           const normalized = {
             show_seal: !!currentFormValues.show_seal,
-            seal_text: currentFormValues.seal_text?.trim() || 'MuTraPro Official',
+            seal_text:
+              currentFormValues.seal_text?.trim() || 'MuTraPro Official',
             seal_variant: currentFormValues.seal_variant || 'red',
             show_watermark: !!currentFormValues.show_watermark,
-            
+
             request_id: currentFormValues.request_id || null,
             customer_id: currentFormValues.customer_id || null,
             manager_id: currentFormValues.manager_id || null,
-            
+
             contract_type: currentFormValues.contract_type,
-            terms_and_conditions: currentFormValues.terms_and_conditions?.trim(),
+            terms_and_conditions:
+              currentFormValues.terms_and_conditions?.trim(),
             special_clauses: currentFormValues.special_clauses?.trim(),
             notes: currentFormValues.notes?.trim(),
-            
+
             total_price: Number(currentFormValues.total_price || 0),
             currency: 'VND',
             deposit_percent: Number(currentFormValues.deposit_percent || 0),
             deposit_amount: Number(currentFormValues.deposit_amount || 0),
             final_amount: Number(currentFormValues.final_amount || 0),
-            
+
             expected_start_date: null,
             sla_days: Number(currentFormValues.sla_days || 0),
             auto_due_date: true,
-            free_revisions_included: Number(currentFormValues.free_revisions_included || 1),
-            additional_revision_fee_vnd: currentFormValues.additional_revision_fee_vnd
-              ? Number(currentFormValues.additional_revision_fee_vnd)
-              : null,
-            revision_deadline_days: Number(currentFormValues.revision_deadline_days || 30),
-            
+            free_revisions_included: Number(
+              currentFormValues.free_revisions_included || 1
+            ),
+            additional_revision_fee_vnd:
+              currentFormValues.additional_revision_fee_vnd
+                ? Number(currentFormValues.additional_revision_fee_vnd)
+                : null,
+            revision_deadline_days: Number(
+              currentFormValues.revision_deadline_days || 30
+            ),
+
             // Use newPartyInfo directly instead of state
             partyA: newPartyInfo.partyA,
             partyAAddress: newPartyInfo.partyAAddress,
@@ -525,7 +552,6 @@ const ContractBuilder = () => {
           console.log('Preview data for edit mode:', normalized);
           setData(normalized);
         }, 200);
-        
       } else {
         throw new Error('Failed to load contract');
       }
@@ -749,16 +775,25 @@ const ContractBuilder = () => {
         // Navigate to contracts list
         navigate('/manager/contracts-list');
       } else {
-        throw new Error(response?.message || `Failed to ${isEditMode ? 'update' : 'create'} contract`);
+        throw new Error(
+          response?.message ||
+            `Failed to ${isEditMode ? 'update' : 'create'} contract`
+        );
       }
     } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} contract:`, error);
+      console.error(
+        `Error ${isEditMode ? 'updating' : 'creating'} contract:`,
+        error
+      );
       setError(
         error?.message ||
           error?.response?.data?.message ||
           `Failed to ${isEditMode ? 'update' : 'create'} contract`
       );
-      message.error(error?.message || `Failed to ${isEditMode ? 'update' : 'create'} contract`);
+      message.error(
+        error?.message ||
+          `Failed to ${isEditMode ? 'update' : 'create'} contract`
+      );
     } finally {
       setCreatingContract(false);
     }
@@ -822,8 +857,23 @@ const ContractBuilder = () => {
   // Show loading spinner while loading
   if (loadingServiceRequest || loadingContract) {
     return (
-      <div className={styles.page} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <Spin size="large" tip={isEditMode ? "Loading contract data..." : "Loading service request data..."} />
+      <div
+        className={styles.page}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+        }}
+      >
+        <Spin
+          size="large"
+          tip={
+            isEditMode
+              ? 'Loading contract data...'
+              : 'Loading service request data...'
+          }
+        />
       </div>
     );
   }
@@ -842,7 +892,9 @@ const ContractBuilder = () => {
             }}
           >
             <Title level={4} style={{ margin: 0, fontSize: '16px' }}>
-              {isEditMode ? 'Edit Contract' : 'Create Contract from Service Request'}
+              {isEditMode
+                ? 'Edit Contract'
+                : 'Create Contract from Service Request'}
             </Title>
             <Tag
               color="default"

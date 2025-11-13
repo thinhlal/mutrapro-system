@@ -35,7 +35,7 @@
   margin: 0;
 }
 
-.otpInput[type=number] {
+.otpInput[type='number'] {
   -moz-appearance: textfield;
 }
 
@@ -76,4 +76,3 @@
     width: 100%;
   }
 }
-

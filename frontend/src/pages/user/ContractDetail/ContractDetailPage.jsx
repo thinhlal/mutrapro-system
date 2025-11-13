@@ -44,7 +44,7 @@ import styles from './ContractDetailPage.module.css';
 const { Title, Text } = Typography;
 
 // Helper function to format date
-const formatDate = (date) => {
+const formatDate = date => {
   if (!date) return 'N/A';
   return dayjs(date).format('YYYY-MM-DD HH:mm');
 };
@@ -72,7 +72,8 @@ const getContractTitle = contractType => {
     arrangement: 'Arrangement Service Agreement',
     arrangement_with_recording: 'Arrangement with Recording Service Agreement',
     recording: 'Recording Service Agreement',
-    bundle: 'Bundle Service Agreement (Transcription + Arrangement + Recording)',
+    bundle:
+      'Bundle Service Agreement (Transcription + Arrangement + Recording)',
   };
   return titleMap[contractType] || 'Service Agreement';
 };
@@ -237,7 +238,9 @@ const ContractDetailPage = () => {
       const response = await initESign(contractId, signatureBase64);
       if (response?.status === 'success' && response?.data) {
         const session = response.data;
-        const expireAtMs = session.expireAt ? dayjs(session.expireAt).valueOf() : null;
+        const expireAtMs = session.expireAt
+          ? dayjs(session.expireAt).valueOf()
+          : null;
 
         setESignSession(session);
         setOtpExpiresAt(expireAtMs);
@@ -250,7 +253,9 @@ const ContractDetailPage = () => {
       }
     } catch (error) {
       console.error('Error initializing e-signature:', error);
-      message.error(error?.message || 'Failed to initialize e-signature. Please try again.');
+      message.error(
+        error?.message || 'Failed to initialize e-signature. Please try again.'
+      );
     } finally {
       setSignatureLoading(false);
     }
@@ -264,14 +269,20 @@ const ContractDetailPage = () => {
 
   const handleVerifyOtp = async otpCode => {
     if (!eSignSession?.sessionId) {
-      message.error('Signing session not found. Please restart the signing process.');
+      message.error(
+        'Signing session not found. Please restart the signing process.'
+      );
       setOtpModalOpen(false);
       return;
     }
 
     try {
       setOtpLoading(true);
-      const response = await verifyOTPAndSign(contractId, eSignSession.sessionId, otpCode);
+      const response = await verifyOTPAndSign(
+        contractId,
+        eSignSession.sessionId,
+        otpCode
+      );
       if (response?.status === 'success') {
         message.success(response.message || 'Contract signed successfully!');
         setOtpModalOpen(false);
@@ -303,18 +314,24 @@ const ContractDetailPage = () => {
       const response = await initESign(contractId, signatureData);
       if (response?.status === 'success' && response?.data) {
         const session = response.data;
-        const expireAtMs = session.expireAt ? dayjs(session.expireAt).valueOf() : null;
+        const expireAtMs = session.expireAt
+          ? dayjs(session.expireAt).valueOf()
+          : null;
 
         setESignSession(session);
         setOtpExpiresAt(expireAtMs);
         setMaxOtpAttempts(session.maxAttempts || 3);
         setOtpError(null);
 
-        message.success(response.message || 'A new OTP has been sent to your email');
+        message.success(
+          response.message || 'A new OTP has been sent to your email'
+        );
       }
     } catch (error) {
       console.error('Error resending OTP:', error);
-      message.error(error?.message || 'Failed to resend OTP. Please try again.');
+      message.error(
+        error?.message || 'Failed to resend OTP. Please try again.'
+      );
     } finally {
       setOtpLoading(false);
     }
@@ -365,8 +382,15 @@ const ContractDetailPage = () => {
           <div className={styles.tagline}>Contract Document</div>
         </div>
         <div className={styles.meta}>
-          <div>Contract ID: {contract?.contractNumber || contract?.contractId}</div>
-          <div>Generated: {contract?.createdAt ? dayjs(contract.createdAt).format('YYYY-MM-DD HH:mm') : ''}</div>
+          <div>
+            Contract ID: {contract?.contractNumber || contract?.contractId}
+          </div>
+          <div>
+            Generated:{' '}
+            {contract?.createdAt
+              ? dayjs(contract.createdAt).format('YYYY-MM-DD HH:mm')
+              : ''}
+          </div>
         </div>
       </div>
     ),
@@ -392,9 +416,7 @@ const ContractDetailPage = () => {
           description={error || 'Contract not found'}
           type="error"
           showIcon
-          action={
-            <Button onClick={() => navigate(-1)}>Go Back</Button>
-          }
+          action={<Button onClick={() => navigate(-1)}>Go Back</Button>}
         />
       </div>
     );
@@ -407,7 +429,9 @@ const ContractDetailPage = () => {
   const isSent = currentStatus === 'sent';
   const isApproved = currentStatus === 'approved';
   const isSigned = currentStatus === 'signed';
-  const isCanceled = currentStatus === 'canceled_by_customer' || currentStatus === 'canceled_by_manager';
+  const isCanceled =
+    currentStatus === 'canceled_by_customer' ||
+    currentStatus === 'canceled_by_manager';
   const isNeedRevision = currentStatus === 'need_revision';
   const isExpired = currentStatus === 'expired';
 
@@ -464,7 +488,10 @@ const ContractDetailPage = () => {
               style={{ marginBottom: 12 }}
               action={
                 canViewReason && (
-                  <Button size="small" onClick={() => setViewReasonModalOpen(true)}>
+                  <Button
+                    size="small"
+                    onClick={() => setViewReasonModalOpen(true)}
+                  >
                     View Reason
                   </Button>
                 )
@@ -491,7 +518,10 @@ const ContractDetailPage = () => {
               style={{ marginBottom: 12 }}
               action={
                 canViewReason && (
-                  <Button size="small" onClick={() => setViewReasonModalOpen(true)}>
+                  <Button
+                    size="small"
+                    onClick={() => setViewReasonModalOpen(true)}
+                  >
                     View Reason
                   </Button>
                 )
@@ -507,7 +537,7 @@ const ContractDetailPage = () => {
                 style={{
                   fontSize: '12px',
                   wordBreak: 'break-all',
-                  display: 'block'
+                  display: 'block',
                 }}
               >
                 {contract.contractId}
@@ -520,16 +550,23 @@ const ContractDetailPage = () => {
               <Tag color={statusConfig.color}>{statusConfig.text}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Contract Type">
-              <Tag color="blue">{contract.contractType?.toUpperCase() || 'N/A'}</Tag>
+              <Tag color="blue">
+                {contract.contractType?.toUpperCase() || 'N/A'}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Total Price">
-              <Text strong>{contract.totalPrice?.toLocaleString()} {contract.currency || 'VND'}</Text>
+              <Text strong>
+                {contract.totalPrice?.toLocaleString()}{' '}
+                {contract.currency || 'VND'}
+              </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Deposit ({contract.depositPercent}%)">
-              {contract.depositAmount?.toLocaleString()} {contract.currency || 'VND'}
+              {contract.depositAmount?.toLocaleString()}{' '}
+              {contract.currency || 'VND'}
             </Descriptions.Item>
             <Descriptions.Item label="Final Amount">
-              {contract.finalAmount?.toLocaleString()} {contract.currency || 'VND'}
+              {contract.finalAmount?.toLocaleString()}{' '}
+              {contract.currency || 'VND'}
             </Descriptions.Item>
             <Descriptions.Item label="SLA Days">
               {contract.slaDays || 0} days
@@ -546,12 +583,16 @@ const ContractDetailPage = () => {
             )}
             {!contract.expectedStartDate && (
               <Descriptions.Item label="Expected Start">
-                <Text type="secondary" italic>Set upon signing</Text>
+                <Text type="secondary" italic>
+                  Set upon signing
+                </Text>
               </Descriptions.Item>
             )}
             {!contract.dueDate && contract.slaDays && (
               <Descriptions.Item label="Due Date">
-                <Text type="secondary" italic>+{contract.slaDays} days from signing</Text>
+                <Text type="secondary" italic>
+                  +{contract.slaDays} days from signing
+                </Text>
               </Descriptions.Item>
             )}
             {contract.sentToCustomerAt && (
@@ -668,9 +709,7 @@ const ContractDetailPage = () => {
               {/* Company Seal - Always show */}
               <div className={`${styles.seal} ${styles.seal_red}`}>
                 <div className={styles.sealInner}>
-                  <div className={styles.sealText}>
-                    MuTraPro Official
-                  </div>
+                  <div className={styles.sealText}>MuTraPro Official</div>
                   <div className={styles.sealDate}>
                     {dayjs(contract.createdAt).format('YYYY-MM-DD')}
                   </div>
@@ -681,7 +720,8 @@ const ContractDetailPage = () => {
                 {getContractTitle(contract.contractType)}
               </h1>
               <p>
-                <strong>Contract Number:</strong> {contract.contractNumber || 'N/A'}
+                <strong>Contract Number:</strong>{' '}
+                {contract.contractNumber || 'N/A'}
                 <br />
                 <strong>Status:</strong> {statusConfig.text}
               </p>
@@ -690,9 +730,14 @@ const ContractDetailPage = () => {
               <p>
                 <strong>Party A (Provider):</strong> {API_CONFIG.PARTY_A_NAME}
                 <br />
-                <strong>Party B (Customer):</strong> {contract.nameSnapshot || contract.userId || 'N/A'}
-                {contract.phoneSnapshot && contract.phoneSnapshot !== 'N/A' && ` | Phone: ${contract.phoneSnapshot}`}
-                {contract.emailSnapshot && contract.emailSnapshot !== 'N/A' && ` | Email: ${contract.emailSnapshot}`}
+                <strong>Party B (Customer):</strong>{' '}
+                {contract.nameSnapshot || contract.userId || 'N/A'}
+                {contract.phoneSnapshot &&
+                  contract.phoneSnapshot !== 'N/A' &&
+                  ` | Phone: ${contract.phoneSnapshot}`}
+                {contract.emailSnapshot &&
+                  contract.emailSnapshot !== 'N/A' &&
+                  ` | Email: ${contract.emailSnapshot}`}
               </p>
 
               <h3>Pricing & Payment</h3>
@@ -700,138 +745,153 @@ const ContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0) && (
-                  <div
-                    style={{
-                      marginBottom: '16px',
-                      padding: '12px',
-                      backgroundColor: '#f5f5f5',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <strong style={{ display: 'block', marginBottom: '8px' }}>
-                      Price Breakdown:
-                    </strong>
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '8px' }}>
+                    Price Breakdown:
+                  </strong>
 
-                    {/* Transcription Details */}
-                    {pricingBreakdown.transcriptionDetails && (
-                      <div
-                        style={{
-                          marginBottom:
-                            pricingBreakdown.instruments.length > 0
-                              ? '12px'
-                              : '0',
-                        }}
-                      >
-                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                          (item, index) => (
-                            <div
-                              key={index}
-                              style={{ marginBottom: '4px', fontSize: '14px' }}
-                            >
-                              <span>{item.label}: </span>
-                              <span style={{ fontWeight: 'bold' }}>
-                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                                {contract.currency || 'VND'}
-                              </span>
-                              {item.description && (
-                                <span
-                                  style={{ color: '#666', marginLeft: '8px' }}
-                                >
-                                  ({formatDescriptionDuration(item.description)})
-                                </span>
-                              )}
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Instruments */}
-                    {pricingBreakdown.instruments.length > 0 && (
-                      <div>
-                        <div
-                          style={{
-                            marginBottom: '4px',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          Instruments Surcharge:
-                        </div>
-                        {pricingBreakdown.instruments.map((instr, index) => (
+                  {/* Transcription Details */}
+                  {pricingBreakdown.transcriptionDetails && (
+                    <div
+                      style={{
+                        marginBottom:
+                          pricingBreakdown.instruments.length > 0
+                            ? '12px'
+                            : '0',
+                      }}
+                    >
+                      {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                        (item, index) => (
                           <div
                             key={index}
-                            style={{
-                              marginLeft: '16px',
-                              marginBottom: '4px',
-                              fontSize: '14px',
-                            }}
+                            style={{ marginBottom: '4px', fontSize: '14px' }}
                           >
-                            <span>• {instr.instrumentName}: </span>
+                            <span>{item.label}: </span>
                             <span style={{ fontWeight: 'bold' }}>
-                              {instr.basePrice?.toLocaleString?.() ??
-                                instr.basePrice}{' '}
+                              {item.amount?.toLocaleString?.() ?? item.amount}{' '}
                               {contract.currency || 'VND'}
                             </span>
+                            {item.description && (
+                              <span
+                                style={{ color: '#666', marginLeft: '8px' }}
+                              >
+                                ({formatDescriptionDuration(item.description)})
+                              </span>
+                            )}
                           </div>
-                        ))}
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Instruments */}
+                  {pricingBreakdown.instruments.length > 0 && (
+                    <div>
+                      <div
+                        style={{
+                          marginBottom: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Instruments Surcharge:
+                      </div>
+                      {pricingBreakdown.instruments.map((instr, index) => (
                         <div
+                          key={index}
                           style={{
-                            marginTop: '4px',
+                            marginLeft: '16px',
+                            marginBottom: '4px',
                             fontSize: '14px',
-                            fontWeight: 'bold',
-                            borderTop: '1px solid #ddd',
-                            paddingTop: '4px',
                           }}
                         >
-                          Instruments Total:{' '}
-                          {pricingBreakdown.instruments
-                            .reduce(
-                              (sum, instr) => sum + (instr.basePrice || 0),
-                              0
-                            )
-                            .toLocaleString()}{' '}
-                          {contract.currency || 'VND'}
+                          <span>• {instr.instrumentName}: </span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {instr.basePrice?.toLocaleString?.() ??
+                              instr.basePrice}{' '}
+                            {contract.currency || 'VND'}
+                          </span>
                         </div>
+                      ))}
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          borderTop: '1px solid #ddd',
+                          paddingTop: '4px',
+                        }}
+                      >
+                        Instruments Total:{' '}
+                        {pricingBreakdown.instruments
+                          .reduce(
+                            (sum, instr) => sum + (instr.basePrice || 0),
+                            0
+                          )
+                          .toLocaleString()}{' '}
+                        {contract.currency || 'VND'}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p>
-                <strong>Currency:</strong> {contract.currency || 'VND'} &nbsp;|&nbsp;
-                <strong>Total Price:</strong> {contract.totalPrice?.toLocaleString()} &nbsp;|&nbsp;
-                <strong>Deposit:</strong> {contract.depositPercent}% = {contract.depositAmount?.toLocaleString()} &nbsp;|&nbsp;
-                <strong>Final Amount:</strong> {contract.finalAmount?.toLocaleString()}
+                <strong>Currency:</strong> {contract.currency || 'VND'}{' '}
+                &nbsp;|&nbsp;
+                <strong>Total Price:</strong>{' '}
+                {contract.totalPrice?.toLocaleString()} &nbsp;|&nbsp;
+                <strong>Deposit:</strong> {contract.depositPercent}% ={' '}
+                {contract.depositAmount?.toLocaleString()} &nbsp;|&nbsp;
+                <strong>Final Amount:</strong>{' '}
+                {contract.finalAmount?.toLocaleString()}
               </p>
 
               <h3>Timeline & SLA</h3>
               <p>
-                <strong>SLA Days:</strong> {contract.slaDays || 0} days &nbsp;|&nbsp;
+                <strong>SLA Days:</strong> {contract.slaDays || 0} days
+                &nbsp;|&nbsp;
                 <strong>Expected Start:</strong>{' '}
-                {contract.expectedStartDate
-                  ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
-                  : <span style={{ fontStyle: 'italic', color: '#999' }}>Upon signing</span>
-                }
+                {contract.expectedStartDate ? (
+                  dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
+                ) : (
+                  <span style={{ fontStyle: 'italic', color: '#999' }}>
+                    Upon signing
+                  </span>
+                )}
                 &nbsp;|&nbsp;
                 <strong>Due Date:</strong>{' '}
-                {contract.dueDate
-                  ? dayjs(contract.dueDate).format('YYYY-MM-DD')
-                  : <span style={{ fontStyle: 'italic', color: '#999' }}>+{contract.slaDays || 0} days from signing</span>
-                }
+                {contract.dueDate ? (
+                  dayjs(contract.dueDate).format('YYYY-MM-DD')
+                ) : (
+                  <span style={{ fontStyle: 'italic', color: '#999' }}>
+                    +{contract.slaDays || 0} days from signing
+                  </span>
+                )}
               </p>
 
               {contract.termsAndConditions && (
                 <>
                   <h3>Terms & Conditions</h3>
-                  <p style={{ whiteSpace: 'pre-line' }}>{contract.termsAndConditions}</p>
+                  <p style={{ whiteSpace: 'pre-line' }}>
+                    {contract.termsAndConditions}
+                  </p>
                 </>
               )}
 
               {contract.specialClauses && (
                 <>
                   <h3>Special Clauses</h3>
-                  <p style={{ whiteSpace: 'pre-line' }}>{contract.specialClauses}</p>
+                  <p style={{ whiteSpace: 'pre-line' }}>
+                    {contract.specialClauses}
+                  </p>
                 </>
               )}
 
@@ -850,21 +910,29 @@ const ContractDetailPage = () => {
                             width: 'auto',
                             marginTop: '8px',
                             marginBottom: '8px',
-                            display: 'block'
+                            display: 'block',
                           }}
                         />
                       </div>
-                      <div style={{
-                        marginTop: '4px',
-                        marginBottom: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#333'
-                      }}>
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          marginBottom: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#333',
+                        }}
+                      >
                         CEO - MuTraPro Studio Co., Ltd
                       </div>
-                      <div className={styles.sigHint} style={{ marginTop: '4px' }}>
-                        Signed on: {contract.signedAt ? formatDate(contract.signedAt) : formatDate(contract.sentAt)}
+                      <div
+                        className={styles.sigHint}
+                        style={{ marginTop: '4px' }}
+                      >
+                        Signed on:{' '}
+                        {contract.signedAt
+                          ? formatDate(contract.signedAt)
+                          : formatDate(contract.sentAt)}
                       </div>
                     </>
                   ) : (
@@ -879,7 +947,10 @@ const ContractDetailPage = () => {
                   {isSigned ? (
                     <>
                       {contract.bSignatureS3Url ? (
-                        <div className={styles.signature} style={{ marginTop: '12px' }}>
+                        <div
+                          className={styles.signature}
+                          style={{ marginTop: '12px' }}
+                        >
                           <img
                             src={contract.bSignatureS3Url}
                             alt="Party B Signature"
@@ -888,23 +959,31 @@ const ContractDetailPage = () => {
                               width: 'auto',
                               marginTop: '8px',
                               marginBottom: '8px',
-                              display: 'block'
+                              display: 'block',
                             }}
                           />
                         </div>
                       ) : (
-                        <div className={styles.sigLine} style={{ marginTop: '16px' }} />
+                        <div
+                          className={styles.sigLine}
+                          style={{ marginTop: '16px' }}
+                        />
                       )}
-                      <div style={{
-                        marginTop: '4px',
-                        marginBottom: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#333'
-                      }}>
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          marginBottom: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: '#333',
+                        }}
+                      >
                         {contract.nameSnapshot || 'Customer'}
                       </div>
-                      <div className={styles.sigHint} style={{ marginTop: '4px' }}>
+                      <div
+                        className={styles.sigHint}
+                        style={{ marginTop: '4px' }}
+                      >
                         Signed on:{' '}
                         {contract.bSignedAt
                           ? formatDate(contract.bSignedAt)
@@ -975,4 +1054,3 @@ const ContractDetailPage = () => {
 };
 
 export default ContractDetailPage;
-

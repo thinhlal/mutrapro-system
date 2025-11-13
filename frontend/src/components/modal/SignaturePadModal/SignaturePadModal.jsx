@@ -11,7 +11,12 @@ import styles from './SignaturePadModal.module.css';
  * @param {function} onConfirm - Callback with signature data URL when user confirms
  * @param {boolean} loading - Whether signature is being processed
  */
-const SignaturePadModal = ({ visible, onCancel, onConfirm, loading = false }) => {
+const SignaturePadModal = ({
+  visible,
+  onCancel,
+  onConfirm,
+  loading = false,
+}) => {
   const sigPadRef = useRef(null);
   const [isEmpty, setIsEmpty] = useState(true);
 
@@ -103,4 +108,3 @@ const SignaturePadModal = ({ visible, onCancel, onConfirm, loading = false }) =>
 };
 
 export default SignaturePadModal;
-

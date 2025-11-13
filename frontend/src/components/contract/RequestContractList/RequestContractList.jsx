@@ -133,7 +133,9 @@ const RequestContractList = ({
                 {/* View Details Button - Always visible */}
                 <Button
                   icon={<EyeOutlined />}
-                  onClick={() => navigate(`/user/contracts/${contract.contractId}`)}
+                  onClick={() =>
+                    navigate(`/user/contracts/${contract.contractId}`)
+                  }
                   style={{ marginBottom: canCustomerAction || canSign ? 8 : 0 }}
                 >
                   View Details
@@ -180,7 +182,8 @@ const RequestContractList = ({
                         <div style={{ maxWidth: 300 }}>
                           Are you sure you want to sign this contract?
                           <br />
-                          <strong>Note:</strong> After signing, the contract will take effect and cannot be canceled.
+                          <strong>Note:</strong> After signing, the contract
+                          will take effect and cannot be canceled.
                         </div>
                       }
                       onConfirm={() => onSign(contract.contractId)}

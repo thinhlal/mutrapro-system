@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Button, Space, Alert, Typography, Statistic } from 'antd';
+import {
+  Modal,
+  Input,
+  Button,
+  Space,
+  Alert,
+  Typography,
+  Statistic,
+} from 'antd';
 import { LockOutlined, ReloadOutlined, CheckOutlined } from '@ant-design/icons';
 import styles from './OTPVerificationModal.module.css';
 
@@ -40,7 +48,7 @@ const OTPVerificationModal = ({
     }
   }, [visible]);
 
-  const handleOtpChange = (e) => {
+  const handleOtpChange = e => {
     const value = e.target.value.replace(/\D/g, ''); // Only allow digits
     if (value.length <= 6) {
       setOtpCode(value);
@@ -59,7 +67,7 @@ const OTPVerificationModal = ({
     onResend();
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === 'Enter' && otpCode.length === 6 && !loading) {
       handleVerify();
     }
@@ -92,8 +100,9 @@ const OTPVerificationModal = ({
           description={
             <div>
               We've sent a 6-digit verification code to{' '}
-              <strong>{email || 'your email address on file'}</strong>. Please enter it
-              below to complete the signature. You have {maxAttempts} attempts.
+              <strong>{email || 'your email address on file'}</strong>. Please
+              enter it below to complete the signature. You have {maxAttempts}{' '}
+              attempts.
             </div>
           }
           type="info"
@@ -146,9 +155,7 @@ const OTPVerificationModal = ({
             className={styles.otpInput}
             autoFocus
           />
-          <div className={styles.hint}>
-            {otpCode.length}/6 digits entered
-          </div>
+          <div className={styles.hint}>{otpCode.length}/6 digits entered</div>
         </div>
 
         <Space className={styles.actions}>
@@ -175,8 +182,9 @@ const OTPVerificationModal = ({
 
         <div className={styles.footer}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            <strong>Note:</strong> By verifying this OTP and signing, you agree to the terms of the contract.
-            The signed contract will have the same legal validity as a paper contract.
+            <strong>Note:</strong> By verifying this OTP and signing, you agree
+            to the terms of the contract. The signed contract will have the same
+            legal validity as a paper contract.
           </Text>
         </div>
       </div>
@@ -185,4 +193,3 @@ const OTPVerificationModal = ({
 };
 
 export default OTPVerificationModal;
-

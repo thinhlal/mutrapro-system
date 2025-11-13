@@ -2,7 +2,12 @@ import React from 'react';
 import { Modal, Alert } from 'antd';
 import PropTypes from 'prop-types';
 
-const ViewCancellationReasonModal = ({ open, onCancel, reason, isCanceled = true }) => {
+const ViewCancellationReasonModal = ({
+  open,
+  onCancel,
+  reason,
+  isCanceled = true,
+}) => {
   return (
     <Modal
       title={isCanceled ? 'Lý do hủy Contract' : 'Lý do yêu cầu sửa Contract'}
@@ -48,4 +53,3 @@ ViewCancellationReasonModal.propTypes = {
 };
 
 export default ViewCancellationReasonModal;
-

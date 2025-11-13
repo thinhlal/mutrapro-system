@@ -110,7 +110,11 @@ const RequestDetailPage = () => {
     const configs = {
       pending: {
         color: hasManager ? 'gold' : 'default',
-        icon: hasManager ? <ClockCircleOutlined /> : <ExclamationCircleOutlined />,
+        icon: hasManager ? (
+          <ClockCircleOutlined />
+        ) : (
+          <ExclamationCircleOutlined />
+        ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
       },
       contract_sent: {
@@ -374,19 +378,23 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-            {request.hasVocalist !== undefined && request.requestType !== 'transcription' && (
-              <Descriptions.Item label="Vocalist">
-                {request.hasVocalist ? (
-                  <Tag color="green">Yes</Tag>
-                ) : (
-                  <Tag color="default">No</Tag>
-                )}
-              </Descriptions.Item>
-            )}
+            {request.hasVocalist !== undefined &&
+              request.requestType !== 'transcription' && (
+                <Descriptions.Item label="Vocalist">
+                  {request.hasVocalist ? (
+                    <Tag color="green">Yes</Tag>
+                  ) : (
+                    <Tag color="default">No</Tag>
+                  )}
+                </Descriptions.Item>
+              )}
 
             {request.externalGuestCount > 0 && (
               <Descriptions.Item label="Guests">
-                <Tag>{request.externalGuestCount} {request.externalGuestCount === 1 ? 'person' : 'people'}</Tag>
+                <Tag>
+                  {request.externalGuestCount}{' '}
+                  {request.externalGuestCount === 1 ? 'person' : 'people'}
+                </Tag>
               </Descriptions.Item>
             )}
 
@@ -414,13 +422,22 @@ const RequestDetailPage = () => {
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
-                  <div><strong>Name:</strong> {request.managerInfo.fullName || 'N/A'}</div>
-                  <div><strong>Email:</strong> {request.managerInfo.email || 'N/A'}</div>
+                  <div>
+                    <strong>Name:</strong>{' '}
+                    {request.managerInfo.fullName || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {request.managerInfo.email || 'N/A'}
+                  </div>
                   {request.managerInfo.phone && (
-                    <div><strong>Phone:</strong> {request.managerInfo.phone}</div>
+                    <div>
+                      <strong>Phone:</strong> {request.managerInfo.phone}
+                    </div>
                   )}
                   {request.managerInfo.role && (
-                    <div><strong>Role:</strong> {request.managerInfo.role}</div>
+                    <div>
+                      <strong>Role:</strong> {request.managerInfo.role}
+                    </div>
                   )}
                   <div style={{ marginTop: 6 }}>
                     <Tag color="processing">{getManagerStatusText()}</Tag>
@@ -528,7 +545,8 @@ const RequestDetailPage = () => {
         >
           <div style={{ marginBottom: 16 }}>
             <p>
-              Please enter the reason you want to change contract <strong>{selectedContract?.contractNumber}</strong>
+              Please enter the reason you want to change contract{' '}
+              <strong>{selectedContract?.contractNumber}</strong>
             </p>
           </div>
           <TextArea

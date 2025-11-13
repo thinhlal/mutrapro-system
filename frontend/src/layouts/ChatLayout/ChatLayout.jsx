@@ -73,8 +73,11 @@ const ChatLayout = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit' });
+
+    return date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+    });
   };
 
   const handleRoomClick = room => {
@@ -93,7 +96,10 @@ const ChatLayout = () => {
               <div className={styles.headerTitle}>
                 <h2>Chats</h2>
                 {totalUnread > 0 && (
-                  <Badge count={totalUnread} className={styles.totalUnreadBadge} />
+                  <Badge
+                    count={totalUnread}
+                    className={styles.totalUnreadBadge}
+                  />
                 )}
               </div>
               <div className={styles.searchBox}>
@@ -101,7 +107,7 @@ const ChatLayout = () => {
                   placeholder="Search conversations..."
                   prefix={<SearchOutlined />}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className={styles.searchInput}
                 />
               </div>
@@ -117,9 +123,9 @@ const ChatLayout = () => {
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description={
-                      searchQuery 
-                        ? "No conversations found" 
-                        : "No conversations yet"
+                      searchQuery
+                        ? 'No conversations found'
+                        : 'No conversations yet'
                     }
                   />
                 </div>
@@ -187,7 +193,10 @@ const ChatLayout = () => {
             ) : (
               <div className={styles.emptyConversation}>
                 <h3>Select a conversation</h3>
-                <p>Choose a conversation from the list on the left to start messaging</p>
+                <p>
+                  Choose a conversation from the list on the left to start
+                  messaging
+                </p>
               </div>
             )}
           </div>

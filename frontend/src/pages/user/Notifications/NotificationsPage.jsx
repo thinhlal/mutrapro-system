@@ -209,13 +209,20 @@ const NotificationsPage = () => {
                 <div className={styles.inboxHeader}>
                   <Text type="secondary">
                     {unreadCount > 0 ? (
-                      <>You have {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}</>
+                      <>
+                        You have {unreadCount} unread{' '}
+                        {unreadCount === 1 ? 'notification' : 'notifications'}
+                      </>
                     ) : (
                       <>All notifications have been read</>
                     )}
                   </Text>
                   {unreadCount > 0 && (
-                    <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={handleMarkAllAsRead}
+                    >
                       Mark all as read
                     </Button>
                   )}
@@ -224,7 +231,7 @@ const NotificationsPage = () => {
                   itemLayout="horizontal"
                   dataSource={filteredNotifications}
                   loading={loading}
-                  renderItem={(notification) => (
+                  renderItem={notification => (
                     <List.Item
                       className={`${styles.notificationItem} ${
                         !notification.isRead ? styles.unread : ''
@@ -236,15 +243,22 @@ const NotificationsPage = () => {
                         avatar={getNotificationIcon(notification.type)}
                         title={
                           <div className={styles.notifHeader}>
-                            <span className={styles.notifTitle}>{notification.title}</span>
+                            <span className={styles.notifTitle}>
+                              {notification.title}
+                            </span>
                             {!notification.isRead && (
-                              <Badge status="processing" className={styles.unreadBadge} />
+                              <Badge
+                                status="processing"
+                                className={styles.unreadBadge}
+                              />
                             )}
                           </div>
                         }
                         description={
                           <div>
-                            <p className={styles.notifMessage}>{notification.content}</p>
+                            <p className={styles.notifMessage}>
+                              {notification.content}
+                            </p>
                             <Text type="secondary" className={styles.notifTime}>
                               {formatTime(notification.createdAt)}
                             </Text>
@@ -299,10 +313,15 @@ const NotificationsPage = () => {
             <>
               <div className={styles.inboxHeader}>
                 <Text type="secondary">
-                  You have {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}
+                  You have {unreadCount} unread{' '}
+                  {unreadCount === 1 ? 'notification' : 'notifications'}
                 </Text>
                 {unreadCount > 0 && (
-                  <Button type="link" size="small" onClick={handleMarkAllAsRead}>
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={handleMarkAllAsRead}
+                  >
                     Mark all as read
                   </Button>
                 )}
@@ -364,7 +383,9 @@ const NotificationsPage = () => {
         <div className={styles.notificationsContent}>
           <div className={styles.pageHeader}>
             <div className={styles.headerText}>
-              <Title level={1} className={styles.pageTitle}>Notifications</Title>
+              <Title level={1} className={styles.pageTitle}>
+                Notifications
+              </Title>
               <Text type="secondary" className={styles.pageSubtitle}>
                 Manage and track all your notifications
               </Text>

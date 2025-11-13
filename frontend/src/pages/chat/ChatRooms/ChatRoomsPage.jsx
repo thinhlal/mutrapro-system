@@ -81,9 +81,9 @@ const ChatRoomsPage = () => {
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                searchQuery 
-                  ? "No matching conversations found" 
-                  : "No conversations yet"
+                searchQuery
+                  ? 'No matching conversations found'
+                  : 'No conversations yet'
               }
             />
           </div>

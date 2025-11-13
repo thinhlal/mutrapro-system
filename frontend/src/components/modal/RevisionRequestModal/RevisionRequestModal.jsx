@@ -15,7 +15,7 @@ const RevisionRequestModal = ({ open, onCancel, onSuccess, contractId }) => {
       setLoading(true);
 
       const response = await requestChangeContract(contractId, values.reason);
-      
+
       if (response?.status === 'success') {
         message.success('Revision request sent successfully');
         form.resetFields();
@@ -51,14 +51,18 @@ const RevisionRequestModal = ({ open, onCancel, onSuccess, contractId }) => {
       width={600}
     >
       <p style={{ marginBottom: 16, color: '#666' }}>
-        Vui lòng mô tả những thay đổi bạn muốn thực hiện cho contract này. Manager sẽ tạo một phiên bản mới dựa trên yêu cầu của bạn.
+        Vui lòng mô tả những thay đổi bạn muốn thực hiện cho contract này.
+        Manager sẽ tạo một phiên bản mới dựa trên yêu cầu của bạn.
       </p>
       <Form form={form} layout="vertical">
         <Form.Item
           name="reason"
           label="Lý do yêu cầu chỉnh sửa"
           rules={[
-            { required: true, message: 'Vui lòng nhập lý do yêu cầu chỉnh sửa' },
+            {
+              required: true,
+              message: 'Vui lòng nhập lý do yêu cầu chỉnh sửa',
+            },
             { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
           ]}
         >
@@ -82,4 +86,3 @@ RevisionRequestModal.propTypes = {
 };
 
 export default RevisionRequestModal;
-

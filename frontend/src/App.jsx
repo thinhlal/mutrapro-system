@@ -260,7 +260,10 @@ function App() {
               element={<ServiceRequestManagement />}
             />
             <Route path="contract-builder" element={<ContractBuilder />} />
-            <Route path="contracts/:contractId/edit" element={<ContractBuilder />} />
+            <Route
+              path="contracts/:contractId/edit"
+              element={<ContractBuilder />}
+            />
             <Route path="contracts-list" element={<ContractsList />} />
             <Route path="task" element={<Tasks />} />
             <Route path="profile" element={<ManagerProfile />} />
