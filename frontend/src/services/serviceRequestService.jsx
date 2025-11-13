@@ -179,18 +179,24 @@ export const getMyAssignedRequests = async (userId, additionalFilters = {}) => {
 
 /**
  * Lấy danh sách requests mà user hiện tại đã tạo
- * GET /requests/my-requests?status=
+ * GET /requests/my-requests?status=&page=&size=&sort=
  *
  * @param {Object} filters - Các filter tùy chọn
  * @param {string} filters.status - Trạng thái: pending, contract_sent, contract_approved, contract_signed, in_progress, completed, cancelled, rejected
+ * @param {number} filters.page - Trang (default: 0)
+ * @param {number} filters.size - Số lượng (default: 10)
+ * @param {string} filters.sort - Sắp xếp (default: createdAt,desc)
  *
- * @returns {Promise} ApiResponse với danh sách requests của user
+ * @returns {Promise} ApiResponse với Page chứa danh sách requests của user
  */
 export const getMyRequests = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
 
     if (filters.status) params.append('status', filters.status);
+    if (filters.page !== undefined) params.append('page', filters.page);
+    if (filters.size !== undefined) params.append('size', filters.size);
+    if (filters.sort) params.append('sort', filters.sort);
 
     const url = `${API_ENDPOINTS.SERVICE_REQUESTS.MY_REQUESTS}${params.toString() ? `?${params.toString()}` : ''}`;
 

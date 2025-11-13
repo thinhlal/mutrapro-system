@@ -58,26 +58,36 @@ export default function ServiceRequestManagement() {
   const [assigning, setAssigning] = useState({});
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  
+  // Pagination state
+  const [allPagination, setAllPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [myPagination, setMyPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch tất cả requests
-  const fetchAllRequests = async () => {
+  // Fetch tất cả requests với phân trang
+  const fetchAllRequests = async (page = 0, size = 10) => {
     try {
       setLoadingAll(true);
       const response = await getAllServiceRequests({
-        page: 0,
-        size: 100,
+        page: page,
+        size: size,
         sort: 'createdAt,desc',
       });
 
-      console.log('API Response:', response);
-
       if (response?.status === 'success') {
-        // API trả về array trực tiếp trong data, không có content
-        const data = Array.isArray(response.data)
-          ? response.data
-          : response.data?.content || [];
+        // API trả về Page object
+        const pageData = response.data;
+        const data = pageData?.content || [];
 
         // Map field names từ API sang frontend format
         const mappedData = data.map(item => ({
@@ -89,6 +99,11 @@ export default function ServiceRequestManagement() {
         }));
 
         setAllRequests(mappedData);
+        setAllPagination({
+          current: (pageData?.number || 0) + 1, // Spring Data page starts from 0
+          pageSize: pageData?.size || size,
+          total: pageData?.totalElements || 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching all requests:', error);
@@ -98,21 +113,20 @@ export default function ServiceRequestManagement() {
     }
   };
 
-  // Fetch requests đã được assign cho user hiện tại
-  const fetchMyRequests = async () => {
+  // Fetch requests đã được assign cho user hiện tại với phân trang
+  const fetchMyRequests = async (page = 0, size = 10) => {
     try {
       setLoadingMy(true);
       const response = await getMyAssignedRequests(user?.id, {
-        page: 0,
-        size: 100,
+        page: page,
+        size: size,
         sort: 'createdAt,desc',
       });
 
       if (response?.status === 'success') {
-        // API trả về array trực tiếp trong data
-        const data = Array.isArray(response.data)
-          ? response.data
-          : response.data?.content || [];
+        // API trả về Page object
+        const pageData = response.data;
+        const data = pageData?.content || [];
 
         // Map field names
         const mappedData = data.map(item => ({
@@ -124,6 +138,11 @@ export default function ServiceRequestManagement() {
         }));
 
         setMyRequests(mappedData);
+        setMyPagination({
+          current: (pageData?.number || 0) + 1, // Spring Data page starts from 0
+          pageSize: pageData?.size || size,
+          total: pageData?.totalElements || 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching my requests:', error);
@@ -190,8 +209,8 @@ export default function ServiceRequestManagement() {
   }, []);
 
   useEffect(() => {
-    fetchAllRequests();
-    fetchMyRequests();
+    fetchAllRequests(0, allPagination.pageSize);
+    fetchMyRequests(0, myPagination.pageSize);
   }, []);
 
   // Columns cho bảng
@@ -342,8 +361,8 @@ export default function ServiceRequestManagement() {
         <Button
           icon={<ReloadOutlined />}
           onClick={() => {
-            fetchAllRequests();
-            fetchMyRequests();
+            fetchAllRequests(allPagination.current - 1, allPagination.pageSize);
+            fetchMyRequests(myPagination.current - 1, myPagination.pageSize);
           }}
         >
           Refresh
@@ -357,7 +376,7 @@ export default function ServiceRequestManagement() {
           tabBarExtraContent={
             <Space>
               <Badge
-                count={allRequests.length}
+                count={allPagination.total}
                 style={{ backgroundColor: '#52c41a' }}
               />
             </Space>
@@ -371,9 +390,17 @@ export default function ServiceRequestManagement() {
               loading={loadingAll}
               scroll={{ x: 1200 }}
               pagination={{
-                pageSize: 10,
+                current: allPagination.current,
+                pageSize: allPagination.pageSize,
+                total: allPagination.total,
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} requests`,
+                onChange: (page, pageSize) => {
+                  fetchAllRequests(page - 1, pageSize); // Spring Data page starts from 0
+                },
+                onShowSizeChange: (current, size) => {
+                  fetchAllRequests(0, size);
+                },
               }}
             />
           </TabPane>
@@ -383,7 +410,7 @@ export default function ServiceRequestManagement() {
               <span>
                 My Assigned Requests
                 <Badge
-                  count={myRequests.length}
+                  count={myPagination.total}
                   style={{ marginLeft: 8, backgroundColor: '#1890ff' }}
                 />
               </span>
@@ -397,9 +424,17 @@ export default function ServiceRequestManagement() {
               loading={loadingMy}
               scroll={{ x: 1200 }}
               pagination={{
-                pageSize: 10,
+                current: myPagination.current,
+                pageSize: myPagination.pageSize,
+                total: myPagination.total,
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} assigned requests`,
+                onChange: (page, pageSize) => {
+                  fetchMyRequests(page - 1, pageSize); // Spring Data page starts from 0
+                },
+                onShowSizeChange: (current, size) => {
+                  fetchMyRequests(0, size);
+                },
               }}
             />
           </TabPane>

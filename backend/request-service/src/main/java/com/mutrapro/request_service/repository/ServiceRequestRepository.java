@@ -3,6 +3,8 @@ package com.mutrapro.request_service.repository;
 import com.mutrapro.request_service.entity.ServiceRequest;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -35,5 +37,28 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     // Filter theo cả 3 điều kiện
     List<ServiceRequest> findByStatusAndRequestTypeAndManagerUserId(
             RequestStatus status, ServiceType requestType, String managerUserId);
+    
+    // Pagination methods
+    Page<ServiceRequest> findAll(Pageable pageable);
+    
+    Page<ServiceRequest> findByStatus(RequestStatus status, Pageable pageable);
+    
+    Page<ServiceRequest> findByRequestType(ServiceType requestType, Pageable pageable);
+    
+    Page<ServiceRequest> findByManagerUserId(String managerUserId, Pageable pageable);
+    
+    Page<ServiceRequest> findByStatusAndRequestType(RequestStatus status, ServiceType requestType, Pageable pageable);
+    
+    Page<ServiceRequest> findByStatusAndManagerUserId(RequestStatus status, String managerUserId, Pageable pageable);
+    
+    Page<ServiceRequest> findByRequestTypeAndManagerUserId(ServiceType requestType, String managerUserId, Pageable pageable);
+    
+    Page<ServiceRequest> findByStatusAndRequestTypeAndManagerUserId(
+            RequestStatus status, ServiceType requestType, String managerUserId, Pageable pageable);
+    
+    // Pagination methods cho user requests
+    Page<ServiceRequest> findByUserId(String userId, Pageable pageable);
+    
+    Page<ServiceRequest> findByUserIdAndStatus(String userId, RequestStatus status, Pageable pageable);
 }
 

@@ -15,10 +15,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -47,32 +49,71 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/my-requests")
-    @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status)")
-    public ApiResponse<List<ServiceRequestResponse>> getUserRequests(
+    @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status, có phân trang)")
+    public ApiResponse<Page<ServiceRequestResponse>> getUserRequests(
             @Parameter(description = "Filter theo status (pending, in_progress, completed, cancelled). Nếu không truyền thì trả về tất cả")
-            @RequestParam(required = false) RequestStatus status) {
-        log.info("Getting user requests with status filter: {}", status != null ? status.name() : "all");
-        List<ServiceRequestResponse> requests = serviceRequestService.getUserRequests(status);
-        return ApiResponse.<List<ServiceRequestResponse>>builder()
+            @RequestParam(required = false) RequestStatus status,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "createdAt,desc") String sort) {
+        log.info("Getting user requests with status filter: {}, page={}, size={}, sort={}", 
+                status != null ? status.name() : "all", page, size, sort);
+        
+        // Parse sort string (format: "field,direction")
+        Sort.Direction direction = Sort.Direction.DESC;
+        String sortField = "createdAt";
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParts = sort.split(",");
+            sortField = sortParts[0].trim();
+            if (sortParts.length > 1) {
+                direction = sortParts[1].trim().equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+            }
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        Page<ServiceRequestResponse> requestsPage = serviceRequestService.getUserRequests(status, pageable);
+        
+        return ApiResponse.<Page<ServiceRequestResponse>>builder()
                 .message("User requests retrieved successfully")
-                .data(requests)
+                .data(requestsPage)
                 .statusCode(200)
                 .build();
     }
 
     @GetMapping
-    @Operation(summary = "Lấy tất cả service requests với các filter tùy chọn")
-    public ApiResponse<List<ServiceRequestResponse>> getAllServiceRequests(
+    @Operation(summary = "Lấy tất cả service requests với các filter tùy chọn (có phân trang)")
+    public ApiResponse<Page<ServiceRequestResponse>> getAllServiceRequests(
             @RequestParam(required = false) RequestStatus status,
             @RequestParam(required = false) ServiceType requestType,
-            @RequestParam(required = false) String managerUserId) {
-        log.info("Getting all service requests with filters: status={}, requestType={}, managerUserId={}", 
-                status, requestType, managerUserId);
-        List<ServiceRequestResponse> requests = serviceRequestService.getAllServiceRequests(
-                status, requestType, managerUserId);
-        return ApiResponse.<List<ServiceRequestResponse>>builder()
+            @RequestParam(required = false) String managerUserId,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "createdAt,desc") String sort) {
+        log.info("Getting all service requests with filters: status={}, requestType={}, managerUserId={}, page={}, size={}, sort={}", 
+                status, requestType, managerUserId, page, size, sort);
+        
+        // Parse sort string (format: "field,direction")
+        Sort.Direction direction = Sort.Direction.DESC;
+        String sortField = "createdAt";
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParts = sort.split(",");
+            sortField = sortParts[0].trim();
+            if (sortParts.length > 1) {
+                direction = sortParts[1].trim().equalsIgnoreCase("asc") 
+                    ? Sort.Direction.ASC 
+                    : Sort.Direction.DESC;
+            }
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        Page<ServiceRequestResponse> requestsPage = serviceRequestService.getAllServiceRequests(
+                status, requestType, managerUserId, pageable);
+        
+        return ApiResponse.<Page<ServiceRequestResponse>>builder()
                 .message("Service requests retrieved successfully")
-                .data(requests)
+                .data(requestsPage)
                 .statusCode(200)
                 .build();
     }

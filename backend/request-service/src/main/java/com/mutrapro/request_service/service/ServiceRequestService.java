@@ -54,6 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -358,68 +361,66 @@ public class ServiceRequestService {
     }
     
     /**
-     * Lấy tất cả service requests với các filter tùy chọn
+     * Lấy tất cả service requests với các filter tùy chọn (có phân trang)
      * 
      * @param status Filter theo status (optional)
      * @param requestType Filter theo request type (optional)
      * @param managerUserId Filter theo manager user ID (optional)
-     * @return Danh sách service requests
+     * @param pageable Phân trang
+     * @return Page chứa danh sách service requests
      */
-    public List<ServiceRequestResponse> getAllServiceRequests(
+    public Page<ServiceRequestResponse> getAllServiceRequests(
             RequestStatus status, 
             ServiceType requestType, 
-            String managerUserId) {
-        List<ServiceRequest> requests;
+            String managerUserId,
+            Pageable pageable) {
+        Page<ServiceRequest> requestsPage;
         
         if (status != null && requestType != null && managerUserId != null) {
             // Filter theo cả 3 tham số
-            requests = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
-                    status, requestType, managerUserId);
+            requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
+                    status, requestType, managerUserId, pageable);
         } else if (status != null && requestType != null) {
             // Filter theo status và requestType
-            requests = serviceRequestRepository.findByStatusAndRequestType(status, requestType);
+            requestsPage = serviceRequestRepository.findByStatusAndRequestType(status, requestType, pageable);
         } else if (status != null && managerUserId != null) {
             // Filter theo status và managerUserId
-            requests = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId);
+            requestsPage = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId, pageable);
         } else if (requestType != null && managerUserId != null) {
             // Filter theo requestType và managerUserId
-            requests = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId);
+            requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId, pageable);
         } else if (status != null) {
             // Filter theo status
-            requests = serviceRequestRepository.findByStatus(status);
+            requestsPage = serviceRequestRepository.findByStatus(status, pageable);
         } else if (requestType != null) {
             // Filter theo requestType
-            requests = serviceRequestRepository.findByRequestType(requestType);
+            requestsPage = serviceRequestRepository.findByRequestType(requestType, pageable);
         } else if (managerUserId != null) {
             // Filter theo managerUserId
-            requests = serviceRequestRepository.findByManagerUserId(managerUserId);
+            requestsPage = serviceRequestRepository.findByManagerUserId(managerUserId, pageable);
         } else {
             // Lấy tất cả
-            requests = serviceRequestRepository.findAll();
+            requestsPage = serviceRequestRepository.findAll(pageable);
         }
         
-        log.info("Retrieved {} service requests with filters: status={}, requestType={}, managerUserId={}", 
-                requests.size(), status, requestType, managerUserId);
-        
-        // Sort theo createdAt giảm dần (mới nhất lên đầu)
-        List<ServiceRequest> sortedRequests = requests.stream()
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
-                    if (a.getCreatedAt() == null) return 1;
-                    if (b.getCreatedAt() == null) return -1;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // DESC
-                })
-                .collect(Collectors.toList());
+        log.info("Retrieved {} service requests (page {}/{}) with filters: status={}, requestType={}, managerUserId={}", 
+                requestsPage.getNumberOfElements(), requestsPage.getNumber(), requestsPage.getTotalPages(),
+                status, requestType, managerUserId);
         
         // Map sang response
-        List<ServiceRequestResponse> responses = sortedRequests.stream()
+        List<ServiceRequestResponse> responses = requestsPage.getContent().stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
         
         // Enrich với thông tin contract từ project-service
         enrichWithContractInfo(responses);
         
-        return responses;
+        // Tạo Page mới với responses đã enrich
+        return new PageImpl<>(
+                responses, 
+                pageable, 
+                requestsPage.getTotalElements()
+        );
     }
     
     /**
@@ -581,36 +582,38 @@ public class ServiceRequestService {
     }
     
     /**
-     * Lấy danh sách request mà user hiện tại đã tạo
+     * Lấy danh sách request mà user hiện tại đã tạo (có phân trang)
      * @param status Optional filter theo status, nếu null thì lấy tất cả
-     * @return Danh sách ServiceRequestResponse
+     * @param pageable Phân trang
+     * @return Page chứa danh sách ServiceRequestResponse
      */
-    public List<ServiceRequestResponse> getUserRequests(RequestStatus status) {
+    public Page<ServiceRequestResponse> getUserRequests(RequestStatus status, Pageable pageable) {
         String userId = getCurrentUserId();
         
-        List<ServiceRequest> requests;
+        Page<ServiceRequest> requestsPage;
         if (status != null) {
-            requests = serviceRequestRepository.findByUserIdAndStatus(userId, status);
+            requestsPage = serviceRequestRepository.findByUserIdAndStatus(userId, status, pageable);
         } else {
-            requests = serviceRequestRepository.findByUserId(userId);
+            requestsPage = serviceRequestRepository.findByUserId(userId, pageable);
         }
         
-        log.info("Retrieved {} requests for user: userId={}, status={}", 
-                requests.size(), userId, status != null ? status.name() : "all");
+        log.info("Retrieved {} requests for user: userId={}, status={}, page={}/{}", 
+                requestsPage.getNumberOfElements(), userId, 
+                status != null ? status.name() : "all",
+                requestsPage.getNumber(), requestsPage.getTotalPages());
         
-        // Sort theo createdAt giảm dần (mới nhất lên đầu)
-        List<ServiceRequest> sortedRequests = requests.stream()
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
-                    if (a.getCreatedAt() == null) return 1;
-                    if (b.getCreatedAt() == null) return -1;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // DESC
-                })
-                .collect(Collectors.toList());
-        
-        return sortedRequests.stream()
+        List<ServiceRequestResponse> responses = requestsPage.getContent().stream()
                 .map(serviceRequestMapper::toServiceRequestResponse)
                 .collect(Collectors.toList());
+        
+        // Enrich với contract info
+        enrichWithContractInfo(responses);
+        
+        return new PageImpl<>(
+                responses,
+                pageable,
+                requestsPage.getTotalElements()
+        );
     }
     
     /**
