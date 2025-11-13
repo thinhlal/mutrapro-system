@@ -10,6 +10,7 @@ import {
   Modal,
   Alert,
   Typography,
+  Popconfirm,
 } from 'antd';
 import {
   CheckOutlined,
@@ -173,15 +174,29 @@ const RequestContractList = ({
                       showIcon
                       style={{ marginBottom: 8 }}
                     />
-                    <Button
-                      type="primary"
-                      icon={<FormOutlined />}
-                      onClick={() => onSign(contract.contractId)}
-                      loading={actionLoading}
-                      size="large"
+                    <Popconfirm
+                      title="Sign Contract"
+                      description={
+                        <div style={{ maxWidth: 300 }}>
+                          Are you sure you want to sign this contract?
+                          <br />
+                          <strong>Note:</strong> After signing, the contract will take effect and cannot be canceled.
+                        </div>
+                      }
+                      onConfirm={() => onSign(contract.contractId)}
+                      okText="Confirm Sign"
+                      cancelText="Cancel"
+                      okButtonProps={{ loading: actionLoading }}
                     >
-                      Ký Contract
-                    </Button>
+                      <Button
+                        type="primary"
+                        icon={<FormOutlined />}
+                        loading={actionLoading}
+                        size="large"
+                      >
+                        Ký Contract
+                      </Button>
+                    </Popconfirm>
                   </Space>
                 )}
                 {isCanceledByManager && (

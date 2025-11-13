@@ -17,14 +17,14 @@ import {
   Tooltip,
 } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getServiceRequestById,
   getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
-import { createContractFromRequest } from '../../../services/contractService';
+import { createContractFromRequest, getContractById, updateContract } from '../../../services/contractService';
 import { API_CONFIG } from '../../../config/apiConfig';
 import {
   getDefaultTermsAndConditions,
@@ -110,11 +110,17 @@ const ContractBuilder = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { contractId } = useParams(); // For edit mode
   const requestId = searchParams.get('requestId');
   const copyFromContract = location.state?.copyFromContract; // Data từ contract cũ để copy
 
+  // Determine mode: edit or create
+  const isEditMode = !!contractId;
+
   const [loadingServiceRequest, setLoadingServiceRequest] = useState(false);
+  const [loadingContract, setLoadingContract] = useState(false);
   const [serviceRequest, setServiceRequest] = useState(null);
+  const [existingContract, setExistingContract] = useState(null);
   const [creatingContract, setCreatingContract] = useState(false);
   const [error, setError] = useState(null);
 
@@ -217,11 +223,18 @@ const ContractBuilder = () => {
     }
   }, [contractType, form, formValues]);
 
+  // Load contract data when in edit mode
+  useEffect(() => {
+    if (isEditMode && contractId) {
+      loadExistingContract(contractId);
+    }
+  }, [contractId, isEditMode]);
+
   // Load service request data when requestId is present
   useEffect(() => {
-    if (requestId) {
+    if (requestId && !isEditMode) {
       loadServiceRequest(requestId);
-    } else {
+    } else if (!requestId && !isEditMode) {
       // Không cho phép tạo contract không có requestId
       // Redirect về trang manage requests hoặc hiển thị error
       setError(
@@ -392,6 +405,139 @@ const ContractBuilder = () => {
     }
   };
 
+  // Load existing contract data for edit mode
+  const loadExistingContract = async contractId => {
+    try {
+      setLoadingContract(true);
+      setError(null);
+      
+      const response = await getContractById(contractId);
+      
+      if (response?.status === 'success' && response?.data) {
+        const contract = response.data;
+        setExistingContract(contract);
+        
+        // Check if contract is in DRAFT status
+        if (contract.status?.toLowerCase() !== 'draft') {
+          setError('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
+          message.error('Chỉ có thể chỉnh sửa contract ở trạng thái DRAFT');
+          setTimeout(() => {
+            navigate('/manager/contracts');
+          }, 2000);
+          return;
+        }
+        
+        // Pre-fill form with existing contract data FIRST
+        form.setFieldsValue({
+          request_id: contract.requestId,
+          customer_id: contract.userId,
+          manager_id: contract.managerUserId,
+          contract_type: contract.contractType,
+          deposit_percent: contract.depositPercent,
+          total_price: contract.totalPrice,
+          deposit_amount: contract.depositAmount,
+          final_amount: contract.finalAmount,
+          sla_days: contract.slaDays,
+          show_watermark: true, // Always show watermark in edit mode
+          free_revisions_included: contract.freeRevisionsIncluded,
+          revision_deadline_days: contract.revisionDeadlineDays,
+          additional_revision_fee_vnd: contract.additionalRevisionFeeVnd,
+          terms_and_conditions: contract.termsAndConditions,
+          special_clauses: contract.specialClauses,
+          notes: contract.notes,
+          expires_in_days: contract.expiresAt ? 
+            Math.ceil((new Date(contract.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : 
+            7,
+        });
+        
+        // Prepare party info from contract data
+        const newPartyInfo = {
+          partyA: API_CONFIG.PARTY_A_NAME,
+          partyAAddress: API_CONFIG.PARTY_A_ADDRESS,
+          partyB: contract.nameSnapshot || 'Customer',
+          partyBPhone: contract.phoneSnapshot || '',
+          partyBEmail: contract.emailSnapshot || '',
+        };
+        
+        // Load service request để lấy pricing breakdown
+        if (contract.requestId) {
+          try {
+            const requestResponse = await getServiceRequestById(contract.requestId);
+            if (requestResponse?.status === 'success' && requestResponse?.data) {
+              const request = requestResponse.data;
+              setServiceRequest(request);
+              await loadPricingBreakdown(request);
+              
+              // Override party info with request data if available
+              if (request.contactName) newPartyInfo.partyB = request.contactName;
+              if (request.contactPhone) newPartyInfo.partyBPhone = request.contactPhone;
+              if (request.contactEmail) newPartyInfo.partyBEmail = request.contactEmail;
+            }
+          } catch (error) {
+            console.warn('Failed to load service request:', error);
+          }
+        }
+        
+        // Always set party info and update preview
+        setPartyInfo(newPartyInfo);
+        
+        // Force update preview after everything is loaded
+        setTimeout(() => {
+          const currentFormValues = form.getFieldsValue(true);
+          // Build preview with current form values and new party info
+          const normalized = {
+            show_seal: !!currentFormValues.show_seal,
+            seal_text: currentFormValues.seal_text?.trim() || 'MuTraPro Official',
+            seal_variant: currentFormValues.seal_variant || 'red',
+            show_watermark: !!currentFormValues.show_watermark,
+            
+            request_id: currentFormValues.request_id || null,
+            customer_id: currentFormValues.customer_id || null,
+            manager_id: currentFormValues.manager_id || null,
+            
+            contract_type: currentFormValues.contract_type,
+            terms_and_conditions: currentFormValues.terms_and_conditions?.trim(),
+            special_clauses: currentFormValues.special_clauses?.trim(),
+            notes: currentFormValues.notes?.trim(),
+            
+            total_price: Number(currentFormValues.total_price || 0),
+            currency: 'VND',
+            deposit_percent: Number(currentFormValues.deposit_percent || 0),
+            deposit_amount: Number(currentFormValues.deposit_amount || 0),
+            final_amount: Number(currentFormValues.final_amount || 0),
+            
+            expected_start_date: null,
+            sla_days: Number(currentFormValues.sla_days || 0),
+            auto_due_date: true,
+            free_revisions_included: Number(currentFormValues.free_revisions_included || 1),
+            additional_revision_fee_vnd: currentFormValues.additional_revision_fee_vnd
+              ? Number(currentFormValues.additional_revision_fee_vnd)
+              : null,
+            revision_deadline_days: Number(currentFormValues.revision_deadline_days || 30),
+            
+            // Use newPartyInfo directly instead of state
+            partyA: newPartyInfo.partyA,
+            partyAAddress: newPartyInfo.partyAAddress,
+            partyB: newPartyInfo.partyB,
+            partyBPhone: newPartyInfo.partyBPhone,
+            partyBEmail: newPartyInfo.partyBEmail,
+          };
+          console.log('Preview data for edit mode:', normalized);
+          setData(normalized);
+        }, 200);
+        
+      } else {
+        throw new Error('Failed to load contract');
+      }
+    } catch (error) {
+      console.error('Error loading contract:', error);
+      setError(error?.message || 'Failed to load contract');
+      message.error('Failed to load contract data');
+    } finally {
+      setLoadingContract(false);
+    }
+  };
+
   // Load pricing breakdown (instruments and transcription details)
   const loadPricingBreakdown = async request => {
     try {
@@ -540,9 +686,10 @@ const ContractBuilder = () => {
     message.success('Preview updated');
   };
 
-  // Create contract from service request
-  const handleCreateContract = async () => {
-    if (!requestId) {
+  // Create or Update contract
+  const handleSaveContract = async () => {
+    // Validate based on mode
+    if (!isEditMode && !requestId) {
       message.error(
         'Request ID is required. Please create contract from Service Request Management page.'
       );
@@ -560,7 +707,7 @@ const ContractBuilder = () => {
       // Prepare contract data
       const totalPrice = Number(values.total_price || 0);
       const contractData = {
-        contractType: values.contract_type, // Tự động từ service request, không cho chỉnh sửa
+        contractType: values.contract_type,
         totalPrice: totalPrice,
         currency: 'VND',
         depositPercent: Number(values.deposit_percent || 40),
@@ -582,33 +729,43 @@ const ContractBuilder = () => {
           : getDefaultAdditionalRevisionFeeVnd(),
       };
 
-      const response = await createContractFromRequest(requestId, contractData);
+      let response;
+      if (isEditMode) {
+        // Update existing contract
+        response = await updateContract(contractId, contractData);
+        if (response?.status === 'success') {
+          message.success('Contract updated successfully!');
+        }
+      } else {
+        // Create new contract
+        response = await createContractFromRequest(requestId, contractData);
+        if (response?.status === 'success') {
+          message.success('Contract created successfully!');
+        }
+      }
 
       if (response?.status === 'success' && response?.data) {
         const contractResponse = response.data;
-        message.success('Contract created successfully!');
-
-        // Navigate đến contract detail nếu có contractId, nếu không thì về list
-        if (contractResponse.contractId) {
-          navigate(`/manager/contracts/${contractResponse.contractId}`);
-        } else {
-          navigate('/manager/contracts-list');
-        }
+        // Navigate to contracts list
+        navigate('/manager/contracts-list');
       } else {
-        throw new Error(response?.message || 'Failed to create contract');
+        throw new Error(response?.message || `Failed to ${isEditMode ? 'update' : 'create'} contract`);
       }
     } catch (error) {
-      console.error('Error creating contract:', error);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} contract:`, error);
       setError(
         error?.message ||
           error?.response?.data?.message ||
-          'Failed to create contract'
+          `Failed to ${isEditMode ? 'update' : 'create'} contract`
       );
-      message.error(error?.message || 'Failed to create contract');
+      message.error(error?.message || `Failed to ${isEditMode ? 'update' : 'create'} contract`);
     } finally {
       setCreatingContract(false);
     }
   };
+
+  // Backward compatibility - keep the old name
+  const handleCreateContract = handleSaveContract;
 
   const header = useMemo(
     () => (
@@ -662,6 +819,15 @@ const ContractBuilder = () => {
     );
   }
 
+  // Show loading spinner while loading
+  if (loadingServiceRequest || loadingContract) {
+    return (
+      <div className={styles.page} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Spin size="large" tip={isEditMode ? "Loading contract data..." : "Loading service request data..."} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       {/* ====== LEFT SECTION: FORM ====== */}
@@ -676,7 +842,7 @@ const ContractBuilder = () => {
             }}
           >
             <Title level={4} style={{ margin: 0, fontSize: '16px' }}>
-              Create Contract from Service Request
+              {isEditMode ? 'Edit Contract' : 'Create Contract from Service Request'}
             </Title>
             <Tag
               color="default"
@@ -685,7 +851,7 @@ const ContractBuilder = () => {
               Status: Draft
             </Tag>
           </div>
-          {!requestId ? (
+          {!requestId && !isEditMode ? (
             <>
               <Alert
                 message="Request ID Required"
@@ -720,10 +886,20 @@ const ContractBuilder = () => {
               </div>
 
               {/* Party Information sẽ hiển thị trong Contract Preview */}
-              {serviceRequest && (
+              {serviceRequest && !isEditMode && (
                 <Alert
                   message={`Creating contract for request: ${serviceRequest.title || serviceRequest.requestId}`}
                   type="info"
+                  showIcon
+                  style={{ marginBottom: 6, padding: '6px 8px' }}
+                  size="small"
+                />
+              )}
+              {isEditMode && existingContract && (
+                <Alert
+                  message={`Editing contract: ${existingContract.contractNumber || existingContract.contractId}`}
+                  description={`Request ID: ${existingContract.requestId}`}
+                  type="warning"
                   showIcon
                   style={{ marginBottom: 6, padding: '6px 8px' }}
                   size="small"
@@ -992,7 +1168,7 @@ const ContractBuilder = () => {
                       loading={creatingContract}
                       onClick={handleCreateContract}
                     >
-                      Create Contract
+                      {isEditMode ? 'Update Contract' : 'Create Contract'}
                     </Button>
                   </Space>
                 </Form>
@@ -1003,7 +1179,7 @@ const ContractBuilder = () => {
       </div>
 
       {/* ====== RIGHT SECTION: PREVIEW ====== */}
-      {requestId && (
+      {(requestId || isEditMode) && (
         <div className={styles.previewSection}>
           <div className={`${styles.card} ${styles.previewCard}`}>
             <div className={styles.previewToolbar}>

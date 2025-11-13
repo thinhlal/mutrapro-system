@@ -95,6 +95,8 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/contracts/from-request/${requestId}`,
     // GET /api/v1/projects/contracts/{contractId}
     GET_BY_ID: contractId => `${PROJECT_PATH}/contracts/${contractId}`,
+    // PUT /api/v1/projects/contracts/{contractId}
+    UPDATE: contractId => `${PROJECT_PATH}/contracts/${contractId}`,
     // GET /api/v1/projects/contracts/by-request/{requestId}
     GET_BY_REQUEST_ID: requestId =>
       `${PROJECT_PATH}/contracts/by-request/${requestId}`,

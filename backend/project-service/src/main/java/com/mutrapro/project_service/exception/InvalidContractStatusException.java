@@ -62,5 +62,11 @@ public class InvalidContractStatusException extends BusinessException {
             currentStatus
         );
     }
+
+    public static InvalidContractStatusException forUpdate(String contractId, String currentStatus) {
+        return new InvalidContractStatusException(
+            String.format("Cannot update contract. Only DRAFT contracts can be updated, but current status is: %s", currentStatus)
+        );
+    }
 }
 

@@ -53,6 +53,26 @@ export const getContractById = async contractId => {
 };
 
 /**
+ * Cập nhật contract (chỉ cho DRAFT contracts)
+ * PUT /contracts/{contractId}
+ *
+ * @param {string} contractId - ID của contract
+ * @param {Object} contractData - Thông tin contract cần update (tương tự createContractFromRequest)
+ * @returns {Promise} ApiResponse với contract đã update
+ */
+export const updateContract = async (contractId, contractData) => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.CONTRACTS.UPDATE(contractId),
+      contractData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi cập nhật contract' };
+  }
+};
+
+/**
  * Lấy danh sách contracts theo requestId
  * GET /contracts/by-request/{requestId}
  *

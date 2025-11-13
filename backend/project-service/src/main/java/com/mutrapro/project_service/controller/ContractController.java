@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
+import com.mutrapro.project_service.dto.request.UpdateContractRequest;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.service.ContractService;
@@ -50,6 +51,22 @@ public class ContractController {
         ContractResponse contract = contractService.getContractById(contractId);
         return ApiResponse.<ContractResponse>builder()
                 .message("Contract retrieved successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PutMapping("/{contractId}")
+    @Operation(summary = "Cập nhật contract (chỉ cho DRAFT contracts)")
+    public ApiResponse<ContractResponse> updateContract(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @RequestBody UpdateContractRequest updateRequest) {
+        log.info("Updating contract: contractId={}", contractId);
+        ContractResponse contract = contractService.updateContract(contractId, updateRequest);
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract updated successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

@@ -10,6 +10,7 @@ import {
   Typography,
   Divider,
   message,
+  Popconfirm,
 } from 'antd';
 import {
   CheckOutlined,
@@ -22,6 +23,12 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getContractById, approveContract, signContract } from '../../../services/contractService';
+import {
+  getServiceRequestById,
+  getNotationInstrumentsByIds,
+  calculatePricing,
+} from '../../../services/serviceRequestService';
+import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
@@ -29,6 +36,28 @@ import ViewCancellationReasonModal from '../../../components/modal/ViewCancellat
 import styles from './ContractDetailPage.module.css';
 
 const { Title, Text } = Typography;
+
+// Helper function to format date
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  return dayjs(date).format('YYYY-MM-DD HH:mm');
+};
+
+// Helper function để format description, thay thế "X.XX phút" bằng format mm:ss
+const formatDescriptionDuration = description => {
+  if (!description) return description;
+
+  // Tìm pattern: số thập phân + " phút" hoặc "phút" (ví dụ: "4.38 phút", "5.5 phút", "4.38phút")
+  const pattern = /(\d+\.?\d*)\s*phút/gi;
+
+  return description.replace(pattern, (match, minutes) => {
+    const minutesNum = parseFloat(minutes);
+    if (!isNaN(minutesNum) && minutesNum > 0) {
+      return formatDurationMMSS(minutesNum);
+    }
+    return match;
+  });
+};
 
 // Generate contract title from contract type
 const getContractTitle = contractType => {
@@ -57,6 +86,12 @@ const ContractDetailPage = () => {
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [viewReasonModalOpen, setViewReasonModalOpen] = useState(false);
 
+  // Pricing breakdown information
+  const [pricingBreakdown, setPricingBreakdown] = useState({
+    instruments: [], // Array of { instrumentId, instrumentName, basePrice }
+    transcriptionDetails: null, // { basePrice, quantity, unitPrice, breakdown }
+  });
+
   // Load contract data
   useEffect(() => {
     if (contractId) {
@@ -71,6 +106,11 @@ const ContractDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
+        
+        // Load pricing breakdown if requestId is available
+        if (response.data.requestId) {
+          await loadPricingBreakdown(response.data.requestId);
+        }
       } else {
         throw new Error('Failed to load contract');
       }
@@ -80,6 +120,70 @@ const ContractDetailPage = () => {
       message.error('Failed to load contract data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load pricing breakdown (instruments and transcription details)
+  const loadPricingBreakdown = async requestId => {
+    try {
+      const requestResponse = await getServiceRequestById(requestId);
+      if (requestResponse?.status !== 'success' || !requestResponse?.data) {
+        return;
+      }
+
+      const request = requestResponse.data;
+      const breakdown = {
+        instruments: [],
+        transcriptionDetails: null,
+      };
+
+      // Load instruments if available
+      if (
+        request.notationInstruments &&
+        Array.isArray(request.notationInstruments) &&
+        request.notationInstruments.length > 0
+      ) {
+        try {
+          const instrumentsResponse = await getNotationInstrumentsByIds(
+            request.notationInstruments
+          );
+          if (
+            instrumentsResponse?.status === 'success' &&
+            instrumentsResponse?.data?.length > 0
+          ) {
+            const selectedInstruments = instrumentsResponse.data.map(instr => ({
+              instrumentId: instr.instrumentId,
+              instrumentName: instr.instrumentName,
+              basePrice: instr.basePrice || 0,
+            }));
+            breakdown.instruments = selectedInstruments;
+          }
+        } catch (error) {
+          console.warn('Failed to load instruments:', error);
+        }
+      }
+
+      // Load transcription details if contract type is transcription or bundle
+      if (
+        request.serviceType === 'transcription' ||
+        request.serviceType === 'bundle'
+      ) {
+        try {
+          const pricingResponse = await calculatePricing({
+            serviceType: request.serviceType,
+            durationMinutes: request.durationMinutes,
+          });
+          if (pricingResponse?.status === 'success' && pricingResponse?.data) {
+            breakdown.transcriptionDetails = pricingResponse.data;
+          }
+        } catch (error) {
+          console.warn('Failed to load transcription pricing:', error);
+        }
+      }
+
+      setPricingBreakdown(breakdown);
+    } catch (error) {
+      console.warn('Error loading pricing breakdown:', error);
     }
   };
 
@@ -410,16 +514,30 @@ const ContractDetailPage = () => {
             )}
 
             {canSign && (
-              <Button
-                type="primary"
-                icon={<FormOutlined />}
-                onClick={handleSign}
-                loading={actionLoading}
-                block
-                size="large"
+              <Popconfirm
+                title="Sign Contract"
+                description={
+                  <div style={{ maxWidth: 300 }}>
+                    Are you sure you want to sign this contract?
+                    <br />
+                    <strong>Note:</strong> After signing, the contract will take effect and cannot be canceled.
+                  </div>
+                }
+                onConfirm={handleSign}
+                okText="Confirm Sign"
+                cancelText="Cancel"
+                okButtonProps={{ loading: actionLoading }}
               >
-                Sign Contract
-              </Button>
+                <Button
+                  type="primary"
+                  icon={<FormOutlined />}
+                  loading={actionLoading}
+                  block
+                  size="large"
+                >
+                  Sign Contract
+                </Button>
+              </Popconfirm>
             )}
 
             {canViewReason && (
@@ -485,6 +603,108 @@ const ContractDetailPage = () => {
               </p>
 
               <h3>Pricing & Payment</h3>
+
+              {/* Pricing Breakdown */}
+              {(pricingBreakdown.transcriptionDetails ||
+                pricingBreakdown.instruments.length > 0) && (
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '8px' }}>
+                    Price Breakdown:
+                  </strong>
+
+                  {/* Transcription Details */}
+                  {pricingBreakdown.transcriptionDetails && (
+                    <div
+                      style={{
+                        marginBottom:
+                          pricingBreakdown.instruments.length > 0
+                            ? '12px'
+                            : '0',
+                      }}
+                    >
+                      {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                        (item, index) => (
+                          <div
+                            key={index}
+                            style={{ marginBottom: '4px', fontSize: '14px' }}
+                          >
+                            <span>{item.label}: </span>
+                            <span style={{ fontWeight: 'bold' }}>
+                              {item.amount?.toLocaleString?.() ?? item.amount}{' '}
+                              {contract.currency || 'VND'}
+                            </span>
+                            {item.description && (
+                              <span
+                                style={{ color: '#666', marginLeft: '8px' }}
+                              >
+                                ({formatDescriptionDuration(item.description)})
+                              </span>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Instruments */}
+                  {pricingBreakdown.instruments.length > 0 && (
+                    <div>
+                      <div
+                        style={{
+                          marginBottom: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Instruments Surcharge:
+                      </div>
+                      {pricingBreakdown.instruments.map((instr, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            marginLeft: '16px',
+                            marginBottom: '4px',
+                            fontSize: '14px',
+                          }}
+                        >
+                          <span>• {instr.instrumentName}: </span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {instr.basePrice?.toLocaleString?.() ??
+                              instr.basePrice}{' '}
+                            {contract.currency || 'VND'}
+                          </span>
+                        </div>
+                      ))}
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          borderTop: '1px solid #ddd',
+                          paddingTop: '4px',
+                        }}
+                      >
+                        Instruments Total:{' '}
+                        {pricingBreakdown.instruments
+                          .reduce(
+                            (sum, instr) => sum + (instr.basePrice || 0),
+                            0
+                          )
+                          .toLocaleString()}{' '}
+                        {contract.currency || 'VND'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <p>
                 <strong>Currency:</strong> {contract.currency || 'VND'} &nbsp;|&nbsp;
                 <strong>Total Price:</strong> {contract.totalPrice?.toLocaleString()} &nbsp;|&nbsp;
@@ -526,18 +746,58 @@ const ContractDetailPage = () => {
               <div className={styles.signRow}>
                 <div>
                   <div className={styles.sigLabel}>Party A Representative</div>
-                  <div className={styles.sigLine} />
-                  <div className={styles.sigHint}>Name, Title</div>
+                  {isSigned ? (
+                    <>
+                      <div className={styles.signature}>
+                        <img 
+                          src="/images/signature.png" 
+                          alt="Party A Signature" 
+                          style={{ 
+                            height: '50px', 
+                            width: 'auto',
+                            marginTop: '8px',
+                            marginBottom: '8px',
+                            display: 'block'
+                          }} 
+                        />
+                      </div>
+                      <div style={{ 
+                        marginTop: '4px', 
+                        marginBottom: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#333'
+                      }}>
+                        CEO - MuTraPro Studio Co., Ltd
+                      </div>
+                      <div className={styles.sigHint} style={{ marginTop: '4px' }}>
+                        Signed on: {contract.signedAt ? formatDate(contract.signedAt) : formatDate(contract.sentAt)}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.sigLine} />
+                      <div className={styles.sigHint}>Name, Title</div>
+                    </>
+                  )}
                 </div>
                 <div>
                   <div className={styles.sigLabel}>Party B Representative</div>
-                  <div className={styles.sigLine} />
-                  <div className={styles.sigHint}>
-                    {contract.signedAt 
-                      ? `Signed: ${dayjs(contract.signedAt).format('YYYY-MM-DD HH:mm')}`
-                      : 'Name, Title'
-                    }
-                  </div>
+                  {isSigned ? (
+                    <>
+                      <div className={styles.sigLine} style={{ marginTop: '16px' }}>
+                        {contract.nameSnapshot || 'Customer'}
+                      </div>
+                      <div className={styles.sigHint}>
+                        Signed on: {contract.signedAt ? formatDate(contract.signedAt) : 'Pending'}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.sigLine} />
+                      <div className={styles.sigHint}>Name, Title</div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -209,6 +209,117 @@ public class ContractService {
     }
     
     /**
+     * Update existing contract (only for DRAFT contracts)
+     */
+    @Transactional
+    public ContractResponse updateContract(String contractId, com.mutrapro.project_service.dto.request.UpdateContractRequest updateRequest) {
+        // Lấy contract hiện tại
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra contract phải ở trạng thái DRAFT
+        if (contract.getStatus() != ContractStatus.draft) {
+            throw InvalidContractStatusException.forUpdate(contractId, contract.getStatus().name());
+        }
+        
+        // Lấy thông tin service request để kiểm tra quyền
+        ApiResponse<ServiceRequestInfoResponse> serviceRequestResponse = 
+            requestServiceFeignClient.getServiceRequestById(contract.getRequestId());
+        
+        if (serviceRequestResponse == null || !"success".equals(serviceRequestResponse.getStatus()) 
+            || serviceRequestResponse.getData() == null) {
+            throw ServiceRequestNotFoundException.byId(contract.getRequestId());
+        }
+        
+        ServiceRequestInfoResponse serviceRequest = serviceRequestResponse.getData();
+        
+        // Kiểm tra current user phải là manager của request
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.equals(serviceRequest.getManagerUserId())) {
+            throw UnauthorizedException.create(
+                "Only the assigned manager can update contract for this request");
+        }
+        
+        // Update các fields nếu có trong request
+        boolean needsRecalculation = false;
+        
+        if (updateRequest.getContractType() != null) {
+            contract.setContractType(updateRequest.getContractType());
+        }
+        
+        if (updateRequest.getTermsAndConditions() != null) {
+            contract.setTermsAndConditions(updateRequest.getTermsAndConditions());
+        }
+        
+        if (updateRequest.getSpecialClauses() != null) {
+            contract.setSpecialClauses(updateRequest.getSpecialClauses());
+        }
+        
+        if (updateRequest.getNotes() != null) {
+            contract.setNotes(updateRequest.getNotes());
+        }
+        
+        if (updateRequest.getTotalPrice() != null) {
+            contract.setTotalPrice(updateRequest.getTotalPrice());
+            needsRecalculation = true;
+        }
+        
+        if (updateRequest.getCurrency() != null) {
+            contract.setCurrency(updateRequest.getCurrency());
+        }
+        
+        if (updateRequest.getDepositPercent() != null) {
+            contract.setDepositPercent(updateRequest.getDepositPercent());
+            needsRecalculation = true;
+        }
+        
+        // Recalculate deposit và final amount nếu cần
+        if (needsRecalculation) {
+            BigDecimal totalPrice = contract.getTotalPrice();
+            BigDecimal depositPercent = contract.getDepositPercent();
+            BigDecimal depositAmount = totalPrice.multiply(depositPercent).divide(BigDecimal.valueOf(100), 2, 
+                java.math.RoundingMode.HALF_UP);
+            BigDecimal finalAmount = totalPrice.subtract(depositAmount);
+            
+            contract.setDepositAmount(depositAmount);
+            contract.setFinalAmount(finalAmount);
+        }
+        
+        if (updateRequest.getExpectedStartDate() != null) {
+            contract.setExpectedStartDate(updateRequest.getExpectedStartDate());
+        }
+        
+        if (updateRequest.getSlaDays() != null) {
+            contract.setSlaDays(updateRequest.getSlaDays());
+        }
+        
+        if (updateRequest.getAutoDueDate() != null) {
+            contract.setAutoDueDate(updateRequest.getAutoDueDate());
+        }
+        
+        if (updateRequest.getFreeRevisionsIncluded() != null) {
+            contract.setFreeRevisionsIncluded(updateRequest.getFreeRevisionsIncluded());
+        }
+        
+        if (updateRequest.getAdditionalRevisionFeeVnd() != null) {
+            contract.setAdditionalRevisionFeeVnd(updateRequest.getAdditionalRevisionFeeVnd());
+        }
+        
+        if (updateRequest.getRevisionDeadlineDays() != null) {
+            contract.setRevisionDeadlineDays(updateRequest.getRevisionDeadlineDays());
+        }
+        
+        if (updateRequest.getExpiresAt() != null) {
+            contract.setExpiresAt(updateRequest.getExpiresAt());
+        }
+        
+        Contract saved = contractRepository.save(contract);
+        log.info("Updated contract: contractId={}, requestId={}", saved.getContractId(), saved.getRequestId());
+        
+        return contractMapper.toResponse(saved);
+    }
+    
+    /**
      * Check và update expired contracts
      * Contracts đã hết hạn (expiresAt <= now) nhưng chưa signed sẽ được set status = expired
      */

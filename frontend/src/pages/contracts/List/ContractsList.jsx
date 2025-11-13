@@ -431,8 +431,13 @@ export default function ContractsList() {
                   </Tooltip>
                 )}
                 {canEdit && (
-                <Tooltip title="Edit">
-                  <Button icon={<EditOutlined />} type="primary" ghost />
+                <Tooltip title="Edit Contract">
+                  <Button 
+                    icon={<EditOutlined />} 
+                    type="primary" 
+                    ghost 
+                    onClick={() => navigate(`/manager/contracts/${r.contractId}/edit`)}
+                  />
                 </Tooltip>
                 )}
                 {canManagerCancel && (
