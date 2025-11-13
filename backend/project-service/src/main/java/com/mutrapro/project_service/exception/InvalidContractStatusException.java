@@ -80,5 +80,13 @@ public class InvalidContractStatusException extends BusinessException {
             String.format("Cannot sign contract. Contract %s has expired.", contractId)
         );
     }
+
+    public static InvalidContractStatusException cannotUploadPdf(String contractId, ContractStatus currentStatus) {
+        return new InvalidContractStatusException(
+            String.format("Cannot upload PDF. Only signed contracts can have PDF uploaded, but current status is: %s", currentStatus),
+            contractId,
+            currentStatus
+        );
+    }
 }
 

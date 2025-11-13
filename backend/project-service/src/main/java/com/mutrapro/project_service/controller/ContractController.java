@@ -18,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -255,6 +257,64 @@ public class ContractController {
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();
+    }
+
+    @GetMapping("/{contractId}/signature-image")
+    @Operation(summary = "Get contract signature image as base64 (for export contract PDF)")
+    public ApiResponse<String> getSignatureImage(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId) {
+        log.info("Getting signature image for contract: contractId={}", contractId);
+        String dataUrl = contractService.getSignatureImageBase64(contractId);
+        return ApiResponse.<String>builder()
+                .message("Signature image retrieved successfully")
+                .data(dataUrl)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping(value = "/{contractId}/upload-pdf", consumes = {"multipart/form-data"})
+    @Operation(summary = "Upload signed contract PDF file and link with contract after signed")
+    public ApiResponse<String> uploadContractPdf(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Parameter(description = "PDF file của signed contract")
+            @RequestParam("file") MultipartFile file) {
+        log.info("Uploading contract PDF: contractId={}, fileName={}, size={}", 
+                contractId, file.getOriginalFilename(), file.getSize());
+        
+        // Validate file type
+        if (!file.getContentType().equals("application/pdf")) {
+            return ApiResponse.<String>builder()
+                    .message("Invalid file type. Only PDF files are allowed")
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                    .status("error")
+                    .build();
+        }
+        
+        try {
+            String fileId = contractService.uploadContractPdf(
+                    contractId,
+                    file.getInputStream(),
+                    file.getOriginalFilename(),
+                    file.getSize()
+            );
+            
+            return ApiResponse.<String>builder()
+                    .message("Contract PDF uploaded successfully")
+                    .data(fileId)
+                    .statusCode(HttpStatus.OK.value())
+                    .status("success")
+                    .build();
+        } catch (IOException e) {
+            log.error("Error reading PDF file: {}", e.getMessage(), e);
+            return ApiResponse.<String>builder()
+                    .message("Failed to read PDF file: " + e.getMessage())
+                    .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .status("error")
+                    .build();
+        }
     }
 }
 

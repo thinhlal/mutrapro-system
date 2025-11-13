@@ -27,22 +27,32 @@ import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.ContractSignSessionRepository;
+import com.mutrapro.project_service.repository.FileRepository;
+import com.mutrapro.project_service.entity.File;
+import com.mutrapro.project_service.enums.FileSourceType;
+import com.mutrapro.project_service.enums.FileStatus;
+import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.project_service.exception.SignatureImageNotFoundException;
+import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -59,6 +69,10 @@ public class ContractService {
     ChatServiceFeignClient chatServiceFeignClient;
     NotificationServiceFeignClient notificationServiceFeignClient;
     ContractSignSessionRepository contractSignSessionRepository;
+    FileRepository fileRepository;
+    
+    @Autowired(required = false)
+    S3Service s3Service;
 
     /**
      * Tạo contract từ service request
@@ -1104,6 +1118,99 @@ public class ContractService {
             return List.of();
         }
         throw UserNotAuthenticatedException.create();
+    }
+
+    /**
+     * Get contract signature image as base64 data URL (to export contract PDF)
+     * @param contractId ID của contract
+     * @return Base64 data URL của signature image
+     * @throws SignatureImageNotFoundException nếu signature image không tồn tại
+     * @throws IllegalStateException nếu S3 service không available
+     * @throws RuntimeException nếu có lỗi khi download từ S3
+     */
+    public String getSignatureImageBase64(String contractId) {
+        ContractResponse contract = getContractById(contractId);
+        
+        if (contract.getBSignatureS3Url() == null || contract.getBSignatureS3Url().isEmpty()) {
+            throw SignatureImageNotFoundException.forContract(contractId);
+        }
+        
+        try {
+            // Download image from S3
+            byte[] imageBytes = s3Service.downloadFileFromUrl(contract.getBSignatureS3Url());
+            
+            // Convert to base64 data URL
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+            return "data:image/png;base64," + base64Image;
+        } catch (Exception e) {
+            log.error("Error downloading signature image from S3 for contract {}: {}", contractId, e.getMessage(), e);
+            throw new RuntimeException("Failed to retrieve signature image: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Upload contract PDF file and link with contract
+     * @param contractId ID của contract
+     * @param pdfInputStream PDF file input stream
+     * @param fileName PDF file name
+     * @param fileSize PDF file size in bytes
+     * @return File ID của PDF đã upload
+     */
+    @Transactional
+    public String uploadContractPdf(String contractId, InputStream pdfInputStream, String fileName, long fileSize) {
+        // Get contract to verify it exists and is signed
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+
+        if (contract.getStatus() != ContractStatus.signed) {
+            throw InvalidContractStatusException.cannotUploadPdf(contractId, contract.getStatus());
+        }
+
+        String currentUserId = getCurrentUserId();
+
+        try {
+            // Upload PDF to S3
+            String s3Url = s3Service.uploadFile(
+                    pdfInputStream,
+                    fileName,
+                    "application/pdf",
+                    fileSize,
+                    "contracts/pdfs",
+                    false  // Private file
+            );
+
+            // Create File record
+            File pdfFile = File.builder()
+                    .fileName(fileName)
+                    .filePath(s3Url)
+                    .fileSize(fileSize)
+                    .mimeType("application/pdf")
+                    .fileSource(FileSourceType.contract_pdf)  // Or create new type for contract_pdf
+                    .contentType(ContentType.contract_pdf)
+                    .description("Signed contract PDF for contract: " + contract.getContractNumber())
+                    .createdBy(currentUserId)
+                    .requestId(contract.getRequestId())
+                    .fileStatus(FileStatus.uploaded)
+                    .deliveredToCustomer(true)  // Contract PDF is delivered to customer
+                    .deliveredAt(Instant.now())
+                    .deliveredBy(currentUserId)
+                    .build();
+
+            File savedFile = fileRepository.save(pdfFile);
+
+            // Link PDF with contract
+            contract.setFileId(savedFile.getFileId());
+            contract.setUpdatedAt(Instant.now());
+            contractRepository.save(contract);
+
+            log.info("Contract PDF uploaded successfully: contractId={}, fileId={}, s3Url={}", 
+                    contractId, savedFile.getFileId(), s3Url);
+
+            return savedFile.getFileId();
+        } catch (Exception e) {
+            log.error("Error uploading contract PDF for contract {}: {}", contractId, e.getMessage(), e);
+            throw new RuntimeException("Failed to upload contract PDF: " + e.getMessage(), e);
+        }
     }
 }
 

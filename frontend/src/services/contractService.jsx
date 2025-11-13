@@ -285,3 +285,46 @@ export const cancelContract = async (contractId, reason) => {
     throw error.response?.data || { message: 'Lỗi khi hủy contract' };
   }
 };
+
+/**
+ * Get contract signature image as base64 (proxy from S3 to avoid CORS)
+ * GET /contracts/{contractId}/signature-image
+ *
+ * @param {string} contractId - ID của contract
+ * @returns {Promise} ApiResponse with base64 image data URL
+ */
+export const getSignatureImage = async contractId => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.SIGNATURE_IMAGE(contractId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy ảnh chữ ký' };
+  }
+};
+
+/**
+ * Upload signed contract PDF file
+ * POST /contracts/{contractId}/upload-pdf
+ *
+ * @param {string} contractId - ID của contract
+ * @param {Blob} pdfBlob - PDF file blob
+ * @param {string} fileName - PDF file name
+ * @returns {Promise} ApiResponse with file ID
+ */
+export const uploadContractPdf = async (contractId, pdfBlob, fileName) => {
+  try {
+    // FormData dùng để gửi multipart/form-data (bắt buộc khi upload file)
+    const formData = new FormData();
+    formData.append('file', pdfBlob, fileName);
+
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.UPLOAD_PDF(contractId),
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi upload PDF contract' };
+  }
+};

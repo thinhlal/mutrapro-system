@@ -18,7 +18,9 @@ import {
   FormOutlined,
   ArrowLeftOutlined,
   EyeOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
+import { Document, Page, Text as PdfText, View, StyleSheet, pdf, Image as PdfImage, Font, Svg, Circle, Path } from '@react-pdf/renderer';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
@@ -26,6 +28,8 @@ import {
   approveContract,
   initESign,
   verifyOTPAndSign,
+  getSignatureImage,
+  uploadContractPdf,
 } from '../../../services/contractService';
 import {
   getServiceRequestById,
@@ -124,7 +128,6 @@ const ContractDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
-        console.log(response.data);
         // Load pricing breakdown if requestId is available
         if (response.data.requestId) {
           await loadPricingBreakdown(response.data.requestId);
@@ -267,6 +270,62 @@ const ContractDetailPage = () => {
     setSignatureLoading(false);
   };
 
+  // Helper function to generate PDF blob
+  const generatePdfBlob = async (contractData = contract, pricingData = pricingBreakdown) => {
+    // Fetch Party A signature image and convert to base64
+    let partyASignatureBase64 = null;
+    try {
+      partyASignatureBase64 = await imageUrlToBase64('/images/signature.png');
+    } catch (error) {
+      // Continue without Party A signature
+    }
+
+    // Fetch Party B signature image via backend proxy
+    let partyBSignatureBase64 = null;
+    if (contractData?.status === 'signed' && contractData?.bSignatureS3Url) {
+      try {
+        const signatureResponse = await getSignatureImage(contractId);
+        if (signatureResponse?.data) {
+          partyBSignatureBase64 = signatureResponse.data;
+        }
+      } catch (error) {
+        // Continue without signature image
+      }
+    }
+
+    // Create PDF document
+    const doc = (
+      <ContractPdfDocument
+        contract={contractData}
+        pricingBreakdown={pricingData}
+        statusConfig={getStatusConfig(contractData?.status)}
+        partyASignatureBase64={partyASignatureBase64}
+        partyBSignatureBase64={partyBSignatureBase64}
+      />
+    );
+
+    // Generate PDF blob
+    return await pdf(doc).toBlob();
+  };
+
+  // Helper function to upload PDF to backend
+  const uploadPdfToBackend = async pdfBlob => {
+    const contractNumber =
+      contract?.contractNumber || contract?.contractId || 'contract';
+    const filename = `contract-${contractNumber}-${dayjs().format('YYYYMMDD')}.pdf`;
+
+    try {
+      const response = await uploadContractPdf(contractId, pdfBlob, filename);
+      if (response?.status === 'success') {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      return false;
+    }
+  };
+
   const handleVerifyOtp = async otpCode => {
     if (!eSignSession?.sessionId) {
       message.error(
@@ -290,7 +349,30 @@ const ContractDetailPage = () => {
         setESignSession(null);
         setOtpError(null);
         setOtpExpiresAt(null);
-        loadContract();
+
+        // Reload contract to get updated status
+        await loadContract();
+
+        // Wait a bit for state to update, then generate and upload PDF automatically
+        setTimeout(async () => {
+          try {
+            message.loading('Generating and uploading PDF...', 0);
+            // Use current contract state (should be updated by now)
+            const pdfBlob = await generatePdfBlob(contract, pricingBreakdown);
+            const uploadSuccess = await uploadPdfToBackend(pdfBlob);
+            message.destroy();
+
+            if (uploadSuccess) {
+              message.success('Contract PDF uploaded successfully!');
+            } else {
+              message.warning('Contract signed but PDF upload failed. You can export PDF manually.');
+            }
+          } catch (error) {
+            console.error('Error generating/uploading PDF:', error);
+            message.destroy();
+            message.warning('Contract signed but PDF generation failed. You can export PDF manually.');
+          }
+        }, 500); // Small delay to ensure state is updated
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -355,6 +437,416 @@ const ContractDetailPage = () => {
   const handleRevisionSuccess = () => {
     message.success('Revision request sent successfully');
     loadContract();
+  };
+
+  // Register Vietnamese font once (Be Vietnam Pro - supports Vietnamese)
+  // Using local font files from public/fonts folder
+  // NOTE: You need to download Be Vietnam Pro font files to public/fonts/ folder
+  useEffect(() => {
+    // Try to register font
+    // Font will fallback to default if not found (error will be caught during PDF generation)
+    try {
+      Font.register({
+        family: 'BeVietnamPro',
+        fonts: [
+          {
+            src: '/fonts/BeVietnamPro-Regular.ttf',
+            fontWeight: 'normal',
+          },
+          {
+            src: '/fonts/BeVietnamPro-Bold.ttf',
+            fontWeight: 'bold',
+          },
+        ],
+      });
+    } catch (error) {
+      console.warn('Failed to register Vietnamese font. PDF may not display Vietnamese correctly:', error);
+      console.warn('Please download Be Vietnam Pro font files to public/fonts/ folder. See public/fonts/README.md');
+    }
+  }, []); // Only register once on mount
+
+  // PDF Styles
+  const pdfStyles = StyleSheet.create({
+    page: {
+      padding: 40,
+      fontSize: 11,
+      lineHeight: 1.6,
+      fontFamily: 'BeVietnamPro', // Will fallback to default if font not loaded
+    },
+    header: {
+      marginBottom: 20,
+      borderBottom: '2px solid #1890ff',
+      paddingBottom: 10,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#1890ff',
+      marginBottom: 10,
+    },
+    section: {
+      marginBottom: 15,
+    },
+    sectionTitle: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: '#333',
+    },
+    text: {
+      marginBottom: 5,
+      color: '#555',
+    },
+    row: {
+      flexDirection: 'row',
+      marginBottom: 5,
+    },
+    label: {
+      fontWeight: 'bold',
+      width: 150,
+    },
+    value: {
+      flex: 1,
+    },
+    signatureRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 40,
+      marginBottom: 20,
+    },
+    signatureBox: {
+      width: '45%',
+    },
+    signatureLine: {
+      borderBottom: '1px solid #333',
+      marginBottom: 5,
+      height: 30,
+    },
+    watermark: {
+      position: 'absolute',
+      top: 200,
+      left: 100,
+      fontSize: 60,
+      color: '#c62828',
+      opacity: 0.1,
+      transform: 'rotate(-25deg)',
+    },
+    seal: {
+      position: 'absolute',
+      top: 20,
+      right: 20,
+      width: 130,
+      height: 130,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sealInner: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    },
+    sealText: {
+      fontSize: 11,
+      fontWeight: 'bold',
+      color: '#c62828',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 3,
+    },
+    sealDate: {
+      fontSize: 9,
+      color: '#c62828',
+      textAlign: 'center',
+      opacity: 0.8,
+    },
+  });
+
+  // Helper function to convert local image URL to base64
+  const imageUrlToBase64 = (url) => {
+    if (!url) {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+
+      img.src = url;
+    });
+  };
+
+  // Contract PDF Document Component
+  const ContractPdfDocument = ({ contract, pricingBreakdown, statusConfig, partyASignatureBase64, partyBSignatureBase64 }) => (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        {/* Company Seal - Only show when signed */}
+        {contract?.status === 'signed' && (
+          <View style={pdfStyles.seal}>
+            <Svg width="130" height="130" style={{ position: 'absolute', transform: 'rotate(-8deg)' }}>
+              {/* Outer circle - solid border */}
+              <Circle cx="65" cy="65" r="63.5" stroke="#c62828" strokeWidth="3" fill="none" />
+              {/* Inner circle - dashed border */}
+              <Circle cx="65" cy="65" r="50" stroke="#c62828" strokeWidth="2" fill="none" strokeDasharray="4 4" />
+            </Svg>
+            <View style={[pdfStyles.sealInner, { position: 'absolute', transform: 'rotate(-8deg)' }]}>
+              <PdfText style={pdfStyles.sealText}>MuTraPro Official</PdfText>
+              <PdfText style={pdfStyles.sealDate}>
+                {contract?.signedAt ? dayjs(contract.signedAt).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')}
+              </PdfText>
+            </View>
+          </View>
+        )}
+        
+        {/* Watermark - Only show if not signed */}
+        {contract?.status !== 'signed' && (
+          <View style={pdfStyles.watermark}>
+            <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
+          </View>
+        )}
+
+        {/* Header */}
+        <View style={pdfStyles.header}>
+          <PdfText style={pdfStyles.title}>
+            {getContractTitle(contract?.contractType)}
+          </PdfText>
+          <PdfText style={pdfStyles.text}>
+            Contract Number: {contract?.contractNumber || 'N/A'}
+          </PdfText>
+          <PdfText style={pdfStyles.text}>
+            Status: {statusConfig?.text || contract?.status}
+          </PdfText>
+        </View>
+
+        {/* Parties */}
+        <View style={pdfStyles.section}>
+          <PdfText style={pdfStyles.sectionTitle}>Parties</PdfText>
+          <PdfText style={pdfStyles.text}>
+            <PdfText style={{ fontWeight: 'bold' }}>Party A (Provider):</PdfText>{' '}
+            {API_CONFIG.PARTY_A_NAME}
+          </PdfText>
+          <PdfText style={pdfStyles.text}>
+            <PdfText style={{ fontWeight: 'bold' }}>Party B (Customer):</PdfText>{' '}
+            {contract?.nameSnapshot || 'N/A'}
+            {contract?.phoneSnapshot && ` | Phone: ${contract.phoneSnapshot}`}
+            {contract?.emailSnapshot && ` | Email: ${contract.emailSnapshot}`}
+          </PdfText>
+        </View>
+
+        {/* Pricing */}
+        <View style={pdfStyles.section}>
+          <PdfText style={pdfStyles.sectionTitle}>Pricing & Payment</PdfText>
+          {pricingBreakdown?.transcriptionDetails && (
+            <View style={{ marginBottom: 10 }}>
+              <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
+                Price Breakdown:
+              </PdfText>
+              {pricingBreakdown.transcriptionDetails.breakdown?.map((item, idx) => (
+                <PdfText key={idx} style={pdfStyles.text}>
+                  {item.label}: {item.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                  {item.description && ` (${item.description})`}
+                </PdfText>
+              ))}
+            </View>
+          )}
+          {pricingBreakdown?.instruments?.length > 0 && (
+            <View style={{ marginBottom: 10 }}>
+              <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
+                Instruments Surcharge:
+              </PdfText>
+              {pricingBreakdown.instruments.map((instr, idx) => (
+                <PdfText key={idx} style={pdfStyles.text}>
+                  • {instr.instrumentName}: {instr.basePrice?.toLocaleString()}{' '}
+                  {contract?.currency || 'VND'}
+                </PdfText>
+              ))}
+            </View>
+          )}
+          <PdfText style={pdfStyles.text}>
+            Currency: {contract?.currency || 'VND'} | Total Price:{' '}
+            {contract?.totalPrice?.toLocaleString()} | Deposit: {contract?.depositPercent}% ={' '}
+            {contract?.depositAmount?.toLocaleString()} | Final Amount:{' '}
+            {contract?.finalAmount?.toLocaleString()}
+          </PdfText>
+        </View>
+
+        {/* Timeline */}
+        <View style={pdfStyles.section}>
+          <PdfText style={pdfStyles.sectionTitle}>Timeline & SLA</PdfText>
+          <PdfText style={pdfStyles.text}>
+            SLA Days: {contract?.slaDays || 0} days | Expected Start:{' '}
+            {contract?.expectedStartDate
+              ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
+              : 'Upon signing'}{' '}
+            | Due Date:{' '}
+            {contract?.dueDate
+              ? dayjs(contract.dueDate).format('YYYY-MM-DD')
+              : `+${contract?.slaDays || 0} days from signing`}
+          </PdfText>
+        </View>
+
+        {/* Terms & Conditions */}
+        {contract?.termsAndConditions && (
+          <View style={pdfStyles.section}>
+            <PdfText style={pdfStyles.sectionTitle}>Terms & Conditions</PdfText>
+            <PdfText style={pdfStyles.text}>{contract.termsAndConditions}</PdfText>
+          </View>
+        )}
+
+        {/* Special Clauses */}
+        {contract?.specialClauses && (
+          <View style={pdfStyles.section}>
+            <PdfText style={pdfStyles.sectionTitle}>Special Clauses</PdfText>
+            <PdfText style={pdfStyles.text}>{contract.specialClauses}</PdfText>
+          </View>
+        )}
+
+        {/* Signatures */}
+        <View style={pdfStyles.signatureRow}>
+          <View style={pdfStyles.signatureBox}>
+            <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
+              Party A Representative
+            </PdfText>
+            {contract?.status === 'signed' && partyASignatureBase64 && (
+              <>
+                <PdfImage
+                  src={partyASignatureBase64}
+                  style={{ width: 100, height: 50, marginBottom: 5 }}
+                />
+                <PdfText style={pdfStyles.text}>CEO - MuTraPro Studio Co., Ltd</PdfText>
+                <PdfText style={pdfStyles.text}>
+                  Signed on:{' '}
+                  {contract?.signedAt
+                    ? formatDate(contract.signedAt)
+                    : formatDate(contract?.sentAt)}
+                </PdfText>
+              </>
+            )}
+            {contract?.status === 'signed' && !partyASignatureBase64 && (
+              <>
+                <View style={pdfStyles.signatureLine} />
+                <PdfText style={pdfStyles.text}>CEO - MuTraPro Studio Co., Ltd</PdfText>
+                <PdfText style={pdfStyles.text}>
+                  Signed on:{' '}
+                  {contract?.signedAt
+                    ? formatDate(contract.signedAt)
+                    : formatDate(contract?.sentAt)}
+                </PdfText>
+              </>
+            )}
+            {contract?.status !== 'signed' && (
+              <>
+                <View style={pdfStyles.signatureLine} />
+                <PdfText style={pdfStyles.text}>Name, Title</PdfText>
+              </>
+            )}
+          </View>
+
+          <View style={pdfStyles.signatureBox}>
+            <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
+              Party B Representative
+            </PdfText>
+            {contract?.status === 'signed' && partyBSignatureBase64 && (
+              <>
+                <PdfImage
+                  src={partyBSignatureBase64}
+                  style={{ width: 100, height: 50, marginBottom: 5 }}
+                />
+                <PdfText style={pdfStyles.text}>
+                  {contract?.nameSnapshot || 'Customer'}
+                </PdfText>
+                <PdfText style={pdfStyles.text}>
+                  Signed on:{' '}
+                  {contract?.bSignedAt
+                    ? formatDate(contract.bSignedAt)
+                    : contract?.signedAt
+                      ? formatDate(contract.signedAt)
+                      : 'Pending'}
+                </PdfText>
+              </>
+            )}
+            {contract?.status === 'signed' && !partyBSignatureBase64 && (
+              <>
+                <View style={pdfStyles.signatureLine} />
+                <PdfText style={pdfStyles.text}>
+                  {contract?.nameSnapshot || 'Customer'}
+                </PdfText>
+                <PdfText style={pdfStyles.text}>
+                  Signed on:{' '}
+                  {contract?.bSignedAt
+                    ? formatDate(contract.bSignedAt)
+                    : contract?.signedAt
+                      ? formatDate(contract.signedAt)
+                      : 'Pending'}
+                </PdfText>
+              </>
+            )}
+            {contract?.status !== 'signed' && (
+              <>
+                <View style={pdfStyles.signatureLine} />
+                <PdfText style={pdfStyles.text}>Name, Title</PdfText>
+              </>
+            )}
+          </View>
+        </View>
+      </Page>
+    </Document>
+  );
+
+  // Handle export PDF
+  const handleExportPdf = async () => {
+    if (!contract) {
+      message.error('Contract data not available');
+      return;
+    }
+
+    try {
+      message.loading('Generating PDF...', 0);
+
+      const contractNumber =
+        contract?.contractNumber || contract?.contractId || 'contract';
+      const filename = `contract-${contractNumber}-${dayjs().format('YYYYMMDD')}.pdf`;
+
+      // Generate PDF blob using helper function
+      const blob = await generatePdfBlob();
+
+      // Download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      message.destroy();
+      message.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      message.destroy();
+      message.error('Failed to export PDF. Please try again.');
+    }
   };
 
   // Status config
@@ -694,6 +1186,14 @@ const ContractDetailPage = () => {
             <Title level={5} style={{ margin: 0 }}>
               Contract Preview
             </Title>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleExportPdf}
+              size="small"
+            >
+              Export PDF
+            </Button>
           </div>
 
           <div className={styles.preview} ref={previewRef}>
@@ -706,15 +1206,16 @@ const ContractDetailPage = () => {
                 </div>
               )}
 
-              {/* Company Seal - Always show */}
-              <div className={`${styles.seal} ${styles.seal_red}`}>
-                <div className={styles.sealInner}>
-                  <div className={styles.sealText}>MuTraPro Official</div>
-                  <div className={styles.sealDate}>
-                    {dayjs(contract.createdAt).format('YYYY-MM-DD')}
+              {isSigned && (
+                <div className={`${styles.seal} ${styles.seal_red}`}>
+                  <div className={styles.sealInner}>
+                    <div className={styles.sealText}>MuTraPro Official</div>
+                    <div className={styles.sealDate}>
+                      {contract.signedAt ? dayjs(contract.signedAt).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <h1 className={styles.docTitle}>
                 {getContractTitle(contract.contractType)}
@@ -745,103 +1246,103 @@ const ContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0) && (
-                <div
-                  style={{
-                    marginBottom: '16px',
-                    padding: '12px',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong style={{ display: 'block', marginBottom: '8px' }}>
-                    Price Breakdown:
-                  </strong>
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <strong style={{ display: 'block', marginBottom: '8px' }}>
+                      Price Breakdown:
+                    </strong>
 
-                  {/* Transcription Details */}
-                  {pricingBreakdown.transcriptionDetails && (
-                    <div
-                      style={{
-                        marginBottom:
-                          pricingBreakdown.instruments.length > 0
-                            ? '12px'
-                            : '0',
-                      }}
-                    >
-                      {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                        (item, index) => (
-                          <div
-                            key={index}
-                            style={{ marginBottom: '4px', fontSize: '14px' }}
-                          >
-                            <span>{item.label}: </span>
-                            <span style={{ fontWeight: 'bold' }}>
-                              {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                              {contract.currency || 'VND'}
-                            </span>
-                            {item.description && (
-                              <span
-                                style={{ color: '#666', marginLeft: '8px' }}
-                              >
-                                ({formatDescriptionDuration(item.description)})
-                              </span>
-                            )}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-
-                  {/* Instruments */}
-                  {pricingBreakdown.instruments.length > 0 && (
-                    <div>
+                    {/* Transcription Details */}
+                    {pricingBreakdown.transcriptionDetails && (
                       <div
                         style={{
-                          marginBottom: '4px',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
+                          marginBottom:
+                            pricingBreakdown.instruments.length > 0
+                              ? '12px'
+                              : '0',
                         }}
                       >
-                        Instruments Surcharge:
+                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                          (item, index) => (
+                            <div
+                              key={index}
+                              style={{ marginBottom: '4px', fontSize: '14px' }}
+                            >
+                              <span>{item.label}: </span>
+                              <span style={{ fontWeight: 'bold' }}>
+                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
+                                {contract.currency || 'VND'}
+                              </span>
+                              {item.description && (
+                                <span
+                                  style={{ color: '#666', marginLeft: '8px' }}
+                                >
+                                  ({formatDescriptionDuration(item.description)})
+                                </span>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
-                      {pricingBreakdown.instruments.map((instr, index) => (
+                    )}
+
+                    {/* Instruments */}
+                    {pricingBreakdown.instruments.length > 0 && (
+                      <div>
                         <div
-                          key={index}
                           style={{
-                            marginLeft: '16px',
                             marginBottom: '4px',
                             fontSize: '14px',
+                            fontWeight: 'bold',
                           }}
                         >
-                          <span>• {instr.instrumentName}: </span>
-                          <span style={{ fontWeight: 'bold' }}>
-                            {instr.basePrice?.toLocaleString?.() ??
-                              instr.basePrice}{' '}
-                            {contract.currency || 'VND'}
-                          </span>
+                          Instruments Surcharge:
                         </div>
-                      ))}
-                      <div
-                        style={{
-                          marginTop: '4px',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
-                          borderTop: '1px solid #ddd',
-                          paddingTop: '4px',
-                        }}
-                      >
-                        Instruments Total:{' '}
-                        {pricingBreakdown.instruments
-                          .reduce(
-                            (sum, instr) => sum + (instr.basePrice || 0),
-                            0
-                          )
-                          .toLocaleString()}{' '}
-                        {contract.currency || 'VND'}
+                        {pricingBreakdown.instruments.map((instr, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              marginLeft: '16px',
+                              marginBottom: '4px',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <span>• {instr.instrumentName}: </span>
+                            <span style={{ fontWeight: 'bold' }}>
+                              {instr.basePrice?.toLocaleString?.() ??
+                                instr.basePrice}{' '}
+                              {contract.currency || 'VND'}
+                            </span>
+                          </div>
+                        ))}
+                        <div
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            borderTop: '1px solid #ddd',
+                            paddingTop: '4px',
+                          }}
+                        >
+                          Instruments Total:{' '}
+                          {pricingBreakdown.instruments
+                            .reduce(
+                              (sum, instr) => sum + (instr.basePrice || 0),
+                              0
+                            )
+                            .toLocaleString()}{' '}
+                          {contract.currency || 'VND'}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
 
               <p>
                 <strong>Currency:</strong> {contract.currency || 'VND'}{' '}

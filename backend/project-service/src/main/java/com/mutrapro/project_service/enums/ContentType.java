@@ -6,6 +6,7 @@ public enum ContentType {
     project_file,       // DAW project files
     documentation,      // Notes, lyrics, etc.
     video,              // Video files
-    archive             // Zip, rar files
+    archive,            // Zip, rar files
+    contract_pdf        // PDF của contract
 }
 

@@ -79,7 +79,12 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     SIGNATURE_UPLOAD_FAILED("CONTRACT_7013", 500,
         "https://docs.mutrapro.com/errors/CONTRACT_7013",
         "Failed to upload signature to storage",
-        Retryable.TRANSIENT);
+        Retryable.TRANSIENT),
+    
+    SIGNATURE_IMAGE_NOT_FOUND("CONTRACT_7014", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7014",
+        "Signature image not found for contract",
+        Retryable.NON_TRANSIENT);
 
     private final String code;
     private final int httpStatus;

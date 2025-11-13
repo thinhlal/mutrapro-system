@@ -141,22 +141,82 @@ public class S3Service {
             return null;
         }
         
-        // Handle public URL: https://bucket.s3.amazonaws.com/key
-        if (s3Url.contains(bucketName + ".s3.amazonaws.com/")) {
-            return s3Url.substring(s3Url.indexOf(bucketName + ".s3.amazonaws.com/") + bucketName.length() + 20);
-        }
-        
-        // Handle pre-signed URL: extract key from query parameters
-        // Pre-signed URLs have the key in the path, before query parameters
-        if (s3Url.contains("?X-Amz")) {
-            String pathPart = s3Url.substring(0, s3Url.indexOf("?X-Amz"));
-            int lastSlash = pathPart.lastIndexOf("/");
-            if (lastSlash >= 0 && lastSlash < pathPart.length() - 1) {
-                return pathPart.substring(lastSlash + 1);
+        try {
+            java.net.URI uri = new java.net.URI(s3Url);
+            // URL: https://bucket.s3.amazonaws.com/folder/file.png
+            // -> path = "/folder/file.png"
+            String path = uri.getPath();
+            
+            // Remove leading slash
+            if (path.startsWith("/")) {
+                path = path.substring(1);
             }
+            
+            // Handle public URL: https://bucket.s3.amazonaws.com/key
+            if (s3Url.contains(bucketName + ".s3.amazonaws.com/")) {
+                return path;
+            }
+            
+            // Handle pre-signed URL: https://bucket.s3.region.amazonaws.com/key?X-Amz-...
+            // The path contains the full key
+            if (path.contains("/")) {
+                return path;
+            }
+            
+            // If path is empty or just bucket name, try to extract from full URL
+            if (s3Url.contains("?X-Amz")) {
+                String pathPart = s3Url.substring(0, s3Url.indexOf("?X-Amz"));
+                // Extract everything after bucket name
+                int bucketIndex = pathPart.indexOf(bucketName);
+                if (bucketIndex >= 0) {
+                    String afterBucket = pathPart.substring(bucketIndex + bucketName.length());
+                    if (afterBucket.startsWith("/")) {
+                        afterBucket = afterBucket.substring(1);
+                    }
+                    if (!afterBucket.isEmpty()) {
+                        return afterBucket;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error parsing S3 URL: {}", s3Url, e);
         }
         
         return null;
+    }
+
+    /**
+     * Download file from S3 and return as byte array
+     * @param fileKey S3 object key
+     * @return file content as byte array
+     */
+    public byte[] downloadFile(String fileKey) {
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileKey)
+                    .build();
+
+            try (InputStream inputStream = s3Client.getObject(getObjectRequest)) {
+                return inputStream.readAllBytes();
+            }
+        } catch (S3Exception | IOException e) {
+            log.error("Error downloading file from S3 with key {}: {}", fileKey, e.getMessage(), e);
+            throw new RuntimeException("Failed to download file from S3: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Download file from S3 using URL (extracts key from URL)
+     * @param s3Url S3 URL (public or pre-signed)
+     * @return file content as byte array
+     */
+    public byte[] downloadFileFromUrl(String s3Url) {
+        String fileKey = extractFileKeyFromUrl(s3Url);
+        if (fileKey == null) {
+            throw new IllegalArgumentException("Invalid S3 URL: " + s3Url);
+        }
+        return downloadFile(fileKey);
     }
 
     private String generateFileKey(String originalFileName, String folderPrefix) {

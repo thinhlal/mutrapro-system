@@ -124,6 +124,12 @@ export const API_ENDPOINTS = {
     // POST /api/v1/projects/contracts/{contractId}/verify-otp
     VERIFY_OTP: contractId =>
       `${PROJECT_PATH}/contracts/${contractId}/verify-otp`,
+    // GET /api/v1/projects/contracts/{contractId}/signature-image
+    SIGNATURE_IMAGE: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/signature-image`,
+    // POST /api/v1/projects/contracts/{contractId}/upload-pdf
+    UPLOAD_PDF: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/upload-pdf`,
   },
 
   FOLDERS: {
