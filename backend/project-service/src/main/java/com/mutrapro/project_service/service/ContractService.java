@@ -1,12 +1,11 @@
 package com.mutrapro.project_service.service;
 
-import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.ChatServiceFeignClient;
+import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
-import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -14,6 +13,7 @@ import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
+import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.exception.ContractExpiredException;
@@ -26,6 +26,8 @@ import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.ContractSignSessionRepository;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +58,7 @@ public class ContractService {
     RequestServiceFeignClient requestServiceFeignClient;
     ChatServiceFeignClient chatServiceFeignClient;
     NotificationServiceFeignClient notificationServiceFeignClient;
+    ContractSignSessionRepository contractSignSessionRepository;
 
     /**
      * Tạo contract từ service request
@@ -328,41 +331,68 @@ public class ContractService {
         Instant now = Instant.now();
         List<Contract> expiredContracts = contractRepository.findExpiredContracts(now);
         
+        int updatedCount = 0;
         if (expiredContracts.isEmpty()) {
             log.debug("No expired contracts found");
-            return 0;
-        }
-        
-        int updatedCount = 0;
-        for (Contract contract : expiredContracts) {
-            ContractStatus currentStatus = contract.getStatus();
-            
-            // Chỉ update những contract đang ở trạng thái SENT hoặc APPROVED
-            // (những trạng thái đang chờ customer phản hồi/và duyệt nhưng chưa ký)
-            if (currentStatus == ContractStatus.sent || currentStatus == ContractStatus.approved) {
-                contract.setStatus(ContractStatus.expired);
-                contractRepository.save(contract);
+        } else {
+            for (Contract contract : expiredContracts) {
+                ContractStatus currentStatus = contract.getStatus();
                 
-                // Update request status về cancelled (customer không phản hồi)
-                try {
-                    requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "cancelled");
-                    log.info("Updated request status to cancelled: requestId={}", contract.getRequestId());
-                } catch (Exception e) {
-                    log.error("Failed to update request status for expired contract: contractId={}, requestId={}", 
-                        contract.getContractId(), contract.getRequestId(), e);
+                // Chỉ update những contract đang ở trạng thái SENT hoặc APPROVED
+                // (những trạng thái đang chờ customer phản hồi/và duyệt nhưng chưa ký)
+                if (currentStatus == ContractStatus.sent || currentStatus == ContractStatus.approved) {
+                    contract.setStatus(ContractStatus.expired);
+                    contractRepository.save(contract);
+                    
+                    // Update request status về cancelled (customer không phản hồi)
+                    try {
+                        requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "cancelled");
+                        log.info("Updated request status to cancelled: requestId={}", contract.getRequestId());
+                    } catch (Exception e) {
+                        log.error("Failed to update request status for expired contract: contractId={}, requestId={}", 
+                            contract.getContractId(), contract.getRequestId(), e);
+                    }
+                    
+                    updatedCount++;
+                    log.info("Contract expired: contractId={}, contractNumber={}, status={}, expiresAt={}", 
+                        contract.getContractId(), contract.getContractNumber(), currentStatus, contract.getExpiresAt());
+                } else {
+                    log.debug("Skipping contract expiration (not in SENT/APPROVED status): contractId={}, status={}", 
+                        contract.getContractId(), currentStatus);
                 }
-                
-                updatedCount++;
-                log.info("Contract expired: contractId={}, contractNumber={}, status={}, expiresAt={}", 
-                    contract.getContractId(), contract.getContractNumber(), currentStatus, contract.getExpiresAt());
-            } else {
-                log.debug("Skipping contract expiration (not in SENT/APPROVED status): contractId={}, status={}", 
-                    contract.getContractId(), currentStatus);
             }
         }
-        
+
         log.info("Updated {} expired contracts", updatedCount);
         return updatedCount;
+    }
+
+    /**
+     * Cleanup expired OTP sign sessions to avoid clutter
+     * @return number of sessions removed
+     */
+    @Transactional
+    public int cleanupExpiredSignSessions() {
+        Instant cutoff = Instant.now();
+        int removedSessions = 0;
+        removedSessions += contractSignSessionRepository.deleteByStatusAndExpireAtBefore(
+                SignSessionStatus.PENDING,
+                cutoff
+        );
+        removedSessions += contractSignSessionRepository.deleteByStatusAndExpireAtBefore(
+                SignSessionStatus.CANCELLED,
+                cutoff
+        );
+        removedSessions += contractSignSessionRepository.deleteByStatusAndExpireAtBefore(
+                SignSessionStatus.EXPIRED,
+                cutoff
+        );
+        if (removedSessions > 0) {
+            log.info("Removed {} expired contract sign sessions", removedSessions);
+        } else {
+            log.debug("No expired contract sign sessions found for cleanup");
+        }
+        return removedSessions;
     }
     
     /**

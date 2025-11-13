@@ -118,7 +118,8 @@ export default function RequestServiceForm({
       tempoPercentage: allValues.tempoPercentage || 100,
       contactName: allValues.contactName || user?.fullName || '',
       contactPhone: allValues.contactPhone || '',
-      contactEmail: allValues.contactEmail || user?.email || '',
+      contactEmail:
+        form.getFieldValue('contactEmail') || allValues.contactEmail || user?.email || '',
       instrumentIds: selectedInstruments, // Thêm instrumentIds
       // Optional fields based on service type
       hasVocalist: allValues.hasVocalist || false,
@@ -206,7 +207,12 @@ export default function RequestServiceForm({
             name="contactEmail"
             rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
           >
-            <Input size="large" placeholder="you@example.com" />
+            <Input
+              size="large"
+              placeholder="you@example.com"
+              readOnly
+              disabled
+            />
           </Form.Item>
 
           <Form.Item
