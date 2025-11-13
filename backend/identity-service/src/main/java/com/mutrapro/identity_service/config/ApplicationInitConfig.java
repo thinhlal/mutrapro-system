@@ -82,17 +82,6 @@ public class ApplicationInitConfig {
                     "Hà Nội, Việt Nam"
             );
 
-            createUserIfNotExists(
-                    usersAuthRepository,
-                    userRepository,
-                    "customer@customer.com",
-                    "12345678",
-                    Role.CUSTOMER,
-                    "Test Customer",
-                    "0123456784",
-                    "Hà Nội, Việt Nam"
-            );
-
             // Giữ lại admin cũ để tương thích
             if (usersAuthRepository.findByEmail("admin@admin.com").isEmpty()) {
                 UsersAuth usersAuth = UsersAuth.builder()
