@@ -16,6 +16,7 @@ import {
   CheckCircleOutlined,
   ReloadOutlined,
   FileTextOutlined,
+  FileSearchOutlined,
 } from '@ant-design/icons';
 import {
   getAllServiceRequests,
@@ -23,7 +24,7 @@ import {
   assignServiceRequest,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ServiceRequestDetailModal from '../../../components/modal/ServiceRequestDetailModal/ServiceRequestDetailModal';
 import styles from './ServiceRequestManagement.module.css';
 
@@ -73,6 +74,7 @@ export default function ServiceRequestManagement() {
   
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch tất cả requests với phân trang
   const fetchAllRequests = async (page = 0, size = 10) => {
@@ -192,6 +194,19 @@ export default function ServiceRequestManagement() {
     navigate(`/manager/contract-builder?requestId=${requestId}`);
   };
 
+  // Điều hướng đến trang danh sách contracts của request
+  const handleViewContracts = record => {
+    const requestId = record.requestId || record.id;
+    if (!requestId) {
+      message.error('Không tìm thấy requestId');
+      return;
+    }
+    const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+    navigate(`${basePath}/service-requests/${requestId}/contracts`, {
+      state: { requestSnapshot: record },
+    });
+  };
+
   // Refresh khi tab được focus lại (khi user quay lại từ contract builder)
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -307,7 +322,7 @@ export default function ServiceRequestManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
+      width: 320,
       fixed: 'right',
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
@@ -316,13 +331,21 @@ export default function ServiceRequestManagement() {
         const hasContract = record.hasContract === true;
 
         return (
-          <Space>
+          <Space wrap>
             <Button
               type="link"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetail(record)}
             >
               View
+            </Button>
+            <Button
+              type="default"
+              size="small"
+              icon={<FileSearchOutlined />}
+              onClick={() => handleViewContracts(record)}
+            >
+              Contracts
             </Button>
             {!hasManager && (
               <Button

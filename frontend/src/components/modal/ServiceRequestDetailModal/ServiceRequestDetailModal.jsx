@@ -94,15 +94,21 @@ export default function ServiceRequestDetailModal({
             ${Number(request.totalPrice || 0).toFixed(2)}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Has Vocalist">
-          {request.hasVocalist ? 'Yes' : 'No'}
-        </Descriptions.Item>
-        <Descriptions.Item label="External Guest Count">
-          {request.externalGuestCount || 0}
-        </Descriptions.Item>
-        <Descriptions.Item label="Tempo Percentage">
-          {request.tempoPercentage}%
-        </Descriptions.Item>
+        {request.requestType === 'arrangement' && (
+          <Descriptions.Item label="Has Vocalist">
+            {request.hasVocalist ? 'Yes' : 'No'}
+          </Descriptions.Item>
+        )}
+        {request.requestType === 'recording' && (
+          <Descriptions.Item label="External Guest Count">
+            {request.externalGuestCount || 0}
+          </Descriptions.Item>
+        )}
+        {request.requestType === 'transcription' && (
+          <Descriptions.Item label="Tempo Percentage">
+            {request.tempoPercentage}%
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="Contact Name">
           {request.contactName}
         </Descriptions.Item>

@@ -36,7 +36,7 @@ import {
   getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
-import { formatDurationMMSS } from '../../../utils/timeUtils';
+import { formatDurationMMSS, formatTempoPercentage } from '../../../utils/timeUtils';
 import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
@@ -113,6 +113,7 @@ const ContractDetailPage = () => {
     instruments: [], // Array of { instrumentId, instrumentName, basePrice }
     transcriptionDetails: null, // { basePrice, quantity, unitPrice, breakdown }
   });
+  const [requestDetails, setRequestDetails] = useState(null);
 
   // Load contract data
   useEffect(() => {
@@ -147,12 +148,14 @@ const ContractDetailPage = () => {
   // Load pricing breakdown (instruments and transcription details)
   const loadPricingBreakdown = async requestId => {
     try {
+      setRequestDetails(null);
       const requestResponse = await getServiceRequestById(requestId);
       if (requestResponse?.status !== 'success' || !requestResponse?.data) {
         return;
       }
 
       const request = requestResponse.data;
+      setRequestDetails(request);
       const breakdown = {
         instruments: [],
         transcriptionDetails: null,
@@ -271,7 +274,11 @@ const ContractDetailPage = () => {
   };
 
   // Helper function to generate PDF blob
-  const generatePdfBlob = async (contractData = contract, pricingData = pricingBreakdown) => {
+  const generatePdfBlob = async (
+    contractData = contract,
+    pricingData = pricingBreakdown,
+    requestData = requestDetails
+  ) => {
     // Fetch Party A signature image and convert to base64
     let partyASignatureBase64 = null;
     try {
@@ -301,6 +308,7 @@ const ContractDetailPage = () => {
         statusConfig={getStatusConfig(contractData?.status)}
         partyASignatureBase64={partyASignatureBase64}
         partyBSignatureBase64={partyBSignatureBase64}
+        requestDetails={requestData}
       />
     );
 
@@ -358,7 +366,11 @@ const ContractDetailPage = () => {
           try {
             message.loading('Generating and uploading PDF...', 0);
             // Use current contract state (should be updated by now)
-            const pdfBlob = await generatePdfBlob(contract, pricingBreakdown);
+            const pdfBlob = await generatePdfBlob(
+              contract,
+              pricingBreakdown,
+              requestDetails
+            );
             const uploadSuccess = await uploadPdfToBackend(pdfBlob);
             message.destroy();
 
@@ -597,7 +609,14 @@ const ContractDetailPage = () => {
   };
 
   // Contract PDF Document Component
-  const ContractPdfDocument = ({ contract, pricingBreakdown, statusConfig, partyASignatureBase64, partyBSignatureBase64 }) => (
+  const ContractPdfDocument = ({
+    contract,
+    pricingBreakdown,
+    statusConfig,
+    partyASignatureBase64,
+    partyBSignatureBase64,
+    requestDetails,
+  }) => (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
         {/* Company Seal - Only show when signed */}
@@ -617,7 +636,7 @@ const ContractDetailPage = () => {
             </View>
           </View>
         )}
-        
+
         {/* Watermark - Only show if not signed */}
         {contract?.status !== 'signed' && (
           <View style={pdfStyles.watermark}>
@@ -653,6 +672,25 @@ const ContractDetailPage = () => {
           </PdfText>
         </View>
 
+        {/* Request Summary */}
+        {requestDetails &&
+          (requestDetails.title || requestDetails.description) && (
+            <View style={pdfStyles.section}>
+              <PdfText style={pdfStyles.sectionTitle}>Request Summary</PdfText>
+              {requestDetails.title && (
+                <PdfText style={pdfStyles.text}>
+                  <PdfText style={{ fontWeight: 'bold' }}>Title:</PdfText>{' '}
+                  {requestDetails.title}
+                </PdfText>
+              )}
+              {requestDetails.description && (
+                <PdfText style={pdfStyles.text}>
+                  {requestDetails.description}
+                </PdfText>
+              )}
+            </View>
+          )}
+
         {/* Pricing */}
         <View style={pdfStyles.section}>
           <PdfText style={pdfStyles.sectionTitle}>Pricing & Payment</PdfText>
@@ -683,12 +721,29 @@ const ContractDetailPage = () => {
             </View>
           )}
           <PdfText style={pdfStyles.text}>
-            Currency: {contract?.currency || 'VND'} | Total Price:{' '}
-            {contract?.totalPrice?.toLocaleString()} | Deposit: {contract?.depositPercent}% ={' '}
-            {contract?.depositAmount?.toLocaleString()} | Final Amount:{' '}
-            {contract?.finalAmount?.toLocaleString()}
+            Total Price: {contract?.totalPrice?.toLocaleString()} VND | Deposit: {contract?.depositPercent || 0}% ={' '}
+            {contract?.depositAmount?.toLocaleString()} VND | Final Amount:{' '}
+            {contract?.finalAmount?.toLocaleString()} VND
           </PdfText>
         </View>
+
+        {/* Transcription Preferences */}
+        {contract?.contractType?.toLowerCase() === 'transcription' &&
+          requestDetails?.tempoPercentage && (
+            <View style={pdfStyles.section}>
+              <PdfText style={pdfStyles.sectionTitle}>
+                Transcription Preferences
+              </PdfText>
+              <PdfText style={pdfStyles.text}>
+                Tempo Reference: {formatTempoPercentage(requestDetails.tempoPercentage)}
+              </PdfText>
+              {requestDetails?.durationMinutes && (
+                <PdfText style={pdfStyles.text}>
+                  Source Duration: {formatDurationMMSS(requestDetails.durationMinutes)}
+                </PdfText>
+              )}
+            </View>
+          )}
 
         {/* Timeline */}
         <View style={pdfStyles.section}>
@@ -702,6 +757,20 @@ const ContractDetailPage = () => {
             {contract?.dueDate
               ? dayjs(contract.dueDate).format('YYYY-MM-DD')
               : `+${contract?.slaDays || 0} days from signing`}
+          </PdfText>
+        </View>
+
+        {/* Revision Policy */}
+        <View style={pdfStyles.section}>
+          <PdfText style={pdfStyles.sectionTitle}>Revision Policy</PdfText>
+          <PdfText style={pdfStyles.text}>
+            Free Revisions Included: {contract?.freeRevisionsIncluded || 0}
+            {contract?.revisionDeadlineDays && (
+              <> | Revision Deadline: {contract.revisionDeadlineDays} days after delivery</>
+            )}
+            {contract?.additionalRevisionFeeVnd && (
+              <> | Additional Revision Fee: {contract.additionalRevisionFeeVnd.toLocaleString()} VND</>
+            )}
           </PdfText>
         </View>
 
@@ -828,7 +897,11 @@ const ContractDetailPage = () => {
       const filename = `contract-${contractNumber}-${dayjs().format('YYYYMMDD')}.pdf`;
 
       // Generate PDF blob using helper function
-      const blob = await generatePdfBlob();
+      const blob = await generatePdfBlob(
+        contract,
+        pricingBreakdown,
+        requestDetails
+      );
 
       // Download
       const url = URL.createObjectURL(blob);
@@ -1052,7 +1125,7 @@ const ContractDetailPage = () => {
                 {contract.currency || 'VND'}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Deposit ({contract.depositPercent}%)">
+            <Descriptions.Item label={`Deposit (${contract.depositPercent || 0}%)`}>
               {contract.depositAmount?.toLocaleString()}{' '}
               {contract.currency || 'VND'}
             </Descriptions.Item>
@@ -1240,6 +1313,24 @@ const ContractDetailPage = () => {
                   contract.emailSnapshot !== 'N/A' &&
                   ` | Email: ${contract.emailSnapshot}`}
               </p>
+              
+              {/* Request Summary */}
+              {requestDetails &&
+                (requestDetails.title || requestDetails.description) && (
+                  <>
+                    <h3>Request Summary</h3>
+                    {requestDetails.title && (
+                      <p>
+                        <strong>Title:</strong> {requestDetails.title}
+                      </p>
+                    )}
+                    {requestDetails.description && (
+                      <p style={{ whiteSpace: 'pre-line' }}>
+                        {requestDetails.description}
+                      </p>
+                    )}
+                  </>
+                )}
 
               <h3>Pricing & Payment</h3>
 
@@ -1345,15 +1436,31 @@ const ContractDetailPage = () => {
                 )}
 
               <p>
-                <strong>Currency:</strong> {contract.currency || 'VND'}{' '}
-                &nbsp;|&nbsp;
                 <strong>Total Price:</strong>{' '}
-                {contract.totalPrice?.toLocaleString()} &nbsp;|&nbsp;
-                <strong>Deposit:</strong> {contract.depositPercent}% ={' '}
-                {contract.depositAmount?.toLocaleString()} &nbsp;|&nbsp;
+                {contract.totalPrice?.toLocaleString()} VND &nbsp;|&nbsp;
+                <strong>Deposit:</strong> {contract.depositPercent || 0}% ={' '}
+                {contract.depositAmount?.toLocaleString()} VND &nbsp;|&nbsp;
                 <strong>Final Amount:</strong>{' '}
-                {contract.finalAmount?.toLocaleString()}
+                {contract.finalAmount?.toLocaleString()} VND
               </p>
+
+              {contract.contractType?.toLowerCase() === 'transcription' &&
+                requestDetails?.tempoPercentage && (
+                  <>
+                    <h3>Transcription Preferences</h3>
+                    <p>
+                      <strong>Tempo Reference:</strong>{' '}
+                      {formatTempoPercentage(requestDetails.tempoPercentage)}
+                      {requestDetails?.durationMinutes && (
+                        <>
+                          &nbsp;|&nbsp;
+                          <strong>Source Duration:</strong>{' '}
+                          {formatDurationMMSS(requestDetails.durationMinutes)}
+                        </>
+                      )}
+                    </p>
+                  </>
+                )}
 
               <h3>Timeline & SLA</h3>
               <p>
@@ -1375,6 +1482,23 @@ const ContractDetailPage = () => {
                   <span style={{ fontStyle: 'italic', color: '#999' }}>
                     +{contract.slaDays || 0} days from signing
                   </span>
+                )}
+              </p>
+
+              <h3>Revision Policy</h3>
+              <p>
+                <strong>Free Revisions Included:</strong> {contract.freeRevisionsIncluded || 0}
+                {contract.revisionDeadlineDays && (
+                  <>
+                    {' '}&nbsp;|&nbsp;{' '}
+                    <strong>Revision Deadline:</strong> {contract.revisionDeadlineDays} days after delivery
+                  </>
+                )}
+                {contract.additionalRevisionFeeVnd && (
+                  <>
+                    {' '}&nbsp;|&nbsp;{' '}
+                    <strong>Additional Revision Fee:</strong> {contract.additionalRevisionFeeVnd.toLocaleString()} VND
+                  </>
                 )}
               </p>
 

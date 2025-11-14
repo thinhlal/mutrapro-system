@@ -27,3 +27,17 @@ export const formatSecondsToMMSS = (seconds = 0) => {
 
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
+
+/**
+ * Format a tempo value (percentage) with trailing "%"
+ * @param {number|string} tempo
+ * @returns {string|null}
+ */
+export const formatTempoPercentage = tempo => {
+  if (tempo === null || tempo === undefined) return null;
+  const value = typeof tempo === 'number' ? tempo : parseFloat(tempo);
+  if (Number.isNaN(value)) {
+    return `${tempo}`;
+  }
+  return `${value}%`;
+};

@@ -69,6 +69,7 @@ import UserManagement from './pages/admin/UserManagement/UserManagement';
 import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
 import AdminProfile from './pages/admin/Profile/AdminProfile';
 import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
+import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/ServiceRequestContracts';
 
 // Manager Pages
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
@@ -258,6 +259,14 @@ function App() {
             <Route
               path="service-requests"
               element={<ServiceRequestManagement />}
+            />
+          <Route
+            path="service-requests/:requestId/contracts"
+            element={<ServiceRequestContracts />}
+          />
+            <Route
+              path="service-requests/:requestId/contracts"
+              element={<ServiceRequestContracts />}
             />
             <Route path="contract-builder" element={<ContractBuilder />} />
             <Route

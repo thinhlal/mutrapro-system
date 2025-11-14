@@ -1,0 +1,64 @@
+.container {
+  padding: 24px;
+  min-height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 240px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.contactList {
+  margin-bottom: 16px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.contactIcon {
+  color: #888;
+}
+
+.descriptionBox {
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+  min-height: 120px;
+}
+
+.subText {
+  font-size: 12px;
+  color: #888;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contractCard {
+  margin-top: 0;
+}
+

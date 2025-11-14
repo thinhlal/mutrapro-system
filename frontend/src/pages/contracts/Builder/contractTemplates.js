@@ -2,7 +2,20 @@
 // Templates for different contract types
 
 // Get default Terms & Conditions based on contract type
-export const getDefaultTermsAndConditions = contractType => {
+export const getDefaultTermsAndConditions = (
+  contractType,
+  {
+    freeRevisionsIncluded = 1,
+    revisionDeadlineDays = 30,
+    additionalRevisionFeeVnd = 500000,
+    depositPercent = 40,
+    finalAmount = 0,
+  } = {}
+) => {
+  const freeRevisionsText = freeRevisionsIncluded === 1 ? '1 free revision' : `${freeRevisionsIncluded} free revisions`;
+  const finalAmountFormatted = typeof finalAmount === 'number' ? finalAmount.toLocaleString() : finalAmount;
+  const revisionFeeFormatted = typeof additionalRevisionFeeVnd === 'number' ? additionalRevisionFeeVnd.toLocaleString() : additionalRevisionFeeVnd;
+
   const termsMap = {
     transcription: `1. SERVICE SCOPE
 Party A agrees to provide professional music transcription services, converting audio recordings into musical notation (sheet music) in the format specified by Party B.
@@ -13,14 +26,14 @@ Party A agrees to provide professional music transcription services, converting 
 - Party A will ensure the transcription accurately represents the audio recording provided.
 
 3. REVISIONS
-- Party B is entitled to {free_revisions_included} free revision(s) within 30 days after delivery.
+- Party B is entitled to ${freeRevisionsText} within ${revisionDeadlineDays} days after delivery.
 - Revision requests must be submitted within the specified time period to be eligible for free revisions.
-- Additional revisions beyond the free allowance will be charged at {additional_revision_fee_vnd} VND per revision.
+- Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and related to transcription accuracy.
 
 4. PAYMENT TERMS
-- Deposit: {deposit_percent}% of total price due upon contract signing.
-- Final payment: Remaining {final_amount} VND due upon delivery and acceptance.
+- Deposit: ${depositPercent}% of total price due upon contract signing.
+- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -49,14 +62,14 @@ Party A agrees to provide professional music arrangement services, creating musi
 - Party A will ensure the arrangement meets the specifications provided by Party B.
 
 3. REVISIONS
-- Party B is entitled to {free_revisions_included} free revision(s) within 45 days after delivery.
+- Party B is entitled to ${freeRevisionsText} within ${revisionDeadlineDays} days after delivery.
 - Revision requests must be submitted within the specified time period to be eligible for free revisions.
-- Additional revisions beyond the free allowance will be charged at {additional_revision_fee_vnd} VND per revision.
+- Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
 4. PAYMENT TERMS
-- Deposit: {deposit_percent}% of total price due upon contract signing.
-- Final payment: Remaining {final_amount} VND due upon delivery and acceptance.
+- Deposit: ${depositPercent}% of total price due upon contract signing.
+- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -90,14 +103,14 @@ Party A agrees to provide professional music arrangement and recording services,
 - All deliverables must meet professional quality standards.
 
 3. REVISIONS
-- Party B is entitled to {free_revisions_included} free revision(s) within 60 days after delivery.
+- Party B is entitled to ${freeRevisionsText} within ${revisionDeadlineDays} days after delivery.
 - Revision requests must be submitted within the specified time period to be eligible for free revisions.
-- Additional revisions beyond the free allowance will be charged at {additional_revision_fee_vnd} VND per revision.
+- Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
 4. PAYMENT TERMS
-- Deposit: {deposit_percent}% of total price due upon contract signing.
-- Final payment: Remaining {final_amount} VND due upon delivery and acceptance.
+- Deposit: ${depositPercent}% of total price due upon contract signing.
+- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -126,14 +139,14 @@ Party A agrees to provide professional music recording services in a studio sett
 - Party A will ensure the recording meets professional quality standards.
 
 3. REVISIONS
-- Party B is entitled to {free_revisions_included} free revision(s) within 30 days after delivery.
+- Party B is entitled to ${freeRevisionsText} within ${revisionDeadlineDays} days after delivery.
 - Revision requests must be submitted within the specified time period to be eligible for free revisions.
-- Additional revisions beyond the free allowance will be charged at {additional_revision_fee_vnd} VND per revision.
+- Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and related to recording quality.
 
 4. PAYMENT TERMS
-- Deposit: {deposit_percent}% of total price due upon contract signing.
-- Final payment: Remaining {final_amount} VND due upon delivery and acceptance.
+- Deposit: ${depositPercent}% of total price due upon contract signing.
+- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -168,14 +181,14 @@ Party A agrees to provide comprehensive music services including:
 - All deliverables must meet professional quality standards.
 
 3. REVISIONS
-- Party B is entitled to {free_revisions_included} free revision(s) within 60 days after delivery.
+- Party B is entitled to ${freeRevisionsText} within ${revisionDeadlineDays} days after delivery.
 - Revision requests must be submitted within the specified time period to be eligible for free revisions.
-- Additional revisions beyond the free allowance will be charged at {additional_revision_fee_vnd} VND per revision.
+- Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
 4. PAYMENT TERMS
-- Deposit: {deposit_percent}% of total price due upon contract signing.
-- Final payment: Remaining {final_amount} VND due upon delivery and acceptance.
+- Deposit: ${depositPercent}% of total price due upon contract signing.
+- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -244,8 +257,12 @@ export const replaceTemplateVariables = (text, formValues) => {
       formValues?.free_revisions_included || 1
     )
     .replace(
+      /\{revision_deadline_days\}/g,
+      formValues?.revision_deadline_days || 30
+    )
+    .replace(
       /\{additional_revision_fee_vnd\}/g,
-      formValues?.additional_revision_fee_vnd || 0
+      formValues?.additional_revision_fee_vnd?.toLocaleString() || '0'
     )
     .replace(/\{deposit_percent\}/g, formValues?.deposit_percent || 40)
     .replace(
