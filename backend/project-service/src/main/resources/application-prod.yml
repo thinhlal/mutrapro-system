@@ -63,7 +63,7 @@ billing:
 # Notification Service Configuration
 notification:
   service:
-    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8086}
+    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
 
 # AWS S3 Configuration
 aws:

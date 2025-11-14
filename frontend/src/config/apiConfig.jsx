@@ -258,16 +258,16 @@ export const API_ENDPOINTS = {
 
   // === Notification Service (Quản lý Thông báo) ===
   NOTIFICATIONS: {
-    // GET /api/v1/notifications/notifications (sau Gateway strip → /notifications)
+    // GET /api/v1/notifications/notifications (Gateway: /api/v1/notifications → Service: /notifications)
     GET_ALL_NOTIFICATIONS: `${NOTIFICATIONS_PATH}/notifications`,
-    // GET /api/v1/notifications/notifications/latest (sau Gateway strip → /notifications/latest)
+    // GET /api/v1/notifications/notifications/latest (Gateway: /api/v1/notifications → Service: /notifications/latest)
     GET_LATEST: `${NOTIFICATIONS_PATH}/notifications/latest`,
-    // GET /api/v1/notifications/notifications/unread-count (sau Gateway strip → /notifications/unread-count)
+    // GET /api/v1/notifications/notifications/unread-count (Gateway: /api/v1/notifications → Service: /notifications/unread-count)
     GET_UNREAD_COUNT: `${NOTIFICATIONS_PATH}/notifications/unread-count`,
-    // POST /api/v1/notifications/notifications/{notificationId}/read (sau Gateway strip → /notifications/{notificationId}/read)
+    // POST /api/v1/notifications/notifications/{notificationId}/read (Gateway: /api/v1/notifications → Service: /notifications/{id}/read)
     MARK_AS_READ: notificationId =>
       `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
-    // POST /api/v1/notifications/notifications/mark-all-read (sau Gateway strip → /notifications/mark-all-read)
+    // POST /api/v1/notifications/notifications/mark-all-read (Gateway: /api/v1/notifications → Service: /notifications/mark-all-read)
     MARK_ALL_AS_READ: `${NOTIFICATIONS_PATH}/notifications/mark-all-read`,
     // WebSocket (for real-time notifications)
     // Frontend: /api/v1/notifications/notifications-ws → Gateway strip → /notifications-ws → Backend: /notifications-ws

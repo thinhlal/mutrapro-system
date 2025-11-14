@@ -166,7 +166,15 @@ public class NotificationController {
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getClaim("userId");
+            String userId = jwt.getClaimAsString("userId");
+            if (userId != null && !userId.isEmpty()) {
+                return userId;
+            }
+            log.warn("userId claim not found in JWT, falling back to subject");
+            String subject = jwt.getSubject();
+            if (subject != null && !subject.isEmpty()) {
+                return subject;
+            }
         }
         throw new RuntimeException("User not authenticated");
     }

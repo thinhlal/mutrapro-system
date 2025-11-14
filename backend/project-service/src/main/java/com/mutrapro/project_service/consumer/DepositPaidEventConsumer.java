@@ -70,16 +70,19 @@ public class DepositPaidEventConsumer extends BaseIdempotentConsumer<DepositPaid
     @Override
     protected void processEvent(DepositPaidEvent event, Acknowledgment acknowledgment) {
         try {
+            log.info("🔄 Processing deposit paid event: eventId={}, contractId={}, installmentId={}, depositPaidAt={}", 
+                    event.getEventId(), event.getContractId(), event.getInstallmentId(), event.getDepositPaidAt());
+            
             // Update contract start date
             contractService.updateContractStartDateAfterDepositPaid(
                 event.getContractId(), 
                 event.getDepositPaidAt()
             );
             
-            log.info("Contract start date updated successfully from deposit paid event: contractId={}, installmentId={}, depositPaidAt={}", 
+            log.info("✅ Contract start date updated successfully from deposit paid event: contractId={}, installmentId={}, depositPaidAt={}", 
                     event.getContractId(), event.getInstallmentId(), event.getDepositPaidAt());
         } catch (Exception e) {
-            log.error("Failed to process deposit paid event: eventId={}, contractId={}, error={}", 
+            log.error("❌ Failed to process deposit paid event: eventId={}, contractId={}, error={}", 
                     event.getEventId(), event.getContractId(), e.getMessage(), e);
             throw e; // Re-throw để trigger retry
         }

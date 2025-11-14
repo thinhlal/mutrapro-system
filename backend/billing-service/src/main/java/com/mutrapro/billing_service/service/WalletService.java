@@ -275,8 +275,9 @@ public class WalletService {
                                 && installment.getContractId() != null) {
                                 try {
                                     // Tạo DepositPaidEvent
+                                    UUID eventId = UUID.randomUUID();
                                     DepositPaidEvent event = DepositPaidEvent.builder()
-                                        .eventId(UUID.randomUUID())
+                                        .eventId(eventId)
                                         .contractId(installment.getContractId())
                                         .installmentId(installment.getInstallmentId())
                                         .depositPaidAt(paidAt)
@@ -292,6 +293,8 @@ public class WalletService {
                                         aggregateId = UUID.fromString(installment.getContractId());
                                     } catch (IllegalArgumentException ex) {
                                         aggregateId = UUID.randomUUID();
+                                        log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                                            installment.getContractId());
                                     }
                                     
                                     OutboxEvent outboxEvent = OutboxEvent.builder()
@@ -301,15 +304,19 @@ public class WalletService {
                                         .eventPayload(payload)
                                         .build();
                                     
-                                    outboxEventRepository.save(outboxEvent);
+                                    OutboxEvent saved = outboxEventRepository.save(outboxEvent);
                                     
-                                    log.info("Queued DepositPaidEvent in outbox: contractId={}, installmentId={}, depositPaidAt={}",
-                                        installment.getContractId(), installment.getInstallmentId(), paidAt);
+                                    log.info("✅ Queued DepositPaidEvent in outbox: outboxId={}, eventId={}, contractId={}, installmentId={}, depositPaidAt={}",
+                                        saved.getOutboxId(), eventId, installment.getContractId(), 
+                                        installment.getInstallmentId(), paidAt);
                                 } catch (Exception e) {
-                                    log.error("Failed to enqueue DepositPaidEvent: contractId={}, installmentId={}, error={}",
+                                    log.error("❌ Failed to enqueue DepositPaidEvent: contractId={}, installmentId={}, error={}",
                                         installment.getContractId(), installment.getInstallmentId(), e.getMessage(), e);
                                     // Không throw exception - installment đã được update thành công
                                 }
+                            } else {
+                                log.debug("Skipping event creation - not a deposit installment: isDeposit={}, contractId={}",
+                                    installment.getIsDeposit(), installment.getContractId());
                             }
                         }
                     }

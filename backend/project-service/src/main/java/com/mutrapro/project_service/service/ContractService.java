@@ -997,22 +997,24 @@ public class ContractService {
         contract.setExpectedStartDate(depositPaidAt);
         
         // Tính lại dueDate từ expectedStartDate + SLA days
-        if (contract.getAutoDueDate() != null && contract.getAutoDueDate()) {
-            Integer slaDays = contract.getSlaDays();
-            if (slaDays != null && slaDays > 0) {
-                Instant newDueDate = depositPaidAt.plusSeconds(slaDays * 24L * 60 * 60);
-                contract.setDueDate(newDueDate);
-                log.info("Set due date from deposit paid date: contractId={}, depositPaidAt={}, dueDate={}, slaDays={}", 
-                    contractId, depositPaidAt, newDueDate, slaDays);
-            }
+        // Luôn set dueDate nếu có slaDays, không cần check autoDueDate
+        Integer slaDays = contract.getSlaDays();
+        if (slaDays != null && slaDays > 0) {
+            Instant newDueDate = depositPaidAt.plusSeconds(slaDays * 24L * 60 * 60);
+            contract.setDueDate(newDueDate);
+            log.info("Set due date from deposit paid date: contractId={}, depositPaidAt={}, dueDate={}, slaDays={}", 
+                contractId, depositPaidAt, newDueDate, slaDays);
+        } else {
+            log.warn("Contract has no SLA days set, dueDate will not be calculated: contractId={}, slaDays={}", 
+                contractId, slaDays);
         }
         
         // Update status từ "signed" → "active" (đã thanh toán deposit, có thể bắt đầu công việc)
         contract.setStatus(ContractStatus.active);
         
         contractRepository.save(contract);
-        log.info("Updated contract to active after deposit paid: contractId={}, expectedStartDate={}, status=active", 
-            contractId, depositPaidAt);
+        log.info("Updated contract to active after deposit paid: contractId={}, expectedStartDate={}, dueDate={}, status=active", 
+            contractId, depositPaidAt, contract.getDueDate());
     }
     
     /**
