@@ -59,7 +59,7 @@ export default function ServiceRequestManagement() {
   const [assigning, setAssigning] = useState({});
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  
+
   // Pagination state
   const [allPagination, setAllPagination] = useState({
     current: 1,
@@ -71,7 +71,7 @@ export default function ServiceRequestManagement() {
     pageSize: 10,
     total: 0,
   });
-  
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -201,7 +201,9 @@ export default function ServiceRequestManagement() {
       message.error('Không tìm thấy requestId');
       return;
     }
-    const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+    const basePath = location.pathname.startsWith('/admin')
+      ? '/admin'
+      : '/manager';
     navigate(`${basePath}/service-requests/${requestId}/contracts`, {
       state: { requestSnapshot: record },
     });

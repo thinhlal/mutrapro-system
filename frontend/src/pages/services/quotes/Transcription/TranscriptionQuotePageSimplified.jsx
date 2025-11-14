@@ -81,7 +81,7 @@ export default function TranscriptionQuotePageSimplified() {
     const fetchPricingData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch calculated price
         const priceResponse = await calculatePrice(
           serviceType,
@@ -93,7 +93,10 @@ export default function TranscriptionQuotePageSimplified() {
 
         // Fetch service pricing detail
         const servicePricingResponse = await getPricingDetail(serviceType);
-        if (servicePricingResponse.status === 'success' && servicePricingResponse.data) {
+        if (
+          servicePricingResponse.status === 'success' &&
+          servicePricingResponse.data
+        ) {
           setServicePricing(servicePricingResponse.data);
         }
       } catch (error) {
@@ -229,12 +232,21 @@ export default function TranscriptionQuotePageSimplified() {
             <Space direction="vertical" style={{ width: '100%' }} size={16}>
               {/* Service Pricing */}
               <div>
-                <Text strong style={{ fontSize: 16, marginBottom: 12, display: 'block' }}>
+                <Text
+                  strong
+                  style={{ fontSize: 16, marginBottom: 12, display: 'block' }}
+                >
                   Selected Service:
                 </Text>
                 <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
                   <Space direction="vertical" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <div>
                         <Text strong style={{ fontSize: 16 }}>
                           {SERVICE_TYPE_LABELS[serviceType] || serviceType}
@@ -247,12 +259,18 @@ export default function TranscriptionQuotePageSimplified() {
                           </div>
                         )}
                       </div>
-                      <Tag color="green" style={{ fontSize: 16, padding: '6px 16px' }}>
+                      <Tag
+                        color="green"
+                        style={{ fontSize: 16, padding: '6px 16px' }}
+                      >
                         {servicePricing
-                          ? formatPrice(servicePricing.basePrice, servicePricing.currency)
-                          : 'N/A'
-                        }
-                        {servicePricing && ` / ${servicePricing.unitType || 'minute'}`}
+                          ? formatPrice(
+                              servicePricing.basePrice,
+                              servicePricing.currency
+                            )
+                          : 'N/A'}
+                        {servicePricing &&
+                          ` / ${servicePricing.unitType || 'minute'}`}
                       </Tag>
                     </div>
                   </Space>
@@ -262,24 +280,29 @@ export default function TranscriptionQuotePageSimplified() {
               {/* Instruments Pricing */}
               {formData.instrumentIds && formData.instrumentIds.length > 0 && (
                 <div>
-                  <Text strong style={{ fontSize: 16, marginBottom: 12, display: 'block' }}>
+                  <Text
+                    strong
+                    style={{ fontSize: 16, marginBottom: 12, display: 'block' }}
+                  >
                     Selected Instruments:
                   </Text>
                   <Table
-                    dataSource={formData.instrumentIds.map(id => {
-                      const inst = instrumentsData.find(
-                        i => i.instrumentId === id
-                      );
-                      return inst
-                        ? {
-                            key: id,
-                            instrumentId: id,
-                            instrumentName: inst.instrumentName,
-                            basePrice: inst.basePrice || 0,
-                            usage: inst.usage,
-                          }
-                        : null;
-                    }).filter(Boolean)}
+                    dataSource={formData.instrumentIds
+                      .map(id => {
+                        const inst = instrumentsData.find(
+                          i => i.instrumentId === id
+                        );
+                        return inst
+                          ? {
+                              key: id,
+                              instrumentId: id,
+                              instrumentName: inst.instrumentName,
+                              basePrice: inst.basePrice || 0,
+                              usage: inst.usage,
+                            }
+                          : null;
+                      })
+                      .filter(Boolean)}
                     columns={[
                       {
                         title: 'Instrument Name',
@@ -298,8 +321,14 @@ export default function TranscriptionQuotePageSimplified() {
                         key: 'basePrice',
                         align: 'right',
                         render: price => (
-                          <Text strong style={{ color: '#52c41a', fontSize: 15 }}>
-                            {formatPrice(price, servicePricing?.currency || 'VND')}
+                          <Text
+                            strong
+                            style={{ color: '#52c41a', fontSize: 15 }}
+                          >
+                            {formatPrice(
+                              price,
+                              servicePricing?.currency || 'VND'
+                            )}
                           </Text>
                         ),
                       },

@@ -39,7 +39,10 @@ import {
   getDefaultTermsAndConditions,
   getDefaultSpecialClauses,
 } from './contractTemplates';
-import { formatDurationMMSS, formatTempoPercentage } from '../../../utils/timeUtils';
+import {
+  formatDurationMMSS,
+  formatTempoPercentage,
+} from '../../../utils/timeUtils';
 import styles from './ContractBuilder.module.css';
 
 const { Title } = Typography;
@@ -180,7 +183,8 @@ const ContractBuilder = () => {
     const termsParams = {
       freeRevisionsIncluded: currentFormValues.free_revisions_included ?? 1,
       revisionDeadlineDays: currentFormValues.revision_deadline_days ?? 30,
-      additionalRevisionFeeVnd: currentFormValues.additional_revision_fee_vnd ?? 500000,
+      additionalRevisionFeeVnd:
+        currentFormValues.additional_revision_fee_vnd ?? 500000,
       depositPercent: currentFormValues.deposit_percent ?? 40,
       finalAmount: currentFormValues.final_amount ?? 0,
     };
@@ -189,7 +193,13 @@ const ContractBuilder = () => {
     // Check if current values are the default values for any contract type
     const isDefaultTerms =
       !currentTerms ||
-      ['transcription', 'arrangement', 'arrangement_with_recording', 'recording', 'bundle'].some(type => {
+      [
+        'transcription',
+        'arrangement',
+        'arrangement_with_recording',
+        'recording',
+        'bundle',
+      ].some(type => {
         const defaultTerms = getDefaultTermsAndConditions(type, termsParams);
         return currentTerms.trim() === defaultTerms.trim();
       });
@@ -207,7 +217,10 @@ const ContractBuilder = () => {
       }).includes(currentClauses.trim());
 
     // Get default values for current contract type with actual values
-    const defaultTerms = getDefaultTermsAndConditions(contractType, termsParams);
+    const defaultTerms = getDefaultTermsAndConditions(
+      contractType,
+      termsParams
+    );
     const defaultClauses = getDefaultSpecialClauses(contractType);
 
     // Update form if fields are empty or contain default values
@@ -387,11 +400,15 @@ const ContractBuilder = () => {
           const termsParams = {
             freeRevisionsIncluded: updatedValues.free_revisions_included ?? 1,
             revisionDeadlineDays: updatedValues.revision_deadline_days ?? 30,
-            additionalRevisionFeeVnd: updatedValues.additional_revision_fee_vnd ?? 500000,
+            additionalRevisionFeeVnd:
+              updatedValues.additional_revision_fee_vnd ?? 500000,
             depositPercent: updatedValues.deposit_percent ?? 40,
             finalAmount: updatedValues.final_amount ?? 0,
           };
-          const defaultTerms = getDefaultTermsAndConditions(contractType, termsParams);
+          const defaultTerms = getDefaultTermsAndConditions(
+            contractType,
+            termsParams
+          );
           // Check if current terms matches the default template
           // If it does, update with actual values
           if (currentTerms && currentTerms.trim() === defaultTerms.trim()) {
@@ -452,9 +469,9 @@ const ContractBuilder = () => {
           notes: contract.notes,
           expires_in_days: contract.expiresAt
             ? Math.ceil(
-              (new Date(contract.expiresAt) - new Date()) /
-              (1000 * 60 * 60 * 24)
-            )
+                (new Date(contract.expiresAt) - new Date()) /
+                  (1000 * 60 * 60 * 24)
+              )
             : 7,
         });
 
@@ -610,34 +627,44 @@ const ContractBuilder = () => {
   };
 
   // Helper function to update terms if it matches default template
-  const updateTermsIfDefault = (formValues) => {
+  const updateTermsIfDefault = formValues => {
     const currentTerms = formValues.terms_and_conditions;
     const contractType = formValues.contract_type;
     if (!contractType || !currentTerms) return;
 
     // Check if current terms matches the default template structure
     // Pattern: "Party B is entitled to X free revision" or "X free revisions" followed by "within Y days"
-    const revisionPattern = /Party B is entitled to \d+ free revision(s)? within \d+ days after delivery/i;
+    const revisionPattern =
+      /Party B is entitled to \d+ free revision(s)? within \d+ days after delivery/i;
     const hasRevisionSection = revisionPattern.test(currentTerms);
-    
+
     // Also check for payment terms pattern
-    const paymentPattern = /Deposit: \d+% of total price|Final payment: Remaining/i;
+    const paymentPattern =
+      /Deposit: \d+% of total price|Final payment: Remaining/i;
     const hasPaymentSection = paymentPattern.test(currentTerms);
-    
+
     // Check if terms contains "REVISIONS" section header (more reliable check)
     const hasRevisionsHeader = /3\.\s*REVISIONS/i.test(currentTerms);
     const hasPaymentHeader = /4\.\s*PAYMENT TERMS/i.test(currentTerms);
 
     // Update if terms contains default template patterns or headers
-    if (hasRevisionSection || hasPaymentSection || (hasRevisionsHeader && hasPaymentHeader)) {
+    if (
+      hasRevisionSection ||
+      hasPaymentSection ||
+      (hasRevisionsHeader && hasPaymentHeader)
+    ) {
       const termsParams = {
         freeRevisionsIncluded: formValues.free_revisions_included ?? 1,
         revisionDeadlineDays: formValues.revision_deadline_days ?? 30,
-        additionalRevisionFeeVnd: formValues.additional_revision_fee_vnd ?? 500000,
+        additionalRevisionFeeVnd:
+          formValues.additional_revision_fee_vnd ?? 500000,
         depositPercent: formValues.deposit_percent ?? 40,
         finalAmount: formValues.final_amount ?? 0,
       };
-      const updatedTerms = getDefaultTermsAndConditions(contractType, termsParams);
+      const updatedTerms = getDefaultTermsAndConditions(
+        contractType,
+        termsParams
+      );
       // Only update if the new terms is different from current
       if (updatedTerms.trim() !== currentTerms.trim()) {
         form.setFieldValue('terms_and_conditions', updatedTerms);
@@ -662,7 +689,7 @@ const ContractBuilder = () => {
     // Update terms & conditions if it's still using default template
     updateTermsIfDefault({ ...v, final_amount: finalAmount });
   };
-  
+
   const onValuesChange = (changedValues, allValues) => {
     recompute();
     // Also update terms when revision or payment fields change
@@ -733,7 +760,6 @@ const ContractBuilder = () => {
     const normalized = buildPreviewPayload(values);
     setData(normalized);
   };
-  
 
   // Create or Update contract
   const handleSaveContract = async () => {
@@ -769,9 +795,9 @@ const ContractBuilder = () => {
         freeRevisionsIncluded: Number(values.free_revisions_included || 1),
         revisionDeadlineDays: Number(
           values.revision_deadline_days ||
-          getDefaultRevisionDeadlineDays(
-            values.contract_type || 'transcription'
-          )
+            getDefaultRevisionDeadlineDays(
+              values.contract_type || 'transcription'
+            )
         ),
         additionalRevisionFeeVnd: values.additional_revision_fee_vnd
           ? Number(values.additional_revision_fee_vnd)
@@ -800,7 +826,7 @@ const ContractBuilder = () => {
       } else {
         throw new Error(
           response?.message ||
-          `Failed to ${isEditMode ? 'update' : 'create'} contract`
+            `Failed to ${isEditMode ? 'update' : 'create'} contract`
         );
       }
     } catch (error) {
@@ -810,12 +836,12 @@ const ContractBuilder = () => {
       );
       setError(
         error?.message ||
-        error?.response?.data?.message ||
-        `Failed to ${isEditMode ? 'update' : 'create'} contract`
+          error?.response?.data?.message ||
+          `Failed to ${isEditMode ? 'update' : 'create'} contract`
       );
       message.error(
         error?.message ||
-        `Failed to ${isEditMode ? 'update' : 'create'} contract`
+          `Failed to ${isEditMode ? 'update' : 'create'} contract`
       );
     } finally {
       setCreatingContract(false);
@@ -1004,7 +1030,7 @@ const ContractBuilder = () => {
               <Divider style={{ margin: '4px 0' }} />
 
               <div className={styles.formCardContent}>
-                  <Form
+                <Form
                   form={form}
                   layout="vertical"
                   className={styles.formGrid}
@@ -1270,8 +1296,9 @@ const ContractBuilder = () => {
                 {/* Con dấu tròn ở góc phải */}
                 {data?.show_seal && (
                   <div
-                    className={`${styles.seal} ${styles[`seal_${data?.seal_variant || 'red'}`]
-                      }`}
+                    className={`${styles.seal} ${
+                      styles[`seal_${data?.seal_variant || 'red'}`]
+                    }`}
                   >
                     <div className={styles.sealInner}>
                       <div className={styles.sealText}>
@@ -1301,7 +1328,6 @@ const ContractBuilder = () => {
                   {data?.partyBEmail && ` | Email: ${data.partyBEmail}`}
                 </p>
 
-
                 {/* Request Summary */}
                 {serviceRequest &&
                   (serviceRequest.title || serviceRequest.description) && (
@@ -1325,104 +1351,104 @@ const ContractBuilder = () => {
                 {/* Pricing Breakdown */}
                 {(pricingBreakdown.transcriptionDetails ||
                   pricingBreakdown.instruments.length > 0) && (
-                    <div
-                      style={{
-                        marginBottom: '16px',
-                        padding: '12px',
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: '4px',
-                      }}
-                    >
-                      <strong style={{ display: 'block', marginBottom: '8px' }}>
-                        Price Breakdown:
-                      </strong>
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: '#f5f5f5',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <strong style={{ display: 'block', marginBottom: '8px' }}>
+                      Price Breakdown:
+                    </strong>
 
-                      {/* Transcription Details */}
-                      {pricingBreakdown.transcriptionDetails && (
-                        <div
-                          style={{
-                            marginBottom:
-                              pricingBreakdown.instruments.length > 0
-                                ? '12px'
-                                : '0',
-                          }}
-                        >
-                          {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                            (item, index) => (
-                              <div
-                                key={index}
-                                style={{ marginBottom: '4px', fontSize: '14px' }}
-                              >
-                                <span>{item.label}: </span>
-                                <span style={{ fontWeight: 'bold' }}>
-                                  {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                                  {data?.currency || 'VND'}
-                                </span>
-                                {item.description && (
-                                  <span
-                                    style={{ color: '#666', marginLeft: '8px' }}
-                                  >
-                                    ({formatDescriptionDuration(item.description)}
-                                    )
-                                  </span>
-                                )}
-                              </div>
-                            )
-                          )}
-                        </div>
-                      )}
-
-                      {/* Instruments */}
-                      {pricingBreakdown.instruments.length > 0 && (
-                        <div>
-                          <div
-                            style={{
-                              marginBottom: '4px',
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            Instruments Surcharge:
-                          </div>
-                          {pricingBreakdown.instruments.map((instr, index) => (
+                    {/* Transcription Details */}
+                    {pricingBreakdown.transcriptionDetails && (
+                      <div
+                        style={{
+                          marginBottom:
+                            pricingBreakdown.instruments.length > 0
+                              ? '12px'
+                              : '0',
+                        }}
+                      >
+                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                          (item, index) => (
                             <div
                               key={index}
-                              style={{
-                                marginLeft: '16px',
-                                marginBottom: '4px',
-                                fontSize: '14px',
-                              }}
+                              style={{ marginBottom: '4px', fontSize: '14px' }}
                             >
-                              <span>• {instr.instrumentName}: </span>
+                              <span>{item.label}: </span>
                               <span style={{ fontWeight: 'bold' }}>
-                                {instr.basePrice?.toLocaleString?.() ??
-                                  instr.basePrice}{' '}
+                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
                                 {data?.currency || 'VND'}
                               </span>
+                              {item.description && (
+                                <span
+                                  style={{ color: '#666', marginLeft: '8px' }}
+                                >
+                                  ({formatDescriptionDuration(item.description)}
+                                  )
+                                </span>
+                              )}
                             </div>
-                          ))}
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {/* Instruments */}
+                    {pricingBreakdown.instruments.length > 0 && (
+                      <div>
+                        <div
+                          style={{
+                            marginBottom: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          Instruments Surcharge:
+                        </div>
+                        {pricingBreakdown.instruments.map((instr, index) => (
                           <div
+                            key={index}
                             style={{
-                              marginTop: '4px',
+                              marginLeft: '16px',
+                              marginBottom: '4px',
                               fontSize: '14px',
-                              fontWeight: 'bold',
-                              borderTop: '1px solid #ddd',
-                              paddingTop: '4px',
                             }}
                           >
-                            Instruments Total:{' '}
-                            {pricingBreakdown.instruments
-                              .reduce(
-                                (sum, instr) => sum + (instr.basePrice || 0),
-                                0
-                              )
-                              .toLocaleString()}{' '}
-                            {data?.currency || 'VND'}
+                            <span>• {instr.instrumentName}: </span>
+                            <span style={{ fontWeight: 'bold' }}>
+                              {instr.basePrice?.toLocaleString?.() ??
+                                instr.basePrice}{' '}
+                              {data?.currency || 'VND'}
+                            </span>
                           </div>
+                        ))}
+                        <div
+                          style={{
+                            marginTop: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            borderTop: '1px solid #ddd',
+                            paddingTop: '4px',
+                          }}
+                        >
+                          Instruments Total:{' '}
+                          {pricingBreakdown.instruments
+                            .reduce(
+                              (sum, instr) => sum + (instr.basePrice || 0),
+                              0
+                            )
+                            .toLocaleString()}{' '}
+                          {data?.currency || 'VND'}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <p>
                   <strong>Currency:</strong> {data?.currency || 'VND'}{' '}

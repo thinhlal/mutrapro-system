@@ -20,7 +20,19 @@ import {
   EyeOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
-import { Document, Page, Text as PdfText, View, StyleSheet, pdf, Image as PdfImage, Font, Svg, Circle, Path } from '@react-pdf/renderer';
+import {
+  Document,
+  Page,
+  Text as PdfText,
+  View,
+  StyleSheet,
+  pdf,
+  Image as PdfImage,
+  Font,
+  Svg,
+  Circle,
+  Path,
+} from '@react-pdf/renderer';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
@@ -36,7 +48,10 @@ import {
   getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
-import { formatDurationMMSS, formatTempoPercentage } from '../../../utils/timeUtils';
+import {
+  formatDurationMMSS,
+  formatTempoPercentage,
+} from '../../../utils/timeUtils';
 import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
@@ -378,12 +393,16 @@ const ContractDetailPage = () => {
             if (uploadSuccess) {
               message.success('Contract PDF uploaded successfully!');
             } else {
-              message.warning('Contract signed but PDF upload failed. You can export PDF manually.');
+              message.warning(
+                'Contract signed but PDF upload failed. You can export PDF manually.'
+              );
             }
           } catch (error) {
             console.error('Error generating/uploading PDF:', error);
             message.destroy();
-            message.warning('Contract signed but PDF generation failed. You can export PDF manually.');
+            message.warning(
+              'Contract signed but PDF generation failed. You can export PDF manually.'
+            );
           }
         }, 500); // Small delay to ensure state is updated
       }
@@ -473,8 +492,13 @@ const ContractDetailPage = () => {
         ],
       });
     } catch (error) {
-      console.warn('Failed to register Vietnamese font. PDF may not display Vietnamese correctly:', error);
-      console.warn('Please download Be Vietnam Pro font files to public/fonts/ folder. See public/fonts/README.md');
+      console.warn(
+        'Failed to register Vietnamese font. PDF may not display Vietnamese correctly:',
+        error
+      );
+      console.warn(
+        'Please download Be Vietnam Pro font files to public/fonts/ folder. See public/fonts/README.md'
+      );
     }
   }, []); // Only register once on mount
 
@@ -580,7 +604,7 @@ const ContractDetailPage = () => {
   });
 
   // Helper function to convert local image URL to base64
-  const imageUrlToBase64 = (url) => {
+  const imageUrlToBase64 = url => {
     if (!url) {
       return Promise.resolve(null);
     }
@@ -623,16 +647,42 @@ const ContractDetailPage = () => {
         {/* Company Seal - Only show when signed */}
         {contract?.status === 'signed' && (
           <View style={pdfStyles.seal}>
-            <Svg width="130" height="130" style={{ position: 'absolute', transform: 'rotate(-8deg)' }}>
+            <Svg
+              width="130"
+              height="130"
+              style={{ position: 'absolute', transform: 'rotate(-8deg)' }}
+            >
               {/* Outer circle - solid border */}
-              <Circle cx="65" cy="65" r="63.5" stroke="#c62828" strokeWidth="3" fill="none" />
+              <Circle
+                cx="65"
+                cy="65"
+                r="63.5"
+                stroke="#c62828"
+                strokeWidth="3"
+                fill="none"
+              />
               {/* Inner circle - dashed border */}
-              <Circle cx="65" cy="65" r="50" stroke="#c62828" strokeWidth="2" fill="none" strokeDasharray="4 4" />
+              <Circle
+                cx="65"
+                cy="65"
+                r="50"
+                stroke="#c62828"
+                strokeWidth="2"
+                fill="none"
+                strokeDasharray="4 4"
+              />
             </Svg>
-            <View style={[pdfStyles.sealInner, { position: 'absolute', transform: 'rotate(-8deg)' }]}>
+            <View
+              style={[
+                pdfStyles.sealInner,
+                { position: 'absolute', transform: 'rotate(-8deg)' },
+              ]}
+            >
               <PdfText style={pdfStyles.sealText}>MuTraPro Official</PdfText>
               <PdfText style={pdfStyles.sealDate}>
-                {contract?.signedAt ? dayjs(contract.signedAt).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')}
+                {contract?.signedAt
+                  ? dayjs(contract.signedAt).format('YYYY-MM-DD')
+                  : dayjs().format('YYYY-MM-DD')}
               </PdfText>
             </View>
           </View>
@@ -662,11 +712,15 @@ const ContractDetailPage = () => {
         <View style={pdfStyles.section}>
           <PdfText style={pdfStyles.sectionTitle}>Parties</PdfText>
           <PdfText style={pdfStyles.text}>
-            <PdfText style={{ fontWeight: 'bold' }}>Party A (Provider):</PdfText>{' '}
+            <PdfText style={{ fontWeight: 'bold' }}>
+              Party A (Provider):
+            </PdfText>{' '}
             {API_CONFIG.PARTY_A_NAME}
           </PdfText>
           <PdfText style={pdfStyles.text}>
-            <PdfText style={{ fontWeight: 'bold' }}>Party B (Customer):</PdfText>{' '}
+            <PdfText style={{ fontWeight: 'bold' }}>
+              Party B (Customer):
+            </PdfText>{' '}
             {contract?.nameSnapshot || 'N/A'}
             {contract?.phoneSnapshot && ` | Phone: ${contract.phoneSnapshot}`}
             {contract?.emailSnapshot && ` | Email: ${contract.emailSnapshot}`}
@@ -700,12 +754,15 @@ const ContractDetailPage = () => {
               <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
                 Price Breakdown:
               </PdfText>
-              {pricingBreakdown.transcriptionDetails.breakdown?.map((item, idx) => (
-                <PdfText key={idx} style={pdfStyles.text}>
-                  {item.label}: {item.amount?.toLocaleString()} {contract?.currency || 'VND'}
-                  {item.description && ` (${item.description})`}
-                </PdfText>
-              ))}
+              {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                (item, idx) => (
+                  <PdfText key={idx} style={pdfStyles.text}>
+                    {item.label}: {item.amount?.toLocaleString()}{' '}
+                    {contract?.currency || 'VND'}
+                    {item.description && ` (${item.description})`}
+                  </PdfText>
+                )
+              )}
             </View>
           )}
           {pricingBreakdown?.instruments?.length > 0 && (
@@ -722,7 +779,8 @@ const ContractDetailPage = () => {
             </View>
           )}
           <PdfText style={pdfStyles.text}>
-            Total Price: {contract?.totalPrice?.toLocaleString()} VND | Deposit: {contract?.depositPercent || 0}% ={' '}
+            Total Price: {contract?.totalPrice?.toLocaleString()} VND | Deposit:{' '}
+            {contract?.depositPercent || 0}% ={' '}
             {contract?.depositAmount?.toLocaleString()} VND | Final Amount:{' '}
             {contract?.finalAmount?.toLocaleString()} VND
           </PdfText>
@@ -736,11 +794,13 @@ const ContractDetailPage = () => {
                 Transcription Preferences
               </PdfText>
               <PdfText style={pdfStyles.text}>
-                Tempo Reference: {formatTempoPercentage(requestDetails.tempoPercentage)}
+                Tempo Reference:{' '}
+                {formatTempoPercentage(requestDetails.tempoPercentage)}
               </PdfText>
               {requestDetails?.durationMinutes && (
                 <PdfText style={pdfStyles.text}>
-                  Source Duration: {formatDurationMMSS(requestDetails.durationMinutes)}
+                  Source Duration:{' '}
+                  {formatDurationMMSS(requestDetails.durationMinutes)}
                 </PdfText>
               )}
             </View>
@@ -767,10 +827,18 @@ const ContractDetailPage = () => {
           <PdfText style={pdfStyles.text}>
             Free Revisions Included: {contract?.freeRevisionsIncluded || 0}
             {contract?.revisionDeadlineDays && (
-              <> | Revision Deadline: {contract.revisionDeadlineDays} days after delivery</>
+              <>
+                {' '}
+                | Revision Deadline: {contract.revisionDeadlineDays} days after
+                delivery
+              </>
             )}
             {contract?.additionalRevisionFeeVnd && (
-              <> | Additional Revision Fee: {contract.additionalRevisionFeeVnd.toLocaleString()} VND</>
+              <>
+                {' '}
+                | Additional Revision Fee:{' '}
+                {contract.additionalRevisionFeeVnd.toLocaleString()} VND
+              </>
             )}
           </PdfText>
         </View>
@@ -779,7 +847,9 @@ const ContractDetailPage = () => {
         {contract?.termsAndConditions && (
           <View style={pdfStyles.section}>
             <PdfText style={pdfStyles.sectionTitle}>Terms & Conditions</PdfText>
-            <PdfText style={pdfStyles.text}>{contract.termsAndConditions}</PdfText>
+            <PdfText style={pdfStyles.text}>
+              {contract.termsAndConditions}
+            </PdfText>
           </View>
         )}
 
@@ -803,7 +873,9 @@ const ContractDetailPage = () => {
                   src={partyASignatureBase64}
                   style={{ width: 100, height: 50, marginBottom: 5 }}
                 />
-                <PdfText style={pdfStyles.text}>CEO - MuTraPro Studio Co., Ltd</PdfText>
+                <PdfText style={pdfStyles.text}>
+                  CEO - MuTraPro Studio Co., Ltd
+                </PdfText>
                 <PdfText style={pdfStyles.text}>
                   Signed on:{' '}
                   {contract?.signedAt
@@ -815,7 +887,9 @@ const ContractDetailPage = () => {
             {contract?.status === 'signed' && !partyASignatureBase64 && (
               <>
                 <View style={pdfStyles.signatureLine} />
-                <PdfText style={pdfStyles.text}>CEO - MuTraPro Studio Co., Ltd</PdfText>
+                <PdfText style={pdfStyles.text}>
+                  CEO - MuTraPro Studio Co., Ltd
+                </PdfText>
                 <PdfText style={pdfStyles.text}>
                   Signed on:{' '}
                   {contract?.signedAt
@@ -1127,7 +1201,9 @@ const ContractDetailPage = () => {
                 {contract.currency || 'VND'}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item label={`Deposit (${contract.depositPercent || 0}%)`}>
+            <Descriptions.Item
+              label={`Deposit (${contract.depositPercent || 0}%)`}
+            >
               {contract.depositAmount?.toLocaleString()}{' '}
               {contract.currency || 'VND'}
             </Descriptions.Item>
@@ -1286,7 +1362,9 @@ const ContractDetailPage = () => {
                   <div className={styles.sealInner}>
                     <div className={styles.sealText}>MuTraPro Official</div>
                     <div className={styles.sealDate}>
-                      {contract.signedAt ? dayjs(contract.signedAt).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')}
+                      {contract.signedAt
+                        ? dayjs(contract.signedAt).format('YYYY-MM-DD')
+                        : dayjs().format('YYYY-MM-DD')}
                     </div>
                   </div>
                 </div>
@@ -1315,7 +1393,7 @@ const ContractDetailPage = () => {
                   contract.emailSnapshot !== 'N/A' &&
                   ` | Email: ${contract.emailSnapshot}`}
               </p>
-              
+
               {/* Request Summary */}
               {requestDetails &&
                 (requestDetails.title || requestDetails.description) && (
@@ -1339,103 +1417,103 @@ const ContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0) && (
-                  <div
-                    style={{
-                      marginBottom: '16px',
-                      padding: '12px',
-                      backgroundColor: '#f5f5f5',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <strong style={{ display: 'block', marginBottom: '8px' }}>
-                      Price Breakdown:
-                    </strong>
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '8px' }}>
+                    Price Breakdown:
+                  </strong>
 
-                    {/* Transcription Details */}
-                    {pricingBreakdown.transcriptionDetails && (
-                      <div
-                        style={{
-                          marginBottom:
-                            pricingBreakdown.instruments.length > 0
-                              ? '12px'
-                              : '0',
-                        }}
-                      >
-                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                          (item, index) => (
-                            <div
-                              key={index}
-                              style={{ marginBottom: '4px', fontSize: '14px' }}
-                            >
-                              <span>{item.label}: </span>
-                              <span style={{ fontWeight: 'bold' }}>
-                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                                {contract.currency || 'VND'}
-                              </span>
-                              {item.description && (
-                                <span
-                                  style={{ color: '#666', marginLeft: '8px' }}
-                                >
-                                  ({formatDescriptionDuration(item.description)})
-                                </span>
-                              )}
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Instruments */}
-                    {pricingBreakdown.instruments.length > 0 && (
-                      <div>
-                        <div
-                          style={{
-                            marginBottom: '4px',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          Instruments Surcharge:
-                        </div>
-                        {pricingBreakdown.instruments.map((instr, index) => (
+                  {/* Transcription Details */}
+                  {pricingBreakdown.transcriptionDetails && (
+                    <div
+                      style={{
+                        marginBottom:
+                          pricingBreakdown.instruments.length > 0
+                            ? '12px'
+                            : '0',
+                      }}
+                    >
+                      {pricingBreakdown.transcriptionDetails.breakdown?.map(
+                        (item, index) => (
                           <div
                             key={index}
-                            style={{
-                              marginLeft: '16px',
-                              marginBottom: '4px',
-                              fontSize: '14px',
-                            }}
+                            style={{ marginBottom: '4px', fontSize: '14px' }}
                           >
-                            <span>• {instr.instrumentName}: </span>
+                            <span>{item.label}: </span>
                             <span style={{ fontWeight: 'bold' }}>
-                              {instr.basePrice?.toLocaleString?.() ??
-                                instr.basePrice}{' '}
+                              {item.amount?.toLocaleString?.() ?? item.amount}{' '}
                               {contract.currency || 'VND'}
                             </span>
+                            {item.description && (
+                              <span
+                                style={{ color: '#666', marginLeft: '8px' }}
+                              >
+                                ({formatDescriptionDuration(item.description)})
+                              </span>
+                            )}
                           </div>
-                        ))}
+                        )
+                      )}
+                    </div>
+                  )}
+
+                  {/* Instruments */}
+                  {pricingBreakdown.instruments.length > 0 && (
+                    <div>
+                      <div
+                        style={{
+                          marginBottom: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        Instruments Surcharge:
+                      </div>
+                      {pricingBreakdown.instruments.map((instr, index) => (
                         <div
+                          key={index}
                           style={{
-                            marginTop: '4px',
+                            marginLeft: '16px',
+                            marginBottom: '4px',
                             fontSize: '14px',
-                            fontWeight: 'bold',
-                            borderTop: '1px solid #ddd',
-                            paddingTop: '4px',
                           }}
                         >
-                          Instruments Total:{' '}
-                          {pricingBreakdown.instruments
-                            .reduce(
-                              (sum, instr) => sum + (instr.basePrice || 0),
-                              0
-                            )
-                            .toLocaleString()}{' '}
-                          {contract.currency || 'VND'}
+                          <span>• {instr.instrumentName}: </span>
+                          <span style={{ fontWeight: 'bold' }}>
+                            {instr.basePrice?.toLocaleString?.() ??
+                              instr.basePrice}{' '}
+                            {contract.currency || 'VND'}
+                          </span>
                         </div>
+                      ))}
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          borderTop: '1px solid #ddd',
+                          paddingTop: '4px',
+                        }}
+                      >
+                        Instruments Total:{' '}
+                        {pricingBreakdown.instruments
+                          .reduce(
+                            (sum, instr) => sum + (instr.basePrice || 0),
+                            0
+                          )
+                          .toLocaleString()}{' '}
+                        {contract.currency || 'VND'}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p>
                 <strong>Total Price:</strong>{' '}
@@ -1489,17 +1567,20 @@ const ContractDetailPage = () => {
 
               <h3>Revision Policy</h3>
               <p>
-                <strong>Free Revisions Included:</strong> {contract.freeRevisionsIncluded || 0}
+                <strong>Free Revisions Included:</strong>{' '}
+                {contract.freeRevisionsIncluded || 0}
                 {contract.revisionDeadlineDays && (
                   <>
-                    {' '}&nbsp;|&nbsp;{' '}
-                    <strong>Revision Deadline:</strong> {contract.revisionDeadlineDays} days after delivery
+                    {' '}
+                    &nbsp;|&nbsp; <strong>Revision Deadline:</strong>{' '}
+                    {contract.revisionDeadlineDays} days after delivery
                   </>
                 )}
                 {contract.additionalRevisionFeeVnd && (
                   <>
-                    {' '}&nbsp;|&nbsp;{' '}
-                    <strong>Additional Revision Fee:</strong> {contract.additionalRevisionFeeVnd.toLocaleString()} VND
+                    {' '}
+                    &nbsp;|&nbsp; <strong>Additional Revision Fee:</strong>{' '}
+                    {contract.additionalRevisionFeeVnd.toLocaleString()} VND
                   </>
                 )}
               </p>

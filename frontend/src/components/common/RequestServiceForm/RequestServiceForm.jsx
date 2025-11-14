@@ -119,7 +119,10 @@ export default function RequestServiceForm({
       contactName: allValues.contactName || user?.fullName || '',
       contactPhone: allValues.contactPhone || '',
       contactEmail:
-        form.getFieldValue('contactEmail') || allValues.contactEmail || user?.email || '',
+        form.getFieldValue('contactEmail') ||
+        allValues.contactEmail ||
+        user?.email ||
+        '',
       instrumentIds: selectedInstruments, // Thêm instrumentIds
       // Optional fields based on service type
       hasVocalist: allValues.hasVocalist || false,

@@ -98,7 +98,9 @@ export default function ServiceRequestContracts() {
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [loadingContracts, setLoadingContracts] = useState(false);
 
-  const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+  const basePath = location.pathname.startsWith('/admin')
+    ? '/admin'
+    : '/manager';
 
   const fetchRequest = async () => {
     if (!requestId) {
@@ -129,7 +131,9 @@ export default function ServiceRequestContracts() {
       if (response?.status === 'success') {
         setContracts(response.data || []);
       } else {
-        throw new Error(response?.message || 'Không thể tải danh sách hợp đồng');
+        throw new Error(
+          response?.message || 'Không thể tải danh sách hợp đồng'
+        );
       }
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -203,7 +207,9 @@ export default function ServiceRequestContracts() {
       width: 160,
       render: (_, record) => (
         <div>
-          <Text strong>{formatCurrency(record.totalPrice, record.currency)}</Text>
+          <Text strong>
+            {formatCurrency(record.totalPrice, record.currency)}
+          </Text>
           <div className={styles.subText}>
             Đặt cọc {Number(record.depositPercent || 0)}% ={' '}
             {formatCurrency(record.depositAmount, record.currency)}
@@ -293,9 +299,8 @@ export default function ServiceRequestContracts() {
                 <Descriptions.Item label="Trạng thái">
                   <Tag
                     color={
-                      REQUEST_STATUS_COLORS[
-                        request.status?.toLowerCase()
-                      ] || 'default'
+                      REQUEST_STATUS_COLORS[request.status?.toLowerCase()] ||
+                      'default'
                     }
                   >
                     {request.status?.toUpperCase() || 'N/A'}
@@ -407,4 +412,3 @@ export default function ServiceRequestContracts() {
     </div>
   );
 }
-

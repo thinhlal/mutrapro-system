@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Spin, Empty, Tag, Card, message, Button, Pagination } from 'antd';
+import {
+  Select,
+  Spin,
+  Empty,
+  Tag,
+  Card,
+  message,
+  Button,
+  Pagination,
+} from 'antd';
 import {
   FileTextOutlined,
   ClockCircleOutlined,
@@ -40,9 +49,9 @@ const MyRequestsContent = () => {
       const filters = {
         page: page,
         size: size,
-        sort: 'createdAt,desc'
+        sort: 'createdAt,desc',
       };
-      
+
       // Chỉ thêm status nếu có giá trị (không phải empty string)
       if (isPendingNoManager || isPendingHasManager) {
         filters.status = 'pending';
@@ -51,26 +60,26 @@ const MyRequestsContent = () => {
       }
 
       const response = await getMyRequests(filters);
-      
+
       if (response && response.status === 'success') {
         // API trả về Page object hoặc array trực tiếp
         const pageData = response.data;
-        
+
         // Kiểm tra xem pageData là array hay Page object
         let data = [];
         let paginationInfo = {
           current: 1,
           pageSize: size,
-          total: 0
+          total: 0,
         };
-        
+
         if (Array.isArray(pageData)) {
           // Nếu là array trực tiếp (Spring có thể serialize Page thành array)
           data = pageData;
           paginationInfo = {
             current: 1,
             pageSize: size,
-            total: pageData.length
+            total: pageData.length,
           };
         } else if (pageData && typeof pageData === 'object') {
           // Nếu là Page object với structure {content: [...], number: 0, size: 10, ...}
@@ -78,17 +87,17 @@ const MyRequestsContent = () => {
           paginationInfo = {
             current: (pageData.number || 0) + 1, // Spring Data page starts from 0
             pageSize: pageData.size || size,
-            total: pageData.totalElements || 0
+            total: pageData.totalElements || 0,
           };
         }
-        
+
         // Filter client-side cho 2 case đặc biệt (chỉ áp dụng cho trang hiện tại)
         if (isPendingNoManager) {
           data = data.filter(r => !r.managerUserId);
         } else if (isPendingHasManager) {
           data = data.filter(r => !!r.managerUserId);
         }
-        
+
         setRequests(data);
         setPagination(paginationInfo);
       } else {
@@ -294,7 +303,9 @@ const MyRequestsContent = () => {
                         <span className={styles.infoLabel}>Guests:</span>
                         <span className={styles.infoValue}>
                           {request.externalGuestCount}{' '}
-                          {request.externalGuestCount === 1 ? 'person' : 'people'}
+                          {request.externalGuestCount === 1
+                            ? 'person'
+                            : 'people'}
                         </span>
                       </div>
                     )}

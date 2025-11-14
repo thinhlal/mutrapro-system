@@ -12,9 +12,18 @@ export const getDefaultTermsAndConditions = (
     finalAmount = 0,
   } = {}
 ) => {
-  const freeRevisionsText = freeRevisionsIncluded === 1 ? '1 free revision' : `${freeRevisionsIncluded} free revisions`;
-  const finalAmountFormatted = typeof finalAmount === 'number' ? finalAmount.toLocaleString() : finalAmount;
-  const revisionFeeFormatted = typeof additionalRevisionFeeVnd === 'number' ? additionalRevisionFeeVnd.toLocaleString() : additionalRevisionFeeVnd;
+  const freeRevisionsText =
+    freeRevisionsIncluded === 1
+      ? '1 free revision'
+      : `${freeRevisionsIncluded} free revisions`;
+  const finalAmountFormatted =
+    typeof finalAmount === 'number'
+      ? finalAmount.toLocaleString()
+      : finalAmount;
+  const revisionFeeFormatted =
+    typeof additionalRevisionFeeVnd === 'number'
+      ? additionalRevisionFeeVnd.toLocaleString()
+      : additionalRevisionFeeVnd;
 
   const termsMap = {
     transcription: `1. SERVICE SCOPE

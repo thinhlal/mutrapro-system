@@ -260,10 +260,10 @@ function App() {
               path="service-requests"
               element={<ServiceRequestManagement />}
             />
-          <Route
-            path="service-requests/:requestId/contracts"
-            element={<ServiceRequestContracts />}
-          />
+            <Route
+              path="service-requests/:requestId/contracts"
+              element={<ServiceRequestContracts />}
+            />
             <Route
               path="service-requests/:requestId/contracts"
               element={<ServiceRequestContracts />}
