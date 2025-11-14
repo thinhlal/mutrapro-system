@@ -216,6 +216,43 @@
   color: #e53e3e;
 }
 
+/* Wallet Balance Section */
+.walletBalanceSection {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.walletBalanceHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.walletIcon {
+  font-size: 1rem;
+  color: #1890ff;
+}
+
+.walletLabel {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.walletBalanceAmount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  line-height: 1.2;
+}
+
+.walletLoading {
+  color: #a0aec0;
+  font-size: 1rem;
+}
+
 /* Divider */
 .dropdownDivider {
   height: 1px;

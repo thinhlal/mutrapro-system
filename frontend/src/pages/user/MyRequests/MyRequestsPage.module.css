@@ -9,11 +9,13 @@
 }
 
 .myRequestsContentWrapper {
+  max-width: 1400px;
   margin: 0 auto;
   background-color: var(--background-card);
   padding: 24px 32px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  min-height: calc(100vh - 80px);
 }
 
 .headerSection {

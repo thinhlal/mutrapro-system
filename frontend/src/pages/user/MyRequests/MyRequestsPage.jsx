@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './MyRequestsPage.module.css';
-import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
+import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
 
 const { Option } = Select;
@@ -357,9 +357,12 @@ const MyRequestsContent = () => {
 
 const MyRequestsPage = () => {
   return (
-    <ProfileLayout>
-      <MyRequestsContent />
-    </ProfileLayout>
+    <>
+      <Header />
+      <div style={{ paddingTop: '80px' }}>
+        <MyRequestsContent />
+      </div>
+    </>
   );
 };
 

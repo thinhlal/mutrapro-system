@@ -1,0 +1,217 @@
+.container {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  min-height: calc(100vh - 80px);
+}
+
+.header {
+  margin-bottom: 24px;
+  padding-top: 0;
+}
+
+.title {
+  margin-bottom: 8px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #333;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #666;
+}
+
+.titleIcon {
+  font-size: 32px;
+  color: #ec8a1c;
+}
+
+/* Wallet Balance Card */
+.walletCard {
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(236, 138, 28, 0.25);
+}
+
+.walletCard :global(.ant-card-body) {
+  padding: 16px;
+}
+
+.balanceSection {
+  color: white;
+}
+
+.balanceLabel {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.balanceAmount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.balanceIcon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.balanceValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.currencyTag {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.walletCard :global(.ant-btn-primary) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.walletCard :global(.ant-btn-primary:hover) {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.walletCard :global(.ant-btn) {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.walletCard :global(.ant-btn:hover) {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.topupButton {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Transactions Card */
+.transactionsCard {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.transactionsCard :global(.ant-card-body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.transactionsCard :global(.ant-card-head) {
+  border-bottom: 2px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.transactionsCard :global(.ant-card-head-title) {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.transactionsCard :global(.ant-table) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.transactionsCard :global(.ant-table-thead > tr > th) {
+  background: #fafafa;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.transactionsCard :global(.ant-table-tbody > tr:hover > td) {
+  background: #f5f5f5;
+}
+
+.transactionsCard :global(.ant-table-wrapper) {
+  flex: 1;
+  min-height: 0;
+}
+
+.transactionsCard :global(.ant-spin-nested-loading) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.transactionsCard :global(.ant-spin-container) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.transactionsCard :global(.ant-table) {
+  flex: 1;
+  min-height: 0;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .balanceValue {
+    font-size: 28px;
+  }
+
+  .balanceIcon {
+    font-size: 28px;
+  }
+
+  .walletCard :global(.ant-card-body) {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 24px !important;
+  }
+
+  .titleIcon {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 576px) {
+  .balanceValue {
+    font-size: 24px;
+  }
+
+  .balanceIcon {
+    font-size: 24px;
+  }
+  
+  .walletCard :global(.ant-card-body) {
+    padding: 16px;
+  }
+}

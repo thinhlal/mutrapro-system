@@ -161,6 +161,22 @@ export const API_ENDPOINTS = {
     GET_BY_ID: planId => `${BILLING_PATH}/subscription-plans/${planId}`,
   },
 
+  // === Wallet Management ===
+  WALLET: {
+    // GET /api/v1/billing/wallets/me
+    GET_OR_CREATE_MY_WALLET: `${BILLING_PATH}/wallets/me`,
+    // GET /api/v1/billing/wallets/{walletId}
+    GET_BY_ID: walletId => `${BILLING_PATH}/wallets/${walletId}`,
+    // POST /api/v1/billing/wallets/{walletId}/topup
+    TOPUP: walletId => `${BILLING_PATH}/wallets/${walletId}/topup`,
+    // POST /api/v1/billing/wallets/{walletId}/debit
+    DEBIT: walletId => `${BILLING_PATH}/wallets/${walletId}/debit`,
+    // GET /api/v1/billing/wallets/{walletId}/transactions
+    GET_TRANSACTIONS: walletId => `${BILLING_PATH}/wallets/${walletId}/transactions`,
+    // GET /api/v1/billing/wallets/me/transactions
+    GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
+  },
+
   // === Request Service (Quản lý Notation, Requests) ===
   REQUEST: {
     NOTATION_INSTRUMENTS: `${REQUEST_PATH}/notation-instruments`,

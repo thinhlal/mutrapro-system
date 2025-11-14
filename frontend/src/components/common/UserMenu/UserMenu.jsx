@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getOrCreateMyWallet } from '../../../services/walletService';
 import styles from './UserMenu.module.css';
 import {
   UserOutlined,
@@ -10,12 +11,15 @@ import {
   DashboardOutlined,
   BellOutlined,
   FileTextOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 
 function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [wallet, setWallet] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(false);
   const menuRef = useRef(null);
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +53,39 @@ function UserMenu() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen]);
+
+  // Load wallet info when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadWallet();
+    }
+  }, [isAuthenticated, user]);
+
+  const loadWallet = async () => {
+    setWalletLoading(true);
+    try {
+      const response = await getOrCreateMyWallet();
+      if (response.status === 'success' && response.data) {
+        setWallet(response.data);
+      }
+    } catch (error) {
+      // Silent fail - don't show error in menu
+      console.error('Failed to load wallet:', error);
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount, currency = 'VND') => {
+    if (!amount) return '0';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const handleLogout = async () => {
     try {
@@ -129,7 +166,25 @@ function UserMenu() {
             </div>
           </div>
 
-          <div className={styles.dropdownDivider} />
+          {/* Wallet Balance Section */}
+          {wallet && (
+            <>
+              <div className={styles.walletBalanceSection}>
+                <div className={styles.walletBalanceHeader}>
+                  <WalletOutlined className={styles.walletIcon} />
+                  <span className={styles.walletLabel}>Số dư ví</span>
+                </div>
+                <div className={styles.walletBalanceAmount}>
+                  {walletLoading ? (
+                    <span className={styles.walletLoading}>...</span>
+                  ) : (
+                    formatCurrency(wallet.balance, wallet.currency)
+                  )}
+                </div>
+              </div>
+              <div className={styles.dropdownDivider} />
+            </>
+          )}
 
           <ul className={styles.dropdownMenu}>
             {/* Profile */}
@@ -193,6 +248,18 @@ function UserMenu() {
               >
                 <FileTextOutlined className={styles.dropdownIcon} />
                 <span>My Requests</span>
+              </Link>
+            </li>
+
+            {/* Wallet */}
+            <li>
+              <Link
+                to="/wallet"
+                className={styles.dropdownItem}
+                onClick={handleMenuItemClick}
+              >
+                <WalletOutlined className={styles.dropdownIcon} />
+                <span>My Wallet</span>
               </Link>
             </li>
           </ul>

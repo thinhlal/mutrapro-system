@@ -36,6 +36,7 @@ import SubscriptionPage from './pages/user/Subscription/SubscriptionPage';
 import MyRequestsPage from './pages/user/MyRequests/MyRequestsPage';
 import RequestDetailPage from './pages/user/RequestDetail/RequestDetailPage';
 import ContractDetailPage from './pages/user/ContractDetail/ContractDetailPage';
+import WalletPage from './pages/user/Wallet/WalletPage';
 
 // Professionals Pages
 import SingersPage from './pages/professionals/Singers/List/SingersPage';
@@ -166,6 +167,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <SubscriptionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <WalletPage />
               </ProtectedRoute>
             }
           />

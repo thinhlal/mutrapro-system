@@ -9,10 +9,8 @@ const ProfileLayout = ({ children }) => {
   const location = useLocation();
 
   const navItems = [
-    { label: 'Back to app', path: '/', type: 'link' },
     { type: 'separator' },
     { label: 'Profile', path: '/profile' },
-    { label: 'My Requests', path: '/my-requests' },
     { label: 'Subscription', path: '/profile/subscription' },
   ];
 
