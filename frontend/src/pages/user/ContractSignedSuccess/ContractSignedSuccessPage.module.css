@@ -1,0 +1,104 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.successCard {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.successHeader {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.successIcon {
+  font-size: 80px;
+  color: #52c41a;
+  margin-bottom: 20px;
+}
+
+.successTitle {
+  color: #1890ff;
+  margin-bottom: 8px !important;
+}
+
+.successSubtitle {
+  font-size: 16px;
+}
+
+.summarySection {
+  margin: 32px 0;
+}
+
+.descriptions {
+  margin-top: 16px;
+}
+
+.noticeAlert {
+  margin: 24px 0;
+}
+
+.paymentSection {
+  margin-top: 32px;
+}
+
+.paymentCard {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border: none;
+}
+
+.paymentInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+}
+
+.paymentIcon {
+  font-size: 48px;
+  color: #1890ff;
+}
+
+.paymentLabel {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.paymentAmount {
+  font-size: 32px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.payButton {
+  height: 50px;
+  font-size: 16px;
+}
+
+.viewButton {
+  height: 50px;
+}
+
+.laterButton {
+  width: 100%;
+  text-align: center;
+}
+

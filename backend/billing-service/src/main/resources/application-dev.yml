@@ -20,6 +20,15 @@ spring:
   sql:
     init:
       mode: never
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
 
 logging:
   level:
@@ -28,3 +37,9 @@ logging:
 # JWT Configuration - Must match auth-service signerKey
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+
+# Event Topics Configuration
+app:
+  event-topics:
+    mappings:
+      billing.deposit-paid: billing-deposit-paid

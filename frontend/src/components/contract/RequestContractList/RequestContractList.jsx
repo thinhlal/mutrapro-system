@@ -132,7 +132,7 @@ const RequestContractList = ({
                 <Button
                   icon={<EyeOutlined />}
                   onClick={() =>
-                    navigate(`/user/contracts/${contract.contractId}`)
+                    navigate(`/contracts/${contract.contractId}`)
                   }
                   style={{ marginBottom: canCustomerAction || canSign ? 8 : 0 }}
                 >

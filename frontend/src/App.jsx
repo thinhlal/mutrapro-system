@@ -36,6 +36,8 @@ import SubscriptionPage from './pages/user/Subscription/SubscriptionPage';
 import MyRequestsPage from './pages/user/MyRequests/MyRequestsPage';
 import RequestDetailPage from './pages/user/RequestDetail/RequestDetailPage';
 import ContractDetailPage from './pages/user/ContractDetail/ContractDetailPage';
+import ContractSignedSuccessPage from './pages/user/ContractSignedSuccess/ContractSignedSuccessPage';
+import PayDepositPage from './pages/user/PayDeposit/PayDepositPage';
 import WalletPage from './pages/user/Wallet/WalletPage';
 import WalletManagement from './pages/admin/WalletManagement/WalletManagement';
 
@@ -148,6 +150,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <ContractDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:contractId/signed-success"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                <ContractSignedSuccessPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:contractId/pay-deposit"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                <PayDepositPage />
               </ProtectedRoute>
             }
           />

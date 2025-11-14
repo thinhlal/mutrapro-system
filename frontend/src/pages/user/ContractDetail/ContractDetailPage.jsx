@@ -19,6 +19,7 @@ import {
   ArrowLeftOutlined,
   EyeOutlined,
   DownloadOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import {
   Document,
@@ -48,6 +49,7 @@ import {
   getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
+import { getPendingDepositInstallment } from '../../../services/billingService';
 import {
   formatDurationMMSS,
   formatTempoPercentage,
@@ -131,6 +133,10 @@ const ContractDetailPage = () => {
   });
   const [requestDetails, setRequestDetails] = useState(null);
 
+  // Deposit installment state
+  const [depositInstallment, setDepositInstallment] = useState(null);
+  const [loadingDeposit, setLoadingDeposit] = useState(false);
+
   // Load contract data
   useEffect(() => {
     if (contractId) {
@@ -145,6 +151,18 @@ const ContractDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
+        
+        // Load deposit installment if contract is signed (non-blocking)
+        if (response.data.status?.toLowerCase() === 'signed') {
+          // Load deposit installment asynchronously, don't block contract loading
+          loadDepositInstallment().catch(err => {
+            console.warn('Failed to load deposit installment:', err);
+            // Don't show error to user, just log it
+          });
+        } else {
+          setDepositInstallment(null);
+        }
+        
         // Load pricing breakdown if requestId is available
         if (response.data.requestId) {
           await loadPricingBreakdown(response.data.requestId);
@@ -225,6 +243,29 @@ const ContractDetailPage = () => {
     } catch (error) {
       console.warn('Error loading pricing breakdown:', error);
     }
+  };
+
+  // Load deposit installment
+  const loadDepositInstallment = async () => {
+    try {
+      setLoadingDeposit(true);
+      const response = await getPendingDepositInstallment(contractId);
+      if (response?.status === 'success' && response?.data) {
+        setDepositInstallment(response.data);
+      } else {
+        setDepositInstallment(null);
+      }
+    } catch (error) {
+      console.warn('Error loading deposit installment:', error);
+      setDepositInstallment(null);
+    } finally {
+      setLoadingDeposit(false);
+    }
+  };
+
+  // Handle pay deposit
+  const handlePayDeposit = () => {
+    navigate(`/contracts/${contractId}/pay-deposit`);
   };
 
   // Handle approve
@@ -405,6 +446,11 @@ const ContractDetailPage = () => {
             );
           }
         }, 500); // Small delay to ensure state is updated
+
+        // Redirect to success page after a short delay
+        setTimeout(() => {
+          navigate(`/contracts/${contractId}/signed-success`);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -1117,6 +1163,19 @@ const ContractDetailPage = () => {
               type="success"
               showIcon
               style={{ marginBottom: 12 }}
+              action={
+                depositInstallment && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<DollarOutlined />}
+                    onClick={handlePayDeposit}
+                    loading={loadingDeposit}
+                  >
+                    Pay Deposit
+                  </Button>
+                )
+              }
             />
           )}
 
@@ -1314,6 +1373,20 @@ const ContractDetailPage = () => {
                 size="large"
               >
                 E-Sign Contract
+              </Button>
+            )}
+
+            {isSigned && depositInstallment && (
+              <Button
+                type="primary"
+                icon={<DollarOutlined />}
+                onClick={handlePayDeposit}
+                loading={loadingDeposit}
+                block
+                size="large"
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                Pay Deposit ({depositInstallment.amount?.toLocaleString()} {depositInstallment.currency || 'VND'})
               </Button>
             )}
 

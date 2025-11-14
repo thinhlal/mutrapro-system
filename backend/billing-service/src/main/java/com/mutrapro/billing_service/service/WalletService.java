@@ -1,13 +1,21 @@
 package com.mutrapro.billing_service.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.billing_service.dto.request.DebitWalletRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
+import com.mutrapro.billing_service.entity.ContractInstallment;
+import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.Wallet;
 import com.mutrapro.billing_service.entity.WalletTransaction;
+import com.mutrapro.billing_service.repository.OutboxEventRepository;
+import com.mutrapro.shared.event.DepositPaidEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
+import com.mutrapro.billing_service.enums.InstallmentStatus;
 import com.mutrapro.billing_service.enums.WalletTxType;
+import com.mutrapro.billing_service.repository.ContractInstallmentRepository;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
 import com.mutrapro.billing_service.exception.InsufficientBalanceException;
 import com.mutrapro.billing_service.exception.InvalidAmountException;
@@ -33,6 +41,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -43,6 +52,9 @@ public class WalletService {
     WalletRepository walletRepository;
     WalletTransactionRepository walletTransactionRepository;
     WalletMapper walletMapper;
+    ContractInstallmentRepository contractInstallmentRepository;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
 
     /**
      * Lấy hoặc tạo wallet cho user hiện tại
@@ -135,6 +147,17 @@ public class WalletService {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("topup_amount", request.getAmount().toString());
         metadata.put("currency", currency.name());
+        
+        // Lưu thông tin payment method và gateway (nếu có)
+        if (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank()) {
+            metadata.put("payment_method", request.getPaymentMethod());
+        }
+        if (request.getTransactionId() != null && !request.getTransactionId().isBlank()) {
+            metadata.put("transaction_id", request.getTransactionId());
+        }
+        if (request.getGatewayResponse() != null && !request.getGatewayResponse().isBlank()) {
+            metadata.put("gateway_response", request.getGatewayResponse());
+        }
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
@@ -200,6 +223,7 @@ public class WalletService {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("debit_amount", request.getAmount().toString());
         metadata.put("currency", currency.name());
+        metadata.put("payment_method", "wallet");  // Luôn là wallet vì thanh toán từ ví
         if (request.getPaymentId() != null) {
             metadata.put("payment_id", request.getPaymentId().toString());
         }
@@ -219,6 +243,85 @@ public class WalletService {
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        // Nếu có installmentId, update installment status thành "paid"
+        if (request.getInstallmentId() != null && !request.getInstallmentId().isBlank()) {
+            try {
+                ContractInstallment installment = contractInstallmentRepository.findById(request.getInstallmentId())
+                    .orElse(null);
+                
+                if (installment != null) {
+                    // Validate installment status
+                    if (installment.getStatus() != InstallmentStatus.pending) {
+                        log.warn("Installment is not pending: installmentId={}, status={}", 
+                            request.getInstallmentId(), installment.getStatus());
+                    } else {
+                        // Validate amount matches
+                        if (installment.getAmount().compareTo(request.getAmount()) != 0) {
+                            log.warn("Installment amount mismatch: installmentId={}, installmentAmount={}, paymentAmount={}", 
+                                request.getInstallmentId(), installment.getAmount(), request.getAmount());
+                        } else {
+                            // Update installment status to paid
+                            Instant paidAt = Instant.now();
+                            installment.setStatus(InstallmentStatus.paid);
+                            installment.setPaidAt(paidAt);
+                            contractInstallmentRepository.save(installment);
+                            
+                            log.info("Updated installment status to paid: installmentId={}, contractId={}, amount={}, paidAt={}",
+                                request.getInstallmentId(), installment.getContractId(), request.getAmount(), paidAt);
+                            
+                            // Nếu là deposit installment, publish event để project-service update contract start date
+                            if (installment.getIsDeposit() != null && installment.getIsDeposit() 
+                                && installment.getContractId() != null) {
+                                try {
+                                    // Tạo DepositPaidEvent
+                                    DepositPaidEvent event = DepositPaidEvent.builder()
+                                        .eventId(UUID.randomUUID())
+                                        .contractId(installment.getContractId())
+                                        .installmentId(installment.getInstallmentId())
+                                        .depositPaidAt(paidAt)
+                                        .amount(installment.getAmount())
+                                        .currency(installment.getCurrency().name())
+                                        .timestamp(Instant.now())
+                                        .build();
+                                    
+                                    JsonNode payload = objectMapper.valueToTree(event);
+                                    
+                                    UUID aggregateId;
+                                    try {
+                                        aggregateId = UUID.fromString(installment.getContractId());
+                                    } catch (IllegalArgumentException ex) {
+                                        aggregateId = UUID.randomUUID();
+                                    }
+                                    
+                                    OutboxEvent outboxEvent = OutboxEvent.builder()
+                                        .aggregateId(aggregateId)
+                                        .aggregateType("ContractInstallment")
+                                        .eventType("billing.deposit-paid")
+                                        .eventPayload(payload)
+                                        .build();
+                                    
+                                    outboxEventRepository.save(outboxEvent);
+                                    
+                                    log.info("Queued DepositPaidEvent in outbox: contractId={}, installmentId={}, depositPaidAt={}",
+                                        installment.getContractId(), installment.getInstallmentId(), paidAt);
+                                } catch (Exception e) {
+                                    log.error("Failed to enqueue DepositPaidEvent: contractId={}, installmentId={}, error={}",
+                                        installment.getContractId(), installment.getInstallmentId(), e.getMessage(), e);
+                                    // Không throw exception - installment đã được update thành công
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    log.warn("Installment not found: installmentId={}", request.getInstallmentId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to update installment status: installmentId={}, error={}",
+                    request.getInstallmentId(), e.getMessage(), e);
+                // Không throw exception - transaction đã được tạo thành công
+            }
+        }
 
         log.info("Debit wallet: walletId={}, amount={}, balanceBefore={}, balanceAfter={}",
                 walletId, request.getAmount(), balanceBefore, balanceAfter);

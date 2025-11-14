@@ -155,6 +155,14 @@ export const API_ENDPOINTS = {
     REFRESH_STATUS: orderId =>
       `${BILLING_PATH}/payments/orders/refresh/${orderId}`,
   },
+  INSTALLMENTS: {
+    // GET /api/v1/billing/contract-installments/contract/{contractId}
+    GET_BY_CONTRACT_ID: contractId =>
+      `${BILLING_PATH}/contract-installments/contract/${contractId}`,
+    // GET /api/v1/billing/contract-installments/contract/{contractId}/pending-deposit
+    GET_PENDING_DEPOSIT: contractId =>
+      `${BILLING_PATH}/contract-installments/contract/${contractId}/pending-deposit`,
+  },
 
   SUBSCRIPTION_PLANS: {
     GET_ALL: `${BILLING_PATH}/subscription-plans`,

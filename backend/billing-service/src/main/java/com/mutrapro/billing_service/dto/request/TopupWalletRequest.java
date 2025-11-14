@@ -25,5 +25,10 @@ public class TopupWalletRequest {
     BigDecimal amount;
     
     CurrencyType currency;  // Optional, default VND
+    
+    // Thông tin payment gateway (SePay, VNPay, etc.) - optional
+    String paymentMethod;  // "sepay_qr", "banking", etc.
+    String transactionId;  // Transaction ID từ payment gateway
+    String gatewayResponse;  // Response từ payment gateway (JSON string)
 }
 

@@ -107,40 +107,15 @@ Table contract_installments {
   }
 }
 
-Table payments {
-  payment_id uuid [pk, default: `gen_random_uuid()`]
-  installment_id uuid [ref: > contract_installments.installment_id, not null]
-  
-  // Thông tin thanh toán
-  amount decimal(12,2) [not null]
-  currency currency_type [default: 'VND']
-  payment_method payment_method [not null]
-  
-  // Liên kết với ví điện tử (FK một chiều với UNIQUE)
-  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id, unique, delete: set null]
-  
-  // Thông tin giao dịch
-  transaction_id varchar(100)
-  gateway_response text
-  
-  // Trạng thái và thời gian
-  status payment_status [default: 'pending']
-  payment_date timestamp
-  processed_date timestamp
-  
-  notes text
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Thanh toán chi tiết theo đợt thanh toán (installment). FK một chiều với wallet_transactions để tránh vòng FK. UNIQUE constraint đảm bảo 1-1 relationship.'
-  
-  indexes {
-    installment_id
-    payment_method
-    status
-    wallet_tx_id [unique]
-    payment_date
-  }
-}
+// Table payments - NOT USED
+// Thông tin payment được lưu trong wallet_transactions.metadata (JSONB)
+// - Topup: metadata.payment_method = "sepay_qr", metadata.sepay_transaction_id, metadata.gateway_response
+// - Payment: metadata.payment_method = "wallet", đã có installment_id trong wallet_transactions
+// 
+// Table payments {
+//   payment_id uuid [pk, default: `gen_random_uuid()`]
+//   ...
+// }
 
 Table outbox_events {
   event_id uuid [pk, default: `gen_random_uuid()`]
