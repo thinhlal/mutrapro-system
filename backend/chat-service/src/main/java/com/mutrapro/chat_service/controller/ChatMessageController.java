@@ -4,6 +4,7 @@ import com.mutrapro.chat_service.dto.request.SendMessageRequest;
 import com.mutrapro.chat_service.dto.response.ChatMessageResponse;
 import com.mutrapro.chat_service.service.ChatMessageService;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,15 +30,18 @@ public class ChatMessageController {
 
     @GetMapping("/room/{roomId}")
     @Operation(summary = "Lấy danh sách tin nhắn trong phòng chat (phân trang)")
-    public ApiResponse<Page<ChatMessageResponse>> getRoomMessages(
+    public ApiResponse<PageResponse<ChatMessageResponse>> getRoomMessages(
             @PathVariable String roomId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         log.info("Getting messages for room: roomId={}, page={}, size={}", roomId, page, size);
         Page<ChatMessageResponse> responses = chatMessageService.getRoomMessages(roomId, page, size);
-        return ApiResponse.<Page<ChatMessageResponse>>builder()
+        
+        PageResponse<ChatMessageResponse> pageResponse = PageResponse.from(responses);
+        
+        return ApiResponse.<PageResponse<ChatMessageResponse>>builder()
                 .message("Messages retrieved successfully")
-                .data(responses)
+                .data(pageResponse)
                 .statusCode(200)
                 .build();
     }

@@ -5,6 +5,7 @@ import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.dto.response.UnreadCountResponse;
 import com.mutrapro.notification_service.service.NotificationService;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,7 +40,7 @@ public class NotificationController {
      */
     @GetMapping
     @Operation(summary = "Lấy danh sách thông báo của user")
-    public ApiResponse<Page<NotificationResponse>> getNotifications(
+    public ApiResponse<PageResponse<NotificationResponse>> getNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
@@ -48,9 +49,11 @@ public class NotificationController {
         
         Page<NotificationResponse> notifications = notificationService.getUserNotifications(userId, page, size);
         
-        return ApiResponse.<Page<NotificationResponse>>builder()
+        PageResponse<NotificationResponse> pageResponse = PageResponse.from(notifications);
+        
+        return ApiResponse.<PageResponse<NotificationResponse>>builder()
                 .message("Notifications retrieved successfully")
-                .data(notifications)
+                .data(pageResponse)
                 .statusCode(200)
                 .build();
     }

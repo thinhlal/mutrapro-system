@@ -7,6 +7,7 @@ import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
 import com.mutrapro.request_service.service.ServiceRequestService;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,7 +51,7 @@ public class ServiceRequestController {
 
     @GetMapping("/my-requests")
     @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status, có phân trang)")
-    public ApiResponse<Page<ServiceRequestResponse>> getUserRequests(
+    public ApiResponse<PageResponse<ServiceRequestResponse>> getUserRequests(
             @Parameter(description = "Filter theo status (pending, in_progress, completed, cancelled). Nếu không truyền thì trả về tất cả")
             @RequestParam(required = false) RequestStatus status,
             @RequestParam(required = false, defaultValue = "0") int page,
@@ -75,16 +76,18 @@ public class ServiceRequestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
         Page<ServiceRequestResponse> requestsPage = serviceRequestService.getUserRequests(status, pageable);
         
-        return ApiResponse.<Page<ServiceRequestResponse>>builder()
+        PageResponse<ServiceRequestResponse> pageResponse = PageResponse.from(requestsPage);
+        
+        return ApiResponse.<PageResponse<ServiceRequestResponse>>builder()
                 .message("User requests retrieved successfully")
-                .data(requestsPage)
+                .data(pageResponse)
                 .statusCode(200)
                 .build();
     }
 
     @GetMapping
     @Operation(summary = "Lấy tất cả service requests với các filter tùy chọn (có phân trang)")
-    public ApiResponse<Page<ServiceRequestResponse>> getAllServiceRequests(
+    public ApiResponse<PageResponse<ServiceRequestResponse>> getAllServiceRequests(
             @RequestParam(required = false) RequestStatus status,
             @RequestParam(required = false) ServiceType requestType,
             @RequestParam(required = false) String managerUserId,
@@ -111,9 +114,11 @@ public class ServiceRequestController {
         Page<ServiceRequestResponse> requestsPage = serviceRequestService.getAllServiceRequests(
                 status, requestType, managerUserId, pageable);
         
-        return ApiResponse.<Page<ServiceRequestResponse>>builder()
+        PageResponse<ServiceRequestResponse> pageResponse = PageResponse.from(requestsPage);
+        
+        return ApiResponse.<PageResponse<ServiceRequestResponse>>builder()
                 .message("Service requests retrieved successfully")
-                .data(requestsPage)
+                .data(pageResponse)
                 .statusCode(200)
                 .build();
     }
