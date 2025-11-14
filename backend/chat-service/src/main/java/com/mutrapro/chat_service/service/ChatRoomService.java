@@ -8,7 +8,6 @@ import com.mutrapro.chat_service.dto.response.ChatRoomResponse;
 import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
 import com.mutrapro.chat_service.entity.OutboxEvent;
-import com.mutrapro.chat_service.enums.ChatErrorCodes;
 import com.mutrapro.chat_service.enums.ParticipantRole;
 import com.mutrapro.chat_service.enums.RoomType;
 import com.mutrapro.chat_service.exception.*;

@@ -216,10 +216,15 @@ public class EmailService {
 
                         <p><strong>Next Steps:</strong></p>
                         <ul>
-                            <li>The contract is now active and binding</li>
-                            <li>Work will begin according to the contract terms</li>
-                            <li>You can view the signed contract anytime in your dashboard</li>
+                            <li>Please pay the deposit to activate the contract and start the work</li>
+                            <li>The start date will be calculated from the deposit payment date</li>
+                            <li>You can view the signed contract and make payment in your dashboard</li>
                         </ul>
+                        
+                        <div style="background-color: #fff7e6; padding: 15px; margin: 20px 0; border-left: 4px solid #faad14; border-radius: 4px;">
+                            <p style="margin: 0; color: #d46b08;"><strong>⚠ Important:</strong></p>
+                            <p style="margin: 5px 0 0 0; color: #666;">The contract will only become active after the deposit payment is completed. Work will begin once the deposit is paid.</p>
+                        </div>
 
                         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; font-size: 12px;">
                             Thank you for choosing MuTraPro Studio!<br>

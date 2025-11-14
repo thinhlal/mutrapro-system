@@ -5,7 +5,6 @@ import { SearchOutlined, MessageOutlined } from '@ant-design/icons';
 import { useChatRooms } from '../../hooks/useChat';
 import ChatConversationPage from '../../pages/chat/ChatConversation/ChatConversationPage';
 import Header from '../../components/common/Header/Header';
-import Footer from '../../components/common/Footer/Footer';
 import styles from './ChatLayout.module.css';
 
 /**

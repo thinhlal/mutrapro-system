@@ -10,7 +10,6 @@ import {
   Modal,
   Alert,
   Typography,
-  Popconfirm,
 } from 'antd';
 import {
   CheckOutlined,
@@ -29,7 +28,6 @@ const RequestContractList = ({
   loading,
   actionLoading,
   onApprove,
-  onSign,
   onRequestChange,
   onCancel,
   formatDate,
@@ -171,35 +169,19 @@ const RequestContractList = ({
                 {canSign && (
                   <Space wrap>
                     <Alert
-                      message="Bạn đã duyệt contract này. Vui lòng ký để bắt đầu thực hiện công việc."
+                      message="Bạn đã duyệt contract này. Vui lòng vào chi tiết contract để ký qua OTP."
                       type="success"
                       showIcon
                       style={{ marginBottom: 8 }}
                     />
-                    <Popconfirm
-                      title="Sign Contract"
-                      description={
-                        <div style={{ maxWidth: 300 }}>
-                          Are you sure you want to sign this contract?
-                          <br />
-                          <strong>Note:</strong> After signing, the contract
-                          will take effect and cannot be canceled.
-                        </div>
-                      }
-                      onConfirm={() => onSign(contract.contractId)}
-                      okText="Confirm Sign"
-                      cancelText="Cancel"
-                      okButtonProps={{ loading: actionLoading }}
+                    <Button
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() => navigate(`/contracts/${contract.contractId}`)}
+                      size="large"
                     >
-                      <Button
-                        type="primary"
-                        icon={<FormOutlined />}
-                        loading={actionLoading}
-                        size="large"
-                      >
-                        Ký Contract
-                      </Button>
-                    </Popconfirm>
+                      Vào chi tiết để ký
+                    </Button>
                   </Space>
                 )}
                 {isCanceledByManager && (
@@ -432,7 +414,6 @@ RequestContractList.propTypes = {
   loading: PropTypes.bool,
   actionLoading: PropTypes.bool,
   onApprove: PropTypes.func.isRequired,
-  onSign: PropTypes.func.isRequired,
   onRequestChange: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   formatDate: PropTypes.func.isRequired,

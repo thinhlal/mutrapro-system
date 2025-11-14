@@ -3,6 +3,7 @@ package com.mutrapro.shared.config;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.exception.CommonErrorCodes;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,15 @@ import java.io.IOException;
 @Slf4j
 public class JWTAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public JWTAuthenticationEntryPoint() {
+        this.objectMapper = new ObjectMapper();
+        // Register JavaTimeModule để serialize LocalDateTime
+        this.objectMapper.registerModule(new JavaTimeModule());
+        // Disable writing dates as timestamps để format đẹp hơn
+        this.objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, 

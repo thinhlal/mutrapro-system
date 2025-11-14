@@ -63,6 +63,11 @@ notification:
   service:
     base-url: http://localhost:8086
 
+# Billing Service Configuration
+billing:
+  service:
+    base-url: http://localhost:8083
+
 # AWS S3 Configuration
 aws:
   s3:

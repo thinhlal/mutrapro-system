@@ -54,6 +54,11 @@ chat:
   service:
     base-url: ${CHAT_SERVICE_URL:http://chat-service:8088}
 
+# Billing Service Configuration
+billing:
+  service:
+    base-url: ${BILLING_SERVICE_URL:http://billing-service:8083}
+
 # Notification Service Configuration
 notification:
   service:

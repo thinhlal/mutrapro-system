@@ -28,7 +28,6 @@ import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import {
   getContractsByRequestId,
   approveContract,
-  signContract,
   requestChangeContract,
   cancelContract,
 } from '../../../services/contractService';
@@ -211,24 +210,6 @@ const RequestDetailPage = () => {
     }
   };
 
-  const handleSignContract = async contractId => {
-    try {
-      setActionLoading(true);
-      await signContract(contractId);
-      message.success(
-        'Đã ký contract thành công! Có thể bắt đầu thực hiện công việc.'
-      );
-      // Reload contracts
-      const response = await getContractsByRequestId(requestId);
-      if (response.status === 'success' && response.data) {
-        setContracts(response.data || []);
-      }
-    } catch (error) {
-      message.error(error.message || 'Lỗi khi ký contract');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleRequestChange = async () => {
     if (!selectedContract || !changeReason.trim()) {
@@ -510,7 +491,6 @@ const RequestDetailPage = () => {
           loading={loadingContracts}
           actionLoading={actionLoading}
           onApprove={handleApproveContract}
-          onSign={handleSignContract}
           onRequestChange={handleOpenRequestChangeModal}
           onCancel={handleOpenCancelModal}
           formatDate={formatDate}

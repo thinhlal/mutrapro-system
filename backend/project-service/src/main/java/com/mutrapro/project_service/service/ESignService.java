@@ -5,11 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
+import com.mutrapro.project_service.client.BillingServiceFeignClient;
+import com.mutrapro.project_service.client.RequestServiceFeignClient;
+import com.mutrapro.project_service.client.NotificationServiceFeignClient;
+import com.mutrapro.project_service.client.ChatServiceFeignClient;
+import com.mutrapro.project_service.dto.request.CreateInstallmentsRequest;
+import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
+import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
+import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractSignSession;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.enums.ContractStatus;
+import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.SignSessionStatus;
+import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.exception.*;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.ContractSignSessionRepository;
@@ -47,6 +58,10 @@ public class ESignService {
     final OutboxEventRepository outboxEventRepository;
     final ObjectMapper objectMapper;
     final S3Service s3Service;
+    final BillingServiceFeignClient billingServiceFeignClient;
+    final RequestServiceFeignClient requestServiceFeignClient;
+    final NotificationServiceFeignClient notificationServiceFeignClient;
+    final ChatServiceFeignClient chatServiceFeignClient;
 
     @Value("${esign.otp.expiration-minutes:5}")
     int otpExpirationMinutes;
@@ -207,12 +222,11 @@ public class ESignService {
         contract.setUpdatedAt(now);
         contract.setStatus(ContractStatus.signed);
 
-        // Set expected start date and calculate due date upon signing
-        contract.setExpectedStartDate(Instant.now());
-        if (contract.getSlaDays() != null && contract.getSlaDays() > 0) {
-            Instant dueDate = Instant.now().plus(contract.getSlaDays(), ChronoUnit.DAYS);
-            contract.setDueDate(dueDate);
-        }
+        // KHÔNG set expectedStartDate khi ký - sẽ set khi deposit được thanh toán
+        // expectedStartDate = null cho đến khi deposit paid
+        // dueDate cũng sẽ được tính lại từ expectedStartDate khi deposit paid
+        contract.setExpectedStartDate(null);
+        contract.setDueDate(null);
 
         contractRepository.save(contract);
 
@@ -223,7 +237,90 @@ public class ESignService {
 
         log.info("Contract signed successfully: {}, signature URL: {}", contractId, signatureS3Url);
 
-        // Send success email
+        // 1. Tạo installments (Deposit và Final) trong billing-service
+        // Note: expectedStartDate và dueDate sẽ null - sẽ được set khi deposit paid
+        try {
+            CreateInstallmentsRequest installmentsRequest = CreateInstallmentsRequest.builder()
+                .contractId(contractId)
+                .depositAmount(contract.getDepositAmount())
+                .finalAmount(contract.getFinalAmount())
+                .currency(contract.getCurrency() != null ? contract.getCurrency() : CurrencyType.VND)
+                .expectedStartDate(null)  // Sẽ set khi deposit paid
+                .dueDate(null)  // Sẽ tính lại từ expectedStartDate + SLA khi deposit paid
+                .build();
+            
+            billingServiceFeignClient.createInstallmentsForSignedContract(installmentsRequest);
+            log.info("Created installments for signed contract via OTP: contractId={}", contractId);
+        } catch (Exception e) {
+            log.error("Failed to create installments for signed contract via OTP: contractId={}, error={}", 
+                contractId, e.getMessage(), e);
+            // Không fail transaction nếu billing-service lỗi, chỉ log
+        }
+
+        // 2. Cập nhật request status thành "contract_signed"
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_signed");
+            log.info("Updated request status to contract_signed: requestId={}, contractId={}", 
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+
+        // 3. Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CONTRACT_APPROVED)
+                    .title("Contract đã được ký")
+                    .content(String.format("Customer đã ký contract #%s. Đang chờ thanh toán deposit để bắt đầu công việc.", 
+                            contract.getContractNumber()))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts-list")
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+
+        // 4. Gửi system message vào chat room
+        try {
+            ApiResponse<ChatRoomResponse> roomResponse = 
+                chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", contract.getRequestId());
+            
+            if (roomResponse != null && "success".equals(roomResponse.getStatus()) 
+                && roomResponse.getData() != null) {
+                ChatRoomResponse roomData = roomResponse.getData();
+                String roomId = roomData.getRoomId();
+                
+                if (roomId != null && !roomId.isBlank()) {
+                    String systemMessage = String.format(
+                        "✍️ Customer đã ký contract #%s. Đang chờ thanh toán deposit để bắt đầu công việc.",
+                        contract.getContractNumber()
+                    );
+                    
+                    SendSystemMessageRequest messageRequest = SendSystemMessageRequest.builder()
+                        .roomId(roomId)
+                        .messageType("SYSTEM")
+                        .content(systemMessage)
+                        .build();
+                    
+                    chatServiceFeignClient.sendSystemMessage(messageRequest);
+                    log.info("Sent system message to chat room: roomId={}, requestId={}", 
+                        roomId, contract.getRequestId());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to send system message to chat room: requestId={}, error={}", 
+                contract.getRequestId(), e.getMessage(), e);
+        }
+
+        // 5. Send success email
         sendSignSuccessEmail(contract);
     }
 

@@ -648,7 +648,7 @@ public class ContractService {
         // Update status - CHỈ set APPROVED, chưa ký
         contract.setStatus(ContractStatus.approved);
         contract.setCustomerReviewedAt(Instant.now());
-        // KHÔNG set signedAt ở đây - phải gọi signContract riêng
+        // KHÔNG set signedAt ở đây - phải ký qua OTP flow (init-esign + verify-otp)
         
         Contract saved = contractRepository.save(contract);
         log.info("Customer approved contract: contractId={}, userId={}", contractId, currentUserId);
@@ -695,99 +695,6 @@ public class ContractService {
         return contractMapper.toResponse(saved);
     }
     
-    /**
-     * Customer sign contract (ký hợp đồng)
-     * Chỉ cho phép khi contract ở trạng thái APPROVED
-     * @param contractId ID của contract
-     * @return ContractResponse
-     */
-    @Transactional
-    public ContractResponse signContract(String contractId) {
-        Contract contract = contractRepository.findById(contractId)
-            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
-        
-        // Kiểm tra quyền: chỉ customer (owner) mới được sign
-        String currentUserId = getCurrentUserId();
-        if (!currentUserId.equals(contract.getUserId())) {
-            throw UnauthorizedException.create(
-                "Only the contract owner can sign this contract");
-        }
-        
-        // Kiểm tra status: chỉ cho phép sign khi status = APPROVED
-        if (contract.getStatus() != ContractStatus.approved) {
-            throw new InvalidContractStatusException(
-                String.format("Cannot sign contract with status %s. Contract must be APPROVED first.", 
-                    contract.getStatus()));
-        }
-        
-        // Check expired
-        if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(Instant.now())) {
-            throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
-        }
-        
-        // Update status và signedAt
-        contract.setStatus(ContractStatus.signed);
-        Instant signedAt = Instant.now();
-        contract.setSignedAt(signedAt);
-        
-        // Set expectedStartDate = ngày ký
-        contract.setExpectedStartDate(signedAt);
-        
-        // Tính lại dueDate từ ngày ký nếu auto_due_date = true
-        if (contract.getAutoDueDate() != null && contract.getAutoDueDate()) {
-            Integer slaDays = contract.getSlaDays();
-            if (slaDays != null && slaDays > 0) {
-                Instant newDueDate = signedAt.plusSeconds(slaDays * 24L * 60 * 60);
-                contract.setDueDate(newDueDate);
-                log.info("Set due date from signed date: contractId={}, signedAt={}, dueDate={}, slaDays={}", 
-                    contractId, signedAt, newDueDate, slaDays);
-            }
-        }
-        
-        Contract saved = contractRepository.save(contract);
-        log.info("Customer signed contract: contractId={}, userId={}, expectedStartDate={}, dueDate={}", 
-            contractId, currentUserId, contract.getExpectedStartDate(), contract.getDueDate());
-        
-        // Cập nhật request status thành "contract_signed"
-        try {
-            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_signed");
-            log.info("Updated request status to contract_signed: requestId={}, contractId={}", 
-                contract.getRequestId(), contractId);
-        } catch (Exception e) {
-            log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
-                contract.getRequestId(), contractId, e.getMessage(), e);
-        }
-        
-        // Gửi notification cho manager
-        try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
-                    .userId(contract.getManagerUserId())
-                    .type(NotificationType.CONTRACT_APPROVED)
-                    .title("Contract đã được ký")
-                    .content(String.format("Customer đã ký contract #%s. Có thể bắt đầu thực hiện công việc.", 
-                            contract.getContractNumber()))
-                    .referenceId(contractId)
-                    .referenceType("CONTRACT")
-                    .actionUrl("/manager/contracts-list")
-                    .build();
-            
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent notification to manager: userId={}, contractId={}", 
-                    contract.getManagerUserId(), contractId);
-        } catch (Exception e) {
-            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
-                    contract.getManagerUserId(), contractId, e.getMessage(), e);
-        }
-        
-        // Gửi system message vào chat room
-        String systemMessage = String.format(
-            "✍️ Customer đã ký contract #%s. Bắt đầu thực hiện công việc!",
-            contract.getContractNumber()
-        );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
-        
-        return contractMapper.toResponse(saved);
-    }
     
     /**
      * Customer request change (yêu cầu chỉnh sửa)
@@ -1056,6 +963,49 @@ public class ContractService {
         }
         
         return contractMapper.toResponse(saved);
+    }
+    
+    /**
+     * Cập nhật expectedStartDate và dueDate khi deposit được thanh toán
+     * Được gọi từ billing-service khi deposit installment status = paid
+     * @param contractId ID của contract
+     * @param depositPaidAt Ngày thanh toán deposit
+     */
+    @Transactional
+    public void updateContractStartDateAfterDepositPaid(String contractId, Instant depositPaidAt) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Chỉ update nếu contract đã signed và expectedStartDate chưa được set
+        if (contract.getStatus() != ContractStatus.signed) {
+            log.warn("Cannot update start date for contract with status {}: contractId={}", 
+                contract.getStatus(), contractId);
+            return;
+        }
+        
+        if (contract.getExpectedStartDate() != null) {
+            log.warn("Contract start date already set: contractId={}, existingStartDate={}", 
+                contractId, contract.getExpectedStartDate());
+            return;
+        }
+        
+        // Set expectedStartDate = ngày thanh toán deposit
+        contract.setExpectedStartDate(depositPaidAt);
+        
+        // Tính lại dueDate từ expectedStartDate + SLA days
+        if (contract.getAutoDueDate() != null && contract.getAutoDueDate()) {
+            Integer slaDays = contract.getSlaDays();
+            if (slaDays != null && slaDays > 0) {
+                Instant newDueDate = depositPaidAt.plusSeconds(slaDays * 24L * 60 * 60);
+                contract.setDueDate(newDueDate);
+                log.info("Set due date from deposit paid date: contractId={}, depositPaidAt={}, dueDate={}, slaDays={}", 
+                    contractId, depositPaidAt, newDueDate, slaDays);
+            }
+        }
+        
+        contractRepository.save(contract);
+        log.info("Updated contract start date after deposit paid: contractId={}, expectedStartDate={}", 
+            contractId, depositPaidAt);
     }
     
     /**

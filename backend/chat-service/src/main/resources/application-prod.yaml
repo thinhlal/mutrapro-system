@@ -49,6 +49,10 @@ spring:
       enable-auto-commit: false
       properties:
         spring.json.trusted.packages: "*"
+        
+notification:
+  service:
+    base-url: ${NOTIFICATION_SERVICE_BASE_URL}
 
 logging:
   level:

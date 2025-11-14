@@ -5,6 +5,7 @@ import com.mutrapro.project_service.dto.request.UpdateContractRequest;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
+import com.mutrapro.project_service.dto.request.UpdateContractStartDateRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
@@ -171,16 +172,18 @@ public class ContractController {
                 .build();
     }
 
-    @PostMapping("/{contractId}/sign")
-    @Operation(summary = "Customer sign contract (chỉ cho phép khi status = APPROVED)")
-    public ApiResponse<ContractResponse> signContract(
+
+    @PutMapping("/{contractId}/start-date-after-deposit-paid")
+    @Operation(summary = "Cập nhật expectedStartDate khi deposit được thanh toán (internal API - gọi từ billing-service)")
+    public ApiResponse<Void> updateContractStartDateAfterDepositPaid(
             @Parameter(description = "ID của contract")
-            @PathVariable String contractId) {
-        log.info("Customer signing contract: contractId={}", contractId);
-        ContractResponse contract = contractService.signContract(contractId);
-        return ApiResponse.<ContractResponse>builder()
-                .message("Contract signed successfully")
-                .data(contract)
+            @PathVariable String contractId,
+            @Valid @RequestBody UpdateContractStartDateRequest request) {
+        log.info("Updating contract start date after deposit paid: contractId={}, depositPaidAt={}", 
+            contractId, request.getDepositPaidAt());
+        contractService.updateContractStartDateAfterDepositPaid(contractId, request.getDepositPaidAt());
+        return ApiResponse.<Void>builder()
+                .message("Contract start date updated successfully")
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

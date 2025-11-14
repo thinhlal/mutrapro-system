@@ -190,16 +190,6 @@ export const approveContract = async contractId => {
   }
 };
 
-export const signContract = async contractId => {
-  try {
-    const response = await axiosInstance.post(
-      API_ENDPOINTS.CONTRACTS.SIGN(contractId)
-    );
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi ký contract' };
-  }
-};
 
 /**
  * Initialize E-signature process - send signature and get OTP

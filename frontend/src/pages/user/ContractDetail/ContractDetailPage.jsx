@@ -813,11 +813,11 @@ const ContractDetailPage = () => {
             SLA Days: {contract?.slaDays || 0} days | Expected Start:{' '}
             {contract?.expectedStartDate
               ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
-              : 'Upon signing'}{' '}
+              : 'After deposit payment'}{' '}
             | Due Date:{' '}
             {contract?.dueDate
               ? dayjs(contract.dueDate).format('YYYY-MM-DD')
-              : `+${contract?.slaDays || 0} days from signing`}
+              : `+${contract?.slaDays || 0} days from start date`}
           </PdfText>
         </View>
 
@@ -1103,7 +1103,7 @@ const ContractDetailPage = () => {
           {isApproved && (
             <Alert
               message="Contract Approved"
-              description="You have approved this contract. Please sign to proceed with the work."
+              description="You have approved this contract. Please sign to proceed. After signing, you need to pay the deposit to start the work."
               type="success"
               showIcon
               style={{ marginBottom: 12 }}
@@ -1113,7 +1113,7 @@ const ContractDetailPage = () => {
           {isSigned && (
             <Alert
               message="Contract Signed"
-              description="This contract has been signed and is now in effect."
+              description="The contract has been signed. Please pay the deposit to start the work. The start date will be calculated from the deposit payment date."
               type="success"
               showIcon
               style={{ marginBottom: 12 }}
@@ -1227,14 +1227,14 @@ const ContractDetailPage = () => {
             {!contract.expectedStartDate && (
               <Descriptions.Item label="Expected Start">
                 <Text type="secondary" italic>
-                  Set upon signing
+                  Will be set after deposit payment
                 </Text>
               </Descriptions.Item>
             )}
             {!contract.dueDate && contract.slaDays && (
               <Descriptions.Item label="Due Date">
                 <Text type="secondary" italic>
-                  +{contract.slaDays} days from signing
+                  +{contract.slaDays} days from start date (after deposit payment)
                 </Text>
               </Descriptions.Item>
             )}
@@ -1551,7 +1551,7 @@ const ContractDetailPage = () => {
                   dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
                 ) : (
                   <span style={{ fontStyle: 'italic', color: '#999' }}>
-                    Upon signing
+                    Will be set after deposit payment
                   </span>
                 )}
                 &nbsp;|&nbsp;
@@ -1560,7 +1560,7 @@ const ContractDetailPage = () => {
                   dayjs(contract.dueDate).format('YYYY-MM-DD')
                 ) : (
                   <span style={{ fontStyle: 'italic', color: '#999' }}>
-                    +{contract.slaDays || 0} days from signing
+                    +{contract.slaDays || 0} days from start date (after deposit payment)
                   </span>
                 )}
               </p>
