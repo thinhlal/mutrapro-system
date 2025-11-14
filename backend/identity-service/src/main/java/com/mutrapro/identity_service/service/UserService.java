@@ -29,7 +29,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UsersAuthRepository usersAuthRepository;
     private final UserMapper userMapper;
-    
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     // ===== PUBLIC API METHODS =====
     
     /**
@@ -204,6 +205,123 @@ public class UserService {
     public User findUserEntityById(String id) {
         return userRepository.findById(id)
             .orElseThrow(() -> UserNotFoundException.byId(id));
-    }  
-}
+    }
 
+    // ===== PROFILE MANAGEMENT =====
+
+    /**
+     * Get current user's profile
+     */
+    public FullUserResponse getMyProfile() {
+        String email = getCurrentUserEmail();
+        log.info("Getting profile for user: {}", email);
+
+        UsersAuth userAuth = usersAuthRepository.findByEmail(email)
+            .orElseThrow(() -> UserNotFoundException.byEmail(email));
+
+        User user = userRepository.findByUserId(userAuth.getUserId())
+            .orElse(null);
+
+        return FullUserResponse.builder()
+            .userId(userAuth.getUserId())
+            .email(userAuth.getEmail())
+            .fullName(user != null ? user.getFullName() : null)
+            .phone(user != null ? user.getPhone() : null)
+            .address(user != null ? user.getAddress() : null)
+            .avatarUrl(user != null ? user.getAvatarUrl() : null)
+            .role(userAuth.getRole().name())
+            .emailVerified(userAuth.isEmailVerified())
+            .active(user != null && user.isActive())
+            .authProvider(userAuth.getAuthProvider())
+            .authProviderId(userAuth.getAuthProviderId())
+            .isNoPassword(!userAuth.isHasLocalPassword())
+            .build();
+    }
+
+    /**
+     * Update current user's profile
+     */
+    @Transactional
+    public UserResponse updateMyProfile(UpdateUserRequest request) {
+        String email = getCurrentUserEmail();
+        log.info("Updating profile for user: {}", email);
+
+        UsersAuth userAuth = usersAuthRepository.findByEmail(email)
+            .orElseThrow(() -> UserNotFoundException.byEmail(email));
+
+        // Use existing updateUser method
+        return updateUser(userAuth.getUserId(), request);
+    }
+
+    // ===== SECURITY =====
+
+    /**
+     * Change password
+     */
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        String email = getCurrentUserEmail();
+        log.info("Changing password for user: {}", email);
+
+        // Validate password match
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new PasswordMismatchException();
+        }
+
+        UsersAuth userAuth = usersAuthRepository.findByEmail(email)
+            .orElseThrow(() -> UserNotFoundException.byEmail(email));
+
+        // Check if user has local password
+        if (!userAuth.isHasLocalPassword()) {
+            throw NoLocalPasswordException.create();
+        }
+
+        // Verify current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), userAuth.getPasswordHash())) {
+            throw new InvalidCurrentPasswordException();
+        }
+
+        // Check if new password is same as current
+        if (passwordEncoder.matches(request.getNewPassword(), userAuth.getPasswordHash())) {
+            throw new SamePasswordException();
+        }
+
+        // Update password
+        userAuth.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usersAuthRepository.save(userAuth);
+
+        log.info("Password changed successfully for user: {}", email);
+    }
+
+    /**
+     * Get security settings
+     */
+    public SecuritySettingsResponse getSecuritySettings() {
+        String email = getCurrentUserEmail();
+        log.info("Getting security settings for user: {}", email);
+
+        UsersAuth userAuth = usersAuthRepository.findByEmail(email)
+            .orElseThrow(() -> UserNotFoundException.byEmail(email));
+
+        return SecuritySettingsResponse.builder()
+            .hasLocalPassword(userAuth.isHasLocalPassword())
+            .authProvider(userAuth.getAuthProvider())
+            .lastPasswordChange(userAuth.getUpdatedAt() != null ?
+                userAuth.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
+            .twoFactorEnabled(false) // TODO: Implement 2FA
+            .lastLoginAt(null) // TODO: Track last login
+            .build();
+    }
+
+    /**
+     * Get current authenticated user's email
+     */
+    private String getCurrentUserEmail() {
+        org.springframework.security.core.Authentication authentication =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        return authentication.getName();
+    }
+}
