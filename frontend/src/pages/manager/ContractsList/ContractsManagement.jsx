@@ -46,7 +46,8 @@ const CONTRACT_STATUS = [
   { label: 'Draft', value: 'draft' },
   { label: 'Sent', value: 'sent' },
   { label: 'Approved', value: 'approved' },
-  { label: 'Signed', value: 'signed' },
+  { label: 'Signed - Pending Deposit', value: 'signed' },
+  { label: 'Active - Deposit Paid', value: 'active' },
   { label: 'Rejected by Customer', value: 'rejected_by_customer' },
   { label: 'Need Revision', value: 'need_revision' },
   { label: 'Canceled by Customer', value: 'canceled_by_customer' },
@@ -82,12 +83,26 @@ const statusColor = {
   draft: 'default',
   sent: 'geekblue',
   approved: 'green',
-  signed: 'green',
+  signed: 'orange',
+  active: 'green',
   rejected_by_customer: 'red',
   need_revision: 'orange',
   canceled_by_customer: 'default',
   canceled_by_manager: 'orange',
   expired: 'volcano',
+};
+
+const statusText = {
+  draft: 'Draft',
+  sent: 'Sent',
+  approved: 'Approved',
+  signed: 'Signed - Pending Deposit',
+  active: 'Active - Deposit Paid',
+  rejected_by_customer: 'Rejected by Customer',
+  need_revision: 'Need Revision',
+  canceled_by_customer: 'Canceled by Customer',
+  canceled_by_manager: 'Canceled by Manager',
+  expired: 'Expired',
 };
 
 const { RangePicker } = DatePicker;
@@ -253,7 +268,7 @@ export default function ContractsManagement() {
         const statusLower = v?.toLowerCase() || 'draft';
         return (
           <Tag color={statusColor[statusLower] || 'default'}>
-            {statusLower.toUpperCase()}
+            {statusText[statusLower] || statusLower.toUpperCase()}
           </Tag>
         );
       },

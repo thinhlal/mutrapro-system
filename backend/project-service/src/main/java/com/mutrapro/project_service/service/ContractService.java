@@ -131,7 +131,8 @@ public class ContractService {
                     return status == ContractStatus.draft 
                         || status == ContractStatus.sent 
                         || status == ContractStatus.approved 
-                        || status == ContractStatus.signed;
+                        || status == ContractStatus.signed
+                        || status == ContractStatus.active;
                 });
             
             if (hasActiveContract) {
@@ -600,6 +601,7 @@ public class ContractService {
                 || contract.getStatus() == ContractStatus.sent 
                 || contract.getStatus() == ContractStatus.approved 
                 || contract.getStatus() == ContractStatus.signed
+                || contract.getStatus() == ContractStatus.active
             );
             
             Contract displayContract = contract;
@@ -798,13 +800,14 @@ public class ContractService {
         }
         
         // Kiểm tra status: chỉ cho phép hủy khi status = SENT
-        // Không cho phép hủy khi đã APPROVED, SIGNED hoặc đã bắt đầu thực hiện
+        // Không cho phép hủy khi đã APPROVED, SIGNED, ACTIVE hoặc đã bắt đầu thực hiện
         if (contract.getStatus() != ContractStatus.sent) {
             if (contract.getStatus() == ContractStatus.approved || 
-                contract.getStatus() == ContractStatus.signed) {
+                contract.getStatus() == ContractStatus.signed ||
+                contract.getStatus() == ContractStatus.active) {
                 throw InvalidContractStatusException.cannotCancel(
                     contractId, contract.getStatus(),
-                    "Contract đã được approve hoặc đã ký. Không thể hủy trực tiếp. Vui lòng liên hệ support để yêu cầu hủy hợp đồng.");
+                    "Contract đã được approve, đã ký hoặc đã active. Không thể hủy trực tiếp. Vui lòng liên hệ support để yêu cầu hủy hợp đồng.");
             }
             throw InvalidContractStatusException.cannotCancel(
                 contractId, contract.getStatus(),
@@ -888,13 +891,14 @@ public class ContractService {
                 "Only the contract manager can cancel this contract");
         }
         
-        // Kiểm tra status: không cho phép hủy khi đã APPROVED hoặc SIGNED
+        // Kiểm tra status: không cho phép hủy khi đã APPROVED, SIGNED hoặc ACTIVE
         // Cho phép hủy khi DRAFT hoặc SENT
         if (contract.getStatus() == ContractStatus.approved || 
-            contract.getStatus() == ContractStatus.signed) {
+            contract.getStatus() == ContractStatus.signed ||
+            contract.getStatus() == ContractStatus.active) {
             throw InvalidContractStatusException.cannotCancel(
                 contractId, contract.getStatus(),
-                "Contract đã được approve hoặc đã ký. Không thể hủy. Vui lòng liên hệ support để xử lý.");
+                "Contract đã được approve, đã ký hoặc đã active. Không thể hủy. Vui lòng liên hệ support để xử lý.");
         }
         
         // Nếu contract đã SENT, log để biết cần thông báo cho customer
@@ -976,7 +980,7 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
-        // Chỉ update nếu contract đã signed và expectedStartDate chưa được set
+        // Chỉ update nếu contract đã signed (chưa thanh toán deposit) và expectedStartDate chưa được set
         if (contract.getStatus() != ContractStatus.signed) {
             log.warn("Cannot update start date for contract with status {}: contractId={}", 
                 contract.getStatus(), contractId);
@@ -1003,8 +1007,11 @@ public class ContractService {
             }
         }
         
+        // Update status từ "signed" → "active" (đã thanh toán deposit, có thể bắt đầu công việc)
+        contract.setStatus(ContractStatus.active);
+        
         contractRepository.save(contract);
-        log.info("Updated contract start date after deposit paid: contractId={}, expectedStartDate={}", 
+        log.info("Updated contract to active after deposit paid: contractId={}, expectedStartDate={}, status=active", 
             contractId, depositPaidAt);
     }
     
@@ -1163,7 +1170,9 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> ContractNotFoundException.byId(contractId));
 
-        if (contract.getStatus() != ContractStatus.signed) {
+        // Cho phép upload PDF cho contract đã signed hoặc active
+        if (contract.getStatus() != ContractStatus.signed && 
+            contract.getStatus() != ContractStatus.active) {
             throw InvalidContractStatusException.cannotUploadPdf(contractId, contract.getStatus());
         }
 

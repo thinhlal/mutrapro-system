@@ -47,7 +47,8 @@ const CONTRACT_STATUS = [
   { label: 'Draft', value: 'draft' },
   { label: 'Sent', value: 'sent' },
   { label: 'Approved', value: 'approved' },
-  { label: 'Signed', value: 'signed' },
+  { label: 'Signed - Pending Deposit', value: 'signed' },
+  { label: 'Active - Deposit Paid', value: 'active' },
   { label: 'Rejected by Customer', value: 'rejected_by_customer' },
   { label: 'Need Revision', value: 'need_revision' },
   { label: 'Canceled by Customer', value: 'canceled_by_customer' },
@@ -83,7 +84,8 @@ const statusColor = {
   draft: 'default',
   sent: 'geekblue',
   approved: 'green',
-  signed: 'green',
+  signed: 'orange',
+  active: 'green',
   rejected_by_customer: 'red',
   need_revision: 'orange',
   canceled_by_customer: 'default',
@@ -95,7 +97,8 @@ const statusText = {
   draft: 'Draft',
   sent: 'Đã gửi',
   approved: 'Đã duyệt',
-  signed: 'Đã ký',
+  signed: 'Đã ký - Chờ thanh toán deposit',
+  active: 'Đã ký - Đã thanh toán deposit',
   rejected_by_customer: 'Bị từ chối',
   need_revision: 'Cần chỉnh sửa',
   canceled_by_customer: 'Đã hủy',
@@ -279,7 +282,7 @@ export default function ContractsList() {
         const statusLower = v?.toLowerCase() || 'draft';
         return (
           <Tag color={statusColor[statusLower] || 'default'}>
-            {statusLower.toUpperCase()}
+            {statusText[statusLower] || statusLower.toUpperCase()}
           </Tag>
         );
       },

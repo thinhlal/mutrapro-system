@@ -48,7 +48,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "  c.status IN (com.mutrapro.project_service.enums.ContractStatus.draft, " +
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
-           "com.mutrapro.project_service.enums.ContractStatus.signed) " +
+           "com.mutrapro.project_service.enums.ContractStatus.signed, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active) " +
            "  OR (c.createdAt = (" +
            "    SELECT MAX(c2.createdAt) FROM Contract c2 " +
            "    WHERE c2.requestId = c.requestId " +
@@ -60,14 +61,16 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "    AND c3.status IN (com.mutrapro.project_service.enums.ContractStatus.draft, " +
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
-           "com.mutrapro.project_service.enums.ContractStatus.signed)" +
+           "com.mutrapro.project_service.enums.ContractStatus.signed, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active)" +
            "  ))" +
            ") " +
            "ORDER BY c.requestId, " +
            "CASE WHEN c.status IN (com.mutrapro.project_service.enums.ContractStatus.draft, " +
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
-           "com.mutrapro.project_service.enums.ContractStatus.signed) THEN 0 ELSE 1 END, " +
+           "com.mutrapro.project_service.enums.ContractStatus.signed, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active) THEN 0 ELSE 1 END, " +
            "c.createdAt DESC")
     List<Contract> findActiveOrLatestContractsByRequestIds(@Param("requestIds") List<String> requestIds);
     

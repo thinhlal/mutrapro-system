@@ -5,6 +5,7 @@ import com.mutrapro.billing_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.billing_service.entity.ContractInstallment;
 import com.mutrapro.billing_service.enums.GateCondition;
 import com.mutrapro.billing_service.enums.InstallmentStatus;
+import com.mutrapro.billing_service.exception.ContractInstallmentNotFoundException;
 import com.mutrapro.billing_service.mapper.ContractInstallmentMapper;
 import com.mutrapro.billing_service.repository.ContractInstallmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +88,7 @@ public class ContractInstallmentService {
         log.info("Getting pending deposit installment for contract: contractId={}", contractId);
         ContractInstallment deposit = installmentRepository
             .findByContractIdAndIsDepositTrueAndStatus(contractId, InstallmentStatus.pending)
-            .orElseThrow(() -> new RuntimeException("Deposit installment not found or already paid for contract: " + contractId));
+            .orElseThrow(() -> ContractInstallmentNotFoundException.byContractId(contractId));
         return installmentMapper.toResponse(deposit);
     }
 }

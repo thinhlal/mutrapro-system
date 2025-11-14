@@ -1049,7 +1049,8 @@ const ContractDetailPage = () => {
       draft: { color: 'default', text: 'Draft' },
       sent: { color: 'blue', text: 'Sent to Customer' },
       approved: { color: 'cyan', text: 'Approved - Waiting for Signature' },
-      signed: { color: 'green', text: 'Signed' },
+      signed: { color: 'orange', text: 'Signed - Pending Deposit Payment' },
+      active: { color: 'green', text: 'Active - Deposit Paid' },
       rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
       need_revision: { color: 'orange', text: 'Needs Revision' },
       canceled_by_customer: { color: 'red', text: 'Canceled by Customer' },
@@ -1115,6 +1116,7 @@ const ContractDetailPage = () => {
   const isSent = currentStatus === 'sent';
   const isApproved = currentStatus === 'approved';
   const isSigned = currentStatus === 'signed';
+  const isActive = currentStatus === 'active';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
