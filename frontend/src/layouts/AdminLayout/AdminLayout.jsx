@@ -12,6 +12,7 @@ import {
   BarsOutlined,
   LogoutOutlined,
   FileTextOutlined,
+  WalletOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,6 +32,11 @@ const menuItems = [
     key: '/admin/users',
     icon: <TeamOutlined />,
     label: <Link to="/admin/users">User Management</Link>,
+  },
+  {
+    key: '/admin/wallets',
+    icon: <WalletOutlined />,
+    label: <Link to="/admin/wallets">Wallet Management</Link>,
   },
   {
     key: '/admin/service-requests',

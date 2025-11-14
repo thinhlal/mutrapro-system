@@ -292,6 +292,94 @@ public class WalletService {
     }
 
     /**
+     * Lấy tất cả wallets (Admin only)
+     */
+    @Transactional(readOnly = true)
+    public Page<WalletResponse> getAllWallets(String userId, Pageable pageable) {
+        Page<Wallet> wallets;
+        if (userId != null && !userId.isEmpty()) {
+            wallets = walletRepository.findAllByUserId(userId, pageable);
+        } else {
+            wallets = walletRepository.findAll(pageable);
+        }
+        return wallets.map(walletMapper::toResponse);
+    }
+
+    /**
+     * Lấy wallet theo ID (Admin only - không check ownership)
+     */
+    @Transactional(readOnly = true)
+    public WalletResponse getWalletByIdForAdmin(String walletId) {
+        Wallet wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+        return walletMapper.toResponse(wallet);
+    }
+
+    /**
+     * Lấy danh sách giao dịch của wallet (Admin only - không check ownership)
+     */
+    @Transactional(readOnly = true)
+    public Page<WalletTransactionResponse> getWalletTransactionsForAdmin(
+            String walletId,
+            WalletTxType txType,
+            Instant fromDate,
+            Instant toDate,
+            String search,
+            Pageable pageable) {
+        // Kiểm tra wallet tồn tại
+        if (!walletRepository.existsById(walletId)) {
+            throw WalletNotFoundException.byId(walletId);
+        }
+
+        // Normalize search string (null hoặc empty string -> null)
+        String searchTerm = (search != null && search.trim().isEmpty()) ? null : search;
+
+        // Lấy transactions với filter - build query động dựa trên parameters
+        Page<WalletTransaction> transactions;
+
+        boolean hasSearch = searchTerm != null && !searchTerm.trim().isEmpty();
+        boolean hasFromDate = fromDate != null;
+        boolean hasToDate = toDate != null;
+
+        if (hasSearch) {
+            // Có search
+            if (hasFromDate && hasToDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndSearchAndDateRange(
+                        walletId, txType, searchTerm, fromDate, toDate, pageable);
+            } else if (hasFromDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndSearchAndFromDate(
+                        walletId, txType, searchTerm, fromDate, pageable);
+            } else if (hasToDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndSearchAndToDate(
+                        walletId, txType, searchTerm, toDate, pageable);
+            } else {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndSearch(
+                        walletId, txType, searchTerm, pageable);
+            }
+        } else {
+            // Không có search
+            if (hasFromDate && hasToDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndDateRange(
+                        walletId, txType, fromDate, toDate, pageable);
+            } else if (hasFromDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndFromDate(
+                        walletId, txType, fromDate, pageable);
+            } else if (hasToDate) {
+                transactions = walletTransactionRepository.findByWalletIdAndTxTypeAndToDate(
+                        walletId, txType, toDate, pageable);
+            } else if (txType != null) {
+                transactions = walletTransactionRepository.findByWallet_WalletIdAndTxTypeOrderByCreatedAtDesc(
+                        walletId, txType, pageable);
+            } else {
+                transactions = walletTransactionRepository.findByWallet_WalletIdOrderByCreatedAtDesc(
+                        walletId, pageable);
+            }
+        }
+
+        return transactions.map(walletMapper::toResponse);
+    }
+
+    /**
      * Lấy current user ID từ JWT token
      */
     private String getCurrentUserId() {

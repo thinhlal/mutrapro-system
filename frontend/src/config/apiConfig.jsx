@@ -175,6 +175,13 @@ export const API_ENDPOINTS = {
     GET_TRANSACTIONS: walletId => `${BILLING_PATH}/wallets/${walletId}/transactions`,
     // GET /api/v1/billing/wallets/me/transactions
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
+    // === Admin Wallet Management ===
+    // GET /api/v1/billing/admin/wallets
+    ADMIN_GET_ALL: `${BILLING_PATH}/admin/wallets`,
+    // GET /api/v1/billing/admin/wallets/{walletId}
+    ADMIN_GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
+    // GET /api/v1/billing/admin/wallets/{walletId}/transactions
+    ADMIN_GET_TRANSACTIONS: walletId => `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
   },
 
   // === Request Service (Quản lý Notation, Requests) ===
