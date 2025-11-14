@@ -25,17 +25,16 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import styles from './ContractsList.module.css';
+import styles from './ContractsManagement.module.css';
 import {
   getAllContracts,
   cancelContract,
   sendContractToCustomer,
 } from '../../../services/contractService';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 
-// ===== Enums (phù hợp với ContractBuilder) =====
+// ===== Enums =====
 const CONTRACT_TYPES = [
   { label: 'Transcription', value: 'transcription' },
   { label: 'Arrangement', value: 'arrangement' },
@@ -91,33 +90,10 @@ const statusColor = {
   expired: 'volcano',
 };
 
-const statusText = {
-  draft: 'Draft',
-  sent: 'Đã gửi',
-  approved: 'Đã duyệt',
-  signed: 'Đã ký',
-  rejected_by_customer: 'Bị từ chối',
-  need_revision: 'Cần chỉnh sửa',
-  canceled_by_customer: 'Đã hủy',
-  canceled_by_manager: 'Đã thu hồi',
-  expired: 'Hết hạn',
-};
-
-// Helper functions for status
-const getStatusColor = status => {
-  const statusLower = status?.toLowerCase() || '';
-  return statusColor[statusLower] || 'default';
-};
-
-const getStatusText = status => {
-  const statusLower = status?.toLowerCase() || '';
-  return statusText[statusLower] || status;
-};
-
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
-export default function ContractsList() {
+export default function ContractsManagement() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState();
   const [status, setStatus] = useState();
@@ -134,8 +110,6 @@ export default function ContractsList() {
   const [cancelReasonModalVisible, setCancelReasonModalVisible] =
     useState(false);
   const [canceledContract, setCanceledContract] = useState(null);
-  const auth = useAuth();
-  const currentUser = auth?.user;
   const navigate = useNavigate();
 
   // Fetch contracts từ API
@@ -353,33 +327,91 @@ export default function ContractsList() {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
         const isSent = statusLower === 'sent';
-        const isApproved = statusLower === 'approved';
-        const isSigned = statusLower === 'signed';
         const isNeedRevision = statusLower === 'need_revision';
         const isCanceledByCustomer = statusLower === 'canceled_by_customer';
         const isCanceledByManager = statusLower === 'canceled_by_manager';
-        const isExpired = statusLower === 'expired';
         const isCanceled = isCanceledByCustomer || isCanceledByManager;
-        const isCustomer = currentUser?.role === 'CUSTOMER';
-        const isOwner = currentUser && r.userId && r.userId === currentUser.id;
-        const canCustomerCancel = isSent && isCustomer && isOwner; // Customer có thể hủy contract SENT của mình
-        const canManagerCancel = (isDraft || isSent) && !isCustomer; // Manager có thể hủy DRAFT hoặc thu hồi SENT
-        const canSend = isDraft && !isCustomer; // Manager có thể gửi contract DRAFT
-        const canRevise = isNeedRevision && !isCustomer; // Manager có thể xem lý do và tạo contract mới
-        const canViewCancelReason = isCanceled && r.cancellationReason; // Bất kỳ ai cũng có thể xem lý do hủy
-        const canEdit = isDraft && !isCustomer; // Chỉ edit được khi DRAFT, sau khi sent thì không edit được nữa
+        const canManagerCancel = isDraft || isSent; // Manager có thể hủy DRAFT hoặc thu hồi SENT
+        const canSend = isDraft; // Manager có thể gửi contract DRAFT
+        const canRevise = isNeedRevision; // Manager có thể xem lý do và tạo contract mới
+        const canViewCancelReason = isCanceled && r.cancellationReason; // Manager có thể xem lý do hủy
+        const canEdit = isDraft; // Chỉ edit được khi DRAFT
 
         return (
           <Space>
             <Tooltip title="View Details">
               <Button
                 icon={<EyeOutlined />}
-                onClick={() => navigate(`/contracts/${r.contractId}`)}
+                onClick={() => navigate(`/manager/contracts/${r.contractId}`)}
               />
             </Tooltip>
-            {/* Customer actions only */}
-            {canCustomerCancel && (
-              <Tooltip title="Hủy contract">
+            {canSend && (
+              <Popconfirm
+                title="Gửi contract này cho customer?"
+                description="Contract sẽ được gửi với thời hạn 7 ngày."
+                okText="Gửi"
+                cancelText="Hủy"
+                onConfirm={() => handleSendContract(r.contractId)}
+              >
+                <Tooltip title="Gửi cho customer">
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    loading={actionLoading}
+                  >
+                    Gửi
+                  </Button>
+                </Tooltip>
+              </Popconfirm>
+            )}
+            {canRevise && (
+              <Tooltip title="Xem lý do yêu cầu sửa">
+                <Button
+                  type="primary"
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => {
+                    setRevisionContract(r);
+                    setRevisionModalVisible(true);
+                  }}
+                  style={{
+                    backgroundColor: '#fa8c16',
+                    borderColor: '#fa8c16',
+                  }}
+                >
+                  Xem lý do
+                </Button>
+              </Tooltip>
+            )}
+            {canViewCancelReason && (
+              <Tooltip title="Xem lý do hủy">
+                <Button
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => {
+                    setCanceledContract(r);
+                    setCancelReasonModalVisible(true);
+                  }}
+                  style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
+                >
+                  Lý do hủy
+                </Button>
+              </Tooltip>
+            )}
+            {canEdit && (
+              <Tooltip title="Edit Contract">
+                <Button
+                  icon={<EditOutlined />}
+                  type="primary"
+                  ghost
+                  onClick={() =>
+                    navigate(`/manager/contracts/${r.contractId}/edit`)
+                  }
+                />
+              </Tooltip>
+            )}
+            {canManagerCancel && (
+              <Tooltip
+                title={isDraft ? 'Hủy contract DRAFT' : 'Thu hồi contract đã gửi'}
+              >
                 <Button
                   danger
                   icon={<StopOutlined />}
@@ -389,11 +421,10 @@ export default function ContractsList() {
                   }}
                   loading={actionLoading}
                 >
-                  Hủy
+                  {isDraft ? 'Hủy' : 'Thu hồi'}
                 </Button>
               </Tooltip>
             )}
-            {/* Customer actions only - no manager actions here */}
           </Space>
         );
       },
@@ -404,7 +435,7 @@ export default function ContractsList() {
     <div className={styles.container}>
       <div>
         <Typography.Title level={2} style={{ marginBottom: 24 }}>
-          My Contracts
+          Contracts Management
         </Typography.Title>
       </div>
       {/* Filters */}
@@ -512,7 +543,7 @@ export default function ContractsList() {
         }}
         onConfirm={handleCancelContract}
         loading={actionLoading}
-        isManager={false}
+        isManager={true}
         isDraft={selectedContract?.status?.toLowerCase() === 'draft'}
       />
 
@@ -544,7 +575,6 @@ export default function ContractsList() {
             type="primary"
             icon={<CopyOutlined />}
             onClick={() => {
-              // Navigate đến ContractBuilder với requestId và pass contract data qua state
               navigate(
                 `/manager/contract-builder?requestId=${revisionContract.requestId}`,
                 {
@@ -740,8 +770,8 @@ export default function ContractsList() {
                   </div>
                   <div>
                     <strong>Status:</strong>{' '}
-                    <Tag color={getStatusColor(canceledContract.status)}>
-                      {getStatusText(canceledContract.status)}
+                    <Tag color={statusColor[canceledContract.status?.toLowerCase()] || 'default'}>
+                      {canceledContract.status?.toUpperCase()}
                     </Tag>
                   </div>
                 </Space>
@@ -781,3 +811,4 @@ export default function ContractsList() {
     </div>
   );
 }
+

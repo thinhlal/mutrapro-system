@@ -30,9 +30,9 @@ const menuItems = [
     label: <Link to="/manager/service-requests">Service Requests</Link>,
   },
   {
-    key: '/manager/contracts-list',
+    key: '/manager/contracts',
     icon: <ContainerOutlined />,
-    label: <Link to="/manager/contracts-list">Contracts</Link>,
+    label: <Link to="/manager/contracts">Contracts</Link>,
   },
   {
     key: '/manager/task',

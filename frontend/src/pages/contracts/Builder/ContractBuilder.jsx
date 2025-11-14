@@ -822,7 +822,7 @@ const ContractBuilder = () => {
       if (response?.status === 'success' && response?.data) {
         const contractResponse = response.data;
         // Navigate to contracts list
-        navigate('/manager/contracts-list');
+        navigate('/manager/contracts');
       } else {
         throw new Error(
           response?.message ||

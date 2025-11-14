@@ -73,6 +73,8 @@ import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/Servi
 
 // Manager Pages
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
+import ManagerContractDetailPage from './pages/manager/ContractDetail/ManagerContractDetailPage';
+import ContractsManagement from './pages/manager/ContractsList/ContractsManagement';
 
 import './App.css';
 
@@ -132,11 +134,17 @@ function App() {
             }
           />
           <Route
-            path="/user/contracts/:contractId"
+            path="/my-contracts"
             element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                <ContractsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:contractId"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <ContractDetailPage />
               </ProtectedRoute>
             }
@@ -273,7 +281,11 @@ function App() {
               path="contracts/:contractId/edit"
               element={<ContractBuilder />}
             />
-            <Route path="contracts-list" element={<ContractsList />} />
+            <Route path="contracts" element={<ContractsManagement />} />
+            <Route
+              path="contracts/:contractId"
+              element={<ManagerContractDetailPage />}
+            />
             <Route path="task" element={<Tasks />} />
             <Route path="profile" element={<ManagerProfile />} />
           </Route>
@@ -298,7 +310,11 @@ function App() {
               path="notation-instruments"
               element={<NotationInstruments />}
             />
-            <Route path="contracts" element={<ContractsList />} />
+            <Route path="contracts" element={<ContractsManagement />} />
+            <Route
+              path="contracts/:contractId"
+              element={<ManagerContractDetailPage />}
+            />
             <Route path="tasks" element={<Tasks />} />
             <Route path="settings" element={<Dashboard />} />
             <Route path="profile" element={<AdminProfile />} />
