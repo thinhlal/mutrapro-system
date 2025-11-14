@@ -44,6 +44,7 @@ import ViewCancellationReasonModal from '../../../components/modal/ViewCancellat
 import SignaturePadModal from '../../../components/modal/SignaturePadModal/SignaturePadModal';
 import OTPVerificationModal from '../../../components/modal/OTPVerificationModal/OTPVerificationModal';
 import styles from './ContractDetailPage.module.css';
+import Header from '../../../components/common/Header/Header';
 
 const { Title, Text } = Typography;
 
@@ -934,6 +935,7 @@ const ContractDetailPage = () => {
 
   return (
     <div className={styles.page}>
+      <Header />
       {/* LEFT SECTION: Contract Info & Actions */}
       <div className={styles.infoSection}>
         <Card className={styles.infoCard}>
