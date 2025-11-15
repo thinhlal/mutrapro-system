@@ -15,6 +15,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import ManagerLayout from './layouts/ManagerLayout/ManagerLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
 import ChatLayout from './layouts/ChatLayout/ChatLayout';
+import TranscriptionLayout from './layouts/TranscriptionLayout/TranscriptionLayout';
 
 // Public Pages
 import HomePage from './pages/public/Home/HomePage';
@@ -206,7 +207,12 @@ function App() {
             path="/editor"
             element={
               <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+                allowedRoles={[
+                  'CUSTOMER',
+                  'MANAGER',
+                  'SYSTEM_ADMIN',
+                  'TRANSCRIPTION',
+                ]}
               >
                 <NotationEditor />
               </ProtectedRoute>
@@ -352,6 +358,19 @@ function App() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="settings" element={<Dashboard />} />
             <Route path="profile" element={<AdminProfile />} />
+          </Route>
+
+          {/* --- TRANSCRIPTION ROUTES (PROTECTED) --- */}
+          <Route
+            path="/transcription"
+            element={
+              <ProtectedRoute allowedRoles={['TRANSCRIPTION', 'SYSTEM_ADMIN']}>
+                <TranscriptionLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="edit-tool" replace />} />
+            <Route path="edit-tool" element={<NotationEditor />} />
           </Route>
 
           {/* --- FALLBACK ROUTE --- */}

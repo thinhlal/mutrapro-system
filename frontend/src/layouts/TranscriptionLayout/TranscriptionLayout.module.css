@@ -1,0 +1,54 @@
+.transcriptionLayout {
+  min-height: 100vh;
+}
+
+.sider {
+  background: #001529;
+}
+
+.logo {
+  height: 48px;
+  margin: 16px;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.2;
+  padding: 4px;
+}
+
+.header {
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.triggerButton {
+  font-size: 16px;
+  width: 64px;
+  height: 64px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userName {
+  margin-left: 8px;
+  font-weight: 500;
+  color: #1f1f1f;
+}
+
+.content {
+  margin: 16px;
+  padding: 16px;
+  min-height: calc(100vh - 64px);
+}
+

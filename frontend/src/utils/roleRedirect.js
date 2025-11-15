@@ -10,6 +10,8 @@ export const getRoleBasedRedirectPath = (role, fallback = '/') => {
       return '/admin/dashboard';
     case 'MANAGER':
       return '/manager/dashboard';
+    case 'TRANSCRIPTION':
+      return '/transcription/edit-tool';
     case 'CUSTOMER':
       return '/';
     default:
