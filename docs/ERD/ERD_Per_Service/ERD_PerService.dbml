@@ -97,7 +97,6 @@ Table specialists {
   user_id uuid [not null, note: 'Soft reference to identity-service']
   specialization specialist_type [not null]
   experience_years integer [default: 0]
-  hourly_rate decimal(10,2)
   max_concurrent_tasks integer [default: 5]
   portfolio_url varchar(255)
   rating decimal(3,2) [default: 0.00]

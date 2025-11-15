@@ -62,7 +62,6 @@ Table specialists {
   user_id [ref: > users.user_id]
   specialization
   experience_years
-  hourly_rate
   max_concurrent_tasks
   portfolio_url
   rating

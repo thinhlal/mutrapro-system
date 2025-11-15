@@ -118,7 +118,6 @@ Table specialists {
   user_id uuid [ref: > users.user_id, not null]
   specialization specialist_type [not null]
   experience_years integer [default: 0]
-  hourly_rate decimal(10,2)
   
   // Capacity management (simplified)
   max_concurrent_tasks integer [default: 5] // Số task tối đa có thể làm cùng lúc

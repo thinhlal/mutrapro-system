@@ -8,6 +8,8 @@ import com.mutrapro.identity_service.exception.*;
 import com.mutrapro.identity_service.mapper.UserMapper;
 import com.mutrapro.identity_service.repository.UserRepository;
 import com.mutrapro.identity_service.repository.UsersAuthRepository;
+import com.mutrapro.shared.enums.Role;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -311,6 +313,23 @@ public class UserService {
             .twoFactorEnabled(false) // TODO: Implement 2FA
             .lastLoginAt(null) // TODO: Track last login
             .build();
+    }
+
+    /**
+     * Update user role (Admin only)
+     */
+    @Transactional
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public void updateUserRole(String id, Role role) {
+        log.info("Updating role for user ID: {} to role: {}", id, role);
+        
+        UsersAuth userAuth = usersAuthRepository.findByUserId(id)
+            .orElseThrow(() -> UserNotFoundException.byId(id));
+        
+        userAuth.setRole(role);
+        usersAuthRepository.save(userAuth);
+        
+        log.info("User role updated successfully for user ID: {}", id);
     }
 
     /**

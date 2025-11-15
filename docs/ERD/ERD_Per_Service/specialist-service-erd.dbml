@@ -17,7 +17,6 @@ Table specialists {
   user_id uuid [not null, note: 'Soft reference to identity-service']
   specialization specialist_type [not null]
   experience_years integer [default: 0]
-  hourly_rate decimal(10,2)
   
   // Capacity management (simplified)
   max_concurrent_tasks integer [default: 5]
