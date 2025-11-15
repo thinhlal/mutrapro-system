@@ -227,3 +227,178 @@ export const updateDemoVisibility = async (demoId, visibilityData) => {
   }
 };
 
+// ===== SPECIALIST PROFILE MANAGEMENT (Self-service) =====
+
+/**
+ * Lấy profile của specialist hiện tại
+ */
+export const getMyProfile = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_MY_PROFILE
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy profile' };
+  }
+};
+
+/**
+ * Lấy profile đầy đủ của specialist hiện tại
+ */
+export const getMyProfileDetail = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_MY_PROFILE_DETAIL
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy profile detail' };
+  }
+};
+
+/**
+ * Cập nhật profile của specialist hiện tại
+ */
+export const updateMyProfile = async profileData => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPDATE_MY_PROFILE,
+      profileData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi cập nhật profile' };
+  }
+};
+
+/**
+ * Lấy danh sách skills có sẵn
+ */
+export const getAvailableSkills = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_AVAILABLE_SKILLS
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách skills' };
+  }
+};
+
+/**
+ * Lấy danh sách skills của specialist hiện tại
+ */
+export const getMySkills = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_MY_SKILLS
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy skills' };
+  }
+};
+
+/**
+ * Thêm skill cho specialist hiện tại
+ */
+export const addSkill = async skillData => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.ADD_SKILL,
+      skillData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi thêm skill' };
+  }
+};
+
+/**
+ * Cập nhật skill của specialist hiện tại
+ */
+export const updateMySkill = async (skillId, skillData) => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPDATE_SKILL(skillId),
+      skillData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi cập nhật skill' };
+  }
+};
+
+/**
+ * Xóa skill của specialist hiện tại
+ */
+export const deleteMySkill = async skillId => {
+  try {
+    const response = await axiosInstance.delete(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.DELETE_SKILL(skillId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi xóa skill' };
+  }
+};
+
+/**
+ * Lấy danh sách demos của specialist hiện tại
+ */
+export const getMyDemos = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.GET_MY_DEMOS
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy demos' };
+  }
+};
+
+/**
+ * Tạo demo mới cho specialist hiện tại
+ */
+export const createMyDemo = async demoData => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.CREATE_DEMO,
+      demoData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi tạo demo' };
+  }
+};
+
+/**
+ * Cập nhật demo của specialist hiện tại
+ */
+export const updateMyDemo = async (demoId, demoData) => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPDATE_DEMO(demoId),
+      demoData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi cập nhật demo' };
+  }
+};
+
+/**
+ * Xóa demo của specialist hiện tại
+ */
+export const deleteMyDemo = async demoId => {
+  try {
+    const response = await axiosInstance.delete(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.DELETE_DEMO(demoId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi xóa demo' };
+  }
+};
+

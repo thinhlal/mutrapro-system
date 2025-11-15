@@ -6,6 +6,7 @@ import {
   EditOutlined,
   UserOutlined,
   LogoutOutlined,
+  ProfileOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -27,6 +28,11 @@ const menuItems = [
     key: '/transcription/edit-tool',
     icon: <EditOutlined />,
     label: <Link to="/transcription/edit-tool">Edit Tool</Link>,
+  },
+  {
+    key: '/transcription/profile',
+    icon: <ProfileOutlined />,
+    label: <Link to="/transcription/profile">My Profile</Link>,
   },
 ];
 

@@ -59,6 +59,9 @@ import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage
 import NotationEditor from './pages/work/NotationEditor/NotationEditor';
 import Tasks from './pages/work/Tasks/Task';
 
+// Transcription Pages
+import SpecialistProfile from './pages/transcription/Profile/SpecialistProfile';
+
 // Chat Pages (not used directly anymore, used in ChatLayout)
 // import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
 // import ChatConversationPage from './pages/chat/ChatConversation/ChatConversationPage';
@@ -377,6 +380,7 @@ function App() {
           >
             <Route index element={<Navigate to="edit-tool" replace />} />
             <Route path="edit-tool" element={<NotationEditor />} />
+            <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 
           {/* --- FALLBACK ROUTE --- */}

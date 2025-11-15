@@ -316,6 +316,33 @@ export const API_ENDPOINTS = {
       // PUT /admin/demos/{demoId}/visibility
       UPDATE_VISIBILITY: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}/visibility`,
     },
+    // Specialist Profile Management (Self-service)
+    PROFILE: {
+      // GET /specialists/me
+      GET_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,
+      // GET /specialists/me/detail
+      GET_MY_PROFILE_DETAIL: `${SPECIALIST_PATH}/specialists/me/detail`,
+      // PUT /specialists/me
+      UPDATE_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,
+      // GET /specialists/me/skills/available
+      GET_AVAILABLE_SKILLS: `${SPECIALIST_PATH}/specialists/me/skills/available`,
+      // GET /specialists/me/skills
+      GET_MY_SKILLS: `${SPECIALIST_PATH}/specialists/me/skills`,
+      // POST /specialists/me/skills
+      ADD_SKILL: `${SPECIALIST_PATH}/specialists/me/skills`,
+      // PUT /specialists/me/skills/{skillId}
+      UPDATE_SKILL: skillId => `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
+      // DELETE /specialists/me/skills/{skillId}
+      DELETE_SKILL: skillId => `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
+      // GET /specialists/me/demos
+      GET_MY_DEMOS: `${SPECIALIST_PATH}/specialists/me/demos`,
+      // POST /specialists/me/demos
+      CREATE_DEMO: `${SPECIALIST_PATH}/specialists/me/demos`,
+      // PUT /specialists/me/demos/{demoId}
+      UPDATE_DEMO: demoId => `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
+      // DELETE /specialists/me/demos/{demoId}
+      DELETE_DEMO: demoId => `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
+    },
   },
 };
 
