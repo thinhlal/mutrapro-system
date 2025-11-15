@@ -105,14 +105,19 @@ function UserMenu() {
     setIsOpen(prev => !prev);
   };
 
+  const truncateText = (text, maxLength = 16) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+  };
+
   const getInitials = email => {
     if (!email) return 'U';
     return email.charAt(0).toUpperCase();
   };
 
   const getDisplayName = () => {
-    if (user?.fullName) return user.fullName;
-    if (user?.email) return user.email.split('@')[0];
+    if (user?.fullName) return truncateText(user.fullName);
+    if (user?.email) return truncateText(user.email.split('@')[0]);
     return 'User';
   };
 
@@ -139,8 +144,13 @@ function UserMenu() {
           )}
         </div>
         <div className={styles.userInfo}>
-          <span className={styles.userName}>{getDisplayName()}</span>
-          <span className={styles.userRole}>{user?.role || 'User'}</span>
+          <span
+            className={styles.userName}
+            title={user?.fullName || user?.email || 'User'}
+          >
+            {getDisplayName()}
+          </span>
+          {/* <span className={styles.userRole}>{user?.role || 'User'}</span> */}
         </div>
       </button>
 
@@ -161,7 +171,12 @@ function UserMenu() {
               )}
             </div>
             <div className={styles.dropdownUserInfo}>
-              <p className={styles.dropdownUserName}>{getDisplayName()}</p>
+              <p
+                className={styles.dropdownUserName}
+                title={user?.fullName || user?.email || 'User'}
+              >
+                {getDisplayName()}
+              </p>
               <p className={styles.dropdownUserEmail}>{user?.email}</p>
             </div>
           </div>
