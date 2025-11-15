@@ -1,6 +1,9 @@
 // src/components/FlatEditor.jsx
 import { useEffect, useRef, useState } from 'react';
 import Embed from 'flat-embed';
+import { Button, Card, Space, Upload, message, Alert } from 'antd';
+import { UploadOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined, FileTextOutlined, AudioOutlined } from '@ant-design/icons';
+import styles from './FlatEditor.module.css';
 
 // Piano C-major 4/4, 2 ô nhịp — demo siêu gọn
 const DEMO_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -111,47 +114,85 @@ export default function FlatEditor() {
   };
 
   return (
-    <div style={{ padding: 12 }}>
-      <div
-        style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}
-      >
-        <label>
-          <input
-            type="file"
+    <div className={styles.container}>
+      <Card className={styles.header} bordered={false}>
+        <Space wrap>
+          <Upload
             accept=".musicxml,.xml,.mxl,.mid,.midi"
-            onChange={handleUpload}
-            style={{ display: 'none' }}
-          />
-          <button type="button">Upload MusicXML/MIDI</button>
-        </label>
+            showUploadList={false}
+            beforeUpload={() => false}
+            onChange={(info) => {
+              const file = info.file.originFileObj || info.file;
+              handleUpload({ target: { files: [file] } });
+            }}
+          >
+            <Button icon={<UploadOutlined />} type="primary">
+              Upload MusicXML/MIDI
+            </Button>
+          </Upload>
 
-        <button type="button" onClick={loadDemo}>
-          Load demo
-        </button>
-        <button type="button" onClick={() => embed?.play()}>
-          Play
-        </button>
-        <button type="button" onClick={() => embed?.pause()}>
-          Pause
-        </button>
-        <button type="button" onClick={() => embed?.stop()}>
-          Stop
-        </button>
-        <button type="button" onClick={exportXML}>
-          Export XML
-        </button>
-        <button type="button" onClick={exportMIDI}>
-          Export MIDI
-        </button>
-      </div>
+          <Button onClick={loadDemo}>
+            Load Demo
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlayCircleOutlined />}
+            onClick={() => embed?.play()}
+          >
+            Play
+          </Button>
+          <Button
+            icon={<PauseCircleOutlined />}
+            onClick={() => embed?.pause()}
+          >
+            Pause
+          </Button>
+          <Button
+            danger
+            icon={<StopOutlined />}
+            onClick={() => embed?.stop()}
+          >
+            Stop
+          </Button>
+          <Button
+            icon={<FileTextOutlined />}
+            onClick={exportXML}
+          >
+            Export XML
+          </Button>
+          <Button
+            icon={<AudioOutlined />}
+            onClick={exportMIDI}
+          >
+            Export MIDI
+          </Button>
+        </Space>
+      </Card>
 
-      {err && <div style={{ color: 'red', marginBottom: 8 }}>{err}</div>}
-      {!ready && <div style={{ marginBottom: 8 }}>Loading editor…</div>}
+      {err && (
+        <Alert
+          message="Error"
+          description={err}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {!ready && (
+        <Alert
+          message="Loading editor..."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
-      <div
-        ref={hostRef}
-        style={{ width: '100%', height: '75vh', border: '1px solid #ddd' }}
-      />
+      <Card className={styles.editorContainer} bordered={false}>
+        <div
+          ref={hostRef}
+          className={styles.iframe}
+        />
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Embed from 'flat-embed';
+import { Button, Card, Space, Upload, Alert, Form, Input, Select, InputNumber, Typography, Divider, Modal } from 'antd';
+import { UploadOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined, FileTextOutlined, FileImageOutlined, PlusOutlined, CloseOutlined, AudioOutlined } from '@ant-design/icons';
+import styles from './FlatDemo.module.css';
 
 export default function FlatDemo() {
   const hostRef = useRef(null);
@@ -8,7 +11,7 @@ export default function FlatDemo() {
   const [ready, setReady] = useState(false);
 
   // ==== form Create ====
-  const [showCreate, setShowCreate] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const [instruments, setInstruments] = useState(['Piano']);
   const [beats, setBeats] = useState('4');
   const [beatType, setBeatType] = useState('4');
@@ -140,7 +143,7 @@ export default function FlatDemo() {
     try {
       const xml = makeMusicXML();
       await embed.loadMusicXML(xml);
-      setShowCreate(false);
+      setModalVisible(false);
     } catch (e) {
       console.error(e);
       alert('Không tạo được bản mới: ' + (e?.message || String(e)));
@@ -203,129 +206,182 @@ export default function FlatDemo() {
 
   // ================== UI ==================
   return (
-    <div style={{ padding: 12 }}>
-      <div
-        style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}
-      >
-        <button type="button" onClick={() => setShowCreate(v => !v)}>
-          Create
-        </button>
+    <div className={styles.container}>
+      <Card className={styles.header} bordered={false}>
+        <Space wrap>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setModalVisible(true)}
+          >
+            Create New Score
+          </Button>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".musicxml,.xml,.mxl,.mid,.midi"
-          onChange={handleUpload}
-          style={{ display: 'none' }}
-        />
-        <button type="button" onClick={openPicker}>
-          Upload (XML/MXL/MIDI)
-        </button>
-
-        <button onClick={() => embed?.play()}>Play</button>
-        <button onClick={() => embed?.pause()}>Pause</button>
-        <button onClick={() => embed?.stop()}>Stop</button>
-
-        <button onClick={exportXML}>Export XML</button>
-        <button onClick={exportMIDI}>Export MIDI</button>
-        <button onClick={exportPNG}>Export PNG</button>
-      </div>
-
-      {/* Panel Create */}
-      {showCreate && (
-        <div
-          style={{
-            border: '1px solid #ddd',
-            padding: 12,
-            marginBottom: 12,
-            borderRadius: 8,
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr',
-              gap: 12,
+          <Upload
+            accept=".musicxml,.xml,.mxl,.mid,.midi"
+            showUploadList={false}
+            beforeUpload={() => false}
+            onChange={(info) => {
+              const file = info.file.originFileObj || info.file;
+              handleUpload({ target: { files: [file] } });
             }}
           >
-            <div>
-              <label style={{ fontWeight: 600 }}>Nhạc cụ</label>
-              <select
-                multiple
+            <Button icon={<UploadOutlined />}>
+              Upload (XML/MXL/MIDI)
+            </Button>
+          </Upload>
+
+          <Button
+            type="primary"
+            icon={<PlayCircleOutlined />}
+            onClick={() => embed?.play()}
+          >
+            Play
+          </Button>
+          <Button
+            icon={<PauseCircleOutlined />}
+            onClick={() => embed?.pause()}
+          >
+            Pause
+          </Button>
+          <Button
+            danger
+            icon={<StopOutlined />}
+            onClick={() => embed?.stop()}
+          >
+            Stop
+          </Button>
+
+          <Button
+            icon={<FileTextOutlined />}
+            onClick={exportXML}
+          >
+            Export XML
+          </Button>
+          <Button
+            icon={<AudioOutlined />}
+            onClick={exportMIDI}
+          >
+            Export MIDI
+          </Button>
+          <Button
+            icon={<FileImageOutlined />}
+            onClick={exportPNG}
+          >
+            Export PNG
+          </Button>
+        </Space>
+      </Card>
+
+      {/* Create New Score Modal */}
+      <Modal
+        title="Create New Musical Score"
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form layout="vertical" className={styles.modalForm}>
+          <div className={styles.formGrid}>
+            <Form.Item label="Instruments">
+              <Select
+                mode="multiple"
                 value={instruments}
-                onChange={e =>
-                  setInstruments(
-                    Array.from(e.target.selectedOptions).map(o => o.value)
-                  )
-                }
-                style={{ width: '100%', height: 120 }}
+                onChange={setInstruments}
+                placeholder="Select instruments"
+                style={{ height: 120 }}
               >
                 {Object.keys(INSTRUMENTS).map(k => (
-                  <option key={k} value={k}>
+                  <Select.Option key={k} value={k}>
                     {k}
-                  </option>
+                  </Select.Option>
                 ))}
-              </select>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                Giữ Ctrl/⌘ để chọn nhiều
-              </div>
-            </div>
+              </Select>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                Hold Ctrl/⌘ to select multiple instruments
+              </Typography.Text>
+            </Form.Item>
 
-            <div>
-              <label style={{ fontWeight: 600 }}>Chỉ số nhịp</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
+            <Form.Item label="Time Signature">
+              <Space.Compact>
+                <InputNumber
                   value={beats}
-                  onChange={e => setBeats(e.target.value)}
-                  style={{ width: 60 }}
+                  onChange={setBeats}
+                  placeholder="4"
+                  min={1}
+                  max={32}
+                  style={{ width: '50%' }}
                 />
-                <span>/</span>
-                <input
+                <Input
+                  value="/"
+                  readOnly
+                  style={{ width: '10%', textAlign: 'center', borderLeft: 0, borderRight: 0 }}
+                />
+                <InputNumber
                   value={beatType}
-                  onChange={e => setBeatType(e.target.value)}
-                  style={{ width: 60 }}
+                  onChange={setBeatType}
+                  placeholder="4"
+                  min={1}
+                  max={32}
+                  style={{ width: '40%' }}
                 />
-              </div>
-            </div>
+              </Space.Compact>
+            </Form.Item>
 
-            <div>
-              <label style={{ fontWeight: 600 }}>Giá trị khoá (fifths)</label>
-              <input
+            <Form.Item label="Key Signature (fifths)">
+              <InputNumber
                 value={keyFifths}
-                onChange={e => setKeyFifths(e.target.value)}
-                style={{ width: 80 }}
+                onChange={setKeyFifths}
+                placeholder="0"
+                min={-7}
+                max={7}
+                style={{ width: '100%' }}
               />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>0=C, 1=G, -1=F,…</div>
-            </div>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                0=C, 1=G, -1=F, etc.
+              </Typography.Text>
+            </Form.Item>
 
-            <div>
-              <label style={{ fontWeight: 600 }}>Tempo (bpm)</label>
-              <input
+            <Form.Item label="Tempo (BPM)">
+              <InputNumber
                 value={tempo}
-                onChange={e => setTempo(e.target.value)}
-                style={{ width: 80 }}
+                onChange={setTempo}
+                placeholder="120"
+                min={20}
+                max={300}
+                style={{ width: '100%' }}
               />
-            </div>
+            </Form.Item>
           </div>
 
-          <div style={{ marginTop: 12 }}>
-            <button onClick={handleCreate}>Tạo bản mới</button>
-            <button
-              style={{ marginLeft: 8 }}
-              onClick={() => setShowCreate(false)}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
+          <Divider />
+
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <Button onClick={() => setModalVisible(false)}>
+              Cancel
+            </Button>
+            <Button type="primary" onClick={handleCreate}>
+              Create New Score
+            </Button>
+          </Space>
+        </Form>
+      </Modal>
+
+      {!ready && (
+        <Alert
+          message="Loading music editor..."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
       )}
 
-      {!ready && <div style={{ marginBottom: 8 }}>Loading editor…</div>}
-
-      <div
-        ref={hostRef}
-        style={{ width: '100%', height: '75vh', border: '1px solid #ddd' }}
-      />
+      <Card className={styles.editorContainer} bordered={false}>
+        <div
+          ref={hostRef}
+          className={styles.iframe}
+        />
+      </Card>
     </div>
   );
 }
