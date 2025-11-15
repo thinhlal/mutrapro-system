@@ -33,6 +33,7 @@ import {
 } from '../../../services/contractService';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
+import FileList from '../../../components/common/FileList/FileList';
 import styles from './RequestDetailPage.module.css';
 
 const { TextArea } = Input;
@@ -446,31 +447,7 @@ const RequestDetailPage = () => {
 
             {request.files && request.files.length > 0 && (
               <Descriptions.Item label="Uploaded Files">
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {request.files.map(file => (
-                    <div key={file.fileId} style={{ marginBottom: 8 }}>
-                      <Tag color="cyan" style={{ marginRight: 8 }}>
-                        {file.fileName}
-                      </Tag>
-                      <span style={{ fontSize: '12px', color: '#888' }}>
-                        {file.fileSize
-                          ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB`
-                          : ''}
-                        {file.mimeType && ` • ${file.mimeType}`}
-                      </span>
-                      {file.filePath && (
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => window.open(file.filePath, '_blank')}
-                          style={{ padding: 0, marginLeft: 8 }}
-                        >
-                          View file
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </Space>
+                <FileList files={request.files} />
               </Descriptions.Item>
             )}
 

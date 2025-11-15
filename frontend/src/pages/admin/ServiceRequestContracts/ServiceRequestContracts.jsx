@@ -23,6 +23,7 @@ import {
 import dayjs from 'dayjs';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractsByRequestId } from '../../../services/contractService';
+import FileList from '../../../components/common/FileList/FileList';
 import styles from './ServiceRequestContracts.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -344,6 +345,11 @@ export default function ServiceRequestContracts() {
                 <Descriptions.Item label="Cập nhật gần nhất">
                   {formatDateTime(request.updatedAt)}
                 </Descriptions.Item>
+                {request.files && request.files.length > 0 && (
+                  <Descriptions.Item label="Uploaded Files">
+                    <FileList files={request.files} />
+                  </Descriptions.Item>
+                )}
               </Descriptions>
             ) : (
               <Empty description="Không tìm thấy request" />

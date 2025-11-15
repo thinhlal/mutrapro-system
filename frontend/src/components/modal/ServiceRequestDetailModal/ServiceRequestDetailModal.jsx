@@ -1,6 +1,7 @@
 import { Modal, Button, Descriptions, Tag } from 'antd';
 import { CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
+import FileList from '../../common/FileList/FileList';
 
 const STATUS_COLORS = {
   pending: 'gold',
@@ -127,6 +128,11 @@ export default function ServiceRequestDetailModal({
             <Tag color="default">Unassigned</Tag>
           )}
         </Descriptions.Item>
+        {request.files && request.files.length > 0 && (
+          <Descriptions.Item label="Uploaded Files">
+            <FileList files={request.files} />
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="Created At">
           {new Date(request.createdAt).toLocaleString('vi-VN')}
         </Descriptions.Item>
