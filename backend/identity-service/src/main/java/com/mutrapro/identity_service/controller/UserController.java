@@ -120,5 +120,58 @@ public class UserController {
             .build();
     }
     
-}
+    // ===== PROFILE MANAGEMENT =====
 
+    /**
+     * Get my profile - Shortcut để user xem profile của mình
+     */
+    @GetMapping("/me")
+    public ApiResponse<FullUserResponse> getMyProfile() {
+        log.info("GET /users/me - Getting current user's profile");
+        FullUserResponse profile = userService.getMyProfile();
+        return ApiResponse.<FullUserResponse>builder()
+            .message("Profile retrieved successfully")
+            .data(profile)
+            .build();
+    }
+
+    /**
+     * Update my profile - Shortcut để user tự update profile
+     */
+    @PutMapping("/me")
+    public ApiResponse<UserResponse> updateMyProfile(@Valid @RequestBody UpdateUserRequest request) {
+        log.info("PUT /users/me - Updating current user's profile");
+        UserResponse profile = userService.updateMyProfile(request);
+        return ApiResponse.<UserResponse>builder()
+            .message("Profile updated successfully")
+            .data(profile)
+            .build();
+    }
+
+    // ===== SECURITY =====
+
+    /**
+     * Change password
+     */
+    @PostMapping("/me/change-password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        log.info("POST /users/me/change-password - Changing password");
+        userService.changePassword(request);
+        return ApiResponse.<Void>builder()
+            .message("Password changed successfully")
+            .build();
+    }
+
+    /**
+     * Get security settings
+     */
+    @GetMapping("/me/security")
+    public ApiResponse<SecuritySettingsResponse> getSecuritySettings() {
+        log.info("GET /users/me/security - Getting security settings");
+        SecuritySettingsResponse settings = userService.getSecuritySettings();
+        return ApiResponse.<SecuritySettingsResponse>builder()
+            .message("Security settings retrieved successfully")
+            .data(settings)
+            .build();
+    }
+}
