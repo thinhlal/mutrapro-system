@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './RegisterPage.module.css';
-import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../../contexts/AuthContext';
+import { FcGoogle } from 'react-icons/fc';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 function RegisterPage() {
   const navigate = useNavigate();
   const { register, loading } = useAuth();
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   // Form state
   const [formData, setFormData] = useState({
     firstName: '',
@@ -48,10 +51,13 @@ function RegisterPage() {
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'Please enter first name';
+    } else if (formData.firstName.trim().length > 8) {
+      newErrors.firstName = 'Max is 8 characters';
     }
-
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Please enter last name';
+    } else if (formData.lastName.trim().length > 8) {
+      newErrors.lastName = 'Max is 8 characters';
     }
 
     if (!formData.email.trim()) {
@@ -227,9 +233,10 @@ function RegisterPage() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder=" "
-                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+                className={`${styles.input} ${styles.passwordInput}
+                 ${errors.password ? styles.inputError : ''}`}
                 value={formData.password}
                 onChange={handleChange}
                 disabled={loading}
@@ -239,6 +246,18 @@ function RegisterPage() {
               <label htmlFor="password" className={styles.label}>
                 Password
               </label>
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword(prev => !prev)}
+                disabled={loading}
+              >
+                {showPassword ? (
+                  <VisibilityOffIcon fontSize="small" />
+                ) : (
+                  <VisibilityIcon fontSize="small" />
+                )}
+              </button>
               {errors.password && (
                 <span className={styles.errorText}>{errors.password}</span>
               )}
@@ -248,9 +267,10 @@ function RegisterPage() {
               <input
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder=" "
-                className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ''}`}
+                className={`${styles.input} ${styles.passwordInput}
+                ${errors.confirmPassword ? styles.inputError : ''}`}
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 disabled={loading}
@@ -260,6 +280,18 @@ function RegisterPage() {
               <label htmlFor="confirmPassword" className={styles.label}>
                 Confirm Password
               </label>
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowConfirmPassword(prev => !prev)}
+                disabled={loading}
+              >
+                {showConfirmPassword ? (
+                  <VisibilityOffIcon fontSize="small" />
+                ) : (
+                  <VisibilityIcon fontSize="small" />
+                )}
+              </button>
               {errors.confirmPassword && (
                 <span className={styles.errorText}>
                   {errors.confirmPassword}
@@ -297,7 +329,7 @@ function RegisterPage() {
 
             <div className={styles.socialRow}>
               <button type="button" className={styles.socialButton}>
-                <GoogleIcon />
+                <FcGoogle size={20} />
                 <span>Continue with Google</span>
               </button>
             </div>
