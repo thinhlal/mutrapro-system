@@ -1,3 +1,8 @@
+.container {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -14,5 +19,12 @@
 .timeline {
   display: grid;
   gap: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
 }
 

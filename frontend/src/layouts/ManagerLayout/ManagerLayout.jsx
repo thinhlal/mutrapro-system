@@ -83,7 +83,7 @@ const ManagerLayout = () => {
 
   return (
     <Layout className={styles.managerLayout}>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={240}>
+      <Sider trigger={null} collapsible collapsed={collapsed} width={200}>
         <div className={styles.logo}>
           {collapsed ? 'MTP' : 'MuTraPro Manager'}
         </div>

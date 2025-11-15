@@ -2,9 +2,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  min-height: 100vh;
+  min-height: calc(100vh - 200px);
   align-items: start;
-  padding: 12px;
+  padding: 24px;
 }
 
 .formSection {
@@ -275,6 +275,12 @@
 
   .formGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px;
   }
 }
 

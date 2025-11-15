@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Form, message, Card, Image } from 'antd';
+import { Table, Button, Space, Tag, Form, message, Card, Image, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   getAllNotationInstruments,
@@ -8,6 +8,8 @@ import {
 } from '../../../services/notationInstrumentService';
 import InstrumentFormModal from '../../../components/modal/InstrumentFormModal/InstrumentFormModal';
 import styles from './NotationInstruments.module.css';
+
+const { Title } = Typography;
 
 const NotationInstruments = () => {
   const [instruments, setInstruments] = useState([]);
@@ -217,7 +219,7 @@ const NotationInstruments = () => {
   return (
     <div className={styles.container}>
       <Card
-        title={<h2 style={{ margin: 0 }}>Notation Instruments</h2>}
+        title={<Title level={3} style={{ margin: 0 }}>Notation Instruments</Title>}
         extra={
           <Space>
             <Button

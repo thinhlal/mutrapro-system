@@ -337,7 +337,7 @@ export default function ContractsManagement() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 270,
+      width: 200,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
@@ -449,7 +449,7 @@ export default function ContractsManagement() {
   return (
     <div className={styles.container}>
       <div>
-        <Typography.Title level={2} style={{ marginBottom: 24 }}>
+        <Typography.Title level={3} style={{ marginBottom: 24 }}>
           Contracts Management
         </Typography.Title>
       </div>

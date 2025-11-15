@@ -1,0 +1,12 @@
+.container {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+}
+
