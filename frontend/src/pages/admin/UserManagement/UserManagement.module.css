@@ -1,5 +1,6 @@
 .userManagement {
-  padding: 0;
+  padding: 24px;
+  min-height: calc(100vh - 200px);
 }
 
 .userManagement :global(.ant-table-wrapper) {
@@ -10,4 +11,11 @@
   :global(.ant-descriptions-bordered .ant-descriptions-item-label) {
   font-weight: 600;
   width: 200px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .userManagement {
+    padding: 16px;
+  }
 }

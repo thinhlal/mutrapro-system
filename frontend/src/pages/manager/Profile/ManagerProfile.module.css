@@ -1,5 +1,6 @@
 .container {
-  padding: 0;
+  padding: 24px;
+  min-height: calc(100vh - 200px);
 }
 
 .profileHeader {
@@ -17,4 +18,11 @@
   margin: 0 0 8px 0;
   font-size: 24px;
   font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
 }

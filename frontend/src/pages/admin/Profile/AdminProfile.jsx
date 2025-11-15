@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, Descriptions, Avatar, Button, Space, Tag, message } from 'antd';
+import { Card, Descriptions, Avatar, Button, Space, Tag, message, Typography } from 'antd';
 import { UserOutlined, EditOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import styles from './AdminProfile.module.css';
+
+const { Title } = Typography;
 
 const AdminProfile = () => {
   const { user, logout, loading } = useAuth();
@@ -43,7 +45,7 @@ const AdminProfile = () => {
   return (
     <div className={styles.container}>
       <Card
-        title={<h2 style={{ margin: 0 }}>Admin Profile</h2>}
+        title={<Title level={3} style={{ margin: 0 }}>Admin Profile</Title>}
         extra={
           <Space>
             <Button

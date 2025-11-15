@@ -106,34 +106,6 @@ function Header() {
         [styles.scrolled]: isScrolled,
       })}
     >
-      {/* Auth bar */}
-      <div
-        className={classNames(styles.container, styles.authAlign)}
-        style={{ marginTop: '1rem' }}
-      >
-        {isAuthenticated ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <NotificationBell />
-            <UserMenu />
-          </div>
-        ) : (
-          <div className="d-flex gap-4 align-items-center">
-            <Link
-              to="/login"
-              className={classNames(styles.navLink, styles.authLink)}
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className={classNames(styles.navLink, styles.authSignup)}
-            >
-              Sign up
-            </Link>
-          </div>
-        )}
-      </div>
-
       <Container fluid className={styles.container}>
         <Navbar expand="lg" className={styles.navbar}>
           {/* Logo */}
@@ -149,19 +121,33 @@ function Header() {
           <div className={styles.desktopNav}>
             <Nav className={styles.navLinks}>
               {navLink('/', 'home', 'Home')}
-              {navLink('/transcription', 'audio', 'Audio → Sheet Music')}
+              {navLink('/transcription', 'audio', 'Introduciton')}
               {navLink('/request-service', 'request', 'Request Service')}
-              {navLink('/pricing', 'pricing', 'Pricing')}
-              {navLink('/reviews', 'reviews', 'Reviews')}
-              {navLink('/chat', 'chat', 'Chat')}
-              {navLink('/notifications', 'notifications', 'Notifications')}
             </Nav>
 
-            {/* CTA */}
-            <div className={styles.ctaContainer}>
-              <Link to="/request-service" className={styles.ctaButton}>
-                REQUEST YOUR SHEET MUSIC
-              </Link>
+            {/* Auth Section */}
+            <div className={styles.authSection}>
+              {isAuthenticated ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <NotificationBell />
+                  <UserMenu />
+                </div>
+              ) : (
+                <div className="d-flex gap-4 align-items-center">
+                  <Link
+                    to="/login"
+                    className={classNames(styles.navLink, styles.authLink)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className={classNames(styles.navLink, styles.authSignup)}
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
@@ -213,7 +199,7 @@ function Header() {
                 })}
                 onClick={closeMobileMenu}
               >
-                Audio → Sheet Music
+                Introduciton
               </Nav.Link>
 
               <Nav.Link
@@ -226,58 +212,45 @@ function Header() {
               >
                 Request Service
               </Nav.Link>
-
-              <Nav.Link
-                as={Link}
-                to="/pricing"
-                className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'pricing',
-                })}
-                onClick={closeMobileMenu}
-              >
-                Pricing
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/reviews"
-                className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'reviews',
-                })}
-                onClick={closeMobileMenu}
-              >
-                Reviews
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/chat"
-                className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'chat',
-                })}
-                onClick={closeMobileMenu}
-              >
-                Chat
-              </Nav.Link>
-              <Nav.Link
-                as={Link}
-                to="/notifications"
-                className={classNames(styles.mobileNavLink, {
-                  [styles.active]: activeKey === 'notifications',
-                })}
-                onClick={closeMobileMenu}
-              >
-                Notifications
-              </Nav.Link>
             </Nav>
 
-            {/* Mobile CTA */}
-            <div className={styles.mobileCta}>
-              <Link
-                to="/request-service"
-                className={styles.mobileCtaButton}
-                onClick={closeMobileMenu}
-              >
-                REQUEST YOUR SHEET MUSIC
-              </Link>
+            {/* Mobile Auth Section */}
+            <div className={styles.mobileAuthSection}>
+              {isAuthenticated ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 0' }}>
+                  <Link
+                    to="/notifications"
+                    className={styles.mobileNavLink}
+                    onClick={closeMobileMenu}
+                  >
+                    Notifications
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className={styles.mobileNavLink}
+                    onClick={closeMobileMenu}
+                  >
+                    Profile
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 0' }}>
+                  <Link
+                    to="/login"
+                    className={classNames(styles.mobileNavLink, styles.authLink)}
+                    onClick={closeMobileMenu}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className={classNames(styles.mobileNavLink, styles.authSignup)}
+                    onClick={closeMobileMenu}
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
