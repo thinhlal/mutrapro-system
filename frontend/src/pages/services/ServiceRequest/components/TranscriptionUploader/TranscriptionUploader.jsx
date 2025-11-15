@@ -102,7 +102,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
       instrumentIds.length === 1;
 
     if (!isInstrumentIdsValid) {
-      setErrorMessage('Vui lòng chọn một nhạc cụ.');
+      setErrorMessage('Please choose a musical instrument.');
       // Scroll to error message
       setTimeout(() => {
         const errorElement = document.getElementById(

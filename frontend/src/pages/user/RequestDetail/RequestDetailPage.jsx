@@ -22,7 +22,7 @@ import {
   ExclamationCircleOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
+import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import {
@@ -211,7 +211,6 @@ const RequestDetailPage = () => {
     }
   };
 
-
   const handleRequestChange = async () => {
     if (!selectedContract || !changeReason.trim()) {
       message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
@@ -266,29 +265,23 @@ const RequestDetailPage = () => {
     setCancelModalVisible(true);
   };
 
-  if (loading) {
-    return (
-      <ProfileLayout>
+  const renderContent = () => {
+    if (loading) {
+      return (
         <div className={styles.loadingContainer}>
           <Spin size="large" />
           <p style={{ marginTop: '1rem' }}>Loading...</p>
         </div>
-      </ProfileLayout>
-    );
-  }
+      );
+    }
 
-  if (!request) {
+    if (!request) {
+      return <Empty description="Request not found" />;
+    }
+
+    const statusConfig = getStatusConfig(request.status);
+
     return (
-      <ProfileLayout>
-        <Empty description="Request not found" />
-      </ProfileLayout>
-    );
-  }
-
-  const statusConfig = getStatusConfig(request.status);
-
-  return (
-    <ProfileLayout>
       <div className={styles.detailWrapper}>
         <div className={styles.headerSection}>
           <Button
@@ -516,7 +509,14 @@ const RequestDetailPage = () => {
           />
         </Modal>
       </div>
-    </ProfileLayout>
+    );
+  };
+
+  return (
+    <>
+      <Header />
+      <div className={styles.pageContainer}>{renderContent()}</div>
+    </>
   );
 };
 

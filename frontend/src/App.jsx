@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Common Components
 import ScrollToTop from './components/common/ScrollToTop/ScrollToTop';
@@ -82,11 +83,13 @@ import ContractsManagement from './pages/manager/ContractsList/ContractsManageme
 
 import './App.css';
 
+
 function App() {
   return (
     <Router>
       <AuthProvider>
         <ScrollToTop />
+        <Toaster position="top-center" />
         <Routes>
           {/* --- PUBLIC ROUTES --- */}
           <Route path="/" element={<HomePage />} />

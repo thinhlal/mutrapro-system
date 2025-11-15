@@ -5,7 +5,6 @@ import {
   Typography,
   Button,
   Empty,
-  message,
   Card,
   Space,
   Tag,
@@ -21,6 +20,7 @@ import {
   CheckCircleOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
+import { toast } from 'react-hot-toast';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
@@ -62,7 +62,7 @@ export default function TranscriptionQuotePageSimplified() {
 
   const { instruments: instrumentsData } = useInstrumentStore();
 
-  // Validate
+  // Validate thiếu data
   if (!formData || !formData.title || !formData.durationMinutes) {
     return (
       <div className={styles.wrap}>
@@ -101,7 +101,7 @@ export default function TranscriptionQuotePageSimplified() {
         }
       } catch (error) {
         console.error('Error fetching pricing data:', error);
-        message.error('Không thể tải thông tin giá. Vui lòng thử lại.');
+        toast.error('Không thể tải thông tin giá. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -111,54 +111,52 @@ export default function TranscriptionQuotePageSimplified() {
   }, [serviceType, formData.durationMinutes]);
 
   const handleSubmit = async () => {
+    // 1. Validate trước
+    if (serviceType === 'transcription') {
+      if (!formData.durationMinutes || formData.durationMinutes <= 0) {
+        toast.error('Thời lượng phải là số dương (phút) cho transcription.');
+        return;
+      }
+
+      if (!uploadedFile) {
+        toast.error('File audio là bắt buộc cho transcription.');
+        return;
+      }
+    }
+
+    // 2. Chuẩn bị payload gửi lên backend
+    const requestData = {
+      requestType: serviceType,
+      title: formData.title,
+      description: formData.description,
+      tempoPercentage: formData.tempoPercentage || 100,
+      contactName: formData.contactName,
+      contactPhone: formData.contactPhone,
+      contactEmail: formData.contactEmail,
+      instrumentIds: formData.instrumentIds || [],
+      durationMinutes: formData.durationMinutes,
+      hasVocalist: formData.hasVocalist || false,
+      externalGuestCount: formData.externalGuestCount || 0,
+      musicOptions: formData.musicOptions || null,
+      files: uploadedFile ? [uploadedFile] : [],
+    };
+
     try {
       setSubmitting(true);
 
-      // Validate duration for transcription
-      if (serviceType === 'transcription') {
-        if (!formData.durationMinutes || formData.durationMinutes <= 0) {
-          message.error(
-            'Thời lượng phải là số dương (phút) cho transcription.'
-          );
-          setSubmitting(false);
-          return;
-        }
+      // 3. Gọi API – nếu lỗi, createServiceRequest sẽ throw
+      await createServiceRequest(requestData);
 
-        // Validate file is required for transcription
-        if (!uploadedFile) {
-          message.error('File audio là bắt buộc cho transcription.');
-          setSubmitting(false);
-          return;
-        }
-      }
-
-      const requestData = {
-        requestType: serviceType,
-        title: formData.title,
-        description: formData.description,
-        tempoPercentage: formData.tempoPercentage || 100,
-        contactName: formData.contactName,
-        contactPhone: formData.contactPhone,
-        contactEmail: formData.contactEmail,
-        instrumentIds: formData.instrumentIds || [],
-        durationMinutes: formData.durationMinutes,
-        hasVocalist: formData.hasVocalist || false,
-        externalGuestCount: formData.externalGuestCount || 0,
-        musicOptions: formData.musicOptions || null,
-        files: uploadedFile ? [uploadedFile] : [],
-      };
-
-      const response = await createServiceRequest(requestData);
-
-      if (response?.status === 'success') {
-        message.success('Service request created successfully!');
-        navigate('/');
-      } else {
-        throw new Error(response?.message || 'Failed to create request');
-      }
+      // 4. Thành công → show toast + điều hướng
+      toast.success('Service request created successfully!');
+      navigate('/');
     } catch (error) {
       console.error('Error creating request:', error);
-      message.error(error?.message || 'Failed to create request');
+      const errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        'Failed to create request';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -282,7 +280,11 @@ export default function TranscriptionQuotePageSimplified() {
                 <div>
                   <Text
                     strong
-                    style={{ fontSize: 16, marginBottom: 12, display: 'block' }}
+                    style={{
+                      fontSize: 16,
+                      marginBottom: 12,
+                      display: 'block',
+                    }}
                   >
                     Selected Instruments:
                   </Text>
