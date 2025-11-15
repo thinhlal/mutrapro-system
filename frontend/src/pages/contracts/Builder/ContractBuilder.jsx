@@ -792,13 +792,14 @@ const ContractBuilder = () => {
         termsAndConditions: values.terms_and_conditions?.trim(),
         specialClauses: values.special_clauses?.trim(),
         notes: values.notes?.trim(),
-        freeRevisionsIncluded: Number(values.free_revisions_included || 1),
-        revisionDeadlineDays: Number(
-          values.revision_deadline_days ||
-            getDefaultRevisionDeadlineDays(
+        freeRevisionsIncluded: values.free_revisions_included !== undefined && values.free_revisions_included !== null
+          ? Number(values.free_revisions_included)
+          : 1,
+        revisionDeadlineDays: values.revision_deadline_days !== undefined && values.revision_deadline_days !== null
+          ? Number(values.revision_deadline_days)
+          : getDefaultRevisionDeadlineDays(
               values.contract_type || 'transcription'
-            )
-        ),
+            ),
         additionalRevisionFeeVnd: values.additional_revision_fee_vnd
           ? Number(values.additional_revision_fee_vnd)
           : getDefaultAdditionalRevisionFeeVnd(),
@@ -1155,6 +1156,37 @@ const ContractBuilder = () => {
                   <Form.Item
                     name="free_revisions_included"
                     label="Free Revisions Included"
+                    rules={[
+                      {
+                        validator: (_, value) => {
+                          if (value === 0) {
+                            return Promise.reject(
+                              new Error('Warning: Setting free revisions to 0 means no free revisions will be provided. Please confirm this is intentional.')
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                        warningOnly: true,
+                      },
+                    ]}
+                    help={
+                      <Form.Item noStyle shouldUpdate>
+                        {({ getFieldValue }) => {
+                          const value = getFieldValue('free_revisions_included');
+                          if (value === 0) {
+                            return (
+                              <Alert
+                                message="Warning: No free revisions will be provided"
+                                type="warning"
+                                showIcon
+                                style={{ marginTop: 8 }}
+                              />
+                            );
+                          }
+                          return null;
+                        }}
+                      </Form.Item>
+                    }
                   >
                     <InputNumber min={0} max={10} style={{ width: '100%' }} />
                   </Form.Item>
@@ -1169,6 +1201,37 @@ const ContractBuilder = () => {
                           />
                         </Tooltip>
                       </span>
+                    }
+                    rules={[
+                      {
+                        validator: (_, value) => {
+                          if (value === 0) {
+                            return Promise.reject(
+                              new Error('Warning: Setting revision deadline to 0 means no deadline period for free revisions. Please confirm this is intentional.')
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                        warningOnly: true,
+                      },
+                    ]}
+                    help={
+                      <Form.Item noStyle shouldUpdate>
+                        {({ getFieldValue }) => {
+                          const value = getFieldValue('revision_deadline_days');
+                          if (value === 0) {
+                            return (
+                              <Alert
+                                message="Warning: No deadline period for free revisions"
+                                type="warning"
+                                showIcon
+                                style={{ marginTop: 8 }}
+                              />
+                            );
+                          }
+                          return null;
+                        }}
+                      </Form.Item>
                     }
                   >
                     <InputNumber
