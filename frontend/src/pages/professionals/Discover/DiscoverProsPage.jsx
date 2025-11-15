@@ -41,7 +41,7 @@ export default function DiscoverProsPage() {
         }
       } catch (error) {
         console.error('Error fetching pricing:', error);
-        message.error('Không thể tải thông tin giá. Sử dụng dữ liệu mặc định.');
+        message.error('Unable to load pricing information. Using default data.');
         // Fallback to original data
         setCategories(PROS_CATEGORIES);
       } finally {
@@ -87,7 +87,7 @@ export default function DiscoverProsPage() {
         >
           {loading ? (
             <div className="col-12 text-center" style={{ padding: '3rem' }}>
-              <Spin size="large" tip="Đang tải dữ liệu..." />
+              <Spin size="large" tip="Loading data..." />
             </div>
           ) : (
             categories.map(item => <CategoryCard key={item.id} item={item} />)

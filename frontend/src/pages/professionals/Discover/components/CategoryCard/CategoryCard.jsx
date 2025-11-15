@@ -46,7 +46,7 @@ export default function CategoryCard({ item }) {
     if (!item.pricing) return null;
 
     const { basePrice, currency, unitType } = item.pricing;
-    const unitLabel = unitType === 'per_minute' ? '/phút' : '/bài';
+    const unitLabel = unitType === 'per_minute' ? '/min' : '/song';
 
     return `${formatPrice(basePrice, currency)}${unitLabel}`;
   };

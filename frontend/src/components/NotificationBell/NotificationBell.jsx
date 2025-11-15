@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Badge,
-  Drawer,
+  Dropdown,
   List,
   Button,
   Empty,
@@ -14,22 +14,20 @@ import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/vi';
 import styles from './NotificationBell.module.css';
 
 // Configure dayjs
 dayjs.extend(relativeTime);
-dayjs.locale('vi');
 
 const { Text, Title } = Typography;
 
 /**
  * Notification Bell Component
- * Hiển thị icon chuông với badge số lượng thông báo chưa đọc
+ * Display bell icon with badge showing unread notifications count
  */
 const NotificationBell = () => {
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const {
     unreadCount,
@@ -55,22 +53,17 @@ const NotificationBell = () => {
       navigate(notification.actionUrl);
     }
 
-    setVisible(false);
+    setOpen(false);
   };
 
   /**
-   * Handle drawer open
+   * Handle dropdown open change
    */
-  const handleOpenDrawer = () => {
-    setVisible(true);
-    fetchLatestNotifications();
-  };
-
-  /**
-   * Handle drawer close
-   */
-  const handleCloseDrawer = () => {
-    setVisible(false);
+  const handleOpenChange = (flag) => {
+    setOpen(flag);
+    if (flag) {
+      fetchLatestNotifications();
+    }
   };
 
   /**
@@ -85,110 +78,123 @@ const NotificationBell = () => {
     }
   };
 
+  // Dropdown menu content
+  const dropdownContent = (
+    <div className={styles.notificationDropdown}>
+      {/* Header */}
+      <div className={styles.dropdownHeader}>
+        <div className={styles.headerLeft}>
+          {/* <BellOutlined className={styles.headerIcon} /> */}
+          <Title level={5} style={{ margin: 0 }}>
+            Notifications
+          </Title>
+          {!connected && (
+            <span className={styles.offlineIndicator}> (Offline)</span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <Button
+            type="text"
+            size="small"
+            icon={<CheckOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              markAllAsRead();
+            }}
+            className={styles.markAllButton}
+          >
+            Mark all
+          </Button>
+        )}
+      </div>
+
+      <Divider style={{ margin: 0 }} />
+
+      {/* Notifications List */}
+      <div className={styles.notificationList}>
+        {loading ? (
+          <div className={styles.loadingContainer}>
+            <Spin tip="Loading..." size="default" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <Empty
+            description="No notifications"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ padding: '40px 0' }}
+          />
+        ) : (
+          <List
+            dataSource={notifications.slice(0, 5)}
+            renderItem={notification => (
+              <List.Item
+                key={notification.notificationId}
+                className={`${styles.notificationItem} ${
+                  !notification.isRead ? styles.unread : ''
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className={styles.notificationContent}>
+                  <div className={styles.notificationHeader}>
+                    <Text strong className={styles.title}>
+                      {notification.title}
+                    </Text>
+                    {!notification.isRead && (
+                      <span className={styles.unreadDot} />
+                    )}
+                  </div>
+                  <Text type="secondary" className={styles.content}>
+                    {notification.content}
+                  </Text>
+                  <Text type="secondary" className={styles.time}>
+                    {formatTime(notification.createdAt)}
+                  </Text>
+                </div>
+              </List.Item>
+            )}
+          />
+        )}
+      </div>
+
+      {/* Footer */}
+      {notifications.length > 0 && (
+        <>
+          <Divider style={{ margin: '8px 0' }} />
+          <div className={styles.footer}>
+            <Button
+              type="link"
+              block
+              onClick={() => {
+                navigate('/notifications');
+                setOpen(false);
+              }}
+              className={styles.viewAllButton}
+            >
+              View all notifications
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <>
+    <Dropdown
+      dropdownRender={() => dropdownContent}
+      trigger={['click']}
+      open={open}
+      onOpenChange={handleOpenChange}
+      placement="bottomRight"
+      overlayClassName={styles.notificationDropdownOverlay}
+    >
       <Badge count={unreadCount} overflowCount={99} offset={[-5, 5]}>
         <Button
           type="text"
           icon={<BellOutlined style={{ fontSize: '20px' }} />}
           className={styles.bellButton}
-          onClick={handleOpenDrawer}
         />
       </Badge>
-
-      <Drawer
-        title={
-          <div className={styles.drawerHeader}>
-            <div className={styles.drawerTitle}>
-              <BellOutlined className={styles.drawerIcon} />
-              <span>Notifications</span>
-              {!connected && (
-                <span className={styles.offlineIndicator}> (Offline)</span>
-              )}
-            </div>
-            {unreadCount > 0 && (
-              <Button
-                type="text"
-                size="small"
-                icon={<CheckOutlined />}
-                onClick={markAllAsRead}
-                className={styles.markAllButton}
-              >
-                Đánh dấu tất cả
-              </Button>
-            )}
-          </div>
-        }
-        placement="right"
-        onClose={handleCloseDrawer}
-        open={visible}
-        width={720}
-        className={styles.notificationDrawer}
-      >
-        {/* Notifications List */}
-        <div className={styles.notificationList}>
-          {loading ? (
-            <div className={styles.loadingContainer}>
-              <Spin tip="Đang tải..." size="large" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <Empty
-              description="Không có thông báo"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ marginTop: '60px' }}
-            />
-          ) : (
-            <>
-              <List
-                dataSource={notifications}
-                renderItem={notification => (
-                  <List.Item
-                    key={notification.notificationId}
-                    className={`${styles.notificationItem} ${
-                      !notification.isRead ? styles.unread : ''
-                    }`}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className={styles.notificationContent}>
-                      <div className={styles.notificationHeader}>
-                        <Text strong className={styles.title}>
-                          {notification.title}
-                        </Text>
-                        {!notification.isRead && (
-                          <span className={styles.unreadDot} />
-                        )}
-                      </div>
-                      <Text type="secondary" className={styles.content}>
-                        {notification.content}
-                      </Text>
-                      <Text type="secondary" className={styles.time}>
-                        {formatTime(notification.createdAt)}
-                      </Text>
-                    </div>
-                  </List.Item>
-                )}
-              />
-
-              <Divider style={{ margin: '12px 0' }} />
-
-              <div className={styles.footer}>
-                <Button
-                  type="primary"
-                  block
-                  onClick={() => {
-                    navigate('/notifications');
-                    handleCloseDrawer();
-                  }}
-                  className={styles.viewAllButton}
-                >
-                  Xem tất cả thông báo
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </Drawer>
-    </>
+    </Dropdown>
   );
 };
 
