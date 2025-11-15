@@ -324,7 +324,7 @@ export default function ServiceRequestManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 320,
+      width: 200,
       fixed: 'right',
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
@@ -382,7 +382,7 @@ export default function ServiceRequestManagement() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title level={2}>Service Request Management</Title>
+        <Title level={3}>Service Request Management</Title>
         <Button
           icon={<ReloadOutlined />}
           onClick={() => {

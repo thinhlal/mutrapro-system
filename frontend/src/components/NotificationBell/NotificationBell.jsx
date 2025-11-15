@@ -101,7 +101,7 @@ const NotificationBell = () => {
           <div className={styles.drawerHeader}>
             <div className={styles.drawerTitle}>
               <BellOutlined className={styles.drawerIcon} />
-              <span>Thông báo</span>
+              <span>Notifications</span>
               {!connected && (
                 <span className={styles.offlineIndicator}> (Offline)</span>
               )}

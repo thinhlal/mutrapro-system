@@ -406,7 +406,7 @@ export default function ContractsList() {
   return (
     <div className={styles.container}>
       <div>
-        <Typography.Title level={2} style={{ marginBottom: 24 }}>
+        <Typography.Title level={3} style={{ marginBottom: 24 }}>
           My Contracts
         </Typography.Title>
       </div>

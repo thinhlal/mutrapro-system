@@ -8,6 +8,7 @@ import {
   message,
   Popconfirm,
   Card,
+  Typography,
 } from 'antd';
 import {
   EditOutlined,
@@ -24,6 +25,8 @@ import {
 import UserEditModal from '../../../components/modal/UserEditModal/UserEditModal';
 import UserDetailModal from '../../../components/modal/UserDetailModal/UserDetailModal';
 import styles from './UserManagement.module.css';
+
+const { Title } = Typography;
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -236,7 +239,7 @@ const UserManagement = () => {
   return (
     <div className={styles.userManagement}>
       <Card
-        title={<h2 style={{ margin: 0 }}>User Management</h2>}
+        title={<Title level={3} style={{ margin: 0 }}>User Management</Title>}
         extra={
           <Button
             type="primary"
