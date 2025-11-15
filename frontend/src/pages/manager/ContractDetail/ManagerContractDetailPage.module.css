@@ -2,8 +2,8 @@
   display: grid;
   grid-template-columns: minmax(300px, 400px) 1fr;
   gap: 16px;
-  min-height: 100vh;
-  padding: 16px;
+  min-height: calc(100vh - 200px);
+  padding: 24px;
   max-width: 100%;
   margin: 0 auto;
   overflow-x: hidden;
@@ -355,6 +355,12 @@
   .infoCard,
   .previewCard {
     min-height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 16px;
   }
 }
 

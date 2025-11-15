@@ -843,7 +843,7 @@ const ManagerContractDetailPage = () => {
             Back to Contracts List
           </Button>
 
-          <Title level={4} style={{ marginTop: 0, marginBottom: 12 }}>
+          <Title level={3} style={{ marginTop: 0, marginBottom: 12 }}>
             Contract Details
           </Title>
 

@@ -65,7 +65,7 @@ export default function CategoryCard({ item }) {
             </span>
           ) : null
         }
-        color="green"
+        color="orange"
       >
         <Card
           styles={{ body: { padding: 0 } }}

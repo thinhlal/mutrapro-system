@@ -940,7 +940,7 @@ const ContractBuilder = () => {
               marginBottom: 4,
             }}
           >
-            <Title level={4} style={{ margin: 0, fontSize: '16px' }}>
+            <Title level={3} style={{ margin: 0, fontSize: '18px' }}>
               {isEditMode
                 ? 'Edit Contract'
                 : 'Create Contract from Service Request'}

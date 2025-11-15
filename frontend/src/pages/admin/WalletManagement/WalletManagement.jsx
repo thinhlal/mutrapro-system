@@ -308,8 +308,8 @@ const WalletManagement = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title level={2}>
-          <WalletOutlined /> Quản lý Wallets
+        <Title level={3}>
+           Quản lý Wallets
         </Title>
         <Space>
           <Search

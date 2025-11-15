@@ -236,7 +236,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                 )}
 
               {/* Duration Adjustment */}
-              {detectedDurationMinutes > 0 && (
+              {/* {detectedDurationMinutes > 0 && (
                 <div style={{ padding: '16px 0', marginTop: 16 }}>
                   <div style={{ marginBottom: 12 }}>
                     <ClockCircleOutlined style={{ marginRight: 8 }} />
@@ -301,7 +301,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                     {toMMSS(Math.round(adjustedDurationMinutes * 60))})
                   </div>
                 </div>
-              )}
+              )} */}
             </Space>
           </div>
         )}
