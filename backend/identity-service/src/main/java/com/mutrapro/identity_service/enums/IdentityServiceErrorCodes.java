@@ -121,6 +121,21 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
         "Invalid password reset token",
         Retryable.NON_TRANSIENT),
 
+    PASSWORD_MISMATCH("USER_4022", 400,
+        "https://docs.mutrapro.com/errors/USER_4022",
+        "New password and confirm password do not match",
+        Retryable.NON_TRANSIENT),
+
+    INVALID_CURRENT_PASSWORD("USER_4023", 400,
+        "https://docs.mutrapro.com/errors/USER_4023",
+        "Current password is incorrect",
+        Retryable.NON_TRANSIENT),
+
+    SAME_PASSWORD("USER_4024", 400,
+        "https://docs.mutrapro.com/errors/USER_4024",
+        "New password cannot be the same as current password",
+        Retryable.NON_TRANSIENT),
+
     // Auth Errors (5000-5099)
     TOKEN_GENERATION_FAILED("AUTH_5000", 500,
         "https://docs.mutrapro.com/errors/AUTH_5000",
@@ -257,4 +272,3 @@ public enum IdentityServiceErrorCodes implements ErrorCode {
         return retryAfterSeconds;
     }
 }
-

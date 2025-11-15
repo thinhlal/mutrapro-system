@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styles from './LoginPage.module.css';
-import GoogleIcon from '@mui/icons-material/Google';
 import { useAuth } from '../../../contexts/AuthContext';
 import { OAuthConfig } from '../../../config/OAuthConfig';
 import { getRoleBasedRedirectPath } from '../../../utils/roleRedirect';
+import { FcGoogle } from 'react-icons/fc';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const location = useLocation();
   const { logIn, loading } = useAuth() || {};
 
@@ -146,9 +149,11 @@ function LoginPage() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder=" "
-                className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+                className={`${styles.input} ${styles.passwordInput}
+                 ${errors.password ? styles.inputError : ''
+                }`}
                 required
                 autoComplete="current-password"
                 value={password}
@@ -162,6 +167,18 @@ function LoginPage() {
               <label htmlFor="password" className={styles.label}>
                 Password
               </label>
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword(prev => !prev)}
+                disabled={loading}
+              >
+                {showPassword ? (
+                  <VisibilityOffIcon fontSize="small" />
+                ) : (
+                  <VisibilityIcon fontSize="small" />
+                )}
+              </button>
               {errors.password && (
                 <span className={styles.errorText}>{errors.password}</span>
               )}
@@ -199,7 +216,7 @@ function LoginPage() {
                 className={styles.socialButton}
                 onClick={handleGoogleLogin}
               >
-                <GoogleIcon />
+                <FcGoogle size={20} />
                 <span>Continue with Google</span>
               </button>
             </div>
