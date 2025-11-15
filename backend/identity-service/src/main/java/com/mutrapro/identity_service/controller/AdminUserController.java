@@ -1,6 +1,7 @@
 package com.mutrapro.identity_service.controller;
 
 import com.mutrapro.identity_service.dto.request.UserSearchRequest;
+import com.mutrapro.identity_service.dto.response.FullUserResponse;
 import com.mutrapro.identity_service.dto.response.UserPageResponse;
 import com.mutrapro.identity_service.service.UserSearchService;
 import com.mutrapro.identity_service.service.UserService;
@@ -53,6 +54,21 @@ public class AdminUserController {
         return ApiResponse.<UserSearchService.UserStatisticsResponse>builder()
             .message("User statistics retrieved successfully")
             .data(stats)
+            .build();
+    }
+
+    /**
+     * Get user by email (Admin only)
+     */
+    @GetMapping("/by-email/{email}")
+    @Operation(summary = "Get user by email", description = "Get user information by email (SYSTEM_ADMIN only)")
+    public ApiResponse<FullUserResponse> getUserByEmail(
+            @PathVariable String email) {
+        log.info("GET /admin/users/by-email/{} - Getting user by email", email);
+        FullUserResponse user = userService.getUserByEmail(email);
+        return ApiResponse.<FullUserResponse>builder()
+            .message("User retrieved successfully")
+            .data(user)
             .build();
     }
 

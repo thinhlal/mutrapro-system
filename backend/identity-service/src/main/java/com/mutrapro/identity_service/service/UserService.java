@@ -209,6 +209,33 @@ public class UserService {
             .orElseThrow(() -> UserNotFoundException.byId(id));
     }
 
+    /**
+     * Get user by email (Admin only)
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public FullUserResponse getUserByEmail(String email) {
+        log.info("Getting user by email: {}", email);
+        UsersAuth userAuth = usersAuthRepository.findByEmail(email)
+            .orElseThrow(() -> UserNotFoundException.byEmail(email));
+        User user = userRepository.findByUserId(userAuth.getUserId())
+            .orElse(null);
+
+        return FullUserResponse.builder()
+            .userId(userAuth.getUserId())
+            .email(userAuth.getEmail())
+            .fullName(user != null ? user.getFullName() : null)
+            .phone(user != null ? user.getPhone() : null)
+            .address(user != null ? user.getAddress() : null)
+            .avatarUrl(user != null ? user.getAvatarUrl() : null)
+            .role(userAuth.getRole().name())
+            .emailVerified(userAuth.isEmailVerified())
+            .active(user != null && user.isActive())
+            .authProvider(userAuth.getAuthProvider())
+            .authProviderId(userAuth.getAuthProviderId())
+            .isNoPassword(!userAuth.isHasLocalPassword())
+            .build();
+    }
+
     // ===== PROFILE MANAGEMENT =====
 
     /**

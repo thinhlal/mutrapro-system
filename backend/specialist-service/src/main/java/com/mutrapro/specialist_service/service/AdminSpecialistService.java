@@ -40,16 +40,31 @@ public class AdminSpecialistService {
     @Transactional
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public SpecialistResponse createSpecialist(CreateSpecialistRequest request) {
-        log.info("Creating specialist for user ID: {}", request.getUserId());
+        String email = request.getEmail().trim();
+        log.info("Creating specialist for user email: {}", email);
+        
+        // Tìm user theo email để lấy userId
+        String userId;
+        try {
+            var userResponse = identityServiceFeignClient.getUserByEmail(email);
+            if (userResponse.getData() == null || userResponse.getData().getUserId() == null) {
+                throw new RuntimeException("User not found with email: " + email);
+            }
+            userId = userResponse.getData().getUserId();
+            log.info("Found user ID: {} for email: {}", userId, email);
+        } catch (Exception e) {
+            log.error("Failed to find user by email: {}", email, e);
+            throw new RuntimeException("User not found with email: " + email, e);
+        }
         
         // Kiểm tra xem user đã có specialist chưa
-        if (specialistRepository.existsByUserId(request.getUserId())) {
-            throw SpecialistAlreadyExistsException.byUserId(request.getUserId());
+        if (specialistRepository.existsByUserId(userId)) {
+            throw SpecialistAlreadyExistsException.byUserId(userId);
         }
         
         // Tạo specialist entity
         Specialist specialist = specialistMapper.toSpecialist(request);
-        specialist.setUserId(request.getUserId());
+        specialist.setUserId(userId);
         specialist.setStatus(SpecialistStatus.ACTIVE);
         
         Specialist saved = specialistRepository.save(specialist);
@@ -57,10 +72,10 @@ public class AdminSpecialistService {
         // Gán role tương ứng trong identity-service
         Role role = mapSpecializationToRole(request.getSpecialization());
         try {
-            identityServiceFeignClient.updateUserRole(request.getUserId(), role);
-            log.info("Updated user role to {} for user ID: {}", role, request.getUserId());
+            identityServiceFeignClient.updateUserRole(userId, role);
+            log.info("Updated user role to {} for user ID: {}", role, userId);
         } catch (Exception e) {
-            log.error("Failed to update user role for user ID: {}", request.getUserId(), e);
+            log.error("Failed to update user role for user ID: {}", userId, e);
             // Rollback specialist creation if role update fails
             specialistRepository.delete(saved);
             throw new RuntimeException("Failed to update user role: " + e.getMessage(), e);

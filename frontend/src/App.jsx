@@ -76,6 +76,9 @@ import NotationInstruments from './pages/admin/NotationInstruments/NotationInstr
 import AdminProfile from './pages/admin/Profile/AdminProfile';
 import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
 import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/ServiceRequestContracts';
+import SpecialistManagement from './pages/admin/SpecialistManagement/SpecialistManagement';
+import SkillManagement from './pages/admin/SkillManagement/SkillManagement';
+import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
 
 // Manager Pages
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
@@ -350,6 +353,9 @@ function App() {
               path="notation-instruments"
               element={<NotationInstruments />}
             />
+            <Route path="specialists" element={<SpecialistManagement />} />
+            <Route path="skills" element={<SkillManagement />} />
+            <Route path="demos" element={<DemoManagement />} />
             <Route path="contracts" element={<ContractsManagement />} />
             <Route
               path="contracts/:contractId"

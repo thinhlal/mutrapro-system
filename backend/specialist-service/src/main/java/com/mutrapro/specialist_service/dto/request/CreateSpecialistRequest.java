@@ -1,6 +1,7 @@
 package com.mutrapro.specialist_service.dto.request;
 
 import com.mutrapro.specialist_service.enums.SpecialistType;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -17,8 +18,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateSpecialistRequest {
     
-    @NotNull(message = "User ID is required")
-    private String userId;
+    @NotNull(message = "Email is required")
+    @Email(message = "Email format is invalid")
+    private String email;
     
     @NotNull(message = "Specialization is required")
     private SpecialistType specialization;

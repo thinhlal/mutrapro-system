@@ -31,7 +31,7 @@ public class AdminSpecialistController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<SpecialistResponse> createSpecialist(@Valid @RequestBody CreateSpecialistRequest request) {
-        log.info("POST /admin/specialists - Creating specialist for user ID: {}", request.getUserId());
+        log.info("POST /admin/specialists - Creating specialist for user email: {}", request.getEmail());
         SpecialistResponse response = adminSpecialistService.createSpecialist(request);
         return ApiResponse.<SpecialistResponse>builder()
             .message("Specialist created successfully")

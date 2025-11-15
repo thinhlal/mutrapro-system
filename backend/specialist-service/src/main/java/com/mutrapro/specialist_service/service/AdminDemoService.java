@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 
 /**
  * Service cho Admin quản lý demo visibility
@@ -24,6 +25,27 @@ public class AdminDemoService {
     
     private final ArtistDemoRepository artistDemoRepository;
     private final ArtistDemoMapper artistDemoMapper;
+    
+    /**
+     * Lấy tất cả demos (Admin only)
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public List<ArtistDemoResponse> getAllDemos() {
+        log.info("Getting all demos");
+        List<ArtistDemo> demos = artistDemoRepository.findAll();
+        return artistDemoMapper.toArtistDemoResponseList(demos);
+    }
+    
+    /**
+     * Lấy demo theo ID (Admin only)
+     */
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ArtistDemoResponse getDemoById(String demoId) {
+        log.info("Getting demo with ID: {}", demoId);
+        ArtistDemo demo = artistDemoRepository.findById(demoId)
+            .orElseThrow(() -> DemoNotFoundException.byId(demoId));
+        return artistDemoMapper.toArtistDemoResponse(demo);
+    }
     
     /**
      * Cập nhật visibility của demo (is_public, is_featured) - Admin only

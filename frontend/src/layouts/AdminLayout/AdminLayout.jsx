@@ -13,6 +13,8 @@ import {
   LogoutOutlined,
   FileTextOutlined,
   WalletOutlined,
+  StarOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,6 +49,21 @@ const menuItems = [
     key: '/admin/notation-instruments',
     icon: <BarsOutlined />,
     label: <Link to="/admin/notation-instruments">Notation Instruments</Link>,
+  },
+  {
+    key: '/admin/specialists',
+    icon: <StarOutlined />,
+    label: <Link to="/admin/specialists">Specialist Management</Link>,
+  },
+  {
+    key: '/admin/skills',
+    icon: <BarsOutlined />,
+    label: <Link to="/admin/skills">Skill Management</Link>,
+  },
+  {
+    key: '/admin/demos',
+    icon: <PlayCircleOutlined />,
+    label: <Link to="/admin/demos">Demo Management</Link>,
   },
   {
     key: '/admin/contracts',

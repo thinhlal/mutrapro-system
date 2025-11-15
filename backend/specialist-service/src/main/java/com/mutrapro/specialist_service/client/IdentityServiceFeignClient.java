@@ -2,7 +2,9 @@ package com.mutrapro.specialist_service.client;
 
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.enums.Role;
+import com.mutrapro.specialist_service.dto.response.UserInfoResponse;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
     path = "/admin/users"
 )
 public interface IdentityServiceFeignClient {
+
+    @GetMapping("/by-email/{email}")
+    ApiResponse<UserInfoResponse> getUserByEmail(@PathVariable("email") String email);
 
     /**
      * Update user role (Admin only)

@@ -28,6 +28,7 @@ const BILLING_PATH = `${API_PREFIX}/billing`;
 const REQUEST_PATH = `${API_PREFIX}/requests`;
 const CHAT_PATH = `${API_PREFIX}/chat`;
 const NOTIFICATIONS_PATH = `${API_PREFIX}/notifications`;
+const SPECIALIST_PATH = `${API_PREFIX}/specialists`;
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -272,6 +273,49 @@ export const API_ENDPOINTS = {
     // WebSocket (for real-time notifications)
     // Frontend: /api/v1/notifications/notifications-ws → Gateway strip → /notifications-ws → Backend: /notifications-ws
     WS_ENDPOINT: `${NOTIFICATIONS_PATH}/notifications-ws`,
+  },
+
+  // === Specialist Service (Quản lý Specialist, Skills, Demos) ===
+  SPECIALISTS: {
+    // Admin Specialist Management
+    ADMIN: {
+      // POST /admin/specialists
+      CREATE: `${SPECIALIST_PATH}/admin/specialists`,
+      // GET /admin/specialists
+      GET_ALL: `${SPECIALIST_PATH}/admin/specialists`,
+      // GET /admin/specialists/{id}
+      GET_BY_ID: id => `${SPECIALIST_PATH}/admin/specialists/${id}`,
+      // GET /admin/specialists/user/{userId}
+      GET_BY_USER_ID: userId => `${SPECIALIST_PATH}/admin/specialists/user/${userId}`,
+      // PUT /admin/specialists/{id}/status
+      UPDATE_STATUS: id => `${SPECIALIST_PATH}/admin/specialists/${id}/status`,
+      // PUT /admin/specialists/{id}/settings
+      UPDATE_SETTINGS: id => `${SPECIALIST_PATH}/admin/specialists/${id}/settings`,
+      // GET /admin/specialists/filter?specialization=&status=
+      FILTER: `${SPECIALIST_PATH}/admin/specialists/filter`,
+    },
+    // Admin Skill Management
+    ADMIN_SKILLS: {
+      // POST /admin/skills
+      CREATE: `${SPECIALIST_PATH}/admin/skills`,
+      // GET /admin/skills
+      GET_ALL: `${SPECIALIST_PATH}/admin/skills`,
+      // GET /admin/skills/{id}
+      GET_BY_ID: id => `${SPECIALIST_PATH}/admin/skills/${id}`,
+      // PUT /admin/skills/{id}
+      UPDATE: id => `${SPECIALIST_PATH}/admin/skills/${id}`,
+      // DELETE /admin/skills/{id}
+      DELETE: id => `${SPECIALIST_PATH}/admin/skills/${id}`,
+    },
+    // Admin Demo Management
+    ADMIN_DEMOS: {
+      // GET /admin/demos
+      GET_ALL: `${SPECIALIST_PATH}/admin/demos`,
+      // GET /admin/demos/{demoId}
+      GET_BY_ID: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}`,
+      // PUT /admin/demos/{demoId}/visibility
+      UPDATE_VISIBILITY: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}/visibility`,
+    },
   },
 };
 
