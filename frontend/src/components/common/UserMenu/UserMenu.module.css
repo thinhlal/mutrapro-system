@@ -54,6 +54,8 @@
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  min-width: 0;
+  max-width: 160px;
 }
 
 .userName {
@@ -61,6 +63,9 @@
   font-weight: 600;
   color: #1a202c;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .userRole {
@@ -68,6 +73,9 @@
   color: #718096;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Dropdown */
