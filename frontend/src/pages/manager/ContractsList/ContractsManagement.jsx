@@ -178,7 +178,7 @@ export default function ContractsManagement() {
     try {
       setActionLoading(true);
       await sendContractToCustomer(contractId, 7); // 7 days expiry
-      message.success('Đã gửi contract cho customer thành công');
+      message.success('Contract sent to customer successfully');
       // Reload contracts
       try {
         setLoading(true);
@@ -190,7 +190,7 @@ export default function ContractsManagement() {
         setLoading(false);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi gửi contract');
+      message.error(error.message || 'Error sending contract');
     } finally {
       setActionLoading(false);
     }
@@ -215,7 +215,7 @@ export default function ContractsManagement() {
         setLoading(false);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi hủy contract');
+      message.error(error.message || 'Error cancelling contract');
     } finally {
       setActionLoading(false);
     }
@@ -346,11 +346,11 @@ export default function ContractsManagement() {
         const isCanceledByCustomer = statusLower === 'canceled_by_customer';
         const isCanceledByManager = statusLower === 'canceled_by_manager';
         const isCanceled = isCanceledByCustomer || isCanceledByManager;
-        const canManagerCancel = isDraft || isSent; // Manager có thể hủy DRAFT hoặc thu hồi SENT
-        const canSend = isDraft; // Manager có thể gửi contract DRAFT
-        const canRevise = isNeedRevision; // Manager có thể xem lý do và tạo contract mới
-        const canViewCancelReason = isCanceled && r.cancellationReason; // Manager có thể xem lý do hủy
-        const canEdit = isDraft; // Chỉ edit được khi DRAFT
+        const canManagerCancel = isDraft || isSent; // Manager can cancel DRAFT or recall SENT
+        const canSend = isDraft; // Manager can send DRAFT contract
+        const canRevise = isNeedRevision; // Manager can view reason and create new contract
+        const canViewCancelReason = isCanceled && r.cancellationReason; // Manager can view cancellation reason
+        const canEdit = isDraft; // Only editable when DRAFT
 
         return (
           <Space>
@@ -362,25 +362,25 @@ export default function ContractsManagement() {
             </Tooltip>
             {canSend && (
               <Popconfirm
-                title="Gửi contract này cho customer?"
-                description="Contract sẽ được gửi với thời hạn 7 ngày."
-                okText="Gửi"
-                cancelText="Hủy"
+                title="Send this contract to customer?"
+                description="Contract will be sent with 7 days expiry."
+                okText="Send"
+                cancelText="Cancel"
                 onConfirm={() => handleSendContract(r.contractId)}
               >
-                <Tooltip title="Gửi cho customer">
+                <Tooltip title="Send to customer">
                   <Button
                     type="primary"
                     icon={<SendOutlined />}
                     loading={actionLoading}
                   >
-                    Gửi
+                    Send
                   </Button>
                 </Tooltip>
               </Popconfirm>
             )}
             {canRevise && (
-              <Tooltip title="Xem lý do yêu cầu sửa">
+              <Tooltip title="View revision reason">
                 <Button
                   type="primary"
                   icon={<InfoCircleOutlined />}
@@ -393,12 +393,12 @@ export default function ContractsManagement() {
                     borderColor: '#fa8c16',
                   }}
                 >
-                  Xem lý do
+                  View Reason
                 </Button>
               </Tooltip>
             )}
             {canViewCancelReason && (
-              <Tooltip title="Xem lý do hủy">
+              <Tooltip title="View cancellation reason">
                 <Button
                   icon={<InfoCircleOutlined />}
                   onClick={() => {
@@ -407,7 +407,7 @@ export default function ContractsManagement() {
                   }}
                   style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
                 >
-                  Lý do hủy
+                  Cancel Reason
                 </Button>
               </Tooltip>
             )}
@@ -425,7 +425,7 @@ export default function ContractsManagement() {
             )}
             {canManagerCancel && (
               <Tooltip
-                title={isDraft ? 'Hủy contract DRAFT' : 'Thu hồi contract đã gửi'}
+                title={isDraft ? 'Cancel DRAFT contract' : 'Recall sent contract'}
               >
                 <Button
                   danger
@@ -436,7 +436,7 @@ export default function ContractsManagement() {
                   }}
                   loading={actionLoading}
                 >
-                  {isDraft ? 'Hủy' : 'Thu hồi'}
+                  {isDraft ? 'Cancel' : 'Recall'}
                 </Button>
               </Tooltip>
             )}
@@ -567,7 +567,7 @@ export default function ContractsManagement() {
         title={
           <Space>
             <InfoCircleOutlined style={{ color: '#fa8c16' }} />
-            <span>Lý do yêu cầu chỉnh sửa Contract</span>
+            <span>Contract Revision Request Reason</span>
           </Space>
         }
         open={revisionModalVisible}
@@ -616,7 +616,7 @@ export default function ContractsManagement() {
               );
             }}
           >
-            Tạo Contract Mới
+            Create New Contract
           </Button>,
         ]}
         width={700}

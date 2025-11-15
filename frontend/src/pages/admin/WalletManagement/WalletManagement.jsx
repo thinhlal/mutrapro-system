@@ -80,7 +80,7 @@ const WalletManagement = () => {
         });
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải danh sách wallets');
+      message.error(error.message || 'Error loading wallets list');
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ const WalletManagement = () => {
         loadTransactions(walletId);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải chi tiết ví');
+      message.error(error.message || 'Error loading wallet details');
     }
   };
 
@@ -114,7 +114,7 @@ const WalletManagement = () => {
         });
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải lịch sử giao dịch');
+      message.error(error.message || 'Error loading transaction history');
     } finally {
       setTransactionsLoading(false);
     }
@@ -177,11 +177,11 @@ const WalletManagement = () => {
   // Get transaction type label
   const getTxTypeLabel = (type) => {
     const labels = {
-      topup: 'Nạp tiền',
-      payment: 'Thanh toán',
-      refund: 'Hoàn tiền',
-      withdrawal: 'Rút tiền',
-      adjustment: 'Điều chỉnh',
+      topup: 'Top Up',
+      payment: 'Payment',
+      refund: 'Refund',
+      withdrawal: 'Withdrawal',
+      adjustment: 'Adjustment',
     };
     return labels[type] || type;
   };
@@ -203,7 +203,7 @@ const WalletManagement = () => {
       render: (text) => <Text code style={{ fontSize: '12px' }}>{text.substring(0, 8)}...</Text>,
     },
     {
-      title: 'Số dư',
+      title: 'Balance',
       dataIndex: 'balance',
       key: 'balance',
       width: 150,
@@ -214,21 +214,21 @@ const WalletManagement = () => {
       ),
     },
     {
-      title: 'Loại tiền tệ',
+      title: 'Currency',
       dataIndex: 'currency',
       key: 'currency',
       width: 120,
       render: (currency) => <Tag color="orange">{currency}</Tag>,
     },
     {
-      title: 'Ngày tạo',
+      title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
     },
     {
-      title: 'Thao tác',
+      title: 'Actions',
       key: 'action',
       width: 120,
       fixed: 'right',
@@ -254,7 +254,7 @@ const WalletManagement = () => {
       render: (text) => <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>{text || '-'}</Text>,
     },
     {
-      title: 'Loại giao dịch',
+      title: 'Transaction Type',
       dataIndex: 'txType',
       key: 'txType',
       width: 150,
@@ -263,7 +263,7 @@ const WalletManagement = () => {
       ),
     },
     {
-      title: 'Số tiền',
+      title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
       width: 180,
@@ -281,14 +281,14 @@ const WalletManagement = () => {
       ),
     },
     {
-      title: 'Số dư trước',
+      title: 'Balance Before',
       dataIndex: 'balanceBefore',
       key: 'balanceBefore',
       width: 150,
       render: (amount, record) => formatCurrency(amount, record.currency),
     },
     {
-      title: 'Số dư sau',
+      title: 'Balance After',
       dataIndex: 'balanceAfter',
       key: 'balanceAfter',
       width: 150,
@@ -297,7 +297,7 @@ const WalletManagement = () => {
       ),
     },
     {
-      title: 'Thời gian',
+      title: 'Time',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
@@ -309,11 +309,11 @@ const WalletManagement = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <Title level={3}>
-           Quản lý Wallets
+          Wallet Management
         </Title>
         <Space>
           <Search
-            placeholder="Tìm theo User ID"
+            placeholder="Search by User ID"
             allowClear
             onSearch={handleSearch}
             style={{ width: 300 }}
@@ -379,7 +379,7 @@ const WalletManagement = () => {
       >
         {selectedWallet ? (
           <Tabs defaultActiveKey="info">
-            <TabPane tab="Thông tin Wallet" key="info">
+            <TabPane tab="Wallet Information" key="info">
               <Descriptions bordered column={2}>
                 <Descriptions.Item label="Wallet ID">
                   <Text code>{selectedWallet.walletId}</Text>
@@ -387,15 +387,15 @@ const WalletManagement = () => {
                 <Descriptions.Item label="User ID">
                   <Text code>{selectedWallet.userId}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Số dư">
+                <Descriptions.Item label="Balance">
                   <Text strong style={{ fontSize: '18px', color: '#ec8a1c' }}>
                     {formatCurrency(selectedWallet.balance, selectedWallet.currency)}
                   </Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Loại tiền tệ">
+                <Descriptions.Item label="Currency">
                   <Tag color="orange">{selectedWallet.currency}</Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Ngày tạo" span={2}>
+                <Descriptions.Item label="Created At" span={2}>
                   {dayjs(selectedWallet.createdAt).format('DD/MM/YYYY HH:mm:ss')}
                 </Descriptions.Item>
               </Descriptions>
@@ -413,7 +413,7 @@ const WalletManagement = () => {
                 {/* Filters */}
                 <Space wrap>
                   <Search
-                    placeholder="Tìm theo Transaction ID, Contract ID..."
+                    placeholder="Search by Transaction ID, Contract ID..."
                     allowClear
                     style={{ width: 300 }}
                     onSearch={(value) => {
@@ -422,7 +422,7 @@ const WalletManagement = () => {
                     enterButton
                   />
                   <Select
-                    placeholder="Loại giao dịch"
+                    placeholder="Transaction Type"
                     allowClear
                     style={{ width: 200 }}
                     value={transactionFilters.txType}
@@ -471,7 +471,7 @@ const WalletManagement = () => {
                     <Spin size="large" />
                   </div>
                 ) : transactions.length === 0 ? (
-                  <Empty description="Chưa có giao dịch nào" />
+                  <Empty description="No transactions yet" />
                 ) : (
                   <Table
                     columns={transactionColumns}
