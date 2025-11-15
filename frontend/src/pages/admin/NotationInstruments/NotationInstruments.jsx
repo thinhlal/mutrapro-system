@@ -28,7 +28,7 @@ const NotationInstruments = () => {
         setInstruments(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách nhạc cụ');
+      message.error(error.message || 'Unable to load instruments list');
     } finally {
       setLoading(false);
     }
@@ -84,16 +84,16 @@ const NotationInstruments = () => {
           selectedInstrument.instrumentId,
           formData
         );
-        message.success('Cập nhật nhạc cụ thành công');
+        message.success('Instrument updated successfully');
       } else {
         await createNotationInstrument(formData);
-        message.success('Tạo nhạc cụ mới thành công');
+        message.success('Instrument created successfully');
       }
 
       setModalVisible(false);
       fetchInstruments();
     } catch (error) {
-      message.error(error.message || 'Có lỗi xảy ra');
+      message.error(error.message || 'An error occurred');
     }
   };
 

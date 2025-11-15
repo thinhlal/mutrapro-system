@@ -11,42 +11,54 @@
   background-color: rgba(0, 0, 0, 0.04);
 }
 
-/* Drawer Header */
-.drawerHeader {
+/* Dropdown Container */
+.notificationDropdown {
+  width: 420px;
+  max-height: 600px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Dropdown Header */
+.dropdownHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding-right: 24px;
+  padding: 16px 20px;
 }
 
-.drawerTitle {
+.headerLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 600;
+  gap: 10px;
 }
 
-.drawerIcon {
-  font-size: 20px;
+.headerIcon {
+  font-size: 18px;
   color: #f97316;
 }
 
 .markAllButton {
   color: #1890ff;
-  font-size: 13px;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.markAllButton:hover {
+  color: #40a9ff;
 }
 
 .offlineIndicator {
   color: #ff4d4f;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: normal;
 }
 
 .notificationList {
-  height: calc(100vh - 120px);
+  max-height: 420px;
   overflow-y: auto;
+  padding: 8px 12px;
 }
 
 .loadingContainer {
@@ -142,7 +154,19 @@
 }
 
 .footer {
-  padding: 12px 0;
+  padding: 8px 20px 12px;
+  text-align: center;
+}
+
+.viewAllButton {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  height: auto;
+}
+
+.viewAllButton:hover {
+  text-decoration: underline;
 }
 
 /* Scrollbar styling */
@@ -163,29 +187,23 @@
   background: #555;
 }
 
-/* Drawer customization */
-:global(.notificationDrawer .ant-drawer-header) {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+/* Dropdown Overlay Customization */
+.notificationDropdownOverlay :global(.ant-dropdown-menu) {
+  padding: 0;
+  border-radius: 8px;
 }
 
-:global(.notificationDrawer .ant-drawer-body) {
-  padding: 16px;
-  background-color: #fafafa;
-}
-
-:global(.notificationDrawer .ant-drawer-title) {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* List styling - bỏ padding mặc định của antd */
-:global(.notificationDrawer .ant-list-item) {
+/* List styling - remove default antd padding */
+.notificationDropdown :global(.ant-list-item) {
   padding: 0;
   border: none;
 }
 
+.notificationDropdown :global(.ant-list) {
+  padding: 0;
+}
+
 /* Empty state */
-:global(.notificationDrawer .ant-empty) {
-  margin: 60px 0;
+.notificationDropdown :global(.ant-empty) {
+  margin: 20px 0;
 }
