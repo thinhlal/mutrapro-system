@@ -22,6 +22,7 @@ import {
   getAllServiceRequests,
   getMyAssignedRequests,
   assignServiceRequest,
+  getServiceRequestById,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -182,9 +183,30 @@ export default function ServiceRequestManagement() {
   };
 
   // Xem chi tiết request
-  const handleViewDetail = record => {
-    setSelectedRequest(record);
-    setDetailModalVisible(true);
+  const handleViewDetail = async record => {
+    const requestId = record.requestId || record.id;
+    try {
+      // Fetch lại request detail với đầy đủ thông tin (bao gồm files)
+      const response = await getServiceRequestById(requestId);
+      if (response?.status === 'success' && response?.data) {
+        // Map field names để tương thích với modal
+        const requestData = {
+          ...response.data,
+          id: response.data.requestId || response.data.id,
+        };
+        setSelectedRequest(requestData);
+        setDetailModalVisible(true);
+      } else {
+        // Fallback to record if API fails
+        setSelectedRequest(record);
+        setDetailModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Error fetching request detail:', error);
+      // Fallback to record if API fails
+      setSelectedRequest(record);
+      setDetailModalVisible(true);
+    }
   };
 
   // Navigate đến Contract Builder với requestId
