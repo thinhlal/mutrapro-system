@@ -61,6 +61,8 @@ import Tasks from './pages/work/Tasks/Task';
 
 // Transcription Pages
 import SpecialistProfile from './pages/transcription/Profile/SpecialistProfile';
+import MyTasksPage from './pages/transcription/MyTasksPage/MyTasksPage';
+import TranscriptionTaskDetailPage from './pages/transcription/TranscriptionTaskDetailPage/TranscriptionTaskDetailPage';
 
 // Chat Pages (not used directly anymore, used in ChatLayout)
 // import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
@@ -380,6 +382,8 @@ function App() {
           >
             <Route index element={<Navigate to="edit-tool" replace />} />
             <Route path="edit-tool" element={<NotationEditor />} />
+            <Route path="my-tasks" element={<MyTasksPage />} />
+            <Route path="my-tasks/:taskId" element={<TranscriptionTaskDetailPage />} />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 

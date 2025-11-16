@@ -1,0 +1,54 @@
+.pageWrapper {
+  padding: 24px 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.headerTitle {
+  margin: 0;
+}
+
+.headerSubtitle {
+  margin: 4px 0 0;
+  color: #888;
+}
+
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.overviewRow {
+  margin-bottom: 16px;
+}
+
+.audioPlayer {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.revisionCard {
+  margin-bottom: 16px;
+}
+
+.filesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
