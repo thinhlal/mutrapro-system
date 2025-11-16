@@ -7,6 +7,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   ProfileOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -24,6 +25,11 @@ import styles from './TranscriptionLayout.module.css';
 const { Header, Sider, Content } = Layout;
 
 const menuItems = [
+  {
+    key: '/transcription/my-tasks',
+    icon: <UnorderedListOutlined />,
+    label: <Link to="/transcription/my-tasks">My Tasks</Link>,
+  },
   {
     key: '/transcription/edit-tool',
     icon: <EditOutlined />,

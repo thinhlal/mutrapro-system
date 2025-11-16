@@ -1,0 +1,32 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filtersCard {
+  padding: 12px;
+}
+
+.filtersRow {
+  width: 100%;
+}
+
+
