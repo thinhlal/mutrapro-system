@@ -3,6 +3,8 @@ package com.mutrapro.specialist_service.service;
 import com.mutrapro.specialist_service.dto.request.*;
 import com.mutrapro.specialist_service.dto.response.*;
 import com.mutrapro.specialist_service.entity.*;
+import com.mutrapro.specialist_service.enums.SkillType;
+import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.*;
 import com.mutrapro.specialist_service.mapper.*;
 import com.mutrapro.specialist_service.repository.*;
@@ -65,12 +67,44 @@ public class SpecialistProfileService {
     }
     
     /**
-     * Lấy danh sách tất cả skills có sẵn
+     * Lấy danh sách skills có sẵn phù hợp với specialization của specialist hiện tại
      */
     public List<SkillResponse> getAllSkills() {
-        log.info("Getting all active skills");
-        List<Skill> skills = skillRepository.findByIsActiveTrue();
+        String currentUserId = getCurrentUserId();
+        log.info("Getting available skills for specialist with user ID: {}", currentUserId);
+        
+        // Lấy specialist hiện tại để biết specialization
+        Specialist specialist = specialistRepository.findByUserId(currentUserId)
+            .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
+        
+        // Map SpecialistType sang SkillType (chúng có cùng giá trị)
+        SkillType skillType = mapSpecialistTypeToSkillType(specialist.getSpecialization());
+        
+        // Lấy skills phù hợp với specialization của specialist
+        List<Skill> skills = skillRepository.findBySkillTypeAndIsActiveTrue(skillType);
+        log.info("Found {} skills for specialization: {}", skills.size(), specialist.getSpecialization());
+        
         return skillMapper.toSkillResponseList(skills);
+    }
+    
+    /**
+     * Map SpecialistType sang SkillType
+     * Vì cả 2 enum có cùng giá trị, nên chỉ cần convert
+     */
+    private SkillType mapSpecialistTypeToSkillType(SpecialistType specialistType) {
+        if (specialistType == null) {
+            throw new IllegalArgumentException("SpecialistType cannot be null");
+        }
+        switch (specialistType) {
+            case TRANSCRIPTION:
+                return SkillType.TRANSCRIPTION;
+            case ARRANGEMENT:
+                return SkillType.ARRANGEMENT;
+            case RECORDING_ARTIST:
+                return SkillType.RECORDING_ARTIST;
+            default:
+                throw new IllegalArgumentException("Unknown SpecialistType: " + specialistType);
+        }
     }
     
     /**

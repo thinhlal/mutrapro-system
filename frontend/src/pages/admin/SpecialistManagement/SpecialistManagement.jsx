@@ -184,6 +184,16 @@ const SpecialistManagement = () => {
     return names[specialization] || specialization;
   };
 
+  // Get specialization color
+  const getSpecializationColor = specialization => {
+    const colors = {
+      TRANSCRIPTION: 'blue',
+      ARRANGEMENT: 'green',
+      RECORDING_ARTIST: 'purple',
+    };
+    return colors[specialization] || 'default';
+  };
+
   // Table columns
   const columns = [
     {
@@ -203,7 +213,9 @@ const SpecialistManagement = () => {
       dataIndex: 'specialization',
       key: 'specialization',
       render: specialization => (
-        <Tag color="blue">{getSpecializationDisplayName(specialization)}</Tag>
+        <Tag color={getSpecializationColor(specialization)}>
+          {getSpecializationDisplayName(specialization)}
+        </Tag>
       ),
       filters: [
         { text: 'Transcription', value: 'TRANSCRIPTION' },

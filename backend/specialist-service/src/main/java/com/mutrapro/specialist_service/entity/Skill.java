@@ -1,6 +1,8 @@
 package com.mutrapro.specialist_service.entity;
 
 import com.mutrapro.shared.entity.BaseEntity;
+import com.mutrapro.specialist_service.enums.RecordingCategory;
+import com.mutrapro.specialist_service.enums.SkillType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,7 +16,9 @@ import java.util.List;
 @Entity
 @Table(name = "skills", indexes = {
     @Index(name = "idx_skills_name", columnList = "skill_name", unique = true),
-    @Index(name = "idx_skills_active", columnList = "is_active")
+    @Index(name = "idx_skills_active", columnList = "is_active"),
+    @Index(name = "idx_skills_type", columnList = "skill_type"),
+    @Index(name = "idx_skills_recording_category", columnList = "recording_category")
 })
 @Getter
 @Setter
@@ -30,6 +34,20 @@ public class Skill extends BaseEntity<String> {
     
     @Column(name = "skill_name", nullable = false, unique = true, length = 100)
     private String skillName;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "skill_type", nullable = false)
+    private SkillType skillType;
+    
+    /**
+     * Category cho Recording Artist skills (optional)
+     * Chỉ có giá trị khi skill_type = RECORDING_ARTIST
+     * VOCAL: Kỹ năng hát (Vocal, Soprano, Alto, Tenor, Bass Voice)
+     * INSTRUMENT: Kỹ năng chơi nhạc cụ (Piano Performance, Guitar Performance, etc.)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "recording_category", length = 50)
+    private RecordingCategory recordingCategory;
     
     @Column(columnDefinition = "TEXT")
     private String description;

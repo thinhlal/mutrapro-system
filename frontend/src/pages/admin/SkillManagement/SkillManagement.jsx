@@ -12,6 +12,7 @@ import {
   Card,
   Typography,
   Popconfirm,
+  Select,
 } from 'antd';
 import {
   EditOutlined,
@@ -67,6 +68,8 @@ const SkillManagement = () => {
     try {
       await createSkill({
         skillName: values.skillName,
+        skillType: values.skillType,
+        recordingCategory: values.skillType === 'RECORDING_ARTIST' ? values.recordingCategory : undefined,
         description: values.description,
         isActive: values.isActive !== false,
       });
@@ -87,6 +90,8 @@ const SkillManagement = () => {
     setSelectedSkill(skill);
     editForm.setFieldsValue({
       skillName: skill.skillName,
+      skillType: skill.skillType,
+      recordingCategory: skill.recordingCategory,
       description: skill.description,
       isActive: skill.isActive,
     });
@@ -99,6 +104,8 @@ const SkillManagement = () => {
     try {
       await updateSkill(selectedSkill.skillId, {
         skillName: values.skillName,
+        skillType: values.skillType,
+        recordingCategory: values.skillType === 'RECORDING_ARTIST' ? values.recordingCategory : undefined,
         description: values.description,
         isActive: values.isActive,
       });
@@ -139,6 +146,34 @@ const SkillManagement = () => {
       dataIndex: 'skillName',
       key: 'skillName',
       sorter: (a, b) => (a.skillName || '').localeCompare(b.skillName || ''),
+    },
+    {
+      title: 'Skill Type',
+      dataIndex: 'skillType',
+      key: 'skillType',
+      render: skillType => {
+        const typeColors = {
+          TRANSCRIPTION: 'blue',
+          ARRANGEMENT: 'green',
+          RECORDING_ARTIST: 'purple',
+        };
+        const typeLabels = {
+          TRANSCRIPTION: 'Transcription',
+          ARRANGEMENT: 'Arrangement',
+          RECORDING_ARTIST: 'Recording Artist',
+        };
+        return (
+          <Tag color={typeColors[skillType] || 'default'}>
+            {typeLabels[skillType] || skillType}
+          </Tag>
+        );
+      },
+      filters: [
+        { text: 'Transcription', value: 'TRANSCRIPTION' },
+        { text: 'Arrangement', value: 'ARRANGEMENT' },
+        { text: 'Recording Artist', value: 'RECORDING_ARTIST' },
+      ],
+      onFilter: (value, record) => record.skillType === value,
     },
     {
       title: 'Description',
@@ -260,7 +295,50 @@ const SkillManagement = () => {
               { max: 100, message: 'Tối đa 100 ký tự' },
             ]}
           >
-            <Input placeholder="e.g., Piano, Guitar, Drums" />
+            <Input placeholder="e.g., Piano Transcription, Guitar Arrangement" />
+          </Form.Item>
+          <Form.Item
+            name="skillType"
+            label="Skill Type"
+            rules={[{ required: true, message: 'Vui lòng chọn skill type' }]}
+          >
+            <Select 
+              placeholder="Chọn skill type"
+              onChange={() => {
+                // Reset recordingCategory when skillType changes
+                createForm.setFieldsValue({ recordingCategory: undefined });
+              }}
+            >
+              <Select.Option value="TRANSCRIPTION">Transcription</Select.Option>
+              <Select.Option value="ARRANGEMENT">Arrangement</Select.Option>
+              <Select.Option value="RECORDING_ARTIST">Recording Artist</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.skillType !== currentValues.skillType
+            }
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('skillType') === 'RECORDING_ARTIST' ? (
+                <Form.Item
+                  name="recordingCategory"
+                  label="Recording Category"
+                  rules={[
+                    { 
+                      required: true, 
+                      message: 'Vui lòng chọn recording category' 
+                    }
+                  ]}
+                >
+                  <Select placeholder="Chọn recording category">
+                    <Select.Option value="VOCAL">Vocal</Select.Option>
+                    <Select.Option value="INSTRUMENT">Instrument</Select.Option>
+                  </Select>
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
           <Form.Item
             name="description"
@@ -306,7 +384,50 @@ const SkillManagement = () => {
               { max: 100, message: 'Tối đa 100 ký tự' },
             ]}
           >
-            <Input placeholder="e.g., Piano, Guitar, Drums" />
+            <Input placeholder="e.g., Piano Transcription, Guitar Arrangement" />
+          </Form.Item>
+          <Form.Item
+            name="skillType"
+            label="Skill Type"
+            rules={[{ required: true, message: 'Vui lòng chọn skill type' }]}
+          >
+            <Select 
+              placeholder="Chọn skill type"
+              onChange={() => {
+                // Reset recordingCategory when skillType changes
+                editForm.setFieldsValue({ recordingCategory: undefined });
+              }}
+            >
+              <Select.Option value="TRANSCRIPTION">Transcription</Select.Option>
+              <Select.Option value="ARRANGEMENT">Arrangement</Select.Option>
+              <Select.Option value="RECORDING_ARTIST">Recording Artist</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.skillType !== currentValues.skillType
+            }
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('skillType') === 'RECORDING_ARTIST' ? (
+                <Form.Item
+                  name="recordingCategory"
+                  label="Recording Category"
+                  rules={[
+                    { 
+                      required: true, 
+                      message: 'Vui lòng chọn recording category' 
+                    }
+                  ]}
+                >
+                  <Select placeholder="Chọn recording category">
+                    <Select.Option value="VOCAL">Vocal</Select.Option>
+                    <Select.Option value="INSTRUMENT">Instrument</Select.Option>
+                  </Select>
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
           <Form.Item
             name="description"

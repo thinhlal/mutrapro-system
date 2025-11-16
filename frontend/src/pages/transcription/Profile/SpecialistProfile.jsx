@@ -135,7 +135,7 @@ const SpecialistProfile = () => {
   const handleEditSkill = skill => {
     setEditingSkill(skill);
     skillForm.setFieldsValue({
-      skillId: skill.skillId,
+      skillId: skill.skill?.skillId || skill.skillId,
       proficiencyLevel: skill.proficiencyLevel,
       yearsExperience: skill.yearsExperience,
       lastUsedDate: skill.lastUsedDate ? dayjs(skill.lastUsedDate) : null,
@@ -192,11 +192,12 @@ const SpecialistProfile = () => {
   };
 
   const formatSkillDisplay = skill => {
+    const skillName = skill.skill?.skillName || skill.skillName || 'Unknown';
     const proficiency = skill.proficiencyLevel || '';
-    const years = skill.yearsExperience ? `${skill.yearsExperience} năm` : '';
-    return `${skill.skillName} – ${proficiency} – ${years}`;
+    const years = skill.yearsExperience ? `${skill.yearsExperience} years` : '';
+    return `${skillName} – ${proficiency} – ${years}`;
   };
-
+  console.log(skills);
   const skillColumns = [
     {
       title: 'Skill',
@@ -436,7 +437,7 @@ const SpecialistProfile = () => {
                   .filter(
                     skill =>
                       !skills.some(
-                        mySkill => mySkill.skillId === skill.skillId
+                        mySkill => (mySkill.skill?.skillId || mySkill.skillId) === skill.skillId
                       )
                   )
                   .map(skill => (

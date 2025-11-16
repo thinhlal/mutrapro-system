@@ -54,7 +54,7 @@ public class ApplicationInitConfig {
                     userRepository,
                     "transcription@transcription.com",
                     "12345678",
-                    Role.TRANSCRIPTION,
+                    Role.CUSTOMER,
                     "Transcription",
                     "0123456787",
                     "Hà Nội, Việt Nam"
@@ -65,7 +65,7 @@ public class ApplicationInitConfig {
                     userRepository,
                     "arrangement@arrangement.com",
                     "12345678",
-                    Role.ARRANGEMENT,
+                    Role.CUSTOMER,
                     "Arrangement",
                     "0123456786",
                     "Hà Nội, Việt Nam"
@@ -76,7 +76,7 @@ public class ApplicationInitConfig {
                     userRepository,
                     "recording@recording.com",
                     "12345678",
-                    Role.RECORDING_ARTIST,
+                    Role.CUSTOMER,
                     "Recording Artist",
                     "0123456785",
                     "Hà Nội, Việt Nam"
