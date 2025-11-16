@@ -13,7 +13,7 @@ import logo from '../../../assets/images/Logo/Logotip-Positiu.svg';
 // ---- Helpers ----
 const SECTION_KEYS = new Map([
   ['/', 'home'],
-  ['/transcription', 'audio'],
+  ['/introduction', 'audio'],
   ['/request-service', 'request'],
   ['/pricing', 'pricing'],
   ['/reviews', 'reviews'],
@@ -121,7 +121,7 @@ function Header() {
           <div className={styles.desktopNav}>
             <Nav className={styles.navLinks}>
               {navLink('/', 'home', 'Home')}
-              {navLink('/transcription', 'audio', 'Introduciton')}
+              {navLink('/introduction', 'audio', 'Introduciton')}
               {navLink('/request-service', 'request', 'Request Service')}
             </Nav>
 
@@ -193,7 +193,7 @@ function Header() {
 
               <Nav.Link
                 as={Link}
-                to="/transcription"
+                to="/introduction"
                 className={classNames(styles.mobileNavLink, {
                   [styles.active]: activeKey === 'audio',
                 })}

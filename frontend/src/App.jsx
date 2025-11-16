@@ -106,7 +106,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/transcription" element={<TranscriptionPage />} />
+          <Route path="/introduction" element={<TranscriptionPage />} />
           <Route path="/detail-service" element={<ServiceRequestPage />} />
           <Route path="/pros/singers/:gender" element={<SingersPage />} />
           <Route path="/pros/singer/:id" element={<SingerDetailPage />} />

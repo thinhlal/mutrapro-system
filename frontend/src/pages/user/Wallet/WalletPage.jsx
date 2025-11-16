@@ -66,7 +66,7 @@ const WalletContent = () => {
         setWallet(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi tải thông tin ví');
+      message.error(error.message || 'Error loading wallet information');
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ const WalletContent = () => {
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
-      message.error(error.message || error.response?.data?.message || 'Lỗi khi tải danh sách giao dịch');
+      message.error(error.message || error.response?.data?.message || 'Error loading transaction list');
       setTransactions([]);
     } finally {
       setTransactionsLoading(false);
@@ -118,14 +118,14 @@ const WalletContent = () => {
         currency: 'VND',
       });
       if (response.status === 'success') {
-        message.success('Nạp tiền thành công!');
+        message.success('Deposit successful!');
         setTopupModalVisible(false);
         topupForm.resetFields();
         loadWallet();
         loadTransactions();
       }
     } catch (error) {
-      message.error(error.message || error.details?.message || 'Lỗi khi nạp tiền');
+      message.error(error.message || error.details?.message || 'Error processing deposit');
     }
   };
 
@@ -185,11 +185,11 @@ const WalletContent = () => {
   // Get transaction type label
   const getTxTypeLabel = (type) => {
     const labels = {
-      topup: 'Nạp tiền',
-      payment: 'Thanh toán',
-      refund: 'Hoàn tiền',
-      withdrawal: 'Rút tiền',
-      adjustment: 'Điều chỉnh',
+      topup: 'Deposit',
+      payment: 'Payment',
+      refund: 'Refund',
+      withdrawal: 'Withdrawal',
+      adjustment: 'Adjustment',
     };
     return labels[type] || type;
   };
@@ -223,7 +223,7 @@ const WalletContent = () => {
   // Table columns
   const columns = [
     {
-      title: 'Loại giao dịch',
+      title: 'Transaction Type',
       dataIndex: 'txType',
       key: 'txType',
       width: 150,
@@ -235,7 +235,7 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Số tiền',
+      title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
       width: 180,
@@ -253,7 +253,7 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Số dư trước',
+      title: 'Balance Before',
       dataIndex: 'balanceBefore',
       key: 'balanceBefore',
       width: 180,
@@ -262,18 +262,18 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Số dư sau',
+      title: 'Balance After',
       dataIndex: 'balanceAfter',
       key: 'balanceAfter',
       width: 180,
       render: (amount, record) => (
-        <Text strong style={{ fontSize: '16px', color: '#ec8a1c' }}>
+        <Text strong style={{ fontSize: '16px', color: '#333' }}>
           {formatCurrency(amount, record.currency)}
         </Text>
       ),
     },
     {
-      title: 'Thời gian',
+      title: 'Time',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 200,
@@ -287,11 +287,10 @@ const WalletContent = () => {
     <div className={WalletPageStyles.container}>
       <div className={WalletPageStyles.header}>
         <Title level={2} className={WalletPageStyles.title}>
-          <WalletOutlined className={WalletPageStyles.titleIcon} />
-          Quản lý ví
+          Wallet Management
         </Title>
         <Text type="secondary" className={WalletPageStyles.subtitle}>
-          Quản lý số dư và lịch sử giao dịch của bạn
+          Manage your balance and transaction history
         </Text>
       </div>
 
@@ -301,34 +300,32 @@ const WalletContent = () => {
           {/* Wallet Balance Card */}
           <Card className={WalletPageStyles.walletCard} loading={loading}>
             <div className={WalletPageStyles.balanceSection}>
-              <Text className={WalletPageStyles.balanceLabel}>Số dư hiện tại</Text>
+              <Text className={WalletPageStyles.balanceLabel}>Current Balance</Text>
               <div className={WalletPageStyles.balanceAmount}>
-                <WalletOutlined className={WalletPageStyles.balanceIcon} />
                 <Text className={WalletPageStyles.balanceValue}>
                   {formatCurrency(wallet?.balance || 0, wallet?.currency || 'VND')}
                 </Text>
               </div>
-              <Tag color="orange" className={WalletPageStyles.currencyTag}>
+              <Tag className={WalletPageStyles.currencyTag}>
                 {wallet?.currency || 'VND'}
               </Tag>
             </div>
             
             <Space direction="vertical" style={{ width: '100%', marginTop: 20 }} size="small">
               <Button
-                type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => setTopupModalVisible(true)}
                 block
                 className={WalletPageStyles.topupButton}
               >
-                Nạp tiền
+                Deposit
               </Button>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={loadWallet}
                 block
               >
-                Làm mới
+                Refresh
               </Button>
             </Space>
           </Card>
@@ -338,7 +335,7 @@ const WalletContent = () => {
             <Col xs={24}>
               <Card>
                 <Statistic
-                  title="Tổng nạp"
+                  title="Total Deposit"
                   value={stats.totalTopup}
                   precision={0}
                   prefix={<ArrowUpOutlined style={{ color: '#52c41a' }} />}
@@ -350,7 +347,7 @@ const WalletContent = () => {
             <Col xs={24}>
               <Card>
                 <Statistic
-                  title="Tổng thanh toán"
+                  title="Total Payment"
                   value={stats.totalPayment}
                   precision={0}
                   prefix={<ArrowDownOutlined style={{ color: '#ff4d4f' }} />}
@@ -362,12 +359,12 @@ const WalletContent = () => {
             <Col xs={24}>
               <Card>
                 <Statistic
-                  title="Tổng hoàn tiền"
+                  title="Total Refund"
                   value={stats.totalRefund}
                   precision={0}
-                  prefix={<DollarOutlined style={{ color: '#ec8a1c' }} />}
+                  prefix={<DollarOutlined style={{ color: '#666' }} />}
                   suffix={wallet?.currency || 'VND'}
-                  valueStyle={{ color: '#ec8a1c' }}
+                  valueStyle={{ color: '#666' }}
                 />
               </Card>
             </Col>
@@ -380,7 +377,7 @@ const WalletContent = () => {
         title={
           <Space>
             <HistoryOutlined />
-            <span>Lịch sử giao dịch</span>
+            <span>Transaction History</span>
           </Space>
         }
         extra={
@@ -389,7 +386,7 @@ const WalletContent = () => {
             onClick={loadTransactions}
             loading={transactionsLoading}
           >
-            Làm mới
+            Refresh
           </Button>
         }
         className={WalletPageStyles.transactionsCard}
@@ -398,17 +395,17 @@ const WalletContent = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col xs={24} sm={12} md={6}>
             <Select
-              placeholder="Loại giao dịch"
+              placeholder="Transaction Type"
               allowClear
               style={{ width: '100%' }}
               value={filters.txType}
               onChange={(value) => handleFilterChange('txType', value)}
             >
-              <Option value="topup">Nạp tiền</Option>
-              <Option value="payment">Thanh toán</Option>
-              <Option value="refund">Hoàn tiền</Option>
-              <Option value="withdrawal">Rút tiền</Option>
-              <Option value="adjustment">Điều chỉnh</Option>
+              <Option value="topup">Deposit</Option>
+              <Option value="payment">Payment</Option>
+              <Option value="refund">Refund</Option>
+              <Option value="withdrawal">Withdrawal</Option>
+              <Option value="adjustment">Adjustment</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={12}>
@@ -416,7 +413,7 @@ const WalletContent = () => {
               style={{ width: '100%' }}
               onChange={handleDateRangeChange}
               format="DD/MM/YYYY"
-              placeholder={['Từ ngày', 'Đến ngày']}
+              placeholder={['From Date', 'To Date']}
             />
           </Col>
         </Row>
@@ -427,7 +424,7 @@ const WalletContent = () => {
             <Spin size="large" />
           </div>
         ) : transactions.length === 0 ? (
-          <Empty description="Chưa có giao dịch nào" />
+          <Empty description="No transactions yet" />
         ) : (
           <Table
             columns={columns}
@@ -439,7 +436,7 @@ const WalletContent = () => {
               pageSize: pagination.pageSize,
               total: pagination.total,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} giao dịch`,
+              showTotal: (total) => `Total ${total} transactions`,
               pageSizeOptions: ['10', '20', '50', '100'],
             }}
             onChange={handleTableChange}
@@ -455,7 +452,7 @@ const WalletContent = () => {
         title={
           <Space>
             <PlusOutlined />
-            <span>Nạp tiền vào ví</span>
+            <span>Deposit to Wallet</span>
           </Space>
         }
         open={topupModalVisible}
@@ -464,8 +461,8 @@ const WalletContent = () => {
           topupForm.resetFields();
         }}
         onOk={() => topupForm.submit()}
-        okText="Nạp tiền"
-        cancelText="Hủy"
+        okText="Deposit"
+        cancelText="Cancel"
         width={500}
       >
         <Form
@@ -474,16 +471,16 @@ const WalletContent = () => {
           onFinish={handleTopup}
         >
           <Form.Item
-            label="Số tiền nạp (VND)"
+            label="Deposit Amount (VND)"
             name="amount"
             rules={[
-              { required: true, message: 'Vui lòng nhập số tiền nạp' },
-              { type: 'number', min: 1000, message: 'Số tiền tối thiểu là 1,000 VND' },
+              { required: true, message: 'Please enter deposit amount' },
+              { type: 'number', min: 1000, message: 'Minimum amount is 1,000 VND' },
             ]}
           >
             <InputNumber
               style={{ width: '100%' }}
-              placeholder="Nhập số tiền"
+              placeholder="Enter amount"
               formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
               min={1000}
