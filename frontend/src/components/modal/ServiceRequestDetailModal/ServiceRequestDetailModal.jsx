@@ -67,7 +67,7 @@ export default function ServiceRequestDetailModal({
           </Button>
         ),
       ]}
-      width={800}
+      width={1000}
     >
       <Descriptions bordered column={1}>
         <Descriptions.Item label="Request ID">

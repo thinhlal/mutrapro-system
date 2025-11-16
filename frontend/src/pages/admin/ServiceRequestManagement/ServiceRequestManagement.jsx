@@ -346,7 +346,7 @@ export default function ServiceRequestManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: 140,
       fixed: 'right',
       render: (_, record) => {
         const isAssignedToMe = record.managerUserId === user?.id;
@@ -355,11 +355,16 @@ export default function ServiceRequestManagement() {
         const hasContract = record.hasContract === true;
 
         return (
-          <Space wrap>
+          <Space
+            direction="vertical"
+            size="small"
+            style={{ width: '100%' }}
+          >
             <Button
               type="link"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetail(record)}
+              block
             >
               View
             </Button>
@@ -368,6 +373,7 @@ export default function ServiceRequestManagement() {
               size="small"
               icon={<FileSearchOutlined />}
               onClick={() => handleViewContracts(record)}
+              block
             >
               Contracts
             </Button>
@@ -378,6 +384,7 @@ export default function ServiceRequestManagement() {
                 icon={<CheckCircleOutlined />}
                 loading={assigning[record.id]}
                 onClick={() => handleAssign(record.id)}
+                block
               >
                 Assign to Me
               </Button>
@@ -417,19 +424,19 @@ export default function ServiceRequestManagement() {
       </div>
 
       <Card>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          tabBarExtraContent={
-            <Space>
-              <Badge
-                count={allPagination.total}
-                style={{ backgroundColor: '#52c41a' }}
-              />
-            </Space>
-          }
-        >
-          <TabPane tab="All Requests" key="all">
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <TabPane
+            tab={
+              <span>
+                All Requests
+                <Badge
+                  count={allPagination.total}
+                  style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
+                />
+              </span>
+            }
+            key="all"
+          >
             <Table
               columns={columns}
               dataSource={allRequests}
