@@ -337,7 +337,7 @@ export default function ContractsManagement() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      width: 160,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
@@ -353,11 +353,16 @@ export default function ContractsManagement() {
         const canEdit = isDraft; // Only editable when DRAFT
 
         return (
-          <Space>
+          <Space
+            direction="vertical"
+            size="small"
+            style={{ width: '100%' }}
+          >
             <Tooltip title="View Details">
               <Button
                 icon={<EyeOutlined />}
                 onClick={() => navigate(`/manager/contracts/${r.contractId}`)}
+                block
               />
             </Tooltip>
             {canSend && (
@@ -373,6 +378,7 @@ export default function ContractsManagement() {
                     type="primary"
                     icon={<SendOutlined />}
                     loading={actionLoading}
+                    block
                   >
                     Send
                   </Button>
@@ -391,6 +397,7 @@ export default function ContractsManagement() {
                   style={{
                     backgroundColor: '#fa8c16',
                     borderColor: '#fa8c16',
+                    width: '100%',
                   }}
                 >
                   View Reason
@@ -405,7 +412,11 @@ export default function ContractsManagement() {
                     setCanceledContract(r);
                     setCancelReasonModalVisible(true);
                   }}
-                  style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}
+                  style={{
+                    color: '#ff4d4f',
+                    borderColor: '#ff4d4f',
+                    width: '100%',
+                  }}
                 >
                   Cancel Reason
                 </Button>
@@ -420,6 +431,7 @@ export default function ContractsManagement() {
                   onClick={() =>
                     navigate(`/manager/contracts/${r.contractId}/edit`)
                   }
+                  block
                 />
               </Tooltip>
             )}
@@ -435,6 +447,7 @@ export default function ContractsManagement() {
                     setCancelModalVisible(true);
                   }}
                   loading={actionLoading}
+                  block
                 >
                   {isDraft ? 'Cancel' : 'Recall'}
                 </Button>
@@ -619,7 +632,7 @@ export default function ContractsManagement() {
             Create New Contract
           </Button>,
         ]}
-        width={700}
+        width={1000}
       >
         {revisionContract && (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
