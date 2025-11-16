@@ -335,7 +335,12 @@ public class SpecialistProfileService {
         
         SpecialistResponse specialistResponse = specialistMapper.toSpecialistResponse(specialist);
         List<SpecialistSkillResponse> skills = getMySkills();
-        List<ArtistDemoResponse> demos = getMyDemos();
+        
+        // Chỉ lấy demos nếu là Recording Artist
+        List<ArtistDemoResponse> demos = List.of();
+        if (specialist.getSpecialization() == SpecialistType.RECORDING_ARTIST) {
+            demos = getMyDemos();
+        }
         
         return SpecialistDetailResponse.builder()
             .specialist(specialistResponse)
