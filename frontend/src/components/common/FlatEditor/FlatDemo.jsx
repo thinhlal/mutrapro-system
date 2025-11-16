@@ -9,6 +9,7 @@ export default function FlatDemo() {
   const fileRef = useRef(null);
   const [embed, setEmbed] = useState(null);
   const [ready, setReady] = useState(false);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
 
   // ==== form Create ====
   const [modalVisible, setModalVisible] = useState(false);
@@ -36,6 +37,7 @@ export default function FlatDemo() {
       .then(() => {
         setEmbed(instance);
         setReady(true);
+        setShowWelcomeMessage(true);
       })
       .catch(e => console.error('Embed init failed:', e));
   }, []);
@@ -144,6 +146,7 @@ export default function FlatDemo() {
       const xml = makeMusicXML();
       await embed.loadMusicXML(xml);
       setModalVisible(false);
+      setShowWelcomeMessage(false); // Hide welcome message when score is created
     } catch (e) {
       console.error(e);
       alert('Không tạo được bản mới: ' + (e?.message || String(e)));
@@ -169,6 +172,7 @@ export default function FlatDemo() {
         const text = await file.text();
         await embed.loadMusicXML(text);
       }
+      setShowWelcomeMessage(false); // Hide welcome message when file is uploaded
     } catch (err) {
       console.error(err);
       alert('Không thể nạp file: ' + (err?.message || String(err)));
@@ -373,6 +377,21 @@ export default function FlatDemo() {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {ready && showWelcomeMessage && (
+        <Alert
+          message="Music Editor Ready!"
+          description="The software has started successfully. Please upload a file or create a new score to get started."
+          type="success"
+          showIcon
+          closable
+          onClose={() => setShowWelcomeMessage(false)}
+          style={{ 
+            marginBottom: 16,
+            borderRadius: '8px',
+          }}
         />
       )}
 
