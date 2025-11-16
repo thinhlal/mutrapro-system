@@ -57,5 +57,14 @@ public class AccessDeniedException extends ForbiddenException {
             Map.of("demoId", demoId != null ? demoId : "unknown")
         );
     }
+    
+    /**
+     * Khi specialist không phải Recording Artist cố gắng truy cập demos
+     */
+    public static AccessDeniedException cannotAccessDemos() {
+        return new AccessDeniedException(
+            "Only Recording Artist specialists can manage demos"
+        );
+    }
 }
 

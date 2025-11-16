@@ -202,6 +202,7 @@ public class SpecialistProfileService {
     
     /**
      * Lấy danh sách demos của specialist hiện tại
+     * Chỉ Recording Artist mới được phép sử dụng
      */
     public List<ArtistDemoResponse> getMyDemos() {
         String currentUserId = getCurrentUserId();
@@ -210,12 +211,18 @@ public class SpecialistProfileService {
         Specialist specialist = specialistRepository.findByUserId(currentUserId)
             .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
         
+        // Chỉ Recording Artist mới được phép quản lý demos
+        if (specialist.getSpecialization() != SpecialistType.RECORDING_ARTIST) {
+            throw AccessDeniedException.cannotAccessDemos();
+        }
+        
         List<ArtistDemo> demos = artistDemoRepository.findBySpecialist(specialist);
         return artistDemoMapper.toArtistDemoResponseList(demos);
     }
     
     /**
      * Tạo demo mới cho specialist hiện tại
+     * Chỉ Recording Artist mới được phép sử dụng
      */
     @Transactional
     public ArtistDemoResponse createDemo(CreateDemoRequest request) {
@@ -224,6 +231,11 @@ public class SpecialistProfileService {
         
         Specialist specialist = specialistRepository.findByUserId(currentUserId)
             .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
+        
+        // Chỉ Recording Artist mới được phép quản lý demos
+        if (specialist.getSpecialization() != SpecialistType.RECORDING_ARTIST) {
+            throw AccessDeniedException.cannotAccessDemos();
+        }
         
         ArtistDemo demo = artistDemoMapper.toArtistDemo(request);
         demo.setSpecialist(specialist);
@@ -244,6 +256,7 @@ public class SpecialistProfileService {
     
     /**
      * Cập nhật demo của specialist hiện tại
+     * Chỉ Recording Artist mới được phép sử dụng
      */
     @Transactional
     public ArtistDemoResponse updateDemo(String demoId, UpdateDemoRequest request) {
@@ -252,6 +265,11 @@ public class SpecialistProfileService {
         
         Specialist specialist = specialistRepository.findByUserId(currentUserId)
             .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
+        
+        // Chỉ Recording Artist mới được phép quản lý demos
+        if (specialist.getSpecialization() != SpecialistType.RECORDING_ARTIST) {
+            throw AccessDeniedException.cannotAccessDemos();
+        }
         
         ArtistDemo demo = artistDemoRepository.findById(demoId)
             .orElseThrow(() -> DemoNotFoundException.byId(demoId));
@@ -278,6 +296,7 @@ public class SpecialistProfileService {
     
     /**
      * Xóa demo của specialist hiện tại
+     * Chỉ Recording Artist mới được phép sử dụng
      */
     @Transactional
     public void deleteDemo(String demoId) {
@@ -286,6 +305,11 @@ public class SpecialistProfileService {
         
         Specialist specialist = specialistRepository.findByUserId(currentUserId)
             .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
+        
+        // Chỉ Recording Artist mới được phép quản lý demos
+        if (specialist.getSpecialization() != SpecialistType.RECORDING_ARTIST) {
+            throw AccessDeniedException.cannotAccessDemos();
+        }
         
         ArtistDemo demo = artistDemoRepository.findById(demoId)
             .orElseThrow(() -> DemoNotFoundException.byId(demoId));

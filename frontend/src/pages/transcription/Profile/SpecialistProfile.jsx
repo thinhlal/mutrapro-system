@@ -20,6 +20,7 @@ import {
   Avatar,
   Rate,
   Divider,
+  Spin,
 } from 'antd';
 import {
   EditOutlined,
@@ -28,6 +29,7 @@ import {
   UserOutlined,
   StarOutlined,
   InfoCircleOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import {
   getMyProfileDetail,
@@ -37,6 +39,10 @@ import {
   addSkill,
   updateMySkill,
   deleteMySkill,
+  getMyDemos,
+  createMyDemo,
+  updateMyDemo,
+  deleteMyDemo,
 } from '../../../services/specialistService';
 import { useAuth } from '../../../contexts/AuthContext';
 import dayjs from 'dayjs';
@@ -53,13 +59,22 @@ const SpecialistProfile = () => {
   const [profileDetail, setProfileDetail] = useState(null);
   const [skills, setSkills] = useState([]);
   const [availableSkills, setAvailableSkills] = useState([]);
+  const [demos, setDemos] = useState([]);
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [availableSkillsLoading, setAvailableSkillsLoading] = useState(false);
+  const [demosLoading, setDemosLoading] = useState(false);
 
   const [profileForm] = Form.useForm();
   const [skillForm] = Form.useForm();
+  const [demoForm] = Form.useForm();
 
   const [skillModalVisible, setSkillModalVisible] = useState(false);
   const [editingSkill, setEditingSkill] = useState(null);
   const [skillLoading, setSkillLoading] = useState(false);
+
+  const [demoModalVisible, setDemoModalVisible] = useState(false);
+  const [editingDemo, setEditingDemo] = useState(null);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -68,6 +83,9 @@ const SpecialistProfile = () => {
   useEffect(() => {
     if (activeTab === 'skills') {
       fetchSkills();
+      fetchAvailableSkills();
+    } else if (activeTab === 'demos') {
+      fetchDemos();
       fetchAvailableSkills();
     }
   }, [activeTab]);
@@ -79,9 +97,9 @@ const SpecialistProfile = () => {
       if (response.data) {
         setProfileDetail(response.data);
         profileForm.setFieldsValue({
-          portfolioUrl: response.data.portfolioUrl,
-          bio: response.data.bio,
-          experienceYears: response.data.experienceYears,
+          portfolioUrl: response.data.specialist?.portfolioUrl,
+          bio: response.data.specialist?.bio,
+          experienceYears: response.data.specialist?.experienceYears,
         });
       }
     } catch (error) {
@@ -91,7 +109,22 @@ const SpecialistProfile = () => {
     }
   };
 
+  const fetchDemos = async () => {
+    setDemosLoading(true);
+    try {
+      const response = await getMyDemos();
+      if (response.data) {
+        setDemos(response.data);
+      }
+    } catch (error) {
+      message.error(error.message || 'Không thể tải demos');
+    } finally {
+      setDemosLoading(false);
+    }
+  };
+
   const fetchSkills = async () => {
+    setSkillsLoading(true);
     try {
       const response = await getMySkills();
       if (response.data) {
@@ -99,10 +132,13 @@ const SpecialistProfile = () => {
       }
     } catch (error) {
       message.error(error.message || 'Không thể tải skills');
+    } finally {
+      setSkillsLoading(false);
     }
   };
 
   const fetchAvailableSkills = async () => {
+    setAvailableSkillsLoading(true);
     try {
       const response = await getAvailableSkills();
       if (response.data) {
@@ -110,6 +146,8 @@ const SpecialistProfile = () => {
       }
     } catch (error) {
       message.error(error.message || 'Không thể tải danh sách skills');
+    } finally {
+      setAvailableSkillsLoading(false);
     }
   };
 
@@ -181,6 +219,68 @@ const SpecialistProfile = () => {
     }
   };
 
+  const handleAddDemo = () => {
+    setEditingDemo(null);
+    demoForm.resetFields();
+    setDemoModalVisible(true);
+  };
+
+  const handleEditDemo = demo => {
+    setEditingDemo(demo);
+    demoForm.setFieldsValue({
+      title: demo.title,
+      description: demo.description,
+      skillId: demo.skill?.skillId || null,
+      fileId: demo.fileId,
+      previewUrl: demo.previewUrl,
+      demoOrder: demo.demoOrder,
+      isFeatured: demo.isFeatured,
+    });
+    setDemoModalVisible(true);
+  };
+
+  const handleDemoSubmit = async values => {
+    setDemoLoading(true);
+    try {
+      const demoData = {
+        ...values,
+      };
+      if (editingDemo) {
+        await updateMyDemo(editingDemo.demoId, demoData);
+        message.success('Cập nhật demo thành công');
+      } else {
+        await createMyDemo(demoData);
+        message.success('Tạo demo thành công');
+      }
+      setDemoModalVisible(false);
+      demoForm.resetFields();
+      fetchDemos();
+    } catch (error) {
+      message.error(error.message || 'Không thể lưu demo');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  const handleDeleteDemo = async demoId => {
+    try {
+      await deleteMyDemo(demoId);
+      message.success('Xóa demo thành công');
+      fetchDemos();
+    } catch (error) {
+      message.error(error.message || 'Không thể xóa demo');
+    }
+  };
+
+  const getSpecializationDisplayName = specialization => {
+    const names = {
+      TRANSCRIPTION: 'Transcription',
+      ARRANGEMENT: 'Arrangement',
+      RECORDING_ARTIST: 'Recording Artist',
+    };
+    return names[specialization] || specialization;
+  };
+
   const getProficiencyColor = level => {
     const colors = {
       BEGINNER: 'default',
@@ -197,7 +297,6 @@ const SpecialistProfile = () => {
     const years = skill.yearsExperience ? `${skill.yearsExperience} years` : '';
     return `${skillName} – ${proficiency} – ${years}`;
   };
-  console.log(skills);
   const skillColumns = [
     {
       title: 'Skill',
@@ -234,6 +333,71 @@ const SpecialistProfile = () => {
     },
   ];
 
+  const demoColumns = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: 'Skill',
+      key: 'skill',
+      render: (_, record) => record.skill?.skillName || 'N/A',
+    },
+    {
+      title: 'Preview URL',
+      dataIndex: 'previewUrl',
+      key: 'previewUrl',
+      render: url =>
+        url ? (
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            {url}
+          </a>
+        ) : (
+          'N/A'
+        ),
+    },
+    {
+      title: 'Public',
+      dataIndex: 'isPublic',
+      key: 'isPublic',
+      render: isPublic => (
+        <Tag color={isPublic ? 'green' : 'default'}>
+          {isPublic ? 'Public' : 'Private'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEditDemo(record)}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Bạn có chắc muốn xóa demo này?"
+            onConfirm={() => handleDeleteDemo(record.demoId)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Remove
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const isRecordingArtist =
+    profileDetail?.specialist?.specialization === 'RECORDING_ARTIST';
+
   return (
     <div className={styles.container}>
       <Card>
@@ -254,7 +418,7 @@ const SpecialistProfile = () => {
                 </span>
               ),
               children: (
-                <>
+                <Spin spinning={loading}>
                   <div className={styles.profileHeader}>
                     <Avatar
                       size={100}
@@ -282,7 +446,13 @@ const SpecialistProfile = () => {
                   >
                     <Form.Item label="Specialization">
                       <Input
-                        value="Transcription"
+                        value={
+                          profileDetail?.specialist?.specialization
+                            ? getSpecializationDisplayName(
+                                profileDetail.specialist.specialization
+                              )
+                            : 'N/A'
+                        }
                         disabled
                         style={{ color: '#000' }}
                       />
@@ -333,40 +503,53 @@ const SpecialistProfile = () => {
 
                   <Card title="Statistics" className={styles.statsCard}>
                     <Descriptions bordered column={1}>
-                      <Descriptions.Item label="Rating">
-                        <Rate
-                          disabled
-                          defaultValue={profileDetail?.rating || 0}
-                          allowHalf
-                        />
-                        <span style={{ marginLeft: 8 }}>
-                          {profileDetail?.rating || 0} / 5.0
-                        </span>
+                      <Descriptions.Item label="Specialist ID">
+                        {profileDetail?.specialist?.specialistId || 'N/A'}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Total Projects">
-                        {profileDetail?.totalProjects || 0}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="On-time Rate">
-                        {profileDetail?.onTimeRate
-                          ? `${(profileDetail.onTimeRate * 100).toFixed(1)}%`
+                      <Descriptions.Item label="Specialization">
+                        {profileDetail?.specialist?.specialization
+                          ? getSpecializationDisplayName(
+                              profileDetail.specialist.specialization
+                            )
                           : 'N/A'}
                       </Descriptions.Item>
                       <Descriptions.Item label="Status">
                         <Tag
                           color={
-                            profileDetail?.status === 'ACTIVE'
+                            profileDetail?.specialist?.status === 'ACTIVE'
                               ? 'green'
-                              : profileDetail?.status === 'SUSPENDED'
+                              : profileDetail?.specialist?.status === 'SUSPENDED'
                               ? 'orange'
                               : 'red'
                           }
                         >
-                          {profileDetail?.status || 'N/A'}
+                          {profileDetail?.specialist?.status || 'N/A'}
                         </Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Max Concurrent Tasks">
+                        {profileDetail?.specialist?.maxConcurrentTasks || 0}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Rating">
+                        <Rate
+                          disabled
+                          defaultValue={profileDetail?.specialist?.rating || 0}
+                          allowHalf
+                        />
+                        <span style={{ marginLeft: 8 }}>
+                          {profileDetail?.specialist?.rating || 0} / 5.0
+                        </span>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Total Projects">
+                        {profileDetail?.specialist?.totalProjects || 0}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="On-time Rate">
+                        {profileDetail?.specialist?.onTimeRate
+                          ? `${(profileDetail.specialist.onTimeRate * 100).toFixed(1)}%`
+                          : 'N/A'}
                       </Descriptions.Item>
                     </Descriptions>
                   </Card>
-                </>
+                </Spin>
               ),
             },
             {
@@ -378,18 +561,19 @@ const SpecialistProfile = () => {
                 </span>
               ),
               children: (
-                <>
+                <Spin spinning={skillsLoading || availableSkillsLoading}>
                   <div style={{ marginBottom: 16 }}>
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
                       onClick={handleAddSkill}
+                      disabled={availableSkillsLoading}
                     >
                       Add Skill
                     </Button>
                   </div>
 
-                  {skills.length === 0 ? (
+                  {skills.length === 0 && !skillsLoading ? (
                     <Card>
                       <div style={{ textAlign: 'center', padding: '40px 0' }}>
                         <StarOutlined style={{ fontSize: 48, color: '#ccc' }} />
@@ -404,11 +588,63 @@ const SpecialistProfile = () => {
                       dataSource={skills}
                       rowKey="specialistSkillId"
                       pagination={false}
+                      loading={skillsLoading}
                     />
                   )}
-                </>
+                </Spin>
               ),
             },
+            ...(isRecordingArtist
+              ? [
+                  {
+                    key: 'demos',
+                    label: (
+                      <span>
+                        <PlayCircleOutlined />
+                        Demos
+                      </span>
+                    ),
+                    children: (
+                      <Spin spinning={demosLoading || availableSkillsLoading}>
+                        <div style={{ marginBottom: 16 }}>
+                          <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleAddDemo}
+                            disabled={availableSkillsLoading}
+                          >
+                            Add Demo
+                          </Button>
+                        </div>
+
+                        {demos.length === 0 && !demosLoading ? (
+                          <Card>
+                            <div
+                              style={{ textAlign: 'center', padding: '40px 0' }}
+                            >
+                              <PlayCircleOutlined
+                                style={{ fontSize: 48, color: '#ccc' }}
+                              />
+                              <p style={{ marginTop: 16, color: '#999' }}>
+                                Chưa có demo nào. Hãy thêm demo đầu tiên của
+                                bạn!
+                              </p>
+                            </div>
+                          </Card>
+                        ) : (
+                          <Table
+                            columns={demoColumns}
+                            dataSource={demos}
+                            rowKey="demoId"
+                            pagination={false}
+                            loading={demosLoading}
+                          />
+                        )}
+                      </Spin>
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
       </Card>
@@ -432,7 +668,19 @@ const SpecialistProfile = () => {
               label="Skill"
               rules={[{ required: true, message: 'Vui lòng chọn skill' }]}
             >
-              <Select placeholder="Select skill">
+              <Select
+                placeholder="Select skill"
+                loading={availableSkillsLoading}
+                notFoundContent={
+                  availableSkillsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                      Loading...
+                    </div>
+                  ) : (
+                    'No skills available'
+                  )
+                }
+              >
                 {availableSkills
                   .filter(
                     skill =>
@@ -502,6 +750,88 @@ const SpecialistProfile = () => {
                 </Form.Item>
               ) : null
             }
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Demo Modal */}
+      <Modal
+        title={editingDemo ? 'Edit Demo' : 'Add Demo'}
+        open={demoModalVisible}
+        onCancel={() => {
+          setDemoModalVisible(false);
+          demoForm.resetFields();
+        }}
+        onOk={() => demoForm.submit()}
+        confirmLoading={demoLoading}
+        width={600}
+      >
+        <Form form={demoForm} layout="vertical" onFinish={handleDemoSubmit}>
+          <Form.Item
+            name="title"
+            label="Title"
+            rules={[{ required: true, message: 'Vui lòng nhập title' }]}
+          >
+            <Input placeholder="Enter demo title" />
+          </Form.Item>
+
+          <Form.Item name="description" label="Description">
+            <TextArea rows={4} placeholder="Enter demo description" />
+          </Form.Item>
+
+          <Form.Item
+            name="fileId"
+            label="File ID"
+            rules={[
+              { required: !editingDemo, message: 'Vui lòng nhập file ID' },
+            ]}
+          >
+            <Input placeholder="Enter file ID" disabled={!!editingDemo} />
+          </Form.Item>
+
+          <Form.Item name="skillId" label="Skill">
+            <Select
+              placeholder="Select skill (optional)"
+              allowClear
+              loading={availableSkillsLoading}
+              notFoundContent={
+                availableSkillsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    Loading...
+                  </div>
+                ) : (
+                  'No skills available'
+                )
+              }
+            >
+              {availableSkills
+                .filter(skill => skill.skillType === 'RECORDING_ARTIST')
+                .map(skill => (
+                  <Option key={skill.skillId} value={skill.skillId}>
+                    {skill.skillName}
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="previewUrl"
+            label="Preview URL"
+            rules={[{ type: 'url', message: 'Please enter a valid URL' }]}
+          >
+            <Input placeholder="https://example.com/demo" />
+          </Form.Item>
+
+          <Form.Item name="demoOrder" label="Demo Order">
+            <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="isFeatured"
+            label="Featured"
+            valuePropName="checked"
+          >
+            <Switch />
           </Form.Item>
         </Form>
       </Modal>

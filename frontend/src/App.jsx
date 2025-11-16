@@ -16,6 +16,8 @@ import ManagerLayout from './layouts/ManagerLayout/ManagerLayout';
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
 import ChatLayout from './layouts/ChatLayout/ChatLayout';
 import TranscriptionLayout from './layouts/TranscriptionLayout/TranscriptionLayout';
+import ArrangementLayout from './layouts/ArrangementLayout/ArrangementLayout';
+import RecordingArtistLayout from './layouts/RecordingArtistLayout/RecordingArtistLayout';
 
 // Public Pages
 import HomePage from './pages/public/Home/HomePage';
@@ -384,6 +386,32 @@ function App() {
             <Route path="edit-tool" element={<NotationEditor />} />
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route path="my-tasks/:taskId" element={<TranscriptionTaskDetailPage />} />
+            <Route path="profile" element={<SpecialistProfile />} />
+          </Route>
+
+          {/* --- ARRANGEMENT ROUTES (PROTECTED) --- */}
+          <Route
+            path="/arrangement"
+            element={
+              <ProtectedRoute allowedRoles={['ARRANGEMENT', 'SYSTEM_ADMIN']}>
+                <ArrangementLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="profile" replace />} />
+            <Route path="profile" element={<SpecialistProfile />} />
+          </Route>
+
+          {/* --- RECORDING ARTIST ROUTES (PROTECTED) --- */}
+          <Route
+            path="/recording-artist"
+            element={
+              <ProtectedRoute allowedRoles={['RECORDING_ARTIST', 'SYSTEM_ADMIN']}>
+                <RecordingArtistLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 
