@@ -26,7 +26,6 @@ import {
 import dayjs from 'dayjs';
 import {
   getServiceRequestById,
-  getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
 import {
@@ -319,7 +318,7 @@ const ContractBuilder = () => {
           deposit_percent: depositPercent,
           total_price: totalPrice, // Có thể chỉnh sửa
           sla_days: defaultSlaDays,
-          show_watermark: true,
+          show_watermark: false,
           free_revisions_included: 1,
           revision_deadline_days: defaultRevisionDeadlineDays,
           additional_revision_fee_vnd: getDefaultAdditionalRevisionFeeVnd(),
@@ -460,7 +459,7 @@ const ContractBuilder = () => {
           deposit_amount: contract.depositAmount,
           final_amount: contract.finalAmount,
           sla_days: contract.slaDays,
-          show_watermark: true, // Always show watermark in edit mode
+          show_watermark: false, // Always show watermark in edit mode
           free_revisions_included: contract.freeRevisionsIncluded,
           revision_deadline_days: contract.revisionDeadlineDays,
           additional_revision_fee_vnd: contract.additionalRevisionFeeVnd,
@@ -519,11 +518,10 @@ const ContractBuilder = () => {
           const currentFormValues = form.getFieldsValue(true);
           // Build preview with current form values and new party info
           const normalized = {
-            show_seal: !!currentFormValues.show_seal,
-            seal_text:
-              currentFormValues.seal_text?.trim() || 'MuTraPro Official',
-            seal_variant: currentFormValues.seal_variant || 'red',
-            show_watermark: !!currentFormValues.show_watermark,
+            show_seal: true,
+            seal_text: 'MuTraPro Official',
+            seal_variant: 'red',
+            show_watermark: true,
 
             request_id: currentFormValues.request_id || null,
             customer_id: currentFormValues.customer_id || null,
@@ -584,26 +582,14 @@ const ContractBuilder = () => {
         instruments: [],
         transcriptionDetails: null,
       };
-      // Load instruments if instrumentIds exist
-      if (request.instrumentIds && request.instrumentIds.length > 0) {
-        try {
-          const instrumentsResponse = await getNotationInstrumentsByIds(
-            request.instrumentIds
-          );
-          if (
-            instrumentsResponse?.status === 'success' &&
-            instrumentsResponse?.data
-          ) {
-            const selectedInstruments = instrumentsResponse.data.map(instr => ({
-              instrumentId: instr.instrumentId,
-              instrumentName: instr.instrumentName,
-              basePrice: instr.basePrice || 0,
-            }));
-            breakdown.instruments = selectedInstruments;
-          }
-        } catch (error) {
-          console.warn('Failed to load instruments:', error);
-        }
+      // Use full instruments info from response (backend trả về đầy đủ thông tin)
+      if (request.instruments && Array.isArray(request.instruments) && request.instruments.length > 0) {
+        const selectedInstruments = request.instruments.map(instr => ({
+          instrumentId: instr.instrumentId,
+          instrumentName: instr.instrumentName,
+          basePrice: instr.basePrice || 0,
+        }));
+        breakdown.instruments = selectedInstruments;
       }
 
       // Load transcription pricing details if request type is transcription
@@ -1284,38 +1270,6 @@ const ContractBuilder = () => {
                     <Input.TextArea rows={2} />
                   </Form.Item>
 
-                  <Divider className={styles.fullRow}>Branding</Divider>
-                  <Form.Item
-                    name="show_seal"
-                    label="Show Company Seal"
-                    valuePropName="checked"
-                    className={styles.fullRow}
-                  >
-                    <Switch />
-                  </Form.Item>
-                  <Form.Item name="seal_text" label="Seal Text">
-                    <Input placeholder="MuTraPro Official" />
-                  </Form.Item>
-                  <Form.Item
-                    name="seal_variant"
-                    label="Seal Color"
-                    initialValue="red"
-                  >
-                    <Select
-                      options={[
-                        { label: 'Red', value: 'red' },
-                        { label: 'Blue', value: 'blue' },
-                      ]}
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    name="show_watermark"
-                    label="Show Watermark"
-                    valuePropName="checked"
-                  >
-                    <Switch defaultChecked />
-                  </Form.Item>
-
                   <div
                     className={styles.fullRow}
                     style={{ marginTop: 8, textAlign: 'right' }}
@@ -1356,23 +1310,6 @@ const ContractBuilder = () => {
                   </div>
                 )}
 
-                {/* Con dấu tròn ở góc phải */}
-                {data?.show_seal && (
-                  <div
-                    className={`${styles.seal} ${
-                      styles[`seal_${data?.seal_variant || 'red'}`]
-                    }`}
-                  >
-                    <div className={styles.sealInner}>
-                      <div className={styles.sealText}>
-                        {data?.seal_text || 'MuTraPro Official'}
-                      </div>
-                      <div className={styles.sealDate}>
-                        {dayjs().format('YYYY-MM-DD')}
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <h1 className={styles.docTitle}>
                   {getContractTitle(data?.contract_type) || 'Service Agreement'}
                 </h1>

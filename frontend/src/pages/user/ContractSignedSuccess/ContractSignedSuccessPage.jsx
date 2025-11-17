@@ -18,7 +18,6 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { getContractById } from '../../../services/contractService';
-import { getPendingDepositInstallment } from '../../../services/billingService';
 import Header from '../../../components/common/Header/Header';
 import styles from './ContractSignedSuccessPage.module.css';
 import dayjs from 'dayjs';
@@ -29,7 +28,7 @@ const ContractSignedSuccessPage = () => {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);
-  const [depositInstallment, setDepositInstallment] = useState(null);
+  const [depositMilestone, setDepositMilestone] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,17 +42,19 @@ const ContractSignedSuccessPage = () => {
       // Load contract
       const contractResponse = await getContractById(contractId);
       if (contractResponse?.status === 'success' && contractResponse?.data) {
-        setContract(contractResponse.data);
+        const contractData = contractResponse.data;
+        setContract(contractData);
         
-        // Load deposit installment
-        try {
-          const depositResponse = await getPendingDepositInstallment(contractId);
-          if (depositResponse?.status === 'success' && depositResponse?.data) {
-            setDepositInstallment(depositResponse.data);
+        // Lấy milestone đầu tiên (deposit milestone) từ contract.milestones
+        if (contractData.milestones && contractData.milestones.length > 0) {
+          // Tìm milestone đầu tiên có paymentStatus = DUE hoặc NOT_DUE (chưa thanh toán)
+          const firstMilestone = contractData.milestones.find(
+            m => m.paymentStatus === 'DUE' || m.paymentStatus === 'NOT_DUE'
+          ) || contractData.milestones[0]; // Fallback: lấy milestone đầu tiên
+          
+          if (firstMilestone) {
+            setDepositMilestone(firstMilestone);
           }
-        } catch (error) {
-          console.warn('Failed to load deposit installment:', error);
-          // Continue even if deposit not found
         }
       }
     } catch (error) {
@@ -76,7 +77,7 @@ const ContractSignedSuccessPage = () => {
   };
 
   const handlePayDeposit = () => {
-    navigate(`/contracts/${contractId}/pay-deposit`);
+    navigate(`/contracts/${contractId}/pay-milestone`);
   };
 
   const handleViewContract = () => {
@@ -116,7 +117,7 @@ const ContractSignedSuccessPage = () => {
     );
   }
 
-  const depositAmount = depositInstallment?.amount || contract?.depositAmount || 0;
+  const depositAmount = depositMilestone?.amount || contract?.depositAmount || 0;
   const depositPercent = contract?.depositPercent || 0;
   const totalPrice = contract?.totalPrice || 0;
 
@@ -157,9 +158,9 @@ const ContractSignedSuccessPage = () => {
               <Descriptions.Item label="Final Payment">
                 {formatCurrency(totalPrice - depositAmount, contract.currency)}
               </Descriptions.Item>
-              {depositInstallment?.dueDate && (
+              {depositMilestone?.plannedDueDate && (
                 <Descriptions.Item label="Deposit Deadline">
-                  {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY HH:mm')}
+                  {dayjs(depositMilestone.plannedDueDate).format('DD/MM/YYYY HH:mm')}
                 </Descriptions.Item>
               )}
             </Descriptions>

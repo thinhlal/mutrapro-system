@@ -39,7 +39,7 @@ public class WalletTransactionResponse {
     
     String contractId;
     
-    String installmentId;
+    String milestoneId;
     
     String bookingId;
     

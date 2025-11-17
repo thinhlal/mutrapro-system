@@ -47,7 +47,8 @@ app:
       file.uploaded: file-uploaded
       contract.otp-email: contract-otp-email
       contract.signed-email: contract-signed-email
-      billing.deposit-paid: billing-deposit-paid
+      # billing.deposit-paid: billing-deposit-paid  # Deprecated - đã chuyển sang billing.milestone-paid
+      billing.milestone-paid: billing-milestone-paid
 
 # Request Service Configuration
 request:

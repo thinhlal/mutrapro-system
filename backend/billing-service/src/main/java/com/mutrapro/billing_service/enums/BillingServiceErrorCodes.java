@@ -53,12 +53,6 @@ public enum BillingServiceErrorCodes implements ErrorCode {
     CURRENCY_MISMATCH("WALLET_8008", 400,
         "https://docs.mutrapro.com/errors/WALLET_8008",
         "Currency mismatch between wallet and transaction",
-        Retryable.NON_TRANSIENT),
-    
-    // Installment Errors (8100-8199)
-    INSTALLMENT_NOT_FOUND("INSTALLMENT_8100", 404,
-        "https://docs.mutrapro.com/errors/INSTALLMENT_8100",
-        "Contract installment not found",
         Retryable.NON_TRANSIENT);
 
     private final String code;

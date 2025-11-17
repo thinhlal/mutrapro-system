@@ -7,13 +7,18 @@ import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
 import com.mutrapro.project_service.dto.response.ChatRoomResponse;
+import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
+import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
+import com.mutrapro.project_service.enums.MilestoneBillingType;
+import com.mutrapro.project_service.enums.MilestonePaymentStatus;
+import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
@@ -27,6 +32,7 @@ import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractSignSessionRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.entity.File;
@@ -57,6 +63,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -67,6 +74,7 @@ import java.util.stream.Collectors;
 public class ContractService {
 
     ContractRepository contractRepository;
+    ContractMilestoneRepository contractMilestoneRepository;
     ContractMapper contractMapper;
     RequestServiceFeignClient requestServiceFeignClient;
     ChatServiceFeignClient chatServiceFeignClient;
@@ -226,7 +234,11 @@ public class ContractService {
         log.info("Created contract from service request: contractId={}, requestId={}, contractNumber={}", 
             saved.getContractId(), requestId, contractNumber);
         
-        return contractMapper.toResponse(saved);
+        // Tạo milestones dựa trên contract type
+        createMilestonesForContract(saved);
+        
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
@@ -337,7 +349,8 @@ public class ContractService {
         Contract saved = contractRepository.save(contract);
         log.info("Updated contract: contractId={}, requestId={}", saved.getContractId(), saved.getRequestId());
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
@@ -420,7 +433,53 @@ public class ContractService {
     public ContractResponse getContractById(String contractId) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
-        return contractMapper.toResponse(contract);
+        
+        ContractResponse response = contractMapper.toResponse(contract);
+        
+        // Load milestones và map vào response
+        return enrichWithMilestones(response);
+    }
+    
+    /**
+     * Map ContractMilestone entity to ContractMilestoneResponse DTO
+     */
+    private ContractMilestoneResponse mapToMilestoneResponse(ContractMilestone milestone) {
+        return ContractMilestoneResponse.builder()
+            .milestoneId(milestone.getMilestoneId())
+            .contractId(milestone.getContractId())
+            .name(milestone.getName())
+            .description(milestone.getDescription())
+            .orderIndex(milestone.getOrderIndex())
+            .workStatus(milestone.getWorkStatus())
+            .billingType(milestone.getBillingType())
+            .billingValue(milestone.getBillingValue())
+            .amount(milestone.getAmount())
+            .paymentStatus(milestone.getPaymentStatus())
+            .plannedDueDate(milestone.getPlannedDueDate())
+            .paidAt(milestone.getPaidAt())
+            .createdAt(milestone.getCreatedAt())
+            .updatedAt(milestone.getUpdatedAt())
+            .build();
+    }
+    
+    /**
+     * Enrich ContractResponse với milestones
+     */
+    private ContractResponse enrichWithMilestones(ContractResponse response) {
+        if (response == null || response.getContractId() == null) {
+            return response;
+        }
+        
+        List<ContractMilestone> milestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(response.getContractId());
+        
+        List<ContractMilestoneResponse> milestoneResponses = milestones.stream()
+            .map(this::mapToMilestoneResponse)
+            .collect(Collectors.toList());
+        
+        response.setMilestones(milestoneResponses);
+        
+        return response;
     }
     
     /**
@@ -508,7 +567,8 @@ public class ContractService {
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
@@ -694,7 +754,8 @@ public class ContractService {
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     
@@ -776,7 +837,8 @@ public class ContractService {
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
@@ -867,7 +929,8 @@ public class ContractService {
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
@@ -966,55 +1029,383 @@ public class ContractService {
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
         
-        return contractMapper.toResponse(saved);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestones(response);
     }
     
     /**
-     * Cập nhật expectedStartDate và dueDate khi deposit được thanh toán
-     * Được gọi từ billing-service khi deposit installment status = paid
+     * Xử lý khi milestone được thanh toán
      * @param contractId ID của contract
-     * @param depositPaidAt Ngày thanh toán deposit
+     * @param milestoneId ID của milestone được thanh toán
+     * @param orderIndex Thứ tự milestone (1, 2, 3...)
+     * @param paidAt Thời điểm thanh toán
      */
     @Transactional
-    public void updateContractStartDateAfterDepositPaid(String contractId, Instant depositPaidAt) {
+    public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, Instant paidAt) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
-        // Chỉ update nếu contract đã signed (chưa thanh toán deposit) và expectedStartDate chưa được set
-        if (contract.getStatus() != ContractStatus.signed) {
-            log.warn("Cannot update start date for contract with status {}: contractId={}", 
-                contract.getStatus(), contractId);
-            return;
+        ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)
+            .orElseThrow(() -> new IllegalArgumentException("Milestone not found: " + milestoneId));
+        
+        // Validation: Milestone từ thứ 2 trở đi chỉ được thanh toán khi work status = READY_FOR_PAYMENT hoặc COMPLETED
+        // Milestone đầu tiên (orderIndex = 1) có thể thanh toán ngay khi DUE
+        if (orderIndex > 1) {
+            MilestoneWorkStatus workStatus = milestone.getWorkStatus();
+            if (workStatus != MilestoneWorkStatus.READY_FOR_PAYMENT 
+                && workStatus != MilestoneWorkStatus.COMPLETED) {
+                log.warn("❌ Cannot pay milestone: milestone must be READY_FOR_PAYMENT or COMPLETED. " +
+                    "contractId={}, milestoneId={}, orderIndex={}, currentWorkStatus={}", 
+                    contractId, milestoneId, orderIndex, workStatus);
+                throw new IllegalStateException(
+                    String.format("Milestone %d chỉ có thể thanh toán khi công việc đã hoàn thành (READY_FOR_PAYMENT hoặc COMPLETED). " +
+                        "Hiện tại work status: %s", orderIndex, workStatus));
+            }
         }
         
-        if (contract.getExpectedStartDate() != null) {
-            log.warn("Contract start date already set: contractId={}, existingStartDate={}", 
-                contractId, contract.getExpectedStartDate());
-            return;
+        // Update milestone payment status và paidAt
+        milestone.setPaymentStatus(MilestonePaymentStatus.PAID);
+        milestone.setPaidAt(paidAt);
+        milestone.setUpdatedAt(Instant.now());
+        
+        // Update milestone work status:
+        // - Milestone đầu tiên (orderIndex = 1): PLANNED → COMPLETED khi thanh toán thành công
+        // - Milestone từ thứ 2 trở đi: đã có work status = READY_FOR_PAYMENT hoặc COMPLETED (không cần update)
+        if (orderIndex == 1 && milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+            milestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+            log.info("✅ Milestone 1 completed after payment: contractId={}, milestoneId={}", 
+                contractId, milestoneId);
         }
         
-        // Set expectedStartDate = ngày thanh toán deposit
-        contract.setExpectedStartDate(depositPaidAt);
+        contractMilestoneRepository.save(milestone);
+        log.info("Updated milestone payment status to PAID: contractId={}, milestoneId={}, orderIndex={}", 
+            contractId, milestoneId, orderIndex);
         
-        // Tính lại dueDate từ expectedStartDate + SLA days
-        // Luôn set dueDate nếu có slaDays, không cần check autoDueDate
-        Integer slaDays = contract.getSlaDays();
-        if (slaDays != null && slaDays > 0) {
-            Instant newDueDate = depositPaidAt.plusSeconds(slaDays * 24L * 60 * 60);
-            contract.setDueDate(newDueDate);
-            log.info("Set due date from deposit paid date: contractId={}, depositPaidAt={}, dueDate={}, slaDays={}", 
-                contractId, depositPaidAt, newDueDate, slaDays);
+        // Gửi notification cho manager khi milestone được thanh toán
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.MILESTONE_PAID)
+                    .title("Milestone đã được thanh toán")
+                    .content(String.format("Customer đã thanh toán milestone \"%s\" cho contract #%s. Số tiền: %s %s", 
+                            milestone.getName(), 
+                            contract.getContractNumber(),
+                            milestone.getAmount().toPlainString(),
+                            contract.getCurrency() != null ? contract.getCurrency() : "VND"))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts/" + contractId)
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent milestone paid notification to manager: userId={}, contractId={}, milestoneId={}", 
+                    contract.getManagerUserId(), contractId, milestoneId);
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to send milestone paid notification: userId={}, contractId={}, milestoneId={}, error={}", 
+                    contract.getManagerUserId(), contractId, milestoneId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "💰 Customer đã thanh toán milestone \"%s\" cho contract #%s.\nSố tiền: %s %s",
+            milestone.getName(),
+            contract.getContractNumber(),
+            milestone.getAmount().toPlainString(),
+            contract.getCurrency() != null ? contract.getCurrency() : "VND"
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        
+        // Nếu là milestone đầu tiên (orderIndex = 1) và contract chưa active
+        if (orderIndex == 1 && contract.getStatus() == ContractStatus.signed) {
+            // Set expectedStartDate = ngày thanh toán milestone đầu tiên
+            contract.setExpectedStartDate(paidAt);
+            
+            // Tính lại dueDate từ expectedStartDate + SLA days
+            Integer slaDays = contract.getSlaDays();
+            if (slaDays != null && slaDays > 0) {
+                Instant newDueDate = paidAt.plusSeconds(slaDays * 24L * 60 * 60);
+                contract.setDueDate(newDueDate);
+                log.info("Set due date from first milestone paid date: contractId={}, paidAt={}, dueDate={}, slaDays={}", 
+                    contractId, paidAt, newDueDate, slaDays);
+            }
+            
+            // Update status từ "signed" → "active" (đã thanh toán milestone đầu tiên, có thể bắt đầu công việc)
+            contract.setStatus(ContractStatus.active);
+            contractRepository.save(contract);
+            log.info("Updated contract to active after first milestone paid: contractId={}, expectedStartDate={}, status=active", 
+                contractId, paidAt);
+            
+            // Update request status từ "contract_signed" → "in_progress" (đã thanh toán, bắt đầu làm việc)
+            try {
+                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "in_progress");
+                log.info("Updated request status to in_progress: requestId={}, contractId={}", 
+                    contract.getRequestId(), contractId);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to update request status to in_progress: requestId={}, contractId={}, error={}", 
+                    contract.getRequestId(), contractId, e.getMessage(), e);
+            }
+        }
+        
+        // Tự động kích hoạt milestone tiếp theo: Khi milestone N được thanh toán → milestone N+1 bắt đầu làm việc
+        Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
+            .findByContractIdAndOrderIndex(contractId, orderIndex + 1);
+        
+        if (nextMilestoneOpt.isPresent()) {
+            ContractMilestone nextMilestone = nextMilestoneOpt.get();
+            
+            // Milestone tiếp theo tự động bắt đầu làm việc (IN_PROGRESS) khi milestone trước được thanh toán
+            if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+                nextMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
+                nextMilestone.setUpdatedAt(Instant.now());
+                log.info("✅ Auto-started next milestone work: contractId={}, milestoneId={}, orderIndex={}, workStatus=IN_PROGRESS", 
+                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+            }
+            
+            // Payment status: Milestone tiếp theo chuyển từ NOT_DUE → DUE (nhưng chỉ thanh toán được khi hoàn thành công việc)
+            // Logic thanh toán sẽ được kiểm tra ở frontend/backend khi customer cố gắng thanh toán
+            if (nextMilestone.getPaymentStatus() == MilestonePaymentStatus.NOT_DUE) {
+                nextMilestone.setPaymentStatus(MilestonePaymentStatus.DUE);
+                nextMilestone.setUpdatedAt(Instant.now());
+                contractMilestoneRepository.save(nextMilestone);
+                log.info("✅ Auto-opened next milestone for payment (will be payable when work completed): contractId={}, milestoneId={}, orderIndex={}", 
+                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+            } else {
+                // Nếu đã update work status, cần save lại
+                contractMilestoneRepository.save(nextMilestone);
+            }
+        }
+        
+        // Kiểm tra xem tất cả milestones đã được thanh toán chưa
+        List<ContractMilestone> allMilestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(contractId);
+        
+        boolean allMilestonesPaid = allMilestones.stream()
+            .allMatch(m -> m.getPaymentStatus() == MilestonePaymentStatus.PAID);
+        
+        if (allMilestonesPaid && contract.getStatus() == ContractStatus.active) {
+            // Tất cả milestones đã được thanh toán → contract completed
+            // Note: ContractStatus có thể không có "completed", có thể dùng status khác hoặc giữ nguyên active
+            // contract.setStatus(ContractStatus.completed);
+            contractRepository.save(contract);
+            log.info("All milestones paid for contract: contractId={}, allMilestonesCount={}", 
+                contractId, allMilestones.size());
+            
+            // Update work status của milestone cuối cùng thành COMPLETED
+            ContractMilestone lastMilestone = allMilestones.get(allMilestones.size() - 1);
+            if (lastMilestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
+                lastMilestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+                lastMilestone.setUpdatedAt(Instant.now());
+                contractMilestoneRepository.save(lastMilestone);
+            }
+            
+            // Update request status to COMPLETED khi tất cả milestones đã được thanh toán
+            try {
+                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "completed");
+                log.info("Updated request status to completed: requestId={}, contractId={}", 
+                    contract.getRequestId(), contractId);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to update request status to completed: requestId={}, contractId={}, error={}", 
+                    contract.getRequestId(), contractId, e.getMessage(), e);
+            }
+            
+            // Gửi notification cho manager khi tất cả milestones đã được thanh toán
+            try {
+                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                        .userId(contract.getManagerUserId())
+                        .type(NotificationType.ALL_MILESTONES_PAID)
+                        .title("Tất cả milestones đã được thanh toán")
+                        .content(String.format("Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.", 
+                                contract.getContractNumber()))
+                        .referenceId(contractId)
+                        .referenceType("CONTRACT")
+                        .actionUrl("/manager/contracts/" + contractId)
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(notifRequest);
+                log.info("Sent all milestones paid notification to manager: userId={}, contractId={}", 
+                        contract.getManagerUserId(), contractId);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to send all milestones paid notification: userId={}, contractId={}, error={}", 
+                        contract.getManagerUserId(), contractId, e.getMessage(), e);
+            }
+            
+            // Gửi system message vào chat room khi tất cả milestones đã được thanh toán
+            String allPaidMessage = String.format(
+                "✅ Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.",
+                contract.getContractNumber()
+            );
+            sendSystemMessageToChat(contract.getRequestId(), allPaidMessage);
+        }
+    }
+    
+    /**
+     * Tạo milestones cho contract dựa trên contract type và depositPercent
+     * @param contract Contract đã được tạo
+     */
+    private void createMilestonesForContract(Contract contract) {
+        ContractType contractType = contract.getContractType();
+        String contractId = contract.getContractId();
+        BigDecimal totalPrice = contract.getTotalPrice() != null ? contract.getTotalPrice() : BigDecimal.ZERO;
+        BigDecimal depositPercent = contract.getDepositPercent() != null 
+            ? contract.getDepositPercent() 
+            : BigDecimal.valueOf(40.0);  // Default 40% nếu không có
+        
+        List<ContractMilestone> milestones = new java.util.ArrayList<>();
+        
+        switch (contractType) {
+            case transcription -> {
+                // Transcription: 2 milestones (depositPercent, 100% - depositPercent)
+                BigDecimal finalPercent = BigDecimal.valueOf(100).subtract(depositPercent);
+                milestones.add(createMilestone(
+                    contractId, 1, 
+                    "Milestone 1: Deposit & Start Transcription",
+                    "Khách thanh toán cọc, hệ thống bắt đầu ký âm",
+                    MilestoneBillingType.PERCENTAGE, depositPercent,
+                    totalPrice, MilestonePaymentStatus.DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 2,
+                    "Milestone 2: Final Transcription Delivery",
+                    "Giao bản ký âm hoàn chỉnh, khách xác nhận",
+                    MilestoneBillingType.PERCENTAGE, finalPercent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+            }
+            case arrangement_with_recording -> {
+                // Arrangement with Recording: 2 milestones (depositPercent, 100% - depositPercent)
+                BigDecimal finalPercent = BigDecimal.valueOf(100).subtract(depositPercent);
+                milestones.add(createMilestone(
+                    contractId, 1,
+                    "Milestone 1: Deposit & Arrangement Phase",
+                    "Khách thanh toán tiền cọc, hệ thống bắt đầu giai đoạn hòa âm (arrangement). Sau khi trả cọc → được assign task arrangement. Arranger làm, gửi bản arr, khách duyệt.",
+                    MilestoneBillingType.PERCENTAGE, depositPercent,
+                    totalPrice, MilestonePaymentStatus.DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 2,
+                    "Milestone 2: Recording & Final Delivery",
+                    "Thu âm, hoàn thiện bản phối, giao sản phẩm cuối cùng. Sau khi arrangement OK thì bắt đầu booking thu, thu âm, chỉnh sửa, mix nhẹ, gửi final.",
+                    MilestoneBillingType.PERCENTAGE, finalPercent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+            }
+            case arrangement -> {
+                // Arrangement: 2 milestones (depositPercent, 100% - depositPercent)
+                BigDecimal finalPercent = BigDecimal.valueOf(100).subtract(depositPercent);
+                milestones.add(createMilestone(
+                    contractId, 1,
+                    "Milestone 1: Deposit & Start Arrangement",
+                    "Khách thanh toán cọc, bắt đầu làm hòa âm",
+                    MilestoneBillingType.PERCENTAGE, depositPercent,
+                    totalPrice, MilestonePaymentStatus.DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 2,
+                    "Milestone 2: Final Arrangement Delivery",
+                    "Giao bản hòa âm hoàn chỉnh, khách xác nhận",
+                    MilestoneBillingType.PERCENTAGE, finalPercent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+            }
+            case recording -> {
+                // Recording: 2 milestones (depositPercent, 100% - depositPercent)
+                BigDecimal finalPercent = BigDecimal.valueOf(100).subtract(depositPercent);
+                milestones.add(createMilestone(
+                    contractId, 1,
+                    "Milestone 1: Deposit & Start Recording",
+                    "Khách thanh toán cọc, bắt đầu thu âm",
+                    MilestoneBillingType.PERCENTAGE, depositPercent,
+                    totalPrice, MilestonePaymentStatus.DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 2,
+                    "Milestone 2: Final Recording Delivery",
+                    "Giao file thu âm hoàn chỉnh, khách xác nhận",
+                    MilestoneBillingType.PERCENTAGE, finalPercent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+            }
+            case bundle -> {
+                // Bundle (T+A+R): 3 milestones (depositPercent, chia đều phần còn lại)
+                BigDecimal remainingPercent = BigDecimal.valueOf(100).subtract(depositPercent);
+                BigDecimal milestone2Percent = remainingPercent.divide(BigDecimal.valueOf(2), 2, 
+                    java.math.RoundingMode.HALF_UP);
+                BigDecimal milestone3Percent = remainingPercent.subtract(milestone2Percent);
+                
+                milestones.add(createMilestone(
+                    contractId, 1,
+                    "Milestone 1: Deposit & Start Transcription",
+                    "Khách thanh toán cọc, bắt đầu ký âm",
+                    MilestoneBillingType.PERCENTAGE, depositPercent,
+                    totalPrice, MilestonePaymentStatus.DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 2,
+                    "Milestone 2: Arrangement Completed",
+                    "Hoàn tất hòa âm, khách duyệt",
+                    MilestoneBillingType.PERCENTAGE, milestone2Percent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+                milestones.add(createMilestone(
+                    contractId, 3,
+                    "Milestone 3: Recording & Final Delivery",
+                    "Thu âm và giao file final, khách confirm",
+                    MilestoneBillingType.PERCENTAGE, milestone3Percent,
+                    totalPrice, MilestonePaymentStatus.NOT_DUE
+                ));
+            }
+        }
+        
+        if (!milestones.isEmpty()) {
+            contractMilestoneRepository.saveAll(milestones);
+            log.info("Created {} milestones for contract: contractId={}, contractType={}, depositPercent={}%", 
+                milestones.size(), contractId, contractType, depositPercent);
+        }
+    }
+    
+    /**
+     * Helper method để tạo một milestone
+     */
+    private ContractMilestone createMilestone(
+            String contractId, 
+            Integer orderIndex,
+            String name,
+            String description,
+            MilestoneBillingType billingType,
+            BigDecimal billingValue,
+            BigDecimal totalPrice,
+            MilestonePaymentStatus paymentStatus) {
+        
+        // Tính số tiền thực tế của milestone
+        BigDecimal amount;
+        if (billingType == MilestoneBillingType.PERCENTAGE) {
+            // Tính từ phần trăm: totalPrice * billingValue / 100
+            amount = totalPrice.multiply(billingValue).divide(BigDecimal.valueOf(100), 2, 
+                java.math.RoundingMode.HALF_UP);
+        } else if (billingType == MilestoneBillingType.FIXED) {
+            // Nếu FIXED thì amount = billingValue
+            amount = billingValue;
         } else {
-            log.warn("Contract has no SLA days set, dueDate will not be calculated: contractId={}, slaDays={}", 
-                contractId, slaDays);
+            // NO_PAYMENT
+            amount = BigDecimal.ZERO;
         }
         
-        // Update status từ "signed" → "active" (đã thanh toán deposit, có thể bắt đầu công việc)
-        contract.setStatus(ContractStatus.active);
-        
-        contractRepository.save(contract);
-        log.info("Updated contract to active after deposit paid: contractId={}, expectedStartDate={}, dueDate={}, status=active", 
-            contractId, depositPaidAt, contract.getDueDate());
+        return ContractMilestone.builder()
+            .contractId(contractId)
+            .orderIndex(orderIndex)
+            .name(name)
+            .description(description)
+            .billingType(billingType)
+            .billingValue(billingValue)
+            .amount(amount)
+            .paymentStatus(paymentStatus)
+            .workStatus(MilestoneWorkStatus.PLANNED)
+            .createdAt(Instant.now())
+            .build();
     }
     
     /**

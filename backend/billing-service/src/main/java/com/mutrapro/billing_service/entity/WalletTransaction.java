@@ -18,7 +18,7 @@ import java.util.Map;
     @Index(name = "idx_wallet_tx_type", columnList = "tx_type"),
     @Index(name = "idx_wallet_tx_currency", columnList = "currency"),
     @Index(name = "idx_wallet_tx_contract_id", columnList = "contract_id"),
-    @Index(name = "idx_wallet_tx_installment_id", columnList = "installment_id"),
+    @Index(name = "idx_wallet_tx_milestone_id", columnList = "milestone_id"),
     @Index(name = "idx_wallet_tx_booking_id", columnList = "booking_id"),
     @Index(name = "idx_wallet_tx_refund_of", columnList = "refund_of_wallet_tx_id"),
     @Index(name = "idx_wallet_tx_created_at", columnList = "created_at")
@@ -66,8 +66,8 @@ public class WalletTransaction {
     @Column(name = "contract_id")
     String contractId;  // Soft reference to project-service
 
-    @Column(name = "installment_id")
-    String installmentId;  // Soft reference to project-service
+    @Column(name = "milestone_id")
+    String milestoneId;  // Soft reference to project-service - contract_milestones
 
     @Column(name = "booking_id")
     String bookingId;  // Soft reference to project-service

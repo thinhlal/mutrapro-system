@@ -57,12 +57,12 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
             @Param("toDate") Instant toDate,
             Pageable pageable);
 
-    // Query với search (walletTxId, contractId, installmentId, bookingId)
+    // Query với search (walletTxId, contractId, milestoneId, bookingId)
     @Query("SELECT wt FROM WalletTransaction wt WHERE wt.wallet.walletId = :walletId " +
            "AND (:txType IS NULL OR wt.txType = :txType) " +
            "AND (:search IS NULL OR LOWER(wt.walletTxId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.contractId) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "     OR LOWER(wt.installmentId) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "     OR LOWER(wt.milestoneId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "ORDER BY wt.createdAt DESC")
     Page<WalletTransaction> findByWalletIdAndTxTypeAndSearch(
@@ -76,7 +76,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
            "AND (:txType IS NULL OR wt.txType = :txType) " +
            "AND (:search IS NULL OR LOWER(wt.walletTxId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.contractId) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "     OR LOWER(wt.installmentId) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "     OR LOWER(wt.milestoneId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "AND wt.createdAt >= :fromDate " +
            "ORDER BY wt.createdAt DESC")
@@ -92,7 +92,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
            "AND (:txType IS NULL OR wt.txType = :txType) " +
            "AND (:search IS NULL OR LOWER(wt.walletTxId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.contractId) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "     OR LOWER(wt.installmentId) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "     OR LOWER(wt.milestoneId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "AND wt.createdAt <= :toDate " +
            "ORDER BY wt.createdAt DESC")
@@ -108,7 +108,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
            "AND (:txType IS NULL OR wt.txType = :txType) " +
            "AND (:search IS NULL OR LOWER(wt.walletTxId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.contractId) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "     OR LOWER(wt.installmentId) LIKE LOWER(CONCAT('%', :search, '%')) " +
+           "     OR LOWER(wt.milestoneId) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "     OR LOWER(wt.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "AND wt.createdAt >= :fromDate AND wt.createdAt <= :toDate " +
            "ORDER BY wt.createdAt DESC")
@@ -122,7 +122,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
 
     List<WalletTransaction> findByContractId(String contractId);
 
-    List<WalletTransaction> findByInstallmentId(String installmentId);
+    List<WalletTransaction> findByMilestoneId(String milestoneId);
 
     List<WalletTransaction> findByBookingId(String bookingId);
 }

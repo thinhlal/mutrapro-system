@@ -73,7 +73,7 @@ Table studio_bookings {
   reservation_fee_status reservation_fee_status [default: 'none'] // Trạng thái phí giữ chỗ
   reservation_wallet_tx_id uuid [note: 'Soft reference to billing-service'] // Giao dịch thanh toán phí giữ chỗ
   reservation_refund_wallet_tx_id uuid [note: 'Soft reference to billing-service'] // Giao dịch hoàn phí giữ chỗ
-  reservation_applied_to_installment_id uuid [note: 'Soft reference to billing-service'] // Khấu trừ vào installment nào
+  reservation_applied_to_milestone_id uuid [note: 'Soft reference to project-service - contract_milestones'] // Khấu trừ vào milestone nào
   refund_policy_json jsonb // Chính sách hoàn tiền (optional)
   
   created_at timestamp [default: `now()`]

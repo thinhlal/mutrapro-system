@@ -34,7 +34,7 @@ import {
   Circle,
   Path,
 } from '@react-pdf/renderer';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getContractById,
@@ -44,12 +44,11 @@ import {
   getSignatureImage,
   uploadContractPdf,
 } from '../../../services/contractService';
+import { getOrCreateMyWallet, debitWallet } from '../../../services/walletService';
 import {
   getServiceRequestById,
-  getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
-import { getPendingDepositInstallment } from '../../../services/billingService';
 import {
   formatDurationMMSS,
   formatTempoPercentage,
@@ -103,6 +102,7 @@ const getContractTitle = contractType => {
 const ContractDetailPage = () => {
   const { contractId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const previewRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
@@ -133,9 +133,8 @@ const ContractDetailPage = () => {
   });
   const [requestDetails, setRequestDetails] = useState(null);
 
-  // Deposit installment state
-  const [depositInstallment, setDepositInstallment] = useState(null);
-  const [loadingDeposit, setLoadingDeposit] = useState(false);
+  // Deposit milestone state
+  const [depositMilestone, setDepositMilestone] = useState(null);
 
   // Load contract data
   useEffect(() => {
@@ -144,23 +143,48 @@ const ContractDetailPage = () => {
     }
   }, [contractId]);
 
+  // Reload contract when returning from payment page
+  useEffect(() => {
+    if (location.state?.paymentSuccess) {
+      // Clear the state to avoid reloading on every render
+      window.history.replaceState({}, document.title);
+      // Reload contract to get updated milestone status
+      loadContract();
+    }
+  }, [location.state?.paymentSuccess]);
+
   const loadContract = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
-        setContract(response.data);
+        const contractData = response.data;
+        setContract(contractData);
         
-        // Load deposit installment if contract is signed (non-blocking)
-        if (response.data.status?.toLowerCase() === 'signed') {
-          // Load deposit installment asynchronously, don't block contract loading
-          loadDepositInstallment().catch(err => {
-            console.warn('Failed to load deposit installment:', err);
-            // Don't show error to user, just log it
-          });
+        // Debug: Log milestones
+        console.log('Contract loaded:', {
+          contractId: contractData.contractId,
+          status: contractData.status,
+          milestones: contractData.milestones,
+          milestonesLength: contractData.milestones?.length || 0,
+        });
+        
+        // Lấy milestone đầu tiên (deposit milestone) từ contract.milestones
+        if (contractData.milestones && contractData.milestones.length > 0) {
+          // Tìm milestone đầu tiên có paymentStatus = DUE hoặc NOT_DUE (chưa thanh toán)
+          const firstMilestone = contractData.milestones.find(
+            m => m.paymentStatus === 'DUE' || m.paymentStatus === 'NOT_DUE'
+          ) || contractData.milestones[0]; // Fallback: lấy milestone đầu tiên
+          
+          if (firstMilestone) {
+            setDepositMilestone(firstMilestone);
         } else {
-          setDepositInstallment(null);
+            setDepositMilestone(null);
+          }
+        } else {
+          setDepositMilestone(null);
+          console.warn('No milestones found in contract response');
         }
         
         // Load pricing breakdown if requestId is available
@@ -195,40 +219,21 @@ const ContractDetailPage = () => {
         transcriptionDetails: null,
       };
 
-      // Load instruments if available
-      if (
-        request.notationInstruments &&
-        Array.isArray(request.notationInstruments) &&
-        request.notationInstruments.length > 0
-      ) {
-        try {
-          const instrumentsResponse = await getNotationInstrumentsByIds(
-            request.notationInstruments
-          );
-          if (
-            instrumentsResponse?.status === 'success' &&
-            instrumentsResponse?.data?.length > 0
-          ) {
-            const selectedInstruments = instrumentsResponse.data.map(instr => ({
-              instrumentId: instr.instrumentId,
-              instrumentName: instr.instrumentName,
-              basePrice: instr.basePrice || 0,
-            }));
-            breakdown.instruments = selectedInstruments;
-          }
-        } catch (error) {
-          console.warn('Failed to load instruments:', error);
-        }
+      // Use full instruments info from response (backend trả về đầy đủ thông tin)
+      if (request.instruments && Array.isArray(request.instruments) && request.instruments.length > 0) {
+        const selectedInstruments = request.instruments.map(instr => ({
+          instrumentId: instr.instrumentId,
+          instrumentName: instr.instrumentName,
+          basePrice: instr.basePrice || 0,
+        }));
+        breakdown.instruments = selectedInstruments;
       }
 
-      // Load transcription details if contract type is transcription or bundle
-      if (
-        request.serviceType === 'transcription' ||
-        request.serviceType === 'bundle'
-      ) {
+      // Load transcription pricing details if request type is transcription
+      const requestType = request.requestType || request.serviceType;
+      if (requestType === 'transcription' && request.durationMinutes) {
         try {
-          const pricingResponse = await calculatePricing({
-            serviceType: request.serviceType,
+          const pricingResponse = await calculatePricing('transcription', {
             durationMinutes: request.durationMinutes,
           });
           if (pricingResponse?.status === 'success' && pricingResponse?.data) {
@@ -245,27 +250,53 @@ const ContractDetailPage = () => {
     }
   };
 
-  // Load deposit installment
-  const loadDepositInstallment = async () => {
-    try {
-      setLoadingDeposit(true);
-      const response = await getPendingDepositInstallment(contractId);
-      if (response?.status === 'success' && response?.data) {
-        setDepositInstallment(response.data);
-      } else {
-        setDepositInstallment(null);
-      }
-    } catch (error) {
-      console.warn('Error loading deposit installment:', error);
-      setDepositInstallment(null);
-    } finally {
-      setLoadingDeposit(false);
-    }
-  };
 
   // Handle pay deposit
   const handlePayDeposit = () => {
     navigate(`/contracts/${contractId}/pay-deposit`);
+  };
+
+  // Handle pay milestone
+  const handlePayMilestone = async (milestone) => {
+    try {
+      setActionLoading(true);
+      
+      // Get wallet
+      const walletResponse = await getOrCreateMyWallet();
+      if (walletResponse?.status !== 'success' || !walletResponse?.data) {
+        message.error('Failed to load wallet information');
+        return;
+      }
+      
+      const wallet = walletResponse.data;
+      const milestoneAmount = parseFloat(milestone.amount);
+      const walletBalance = parseFloat(wallet.balance || 0);
+      
+      if (walletBalance < milestoneAmount) {
+        message.warning('Insufficient wallet balance. Please top up your wallet first.');
+        navigate('/wallet');
+        return;
+      }
+      
+      // Debit wallet
+      const debitResponse = await debitWallet(wallet.walletId, {
+        amount: milestoneAmount,
+        currency: contract?.currency || 'VND',
+        milestoneId: milestone.milestoneId,
+        orderIndex: milestone.orderIndex,
+        contractId: contractId,
+      });
+      
+      if (debitResponse?.status === 'success') {
+        message.success(`Milestone "${milestone.name}" payment successful!`);
+        await loadContract(); // Reload to get updated milestone status
+      }
+    } catch (error) {
+      console.error('Error paying milestone:', error);
+      message.error(error?.message || 'Failed to process payment');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Handle approve
@@ -346,7 +377,7 @@ const ContractDetailPage = () => {
 
     // Fetch Party B signature image via backend proxy
     let partyBSignatureBase64 = null;
-    if (contractData?.status === 'signed' && contractData?.bSignatureS3Url) {
+    if ((contractData?.status === 'signed' || contractData?.status === 'active') && contractData?.bSignatureS3Url) {
       try {
         const signatureResponse = await getSignatureImage(contractId);
         if (signatureResponse?.data) {
@@ -418,13 +449,21 @@ const ContractDetailPage = () => {
         // Reload contract to get updated status
         await loadContract();
 
+        // Fetch fresh contract data to ensure we have the latest signature URL
         // Wait a bit for state to update, then generate and upload PDF automatically
         setTimeout(async () => {
           try {
             message.loading('Generating and uploading PDF...', 0);
-            // Use current contract state (should be updated by now)
+            
+            // Fetch fresh contract data to ensure we have bSignatureS3Url
+            const freshContractResponse = await getContractById(contractId);
+            const freshContractData = freshContractResponse?.status === 'success' 
+              ? freshContractResponse.data 
+              : contract;
+            
+            // Use fresh contract data to ensure signatures are included
             const pdfBlob = await generatePdfBlob(
-              contract,
+              freshContractData,
               pricingBreakdown,
               requestDetails
             );
@@ -445,7 +484,7 @@ const ContractDetailPage = () => {
               'Contract signed but PDF generation failed. You can export PDF manually.'
             );
           }
-        }, 500); // Small delay to ensure state is updated
+        }, 1000); // Increased delay to ensure backend has processed the signature
 
         // Redirect to success page after a short delay
         setTimeout(() => {
@@ -690,8 +729,8 @@ const ContractDetailPage = () => {
   }) => (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
-        {/* Company Seal - Only show when signed */}
-        {contract?.status === 'signed' && (
+        {/* Company Seal - Only show when signed or active */}
+        {(contract?.status === 'signed' || contract?.status === 'active') && (
           <View style={pdfStyles.seal}>
             <Svg
               width="130"
@@ -825,11 +864,48 @@ const ContractDetailPage = () => {
             </View>
           )}
           <PdfText style={pdfStyles.text}>
-            Total Price: {contract?.totalPrice?.toLocaleString()} VND | Deposit:{' '}
-            {contract?.depositPercent || 0}% ={' '}
-            {contract?.depositAmount?.toLocaleString()} VND | Final Amount:{' '}
-            {contract?.finalAmount?.toLocaleString()} VND
+            Total Price: {contract?.totalPrice?.toLocaleString()} VND
           </PdfText>
+
+          {/* Payment Milestones Schedule */}
+          {contract?.milestones && contract.milestones.length > 0 && (
+            <View style={{ marginTop: 10, marginBottom: 10 }}>
+              <PdfText style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 12 }}>
+                Payment Milestones Schedule:
+              </PdfText>
+              {contract.milestones
+                .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                .map((milestone, index) => (
+                  <View
+                    key={milestone.milestoneId || index}
+                    style={{
+                      marginBottom: index < contract.milestones.length - 1 ? 8 : 0,
+                      paddingBottom: index < contract.milestones.length - 1 ? 8 : 0,
+                      borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                    }}
+                  >
+                    <PdfText style={{ fontWeight: 'bold', fontSize: 11, marginBottom: 4 }}>
+                      Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                    </PdfText>
+                    {milestone.description && (
+                      <PdfText style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>
+                        {milestone.description}
+                      </PdfText>
+                    )}
+                    <PdfText style={pdfStyles.text}>
+                      Amount: {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                      {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && 
+                        ` (${milestone.billingValue}%)`}
+                    </PdfText>
+                    {milestone.plannedDueDate && (
+                      <PdfText style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                        Planned Due Date: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                      </PdfText>
+                    )}
+                  </View>
+                ))}
+            </View>
+          )}
         </View>
 
         {/* Transcription Preferences */}
@@ -913,7 +989,7 @@ const ContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party A Representative
             </PdfText>
-            {contract?.status === 'signed' && partyASignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && partyASignatureBase64 && (
               <>
                 <PdfImage
                   src={partyASignatureBase64}
@@ -930,7 +1006,7 @@ const ContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status === 'signed' && !partyASignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && !partyASignatureBase64 && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>
@@ -944,7 +1020,7 @@ const ContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status !== 'signed' && (
+            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -956,7 +1032,7 @@ const ContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party B Representative
             </PdfText>
-            {contract?.status === 'signed' && partyBSignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && partyBSignatureBase64 && (
               <>
                 <PdfImage
                   src={partyBSignatureBase64}
@@ -975,7 +1051,7 @@ const ContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status === 'signed' && !partyBSignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && !partyBSignatureBase64 && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>
@@ -991,7 +1067,7 @@ const ContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status !== 'signed' && (
+            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -1123,6 +1199,9 @@ const ContractDetailPage = () => {
   const isNeedRevision = currentStatus === 'need_revision';
   const isExpired = currentStatus === 'expired';
 
+  // Contract is signed or active - milestones can be paid
+  const canPayMilestones = isSigned || isActive;
+
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
   const canSign = isApproved;
@@ -1161,23 +1240,10 @@ const ContractDetailPage = () => {
           {isSigned && (
             <Alert
               message="Contract Signed"
-              description="The contract has been signed. Please pay the deposit to start the work. The start date will be calculated from the deposit payment date."
+              description="The contract has been signed. Please pay the deposit milestone to start the work. The start date will be calculated from the deposit payment date."
               type="success"
               showIcon
               style={{ marginBottom: 12 }}
-              action={
-                depositInstallment && (
-                  <Button
-                    type="primary"
-                    size="small"
-                    icon={<DollarOutlined />}
-                    onClick={handlePayDeposit}
-                    loading={loadingDeposit}
-                  >
-                    Pay Deposit
-                  </Button>
-                )
-              }
             />
           )}
 
@@ -1262,16 +1328,36 @@ const ContractDetailPage = () => {
                 {contract.currency || 'VND'}
               </Text>
             </Descriptions.Item>
-            <Descriptions.Item
-              label={`Deposit (${contract.depositPercent || 0}%)`}
-            >
-              {contract.depositAmount?.toLocaleString()}{' '}
-              {contract.currency || 'VND'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Final Amount">
-              {contract.finalAmount?.toLocaleString()}{' '}
-              {contract.currency || 'VND'}
-            </Descriptions.Item>
+            {contract?.milestones && contract.milestones.length > 0 ? (
+              <>
+                <Descriptions.Item
+                  label={`Deposit (${contract.depositPercent || 0}%)`}
+                >
+                  {contract.milestones[0]?.amount?.toLocaleString()}{' '}
+                  {contract.currency || 'VND'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Final Amount">
+                  {contract.milestones
+                    .slice(1)
+                    .reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0)
+                    .toLocaleString()}{' '}
+                  {contract.currency || 'VND'}
+                </Descriptions.Item>
+              </>
+            ) : (
+              <>
+                <Descriptions.Item
+                  label={`Deposit (${contract.depositPercent || 0}%)`}
+                >
+                  {contract.depositAmount?.toLocaleString()}{' '}
+                  {contract.currency || 'VND'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Final Amount">
+                  {contract.finalAmount?.toLocaleString()}{' '}
+                  {contract.currency || 'VND'}
+                </Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label="SLA Days">
               {contract.slaDays || 0} days
             </Descriptions.Item>
@@ -1331,6 +1417,140 @@ const ContractDetailPage = () => {
 
           <Divider />
 
+          {/* Milestones Section - Show when milestones exist */}
+          {contract?.milestones && contract.milestones.length > 0 && (
+            <>
+              <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                Payment Milestones
+              </Title>
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                {contract.milestones
+                  .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                  .map((milestone, index) => {
+                    const paymentStatus = milestone.paymentStatus || 'NOT_DUE';
+                    const workStatus = milestone.workStatus || 'PLANNED';
+                    const isPaid = paymentStatus === 'PAID';
+                    const isDue = paymentStatus === 'DUE';
+                    const isNotDue = paymentStatus === 'NOT_DUE';
+                    
+                    const getPaymentStatusColor = () => {
+                      if (isPaid) return 'success';
+                      if (isDue) return 'warning';
+                      return 'default';
+                    };
+                    
+                    const getPaymentStatusText = () => {
+                      if (isPaid) return 'PAID';
+                      if (isDue) return 'DUE';
+                      return 'NOT DUE';
+                    };
+                    
+                    const getWorkStatusColor = () => {
+                      switch (workStatus) {
+                        case 'COMPLETED': return 'success';
+                        case 'IN_PROGRESS': return 'processing';
+                        case 'WAITING_CUSTOMER': return 'warning';
+                        case 'READY_FOR_PAYMENT': return 'cyan';
+                        default: return 'default';
+                      }
+                    };
+                    
+                    return (
+                      <Card
+                        key={milestone.milestoneId || index}
+                        size="small"
+                        style={{
+                          borderLeft: isPaid ? '4px solid #52c41a' : isDue ? '4px solid #faad14' : '4px solid #d9d9d9',
+                        }}
+                      >
+                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <Text strong style={{ fontSize: 16 }}>
+                                {milestone.name || `Milestone ${milestone.orderIndex || index + 1}`}
+                              </Text>
+                              {milestone.description && (
+                                <div style={{ marginTop: 8, marginBottom: 8 }}>
+                                  <Text type="secondary" style={{ fontSize: 13 }}>
+                                    {milestone.description}
+                                  </Text>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                                {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                              </Text>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                            <Space size="small">
+                              <Tag color={getPaymentStatusColor()}>
+                                Payment: {getPaymentStatusText()}
+                              </Tag>
+                              <Tag color={getWorkStatusColor()}>
+                                Work: {workStatus}
+                              </Tag>
+                              {milestone.paidAt && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Paid: {dayjs(milestone.paidAt).format('DD/MM/YYYY HH:mm')}
+                                </Text>
+                              )}
+                              {milestone.plannedDueDate && !isPaid && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Due: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                                </Text>
+                              )}
+                            </Space>
+                            
+                            {isDue && !isPaid && canPayMilestones && (
+                              <>
+                                {/* Milestone đầu tiên: có thể thanh toán ngay khi DUE */}
+                                {/* Milestone từ thứ 2 trở đi: chỉ thanh toán được khi work status = READY_FOR_PAYMENT hoặc COMPLETED */}
+                                {(milestone.orderIndex === 1 || 
+                                  workStatus === 'READY_FOR_PAYMENT' || 
+                                  workStatus === 'COMPLETED') ? (
+                                  <Button
+                                    type="primary"
+                                    size="small"
+                                    icon={<DollarOutlined />}
+                                    onClick={() => navigate(`/contracts/${contractId}/pay-milestone`, {
+                                      state: {
+                                        milestoneId: milestone.milestoneId,
+                                        orderIndex: milestone.orderIndex
+                                      }
+                                    })}
+                                  >
+                                    Pay Now
+                                  </Button>
+                                ) : (
+                                  <Tag color="default">
+                                    Waiting for work completion
+                                  </Tag>
+                                )}
+                              </>
+                            )}
+                            {isDue && !isPaid && !canPayMilestones && (
+                              <Tag color="default">
+                                Waiting for signature
+                              </Tag>
+                            )}
+                            {isPaid && (
+                              <Tag color="success" icon={<CheckOutlined />}>
+                                Paid
+                              </Tag>
+                            )}
+                          </div>
+                        </Space>
+                      </Card>
+                    );
+                  })}
+              </Space>
+              <Divider />
+            </>
+          )}
+
           {/* Action Buttons */}
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             {canCustomerAction && (
@@ -1378,19 +1598,7 @@ const ContractDetailPage = () => {
               </Button>
             )}
 
-            {isSigned && depositInstallment && (
-              <Button
-                type="primary"
-                icon={<DollarOutlined />}
-                onClick={handlePayDeposit}
-                loading={loadingDeposit}
-                block
-                size="large"
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              >
-                Pay Deposit ({depositInstallment.amount?.toLocaleString()} {depositInstallment.currency || 'VND'})
-              </Button>
-            )}
+            {/* Pay Deposit button removed - use Pay Now in Payment Milestones section instead */}
 
             {canViewReason && (
               <Button
@@ -1425,14 +1633,14 @@ const ContractDetailPage = () => {
           <div className={styles.preview} ref={previewRef}>
             {header}
             <div className={styles.doc}>
-              {/* Watermark - Always show except when signed */}
-              {!isSigned && (
+              {/* Watermark - Always show except when signed or active */}
+              {!canPayMilestones && (
                 <div className={styles.watermark}>
                   {statusConfig.text.toUpperCase()}
                 </div>
               )}
 
-              {isSigned && (
+              {canPayMilestones && (
                 <div className={`${styles.seal} ${styles.seal_red}`}>
                   <div className={styles.sealInner}>
                     <div className={styles.sealText}>MuTraPro Official</div>
@@ -1592,12 +1800,66 @@ const ContractDetailPage = () => {
 
               <p>
                 <strong>Total Price:</strong>{' '}
-                {contract.totalPrice?.toLocaleString()} VND &nbsp;|&nbsp;
-                <strong>Deposit:</strong> {contract.depositPercent || 0}% ={' '}
-                {contract.depositAmount?.toLocaleString()} VND &nbsp;|&nbsp;
-                <strong>Final Amount:</strong>{' '}
-                {contract.finalAmount?.toLocaleString()} VND
+                {contract.totalPrice?.toLocaleString()} VND
               </p>
+
+              {/* Payment Milestones Schedule */}
+              {contract?.milestones && contract.milestones.length > 0 && (
+                <div
+                  style={{
+                    marginTop: '16px',
+                    marginBottom: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f0f7ff',
+                    borderRadius: '4px',
+                    border: '1px solid #d4edda',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '12px', fontSize: '16px' }}>
+                    Payment Milestones Schedule:
+                  </strong>
+                  {contract.milestones
+                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                    .map((milestone, index) => (
+                      <div
+                        key={milestone.milestoneId || index}
+                        style={{
+                          marginBottom: index < contract.milestones.length - 1 ? '12px' : '0',
+                          paddingBottom: index < contract.milestones.length - 1 ? '12px' : '0',
+                          borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                        }}
+                      >
+                        <div style={{ marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '14px' }}>
+                            Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                          </strong>
+                        </div>
+                        {milestone.description && (
+                          <div style={{ marginBottom: '6px', fontSize: '13px', color: '#666' }}>
+                            {milestone.description}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '14px' }}>
+                          <strong>Amount:</strong>{' '}
+                          <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                            {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                          </span>
+                          {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && (
+                            <span style={{ color: '#666', marginLeft: '8px' }}>
+                              ({milestone.billingValue}%)
+                            </span>
+                          )}
+                        </div>
+                        {milestone.plannedDueDate && (
+                          <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                            <strong>Planned Due Date:</strong>{' '}
+                            {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
 
               {contract.contractType?.toLowerCase() === 'transcription' &&
                 requestDetails?.tempoPercentage && (
@@ -1682,7 +1944,7 @@ const ContractDetailPage = () => {
               <div className={styles.signRow}>
                 <div>
                   <div className={styles.sigLabel}>Party A Representative</div>
-                  {isSigned ? (
+                  {canPayMilestones ? (
                     <>
                       <div className={styles.signature}>
                         <img
@@ -1727,7 +1989,7 @@ const ContractDetailPage = () => {
                 </div>
                 <div>
                   <div className={styles.sigLabel}>Party B Representative</div>
-                  {isSigned ? (
+                  {canPayMilestones ? (
                     <>
                       {contract.bSignatureS3Url ? (
                         <div

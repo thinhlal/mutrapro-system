@@ -147,7 +147,6 @@ export const API_ENDPOINTS = {
   },
 
   // === Billing Service (Quản lý Thanh toán) ===
-  // Giả định các controller bên trong billing-service giữ nguyên đường dẫn
   PAYMENT: {
     CREATE_ORDER: `${BILLING_PATH}/payments/orders`,
     GET_ORDER: orderId => `${BILLING_PATH}/payments/orders/${orderId}`,
@@ -155,14 +154,6 @@ export const API_ENDPOINTS = {
     CANCEL_ORDER: orderId => `${BILLING_PATH}/payments/orders/${orderId}`,
     REFRESH_STATUS: orderId =>
       `${BILLING_PATH}/payments/orders/refresh/${orderId}`,
-  },
-  INSTALLMENTS: {
-    // GET /api/v1/billing/contract-installments/contract/{contractId}
-    GET_BY_CONTRACT_ID: contractId =>
-      `${BILLING_PATH}/contract-installments/contract/${contractId}`,
-    // GET /api/v1/billing/contract-installments/contract/{contractId}/pending-deposit
-    GET_PENDING_DEPOSIT: contractId =>
-      `${BILLING_PATH}/contract-installments/contract/${contractId}/pending-deposit`,
   },
 
   SUBSCRIPTION_PLANS: {

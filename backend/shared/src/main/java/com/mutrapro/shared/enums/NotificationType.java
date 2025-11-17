@@ -15,6 +15,8 @@ public enum NotificationType {
     CONTRACT_NEED_REVISION,     // Contract yêu cầu chỉnh sửa
     CONTRACT_CANCELED_BY_CUSTOMER,  // Contract bị customer hủy
     CONTRACT_CANCELED_BY_MANAGER,   // Contract bị manager hủy
+    MILESTONE_PAID,             // Milestone đã được thanh toán
+    ALL_MILESTONES_PAID,        // Tất cả milestones đã được thanh toán
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }
 

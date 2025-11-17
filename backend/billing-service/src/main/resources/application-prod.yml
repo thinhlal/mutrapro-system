@@ -38,4 +38,5 @@ jwt:
 app:
   event-topics:
     mappings:
-      billing.deposit-paid: ${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:billing-deposit-paid}
+      # billing.deposit-paid: ${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:billing-deposit-paid}  # Deprecated - đã chuyển sang billing.milestone-paid
+      billing.milestone-paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}

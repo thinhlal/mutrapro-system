@@ -1,51 +1,36 @@
-# REFACTOR: Tách Milestone và Installment
+# REFACTOR: Chuyển từ Installment sang Contract Milestones
 
-## 📋 TÓM TẮT THAY ĐỔI
+## ✅ ĐÃ HOÀN THÀNH
 
-### ❌ XÓA: `payment_milestones`
-- Trước đây: Trộn "mốc công việc" và "đợt thanh toán" trong 1 bảng
-- Vấn đề: Không rõ ràng, khó quản lý
+### ❌ ĐÃ XÓA: `contract_installments` và `payment_milestones`
+- Trước đây: Dùng `contract_installments` để quản lý đợt thanh toán riêng biệt
+- Vấn đề: Tách biệt giữa công việc (milestone) và thanh toán (installment) gây phức tạp
 
-### ✅ THÊM: `contract_milestones` (Mốc công việc)
+### ✅ HIỆN TẠI: Chỉ dùng `contract_milestones` (Mốc công việc + Thanh toán)
 ```dbml
 Table contract_milestones {
   milestone_id uuid [pk]
   contract_id uuid [ref: > contracts.contract_id]
   name varchar(100)
   description text
-  owner_id uuid [ref: > users.user_id] // specialist hoặc manager
-  budget decimal(12,2)
-  due_date timestamp
-  status milestone_work_status [default: 'planned'] // planned, accepted
+  order_index int // 1, 2, 3...
+  work_status milestone_work_status [default: 'PLANNED'] // PLANNED, IN_PROGRESS, WAITING_CUSTOMER, READY_FOR_PAYMENT, COMPLETED, CANCELLED
+  billing_type milestone_billing_type // PERCENTAGE, FIXED, NO_PAYMENT
+  billing_value decimal(5,2) // % hoặc số tiền
+  amount decimal(12,2) // Số tiền thực tế
+  payment_status milestone_payment_status [default: 'NOT_DUE'] // NOT_DUE, DUE, PAID, OVERDUE
+  planned_due_date timestamp
+  paid_at timestamp
+  created_at timestamp
+  updated_at timestamp
 }
 ```
 
 **Mục đích:**
-- Quản lý mốc công việc trong hợp đồng
-- Gán owner (người phụ trách)
-- Tracking timeline và budget
-
-### ✅ THÊM: `contract_installments` (Đợt thanh toán)
-```dbml
-Table contract_installments {
-  installment_id uuid [pk]
-  contract_id uuid [ref: > contracts.contract_id]
-  label varchar(50) // Deposit, Phase 1, Final
-  due_date timestamp
-  amount decimal(12,2)
-  currency currency_type [default: 'VND']
-  status installment_status [default: 'pending'] // pending, paid, overdue, cancelled
-  is_deposit boolean [default: false]
-  milestone_id uuid [ref: > contract_milestones.milestone_id] // Optional
-  gate_condition gate_condition // before_start, after_accept
-}
-```
-
-**Mục đích:**
-- Quản lý đợt thanh toán độc lập
-- Đánh dấu cọc (`is_deposit`)
-- Liên kết với mốc công việc (optional)
-- Điều kiện thanh toán (`gate_condition`)
+- Quản lý mốc công việc VÀ thanh toán trong cùng một entity
+- Mỗi milestone có cả thông tin công việc (work_status) và thanh toán (payment_status, amount)
+- Tự động tạo dựa trên contract type và depositPercent
+- Tracking timeline, công việc và thanh toán
 
 ## 🔄 CẬP NHẬT BẢNG KHÁC
 
@@ -59,16 +44,17 @@ Table task_assignments {
 ```
 - **Gán task vào mốc công việc** qua `milestone_id`
 
-### 2. `payments`
+### 2. `wallet_transactions`
 ```dbml
-Table payments {
+Table wallet_transactions {
   ...
-  installment_id uuid [ref: > contract_installments.installment_id, not null] // CHANGED
+  milestone_id uuid [ref: > contract_milestones.milestone_id] // CHANGED
+  contract_id uuid [ref: > contracts.contract_id]
   ...
 }
 ```
-- **Từ:** `milestone_id` → **Sang:** `installment_id`
-- Thanh toán theo đợt thanh toán (installment)
+- **Từ:** `installment_id` → **Sang:** `milestone_id`
+- Thanh toán gắn trực tiếp với milestone
 
 ## 🔧 ENUMS MỚI
 
@@ -83,96 +69,55 @@ Enum milestone_work_status {
 }
 ```
 
-### `installment_status`
+### `milestone_payment_status`
 ```dbml
-Enum installment_status {
-  pending         // Chờ thanh toán
-  paid            // Đã thanh toán
-  overdue         // Quá hạn
-  cancelled       // Hủy
+Enum milestone_payment_status {
+  NOT_DUE         // Chưa đến hạn thanh toán
+  DUE             // Đến hạn thanh toán
+  PAID            // Đã thanh toán
+  OVERDUE         // Quá hạn thanh toán
 }
 ```
 
-### `gate_condition`
+### `milestone_billing_type`
 ```dbml
-Enum gate_condition {
-  before_start    // Trả trước khi bắt đầu mốc (dùng cho Deposit)
-  after_accept    // Trả sau khi mốc được duyệt
-  after_delivery  // Trả sau khi có file bàn giao (delivered)
+Enum milestone_billing_type {
+  PERCENTAGE      // Thanh toán theo % (ví dụ: 40%, 60%)
+  FIXED           // Thanh toán số tiền cố định
+  NO_PAYMENT      // Không có thanh toán
 }
 ```
 
-## ❌ ENUMS XÓA
+## ❌ ENUMS ĐÃ XÓA
 
+- ❌ `installment_status` (pending, paid, overdue, cancelled)
+- ❌ `gate_condition` (before_start, after_accept, after_delivery)
 - ❌ `milestone_type` (deposit, final_payment, revision_fee)
-- ❌ `trigger_condition` (contract_signed, project_started, deliverable_sent, project_completed)
-- ❌ `milestone_status` (pending, due, paid, overdue)
 
-## 🤖 TRIGGERS MỚI
+## 🤖 LOGIC TỰ ĐỘNG (Backend)
 
-### Trigger 1: Auto Create Installments
-```sql
-CREATE OR REPLACE FUNCTION auto_create_installments() RETURNS trigger AS $$
-DECLARE
-  v_deposit_amount decimal(12,2);
-  v_final_amount decimal(12,2);
-BEGIN
-  -- Tính toán số tiền cọc và cuối
-  v_deposit_amount := NEW.total_price * (NEW.deposit_percent / 100.0);
-  v_final_amount := NEW.total_price - v_deposit_amount;
-  
-  -- Tạo đợt cọc
-  INSERT INTO contract_installments (
-    contract_id, label, due_date, amount, currency, 
-    is_deposit, status, gate_condition
-  ) VALUES (
-    NEW.contract_id, 'Deposit', NEW.expected_start_date, v_deposit_amount, NEW.currency,
-    true, 'pending', 'before_start'
-  );
-  
-  -- Tạo đợt cuối
-  INSERT INTO contract_installments (
-    contract_id, label, due_date, amount, currency,
-    is_deposit, status, gate_condition
-  ) VALUES (
-    NEW.contract_id, 'Final', NEW.due_date, v_final_amount, NEW.currency,
-    false, 'pending', 'after_accept'
-  );
-  
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
+### 1. Auto Create Milestones
+- **Khi nào:** Sau khi tạo contract thành công
+- **Logic:** `ContractService.createMilestonesForContract()`
+- **Tạo milestones dựa trên contract type:**
+  - `transcription`: 2 milestones (depositPercent, 100% - depositPercent)
+  - `arrangement`: 2 milestones (depositPercent, 100% - depositPercent)
+  - `arrangement_with_recording`: 2 milestones (depositPercent, 100% - depositPercent)
+  - `recording`: 2 milestones (depositPercent, 100% - depositPercent)
+  - `bundle`: 3 milestones (depositPercent, chia đều phần còn lại)
+- **Tính toán:** `amount = totalPrice * (billingValue / 100)` nếu PERCENTAGE
 
-CREATE TRIGGER trg_auto_create_installments
-AFTER INSERT ON contracts FOR EACH ROW EXECUTE FUNCTION auto_create_installments();
-```
-
-**Chức năng:**
-- Tự động tạo **Deposit** và **Final** khi tạo hợp đồng
-- Tính số tiền từ `deposit_percent`
-- Gate condition: Deposit = `before_start`, Final = `after_accept`
-
-### Trigger 2: Mở Milestone Sau Deposit Paid
-```sql
-CREATE OR REPLACE FUNCTION open_milestones_after_deposit() RETURNS trigger AS $$
-BEGIN
-  -- Khi Deposit paid → cho phép milestone chuyển từ planned → in_progress
-  IF NEW.is_deposit = true AND NEW.status = 'paid' THEN
-    UPDATE contract_milestones
-    SET status = 'in_progress'
-    WHERE contract_id = NEW.contract_id
-      AND status = 'planned';
-  END IF;
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_open_milestones_after_deposit
-AFTER UPDATE OF status ON contract_installments FOR EACH ROW
-EXECUTE FUNCTION open_milestones_after_deposit();
-```
-
-**Chức năng:**
-- Khi Deposit paid → milestone chuyển từ `planned` → `in_progress`
-- Cho phép Manager assign task và Specialist bắt đầu làm việc
+### 2. Update Milestone Khi Thanh Toán
+- **Khi nào:** Khi nhận `MilestonePaidEvent` từ billing-service
+- **Logic:** `ContractService.handleMilestonePaid()`
+- **Xử lý:**
+  - Update milestone: `payment_status = PAID`, `work_status = IN_PROGRESS`
+  - Nếu milestone đầu tiên (orderIndex = 1):
+    * Set `contract.expectedStartDate = paidAt`
+    * Set `contract.dueDate = paidAt + slaDays`
+    * Set `contract.status = ACTIVE`
+  - Nếu tất cả milestones đã PAID:
+    * Update milestone cuối cùng: `work_status = COMPLETED`
 
 ### Trigger 3: Auto Submit Milestone Khi Deliver File
 ```sql
@@ -207,36 +152,14 @@ EXECUTE FUNCTION auto_submit_milestone_on_delivery();
 - Khi file được delivered cho customer → milestone chuyển từ `in_progress` → `submitted`
 - Tự động hóa việc tracking milestone status
 
-### Trigger 4: Mở Final Khi Milestone Accepted/Delivered
-```sql
-CREATE OR REPLACE FUNCTION open_final_on_milestone_complete() RETURNS trigger AS $$
-DECLARE
-  v_gate condition;
-BEGIN
-  -- Khi milestone accepted → mở Final theo gate condition
-  IF NEW.status = 'accepted' THEN
-    -- Check gate condition
-    SELECT gate_condition INTO v_gate
-    FROM contract_installments
-    WHERE contract_id = NEW.contract_id
-      AND is_deposit = false
-      AND status = 'pending';
-    
-    -- Status đã là pending từ đầu khi tạo hợp đồng
-    -- Chỉ cần track để enable UI payment button
-  END IF;
-  
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_open_final_on_milestone_complete
-AFTER UPDATE OF status ON contract_milestones FOR EACH ROW
-EXECUTE FUNCTION open_final_on_milestone_complete();
-```
-
-**Chức năng:**
-- Khi milestone `accepted` → Final installment có thể thanh toán
-- Gate condition: `after_accept` hoặc `after_delivery`
+### 3. Event-Driven Payment Processing
+- **Event:** `MilestonePaidEvent` từ billing-service
+- **Consumer:** `MilestonePaidEventConsumer` trong project-service
+- **Flow:**
+  1. Customer thanh toán → `WalletService.debitWallet()` tạo `MilestonePaidEvent`
+  2. Event được publish vào Kafka topic `billing-milestone-paid`
+  3. `MilestonePaidEventConsumer` nhận event và gọi `handleMilestonePaid()`
+  4. Update milestone và contract status
 
 ## 📊 WORKFLOW MỚI
 
@@ -244,10 +167,10 @@ EXECUTE FUNCTION open_final_on_milestone_complete();
 ```
 Manager tạo contracts
   ↓
-Trigger tự động tạo:
-  - contract_installments (Deposit + Final)
+Backend tự động tạo:
+  - contract_milestones (dựa trên contract type và depositPercent)
   ↓
-Customer ký hợp đồng và thanh toán Deposit
+Customer ký hợp đồng và thanh toán milestone đầu tiên (Deposit)
 ```
 
 ### 2. Tạo mốc công việc và gán task
@@ -270,22 +193,22 @@ Specialist submit milestone:
 Manager review milestone
   ↓
 Nếu OK:
-  milestone.status → accepted
+  milestone.work_status → accepted
   ↓
-Gate condition check:
-  - after_accept: Final installment có thể thanh toán
-  - after_delivery: Chờ file delivered
+Milestone tiếp theo có thể được thanh toán
   ↓
-Customer thanh toán Final installment
+Customer thanh toán milestone tiếp theo
 ```
 
-### 4. Thanh toán Final
+### 4. Thanh toán Milestones
 ```
-Customer thanh toán Final installment
+Customer thanh toán milestone
   ↓
-Payment liên kết với installment_id
+WalletTransaction liên kết với milestone_id
   ↓
-Hoàn tất hợp đồng
+MilestonePaidEvent → Update milestone và contract
+  ↓
+Nếu tất cả milestones đã PAID → Hoàn tất hợp đồng
 ```
 
 ### 5. Nếu Manager từ chối
@@ -298,45 +221,48 @@ Specialist làm lại từ bước 2
 
 ## ✅ LỢI ÍCH
 
-1. **Tách biệt rõ ràng:**
-   - Mốc công việc ≠ Đợt thanh toán
-   - Quản lý độc lập
+1. **Đơn giản hóa:**
+   - Mốc công việc = Đợt thanh toán (trong cùng một entity)
+   - Quản lý thống nhất, dễ hiểu
 
 2. **Linh hoạt hơn:**
-   - Có thể có nhiều mốc công việc
-   - Có thể có nhiều đợt thanh toán
-   - Liên kết linh hoạt giữa milestone và installment
+   - Có thể có nhiều milestones tùy contract type
+   - Mỗi milestone có cả thông tin công việc và thanh toán
+   - Tự động tính toán amount dựa trên percentage hoặc fixed
 
 3. **Tự động hóa:**
-   - Tự sinh Deposit và Final khi tạo hợp đồng
-   - Gate condition tự động kiểm soát thanh toán
+   - Tự sinh milestones khi tạo hợp đồng
+   - Tự động update status khi thanh toán
+   - Event-driven architecture với Kafka
 
 4. **Traceability tốt hơn:**
-   - Task → Milestone → Installment → Payment
+   - Task → Milestone → Payment (WalletTransaction)
    - Dễ theo dõi và audit
+   - Mỗi milestone có đầy đủ thông tin công việc và thanh toán
 
-## 📝 MIGRATION NOTES
+## 📝 MIGRATION ĐÃ HOÀN THÀNH
 
 ### Database Changes:
-1. Tạo bảng mới: `contract_milestones`, `contract_installments`
-2. Thêm `milestone_id` vào `task_assignments`
-3. Đổi `payments.milestone_id` → `payments.installment_id`
-4. Xóa bảng `payment_milestones`
-5. Thêm trigger `auto_create_installments`
-6. Cập nhật trigger `create_wallet_payment_transaction`
+1. ✅ Tạo bảng mới: `contract_milestones` (với đầy đủ thông tin công việc và thanh toán)
+2. ✅ Thêm `milestone_id` vào `wallet_transactions`
+3. ✅ Xóa bảng `contract_installments`
+4. ✅ Xóa các enum: `installment_status`, `gate_condition`
+5. ✅ Thêm các enum: `milestone_payment_status`, `milestone_billing_type`, `milestone_work_status`
 
 ### Code Changes:
-1. Update repositories để sử dụng `contract_installments`
-2. Update payment APIs để nhận `installment_id`
-3. Update business logic để tạo milestones và installments
-4. Update workflow tracking
+1. ✅ Update repositories để chỉ sử dụng `contract_milestones`
+2. ✅ Update payment APIs để nhận `milestone_id` và `orderIndex`
+3. ✅ Update business logic để tự động tạo milestones
+4. ✅ Implement `MilestonePaidEvent` và `MilestonePaidEventConsumer`
+5. ✅ Xóa tất cả code liên quan đến `contract_installments`
 
 ## 🎯 SUMMARY
 
 **TRƯỚC:**
-- `payment_milestones` - Trộn công việc và thanh toán
+- `contract_installments` - Đợt thanh toán riêng biệt
+- `contract_milestones` - Mốc công việc riêng biệt
+- Phức tạp, cần liên kết giữa 2 bảng
 
 **SAU:**
-- `contract_milestones` - Mốc công việc
-- `contract_installments` - Đợt thanh toán
-- Tách biệt rõ ràng, quản lý tốt hơn!
+- `contract_milestones` - Mốc công việc + Thanh toán (unified)
+- Đơn giản, dễ quản lý, tự động hóa tốt hơn!

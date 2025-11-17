@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -99,5 +100,8 @@ public class ContractResponse {
     
     // Customer action reason
     String cancellationReason;
+    
+    // Milestones
+    List<ContractMilestoneResponse> milestones;
 }
 

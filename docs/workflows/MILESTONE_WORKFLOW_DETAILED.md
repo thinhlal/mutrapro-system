@@ -11,22 +11,23 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 
 ## 🔄 CÁC BƯỚC CHI TIẾT
 
-### **Bước 1: Ký hợp đồng + Tạo Installments**
+### **Bước 1: Ký hợp đồng + Tạo Milestones**
 
 **Ai làm:** Hệ thống tự động
 
 **Hành động:**
 - Manager tạo `contracts`
-- Trigger tự động tạo 2 đợt tiền:
-  - **Deposit** (gate_condition = `before_start`)
-  - **Final** (gate_condition = `after_accept` hoặc `after_delivery`)
+- Hệ thống tự động tạo milestones dựa trên contract type:
+  - **Milestone 1 (Deposit)**: Thanh toán cọc để bắt đầu
+  - **Milestone 2, 3...**: Các milestone tiếp theo theo contract type
 
 **Trạng thái:**
-- `contract_installments.status` = `pending`
+- `contract_milestones.payment_status` = `DUE` hoặc `NOT_DUE`
+- `contract_milestones.work_status` = `PLANNED`
 
 **Liên kết:**
-- `contract_installments.contract_id` → `contracts.contract_id`
-- `contract_installments.is_deposit` = `true` cho Deposit
+- `contract_milestones.contract_id` → `contracts.contract_id`
+- Milestone đầu tiên (orderIndex = 1) là deposit milestone
 
 ---
 
@@ -39,16 +40,20 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 - Tạo `payments` → `wallet_transactions`
 
 **Trạng thái:**
-- `contract_installments(Deposit).status` = `paid`
+- `contract_milestones[orderIndex=1].payment_status` = `PAID`
+- `contract_milestones[orderIndex=1].work_status` = `IN_PROGRESS`
 
 **Trigger tự động:**
-- Khi Deposit = `paid`:
-  - Cho phép milestone mở: `milestone.status` → `in_progress`
+- Khi Deposit milestone = `PAID`:
+  - Milestone đầu tiên: `work_status` → `IN_PROGRESS`
+  - Contract status: `signed` → `active`
+  - Set `contract.expectedStartDate` = ngày thanh toán
+  - Set `contract.dueDate` = expectedStartDate + slaDays
   - Manager được phép assign task: tạo `task_assignments(status='assigned')`
 
 **Liên kết:**
-- `payments.installment_id` → `contract_installments(Deposit).installment_id`
-- `payments.wallet_tx_id` → `wallet_transactions.wallet_tx_id`
+- `wallet_transactions.milestone_id` → `contract_milestones.milestone_id`
+- `wallet_transactions.contract_id` → `contracts.contract_id`
 
 ---
 
@@ -111,8 +116,8 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 - Milestone: `in_progress` → `submitted` (đã nộp mốc ra ngoài)
 
 **Trigger tự động:**
-- Nếu Final gate = `after_delivery`:
-  - Trigger mở đợt Final: `contract_installments(Final).status` → `pending`
+- Nếu milestone cuối cùng được deliver:
+  - Milestone tiếp theo (nếu có) có thể được thanh toán
 
 **Liên kết:**
 - `files.delivered_by` → Manager user_id
@@ -134,8 +139,8 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 - Milestone: `submitted` → `accepted`
 
 **Trigger tự động:**
-- Nếu Final gate = `after_accept`:
-  - Trigger mở đợt Final: `contract_installments(Final).status` → `pending`
+- Nếu milestone được accept:
+  - Milestone tiếp theo (nếu có) có thể được thanh toán
 
 **Liên kết:**
 - `revision_requests.contract_id` → `contracts.contract_id`
@@ -148,18 +153,19 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 **Ai làm:** Customer (thanh toán), Manager (đóng hợp đồng)
 
 **Hành động:**
-- Customer thanh toán Final
-- `contract_installments(Final).status` = `paid`
+- Customer thanh toán milestone cuối cùng
+- `contract_milestones[last].payment_status` = `PAID`
+- `contract_milestones[last].work_status` = `COMPLETED`
 - Nếu còn file/bàn giao cuối cùng (sheet PDF, stems…) thì gửi nốt
-- Đánh dấu `contract.status='completed'`
 - `task_assignments.completed_date` = timestamp
 
 **Trạng thái:**
-- `contract.status`: `signed` → `completed`
-- `contract_installments(Final).status` = `paid`
+- Tất cả milestones: `payment_status` = `PAID`
+- Milestone cuối cùng: `work_status` = `COMPLETED`
+- Contract có thể được đánh dấu hoàn thành
 
 **Liên kết:**
-- `payments.installment_id` → `contract_installments(Final).installment_id`
+- `wallet_transactions.milestone_id` → `contract_milestones.milestone_id`
 
 ---
 
@@ -175,25 +181,23 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 
 ---
 
-## 🤝 BẮT TAY VỚI INSTALLMENTS (Đợt tiền)
+## 🤝 BẮT TAY VỚI MILESTONES (Mốc thanh toán)
 
-### **Deposit (before_start)**
-- **Điều kiện:** Phải `paid` thì milestone mới được `in_progress`
-- **Kiểm soát:** Task không được assign/start nếu chưa cọc
+### **Milestone đầu tiên (Deposit)**
+- **Điều kiện:** Phải `PAID` thì milestone mới được `IN_PROGRESS`
+- **Kiểm soát:** Task không được assign/start nếu chưa thanh toán milestone đầu tiên
+- **Tự động:** Khi thanh toán → contract status = `active`, set expectedStartDate và dueDate
 
-### **Final**
+### **Milestones tiếp theo**
 
-#### **Nếu gate_condition='after_delivery'**
-- Mở thu ngay khi đã `delivered_to_customer=true`
-- Trigger: `contract_installments(Final).status` → `pending`
-
-#### **Nếu gate_condition='after_accept'**
-- Mở thu khi milestone `accepted`
-- Trigger: `contract_installments(Final).status` → `pending`
+#### **Thanh toán theo tiến độ**
+- Mỗi milestone có `payment_status`: `NOT_DUE`, `DUE`, `PAID`, `OVERDUE`
+- Milestone tiếp theo có thể được thanh toán khi milestone trước đó đã `PAID`
+- `work_status` tự động chuyển từ `PLANNED` → `IN_PROGRESS` khi thanh toán
 
 **Cách hoạt động:**
-- UI chỉ enable nút thanh toán khi gate đạt
-- DB: trigger update trạng thái sang `pending` lúc gate đạt
+- UI hiển thị milestones và trạng thái thanh toán
+- Backend tự động update milestone status khi nhận payment event
 
 ---
 
@@ -228,9 +232,9 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
    ↓
 6. Milestone: accepted
    ↓
-7. Final mở thu (after_accept)
+7. Milestone cuối cùng có thể thanh toán
    ↓
-8. Khách trả Final
+8. Khách trả milestone cuối cùng
    ↓
 9. Close
 ```
@@ -244,17 +248,17 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
    M2 (Recording) vẫn planned
    ↓
 3. M1 delivered & accepted
-   Mở installment Phase1 (nếu có)
-   Hoặc chờ Final sau cùng
+   Milestone M2 có thể được thanh toán (nếu có)
+   Hoặc chờ milestone cuối cùng
    ↓
 4. Sau khi M1 accepted
    M2 in_progress, assign T-recording
    ↓
 5. Toàn bộ mốc accepted
    ↓
-6. Mở Final
+6. Milestone cuối cùng có thể thanh toán
    ↓
-7. Thu Final
+7. Thu milestone cuối cùng
    ↓
 8. Close
 ```
@@ -263,23 +267,24 @@ Manager duyệt → Gửi khách → Khách phản hồi → Accept mốc → Th
 
 ## 🎯 TL;DR - QUY TẮC NHỚ NHANH
 
-1. **Cọc xong mới:** milestone `in_progress` + assign task
+1. **Thanh toán milestone đầu tiên:** milestone `IN_PROGRESS` + contract `active` + assign task
 2. **Nộp cho KH:** set milestone `submitted` (khi `delivered_to_customer=true`)
-3. **KH OK:** milestone `accepted` → mở Final theo gate
-4. **KH không OK:** milestone `rejected` → tạo revision_requests → trở lại `in_progress`
+3. **KH OK:** milestone `accepted` → milestone tiếp theo có thể thanh toán
+4. **KH không OK:** milestone `rejected` → tạo revision_requests → trở lại `IN_PROGRESS`
 
 ---
 
 ## 🤖 TRIGGERS TỰ ĐỘNG HÓA (ĐỀ XUẤT)
 
-### **Trigger 1: Mở milestone sau cọc**
+### **Trigger 1: Mở milestone sau thanh toán milestone đầu tiên**
 ```sql
--- Khi Deposit paid → cho phép milestone in_progress
-CREATE TRIGGER trg_open_milestone_after_deposit
-AFTER UPDATE OF status ON contract_installments
-FOR EACH ROW
-WHEN (NEW.is_deposit = true AND NEW.status = 'paid')
-EXECUTE FUNCTION open_milestones();
+-- Khi milestone đầu tiên paid → cho phép milestone in_progress
+-- Logic này được xử lý bởi MilestonePaidEventConsumer trong ContractService.handleMilestonePaid()
+-- Khi orderIndex = 1 và payment_status = PAID:
+--   - milestone.work_status → IN_PROGRESS
+--   - contract.status → active
+--   - contract.expectedStartDate = paidAt
+--   - contract.dueDate = paidAt + slaDays
 ```
 
 ### **Trigger 2: Auto set milestone submitted khi deliver**
@@ -292,19 +297,13 @@ WHEN (NEW.delivered_to_customer = true AND OLD.delivered_to_customer = false)
 EXECUTE FUNCTION auto_submit_milestone();
 ```
 
-### **Trigger 3: Mở Final khi milestone accepted/delivered**
+### **Trigger 3: Cập nhật milestone tiếp theo khi milestone trước đó paid**
 ```sql
--- Khi milestone accepted hoặc delivered → mở Final theo gate
-CREATE TRIGGER trg_open_final_on_milestone_complete
-AFTER UPDATE OF status ON contract_milestones
-FOR EACH ROW
-WHEN (EXISTS (
-  SELECT 1 FROM contract_installments ci
-  WHERE ci.contract_id = NEW.contract_id
-    AND ci.gate_condition IN ('after_accept', 'after_delivery')
-    AND ci.status = 'pending'
-))
-EXECUTE FUNCTION open_final_installment();
+-- Khi milestone được thanh toán → milestone tiếp theo có thể thanh toán
+-- Logic này được xử lý bởi MilestonePaidEventConsumer
+-- Khi milestone payment_status = PAID:
+--   - Milestone tiếp theo (nếu có) payment_status có thể chuyển từ NOT_DUE → DUE
+--   - Nếu tất cả milestones đã PAID → milestone cuối cùng work_status = COMPLETED
 ```
 
 ---
@@ -314,7 +313,7 @@ EXECUTE FUNCTION open_final_installment();
 - [x] Định nghĩa workflow chi tiết từng bước
 - [x] Xác định vai trò ai làm gì
 - [x] Trạng thái đổi thế nào
-- [x] Liên kết với Installment/Task/Files
+- [x] Liên kết với Milestones/Task/Files
 - [x] Đề xuất triggers tự động hóa
 - [x] Ví dụ minh họa cho từng luồng
 - [ ] Implement triggers vào ERD (sẽ làm ở bước tiếp theo)

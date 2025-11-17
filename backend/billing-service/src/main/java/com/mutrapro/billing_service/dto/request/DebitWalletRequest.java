@@ -30,7 +30,9 @@ public class DebitWalletRequest {
     
     String contractId;  // Optional, for audit trail
     
-    String installmentId;  // Optional, for audit trail
+    String milestoneId;  // Optional, for milestone payment
+    
+    Integer orderIndex;  // Optional, milestone order index (1, 2, 3...)
     
     String bookingId;  // Optional, for audit trail
 }

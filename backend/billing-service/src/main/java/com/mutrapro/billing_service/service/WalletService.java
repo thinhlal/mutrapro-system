@@ -6,16 +6,13 @@ import com.mutrapro.billing_service.dto.request.DebitWalletRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
-import com.mutrapro.billing_service.entity.ContractInstallment;
 import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.Wallet;
 import com.mutrapro.billing_service.entity.WalletTransaction;
 import com.mutrapro.billing_service.repository.OutboxEventRepository;
-import com.mutrapro.shared.event.DepositPaidEvent;
+import com.mutrapro.shared.event.MilestonePaidEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
-import com.mutrapro.billing_service.enums.InstallmentStatus;
 import com.mutrapro.billing_service.enums.WalletTxType;
-import com.mutrapro.billing_service.repository.ContractInstallmentRepository;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
 import com.mutrapro.billing_service.exception.InsufficientBalanceException;
 import com.mutrapro.billing_service.exception.InvalidAmountException;
@@ -52,7 +49,6 @@ public class WalletService {
     WalletRepository walletRepository;
     WalletTransactionRepository walletTransactionRepository;
     WalletMapper walletMapper;
-    ContractInstallmentRepository contractInstallmentRepository;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
 
@@ -237,95 +233,58 @@ public class WalletService {
                 .balanceAfter(balanceAfter)
                 .metadata(metadata)
                 .contractId(request.getContractId())
-                .installmentId(request.getInstallmentId())
+                .milestoneId(request.getMilestoneId())
                 .bookingId(request.getBookingId())
                 .createdAt(Instant.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
-        // Nếu có installmentId, update installment status thành "paid"
-        if (request.getInstallmentId() != null && !request.getInstallmentId().isBlank()) {
+        // Nếu có milestoneId, gửi MilestonePaidEvent để project-service update milestone status
+        if (request.getMilestoneId() != null && !request.getMilestoneId().isBlank() 
+            && request.getContractId() != null && !request.getContractId().isBlank()) {
             try {
-                ContractInstallment installment = contractInstallmentRepository.findById(request.getInstallmentId())
-                    .orElse(null);
+                Instant paidAt = Instant.now();
                 
-                if (installment != null) {
-                    // Validate installment status
-                    if (installment.getStatus() != InstallmentStatus.pending) {
-                        log.warn("Installment is not pending: installmentId={}, status={}", 
-                            request.getInstallmentId(), installment.getStatus());
-                    } else {
-                        // Validate amount matches
-                        if (installment.getAmount().compareTo(request.getAmount()) != 0) {
-                            log.warn("Installment amount mismatch: installmentId={}, installmentAmount={}, paymentAmount={}", 
-                                request.getInstallmentId(), installment.getAmount(), request.getAmount());
-                        } else {
-                            // Update installment status to paid
-                            Instant paidAt = Instant.now();
-                            installment.setStatus(InstallmentStatus.paid);
-                            installment.setPaidAt(paidAt);
-                            contractInstallmentRepository.save(installment);
-                            
-                            log.info("Updated installment status to paid: installmentId={}, contractId={}, amount={}, paidAt={}",
-                                request.getInstallmentId(), installment.getContractId(), request.getAmount(), paidAt);
-                            
-                            // Nếu là deposit installment, publish event để project-service update contract start date
-                            if (installment.getIsDeposit() != null && installment.getIsDeposit() 
-                                && installment.getContractId() != null) {
-                                try {
-                                    // Tạo DepositPaidEvent
-                                    UUID eventId = UUID.randomUUID();
-                                    DepositPaidEvent event = DepositPaidEvent.builder()
-                                        .eventId(eventId)
-                                        .contractId(installment.getContractId())
-                                        .installmentId(installment.getInstallmentId())
-                                        .depositPaidAt(paidAt)
-                                        .amount(installment.getAmount())
-                                        .currency(installment.getCurrency().name())
-                                        .timestamp(Instant.now())
-                                        .build();
-                                    
-                                    JsonNode payload = objectMapper.valueToTree(event);
-                                    
-                                    UUID aggregateId;
-                                    try {
-                                        aggregateId = UUID.fromString(installment.getContractId());
-                                    } catch (IllegalArgumentException ex) {
-                                        aggregateId = UUID.randomUUID();
-                                        log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                                            installment.getContractId());
-                                    }
-                                    
-                                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                                        .aggregateId(aggregateId)
-                                        .aggregateType("ContractInstallment")
-                                        .eventType("billing.deposit-paid")
-                                        .eventPayload(payload)
-                                        .build();
-                                    
-                                    OutboxEvent saved = outboxEventRepository.save(outboxEvent);
-                                    
-                                    log.info("✅ Queued DepositPaidEvent in outbox: outboxId={}, eventId={}, contractId={}, installmentId={}, depositPaidAt={}",
-                                        saved.getOutboxId(), eventId, installment.getContractId(), 
-                                        installment.getInstallmentId(), paidAt);
-                                } catch (Exception e) {
-                                    log.error("❌ Failed to enqueue DepositPaidEvent: contractId={}, installmentId={}, error={}",
-                                        installment.getContractId(), installment.getInstallmentId(), e.getMessage(), e);
-                                    // Không throw exception - installment đã được update thành công
-                                }
-                            } else {
-                                log.debug("Skipping event creation - not a deposit installment: isDeposit={}, contractId={}",
-                                    installment.getIsDeposit(), installment.getContractId());
-                            }
-                        }
-                    }
-                } else {
-                    log.warn("Installment not found: installmentId={}", request.getInstallmentId());
+                // Tạo MilestonePaidEvent
+                UUID eventId = UUID.randomUUID();
+                MilestonePaidEvent event = MilestonePaidEvent.builder()
+                    .eventId(eventId)
+                    .contractId(request.getContractId())
+                    .milestoneId(request.getMilestoneId())
+                    .orderIndex(request.getOrderIndex())  // Optional, project-service có thể lấy từ milestoneId
+                    .paidAt(paidAt)
+                    .amount(request.getAmount())
+                    .currency(currency.name())
+                    .timestamp(Instant.now())
+                    .build();
+                
+                JsonNode payload = objectMapper.valueToTree(event);
+                
+                UUID aggregateId;
+                try {
+                    aggregateId = UUID.fromString(request.getContractId());
+                } catch (IllegalArgumentException ex) {
+                    aggregateId = UUID.randomUUID();
+                    log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                        request.getContractId());
                 }
+                
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("ContractMilestone")
+                    .eventType("billing.milestone-paid")
+                    .eventPayload(payload)
+                    .build();
+                
+                OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+                
+                log.info("✅ Queued MilestonePaidEvent in outbox: outboxId={}, eventId={}, contractId={}, milestoneId={}, orderIndex={}, paidAt={}",
+                    saved.getOutboxId(), eventId, request.getContractId(), 
+                    request.getMilestoneId(), request.getOrderIndex(), paidAt);
             } catch (Exception e) {
-                log.error("Failed to update installment status: installmentId={}, error={}",
-                    request.getInstallmentId(), e.getMessage(), e);
+                log.error("❌ Failed to enqueue MilestonePaidEvent: contractId={}, milestoneId={}, error={}",
+                    request.getContractId(), request.getMilestoneId(), e.getMessage(), e);
                 // Không throw exception - transaction đã được tạo thành công
             }
         }

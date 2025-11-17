@@ -2,7 +2,7 @@ package com.mutrapro.project_service.consumer;
 
 import com.mutrapro.project_service.service.ContractService;
 import com.mutrapro.shared.consumer.BaseIdempotentConsumer;
-import com.mutrapro.shared.event.DepositPaidEvent;
+import com.mutrapro.shared.event.MilestonePaidEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -15,38 +15,39 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Kafka Consumer để nhận deposit paid events và update contract start date
+ * Kafka Consumer để nhận milestone paid events và update contract status
+ * Được gọi khi bất kỳ milestone nào có payment status = PAID
  * Extends BaseIdempotentConsumer để tránh duplicate idempotency logic
  */
 @Component
 @Slf4j
-public class DepositPaidEventConsumer extends BaseIdempotentConsumer<DepositPaidEvent> {
+public class MilestonePaidEventConsumer extends BaseIdempotentConsumer<MilestonePaidEvent> {
 
     private final ContractService contractService;
     private final com.mutrapro.project_service.repository.ConsumedEventRepository consumedEventRepository;
     private static final String CONSUMER_NAME = "project-service";
 
-    public DepositPaidEventConsumer(ContractService contractService,
+    public MilestonePaidEventConsumer(ContractService contractService,
                                     com.mutrapro.project_service.repository.ConsumedEventRepository consumedEventRepository) {
         this.contractService = contractService;
         this.consumedEventRepository = consumedEventRepository;
     }
 
     @KafkaListener(
-        topics = "${app.event-topics.mappings.billing.deposit-paid:billing-deposit-paid}",
+        topics = "${app.event-topics.mappings.billing.milestone-paid:billing-milestone-paid}",
         groupId = "${spring.kafka.consumer.group-id:project-service}",
         properties = {
-            "spring.json.value.default.type=com.mutrapro.shared.event.DepositPaidEvent"
+            "spring.json.value.default.type=com.mutrapro.shared.event.MilestonePaidEvent"
         }
     )
     @Transactional
-    public void handleDepositPaidEvent(
-            @Payload DepositPaidEvent event,
+    public void handleMilestonePaidEvent(
+            @Payload MilestonePaidEvent event,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             Acknowledgment acknowledgment) {
         
-        log.info("Received deposit paid event from topic: {}, eventId: {}, contractId: {}", 
-                topic, event.getEventId(), event.getContractId());
+        log.info("Received milestone paid event from topic: {}, eventId: {}, contractId: {}, milestoneId: {}", 
+                topic, event.getEventId(), event.getContractId(), event.getMilestoneId());
         
         // Gọi base class method để xử lý với idempotency check
         handleEvent(event, acknowledgment);
@@ -63,27 +64,29 @@ public class DepositPaidEventConsumer extends BaseIdempotentConsumer<DepositPaid
     }
 
     @Override
-    protected UUID getEventId(DepositPaidEvent event) {
+    protected UUID getEventId(MilestonePaidEvent event) {
         return event.getEventId();
     }
 
     @Override
-    protected void processEvent(DepositPaidEvent event, Acknowledgment acknowledgment) {
+    protected void processEvent(MilestonePaidEvent event, Acknowledgment acknowledgment) {
         try {
-            log.info("🔄 Processing deposit paid event: eventId={}, contractId={}, installmentId={}, depositPaidAt={}", 
-                    event.getEventId(), event.getContractId(), event.getInstallmentId(), event.getDepositPaidAt());
+            log.info("🔄 Processing milestone paid event: eventId={}, contractId={}, milestoneId={}, orderIndex={}, paidAt={}", 
+                    event.getEventId(), event.getContractId(), event.getMilestoneId(), event.getOrderIndex(), event.getPaidAt());
             
-            // Update contract start date
-            contractService.updateContractStartDateAfterDepositPaid(
+            // Xử lý khi milestone được thanh toán
+            contractService.handleMilestonePaid(
                 event.getContractId(), 
-                event.getDepositPaidAt()
+                event.getMilestoneId(),
+                event.getOrderIndex(),
+                event.getPaidAt()
             );
             
-            log.info("✅ Contract start date updated successfully from deposit paid event: contractId={}, installmentId={}, depositPaidAt={}", 
-                    event.getContractId(), event.getInstallmentId(), event.getDepositPaidAt());
+            log.info("✅ Milestone paid event processed successfully: contractId={}, milestoneId={}", 
+                    event.getContractId(), event.getMilestoneId());
         } catch (Exception e) {
-            log.error("❌ Failed to process deposit paid event: eventId={}, contractId={}, error={}", 
-                    event.getEventId(), event.getContractId(), e.getMessage(), e);
+            log.error("❌ Failed to process milestone paid event: eventId={}, contractId={}, milestoneId={}, error={}", 
+                    event.getEventId(), event.getContractId(), event.getMilestoneId(), e.getMessage(), e);
             throw e; // Re-throw để trigger retry
         }
     }

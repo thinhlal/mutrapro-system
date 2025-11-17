@@ -64,7 +64,8 @@ export const topupWallet = async (walletId, topupData) => {
  * @param {string} debitData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
  * @param {string} debitData.paymentId - ID thanh toán (optional)
  * @param {string} debitData.contractId - ID hợp đồng (optional)
- * @param {string} debitData.installmentId - ID kỳ trả góp (optional)
+ * @param {string} debitData.milestoneId - ID milestone (optional)
+ * @param {number} debitData.orderIndex - Thứ tự milestone (1, 2, 3...) (optional)
  * @param {string} debitData.bookingId - ID đặt chỗ (optional)
  * @returns {Promise} ApiResponse với thông tin giao dịch
  */

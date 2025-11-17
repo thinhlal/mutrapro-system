@@ -37,7 +37,6 @@ import {
 } from '../../../services/contractService';
 import {
   getServiceRequestById,
-  getNotationInstrumentsByIds,
   calculatePricing,
 } from '../../../services/serviceRequestService';
 import {
@@ -150,40 +149,21 @@ const ManagerContractDetailPage = () => {
         transcriptionDetails: null,
       };
 
-      // Load instruments if available
-      if (
-        request.notationInstruments &&
-        Array.isArray(request.notationInstruments) &&
-        request.notationInstruments.length > 0
-      ) {
-        try {
-          const instrumentsResponse = await getNotationInstrumentsByIds(
-            request.notationInstruments
-          );
-          if (
-            instrumentsResponse?.status === 'success' &&
-            instrumentsResponse?.data?.length > 0
-          ) {
-            const selectedInstruments = instrumentsResponse.data.map(instr => ({
-              instrumentId: instr.instrumentId,
-              instrumentName: instr.instrumentName,
-              basePrice: instr.basePrice || 0,
-            }));
-            breakdown.instruments = selectedInstruments;
-          }
-        } catch (error) {
-          console.warn('Failed to load instruments:', error);
-        }
+      // Use full instruments info from response (backend trả về đầy đủ thông tin)
+      if (request.instruments && Array.isArray(request.instruments) && request.instruments.length > 0) {
+        const selectedInstruments = request.instruments.map(instr => ({
+          instrumentId: instr.instrumentId,
+          instrumentName: instr.instrumentName,
+          basePrice: instr.basePrice || 0,
+        }));
+        breakdown.instruments = selectedInstruments;
       }
 
-      // Load transcription details if contract type is transcription or bundle
-      if (
-        request.serviceType === 'transcription' ||
-        request.serviceType === 'bundle'
-      ) {
+      // Load transcription pricing details if request type is transcription
+      const requestType = request.requestType || request.serviceType;
+      if (requestType === 'transcription' && request.durationMinutes) {
         try {
-          const pricingResponse = await calculatePricing({
-            serviceType: request.serviceType,
+          const pricingResponse = await calculatePricing('transcription', {
             durationMinutes: request.durationMinutes,
           });
           if (pricingResponse?.status === 'success' && pricingResponse?.data) {
@@ -216,7 +196,7 @@ const ManagerContractDetailPage = () => {
 
     // Fetch Party B signature image via backend proxy
     let partyBSignatureBase64 = null;
-    if (contractData?.status === 'signed' && contractData?.bSignatureS3Url) {
+    if ((contractData?.status === 'signed' || contractData?.status === 'active') && contractData?.bSignatureS3Url) {
       try {
         const signatureResponse = await getSignatureImage(contractId);
         if (signatureResponse?.data) {
@@ -398,8 +378,8 @@ const ManagerContractDetailPage = () => {
   }) => (
     <Document>
       <Page size="A4" style={pdfStyles.page}>
-        {/* Company Seal - Only show when signed */}
-        {contract?.status === 'signed' && (
+        {/* Company Seal - Only show when signed or active */}
+        {(contract?.status === 'signed' || contract?.status === 'active') && (
           <View style={pdfStyles.seal}>
             <Svg
               width="130"
@@ -440,8 +420,8 @@ const ManagerContractDetailPage = () => {
           </View>
         )}
 
-        {/* Watermark - Only show if not signed */}
-        {contract?.status !== 'signed' && (
+        {/* Watermark - Only show if not signed or active */}
+        {(contract?.status !== 'signed' && contract?.status !== 'active') && (
           <View style={pdfStyles.watermark}>
             <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
           </View>
@@ -531,12 +511,49 @@ const ManagerContractDetailPage = () => {
             </View>
           )}
           <PdfText style={pdfStyles.text}>
-            Total Price: {contract?.totalPrice?.toLocaleString()} VND | Deposit:{' '}
-            {contract?.depositPercent || 0}% ={' '}
-            {contract?.depositAmount?.toLocaleString()} VND | Final Amount:{' '}
-            {contract?.finalAmount?.toLocaleString()} VND
+            Total Price: {contract?.totalPrice?.toLocaleString()} {contract?.currency || 'VND'}
           </PdfText>
         </View>
+
+        {/* Payment Milestones Schedule */}
+        {contract?.milestones && contract.milestones.length > 0 && (
+          <View style={{ marginTop: 10, marginBottom: 10 }}>
+            <PdfText style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 12 }}>
+              Payment Milestones Schedule:
+            </PdfText>
+            {contract.milestones
+              .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+              .map((milestone, index) => (
+                <View
+                  key={milestone.milestoneId || index}
+                  style={{
+                    marginBottom: index < contract.milestones.length - 1 ? 8 : 0,
+                    paddingBottom: index < contract.milestones.length - 1 ? 8 : 0,
+                    borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold', fontSize: 11, marginBottom: 4 }}>
+                    Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                  </PdfText>
+                  {milestone.description && (
+                    <PdfText style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>
+                      {milestone.description}
+                    </PdfText>
+                  )}
+                  <PdfText style={pdfStyles.text}>
+                    Amount: {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                    {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && 
+                      ` (${milestone.billingValue}%)`}
+                  </PdfText>
+                  {milestone.plannedDueDate && (
+                    <PdfText style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                      Planned Due Date: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                    </PdfText>
+                  )}
+                </View>
+              ))}
+          </View>
+        )}
 
         {/* Transcription Preferences */}
         {contract?.contractType?.toLowerCase() === 'transcription' &&
@@ -619,7 +636,7 @@ const ManagerContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party A Representative
             </PdfText>
-            {contract?.status === 'signed' && partyASignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && partyASignatureBase64 && (
               <>
                 <PdfImage
                   src={partyASignatureBase64}
@@ -636,7 +653,7 @@ const ManagerContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status === 'signed' && !partyASignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && !partyASignatureBase64 && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>
@@ -650,7 +667,7 @@ const ManagerContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status !== 'signed' && (
+            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -662,7 +679,7 @@ const ManagerContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party B Representative
             </PdfText>
-            {contract?.status === 'signed' && partyBSignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && partyBSignatureBase64 && (
               <>
                 <PdfImage
                   src={partyBSignatureBase64}
@@ -681,7 +698,7 @@ const ManagerContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status === 'signed' && !partyBSignatureBase64 && (
+            {(contract?.status === 'signed' || contract?.status === 'active') && !partyBSignatureBase64 && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>
@@ -697,7 +714,7 @@ const ManagerContractDetailPage = () => {
                 </PdfText>
               </>
             )}
-            {contract?.status !== 'signed' && (
+            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -826,6 +843,9 @@ const ManagerContractDetailPage = () => {
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
   const isNeedRevision = currentStatus === 'need_revision';
+
+  // Contract is signed or active - milestones can be paid
+  const canPayMilestones = isSigned || isActive;
 
   const canViewReason = isCanceled || isNeedRevision;
 
@@ -1014,11 +1034,6 @@ const ManagerContractDetailPage = () => {
                 {dayjs(contract.customerReviewedAt).format('YYYY-MM-DD HH:mm')}
               </Descriptions.Item>
             )}
-            {contract.signedAt && (
-              <Descriptions.Item label="Signed At">
-                {dayjs(contract.signedAt).format('YYYY-MM-DD HH:mm')}
-              </Descriptions.Item>
-            )}
             {contract.bSignedAt && (
               <Descriptions.Item label="Customer Signed At">
                 {dayjs(contract.bSignedAt).format('YYYY-MM-DD HH:mm')}
@@ -1035,6 +1050,105 @@ const ManagerContractDetailPage = () => {
           </Descriptions>
 
           <Divider />
+
+          {/* Milestones Section - Show when milestones exist */}
+          {contract?.milestones && contract.milestones.length > 0 && (
+            <>
+              <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                Payment Milestones
+              </Title>
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                {contract.milestones
+                  .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                  .map((milestone, index) => {
+                    const paymentStatus = milestone.paymentStatus || 'NOT_DUE';
+                    const workStatus = milestone.workStatus || 'PLANNED';
+                    const isPaid = paymentStatus === 'PAID';
+                    const isDue = paymentStatus === 'DUE';
+                    
+                    const getPaymentStatusColor = () => {
+                      if (isPaid) return 'success';
+                      if (isDue) return 'warning';
+                      return 'default';
+                    };
+                    
+                    const getPaymentStatusText = () => {
+                      if (isPaid) return 'PAID';
+                      if (isDue) return 'DUE';
+                      return 'NOT DUE';
+                    };
+                    
+                    const getWorkStatusColor = () => {
+                      switch (workStatus) {
+                        case 'COMPLETED': return 'success';
+                        case 'IN_PROGRESS': return 'processing';
+                        case 'WAITING_CUSTOMER': return 'warning';
+                        case 'READY_FOR_PAYMENT': return 'cyan';
+                        default: return 'default';
+                      }
+                    };
+                    
+                    return (
+                      <Card
+                        key={milestone.milestoneId || index}
+                        size="small"
+                        style={{
+                          borderLeft: isPaid ? '4px solid #52c41a' : isDue ? '4px solid #faad14' : '4px solid #d9d9d9',
+                        }}
+                      >
+                        <Space direction="vertical" style={{ width: '100%' }} size="small">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <Text strong style={{ fontSize: 16 }}>
+                                {milestone.name || `Milestone ${milestone.orderIndex || index + 1}`}
+                              </Text>
+                              {milestone.description && (
+                                <div style={{ marginTop: 8, marginBottom: 8 }}>
+                                  <Text type="secondary" style={{ fontSize: 13 }}>
+                                    {milestone.description}
+                                  </Text>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                                {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                              </Text>
+                            </div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                            <Space size="small">
+                              <Tag color={getPaymentStatusColor()}>
+                                Payment: {getPaymentStatusText()}
+                              </Tag>
+                              <Tag color={getWorkStatusColor()}>
+                                Work: {workStatus}
+                              </Tag>
+                              {milestone.paidAt && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Paid: {dayjs(milestone.paidAt).format('DD/MM/YYYY HH:mm')}
+                                </Text>
+                              )}
+                              {milestone.plannedDueDate && !isPaid && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Due: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                                </Text>
+                              )}
+                            </Space>
+                            
+                            {isPaid && (
+                              <Tag color="success">Paid</Tag>
+                            )}
+                          </div>
+                        </Space>
+                      </Card>
+                    );
+                  })}
+              </Space>
+              <Divider />
+            </>
+          )}
 
           {/* Action Buttons */}
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -1083,14 +1197,14 @@ const ManagerContractDetailPage = () => {
           <div className={styles.preview} ref={previewRef}>
             {header}
             <div className={styles.doc}>
-              {/* Watermark - Always show except when signed */}
-              {!isSigned && (
+              {/* Watermark - Always show except when signed or active */}
+              {!canPayMilestones && (
                 <div className={styles.watermark}>
                   {statusConfig.text.toUpperCase()}
                 </div>
               )}
 
-              {isSigned && (
+              {canPayMilestones && (
                 <div className={`${styles.seal} ${styles.seal_red}`}>
                   <div className={styles.sealInner}>
                     <div className={styles.sealText}>MuTraPro Official</div>
@@ -1250,12 +1364,66 @@ const ManagerContractDetailPage = () => {
 
               <p>
                 <strong>Total Price:</strong>{' '}
-                {contract.totalPrice?.toLocaleString()} VND &nbsp;|&nbsp;
-                <strong>Deposit:</strong> {contract.depositPercent || 0}% ={' '}
-                {contract.depositAmount?.toLocaleString()} VND &nbsp;|&nbsp;
-                <strong>Final Amount:</strong>{' '}
-                {contract.finalAmount?.toLocaleString()} VND
+                {contract.totalPrice?.toLocaleString()} {contract?.currency || 'VND'}
               </p>
+
+              {/* Payment Milestones Schedule */}
+              {contract?.milestones && contract.milestones.length > 0 && (
+                <div
+                  style={{
+                    marginTop: '16px',
+                    marginBottom: '16px',
+                    padding: '12px',
+                    backgroundColor: '#f0f7ff',
+                    borderRadius: '4px',
+                    border: '1px solid #d4edda',
+                  }}
+                >
+                  <strong style={{ display: 'block', marginBottom: '12px', fontSize: '16px' }}>
+                    Payment Milestones Schedule:
+                  </strong>
+                  {contract.milestones
+                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                    .map((milestone, index) => (
+                      <div
+                        key={milestone.milestoneId || index}
+                        style={{
+                          marginBottom: index < contract.milestones.length - 1 ? '12px' : '0',
+                          paddingBottom: index < contract.milestones.length - 1 ? '12px' : '0',
+                          borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                        }}
+                      >
+                        <div style={{ marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '14px' }}>
+                            Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                          </strong>
+                        </div>
+                        {milestone.description && (
+                          <div style={{ marginBottom: '6px', fontSize: '13px', color: '#666' }}>
+                            {milestone.description}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '14px' }}>
+                          <strong>Amount:</strong>{' '}
+                          <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                            {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                          </span>
+                          {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && (
+                            <span style={{ color: '#666', marginLeft: '8px' }}>
+                              ({milestone.billingValue}%)
+                            </span>
+                          )}
+                        </div>
+                        {milestone.plannedDueDate && (
+                          <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                            <strong>Planned Due Date:</strong>{' '}
+                            {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
 
               {contract.contractType?.toLowerCase() === 'transcription' &&
                 requestDetails?.tempoPercentage && (
@@ -1340,7 +1508,7 @@ const ManagerContractDetailPage = () => {
               <div className={styles.signRow}>
                 <div>
                   <div className={styles.sigLabel}>Party A Representative</div>
-                  {isSigned ? (
+                  {canPayMilestones ? (
                     <>
                       <div className={styles.signature}>
                         <img
@@ -1385,7 +1553,7 @@ const ManagerContractDetailPage = () => {
                 </div>
                 <div>
                   <div className={styles.sigLabel}>Party B Representative</div>
-                  {isSigned ? (
+                  {canPayMilestones ? (
                     <>
                       {contract.bSignatureS3Url ? (
                         <div

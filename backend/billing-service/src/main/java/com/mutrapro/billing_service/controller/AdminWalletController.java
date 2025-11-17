@@ -84,7 +84,7 @@ public class AdminWalletController {
             @PathVariable String walletId,
             @Parameter(description = "Loại giao dịch (topup, payment, refund, withdrawal, adjustment)")
             @RequestParam(required = false) WalletTxType txType,
-            @Parameter(description = "Tìm kiếm theo Transaction ID, Contract ID, Installment ID, Booking ID")
+            @Parameter(description = "Tìm kiếm theo Transaction ID, Contract ID, Milestone ID, Booking ID")
             @RequestParam(required = false) String search,
             @Parameter(description = "Ngày bắt đầu (ISO format)")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fromDate,

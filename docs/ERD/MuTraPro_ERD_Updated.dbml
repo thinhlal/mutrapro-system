@@ -92,20 +92,20 @@ Table wallet_transactions {
   
   // Truy vết giao dịch đến thực thể
   contract_id uuid [ref: > contracts.contract_id] // Liên kết với contract
-  installment_id uuid [ref: > contract_installments.installment_id] // Liên kết với installment
+  milestone_id uuid [ref: > contract_milestones.milestone_id] // Liên kết với milestone
   booking_id uuid [ref: > studio_bookings.booking_id] // Liên kết với booking
   refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Hoàn tiền cho giao dịch nào
   
   created_at timestamp [default: `now()`]
   
-  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. Truy vết đến contract/installment/booking để audit trail đầy đủ.'
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. Truy vết đến contract/milestone/booking để audit trail đầy đủ.'
   
   indexes {
     wallet_id
     tx_type
     currency
     contract_id
-    installment_id
+    milestone_id
     booking_id
     refund_of_wallet_tx_id
     created_at
@@ -497,47 +497,9 @@ Table contract_milestones {
   }
 }
 
-// 11. Đợt thanh toán (Contract Installments) - NEW
-Table contract_installments {
-  installment_id uuid [pk, default: `gen_random_uuid()`]
-  contract_id uuid [ref: > contracts.contract_id, not null]
-  
-  // Thông tin đợt
-  label varchar(50) [not null] // Deposit, Phase 1, Phase 2, Final
-  due_date timestamp
-  
-  // Số tiền
-  amount decimal(12,2) [not null]
-  currency currency_type [default: 'VND']
-  
-  // Trạng thái
-  status installment_status [default: 'pending']
-  
-  // Đánh dấu cọc
-  is_deposit boolean [default: false]
-  
-  // Liên kết với mốc công việc (optional)
-  milestone_id uuid [ref: > contract_milestones.milestone_id]
-  
-  // Điều kiện thanh toán
-  gate_condition gate_condition
-  
-  // Khấu trừ từ reservation fee hoặc credit khác
-  applied_credit_amount decimal(12,2) [default: 0] // Tổng số tiền đã khấu trừ
-  
-  created_at timestamp [default: `now()`]
-  paid_at timestamp
-  
-  Note: 'Đợt thanh toán trong hợp đồng - Tự động tạo Deposit và Final khi tạo hợp đồng từ deposit_percent. applied_credit_amount để track số tiền đã khấu trừ từ reservation fee.'
-  
-  indexes {
-    contract_id
-#     milestone_id
-    status
-    is_deposit
-    due_date
-  }
-}
+// 11. Contract Installments - ĐÃ XÓA
+// Đã được thay thế hoàn toàn bởi contract_milestones trong project-service
+// contract_milestones quản lý cả công việc và thanh toán trong cùng một entity
 
 // 12. Phân công công việc (Task Assignments) - SIMPLIFIED v3.11
 Table task_assignments {
@@ -674,7 +636,7 @@ Table studio_bookings {
   reservation_fee_status reservation_fee_status [default: 'none'] // Trạng thái phí giữ chỗ
   reservation_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Giao dịch thanh toán phí giữ chỗ
   reservation_refund_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Giao dịch hoàn phí giữ chỗ
-  reservation_applied_to_installment_id uuid [ref: > contract_installments.installment_id] // Khấu trừ vào installment nào
+  reservation_applied_to_milestone_id uuid [ref: > contract_milestones.milestone_id] // Khấu trừ vào milestone nào
   refund_policy_json jsonb // Chính sách hoàn tiền (optional)
   
   created_at timestamp [default: `now()`]
@@ -692,41 +654,9 @@ Table studio_bookings {
   }
 }
 
-// 14. Thanh toán chi tiết (Payments)
-Table payments {
-  payment_id uuid [pk, default: `gen_random_uuid()`]
-  installment_id uuid [ref: > contract_installments.installment_id, not null]
-  
-  // Thông tin thanh toán
-  amount decimal(12,2) [not null]
-  currency currency_type [default: 'VND']
-  payment_method payment_method [not null]
-  
-  // Liên kết với ví điện tử
-  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id] // Nullable, chỉ có khi method='wallet'
-  
-  // Thông tin giao dịch
-  transaction_id varchar(100)
-  gateway_response text
-  
-  // Trạng thái và thời gian
-  status payment_status [default: 'pending']
-  payment_date timestamp
-  processed_date timestamp
-  
-  notes text
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Thanh toán chi tiết theo đợt thanh toán (installment). Thanh toán luôn theo contract, không theo booking. CHECK: status <> not_required, (payment_method = wallet) = (wallet_tx_id IS NOT NULL)'
-  
-  indexes {
-    installment_id
-    payment_method
-    status
-    wallet_tx_id
-    payment_date
-  }
-}
+// 14. Payments - NOT USED
+// Thông tin payment được lưu trong wallet_transactions.metadata (JSONB)
+// Thanh toán gắn trực tiếp với milestone_id trong wallet_transactions
 
 // 15. Yêu cầu chỉnh sửa (Revision Requests) - Simple revision system
 Table revision_requests {
@@ -971,18 +901,11 @@ Enum reservation_fee_status {
   forfeited       // Mất phí giữ chỗ (hủy <24h hoặc no-show)
 }
 
-Enum installment_status {
-  pending         // Chờ thanh toán
-  paid            // Đã thanh toán
-  overdue         // Quá hạn
-  cancelled       // Hủy
-}
+// Enum installment_status - ĐÃ XÓA
+// Đã được thay thế bởi milestone_payment_status trong project-service
 
-Enum gate_condition {
-  before_start    // Trả trước khi bắt đầu mốc (dùng cho Deposit)
-  after_accept    // Trả sau khi mốc được duyệt
-  after_delivery  // Trả sau khi có file bàn giao (delivered)
-}
+// Enum gate_condition - ĐÃ XÓA
+// Đã được thay thế bởi logic tự động trong contract_milestones
 
 Enum task_type {
   transcription
@@ -1278,7 +1201,7 @@ BEGIN
     FROM studio_bookings sb
     WHERE sb.contract_id = NEW.contract_id
       AND sb.reservation_fee_status = 'paid'
-      AND sb.reservation_applied_to_installment_id IS NULL
+      AND sb.reservation_applied_to_milestone_id IS NULL
     LIMIT 1;
     
     -- Nếu có reservation chưa apply
@@ -1290,7 +1213,7 @@ BEGIN
       -- Update booking reservation status
       UPDATE studio_bookings
       SET reservation_fee_status = 'applied',
-          reservation_applied_to_installment_id = NEW.installment_id
+          reservation_applied_to_milestone_id = NEW.milestone_id
       WHERE booking_id = v_booking_id;
     END IF;
   END IF;
@@ -1685,7 +1608,7 @@ BEGIN
     JOIN users u ON w.user_id = u.user_id
     JOIN contracts ct ON ct.user_id = u.user_id
     JOIN contract_installments ci ON ci.contract_id = ct.contract_id
-    WHERE ci.installment_id = NEW.installment_id;
+    WHERE cm.milestone_id = NEW.milestone_id;
     
     -- Tạo giao dịch ví
     INSERT INTO wallet_transactions (

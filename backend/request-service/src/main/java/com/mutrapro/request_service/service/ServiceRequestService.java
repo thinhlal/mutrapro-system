@@ -6,6 +6,7 @@ import com.mutrapro.request_service.dto.request.AssignManagerRequest;
 import com.mutrapro.request_service.dto.request.CreateServiceRequestRequest;
 import com.mutrapro.request_service.dto.response.FileInfoResponse;
 import com.mutrapro.request_service.dto.response.ManagerInfoResponse;
+import com.mutrapro.request_service.dto.response.NotationInstrumentResponse;
 import com.mutrapro.request_service.dto.response.PriceCalculationResponse;
 import com.mutrapro.request_service.dto.response.RequestContractInfo;
 import com.mutrapro.request_service.dto.response.ServiceRequestResponse;
@@ -491,26 +492,33 @@ public class ServiceRequestService {
         
         // Trigger lazy loading of notationInstruments to ensure they are loaded
         // This is needed because @OneToMany uses LAZY fetching by default
-        List<String> instrumentIds = new ArrayList<>();
-        int instrumentsCount = 0;
+        List<NotationInstrumentResponse> instruments = new ArrayList<>();
         
         try {
             if (serviceRequest.getNotationInstruments() != null) {
-                instrumentsCount = serviceRequest.getNotationInstruments().size(); // Trigger lazy load
+                int instrumentsCount = serviceRequest.getNotationInstruments().size(); // Trigger lazy load
                 log.debug("Found {} notation instruments for requestId={}", instrumentsCount, requestId);
                 
-                // Extract instrument IDs and trigger lazy load of nested NotationInstrument entities
+                // Extract full instrument info
                 for (RequestNotationInstrument reqInst : serviceRequest.getNotationInstruments()) {
                     try {
                         if (reqInst != null) {
                             // Trigger lazy load of NotationInstrument
                             NotationInstrument notationInstrument = reqInst.getNotationInstrument();
                             if (notationInstrument != null) {
-                                String instrumentId = notationInstrument.getInstrumentId();
-                                if (instrumentId != null && !instrumentId.isBlank()) {
-                                    instrumentIds.add(instrumentId);
-                                    log.debug("Extracted instrument ID: {}", instrumentId);
-                                }
+                                // Map to NotationInstrumentResponse with full info
+                                NotationInstrumentResponse instrumentResponse = NotationInstrumentResponse.builder()
+                                        .instrumentId(notationInstrument.getInstrumentId())
+                                        .instrumentName(notationInstrument.getInstrumentName())
+                                        .usage(notationInstrument.getUsage())
+                                        .basePrice(notationInstrument.getBasePrice())
+                                        .isActive(notationInstrument.isActive())
+                                        .image(notationInstrument.getImage())
+                                        .build();
+                                instruments.add(instrumentResponse);
+                                
+                                log.debug("Extracted instrument: id={}, name={}", 
+                                    notationInstrument.getInstrumentId(), notationInstrument.getInstrumentName());
                             } else {
                                 log.warn("NotationInstrument is null for RequestNotationInstrument in requestId={}", requestId);
                             }
@@ -524,20 +532,17 @@ public class ServiceRequestService {
             log.error("Error loading notationInstruments for requestId={}: {}", requestId, e.getMessage(), e);
         }
         
-        log.info("Retrieved service request: requestId={}, instrumentsCount={}, extractedIds={}", 
-                requestId, instrumentsCount, instrumentIds.size());
+        log.info("Retrieved service request: requestId={}, instrumentsCount={}", 
+                requestId, instruments.size());
         
         // Map entity to response DTO
         ServiceRequestResponse response = serviceRequestMapper.toServiceRequestResponse(serviceRequest);
         
-        // Always manually set instrumentIds (don't rely on @AfterMapping)
+        // Always manually set instruments (don't rely on @AfterMapping)
         // This ensures the field is always set correctly, even if mapper fails
-        if (instrumentIds.isEmpty()) {
-            response.setInstrumentIds(List.of());
-            log.debug("Set empty instrumentIds list for requestId={}", requestId);
-        } else {
-            response.setInstrumentIds(instrumentIds);
-            log.info("Set instrumentIds for requestId={}, count={}, ids={}", requestId, instrumentIds.size(), instrumentIds);
+        response.setInstruments(instruments);
+        if (!instruments.isEmpty()) {
+            log.info("Set full instruments for requestId={}, count={}", requestId, instruments.size());
         }
         
         // Fetch manager info from identity-service if available

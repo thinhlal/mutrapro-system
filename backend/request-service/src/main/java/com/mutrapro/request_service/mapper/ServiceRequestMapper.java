@@ -11,8 +11,8 @@ import java.util.List;
 /**
  * MapStruct Mapper giữa ServiceRequest entity và ServiceRequestResponse DTO
  * 
- * Note: Field instrumentIds is handled manually in ServiceRequestService.getServiceRequestById()
- * because it requires extracting IDs from nested lazy-loaded entities within a transaction context.
+ * Note: Field instruments is handled manually in ServiceRequestService.getServiceRequestById()
+ * because it requires extracting full instrument info from nested lazy-loaded entities within a transaction context.
  */
 @Mapper(
     componentModel = "spring",
@@ -23,9 +23,9 @@ public interface ServiceRequestMapper {
     /**
      * Map ServiceRequest entity sang ServiceRequestResponse DTO
      * MapStruct sẽ tự động map các field có cùng tên
-     * Field instrumentIds được ignore vì được set manually trong service layer
+     * Field instruments được set manually trong service layer
      */
-    @Mapping(target = "instrumentIds", ignore = true)
+    @Mapping(target = "instruments", ignore = true)
     ServiceRequestResponse toServiceRequestResponse(ServiceRequest serviceRequest);
 
     /**

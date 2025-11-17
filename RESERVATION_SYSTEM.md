@@ -36,7 +36,7 @@ Hệ thống Reservation cho phép khách hàng giữ chỗ studio trước khi 
 #### **Hoàn/Khấu trừ:**
 
 **Nếu khách tiếp tục và ký hợp đồng:**
-- Khấu trừ reservation fee vào installment "Deposit" của hợp đồng
+- Khấu trừ reservation fee vào milestone đầu tiên (Deposit milestone) của hợp đồng
 - `reservation_holders.status` = `applied`
 - `reservation_holders.is_applied_to_deposit` = `true`
 
@@ -52,13 +52,15 @@ Hệ thống Reservation cho phép khách hàng giữ chỗ studio trước khi 
 
 ### **B. Khi đã có hợp đồng**
 
-#### **Tự sinh 2 installment:**
-- **Deposit (40%)** - `gate_condition` = `before_start`
-- **Final (60%)** - `gate_condition` = `after_accept` hoặc `after_delivery`
+#### **Tự sinh milestones:**
+- Hệ thống tự động tạo milestones dựa trên contract type và depositPercent
+- **Milestone 1 (Deposit)**: Thanh toán cọc để bắt đầu
+- **Milestone 2, 3...**: Các milestone tiếp theo theo contract type
 
 #### **Điều kiện để bắt đầu:**
-Chỉ khi Deposit đã `paid` mới:
+Chỉ khi milestone đầu tiên (Deposit) đã `PAID` mới:
 - `studio_bookings.status` → `confirmed`
+- Contract status → `active`
 - Manager được phép assign task (nếu có)
 
 ---
@@ -76,19 +78,19 @@ Table studio_bookings {
   reservation_fee_status reservation_fee_status [default: 'none']
   reservation_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
   reservation_refund_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
-  reservation_applied_to_installment_id uuid [ref: > contract_installments.installment_id]
+  reservation_applied_to_milestone_id uuid [ref: > contract_milestones.milestone_id]
   refund_policy_json jsonb
 }
 ```
 
-### **Table: contract_installments** (Thêm field cho credit)
+### **Table: contract_milestones** (Thêm field cho credit nếu cần)
 
 ```dbml
-Table contract_installments {
+Table contract_milestones {
   // ... existing fields ...
   
-  // Khấu trừ từ reservation fee hoặc credit khác
-  applied_credit_amount decimal(12,2) [default: 0]
+  // Khấu trừ từ reservation fee hoặc credit khác (nếu cần)
+  // applied_credit_amount decimal(12,2) [default: 0]
 }
 ```
 
@@ -100,7 +102,7 @@ Table wallet_transactions {
   
   // Truy vết giao dịch đến thực thể
   contract_id uuid [ref: > contracts.contract_id]
-  installment_id uuid [ref: > contract_installments.installment_id]
+  milestone_id uuid [ref: > contract_milestones.milestone_id]
   booking_id uuid [ref: > studio_bookings.booking_id]
   refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
 }
@@ -135,12 +137,12 @@ Enum reservation_fee_status {
 3. Customer thanh toán Reservation Fee
    → reservation_holders (status: paid)
    
-4. Customer ký hợp đồng và thanh toán Deposit
-   → Trigger: Khấu trừ reservation fee vào Deposit
+4. Customer ký hợp đồng và thanh toán Deposit milestone
+   → Trigger: Khấu trừ reservation fee vào milestone đầu tiên (Deposit)
    → reservation_holders (status: applied)
    → reservation_holders.is_applied_to_deposit = true
-   → reservation_holders.installment_id = Deposit installment_id
-   → Deposit amount giảm bằng reservation_fee
+   → reservation_holders.reservation_applied_to_milestone_id = Deposit milestone_id
+   → Deposit milestone amount giảm bằng reservation_fee
    
 5. Hợp đồng hoạt động bình thường
 ```
@@ -169,53 +171,23 @@ Enum reservation_fee_status {
 
 ## 🤖 TRIGGERS
 
-### **Trigger 1: Khấu trừ Reservation Fee vào Deposit**
+### **Trigger 1: Khấu trừ Reservation Fee vào Deposit Milestone**
 
 ```sql
-CREATE OR REPLACE FUNCTION apply_reservation_to_deposit() RETURNS trigger AS $$
-DECLARE
-  v_reservation_id uuid;
-  v_reservation_fee decimal(12,2);
-BEGIN
-  -- Khi Deposit paid và có reservation
-  IF NEW.is_deposit = true AND NEW.status = 'paid' THEN
-    -- Tìm reservation của booking này
-    SELECT rh.reservation_id, rh.reservation_fee 
-    INTO v_reservation_id, v_reservation_fee
-    FROM reservation_holders rh
-    JOIN studio_bookings sb ON sb.booking_id = rh.booking_id
-    WHERE sb.contract_id = NEW.contract_id
-      AND rh.status = 'paid'
-      AND rh.is_applied_to_deposit = false
-    LIMIT 1;
-    
-    -- Nếu có reservation chưa apply
-    IF v_reservation_id IS NOT NULL THEN
-      -- Khấu trừ vào amount
-      NEW.amount := NEW.amount - v_reservation_fee;
-      
-      -- Update reservation status
-      UPDATE reservation_holders
-      SET status = 'applied',
-          is_applied_to_deposit = true,
-          installment_id = NEW.installment_id
-      WHERE reservation_id = v_reservation_id;
-    END IF;
-  END IF;
-  
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_apply_reservation_to_deposit
-BEFORE UPDATE OF status ON contract_installments 
-FOR EACH ROW
-EXECUTE FUNCTION apply_reservation_to_deposit();
+-- Logic này được xử lý trong backend khi milestone đầu tiên được thanh toán
+-- Khi milestone đầu tiên (orderIndex = 1) payment_status = PAID:
+--   - Kiểm tra xem có reservation fee chưa apply không
+--   - Nếu có: Khấu trừ reservation fee vào milestone amount
+--   - Update reservation_holders:
+--     * status = 'applied'
+--     * is_applied_to_deposit = true
+--     * reservation_applied_to_milestone_id = milestone_id
 ```
 
 **Chức năng:**
-- Khi Deposit paid → Tự động khấu trừ reservation fee vào Deposit amount
+- Khi Deposit milestone paid → Tự động khấu trừ reservation fee vào milestone amount
 - Update reservation status = `applied`
-- Link reservation với installment
+- Link reservation với milestone
 
 ### **Trigger 2: Tính Refund khi hủy**
 
@@ -280,7 +252,7 @@ EXECUTE FUNCTION calculate_reservation_refund();
 - [x] Trigger khấu trừ reservation vào Deposit
 - [x] Trigger tính refund khi hủy
 - [x] Liên kết với `studio_bookings`
-- [x] Soft reference với `contract_installments`
+- [x] Soft reference với `contract_milestones`
 
 ---
 

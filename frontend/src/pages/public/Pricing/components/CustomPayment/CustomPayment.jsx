@@ -9,7 +9,7 @@ function CustomPayment() {
       <Container className={styles.container}>
         <div className={styles.header}>
           <h2 id="custom-payment-title" className={styles.title}>
-            Custom payment installment options
+            Custom payment milestone options
           </h2>
           <span className={styles.rule} aria-hidden="true" />
         </div>
@@ -26,8 +26,8 @@ function CustomPayment() {
               </p>
               <br />
               <p className={styles.text}>
-                Our options include: 50–50% payments, PayPal 3 or 4 installments
-                options, dividing the project in batches that you can afford,
+                Our options include: 50–50% payments, multiple milestone payment
+                plans, dividing the project in batches that you can afford,
                 and others.
               </p>
             </Col>

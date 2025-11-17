@@ -603,7 +603,7 @@ Table wallet_transactions {
   
   // Truy vết giao dịch đến thực thể
   contract_id uuid [note: 'Soft reference to project-service']
-  installment_id uuid [note: 'Soft reference to billing-service - contract_installments']
+  milestone_id uuid [note: 'Soft reference to project-service - contract_milestones']
   booking_id uuid [note: 'Soft reference to studio-service']
   refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
   
@@ -614,74 +614,19 @@ Table wallet_transactions {
     tx_type
     currency
     contract_id
-    installment_id
+    milestone_id
     booking_id
     refund_of_wallet_tx_id
     created_at
   }
 }
 
-Table contract_installments {
-  installment_id uuid [pk]
-  contract_id uuid [not null, note: 'Soft reference to project-service']
-  
-  // Thông tin đợt
-  label varchar(50) [not null] // Deposit, Phase 1, Phase 2, Final
-  due_date timestamp
-  
-  // Số tiền
-  amount decimal(12,2) [not null]
-  currency currency_type [default: 'VND']
-  
-  // Trạng thái
-  status installment_status [default: 'pending']
-  
-  // Đánh dấu cọc
-  is_deposit boolean [default: false]
-  
-  // Liên kết với mốc công việc (optional)
-  milestone_id uuid [note: 'Soft reference to project-service - contract_milestones']
-  
-  // Điều kiện thanh toán
-  gate_condition gate_condition
-  
-  // Khấu trừ từ reservation fee hoặc credit khác
-  applied_credit_amount decimal(12,2) [default: 0]
-  
-  created_at timestamp [default: `now()`]
-  paid_at timestamp
-  
-  indexes {
-    contract_id
-    status
-    is_deposit
-    due_date
-  }
-}
+// Table contract_installments - ĐÃ XÓA
+// Đã được thay thế hoàn toàn bởi contract_milestones trong project-service
+// contract_milestones quản lý cả công việc và thanh toán trong cùng một entity
 
-Table payments {
-  payment_id uuid [pk]
-  installment_id uuid [ref: > contract_installments.installment_id, not null]
-  amount decimal(12,2) [not null]
-  currency currency_type [default: 'VND']
-  payment_method payment_method [not null]
-  wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
-  transaction_id varchar(100)
-  gateway_response text
-  status payment_status [default: 'pending']
-  payment_date timestamp
-  processed_date timestamp
-  notes text
-  created_at timestamp [default: `now()`]
-  
-  indexes {
-    installment_id
-    payment_method
-    status
-    wallet_tx_id
-    payment_date
-  }
-}
+// Table payments - NOT USED
+// Thông tin payment được lưu trong wallet_transactions.metadata (JSONB)
 
 // ===============================
 // 7) NOTIFICATION-SERVICE (notification_db)
@@ -809,12 +754,8 @@ Enum milestone_work_status {
   rejected
 }
 
-Enum installment_status {
-  pending
-  paid
-  overdue
-  cancelled
-}
+// Enum installment_status - ĐÃ XÓA
+// Đã được thay thế bởi milestone_payment_status trong project-service
 
 Enum gate_condition {
   before_start

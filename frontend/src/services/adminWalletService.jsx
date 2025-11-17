@@ -53,7 +53,7 @@ export const getWalletById = async walletId => {
  * @param {string} walletId - ID của ví
  * @param {Object} filters - Các filter tùy chọn
  * @param {string} filters.txType - Loại giao dịch: topup, payment, refund, withdrawal, adjustment
- * @param {string} filters.search - Tìm kiếm theo Transaction ID, Contract ID, Installment ID, Booking ID
+ * @param {string} filters.search - Tìm kiếm theo Transaction ID, Contract ID, Milestone ID, Booking ID
  * @param {string} filters.fromDate - Ngày bắt đầu (ISO format)
  * @param {string} filters.toDate - Ngày kết thúc (ISO format)
  * @param {number} filters.page - Trang (default: 0)

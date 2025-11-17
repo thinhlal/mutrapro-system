@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
-import com.mutrapro.project_service.client.BillingServiceFeignClient;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.client.ChatServiceFeignClient;
-import com.mutrapro.project_service.dto.request.CreateInstallmentsRequest;
 import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
 import com.mutrapro.project_service.dto.response.ChatRoomResponse;
@@ -17,7 +15,6 @@ import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractSignSession;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.enums.ContractStatus;
-import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.enums.NotificationType;
@@ -58,7 +55,6 @@ public class ESignService {
     final OutboxEventRepository outboxEventRepository;
     final ObjectMapper objectMapper;
     final S3Service s3Service;
-    final BillingServiceFeignClient billingServiceFeignClient;
     final RequestServiceFeignClient requestServiceFeignClient;
     final NotificationServiceFeignClient notificationServiceFeignClient;
     final ChatServiceFeignClient chatServiceFeignClient;
@@ -237,27 +233,7 @@ public class ESignService {
 
         log.info("Contract signed successfully: {}, signature URL: {}", contractId, signatureS3Url);
 
-        // 1. Tạo installments (Deposit và Final) trong billing-service
-        // Note: expectedStartDate và dueDate sẽ null - sẽ được set khi deposit paid
-        try {
-            CreateInstallmentsRequest installmentsRequest = CreateInstallmentsRequest.builder()
-                .contractId(contractId)
-                .depositAmount(contract.getDepositAmount())
-                .finalAmount(contract.getFinalAmount())
-                .currency(contract.getCurrency() != null ? contract.getCurrency() : CurrencyType.VND)
-                .expectedStartDate(null)  // Sẽ set khi deposit paid
-                .dueDate(null)  // Sẽ tính lại từ expectedStartDate + SLA khi deposit paid
-                .build();
-            
-            billingServiceFeignClient.createInstallmentsForSignedContract(installmentsRequest);
-            log.info("Created installments for signed contract via OTP: contractId={}", contractId);
-        } catch (Exception e) {
-            log.error("Failed to create installments for signed contract via OTP: contractId={}, error={}", 
-                contractId, e.getMessage(), e);
-            // Không fail transaction nếu billing-service lỗi, chỉ log
-        }
-
-        // 2. Cập nhật request status thành "contract_signed"
+        // Cập nhật request status thành "contract_signed"
         try {
             requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "contract_signed");
             log.info("Updated request status to contract_signed: requestId={}, contractId={}", 
