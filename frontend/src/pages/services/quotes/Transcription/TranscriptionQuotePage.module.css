@@ -1,50 +1,65 @@
 .wrap {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 8rem auto;
   padding: 16px;
   border-radius: 12px; /* optional cho mềm */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
 }
+
+/* 2 cột chính */
 .row {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 24px;
   align-items: flex-start;
 }
+
 .left {
 }
+
 .right {
 }
+
 .metaRow {
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
   border-bottom: 1px dashed #eee;
 }
+
 .mt8 {
   margin-top: 12px;
 }
+
 .durationLine {
   margin-top: 8px;
 }
+
 .sectionTitle {
   font-weight: 600;
   font-size: 18px;
 }
+
 .sectionBody {
   padding: 8px 0;
 }
+
 .block {
   margin: 12px 0 4px;
 }
+
 .rightAlign {
   text-align: right;
 }
+
 .inlineRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
+
+/* Thanh action cố định dưới */
 .footerBar {
   position: sticky;
   bottom: 0;
@@ -53,31 +68,49 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 12px 0 0;
   margin-top: 24px;
 }
+
 .cartGrid {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 24px;
 }
+
 .cartMeta {
   display: flex;
   gap: 16px;
 }
+
 .listDots {
   list-style: disc;
   padding-left: 18px;
 }
+
 .totalLine {
   display: flex;
   justify-content: space-between;
   margin: 6px 0;
   font-size: 16px;
 }
+
 .totalLineStrong {
   display: flex;
   justify-content: space-between;
   margin: 6px 0 12px;
   font-size: 18px;
+}
+
+/* Responsive: màn hình nhỏ xếp dọc */
+@media (max-width: 992px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .footerBar {
+    position: static;
+    margin-top: 16px;
+    padding-top: 16px;
+  }
 }
