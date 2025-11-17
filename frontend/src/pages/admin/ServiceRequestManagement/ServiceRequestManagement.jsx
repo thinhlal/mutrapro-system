@@ -360,23 +360,6 @@ export default function ServiceRequestManagement() {
             size="small"
             style={{ width: '100%' }}
           >
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetail(record)}
-              block
-            >
-              View
-            </Button>
-            <Button
-              type="default"
-              size="small"
-              icon={<FileSearchOutlined />}
-              onClick={() => handleViewContracts(record)}
-              block
-            >
-              Contracts
-            </Button>
             {!hasManager && (
               <Button
                 type="primary"
@@ -402,6 +385,24 @@ export default function ServiceRequestManagement() {
             {isAssignedToMe && hasContract && (
               <Tag color="green">Contract Created</Tag>
             )}
+            <Button
+              type="default"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
+              block
+            >
+              View
+            </Button>
+            <Button
+              type="default"
+              size="small"
+              icon={<FileSearchOutlined />}
+              onClick={() => handleViewContracts(record)}
+              block
+            >
+              Contracts
+            </Button>
           </Space>
         );
       },
