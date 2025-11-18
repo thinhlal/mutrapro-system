@@ -187,7 +187,7 @@ function UserMenu() {
               <div className={styles.walletBalanceSection}>
                 <div className={styles.walletBalanceHeader}>
                   <WalletOutlined className={styles.walletIcon} />
-                  <span className={styles.walletLabel}>Số dư ví</span>
+                  <span className={styles.walletLabel}>Wallet balance</span>
                 </div>
                 <div className={styles.walletBalanceAmount}>
                   {walletLoading ? (

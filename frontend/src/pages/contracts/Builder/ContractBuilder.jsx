@@ -855,10 +855,25 @@ const ContractBuilder = () => {
 
   if (loadingServiceRequest) {
     return (
-      <div className={styles.page}>
+      <div
+        className={styles.page}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <div
-          className={styles.card}
-          style={{ textAlign: 'center', padding: '50px' }}
+          // className={styles.card}
+          style={{
+            textAlign: 'center',
+            padding: '50px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>Loading service request data...</div>
@@ -1359,111 +1374,275 @@ const ContractBuilder = () => {
                       borderRadius: '4px',
                     }}
                   >
-                    <strong style={{ display: 'block', marginBottom: '8px' }}>
+                    <strong style={{ display: 'block', marginBottom: '12px' }}>
                       Price Breakdown:
                     </strong>
 
-                    {/* Transcription Details */}
-                    {pricingBreakdown.transcriptionDetails && (
-                      <div
-                        style={{
-                          marginBottom:
-                            pricingBreakdown.instruments.length > 0
-                              ? '12px'
-                              : '0',
-                        }}
-                      >
-                        {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                          (item, index) => (
-                            <div
-                              key={index}
-                              style={{ marginBottom: '4px', fontSize: '14px' }}
-                            >
-                              <span>{item.label}: </span>
-                              <span style={{ fontWeight: 'bold' }}>
-                                {item.amount?.toLocaleString?.() ?? item.amount}{' '}
-                                {data?.currency || 'VND'}
-                              </span>
-                              {item.description && (
-                                <span
-                                  style={{ color: '#666', marginLeft: '8px' }}
-                                >
-                                  ({formatDescriptionDuration(item.description)}
-                                  )
-                                </span>
-                              )}
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Instruments */}
-                    {pricingBreakdown.instruments.length > 0 && (
-                      <div>
-                        <div
-                          style={{
-                            marginBottom: '4px',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                          }}
-                        >
-                          Instruments Surcharge:
-                        </div>
-                        {pricingBreakdown.instruments.map((instr, index) => (
-                          <div
-                            key={index}
+                    <table
+                      style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: '14px',
+                        border: '1px solid #000',
+                        backgroundColor: '#fff',
+                      }}
+                    >
+                      <thead>
+                        <tr>
+                          <th
                             style={{
-                              marginLeft: '16px',
-                              marginBottom: '4px',
-                              fontSize: '14px',
+                              border: '1px solid #000',
+                              padding: '10px',
+                              textAlign: 'left',
+                              backgroundColor: '#e8e8e8',
+                              fontWeight: 'bold',
                             }}
                           >
-                            <span>• {instr.instrumentName}: </span>
-                            <span style={{ fontWeight: 'bold' }}>
-                              {instr.basePrice?.toLocaleString?.() ??
-                                instr.basePrice}{' '}
-                              {data?.currency || 'VND'}
-                            </span>
-                          </div>
-                        ))}
-                        <div
-                          style={{
-                            marginTop: '4px',
-                            fontSize: '14px',
-                            fontWeight: 'bold',
-                            borderTop: '1px solid #ddd',
-                            paddingTop: '4px',
-                          }}
-                        >
-                          Instruments Total:{' '}
-                          {pricingBreakdown.instruments
-                            .reduce(
-                              (sum, instr) => sum + (instr.basePrice || 0),
-                              0
-                            )
-                            .toLocaleString()}{' '}
-                          {data?.currency || 'VND'}
-                        </div>
-                      </div>
-                    )}
+                            Item
+                          </th>
+                          <th
+                            style={{
+                              border: '1px solid #000',
+                              padding: '10px',
+                              textAlign: 'right',
+                              backgroundColor: '#e8e8e8',
+                              fontWeight: 'bold',
+                              width: '150px',
+                            }}
+                          >
+                            Amount ({data?.currency || 'VND'})
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Transcription Details */}
+                        {pricingBreakdown.transcriptionDetails?.breakdown?.map(
+                          (item, index) => (
+                            <tr key={`transcription-${index}`}>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {item.label}
+                                {item.description && (
+                                  <div
+                                    style={{
+                                      color: '#666',
+                                      fontSize: '12px',
+                                      marginTop: '4px',
+                                      fontStyle: 'italic',
+                                    }}
+                                  >
+                                    ({formatDescriptionDuration(item.description)})
+                                  </div>
+                                )}
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {item.amount?.toLocaleString?.() ?? item.amount}
+                              </td>
+                            </tr>
+                          )
+                        )}
+
+                        {/* Instruments */}
+                        {pricingBreakdown.instruments.length > 0 && (
+                          <>
+                            <tr>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#f0f0f0',
+                                }}
+                              >
+                                Instruments Surcharge:
+                              </td>
+                            </tr>
+                            {pricingBreakdown.instruments.map((instr, index) => (
+                              <tr key={`instrument-${index}`}>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    paddingLeft: '24px',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  • {instr.instrumentName}
+                                </td>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    textAlign: 'right',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  {instr.basePrice?.toLocaleString?.() ??
+                                    instr.basePrice}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                Instruments Total:
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                {pricingBreakdown.instruments
+                                  .reduce(
+                                    (sum, instr) => sum + (instr.basePrice || 0),
+                                    0
+                                  )
+                                  .toLocaleString()}
+                              </td>
+                            </tr>
+                          </>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 )}
 
-                <p>
-                  <strong>Currency:</strong> {data?.currency || 'VND'}{' '}
-                  &nbsp;|&nbsp;
-                  <strong>Total Price:</strong>{' '}
-                  {data?.total_price?.toLocaleString?.() ?? data?.total_price}{' '}
-                  &nbsp;|&nbsp;
-                  <strong>Deposit:</strong> {data?.deposit_percent}% ={' '}
-                  {data?.deposit_amount?.toLocaleString?.() ??
-                    data?.deposit_amount}{' '}
-                  &nbsp;|&nbsp;
-                  <strong>Final Amount:</strong>{' '}
-                  {data?.final_amount?.toLocaleString?.() ??
-                    data?.final_amount}{' '}
-                </p>
+                <table
+                  style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '14px',
+                    border: '1px solid #000',
+                    backgroundColor: '#fff',
+                    marginTop: '16px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <tbody>
+                    <tr>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          fontWeight: 'bold',
+                          backgroundColor: '#e8e8e8',
+                          width: '200px',
+                        }}
+                      >
+                        Currency
+                      </td>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          backgroundColor: '#fff',
+                        }}
+                      >
+                        {data?.currency || 'VND'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          fontWeight: 'bold',
+                          backgroundColor: '#e8e8e8',
+                        }}
+                      >
+                        Total Price
+                      </td>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          textAlign: 'right',
+                          fontWeight: 'bold',
+                          backgroundColor: '#fff',
+                        }}
+                      >
+                        {data?.total_price?.toLocaleString?.() ??
+                          data?.total_price}{' '}
+                        {data?.currency || 'VND'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          fontWeight: 'bold',
+                          backgroundColor: '#e8e8e8',
+                        }}
+                      >
+                        Deposit ({data?.deposit_percent || 0}%)
+                      </td>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          textAlign: 'right',
+                          fontWeight: 'bold',
+                          backgroundColor: '#fff',
+                        }}
+                      >
+                        {data?.deposit_amount?.toLocaleString?.() ??
+                          data?.deposit_amount}{' '}
+                        {data?.currency || 'VND'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          fontWeight: 'bold',
+                          backgroundColor: '#e8e8e8',
+                        }}
+                      >
+                        Final Amount
+                      </td>
+                      <td
+                        style={{
+                          border: '1px solid #000',
+                          padding: '10px',
+                          textAlign: 'right',
+                          fontWeight: 'bold',
+                          backgroundColor: '#fff',
+                        }}
+                      >
+                        {data?.final_amount?.toLocaleString?.() ??
+                          data?.final_amount}{' '}
+                        {data?.currency || 'VND'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {contractType?.toLowerCase() === 'transcription' &&
                   serviceRequest?.tempoPercentage && (

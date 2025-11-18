@@ -298,7 +298,7 @@ const RequestDetailPage = () => {
           <div className={styles.cardHeader}>
             <h2 className={styles.requestTitle}>{request.title}</h2>
             <Space>
-              <Tag color="blue" className={styles.typeTag}>
+              <Tag color="orange" className={styles.typeTag}>
                 {getRequestTypeText(request.requestType)}
               </Tag>
               <Tag

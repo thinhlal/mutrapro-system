@@ -152,6 +152,7 @@
 
 .preview {
   padding: 16px;
+  overflow-x: hidden;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
