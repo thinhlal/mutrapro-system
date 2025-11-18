@@ -16,7 +16,12 @@ const { Text } = Typography;
  * @param {boolean} showEmpty - Có hiển thị khi không có files không (default: false)
  * @param {string} emptyText - Text hiển thị khi không có files (default: "No files")
  */
-const FileList = ({ files = [], showEmpty = false, emptyText = 'No files' }) => {
+const FileList = ({
+  files = [],
+  showEmpty = false,
+  emptyText = 'No files',
+  maxNameLength,
+}) => {
   // Nếu không có files và không show empty, return null
   if (!files || files.length === 0) {
     if (!showEmpty) return null;
@@ -71,10 +76,14 @@ const FileList = ({ files = [], showEmpty = false, emptyText = 'No files' }) => 
   return (
     <div className={styles.fileListContainer}>
       {files.map(file => {
-        const fileName = file.fileName || file.name;
+        const fileName = file.fileName || file.name || 'Unnamed file';
         const filePath = file.filePath || file.url;
         const fileSize = file.fileSize || file.size;
         const mimeType = file.mimeType;
+        const displayName =
+          maxNameLength && fileName.length > maxNameLength
+            ? `${fileName.slice(0, maxNameLength)}…`
+            : fileName;
 
         return (
           <div key={file.fileId || file.id} className={styles.fileItem}>
@@ -84,7 +93,7 @@ const FileList = ({ files = [], showEmpty = false, emptyText = 'No files' }) => 
             <div className={styles.fileInfo}>
               <div className={styles.fileNameRow}>
                 <Text strong className={styles.fileName} title={fileName}>
-                  {fileName}
+                  {displayName}
                 </Text>
                 {filePath && (
                   <Space className={styles.fileActions}>
@@ -152,6 +161,7 @@ FileList.propTypes = {
   ),
   showEmpty: PropTypes.bool,
   emptyText: PropTypes.string,
+  maxNameLength: PropTypes.number,
 };
 
 export default FileList;

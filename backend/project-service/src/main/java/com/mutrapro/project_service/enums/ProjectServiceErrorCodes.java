@@ -84,6 +84,28 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     SIGNATURE_IMAGE_NOT_FOUND("CONTRACT_7014", 404,
         "https://docs.mutrapro.com/errors/CONTRACT_7014",
         "Signature image not found for contract",
+        Retryable.NON_TRANSIENT),
+    
+    // Contract Milestone Errors (7015-7019)
+    CONTRACT_MILESTONE_NOT_FOUND("CONTRACT_7015", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7015",
+        "Contract milestone not found",
+        Retryable.NON_TRANSIENT),
+    
+    // Task Assignment Errors (7020-7029)
+    INVALID_TASK_TYPE("CONTRACT_7020", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7020",
+        "Task type is not valid for the contract type",
+        Retryable.NON_TRANSIENT),
+    
+    TASK_ASSIGNMENT_ALREADY_COMPLETED("CONTRACT_7021", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7021",
+        "Task assignment is already completed and cannot be modified",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_MILESTONE_ID("CONTRACT_7022", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7022",
+        "Milestone ID cannot be blank",
         Retryable.NON_TRANSIENT);
 
     private final String code;

@@ -21,5 +21,7 @@ public interface ContractMilestoneRepository extends JpaRepository<ContractMiles
     List<ContractMilestone> findByContractIdAndWorkStatus(String contractId, MilestoneWorkStatus workStatus);
     
     Optional<ContractMilestone> findFirstByContractIdOrderByOrderIndexAsc(String contractId);
+    
+    Optional<ContractMilestone> findByMilestoneIdAndContractId(String milestoneId, String contractId);
 }
 

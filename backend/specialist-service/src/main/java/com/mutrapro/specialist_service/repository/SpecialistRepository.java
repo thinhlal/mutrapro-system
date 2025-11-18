@@ -3,6 +3,7 @@ package com.mutrapro.specialist_service.repository;
 import com.mutrapro.specialist_service.entity.Specialist;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -17,8 +18,10 @@ public interface SpecialistRepository extends JpaRepository<Specialist, String>,
     
     List<Specialist> findBySpecialization(SpecialistType specialization);
     
+    @EntityGraph(attributePaths = {"specialistSkills", "specialistSkills.skill"})
     List<Specialist> findByStatus(SpecialistStatus status);
     
+    @EntityGraph(attributePaths = {"specialistSkills", "specialistSkills.skill"})
     List<Specialist> findBySpecializationAndStatus(SpecialistType specialization, SpecialistStatus status);
     
     boolean existsByUserId(String userId);

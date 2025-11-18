@@ -1,0 +1,712 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Table,
+  Card,
+  Button,
+  Space,
+  Tag,
+  message,
+  Typography,
+  Input,
+  Spin,
+  Tooltip,
+  Popconfirm,
+  Empty,
+  Row,
+  Col,
+  List,
+  Alert,
+} from 'antd';
+import {
+  ReloadOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserAddOutlined,
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import {
+  getAllContracts,
+  getContractById,
+} from '../../../services/contractService';
+import {
+  getTaskAssignmentsByContract,
+  deleteTaskAssignment,
+} from '../../../services/taskAssignmentService';
+import { getAllSpecialists } from '../../../services/specialistService';
+import styles from './TaskAssignmentManagement.module.css';
+
+const { Title, Text } = Typography;
+
+// Task type labels
+const TASK_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+};
+
+// Assignment status colors
+const STATUS_COLORS = {
+  assigned: 'blue',
+  in_progress: 'processing',
+  completed: 'success',
+  cancelled: 'error',
+};
+
+// Assignment status labels
+const STATUS_LABELS = {
+  assigned: 'Đã gán',
+  in_progress: 'Đang thực hiện',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+};
+
+const defaultTaskStats = {
+  total: 0,
+  assigned: 0,
+  inProgress: 0,
+  completed: 0,
+  cancelled: 0,
+};
+
+const computeTaskStats = tasks =>
+  tasks.reduce(
+    (acc, task) => {
+      acc.total += 1;
+      const status = task.status?.toLowerCase();
+      if (status === 'in_progress') acc.inProgress += 1;
+      else if (status === 'completed') acc.completed += 1;
+      else if (status === 'cancelled') acc.cancelled += 1;
+      else acc.assigned += 1;
+      return acc;
+    },
+    { ...defaultTaskStats }
+  );
+
+export default function TaskAssignmentManagement() {
+  const [contracts, setContracts] = useState([]);
+  const [selectedContractId, setSelectedContractId] = useState(null);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [taskAssignments, setTaskAssignments] = useState([]);
+  const [specialists, setSpecialists] = useState([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [contractSearch, setContractSearch] = useState('');
+  const [contractTaskStats, setContractTaskStats] = useState({});
+  const navigate = useNavigate();
+
+  const updateContractStats = useCallback((contractId, tasks) => {
+    setContractTaskStats(prev => ({
+      ...prev,
+      [contractId]: computeTaskStats(tasks),
+    }));
+  }, []);
+
+  const fetchContractTaskStats = useCallback(
+    async contractList => {
+      if (!contractList || contractList.length === 0) return;
+      const statsEntries = {};
+      await Promise.allSettled(
+        contractList.map(contract =>
+          getTaskAssignmentsByContract(contract.contractId)
+            .then(response => {
+              const tasks =
+                response?.status === 'success' && response?.data
+                  ? response.data
+                  : [];
+              statsEntries[contract.contractId] = computeTaskStats(tasks);
+            })
+            .catch(() => {
+              statsEntries[contract.contractId] = { ...defaultTaskStats };
+            })
+        )
+      );
+      setContractTaskStats(prev => ({
+        ...prev,
+        ...statsEntries,
+      }));
+    },
+    []
+  );
+
+  const fetchContracts = useCallback(async () => {
+    try {
+      setContractsLoading(true);
+      const response = await getAllContracts();
+      if (response?.status === 'success' && response?.data) {
+        const activeContracts = response.data.filter(
+          c => c.status?.toLowerCase() === 'active'
+        );
+        setContracts(activeContracts);
+        fetchContractTaskStats(activeContracts);
+      }
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      message.error('Lỗi khi tải danh sách contracts');
+    } finally {
+      setContractsLoading(false);
+    }
+  }, [fetchContractTaskStats]);
+
+  // Fetch contracts
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
+
+  // Auto select first contract when data available
+  useEffect(() => {
+    if (!selectedContractId && contracts.length > 0) {
+      setSelectedContractId(contracts[0].contractId);
+    }
+  }, [contracts, selectedContractId]);
+
+  // Fetch specialists
+  useEffect(() => {
+    const fetchSpecialists = async () => {
+      try {
+        const response = await getAllSpecialists();
+        if (response?.status === 'success' && response?.data) {
+          // Chỉ lấy specialists có status active
+          const activeSpecialists = response.data.filter(
+            s => s.status?.toLowerCase() === 'active'
+          );
+          setSpecialists(activeSpecialists);
+        }
+      } catch (error) {
+        console.error('Error fetching specialists:', error);
+        message.error('Lỗi khi tải danh sách specialists');
+      }
+    };
+
+    fetchSpecialists();
+  }, []);
+
+  // Fetch task assignments when contract is selected
+  useEffect(() => {
+    if (selectedContractId) {
+      fetchTaskAssignments(selectedContractId);
+      fetchContractDetail(selectedContractId);
+    } else {
+      setTaskAssignments([]);
+      setSelectedContract(null);
+    }
+  }, [selectedContractId]);
+
+  const fetchContractDetail = async contractId => {
+    try {
+      const response = await getContractById(contractId);
+      if (response?.status === 'success' && response?.data) {
+        setSelectedContract(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching contract detail:', error);
+    }
+  };
+
+  const fetchTaskAssignments = async contractId => {
+    try {
+      setAssignmentsLoading(true);
+      const response = await getTaskAssignmentsByContract(contractId);
+      if (response?.status === 'success' && response?.data) {
+        setTaskAssignments(response.data || []);
+        updateContractStats(contractId, response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching task assignments:', error);
+      message.error('Lỗi khi tải danh sách task assignments');
+      setTaskAssignments([]);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
+  const getContractBadge = useCallback(
+    contractId => {
+      const stats = contractTaskStats[contractId];
+      if (!stats) return null;
+      if (stats.total === 0) {
+        return { label: 'need assignment', color: 'orange', priority: 0 };
+      }
+      if (stats.inProgress > 0) {
+        return { label: 'in progress', color: 'green', priority: 2 };
+      }
+      if (stats.completed === stats.total) {
+        return { label: 'completed', color: 'purple', priority: 3 };
+      }
+      if (stats.assigned > 0) {
+        return { label: 'assigned', color: 'blue', priority: 1 };
+      }
+      return null;
+    },
+    [contractTaskStats]
+  );
+
+  const filteredContracts = useMemo(() => {
+    const keyword = contractSearch.toLowerCase();
+    const list = contracts.filter(contract => {
+      if (!keyword) return true;
+      const number = contract.contractNumber?.toLowerCase() || '';
+      const name = contract.nameSnapshot?.toLowerCase() || '';
+      const type = contract.contractType?.toLowerCase() || '';
+      return (
+        number.includes(keyword) ||
+        name.includes(keyword) ||
+        type.includes(keyword)
+      );
+    });
+    return list.sort((a, b) => {
+      const badgeA = getContractBadge(a.contractId);
+      const badgeB = getContractBadge(b.contractId);
+      const priorityA = badgeA?.priority ?? 99;
+      const priorityB = badgeB?.priority ?? 99;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return (
+        (a.contractNumber || '').localeCompare(b.contractNumber || '')
+      );
+    });
+  }, [contracts, contractSearch, getContractBadge]);
+
+  const milestoneTaskStats = useMemo(() => {
+    const stats = {};
+    taskAssignments.forEach(task => {
+      if (!task.milestoneId) return;
+      if (!stats[task.milestoneId]) {
+        stats[task.milestoneId] = { ...defaultTaskStats };
+      }
+      const status = task.status?.toLowerCase();
+      stats[task.milestoneId].total += 1;
+      if (status === 'completed') stats[task.milestoneId].completed += 1;
+      else if (status === 'in_progress') stats[task.milestoneId].inProgress += 1;
+      else if (status === 'cancelled') stats[task.milestoneId].cancelled += 1;
+      else stats[task.milestoneId].assigned += 1;
+    });
+    return stats;
+  }, [taskAssignments]);
+
+  const selectedContractSummary = useMemo(
+    () => computeTaskStats(taskAssignments),
+    [taskAssignments]
+  );
+
+  // Handle assign task
+  const handleAssignTask = () => {
+    if (!selectedContractId) {
+      message.warning('Vui lòng chọn contract trước');
+      return;
+    }
+    if (
+      !selectedContract?.milestones ||
+      selectedContract.milestones.length === 0
+    ) {
+      message.warning('Contract chưa có milestone. Không thể gán task.');
+      return;
+    }
+    navigate(`/manager/task-assignments/${selectedContractId}/new`);
+  };
+
+  // Handle edit task assignment
+  const handleEdit = record => {
+    if (!selectedContractId) {
+      message.warning('Vui lòng chọn contract trước');
+      return;
+    }
+    navigate(`/manager/task-assignments/${selectedContractId}/edit/${record.assignmentId}`);
+  };
+
+  // Handle delete task assignment
+  const handleDelete = async assignmentId => {
+    try {
+      const response = await deleteTaskAssignment(
+        selectedContractId,
+        assignmentId
+      );
+
+      if (response?.status === 'success') {
+        message.success('Xóa task assignment thành công!');
+        fetchTaskAssignments(selectedContractId);
+      }
+    } catch (error) {
+      console.error('Error deleting task assignment:', error);
+      message.error(
+        error?.message || 'Lỗi khi xóa task assignment. Vui lòng thử lại.'
+      );
+    }
+  };
+
+  // Get specialist name by ID
+  const getSpecialistName = specialistId => {
+    const specialist = specialists.find(s => s.specialistId === specialistId);
+    return specialist
+      ? `${specialist.fullName || specialist.email || 'N/A'} (${
+          specialist.specialization || 'N/A'
+        })`
+      : specialistId;
+  };
+
+  // Get milestone name by ID
+  const getMilestoneName = milestoneId => {
+    if (!selectedContract?.milestones || !milestoneId) return 'N/A';
+    const milestone = selectedContract.milestones.find(
+      m => m.milestoneId === milestoneId
+    );
+    return milestone ? milestone.name : milestoneId;
+  };
+
+
+  // Table columns
+  const columns = [
+    {
+      title: 'Task Type',
+      dataIndex: 'taskType',
+      key: 'taskType',
+      width: 150,
+      render: type => (
+        <Tag color="cyan">{TASK_TYPE_LABELS[type] || type}</Tag>
+      ),
+    },
+    {
+      title: 'Specialist',
+      dataIndex: 'specialistId',
+      key: 'specialistId',
+      width: 250,
+      render: specialistId => (
+        <Text>{getSpecialistName(specialistId)}</Text>
+      ),
+    },
+    {
+      title: 'Milestone',
+      dataIndex: 'milestoneId',
+      key: 'milestoneId',
+      width: 200,
+      render: milestoneId => (
+        <Text type="secondary">{getMilestoneName(milestoneId)}</Text>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: status => (
+        <Tag color={STATUS_COLORS[status] || 'default'}>
+          {STATUS_LABELS[status] || status?.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Assigned Date',
+      dataIndex: 'assignedDate',
+      key: 'assignedDate',
+      width: 150,
+      render: date =>
+        date ? dayjs(date).format('YYYY-MM-DD HH:mm') : 'N/A',
+    },
+    {
+      title: 'Completed Date',
+      dataIndex: 'completedDate',
+      key: 'completedDate',
+      width: 150,
+      render: date =>
+        date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-',
+    },
+    {
+      title: 'Notes',
+      dataIndex: 'notes',
+      key: 'notes',
+      ellipsis: true,
+      render: notes => (notes ? <Text type="secondary">{notes}</Text> : '-'),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 150,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+              disabled={record.status === 'completed'}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Xóa task assignment này?"
+            description="Bạn có chắc chắn muốn xóa task assignment này không?"
+            onConfirm={() => handleDelete(record.assignmentId)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Tooltip title="Xóa">
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                disabled={record.status === 'completed'}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <Title level={3}>Quản lý Task Assignment</Title>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              fetchContracts();
+              if (selectedContractId) {
+                fetchContractDetail(selectedContractId);
+                fetchTaskAssignments(selectedContractId);
+              }
+            }}
+          >
+            Làm mới
+          </Button>
+        </Space>
+      </div>
+
+      <Row gutter={[16, 16]} className={styles.layoutGrid}>
+        <Col xs={24} lg={8}>
+          <Card title="Contracts">
+            <Input.Search
+              placeholder="Tìm contract..."
+              allowClear
+              value={contractSearch}
+              onChange={e => setContractSearch(e.target.value)}
+              onSearch={value => setContractSearch(value)}
+            />
+            <div className={styles.contractList}>
+              {contractsLoading ? (
+                <div className={styles.contractListLoading}>
+                  <Spin />
+                </div>
+              ) : filteredContracts.length > 0 ? (
+                <List
+                  rowKey="contractId"
+                  dataSource={filteredContracts}
+                  renderItem={item => {
+                    const isActive = item.contractId === selectedContractId;
+                    const badge = getContractBadge(item.contractId);
+                    return (
+                      <List.Item
+                        className={`${styles.contractItem} ${
+                          isActive ? styles.contractItemActive : ''
+                        }`}
+                        onClick={() => setSelectedContractId(item.contractId)}
+                      >
+                        <div>
+                          <Text strong>{item.contractNumber}</Text>
+                          <span className={styles.contractMeta}>
+                            {item.nameSnapshot || 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <Tag>{item.contractType}</Tag>
+                          {badge && (
+                            <Tag
+                              color={badge.color}
+                              className={styles.contractBadge}
+                            >
+                              {badge.label}
+                            </Tag>
+                          )}
+                          <Tag color="green" className={styles.contractStatus}>
+                            {item.status}
+                          </Tag>
+                        </div>
+                      </List.Item>
+                    );
+                  }}
+                />
+              ) : (
+                <Empty
+                  description="Không có contract nào"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              )}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={16}>
+          <Card>
+            {selectedContract ? (
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div className={styles.contractInfo}>
+                  <div>
+                    <Text strong>Contract Number: </Text>
+                    <Text>{selectedContract.contractNumber}</Text>
+                  </div>
+                  <div>
+                    <Text strong>Customer: </Text>
+                    <Text>{selectedContract.nameSnapshot || 'N/A'}</Text>
+                  </div>
+                  <div>
+                    <Text strong>Contract Type: </Text>
+                    <Tag>{selectedContract.contractType}</Tag>
+                  </div>
+                  <div>
+                    <Text strong>Status: </Text>
+                    <Tag color="green">{selectedContract.status}</Tag>
+                  </div>
+                  {(!selectedContract.milestones ||
+                    selectedContract.milestones.length === 0) && (
+                    <Alert
+                      type="warning"
+                      message="Contract chưa có milestone. Không thể gán task."
+                    />
+                  )}
+                  <div className={styles.contractSummary}>
+                    <Text strong>Tasks:</Text>
+                    <Text>
+                      {selectedContractSummary.total} tổng · Chưa bắt đầu:{' '}
+                      {selectedContractSummary.assigned} · Đang làm:{' '}
+                      {selectedContractSummary.inProgress} · Hoàn thành:{' '}
+                      {selectedContractSummary.completed}
+                    </Text>
+                  </div>
+
+                <Card
+                  size="small"
+                  title="Milestones"
+                  className={styles.milestoneCard}
+                >
+                  {selectedContract.milestones &&
+                  selectedContract.milestones.length > 0 ? (
+                    <List
+                      dataSource={selectedContract.milestones}
+                      rowKey="milestoneId"
+                      renderItem={item => {
+                        const stats = milestoneTaskStats[item.milestoneId] || {
+                          total: 0,
+                          completed: 0,
+                          inProgress: 0,
+                          assigned: 0,
+                          cancelled: 0,
+                        };
+                        return (
+                          <List.Item className={styles.milestoneItem}>
+                            <div className={styles.milestoneInfo}>
+                              <div className={styles.milestoneHeader}>
+                                <Text strong>{item.name}</Text>
+                                <Tag>{item.workStatus}</Tag>
+                              </div>
+                              <div className={styles.milestoneMeta}>
+                                {item.plannedDueDate && (
+                                  <span>
+                                    <Text type="secondary">Due: </Text>
+                                    {dayjs(item.plannedDueDate).format(
+                                      'YYYY-MM-DD'
+                                    )}
+                                  </span>
+                                )}
+                                <span>
+                                  <Text type="secondary">Payment: </Text>
+                                  <Tag>{item.paymentStatus}</Tag>
+                                </span>
+                              </div>
+                            </div>
+                            {stats.total > 0 && (
+                              <div className={styles.milestoneStats}>
+                                <div>
+                                  <Text strong>{stats.total}</Text>
+                                  <Text type="secondary">Task tổng</Text>
+                                </div>
+                                <div>
+                                  <Text strong>{stats.inProgress}</Text>
+                                  <Text type="secondary">Đang làm</Text>
+                                </div>
+                                <div>
+                                  <Text strong>{stats.completed}</Text>
+                                  <Text type="secondary">Hoàn thành</Text>
+                                </div>
+                                <div>
+                                  <Text strong>{stats.assigned}</Text>
+                                  <Text type="secondary">Chưa bắt đầu</Text>
+                                </div>
+                              </div>
+                            )}
+                          </List.Item>
+                        );
+                      }}
+                    />
+                  ) : (
+                    <Empty
+                      description="Chưa tạo milestone"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  )}
+                </Card>
+                </div>
+
+                <div className={styles.taskHeader}>
+                  <Title level={4} style={{ margin: 0 }}>
+                    Task Assignments
+                  </Title>
+                  <Button
+                    type="primary"
+                    icon={<UserAddOutlined />}
+                    onClick={handleAssignTask}
+                    disabled={
+                      !selectedContract?.milestones ||
+                      selectedContract.milestones.length === 0
+                    }
+                  >
+                    Gán Task Mới
+                  </Button>
+                </div>
+
+                {selectedContractSummary.total === 0 ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="Contract này chưa được gán task nào."
+                    description="Để bắt đầu milestone tiếp theo, hãy bấm “Gán Task Mới”."
+                  />
+                ) : selectedContractSummary.assigned > 0 ? (
+                  <Alert
+                    type="info"
+                    showIcon
+                    message={`Còn ${selectedContractSummary.assigned} task chưa bắt đầu.`}
+                    description="Lọc trạng thái 'Assigned' để xem chi tiết và gán specialist phù hợp."
+                  />
+                ) : null}
+
+                <Spin spinning={assignmentsLoading}>
+                  <Table
+                    columns={columns}
+                    dataSource={taskAssignments}
+                    rowKey="assignmentId"
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1200 }}
+                    locale={{
+                      emptyText: (
+                        <Empty
+                          description="Chưa có task assignment nào"
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                      ),
+                    }}
+                  />
+                </Spin>
+              </Space>
+            ) : (
+              <Empty
+                description="Vui lòng chọn contract để xem task assignments"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+    </div>
+  );
+}
+

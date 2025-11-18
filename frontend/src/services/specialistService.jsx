@@ -19,13 +19,32 @@ export const createSpecialist = async specialistData => {
 };
 
 /**
- * Lấy tất cả specialists
+ * Lấy tất cả specialists cho Manager (có thể filter)
  */
-export const getAllSpecialists = async () => {
+export const getAllSpecialists = async (filters = {}) => {
   try {
-    const response = await axiosInstance.get(
-      API_ENDPOINTS.SPECIALISTS.ADMIN.GET_ALL
-    );
+    const params = new URLSearchParams();
+    
+    // Xử lý từng filter
+    if (filters.specialization) {
+      params.append('specialization', filters.specialization);
+    }
+    
+    // Xử lý skillNames array: Spring Boot nhận format ?skillNames=value1&skillNames=value2
+    if (Array.isArray(filters.skillNames) && filters.skillNames.length > 0) {
+      filters.skillNames.forEach(skillName => {
+        if (skillName) {
+          params.append('skillNames', skillName);
+        }
+      });
+    }
+    
+    const queryString = params.toString();
+    const url = `${API_ENDPOINTS.SPECIALISTS.MANAGER.GET_AVAILABLE}${
+      queryString ? `?${queryString}` : ''
+    }`;
+    
+    const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy danh sách specialist' };

@@ -2,6 +2,7 @@ package com.mutrapro.identity_service.controller;
 
 import com.mutrapro.identity_service.dto.request.UserSearchRequest;
 import com.mutrapro.identity_service.dto.response.FullUserResponse;
+import com.mutrapro.identity_service.dto.response.UserBasicInfoResponse;
 import com.mutrapro.identity_service.dto.response.UserPageResponse;
 import com.mutrapro.identity_service.service.UserSearchService;
 import com.mutrapro.identity_service.service.UserService;
@@ -69,6 +70,26 @@ public class AdminUserController {
         return ApiResponse.<FullUserResponse>builder()
             .message("User retrieved successfully")
             .data(user)
+            .build();
+    }
+
+    /**
+     * Get basic user info by ID (Admin only)
+     */
+    @GetMapping("/{id}/basic")
+    @Operation(summary = "Get basic user info", description = "Get basic user info by ID (SYSTEM_ADMIN only)")
+    public ApiResponse<UserBasicInfoResponse> getBasicUserInfo(
+            @PathVariable String id) {
+        log.info("GET /admin/users/{}/basic - Getting basic info", id);
+        var user = userService.getFullUser(id);
+        var response = UserBasicInfoResponse.builder()
+            .userId(user.getUserId())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .build();
+        return ApiResponse.<UserBasicInfoResponse>builder()
+            .message("User basic info retrieved successfully")
+            .data(response)
             .build();
     }
 

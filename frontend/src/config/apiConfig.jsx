@@ -133,17 +133,9 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/contracts/${contractId}/upload-pdf`,
   },
 
-  FOLDERS: {
-    CREATE: `${PROJECT_PATH}/folders`,
-    MY_FOLDERS: `${PROJECT_PATH}/folders/my-folders`,
-    PUBLIC: `${PROJECT_PATH}/folders/public`,
-  },
-
-  TAGS: {
-    GET_ALL: `${PROJECT_PATH}/tags`,
-    CREATE: `${PROJECT_PATH}/tags`,
-    ASSIGN_TO_FILE: `${PROJECT_PATH}/tags/files`,
-    ASSIGN_TO_FOLDER: `${PROJECT_PATH}/tags/folders`,
+  // === Task Assignment Management ===
+  TASK_ASSIGNMENTS: {
+    BASE: `${PROJECT_PATH}/task-assignments`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===
@@ -155,12 +147,7 @@ export const API_ENDPOINTS = {
     REFRESH_STATUS: orderId =>
       `${BILLING_PATH}/payments/orders/refresh/${orderId}`,
   },
-
-  SUBSCRIPTION_PLANS: {
-    GET_ALL: `${BILLING_PATH}/subscription-plans`,
-    GET_BY_ID: planId => `${BILLING_PATH}/subscription-plans/${planId}`,
-  },
-
+  
   // === Wallet Management ===
   WALLET: {
     // GET /api/v1/billing/wallets/me
@@ -308,6 +295,10 @@ export const API_ENDPOINTS = {
       UPDATE_VISIBILITY: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}/visibility`,
     },
     // Specialist Profile Management (Self-service)
+    MANAGER: {
+      // GET /manager/specialists?specialization=
+      GET_AVAILABLE: `${SPECIALIST_PATH}/manager/specialists`,
+    },
     PROFILE: {
       // GET /specialists/me
       GET_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,

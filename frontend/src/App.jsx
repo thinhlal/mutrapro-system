@@ -91,6 +91,8 @@ import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
 import ManagerContractDetailPage from './pages/manager/ContractDetail/ManagerContractDetailPage';
 import ContractsManagement from './pages/manager/ContractsList/ContractsManagement';
+import TaskAssignmentManagement from './pages/manager/TaskAssignment/TaskAssignmentManagement';
+import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 
 import './App.css';
 
@@ -343,6 +345,15 @@ function App() {
             <Route
               path="contracts/:contractId"
               element={<ManagerContractDetailPage />}
+            />
+            <Route path="task-assignments" element={<TaskAssignmentManagement />} />
+            <Route
+              path="task-assignments/:contractId/new"
+              element={<TaskAssignmentWorkspace />}
+            />
+            <Route
+              path="task-assignments/:contractId/edit/:assignmentId"
+              element={<TaskAssignmentWorkspace />}
             />
             <Route path="task" element={<Tasks />} />
             <Route path="profile" element={<ManagerProfile />} />

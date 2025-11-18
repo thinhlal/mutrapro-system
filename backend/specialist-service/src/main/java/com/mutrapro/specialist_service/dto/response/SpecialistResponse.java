@@ -31,6 +31,10 @@ public class SpecialistResponse {
     
     private Integer maxConcurrentTasks;
     
+    private Integer totalOpenTasks;
+    
+    private Integer tasksInSlaWindow;
+    
     private String portfolioUrl;
     
     private String bio;
@@ -42,5 +46,9 @@ public class SpecialistResponse {
     private LocalDateTime createdAt;
     
     private LocalDateTime updatedAt;
+    
+    private String fullName;
+    
+    private String email;
 }
 

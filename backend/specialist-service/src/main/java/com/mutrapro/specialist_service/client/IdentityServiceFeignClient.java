@@ -19,6 +19,9 @@ public interface IdentityServiceFeignClient {
     @GetMapping("/by-email/{email}")
     ApiResponse<UserInfoResponse> getUserByEmail(@PathVariable("email") String email);
 
+    @GetMapping("/{id}/basic")
+    ApiResponse<UserInfoResponse> getUserBasicInfo(@PathVariable("id") String userId);
+
     /**
      * Update user role (Admin only)
      */

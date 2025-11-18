@@ -9,6 +9,7 @@ import {
   ContainerOutlined,
   FileTextOutlined,
   LogoutOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,6 +34,11 @@ const menuItems = [
     key: '/manager/contracts',
     icon: <ContainerOutlined />,
     label: <Link to="/manager/contracts">Contracts</Link>,
+  },
+  {
+    key: '/manager/task-assignments',
+    icon: <UsergroupAddOutlined />,
+    label: <Link to="/manager/task-assignments">Task Assignments</Link>,
   },
   {
     key: '/manager/task',

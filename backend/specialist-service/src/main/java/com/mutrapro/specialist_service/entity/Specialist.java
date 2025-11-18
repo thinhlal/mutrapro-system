@@ -65,6 +65,14 @@ public class Specialist extends BaseEntity<String> {
     @Column(name = "total_projects")
     @Builder.Default
     private Integer totalProjects = 0;
+
+    @Column(name = "current_open_tasks")
+    @Builder.Default
+    private Integer currentOpenTasks = 0;
+
+    @Column(name = "tasks_in_sla_window")
+    @Builder.Default
+    private Integer tasksInSlaWindow = 0;
     
     // ===== RELATIONSHIPS =====
     
