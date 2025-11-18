@@ -44,5 +44,14 @@ public class TaskAssignmentResponse {
     Instant specialistRespondedAt;
 
     Integer usedRevisions;
+
+    // Reassign request fields
+    String reassignReason;
+    Instant reassignRequestedAt;
+    String reassignRequestedBy;
+    String reassignApprovedBy;
+    Instant reassignApprovedAt;
+    String reassignDecision;
+    String reassignDecisionReason;
 }
 

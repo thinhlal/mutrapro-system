@@ -135,7 +135,18 @@ export const API_ENDPOINTS = {
 
   // === Task Assignment Management ===
   TASK_ASSIGNMENTS: {
+    // Manager endpoints
     BASE: `${PROJECT_PATH}/task-assignments`,
+    APPROVE_REASSIGN: (contractId, assignmentId) =>
+      `${PROJECT_PATH}/task-assignments/${assignmentId}/approve-reassign?contractId=${contractId}`,
+    REJECT_REASSIGN: (contractId, assignmentId) =>
+      `${PROJECT_PATH}/task-assignments/${assignmentId}/reject-reassign?contractId=${contractId}`,
+    // Specialist endpoints
+    MY_TASKS: `${PROJECT_PATH}/specialist/task-assignments`,
+    MY_TASK_DETAIL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}`,
+    ACCEPT: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/accept`,
+    CANCEL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
+    REQUEST_REASSIGN: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/request-reassign`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===

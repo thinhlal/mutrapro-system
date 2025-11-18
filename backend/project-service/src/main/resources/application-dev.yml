@@ -70,6 +70,11 @@ billing:
   service:
     base-url: http://localhost:8083
 
+# Specialist Service Configuration
+specialist:
+  service:
+    base-url: http://localhost:8086
+
 # AWS S3 Configuration
 aws:
   s3:

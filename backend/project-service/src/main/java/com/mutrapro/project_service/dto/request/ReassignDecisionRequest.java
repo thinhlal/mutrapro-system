@@ -1,0 +1,22 @@
+package com.mutrapro.project_service.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldDefaults;
+
+import static lombok.AccessLevel.PRIVATE;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = PRIVATE)
+public class ReassignDecisionRequest {
+
+    @NotBlank(message = "Decision reason is required")
+    String reason;  // Lý do manager approve/reject
+}
+

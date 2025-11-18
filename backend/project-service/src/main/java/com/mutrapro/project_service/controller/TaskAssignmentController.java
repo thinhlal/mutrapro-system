@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
+import com.mutrapro.project_service.dto.request.ReassignDecisionRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.service.TaskAssignmentService;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -117,6 +119,7 @@ public class TaskAssignmentController {
     }
 
     @DeleteMapping("/{assignmentId}")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
     @Operation(summary = "Xóa task assignment")
     public ApiResponse<Void> deleteTaskAssignment(
             @Parameter(description = "ID của contract")
@@ -128,6 +131,46 @@ public class TaskAssignmentController {
         taskAssignmentService.deleteTaskAssignment(contractId, assignmentId);
         return ApiResponse.<Void>builder()
                 .message("Task assignment deleted successfully")
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{assignmentId}/approve-reassign")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Manager approve reassign request (reassign_requested → assigned)")
+    public ApiResponse<TaskAssignmentResponse> approveReassign(
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            @Parameter(description = "ID của task assignment")
+            @PathVariable String assignmentId,
+            @Valid @RequestBody ReassignDecisionRequest request) {
+        log.info("Manager approving reassign: contractId={}, assignmentId={}", contractId, assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.approveReassign(
+            contractId, assignmentId, request.getReason());
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Reassign request approved successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{assignmentId}/reject-reassign")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Manager reject reassign request (reassign_requested → in_progress)")
+    public ApiResponse<TaskAssignmentResponse> rejectReassign(
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            @Parameter(description = "ID của task assignment")
+            @PathVariable String assignmentId,
+            @Valid @RequestBody ReassignDecisionRequest request) {
+        log.info("Manager rejecting reassign: contractId={}, assignmentId={}", contractId, assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.rejectReassign(
+            contractId, assignmentId, request.getReason());
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Reassign request rejected successfully")
+                .data(assignment)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

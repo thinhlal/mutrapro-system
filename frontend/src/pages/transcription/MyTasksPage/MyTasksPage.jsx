@@ -14,110 +14,49 @@ import {
   Tooltip,
   Alert,
   Empty,
+  Popconfirm,
+  Modal,
+  Form,
+  message,
 } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import {
+  getMyTaskAssignments,
+  acceptTaskAssignment,
+  cancelTaskAssignment,
+} from '../../../services/taskAssignmentService';
 import styles from './MyTasksPage.module.css';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-// -------- Fake API --------
+// -------- Helper Functions --------
 /**
- * Simulate fetching tasks assigned to a Specialist Transcription user.
- * Returns a Promise that resolves with a list of tasks after a short delay.
+ * Map backend status to frontend display
  */
-function fetchTasks() {
-  /** @type {Array<{
-   *  id: string;
-   *  taskCode: string;
-   *  title: string;
-   *  serviceType: 'TRANSCRIPTION';
-   *  instruments: string[];
-   *  durationSeconds: number;
-   *  dueAt: string;
-   *  status: 'ASSIGNED' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVISION_REQUESTED' | 'COMPLETED';
-   *  revisionCount: number;
-   *  maxFreeRevisions?: number;
-   *  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
-   *  lastUpdatedAt: string;
-   * }>} */
-  const mock = [
-    {
-      id: '1',
-      taskCode: 'TX-2025-0001',
-      title: 'Chopin Nocturne Op.9 No.2 - Right Hand Melodic Line',
-      serviceType: 'TRANSCRIPTION',
-      instruments: ['Piano'],
-      durationSeconds: 184,
-      dueAt: new Date(Date.now() + 36 * 3600 * 1000).toISOString(),
-      status: 'ASSIGNED',
-      revisionCount: 0,
-      maxFreeRevisions: 2,
-      priority: 'MEDIUM',
-      lastUpdatedAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      taskCode: 'TX-2025-0002',
-      title: 'Jazz Trio Live - Full Transcription (Piano, Bass, Drums)',
-      serviceType: 'TRANSCRIPTION',
-      instruments: ['Piano', 'Double Bass', 'Drums'],
-      durationSeconds: 512,
-      dueAt: new Date(Date.now() + 12 * 3600 * 1000).toISOString(),
-      status: 'IN_PROGRESS',
-      revisionCount: 1,
-      maxFreeRevisions: 3,
-      priority: 'HIGH',
-      lastUpdatedAt: new Date().toISOString(),
-    },
-    {
-      id: '3',
-      taskCode: 'TX-2025-0003',
-      title: 'Anime OST Strings Section - Violin I & II',
-      serviceType: 'TRANSCRIPTION',
-      instruments: ['Violin I', 'Violin II'],
-      durationSeconds: 245,
-      dueAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
-      status: 'SUBMITTED',
-      revisionCount: 0,
-      maxFreeRevisions: 2,
-      priority: 'LOW',
-      lastUpdatedAt: new Date().toISOString(),
-    },
-    {
-      id: '4',
-      taskCode: 'TX-2025-0004',
-      title: 'Rock Guitar Solo - Pitch-Perfect Lead',
-      serviceType: 'TRANSCRIPTION',
-      instruments: ['Electric Guitar'],
-      durationSeconds: 198,
-      dueAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-      status: 'REVISION_REQUESTED',
-      revisionCount: 1,
-      maxFreeRevisions: 2,
-      priority: 'MEDIUM',
-      lastUpdatedAt: new Date().toISOString(),
-    },
-    {
-      id: '5',
-      taskCode: 'TX-2025-0005',
-      title: 'Classical Quartet - Cello Voice Isolation (Completed)',
-      serviceType: 'TRANSCRIPTION',
-      instruments: ['Cello'],
-      durationSeconds: 305,
-      dueAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-      status: 'COMPLETED',
-      revisionCount: 2,
-      maxFreeRevisions: 2,
-      priority: 'LOW',
-      lastUpdatedAt: new Date().toISOString(),
-    },
-  ];
+function getStatusDisplay(status) {
+  if (!status) return { text: 'Assigned', color: 'blue' };
+  const statusMap = {
+    assigned: { text: 'Assigned', color: 'blue' },
+    in_progress: { text: 'In Progress', color: 'geekblue' },
+    completed: { text: 'Completed', color: 'green' },
+    cancelled: { text: 'Cancelled', color: 'default' },
+  };
+  return statusMap[status.toLowerCase()] || { text: status, color: 'default' };
+}
 
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mock), 650);
-  });
+/**
+ * Get task type display label
+ */
+function getTaskTypeLabel(taskType) {
+  if (!taskType) return 'N/A';
+  const labels = {
+    transcription: 'Transcription',
+    arrangement: 'Arrangement',
+    recording: 'Recording',
+  };
+  return labels[taskType.toLowerCase()] || taskType;
 }
 
 // -------- Helpers --------
@@ -147,30 +86,7 @@ function formatDateTime(iso) {
   return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
 }
 
-/**
- * Map task status to antd Tag color and display text.
- */
-function getStatusTag(status) {
-  const map = {
-    ASSIGNED: { color: 'blue', text: 'Assigned' },
-    IN_PROGRESS: { color: 'geekblue', text: 'In Progress' },
-    SUBMITTED: { color: 'gold', text: 'Submitted' },
-    REVISION_REQUESTED: { color: 'red', text: 'Revision Requested' },
-    COMPLETED: { color: 'green', text: 'Completed' },
-  };
-  const item = map[status] || { color: 'default', text: status };
-  return <Tag color={item.color}>{item.text}</Tag>;
-}
 
-/**
- * Fixed service label for transcription tasks.
- */
-function renderServiceLabel(serviceType) {
-  if (serviceType === 'TRANSCRIPTION') {
-    return 'Transcription (Sound → Sheet)';
-  }
-  return serviceType;
-}
 
 // -------- Component --------
 /**
@@ -186,15 +102,25 @@ const MyTasksPage = ({ onOpenTask }) => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [onlyActive, setOnlyActive] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelTask, setCancelTask] = useState(null);
+  const [cancelForm] = Form.useForm();
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await fetchTasks();
-      setTasks(Array.isArray(data) ? data : []);
+      const response = await getMyTaskAssignments();
+      if (response?.status === 'success' && response?.data) {
+        // Dùng trực tiếp data từ API, không map
+        setTasks(response.data);
+      } else {
+        setTasks([]);
+      }
     } catch (e) {
-      setError('Failed to load tasks. Please try again.');
+      console.error('Error loading tasks:', e);
+      setError(e?.message || 'Failed to load tasks. Please try again.');
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -208,32 +134,87 @@ const MyTasksPage = ({ onOpenTask }) => {
     applyFilters();
   }, [tasks, searchText, statusFilter, onlyActive]);
 
-  // Filter logic: search by taskCode/title, filter by status, and only active
+  // Filter logic: search by assignmentId/notes, filter by status, and only active
   const applyFilters = () => {
     let next = [...tasks];
     if (searchText.trim()) {
       const q = searchText.trim().toLowerCase();
       next = next.filter(
         (t) =>
-          t.taskCode.toLowerCase().includes(q) ||
-          (t.title || '').toLowerCase().includes(q)
+          (t.assignmentId || '').toLowerCase().includes(q) ||
+          (t.notes || '').toLowerCase().includes(q) ||
+          (t.taskType || '').toLowerCase().includes(q)
       );
     }
     if (statusFilter !== 'ALL') {
-      next = next.filter((t) => t.status === statusFilter);
+      // Map statusFilter từ frontend format sang backend format
+      const statusMap = {
+        ASSIGNED: 'assigned',
+        IN_PROGRESS: 'in_progress',
+        COMPLETED: 'completed',
+        CANCELLED: 'cancelled',
+      };
+      const backendStatus = statusMap[statusFilter];
+      if (backendStatus) {
+        next = next.filter((t) => t.status?.toLowerCase() === backendStatus);
+      }
     }
     if (onlyActive) {
-      next = next.filter((t) => t.status !== 'COMPLETED');
+      next = next.filter(
+        (t) => t.status?.toLowerCase() !== 'completed' && t.status?.toLowerCase() !== 'cancelled'
+      );
     }
     setFilteredTasks(next);
   };
 
+  const handleAccept = useCallback(async (task) => {
+    try {
+      const response = await acceptTaskAssignment(task.assignmentId);
+      if (response?.status === 'success') {
+        message.success('Task đã được accept thành công');
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error accepting task:', error);
+      message.error(error?.message || 'Lỗi khi accept task');
+    }
+  }, [loadTasks]);
+
+  const handleCancel = useCallback((task) => {
+    setCancelTask(task);
+    setCancelModalVisible(true);
+    cancelForm.resetFields();
+  }, [cancelForm]);
+
+  const handleCancelConfirm = useCallback(async () => {
+    try {
+      const values = await cancelForm.validateFields();
+      const response = await cancelTaskAssignment(cancelTask.assignmentId, values.reason);
+      if (response?.status === 'success') {
+        message.success('Task đã được cancel thành công');
+        setCancelModalVisible(false);
+        setCancelTask(null);
+        cancelForm.resetFields();
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error cancelling task:', error);
+      message.error(error?.message || 'Lỗi khi cancel task');
+    }
+  }, [cancelTask, cancelForm, loadTasks]);
+
+  const handleCancelModalCancel = useCallback(() => {
+    setCancelModalVisible(false);
+    setCancelTask(null);
+    cancelForm.resetFields();
+  }, [cancelForm]);
+
   const handleOpenTask = useCallback(
     (task) => {
       if (typeof onOpenTask === 'function') {
-        onOpenTask(task.id);
+        onOpenTask(task.assignmentId);
       } else {
-        navigate(`/transcription/my-tasks/${task.id}`);
+        navigate(`/transcription/my-tasks/${task.assignmentId}`);
       }
     },
     [navigate, onOpenTask]
@@ -242,59 +223,42 @@ const MyTasksPage = ({ onOpenTask }) => {
   const columns = useMemo(
     () => [
       {
-        title: 'Task ID',
-        dataIndex: 'taskCode',
-        key: 'taskCode',
-        width: 160,
+        title: 'Assignment ID',
+        dataIndex: 'assignmentId',
+        key: 'assignmentId',
+        width: 200,
         ellipsis: true,
+        render: (id) => (
+          <Tooltip title={id}>
+            <span>{id?.substring(0, 8)}...</span>
+          </Tooltip>
+        ),
       },
       {
-        title: 'Title',
-        dataIndex: 'title',
-        key: 'title',
+        title: 'Task Type',
+        dataIndex: 'taskType',
+        key: 'taskType',
+        width: 150,
+        render: (taskType) => <Tag>{getTaskTypeLabel(taskType)}</Tag>,
+      },
+      {
+        title: 'Notes',
+        dataIndex: 'notes',
+        key: 'notes',
+        ellipsis: true,
         render: (text) =>
-          text && text.length > 40 ? (
+          text && text.length > 50 ? (
             <Tooltip title={text}>
-              <span>{text.slice(0, 40)}...</span>
+              <span>{text.slice(0, 50)}...</span>
             </Tooltip>
           ) : (
-            <span>{text}</span>
+            <span>{text || '-'}</span>
           ),
       },
       {
-        title: 'Service',
-        dataIndex: 'serviceType',
-        key: 'serviceType',
-        width: 260,
-        render: (value) => renderServiceLabel(value),
-      },
-      {
-        title: 'Instruments',
-        dataIndex: 'instruments',
-        key: 'instruments',
-        width: 260,
-        render: (arr) => {
-          const joined = Array.isArray(arr) ? arr.join(', ') : '';
-          return joined.length > 45 ? (
-            <Tooltip title={joined}>
-              <span>{joined.slice(0, 45)}...</span>
-            </Tooltip>
-          ) : (
-            <span>{joined}</span>
-          );
-        },
-      },
-      {
-        title: 'Duration',
-        dataIndex: 'durationSeconds',
-        key: 'durationSeconds',
-        width: 110,
-        render: (sec) => formatDuration(sec),
-      },
-      {
-        title: 'Due Date',
-        dataIndex: 'dueAt',
-        key: 'dueAt',
+        title: 'Assigned Date',
+        dataIndex: 'assignedDate',
+        key: 'assignedDate',
         width: 170,
         render: (iso) => formatDateTime(iso),
       },
@@ -302,32 +266,56 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
-        width: 170,
-        render: (status) => getStatusTag(status),
-      },
-      {
-        title: 'Revisions',
-        dataIndex: 'revisionCount',
-        key: 'revision',
-        width: 120,
-        render: (count, record) =>
-          record.maxFreeRevisions != null
-            ? `${count}/${record.maxFreeRevisions}`
-            : String(count),
+        width: 150,
+        render: (status) => {
+          const statusDisplay = getStatusDisplay(status);
+          return <Tag color={statusDisplay.color}>{statusDisplay.text}</Tag>;
+        },
       },
       {
         title: 'Actions',
         key: 'actions',
         fixed: 'right',
-        width: 130,
-        render: (_, record) => (
-          <Button type="link" size="small" onClick={() => handleOpenTask(record)}>
-            View / Work
-          </Button>
-        ),
+        width: 200,
+        render: (_, record) => {
+          const status = record.status?.toLowerCase();
+          return (
+            <Space size="small">
+              {status === 'assigned' && (
+                <>
+                  <Popconfirm
+                    title="Bạn có chắc muốn accept task này?"
+                    onConfirm={() => handleAccept(record)}
+                    okText="Accept"
+                    cancelText="Hủy"
+                  >
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<CheckOutlined />}
+                    >
+                      Accept
+                    </Button>
+                  </Popconfirm>
+                  <Button
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={() => handleCancel(record)}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+              <Button type="link" size="small" onClick={() => handleOpenTask(record)}>
+                View / Work
+              </Button>
+            </Space>
+          );
+        },
       },
     ],
-    [handleOpenTask]
+    [handleOpenTask, handleAccept, handleCancel]
   );
 
   const tableLocale = useMemo(
@@ -376,10 +364,10 @@ const MyTasksPage = ({ onOpenTask }) => {
                 { label: 'All statuses', value: 'ALL' },
                 { label: 'Assigned', value: 'ASSIGNED' },
                 { label: 'In Progress', value: 'IN_PROGRESS' },
-                { label: 'Submitted', value: 'SUBMITTED' },
-                { label: 'Revision Requested', value: 'REVISION_REQUESTED' },
                 { label: 'Completed', value: 'COMPLETED' },
+                { label: 'Cancelled', value: 'CANCELLED' },
               ]}
+              // Note: Filter sẽ map ASSIGNED -> 'assigned' trong applyFilters
             />
           </Col>
           <Col xs={24} md={6} lg={6}>
@@ -399,7 +387,7 @@ const MyTasksPage = ({ onOpenTask }) => {
 
       <Card>
         <Table
-          rowKey="id"
+          rowKey="assignmentId"
           dataSource={filteredTasks}
           columns={columns}
           loading={loading}
@@ -408,6 +396,36 @@ const MyTasksPage = ({ onOpenTask }) => {
           locale={tableLocale}
         />
       </Card>
+
+      {/* Cancel Task Modal */}
+      <Modal
+        title="Cancel Task"
+        open={cancelModalVisible}
+        onOk={handleCancelConfirm}
+        onCancel={handleCancelModalCancel}
+        okText="Cancel Task"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <Form form={cancelForm} layout="vertical">
+          <Form.Item
+            label="Lý do cancel (bắt buộc)"
+            name="reason"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do cancel' },
+              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Nhập lý do bạn muốn cancel task này..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </div>
   );
 };

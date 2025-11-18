@@ -17,6 +17,7 @@ import {
   Form,
   Input,
   Empty,
+  Alert,
 } from 'antd';
 import {
   LeftOutlined,
@@ -26,6 +27,11 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+  getMyTaskAssignmentById,
+  requestReassign,
+  acceptTaskAssignment,
+} from '../../../services/taskAssignmentService';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -159,14 +165,14 @@ function formatDateTime(iso) {
 }
 
 function getStatusTag(status) {
+  if (!status) return <Tag color="default">Unknown</Tag>;
   const map = {
-    ASSIGNED: { color: 'blue', text: 'Assigned' },
-    IN_PROGRESS: { color: 'geekblue', text: 'In Progress' },
-    SUBMITTED: { color: 'gold', text: 'Submitted' },
-    REVISION_REQUESTED: { color: 'red', text: 'Revision Requested' },
-    COMPLETED: { color: 'green', text: 'Completed' },
+    assigned: { color: 'blue', text: 'Assigned' },
+    in_progress: { color: 'geekblue', text: 'In Progress' },
+    completed: { color: 'green', text: 'Completed' },
+    cancelled: { color: 'default', text: 'Cancelled' },
   };
-  const item = map[status] || { color: 'default', text: status };
+  const item = map[status.toLowerCase()] || { color: 'default', text: status };
   return <Tag color={item.color}>{item.text}</Tag>;
 }
 
@@ -180,40 +186,48 @@ function getFileStatusTag(status) {
   return <Tag color={item.color}>{item.text}</Tag>;
 }
 
-function getPriorityTag(priority) {
-  const map = {
-    LOW: { color: 'default', text: 'Low' },
-    MEDIUM: { color: 'gold', text: 'Medium' },
-    HIGH: { color: 'red', text: 'High' },
+function getTaskTypeLabel(taskType) {
+  if (!taskType) return 'N/A';
+  const labels = {
+    transcription: 'Transcription',
+    arrangement: 'Arrangement',
+    recording: 'Recording',
   };
-  const item = map[priority] || { color: 'default', text: priority };
-  return <Tag color={item.color}>{item.text}</Tag>;
+  return labels[taskType.toLowerCase()] || taskType;
 }
+
 
 // ---------------- Component ----------------
 const TranscriptionTaskDetailPage = () => {
   const navigate = useNavigate();
-  const { taskId } = useParams();
+  const { taskId } = useParams(); // taskId thực chất là assignmentId
 
   const [task, setTask] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [loadingActions, setLoadingActions] = useState(false);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadForm] = Form.useForm();
+  const [reassignModalVisible, setReassignModalVisible] = useState(false);
+  const [reassignSubmitting, setReassignSubmitting] = useState(false);
+  const [acceptingTask, setAcceptingTask] = useState(false);
+  const [reassignForm] = Form.useForm();
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [detail, list] = await Promise.all([
-        fetchTaskDetail(taskId),
-        fetchTaskFiles(taskId),
-      ]);
-      setTask(detail);
-      setFiles(list);
+      // Gọi real API để lấy task assignment detail
+      const response = await getMyTaskAssignmentById(taskId);
+      if (response?.status === 'success' && response?.data) {
+        setTask(response.data);
+        // Files sẽ được load sau khi có contract/request info
+        setFiles([]);
+      } else {
+        setError('Task not found');
+      }
     } catch (err) {
+      console.error('Error loading task detail:', err);
       setError(err?.message || 'Failed to load task');
     } finally {
       setLoading(false);
@@ -228,35 +242,32 @@ const TranscriptionTaskDetailPage = () => {
     loadData();
   }, [loadData]);
 
-  // Action handlers: update FE state only
-  const handleStart = useCallback(() => {
-    if (!task || task.status !== 'ASSIGNED') return;
-    setLoadingActions(true);
-    setTimeout(() => {
-      setTask((prev) => ({ ...prev, status: 'IN_PROGRESS' }));
-      setLoadingActions(false);
-      message.success('Task status updated to In Progress');
-    }, 400);
-  }, [task]);
-
   const handleSubmitForReview = useCallback(() => {
-    if (!task || task.status !== 'IN_PROGRESS' || files.length === 0) return;
-    setLoadingActions(true);
-    setTimeout(() => {
-      setTask((prev) => ({ ...prev, status: 'SUBMITTED' }));
-      setLoadingActions(false);
-      message.success('Task submitted for review');
-    }, 400);
+    if (!task || task.status?.toLowerCase() !== 'in_progress' || files.length === 0) return;
+    message.info('Chức năng submit for review sẽ được implement sau');
   }, [task, files.length]);
+  
+  const handleAcceptTask = useCallback(async () => {
+    if (!task || task.status?.toLowerCase() !== 'assigned') return;
+    try {
+      setAcceptingTask(true);
+      const response = await acceptTaskAssignment(task.assignmentId);
+      if (response?.status === 'success') {
+        message.success('Bạn đã accept task thành công');
+        await loadData();
+      }
+    } catch (error) {
+      console.error('Error accepting task:', error);
+      message.error(error?.message || 'Lỗi khi accept task');
+    } finally {
+      setAcceptingTask(false);
+    }
+  }, [task, loadData]);
 
   const handleSubmitRevision = useCallback(() => {
-    if (!task || task.status !== 'REVISION_REQUESTED' || files.length === 0) return;
-    setLoadingActions(true);
-    setTimeout(() => {
-      setTask((prev) => ({ ...prev, status: 'SUBMITTED' }));
-      setLoadingActions(false);
-      message.success('Revision submitted for review');
-    }, 400);
+    // TODO: Implement submit revision API
+    if (!task || task.status?.toLowerCase() !== 'revision_requested' || files.length === 0) return;
+    message.info('Chức năng submit revision sẽ được implement sau');
   }, [task, files.length]);
 
   const handleOpenUploadModal = useCallback(() => {
@@ -299,17 +310,37 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [files, uploadForm]);
 
-  const isOverdue = useMemo(() => {
-    if (!task?.dueAt) return false;
-    return new Date(task.dueAt).getTime() < Date.now();
-  }, [task]);
+  const handleOpenReassignModal = useCallback(() => {
+    reassignForm.resetFields();
+    setReassignModalVisible(true);
+  }, [reassignForm]);
 
-  const isDueSoon = useMemo(() => {
-    if (!task?.dueAt) return false;
-    const diffMs = new Date(task.dueAt).getTime() - Date.now();
-    const hours = diffMs / (1000 * 60 * 60);
-    return hours > 0 && hours < 24;
-  }, [task]);
+  const handleReassignCancel = useCallback(() => {
+    setReassignModalVisible(false);
+    reassignForm.resetFields();
+  }, [reassignForm]);
+
+  const handleReassignSubmit = useCallback(async () => {
+    if (!task) return;
+    try {
+      const { reason } = await reassignForm.validateFields();
+      setReassignSubmitting(true);
+      const response = await requestReassign(task.assignmentId, reason);
+      if (response?.status === 'success') {
+        message.success('Đã gửi yêu cầu reassign cho Manager');
+        setReassignModalVisible(false);
+        reassignForm.resetFields();
+        await loadData();
+      }
+    } catch (error) {
+      if (error?.errorFields) return;
+      console.error('Error requesting reassign:', error);
+      message.error(error?.message || 'Lỗi khi gửi yêu cầu reassign');
+    } finally {
+      setReassignSubmitting(false);
+    }
+  }, [task, reassignForm, loadData]);
+
 
   const latestVersion = useMemo(() => {
     if (files.length === 0) return 0;
@@ -430,35 +461,24 @@ const TranscriptionTaskDetailPage = () => {
       <Card className={styles.section}>
         <Row gutter={[16, 16]} className={styles.overviewRow}>
           <Col xs={24} lg={14}>
-            <Descriptions column={1} title="Service & Request">
-              <Descriptions.Item label="Task ID">
-                {task.taskCode}
+            <Descriptions column={1} title="Task Assignment Details">
+              <Descriptions.Item label="Assignment ID">
+                {task.assignmentId}
               </Descriptions.Item>
-              <Descriptions.Item label="Title">{task.title}</Descriptions.Item>
-              <Descriptions.Item label="Service">
-                Transcription (Sound → Sheet)
+              <Descriptions.Item label="Task Type">
+                <Tag>{getTaskTypeLabel(task.taskType)}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Instruments">
-                {Array.isArray(task.instruments) &&
-                task.instruments.join(', ').length > 60 ? (
-                  <Tooltip title={task.instruments.join(', ')}>
-                    <span>{task.instruments.join(', ').slice(0, 60)}...</span>
-                  </Tooltip>
-                ) : (
-                  <span>{(task.instruments || []).join(', ')}</span>
-                )}
+              <Descriptions.Item label="Contract ID">
+                {task.contractId}
               </Descriptions.Item>
-              <Descriptions.Item label="Duration">
-                {formatDuration(task.durationSeconds)}
+              <Descriptions.Item label="Milestone ID">
+                {task.milestoneId}
               </Descriptions.Item>
-              <Descriptions.Item label="Tempo / Time">
-                {task.tempo} BPM • {task.timeSignature}
+              <Descriptions.Item label="Notes">
+                {task.notes || '—'}
               </Descriptions.Item>
-              <Descriptions.Item label="Customer">
-                {task.customerName}
-              </Descriptions.Item>
-              <Descriptions.Item label="Special Notes">
-                {task.specialNotes || '—'}
+              <Descriptions.Item label="Used Revisions">
+                {task.usedRevisions || 0}
               </Descriptions.Item>
             </Descriptions>
           </Col>
@@ -470,56 +490,40 @@ const TranscriptionTaskDetailPage = () => {
                   {getStatusTag(task.status)}
                 </div>
                 <div>
-                  <Text strong>Priority: </Text>
-                  {getPriorityTag(task.priority)}
+                  <Text strong>Assigned Date: </Text>
+                  <Text>{formatDateTime(task.assignedDate)}</Text>
                 </div>
-                <div>
-                  <Text strong>Due Date: </Text>
-                  <Space>
-                    {isOverdue ? (
-                      <Text type="danger">
-                        <ExclamationCircleOutlined /> {formatDateTime(task.dueAt)}
-                      </Text>
-                    ) : isDueSoon ? (
-                      <Text style={{ color: '#fa8c16' }}>
-                        {formatDateTime(task.dueAt)}
-                      </Text>
-                    ) : (
-                      <Text>{formatDateTime(task.dueAt)}</Text>
-                    )}
-                  </Space>
-                </div>
-                <div>
-                  <Text strong>Last updated: </Text>
-                  <Text>{formatDateTime(task.lastUpdatedAt)}</Text>
-                </div>
+                {task.completedDate && (
+                  <div>
+                    <Text strong>Completed Date: </Text>
+                    <Text>{formatDateTime(task.completedDate)}</Text>
+                  </div>
+                )}
                 <Space>
-                  <Button
-                    onClick={handleStart}
-                    disabled={task.status !== 'ASSIGNED' || loadingActions}
-                    loading={loadingActions && task.status === 'ASSIGNED'}
-                  >
-                    Start / Mark In Progress
-                  </Button>
+                  {task.status?.toLowerCase() === 'assigned' && (
+                    <Button
+                      type="primary"
+                      onClick={handleAcceptTask}
+                      loading={acceptingTask}
+                    >
+                      Accept Task
+                    </Button>
+                  )}
                   <Button
                     onClick={handleSubmitForReview}
                     disabled={
-                      task.status !== 'IN_PROGRESS' || files.length === 0 || loadingActions
+                      task.status?.toLowerCase() !== 'in_progress' || files.length === 0
                     }
-                    loading={loadingActions && task.status === 'IN_PROGRESS'}
                   >
                     Submit for Review
                   </Button>
-                  {task.status === 'REVISION_REQUESTED' && (
-                    <Button
-                      type="primary"
-                      onClick={handleSubmitRevision}
-                      disabled={files.length === 0 || loadingActions}
-                      loading={loadingActions}
-                    >
-                      Submit Revision
-                    </Button>
-                  )}
+                  <Button
+                    danger
+                    onClick={handleOpenReassignModal}
+                    disabled={task.status?.toLowerCase() !== 'in_progress'}
+                  >
+                    Request Reassign
+                  </Button>
                 </Space>
               </Space>
             </Card>
@@ -527,26 +531,14 @@ const TranscriptionTaskDetailPage = () => {
         </Row>
       </Card>
 
-      {/* Audio Preview */}
-      <Card className={styles.section} title="Audio Preview">
+      {/* Audio Preview - TODO: Load from contract/request */}
+      {/* <Card className={styles.section} title="Audio Preview">
         {task.audioUrl ? (
           <audio controls src={task.audioUrl} className={styles.audioPlayer} />
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No audio provided" />
         )}
-      </Card>
-
-      {/* Revision Request */}
-      {task.revisionRequest && task.status === 'REVISION_REQUESTED' && (
-        <Card className={`${styles.section} ${styles.revisionCard}`} type="inner" title={`Revision #${task.revisionRequest.revisionNumber} requested by ${task.revisionRequest.requestedBy}`}>
-          <Space direction="vertical">
-            <Text type="secondary">
-              Requested at: {formatDateTime(task.revisionRequest.requestedAt)}
-            </Text>
-            <Text>{task.revisionRequest.message}</Text>
-          </Space>
-        </Card>
-      )}
+      </Card> */}
 
       {/* Files & Versions */}
       <Card
@@ -608,6 +600,41 @@ const TranscriptionTaskDetailPage = () => {
             <TextArea rows={3} placeholder="Optional notes about this version" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Request Reassign"
+        open={reassignModalVisible}
+        onOk={handleReassignSubmit}
+        onCancel={handleReassignCancel}
+        okText="Gửi yêu cầu"
+        cancelText="Hủy"
+        confirmLoading={reassignSubmitting}
+      >
+        <Form layout="vertical" form={reassignForm}>
+          <Form.Item
+            label="Lý do request reassign (bắt buộc)"
+            name="reason"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do request reassign' },
+              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Mô tả lý do bạn cần được reassign..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+        <Alert
+          message="Lưu ý"
+          description="Yêu cầu reassign sẽ được gửi tới Manager. Manager cần approve thì task mới được giao lại cho người khác."
+          type="info"
+          showIcon
+          style={{ marginTop: 16 }}
+        />
       </Modal>
     </div>
   );

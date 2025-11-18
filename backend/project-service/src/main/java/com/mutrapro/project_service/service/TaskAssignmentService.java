@@ -1,14 +1,19 @@
 package com.mutrapro.project_service.service;
 
+import com.mutrapro.project_service.client.NotificationServiceFeignClient;
+import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
+import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.mapper.TaskAssignmentMapper;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
@@ -26,12 +31,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import java.time.Instant;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -45,6 +52,8 @@ public class TaskAssignmentService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     TaskAssignmentMapper taskAssignmentMapper;
+    SpecialistServiceFeignClient specialistServiceFeignClient;
+    NotificationServiceFeignClient notificationServiceFeignClient;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -273,6 +282,294 @@ public class TaskAssignmentService {
         };
     }
 
+
+    /**
+     * Lấy danh sách task assignments của specialist hiện tại
+     */
+    public List<TaskAssignmentResponse> getMyTaskAssignments() {
+        log.info("Getting task assignments for current specialist");
+        String specialistId = getCurrentSpecialistId();
+        List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistId(specialistId);
+        return taskAssignmentMapper.toResponseList(assignments);
+    }
+
+    /**
+     * Lấy chi tiết task assignment của specialist hiện tại
+     */
+    public TaskAssignmentResponse getMyTaskAssignmentById(String assignmentId) {
+        log.info("Getting task assignment detail: assignmentId={}", assignmentId);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only view your own task assignments");
+        }
+        
+        return taskAssignmentMapper.toResponse(assignment);
+    }
+
+    /**
+     * Specialist accept task (assigned → in_progress)
+     */
+    @Transactional
+    public TaskAssignmentResponse acceptTaskAssignment(String assignmentId) {
+        log.info("Specialist accepting task assignment: assignmentId={}", assignmentId);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only accept tasks assigned to you");
+        }
+        
+        // Only allow accept if status is 'assigned'
+        if (assignment.getStatus() != AssignmentStatus.assigned) {
+            throw new RuntimeException(
+                "Task assignment cannot be accepted. Current status: " + assignment.getStatus());
+        }
+        
+        assignment.setStatus(AssignmentStatus.in_progress);
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Task assignment accepted successfully: assignmentId={}", assignmentId);
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Specialist cancel task (assigned → cancelled)
+     */
+    @Transactional
+    public TaskAssignmentResponse cancelTaskAssignment(String assignmentId, String reason) {
+        log.info("Specialist cancelling task assignment: assignmentId={}, reason={}", assignmentId, reason);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only cancel tasks assigned to you");
+        }
+        
+        // Only allow cancel if status is 'assigned'
+        if (assignment.getStatus() != AssignmentStatus.assigned) {
+            throw new RuntimeException(
+                "Task assignment cannot be cancelled. Current status: " + assignment.getStatus());
+        }
+        
+        assignment.setStatus(AssignmentStatus.cancelled);
+        assignment.setSpecialistResponseReason(reason);
+        assignment.setSpecialistRespondedAt(Instant.now());
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Task assignment cancelled successfully: assignmentId={}, reason={}", assignmentId, reason);
+        
+        // Gửi notification cho manager
+        try {
+            Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElse(null);
+            
+            if (contract != null && contract.getManagerUserId() != null) {
+                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                        .userId(contract.getManagerUserId())
+                        .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
+                        .title("Task assignment đã bị hủy")
+                        .content(String.format("Specialist đã hủy task assignment cho contract #%s. Task type: %s. Lý do: %s", 
+                                contract.getContractNumber() != null ? contract.getContractNumber() : assignment.getContractId(),
+                                assignment.getTaskType(),
+                                reason))
+                        .referenceId(assignmentId)
+                        .referenceType("TASK_ASSIGNMENT")
+                        .actionUrl("/manager/task-assignments?contractId=" + assignment.getContractId())
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(notifRequest);
+                log.info("Sent task cancellation notification to manager: userId={}, assignmentId={}, contractId={}", 
+                        contract.getManagerUserId(), assignmentId, assignment.getContractId());
+            } else {
+                log.warn("Cannot send notification: contract not found or managerUserId is null. contractId={}, assignmentId={}", 
+                        assignment.getContractId(), assignmentId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to send task cancellation notification: assignmentId={}, error={}", 
+                    assignmentId, e.getMessage(), e);
+        }
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Specialist request reassign task (in_progress → reassign_requested)
+     */
+    @Transactional
+    public TaskAssignmentResponse requestReassign(String assignmentId, String reason) {
+        log.info("Specialist requesting reassign: assignmentId={}, reason={}", assignmentId, reason);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only request reassign for your own tasks");
+        }
+        
+        // Only allow request reassign if status is 'in_progress'
+        if (assignment.getStatus() != AssignmentStatus.in_progress) {
+            throw new RuntimeException(
+                "Task assignment cannot be requested for reassign. Current status: " + assignment.getStatus());
+        }
+        
+        assignment.setStatus(AssignmentStatus.reassign_requested);
+        assignment.setReassignReason(reason);
+        assignment.setReassignRequestedAt(Instant.now());
+        assignment.setReassignRequestedBy(specialistId);
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Reassign requested successfully: assignmentId={}", assignmentId);
+        
+        // Gửi notification cho manager
+        try {
+            Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElse(null);
+            
+            if (contract != null && contract.getManagerUserId() != null) {
+                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                        .userId(contract.getManagerUserId())
+                        .type(NotificationType.TASK_ASSIGNMENT_CANCELED) // Có thể tạo type mới sau
+                        .title("Yêu cầu reassign task")
+                        .content(String.format("Specialist đã yêu cầu reassign task assignment cho contract #%s. Task type: %s. Lý do: %s", 
+                                contract.getContractNumber() != null ? contract.getContractNumber() : assignment.getContractId(),
+                                assignment.getTaskType(),
+                                reason))
+                        .referenceId(assignmentId)
+                        .referenceType("TASK_ASSIGNMENT")
+                        .actionUrl("/manager/task-assignments?contractId=" + assignment.getContractId())
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(notifRequest);
+                log.info("Sent reassign request notification to manager: userId={}, assignmentId={}, contractId={}", 
+                        contract.getManagerUserId(), assignmentId, assignment.getContractId());
+            }
+        } catch (Exception e) {
+            log.error("Failed to send reassign request notification: assignmentId={}, error={}", 
+                    assignmentId, e.getMessage(), e);
+        }
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Manager approve reassign request (reassign_requested → assigned)
+     */
+    @Transactional
+    public TaskAssignmentResponse approveReassign(String contractId, String assignmentId, String decisionReason) {
+        log.info("Manager approving reassign: contractId={}, assignmentId={}, reason={}", 
+            contractId, assignmentId, decisionReason);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify contract exists and user has permission
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        verifyManagerPermission(contract);
+        
+        // Verify assignment belongs to contract
+        if (!assignment.getContractId().equals(contractId)) {
+            throw new RuntimeException("Task assignment does not belong to this contract");
+        }
+        
+        // Only allow approve if status is 'reassign_requested'
+        if (assignment.getStatus() != AssignmentStatus.reassign_requested) {
+            throw new RuntimeException(
+                "Task assignment cannot be approved for reassign. Current status: " + assignment.getStatus());
+        }
+        
+        String managerUserId = getCurrentUserId();
+        assignment.setStatus(AssignmentStatus.assigned);
+        assignment.setReassignApprovedBy(managerUserId);
+        assignment.setReassignApprovedAt(Instant.now());
+        assignment.setReassignDecision("APPROVED");
+        assignment.setReassignDecisionReason(decisionReason);
+        // Clear specialist assignment để manager có thể assign lại
+        // assignment.setSpecialistId(null); // Có thể giữ lại để biết ai đã làm trước đó
+        
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Reassign approved successfully: assignmentId={}, contractId={}", assignmentId, contractId);
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Manager reject reassign request (reassign_requested → in_progress)
+     */
+    @Transactional
+    public TaskAssignmentResponse rejectReassign(String contractId, String assignmentId, String decisionReason) {
+        log.info("Manager rejecting reassign: contractId={}, assignmentId={}, reason={}", 
+            contractId, assignmentId, decisionReason);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify contract exists and user has permission
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        verifyManagerPermission(contract);
+        
+        // Verify assignment belongs to contract
+        if (!assignment.getContractId().equals(contractId)) {
+            throw new RuntimeException("Task assignment does not belong to this contract");
+        }
+        
+        // Only allow reject if status is 'reassign_requested'
+        if (assignment.getStatus() != AssignmentStatus.reassign_requested) {
+            throw new RuntimeException(
+                "Task assignment cannot be rejected for reassign. Current status: " + assignment.getStatus());
+        }
+        
+        String managerUserId = getCurrentUserId();
+        assignment.setStatus(AssignmentStatus.in_progress);
+        assignment.setReassignApprovedBy(managerUserId);
+        assignment.setReassignApprovedAt(Instant.now());
+        assignment.setReassignDecision("REJECTED");
+        assignment.setReassignDecisionReason(decisionReason);
+        
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Reassign rejected successfully: assignmentId={}, contractId={}", assignmentId, contractId);
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Lấy specialistId của user hiện tại từ specialist-service
+     */
+    private String getCurrentSpecialistId() {
+        try {
+            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
+            if (response == null || !"success".equals(response.getStatus()) 
+                || response.getData() == null) {
+                throw UnauthorizedException.create("Specialist not found for current user");
+            }
+            Map<String, Object> data = response.getData();
+            String specialistId = (String) data.get("specialistId");
+            if (specialistId == null || specialistId.isEmpty()) {
+                throw UnauthorizedException.create("Specialist ID not found in response");
+            }
+            return specialistId;
+        } catch (Exception e) {
+            log.error("Failed to get specialist info: {}", e.getMessage(), e);
+            throw UnauthorizedException.create("Failed to get specialist information: " + e.getMessage());
+        }
+    }
 
     /**
      * Lấy current user ID từ JWT token

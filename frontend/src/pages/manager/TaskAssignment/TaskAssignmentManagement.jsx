@@ -16,12 +16,15 @@ import {
   Col,
   List,
   Alert,
+  Modal,
+  Form,
 } from 'antd';
 import {
   ReloadOutlined,
   EditOutlined,
   DeleteOutlined,
   UserAddOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -51,6 +54,7 @@ const STATUS_COLORS = {
   in_progress: 'processing',
   completed: 'success',
   cancelled: 'error',
+  reassign_requested: 'orange',
 };
 
 // Assignment status labels
@@ -59,6 +63,7 @@ const STATUS_LABELS = {
   in_progress: 'Đang thực hiện',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
+  reassign_requested: 'Yêu cầu reassign',
 };
 
 const defaultTaskStats = {
@@ -77,6 +82,7 @@ const computeTaskStats = tasks =>
       if (status === 'in_progress') acc.inProgress += 1;
       else if (status === 'completed') acc.completed += 1;
       else if (status === 'cancelled') acc.cancelled += 1;
+      else if (status === 'reassign_requested') acc.assigned += 1; // Tạm thời tính vào assigned
       else acc.assigned += 1;
       return acc;
     },
@@ -93,6 +99,11 @@ export default function TaskAssignmentManagement() {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [contractSearch, setContractSearch] = useState('');
   const [contractTaskStats, setContractTaskStats] = useState({});
+  const [cancelledTaskModalVisible, setCancelledTaskModalVisible] = useState(false);
+  const [selectedCancelledTask, setSelectedCancelledTask] = useState(null);
+  const [reassignModalVisible, setReassignModalVisible] = useState(false);
+  const [reassignTask, setReassignTask] = useState(null);
+  const [reassignForm] = Form.useForm();
   const navigate = useNavigate();
 
   const updateContractStats = useCallback((contractId, tasks) => {
@@ -224,6 +235,10 @@ export default function TaskAssignmentManagement() {
     contractId => {
       const stats = contractTaskStats[contractId];
       if (!stats) return null;
+      // Ưu tiên hiển thị cancelled nếu có
+      if (stats.cancelled > 0) {
+        return { label: `cancelled (${stats.cancelled})`, color: 'red', priority: -1 };
+      }
       if (stats.total === 0) {
         return { label: 'need assignment', color: 'orange', priority: 0 };
       }
@@ -278,6 +293,7 @@ export default function TaskAssignmentManagement() {
       if (status === 'completed') stats[task.milestoneId].completed += 1;
       else if (status === 'in_progress') stats[task.milestoneId].inProgress += 1;
       else if (status === 'cancelled') stats[task.milestoneId].cancelled += 1;
+      else if (status === 'reassign_requested') stats[task.milestoneId].assigned += 1; // Tạm thời tính vào assigned
       else stats[task.milestoneId].assigned += 1;
     });
     return stats;
@@ -331,6 +347,72 @@ export default function TaskAssignmentManagement() {
         error?.message || 'Lỗi khi xóa task assignment. Vui lòng thử lại.'
       );
     }
+  };
+
+  // Handle view cancelled task details
+  const handleViewCancelledDetails = record => {
+    setSelectedCancelledTask(record);
+    setCancelledTaskModalVisible(true);
+  };
+
+  const handleCloseCancelledTaskModal = () => {
+    setCancelledTaskModalVisible(false);
+    setSelectedCancelledTask(null);
+  };
+
+  // Handle reassign request actions
+  const handleApproveReassign = async (record) => {
+    setReassignTask(record);
+    setReassignModalVisible(true);
+    reassignForm.setFieldsValue({ action: 'approve', reason: '' });
+  };
+
+  const handleRejectReassign = async (record) => {
+    setReassignTask(record);
+    setReassignModalVisible(true);
+    reassignForm.setFieldsValue({ action: 'reject', reason: '' });
+  };
+
+  const handleReassignConfirm = async () => {
+    try {
+      const values = await reassignForm.validateFields();
+      const { action, reason } = values;
+      
+      if (action === 'approve') {
+        const response = await approveReassign(
+          selectedContractId,
+          reassignTask.assignmentId,
+          reason
+        );
+        if (response?.status === 'success') {
+          message.success('Đã approve reassign request thành công');
+          await fetchTaskAssignments(selectedContractId);
+        }
+      } else {
+        const response = await rejectReassign(
+          selectedContractId,
+          reassignTask.assignmentId,
+          reason
+        );
+        if (response?.status === 'success') {
+          message.success('Đã reject reassign request thành công');
+          await fetchTaskAssignments(selectedContractId);
+        }
+      }
+      
+      setReassignModalVisible(false);
+      setReassignTask(null);
+      reassignForm.resetFields();
+    } catch (error) {
+      console.error('Error processing reassign:', error);
+      message.error(error?.message || 'Lỗi khi xử lý reassign request');
+    }
+  };
+
+  const handleReassignModalCancel = () => {
+    setReassignModalVisible(false);
+    setReassignTask(null);
+    reassignForm.resetFields();
   };
 
   // Get specialist name by ID
@@ -421,34 +503,85 @@ export default function TaskAssignmentManagement() {
       key: 'actions',
       width: 150,
       fixed: 'right',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              disabled={record.status === 'completed'}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa task assignment này?"
-            description="Bạn có chắc chắn muốn xóa task assignment này không?"
-            onConfirm={() => handleDelete(record.assignmentId)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Xóa">
+      render: (_, record) => {
+        const status = record.status?.toLowerCase();
+        const isCancelled = status === 'cancelled';
+        const isCompleted = status === 'completed';
+        const isReassignRequested = status === 'reassign_requested';
+        
+        // Nếu task bị hủy, chỉ hiển thị nút xem chi tiết
+        if (isCancelled) {
+          return (
+            <Space size="small">
+              <Tooltip title="Xem chi tiết task đã hủy">
+                <Button
+                  type="link"
+                  icon={<EyeOutlined />}
+                  onClick={() => handleViewCancelledDetails(record)}
+                >
+                  Chi tiết
+                </Button>
+              </Tooltip>
+            </Space>
+          );
+        }
+        
+        // Nếu task có reassign request, hiển thị Approve/Reject
+        if (isReassignRequested) {
+          return (
+            <Space size="small">
+              <Tooltip title="Approve reassign request">
+                <Button
+                  type="link"
+                  style={{ color: '#52c41a' }}
+                  onClick={() => handleApproveReassign(record)}
+                >
+                  Approve
+                </Button>
+              </Tooltip>
+              <Tooltip title="Reject reassign request">
+                <Button
+                  type="link"
+                  danger
+                  onClick={() => handleRejectReassign(record)}
+                >
+                  Reject
+                </Button>
+              </Tooltip>
+            </Space>
+          );
+        }
+        
+        // Nếu task chưa bị hủy và không có reassign request, hiển thị Edit và Delete
+        return (
+          <Space size="small">
+            <Tooltip title="Chỉnh sửa">
               <Button
                 type="link"
-                danger
-                icon={<DeleteOutlined />}
-                disabled={record.status === 'completed'}
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                disabled={isCompleted}
               />
             </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
+            <Popconfirm
+              title="Xóa task assignment này?"
+              description="Bạn có chắc chắn muốn xóa task assignment này không?"
+              onConfirm={() => handleDelete(record.assignmentId)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Tooltip title="Xóa">
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={isCompleted}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -569,6 +702,9 @@ export default function TaskAssignmentManagement() {
                       {selectedContractSummary.assigned} · Đang làm:{' '}
                       {selectedContractSummary.inProgress} · Hoàn thành:{' '}
                       {selectedContractSummary.completed}
+                      {selectedContractSummary.cancelled > 0 && (
+                        <> · <Text type="danger">Đã hủy: {selectedContractSummary.cancelled}</Text></>
+                      )}
                     </Text>
                   </div>
 
@@ -630,6 +766,12 @@ export default function TaskAssignmentManagement() {
                                   <Text strong>{stats.assigned}</Text>
                                   <Text type="secondary">Chưa bắt đầu</Text>
                                 </div>
+                                {stats.cancelled > 0 && (
+                                  <div>
+                                    <Text strong type="danger">{stats.cancelled}</Text>
+                                    <Text type="secondary">Đã hủy</Text>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </List.Item>
@@ -706,6 +848,130 @@ export default function TaskAssignmentManagement() {
         </Col>
       </Row>
 
+      {/* Modal hiển thị chi tiết task đã hủy */}
+      <Modal
+        title="Chi tiết Task đã hủy"
+        open={cancelledTaskModalVisible}
+        onCancel={handleCloseCancelledTaskModal}
+        footer={[
+          <Button key="close" onClick={handleCloseCancelledTaskModal}>
+            Đóng
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedCancelledTask && (
+          <div style={{ marginTop: 16 }}>
+            <p><strong>Assignment ID:</strong> {selectedCancelledTask.assignmentId}</p>
+            <p><strong>Task Type:</strong> {TASK_TYPE_LABELS[selectedCancelledTask.taskType] || selectedCancelledTask.taskType}</p>
+            <p><strong>Milestone ID:</strong> {selectedCancelledTask.milestoneId}</p>
+            <p><strong>Status:</strong> <Tag color="red">Đã hủy</Tag></p>
+            <p><strong>Assigned Date:</strong> {selectedCancelledTask.assignedDate ? dayjs(selectedCancelledTask.assignedDate).format('YYYY-MM-DD HH:mm') : 'N/A'}</p>
+            {selectedCancelledTask.specialistRespondedAt && (
+              <p><strong>Thời gian hủy:</strong> {dayjs(selectedCancelledTask.specialistRespondedAt).format('YYYY-MM-DD HH:mm')}</p>
+            )}
+            {selectedCancelledTask.specialistResponseReason && (
+              <div style={{ marginTop: 12 }}>
+                <p><strong>Lý do hủy:</strong></p>
+                <p style={{ 
+                  padding: 12, 
+                  background: '#f5f5f5', 
+                  borderRadius: 4,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {selectedCancelledTask.specialistResponseReason}
+                </p>
+              </div>
+            )}
+            {selectedCancelledTask.notes && (
+              <div style={{ marginTop: 12 }}>
+                <p><strong>Ghi chú:</strong></p>
+                <p style={{ 
+                  padding: 12, 
+                  background: '#f5f5f5', 
+                  borderRadius: 4,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {selectedCancelledTask.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Reassign Decision Modal */}
+      <Modal
+        title={reassignTask && reassignForm.getFieldValue('action') === 'approve' 
+          ? 'Approve Reassign Request' 
+          : 'Reject Reassign Request'}
+        open={reassignModalVisible}
+        onOk={handleReassignConfirm}
+        onCancel={handleReassignModalCancel}
+        okText={reassignTask && reassignForm.getFieldValue('action') === 'approve' 
+          ? 'Approve' 
+          : 'Reject'}
+        cancelText="Hủy"
+        okButtonProps={reassignTask && reassignForm.getFieldValue('action') === 'reject' 
+          ? { danger: true } 
+          : { type: 'primary' }}
+      >
+        {reassignTask && (
+          <div style={{ marginBottom: 16 }}>
+            <p><strong>Task Type:</strong> {TASK_TYPE_LABELS[reassignTask.taskType] || reassignTask.taskType}</p>
+            <p><strong>Specialist:</strong> {getSpecialistName(reassignTask.specialistId)}</p>
+            {reassignTask.reassignReason && (
+              <div style={{ marginTop: 12 }}>
+                <p><strong>Lý do request:</strong></p>
+                <p style={{ 
+                  padding: 12, 
+                  background: '#f5f5f5', 
+                  borderRadius: 4,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {reassignTask.reassignReason}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+        <Form form={reassignForm} layout="vertical">
+          <Form.Item name="action" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label={reassignTask && reassignForm.getFieldValue('action') === 'approve' 
+              ? 'Lý do approve (bắt buộc)' 
+              : 'Lý do reject (bắt buộc)'}
+            name="reason"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do' },
+              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder={reassignTask && reassignForm.getFieldValue('action') === 'approve' 
+                ? 'Nhập lý do bạn approve reassign request này...' 
+                : 'Nhập lý do bạn reject reassign request này...'}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+        {reassignTask && reassignForm.getFieldValue('action') === 'approve' && (
+          <Alert
+            message="Lưu ý"
+            description="Khi approve, task sẽ quay lại trạng thái 'assigned' và bạn có thể assign lại cho specialist khác."
+            type="info"
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
