@@ -8,6 +8,9 @@ export const API_CONFIG = {
   // API prefix
   API_PREFIX: '/api/v1',
   
+  // Google OAuth Client ID (same as web)
+  GOOGLE_CLIENT_ID: '807495098527-cngsfgsl7aep23ht0u0t26e99ofohc7u.apps.googleusercontent.com',
+  
   // Environment
   IS_DEV: __DEV__,
 };
