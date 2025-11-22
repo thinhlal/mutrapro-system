@@ -193,7 +193,7 @@ const RegisterScreen = ({ navigation }) => {
             label="Password"
             value={formData.password}
             onChangeText={(text) => handleInputChange('password', text)}
-            placeholder="Enter password (min 8 characters)"
+            placeholder="Enter password"
             secureTextEntry
             autoCapitalize="none"
             autoComplete="password"
@@ -237,7 +237,7 @@ const RegisterScreen = ({ navigation }) => {
             onPress={handleRegister}
             loading={loading}
             disabled={loading}
-            size="large"
+            size="medium"
           />
 
           {/* Divider */}

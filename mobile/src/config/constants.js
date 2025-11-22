@@ -46,7 +46,7 @@ export const SUCCESS_MESSAGES = {
 
 // Colors
 export const COLORS = {
-  primary: '#6B4EFF',
+  primary: '#ec8a1c',
   primaryDark: '#5639CC',
   primaryLight: '#8B74FF',
   secondary: '#FF6B9D',

@@ -146,7 +146,8 @@ const VerifyEmailScreen = ({ navigation, route }) => {
     setError('');
 
     try {
-      const response = await verifyEmail({ email, code: otpCode });
+      // Gửi email và code như parameters riêng biệt
+      const response = await verifyEmail(email, otpCode);
       
       if (response.statusCode === 200) {
         setIsVerified(true);

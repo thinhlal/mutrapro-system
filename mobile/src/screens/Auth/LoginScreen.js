@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,10 @@ import Toast from 'react-native-toast-message';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, Input, ErrorMessage, SuccessMessage } from '../../components';
 import { validateEmail, validatePassword } from '../../utils/validators';
+import { useGoogleAuth, authenticateWithGoogle } from '../../services/googleAuthService';
+import { setItem } from '../../utils/storage';
+import { STORAGE_KEYS } from '../../config/constants';
+import { logRedirectUri } from '../../utils/getRedirectUri';
 import {
   COLORS,
   FONT_SIZES,
@@ -22,11 +26,83 @@ import {
 } from '../../config/constants';
 
 const LoginScreen = ({ navigation }) => {
-  const { logIn, loading } = useAuth();
+  const { logIn, loading, updateUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  
+  // Google OAuth
+  const { request, response, promptAsync } = useGoogleAuth();
+  
+  // Log redirect URI for debugging (chỉ trong development)
+  useEffect(() => {
+    if (__DEV__) {
+      logRedirectUri();
+    }
+  }, []);
+
+  // Handle Google OAuth response
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { code } = response.params;
+      handleGoogleCallback(code);
+    } else if (response?.type === 'error') {
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi đăng nhập',
+        text2: 'Không thể đăng nhập với Google',
+      });
+      setGoogleLoading(false);
+    } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
+      setGoogleLoading(false);
+    }
+  }, [response]);
+
+  const handleGoogleCallback = async (code) => {
+    setGoogleLoading(true);
+    try {
+      const { accessToken, user } = await authenticateWithGoogle(code);
+      
+      // Save to storage
+      await setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      await setItem(STORAGE_KEYS.USER_DATA, user);
+      
+      // Update context
+      await updateUser(user);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Đăng nhập thành công',
+        text2: `Chào mừng ${user.fullName}!`,
+      });
+    } catch (error) {
+      console.error('Google authentication error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi xác thực',
+        text2: error.message || 'Không thể đăng nhập với Google',
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      await promptAsync();
+    } catch (error) {
+      console.error('Google login error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể mở Google đăng nhập',
+      });
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     // Clear previous messages
@@ -143,7 +219,7 @@ const LoginScreen = ({ navigation }) => {
             onPress={handleLogin}
             loading={loading}
             disabled={loading}
-            size="large"
+            size="medium"
           />
 
           {/* Divider */}
@@ -156,14 +232,10 @@ const LoginScreen = ({ navigation }) => {
           {/* Google Login Button */}
           <Button
             title="Continue with Google"
-            onPress={() => {
-              Toast.show({
-                type: 'info',
-                text1: 'Tính năng đang phát triển',
-                text2: 'Google login sẽ sớm được hỗ trợ',
-              });
-            }}
+            onPress={handleGoogleLogin}
             variant="outline"
+            loading={googleLoading}
+            disabled={loading || googleLoading || !request}
             icon={<Ionicons name="logo-google" size={20} color={COLORS.primary} />}
             iconPosition="left"
           />
