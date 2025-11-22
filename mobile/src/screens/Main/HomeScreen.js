@@ -10,17 +10,16 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../../components';
+import { Button, ImageSlider } from '../../components';
 import {
   COLORS,
   FONT_SIZES,
   SPACING,
   BORDER_RADIUS,
-  SCREEN_NAMES,
 } from '../../config/constants';
 
 const HomeScreen = ({ navigation }) => {
-  const { user, logout, loading } = useAuth();
+  const { logout, loading } = useAuth();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(() => {
@@ -47,25 +46,8 @@ const HomeScreen = ({ navigation }) => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Welcome Card */}
-      <View style={styles.welcomeCard}>
-        <View style={styles.userInfo}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={32} color={COLORS.white} />
-          </View>
-          <View style={styles.userText}>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{user?.fullName || 'User'}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => navigation.navigate(SCREEN_NAMES.PROFILE)}
-        >
-          <Ionicons name="settings-outline" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      {/* Image Slider */}
+      <ImageSlider />
 
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -177,62 +159,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
-    padding: SPACING.lg,
-  },
-  welcomeCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.xl,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: BORDER_RADIUS.round,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  userText: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  userName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginTop: SPACING.xs,
-  },
-  userEmail: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  profileButton: {
-    padding: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
+    paddingTop: 0, // Bỏ padding top để slider tràn lên
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
