@@ -5,4 +5,6 @@ export { default as LoadingScreen } from './LoadingScreen';
 export { default as OTPInput } from './OTPInput';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as SuccessMessage } from './SuccessMessage';
+export { default as CustomDrawerContent } from './CustomDrawerContent';
+export { default as ImageSlider } from './ImageSlider';
 
