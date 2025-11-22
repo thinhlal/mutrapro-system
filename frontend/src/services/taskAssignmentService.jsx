@@ -222,6 +222,76 @@ export const cancelTaskAssignment = async (assignmentId, reason) => {
 };
 
 /**
+ * Specialist báo issue (không kịp deadline, có vấn đề)
+ * POST /specialist/task-assignments/{assignmentId}/report-issue
+ *
+ * @param {string} assignmentId - ID của task assignment
+ * @param {string} reason - Lý do báo issue (required)
+ * @returns {Promise} ApiResponse với task assignment đã được đánh dấu có issue
+ */
+export const reportIssue = async (assignmentId, reason) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.REPORT_ISSUE(assignmentId),
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi báo issue',
+      }
+    );
+  }
+};
+
+/**
+ * Manager resolve issue (clear hasIssue flag - cho specialist tiếp tục)
+ * POST /task-assignments/{assignmentId}/resolve-issue?contractId={contractId}
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} assignmentId - ID của task assignment
+ * @returns {Promise} ApiResponse với task assignment đã resolve issue
+ */
+export const resolveIssue = async (contractId, assignmentId) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.RESOLVE_ISSUE(contractId, assignmentId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi resolve issue',
+      }
+    );
+  }
+};
+
+/**
+ * Manager cancel task (có thể cancel task ở bất kỳ status nào, trừ completed)
+ * POST /task-assignments/{assignmentId}/cancel?contractId={contractId}
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} assignmentId - ID của task assignment
+ * @returns {Promise} ApiResponse với task assignment đã cancel
+ */
+export const cancelTaskByManager = async (contractId, assignmentId) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.CANCEL_BY_MANAGER(contractId, assignmentId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi cancel task',
+      }
+    );
+  }
+};
+
+/**
  * Lấy chi tiết task assignment của specialist hiện tại
  * GET /specialist/task-assignments/{assignmentId}
  *

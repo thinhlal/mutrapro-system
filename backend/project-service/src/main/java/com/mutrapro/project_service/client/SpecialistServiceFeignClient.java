@@ -3,6 +3,7 @@ package com.mutrapro.project_service.client;
 import com.mutrapro.shared.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Map;
 
@@ -22,5 +23,13 @@ public interface SpecialistServiceFeignClient {
      */
     @GetMapping("/specialists/me")
     ApiResponse<Map<String, Object>> getMySpecialistInfo();
+
+    /**
+     * Lấy thông tin specialist theo specialistId (cho manager)
+     * GET /manager/specialists/{specialistId}
+     * Trả về Map để tránh dependency với specialist-service DTO
+     */
+    @GetMapping("/manager/specialists/{specialistId}")
+    ApiResponse<Map<String, Object>> getSpecialistById(@PathVariable String specialistId);
 }
 

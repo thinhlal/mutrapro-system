@@ -26,10 +26,12 @@ import {
   UploadOutlined,
   EditOutlined,
 } from '@ant-design/icons';
+import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   getMyTaskAssignmentById,
   acceptTaskAssignment,
+  reportIssue,
 } from '../../../services/taskAssignmentService';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
@@ -202,22 +204,34 @@ const TranscriptionTaskDetailPage = () => {
   const { taskId } = useParams(); // taskId thực chất là assignmentId
 
   const [task, setTask] = useState(null);
+  const [request, setRequest] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadForm] = Form.useForm();
   const [acceptingTask, setAcceptingTask] = useState(false);
+  const [issueModalVisible, setIssueModalVisible] = useState(false);
+  const [reportingIssue, setReportingIssue] = useState(false);
+  const [issueForm] = Form.useForm();
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Gọi real API để lấy task assignment detail
+      // Gọi API để lấy task assignment detail (đã bao gồm request info)
+      // Chỉ cần 1 lần gọi API thay vì 3 lần
       const response = await getMyTaskAssignmentById(taskId);
       if (response?.status === 'success' && response?.data) {
-        setTask(response.data);
-        // Files sẽ được load sau khi có contract/request info
+        const taskData = response.data;
+        setTask(taskData);
+        
+        // Extract request từ response (nếu có)
+        if (taskData.request) {
+          setRequest(taskData.request);
+        }
+        
+        // Files sẽ được load sau khi có request info
         setFiles([]);
       } else {
         setError('Task not found');
@@ -265,6 +279,37 @@ const TranscriptionTaskDetailPage = () => {
     if (!task || task.status?.toLowerCase() !== 'revision_requested' || files.length === 0) return;
     message.info('Chức năng submit revision sẽ được implement sau');
   }, [task, files.length]);
+
+  const handleOpenIssueModal = useCallback(() => {
+    issueForm.resetFields();
+    setIssueModalVisible(true);
+  }, [issueForm]);
+
+  const handleIssueModalCancel = useCallback(() => {
+    setIssueModalVisible(false);
+    issueForm.resetFields();
+  }, [issueForm]);
+
+  const handleReportIssue = useCallback(async () => {
+    if (!task) return;
+    try {
+      const { reason } = await issueForm.validateFields();
+      setReportingIssue(true);
+      const response = await reportIssue(task.assignmentId, reason);
+      if (response?.status === 'success') {
+        message.success('Đã báo issue cho Manager. Manager sẽ được thông báo.');
+        setIssueModalVisible(false);
+        issueForm.resetFields();
+        await loadData();
+      }
+    } catch (error) {
+      if (error?.errorFields) return;
+      console.error('Error reporting issue:', error);
+      message.error(error?.message || 'Lỗi khi báo issue');
+    } finally {
+      setReportingIssue(false);
+    }
+  }, [task, issueForm, loadData]);
 
   const handleOpenUploadModal = useCallback(() => {
     setUploadModalVisible(true);
@@ -427,66 +472,279 @@ const TranscriptionTaskDetailPage = () => {
       <Card className={styles.section}>
         <Row gutter={[16, 16]} className={styles.overviewRow}>
           <Col xs={24} lg={14}>
-            <Descriptions column={1} title="Task Assignment Details">
+            <Descriptions column={1} title="Task Assignment Details" bordered>
               <Descriptions.Item label="Assignment ID">
-                {task.assignmentId}
+                <Text copyable>{task.assignmentId}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Task Type">
-                <Tag>{getTaskTypeLabel(task.taskType)}</Tag>
+                <Tag color="cyan">{getTaskTypeLabel(task.taskType)}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Contract ID">
-                {task.contractId}
+              <Descriptions.Item label="Milestone">
+                {task.milestone ? (
+                  <div>
+                    <Text strong>{task.milestone.name}</Text>
+                    {task.milestone.description && (
+                      <div style={{ marginTop: 4 }}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {task.milestone.description}
+                        </Text>
+                      </div>
+                    )}
+                    <div style={{ marginTop: 4 }}>
+                      <Text copyable type="secondary" style={{ fontSize: '12px' }}>
+                        ID: {task.milestone.milestoneId}
+                      </Text>
+                    </div>
+                  </div>
+                ) : (
+                  <Text copyable type="secondary">{task.milestoneId}</Text>
+                )}
               </Descriptions.Item>
-              <Descriptions.Item label="Milestone ID">
-                {task.milestoneId}
+              <Descriptions.Item label="Status">
+                {getStatusTag(task.status)}
+                {task.hasIssue && (
+                  <Tag color="orange" icon={<ExclamationCircleOutlined />} style={{ marginLeft: 8 }}>
+                    Có issue
+                  </Tag>
+                )}
               </Descriptions.Item>
-              <Descriptions.Item label="Notes">
-                {task.notes || '—'}
+              <Descriptions.Item label="Assigned Date">
+                {task.assignedDate ? formatDateTime(task.assignedDate) : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Completed Date">
+                {task.completedDate ? formatDateTime(task.completedDate) : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Used Revisions">
-                {task.usedRevisions || 0}
+                <Text strong>{task.usedRevisions || 0}</Text>
               </Descriptions.Item>
+              <Descriptions.Item label="Notes" span={2}>
+                {task.notes ? (
+                  <Text>{task.notes}</Text>
+                ) : (
+                  <Text type="secondary">—</Text>
+                )}
+              </Descriptions.Item>
+              {task.specialistResponseReason && (
+                <Descriptions.Item label="Cancel Reason">
+                  <Text type="danger">{task.specialistResponseReason}</Text>
+                  {task.specialistRespondedAt && (
+                    <div style={{ marginTop: 4 }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        (Canceled at: {formatDateTime(task.specialistRespondedAt)})
+                      </Text>
+                    </div>
+                  )}
+                </Descriptions.Item>
+              )}
+              {task.hasIssue && task.issueReason && (
+                <Descriptions.Item label="Issue Report" span={2}>
+                  <Alert
+                    message="Đã báo issue / không kịp deadline"
+                    description={
+                      <div>
+                        <Text strong>Lý do: </Text>
+                        <Text>{task.issueReason}</Text>
+                        {task.issueReportedAt && (
+                          <div style={{ marginTop: 8 }}>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              Báo lúc: {formatDateTime(task.issueReportedAt)}
+                            </Text>
+                          </div>
+                        )}
+                        <div style={{ marginTop: 8 }}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            Manager đã được thông báo. Vui lòng chờ quyết định từ Manager.
+                          </Text>
+                        </div>
+                      </div>
+                    }
+                    type="warning"
+                    showIcon
+                    style={{ marginTop: 8 }}
+                  />
+                </Descriptions.Item>
+              )}
             </Descriptions>
           </Col>
           <Col xs={24} lg={10}>
-            <Card size="small" bordered>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div>
-                  <Text strong>Status: </Text>
-                  {getStatusTag(task.status)}
-                </div>
-                <div>
-                  <Text strong>Assigned Date: </Text>
-                  <Text>{formatDateTime(task.assignedDate)}</Text>
-                </div>
-                {task.completedDate && (
-                  <div>
-                    <Text strong>Completed Date: </Text>
-                    <Text>{formatDateTime(task.completedDate)}</Text>
-                  </div>
-                )}
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              {/* Request Information */}
+              {request && (
+                <Card title="Request Information" size="small" bordered>
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label="Request ID">
+                      <Text copyable type="secondary">{request.requestId}</Text>
+                    </Descriptions.Item>
+                    {request.serviceType && (
+                      <Descriptions.Item label="Service Type">
+                        <Tag>{request.serviceType}</Tag>
+                      </Descriptions.Item>
+                    )}
+                    {request.title && (
+                      <Descriptions.Item label="Title">
+                        <Text>{request.title}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.description && (
+                      <Descriptions.Item label="Description" span={2}>
+                        <Text>{request.description}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.durationSeconds && (
+                      <Descriptions.Item label="Duration">
+                        <Text>{formatDuration(request.durationSeconds)}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.tempo && (
+                      <Descriptions.Item label="Tempo">
+                        <Text>{request.tempo} BPM</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.timeSignature && (
+                      <Descriptions.Item label="Time Signature">
+                        <Text>{request.timeSignature}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.instruments && request.instruments.length > 0 && (
+                      <Descriptions.Item label="Instruments" span={2}>
+                        <Space wrap>
+                          {request.instruments.map((inst, idx) => (
+                            <Tag key={idx}>
+                              {inst.instrumentName || inst.name || inst}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {request.specialNotes && (
+                      <Descriptions.Item label="Special Notes" span={2}>
+                        <Text>{request.specialNotes}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {request.files && Array.isArray(request.files) && (() => {
+                      // Filter out contract PDF files - specialist không cần thấy contract files
+                      const filteredFiles = request.files.filter(file => {
+                        const contentType = file.contentType || '';
+                        const fileName = (file.fileName || file.name || '').toLowerCase();
+                        // Loại bỏ contract PDF files
+                        return !(
+                          contentType === 'contract_pdf' || 
+                          contentType === 'CONTRACT_PDF' ||
+                          (fileName.includes('contract') && fileName.endsWith('.pdf'))
+                        );
+                      });
+                      return filteredFiles.length > 0 ? (
+                        <Descriptions.Item label="Files" span={2} contentStyle={{ 
+                          width: 0,
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          padding: '4px 0',
+                          boxSizing: 'border-box'
+                        }}>
+                          <div style={{ 
+                            width: '100%', 
+                            maxWidth: '100%', 
+                            overflow: 'hidden',
+                            boxSizing: 'border-box'
+                          }}>
+                            <FileList files={filteredFiles} maxNameLength={30} />
+                          </div>
+                        </Descriptions.Item>
+                      ) : null;
+                    })()}
+                  </Descriptions>
+                </Card>
+              )}
+              
+              {/* Quick Actions */}
+              {(() => {
+                // Kiểm tra issue report: có thể có issueReason ngay cả khi hasIssue = false (nếu task đã cancelled)
+                const hasIssueAlert = task.issueReason && task.issueReason.trim().length > 0;
+                const hasAcceptButton = task.status?.toLowerCase() === 'assigned';
+                const hasSubmitButton = task.status?.toLowerCase() !== 'cancelled';
+                const hasIssueButton = task.status?.toLowerCase() === 'in_progress' && !task.hasIssue;
+                // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
+                const hasAnyAction = hasIssueAlert || hasAcceptButton || hasSubmitButton || hasIssueButton;
                 
-                <Space>
-                  {task.status?.toLowerCase() === 'assigned' && (
-                    <Button
-                      type="primary"
-                      onClick={handleAcceptTask}
-                      loading={acceptingTask}
-                    >
-                      Accept Task
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleSubmitForReview}
-                    disabled={
-                      task.status?.toLowerCase() !== 'in_progress' || files.length === 0
-                    }
-                  >
-                    Submit for Review
-                  </Button>
-                </Space>
-              </Space>
-            </Card>
+                if (!hasAnyAction) return null;
+                
+                return (
+                  <Card size="small" bordered title="Quick Actions">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {/* Hiển thị thông tin issue nếu đã báo (kể cả khi task đã cancelled) */}
+                      {hasIssueAlert && (
+                        <Alert
+                          message={task.status?.toLowerCase() === 'cancelled' 
+                            ? "Task đã bị hủy sau khi báo issue" 
+                            : "Đã báo issue / không kịp deadline"}
+                          description={
+                            <div>
+                              <Text strong>Lý do: </Text>
+                              <Text>{task.issueReason}</Text>
+                              {task.issueReportedAt && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Báo lúc: {formatDateTime(task.issueReportedAt)}
+                                  </Text>
+                                </div>
+                              )}
+                              {task.status?.toLowerCase() === 'cancelled' ? (
+                                <div style={{ marginTop: 8 }}>
+                                  <Text type="danger" style={{ fontSize: '12px', fontWeight: 500 }}>
+                                    Task này đã bị Manager hủy sau khi bạn báo issue.
+                                  </Text>
+                                </div>
+                              ) : task.hasIssue ? (
+                                <div style={{ marginTop: 8 }}>
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    Manager đã được thông báo. Vui lòng chờ quyết định từ Manager.
+                                  </Text>
+                                </div>
+                              ) : null}
+                            </div>
+                          }
+                          type={task.status?.toLowerCase() === 'cancelled' ? 'error' : 'warning'}
+                          showIcon
+                        />
+                      )}
+                      
+                      {(hasAcceptButton || hasSubmitButton || hasIssueButton) && (
+                        <Space wrap>
+                          {hasAcceptButton && (
+                            <Button
+                              type="primary"
+                              onClick={handleAcceptTask}
+                              loading={acceptingTask}
+                            >
+                              Accept Task
+                            </Button>
+                          )}
+                          {hasSubmitButton && (
+                            <Button
+                              onClick={handleSubmitForReview}
+                              disabled={
+                                task.status?.toLowerCase() !== 'in_progress' || files.length === 0
+                              }
+                            >
+                              Submit for Review
+                            </Button>
+                          )}
+                          {hasIssueButton && (
+                            <Button
+                              danger
+                              icon={<ExclamationCircleOutlined />}
+                              onClick={handleOpenIssueModal}
+                            >
+                              Báo không kịp deadline
+                            </Button>
+                          )}
+                        </Space>
+                      )}
+                    </Space>
+                  </Card>
+                );
+              })()}
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -505,9 +763,11 @@ const TranscriptionTaskDetailPage = () => {
         className={styles.section}
         title={<div className={styles.filesHeader}>Notation Files & Versions</div>}
         extra={
-          <Button type="primary" icon={<UploadOutlined />} onClick={handleOpenUploadModal}>
-            Upload new version
-          </Button>
+          task.status?.toLowerCase() !== 'cancelled' && (
+            <Button type="primary" icon={<UploadOutlined />} onClick={handleOpenUploadModal}>
+              Upload new version
+            </Button>
+          )
         }
       >
         {files.length > 0 ? (
@@ -562,6 +822,41 @@ const TranscriptionTaskDetailPage = () => {
         </Form>
       </Modal>
 
+      {/* Modal báo issue */}
+      <Modal
+        title="Báo không kịp deadline / Có vấn đề"
+        open={issueModalVisible}
+        onOk={handleReportIssue}
+        onCancel={handleIssueModalCancel}
+        okText="Gửi báo cáo"
+        cancelText="Hủy"
+        confirmLoading={reportingIssue}
+      >
+        <Form layout="vertical" form={issueForm}>
+          <Form.Item
+            label="Lý do báo issue (bắt buộc)"
+            name="reason"
+            rules={[
+              { required: true, message: 'Vui lòng nhập lý do báo issue' },
+              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Mô tả lý do bạn không kịp deadline hoặc có vấn đề (ví dụ: công việc phức tạp hơn dự kiến, thiếu tài liệu, v.v.)..."
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+        </Form>
+        <Alert
+          message="Lưu ý"
+          description="Báo issue sẽ được gửi tới Manager. Task vẫn tiếp tục ở trạng thái 'In Progress'. Manager sẽ xem xét và quyết định cho bạn tiếp tục hoặc cancel task."
+          type="info"
+          showIcon
+          style={{ marginTop: 16 }}
+        />
+      </Modal>
     </div>
   );
 };

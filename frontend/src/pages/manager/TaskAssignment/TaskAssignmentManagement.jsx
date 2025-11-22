@@ -25,6 +25,7 @@ import {
   DeleteOutlined,
   UserAddOutlined,
   EyeOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -35,6 +36,8 @@ import {
 import {
   getTaskAssignmentsByContract,
   deleteTaskAssignment,
+  resolveIssue,
+  cancelTaskByManager,
 } from '../../../services/taskAssignmentService';
 import { getAllSpecialists } from '../../../services/specialistService';
 import styles from './TaskAssignmentManagement.module.css';
@@ -70,6 +73,7 @@ const defaultTaskStats = {
   inProgress: 0,
   completed: 0,
   cancelled: 0,
+  hasIssue: 0, // Số task có issue
 };
 
 const computeTaskStats = tasks =>
@@ -81,6 +85,8 @@ const computeTaskStats = tasks =>
       else if (status === 'completed') acc.completed += 1;
       else if (status === 'cancelled') acc.cancelled += 1;
       else acc.assigned += 1;
+      // Đếm task có issue
+      if (task.hasIssue) acc.hasIssue += 1;
       return acc;
     },
     { ...defaultTaskStats }
@@ -98,6 +104,9 @@ export default function TaskAssignmentManagement() {
   const [contractTaskStats, setContractTaskStats] = useState({});
   const [cancelledTaskModalVisible, setCancelledTaskModalVisible] = useState(false);
   const [selectedCancelledTask, setSelectedCancelledTask] = useState(null);
+  const [issueModalVisible, setIssueModalVisible] = useState(false);
+  const [selectedIssueTask, setSelectedIssueTask] = useState(null);
+  const [cancellingTask, setCancellingTask] = useState(false);
   const navigate = useNavigate();
 
   const updateContractStats = useCallback((contractId, tasks) => {
@@ -143,7 +152,8 @@ export default function TaskAssignmentManagement() {
           c => c.status?.toLowerCase() === 'active'
         );
         setContracts(activeContracts);
-        fetchContractTaskStats(activeContracts);
+        // Đợi fetch stats xong rồi mới tắt loading
+        await fetchContractTaskStats(activeContracts);
       }
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -229,22 +239,35 @@ export default function TaskAssignmentManagement() {
     contractId => {
       const stats = contractTaskStats[contractId];
       if (!stats) return null;
-      // Ưu tiên hiển thị cancelled nếu có
-      if (stats.cancelled > 0) {
-        return { label: `cancelled (${stats.cancelled})`, color: 'red', priority: -1 };
+      
+      // Tính số task active (không phải cancelled)
+      const activeTasks = stats.total - stats.cancelled;
+      
+      // Ưu tiên hiển thị issue nếu có (cần manager xử lý) và có task active
+      if (stats.hasIssue > 0 && activeTasks > 0) {
+        return { label: `có issue (${stats.hasIssue})`, color: 'orange', priority: 0 };
       }
+      
       if (stats.total === 0) {
         return { label: 'need assignment', color: 'orange', priority: 1 };
       }
+      
+      // Chỉ hiển thị cancelled nếu TẤT CẢ task đều cancelled (không còn task active)
+      if (stats.cancelled > 0 && activeTasks === 0) {
+        return { label: `cancelled (${stats.cancelled})`, color: 'red', priority: -1 };
+      }
+      
+      // Nếu có task cancelled nhưng vẫn còn task active, hiển thị thông tin task active
       if (stats.inProgress > 0) {
         return { label: 'in progress', color: 'green', priority: 2 };
       }
-      if (stats.completed === stats.total) {
+      if (stats.completed === activeTasks && activeTasks > 0) {
         return { label: 'completed', color: 'purple', priority: 3 };
       }
       if (stats.assigned > 0) {
         return { label: 'assigned', color: 'blue', priority: 1 };
       }
+      
       return null;
     },
     [contractTaskStats]
@@ -288,6 +311,8 @@ export default function TaskAssignmentManagement() {
       else if (status === 'in_progress') stats[task.milestoneId].inProgress += 1;
       else if (status === 'cancelled') stats[task.milestoneId].cancelled += 1;
       else stats[task.milestoneId].assigned += 1;
+      // Đếm task có issue
+      if (task.hasIssue) stats[task.milestoneId].hasIssue += 1;
     });
     return stats;
   }, [taskAssignments]);
@@ -296,6 +321,22 @@ export default function TaskAssignmentManagement() {
     () => computeTaskStats(taskAssignments),
     [taskAssignments]
   );
+
+  // Sort task assignments: mới nhất lên trước (theo assignedDate hoặc createdAt)
+  const sortedTaskAssignments = useMemo(() => {
+    return [...taskAssignments].sort((a, b) => {
+      // Ưu tiên assignedDate, nếu không có thì dùng createdAt hoặc assignmentId
+      const dateA = a.assignedDate || a.createdAt || a.assignmentId || '';
+      const dateB = b.assignedDate || b.createdAt || b.assignmentId || '';
+      
+      // Sort descending (mới nhất lên trước)
+      if (dateA && dateB) {
+        return new Date(dateB) - new Date(dateA);
+      }
+      // Nếu không có date, sort theo assignmentId (UUID - mới hơn thường có ID lớn hơn)
+      return (b.assignmentId || '').localeCompare(a.assignmentId || '');
+    });
+  }, [taskAssignments]);
 
   // Handle assign task
   const handleAssignTask = () => {
@@ -353,6 +394,62 @@ export default function TaskAssignmentManagement() {
     setSelectedCancelledTask(null);
   };
 
+  // Handle view issue details
+  const handleViewIssueDetails = record => {
+    setSelectedIssueTask(record);
+    setIssueModalVisible(true);
+  };
+
+  const handleCloseIssueModal = () => {
+    setIssueModalVisible(false);
+    setSelectedIssueTask(null);
+  };
+
+  // Handle resolve issue (cho specialist tiếp tục)
+  const handleResolveIssue = async () => {
+    if (!selectedIssueTask || !selectedContractId) return;
+    try {
+      const response = await resolveIssue(selectedContractId, selectedIssueTask.assignmentId);
+      if (response?.status === 'success') {
+        message.success('Đã cho phép specialist tiếp tục task');
+        setIssueModalVisible(false);
+        setSelectedIssueTask(null);
+        await fetchTaskAssignments(selectedContractId);
+      }
+    } catch (error) {
+      console.error('Error resolving issue:', error);
+      message.error(error?.message || 'Lỗi khi resolve issue');
+    }
+  };
+
+  // Handle cancel task by manager and create new
+  const handleCancelAndCreateNew = async () => {
+    if (!selectedIssueTask || !selectedContractId) return;
+    try {
+      setCancellingTask(true);
+      const response = await cancelTaskByManager(
+        selectedContractId,
+        selectedIssueTask.assignmentId
+      );
+      if (response?.status === 'success') {
+        message.success('Đã hủy task thành công. Đang chuyển đến trang tạo task mới...');
+        setIssueModalVisible(false);
+        const taskToCreate = selectedIssueTask;
+        setSelectedIssueTask(null);
+        
+        // Navigate đến workspace với data pre-filled từ task cũ
+        // Thêm excludeSpecialistId để filter out specialist cũ
+        navigate(
+          `/manager/task-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
+        );
+      }
+    } catch (error) {
+      console.error('Error cancelling task:', error);
+      message.error(error?.message || 'Lỗi khi hủy task');
+    } finally {
+      setCancellingTask(false);
+    }
+  };
 
   // Get specialist name by ID
   const getSpecialistName = specialistId => {
@@ -407,11 +504,18 @@ export default function TaskAssignmentManagement() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
-      render: status => (
-        <Tag color={STATUS_COLORS[status] || 'default'}>
-          {STATUS_LABELS[status] || status?.toUpperCase()}
-        </Tag>
+      width: 150,
+      render: (status, record) => (
+        <Space direction="vertical" size={4}>
+          <Tag color={STATUS_COLORS[status] || 'default'}>
+            {STATUS_LABELS[status] || status?.toUpperCase()}
+          </Tag>
+          {record.hasIssue && (
+            <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+              Có issue
+            </Tag>
+          )}
+        </Space>
       ),
     },
     {
@@ -447,6 +551,25 @@ export default function TaskAssignmentManagement() {
         const status = record.status?.toLowerCase();
         const isCancelled = status === 'cancelled';
         const isCompleted = status === 'completed';
+        const hasIssue = record.hasIssue;
+        
+        // Nếu task có issue, ưu tiên hiển thị nút "Xử lý issue"
+        if (hasIssue && !isCancelled) {
+          return (
+            <Space size="small">
+              <Tooltip title="Xem và xử lý issue">
+                <Button
+                  type="primary"
+                  danger
+                  icon={<ExclamationCircleOutlined />}
+                  onClick={() => handleViewIssueDetails(record)}
+                >
+                  Xử lý issue
+                </Button>
+              </Tooltip>
+            </Space>
+          );
+        }
         
         // Nếu task bị hủy, chỉ hiển thị chi tiết
         if (isCancelled) {
@@ -465,7 +588,7 @@ export default function TaskAssignmentManagement() {
           );
         }
         
-        // Nếu task chưa bị hủy, hiển thị Edit và Delete
+        // Nếu task chưa bị hủy và không có issue, hiển thị Edit và Delete
         return (
           <Space size="small">
             <Tooltip title="Chỉnh sửa">
@@ -615,6 +738,9 @@ export default function TaskAssignmentManagement() {
                       {selectedContractSummary.assigned} · Đang làm:{' '}
                       {selectedContractSummary.inProgress} · Hoàn thành:{' '}
                       {selectedContractSummary.completed}
+                      {selectedContractSummary.hasIssue > 0 && (
+                        <> · <Text type="warning">Có issue: {selectedContractSummary.hasIssue}</Text></>
+                      )}
                       {selectedContractSummary.cancelled > 0 && (
                         <> · <Text type="danger">Đã hủy: {selectedContractSummary.cancelled}</Text></>
                       )}
@@ -638,6 +764,7 @@ export default function TaskAssignmentManagement() {
                           inProgress: 0,
                           assigned: 0,
                           cancelled: 0,
+                          hasIssue: 0,
                         };
                         return (
                           <List.Item className={styles.milestoneItem}>
@@ -679,6 +806,12 @@ export default function TaskAssignmentManagement() {
                                   <Text strong>{stats.assigned}</Text>
                                   <Text type="secondary">Chưa bắt đầu</Text>
                                 </div>
+                                {stats.hasIssue > 0 && (
+                                  <div>
+                                    <Text strong type="warning">{stats.hasIssue}</Text>
+                                    <Text type="secondary">Có issue</Text>
+                                  </div>
+                                )}
                                 {stats.cancelled > 0 && (
                                   <div>
                                     <Text strong type="danger">{stats.cancelled}</Text>
@@ -736,7 +869,7 @@ export default function TaskAssignmentManagement() {
                 <Spin spinning={assignmentsLoading}>
                   <Table
                     columns={columns}
-                    dataSource={taskAssignments}
+                    dataSource={sortedTaskAssignments}
                     rowKey="assignmentId"
                     pagination={{ pageSize: 10 }}
                     scroll={{ x: 1400 }}
@@ -811,6 +944,93 @@ export default function TaskAssignmentManagement() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal hiển thị và xử lý issue */}
+      <Modal
+        title="Chi tiết Issue / Vấn đề"
+        open={issueModalVisible}
+        onCancel={handleCloseIssueModal}
+        footer={[
+          <Button key="close" onClick={handleCloseIssueModal}>
+            Đóng
+          </Button>,
+          <Button
+            key="continue"
+            type="primary"
+            onClick={handleResolveIssue}
+          >
+            Cho tiếp tục
+          </Button>,
+          <Popconfirm
+            key="cancel"
+            title="Xác nhận hủy task và tạo task mới?"
+            description="Task hiện tại sẽ bị hủy và bạn sẽ được chuyển đến trang tạo task mới với thông tin tương tự (milestone, task type). Bạn chỉ cần chọn specialist mới."
+            onConfirm={handleCancelAndCreateNew}
+            okText="Xác nhận"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger loading={cancellingTask}>
+              Cancel and create new
+            </Button>
+          </Popconfirm>,
+        ]}
+        width={700}
+      >
+        {selectedIssueTask && (
+          <div style={{ marginTop: 16 }}>
+            <p><strong>Assignment ID:</strong> {selectedIssueTask.assignmentId}</p>
+            <p><strong>Task Type:</strong> {TASK_TYPE_LABELS[selectedIssueTask.taskType] || selectedIssueTask.taskType}</p>
+            <p><strong>Specialist:</strong> {getSpecialistName(selectedIssueTask.specialistId)}</p>
+            <p><strong>Milestone:</strong> {getMilestoneName(selectedIssueTask.milestoneId)}</p>
+            <p><strong>Status:</strong> <Tag color="processing">Đang thực hiện</Tag> <Tag color="orange">Có issue</Tag></p>
+            <p><strong>Assigned Date:</strong> {selectedIssueTask.assignedDate ? dayjs(selectedIssueTask.assignedDate).format('YYYY-MM-DD HH:mm') : 'N/A'}</p>
+            
+            {selectedIssueTask.issueReportedAt && (
+              <p><strong>Thời gian báo issue:</strong> {dayjs(selectedIssueTask.issueReportedAt).format('YYYY-MM-DD HH:mm')}</p>
+            )}
+            
+            {selectedIssueTask.issueReason && (
+              <div style={{ marginTop: 12 }}>
+                <p><strong>Lý do báo issue:</strong></p>
+                <p style={{ 
+                  padding: 12, 
+                  background: '#fff7e6', 
+                  border: '1px solid #ffd591',
+                  borderRadius: 4,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {selectedIssueTask.issueReason}
+                </p>
+              </div>
+            )}
+
+            {selectedIssueTask.notes && (
+              <div style={{ marginTop: 12 }}>
+                <p><strong>Ghi chú:</strong></p>
+                <p style={{ 
+                  padding: 12, 
+                  background: '#f5f5f5', 
+                  borderRadius: 4,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {selectedIssueTask.notes}
+                </p>
+              </div>
+            )}
+
+            <Alert
+              message="Quyết định"
+              description="Bạn có thể cho specialist tiếp tục (clear issue flag) hoặc cancel task nếu thấy không thể tiếp tục."
+              type="info"
+              showIcon
+              style={{ marginTop: 16 }}
+            />
           </div>
         )}
       </Modal>

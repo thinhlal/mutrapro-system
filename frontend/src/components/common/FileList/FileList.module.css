@@ -1,8 +1,11 @@
 .fileListContainer {
   width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .fileItem {
@@ -14,6 +17,10 @@
   border-radius: 8px;
   transition: all 0.2s ease;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .fileItem:hover {
@@ -40,32 +47,45 @@
 .fileInfo {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
 .fileNameRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 .fileName {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: none;
   font-size: 14px;
   color: #262626;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .fileActions {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .actionButton {

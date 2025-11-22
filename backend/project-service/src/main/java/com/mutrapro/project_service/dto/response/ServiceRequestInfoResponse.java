@@ -8,12 +8,14 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 import static lombok.AccessLevel.PRIVATE;
 
 /**
  * DTO để nhận thông tin ServiceRequest từ request-service
- * Chỉ chứa các field cần thiết để tạo contract
+ * Chứa các field cần thiết để tạo contract và hiển thị cho specialist
  */
 @Data
 @Builder
@@ -34,5 +36,12 @@ public class ServiceRequestInfoResponse {
     String description;
     BigDecimal totalPrice;
     String currency;  // VND, USD, EUR
+    
+    // Thêm các field cho specialist (từ ServiceRequestResponse)
+    BigDecimal durationMinutes;  // Độ dài audio file (phút)
+    BigDecimal tempoPercentage;  // Tempo percentage
+    Map<String, Object> musicOptions;  // Music options (có thể chứa timeSignature, specialNotes)
+    List<Object> instruments;  // Danh sách instruments
+    List<Object> files;  // Danh sách files mà customer đã upload
 }
 

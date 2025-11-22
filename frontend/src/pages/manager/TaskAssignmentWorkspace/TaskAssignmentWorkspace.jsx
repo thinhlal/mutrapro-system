@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
   Card,
   Spin,
@@ -21,7 +21,7 @@ import {
   CheckCircleOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getContractById } from '../../../services/contractService';
 import {
@@ -84,6 +84,8 @@ const getInstrumentUsageLabel = usage => {
 
 export default function TaskAssignmentWorkspace() {
   const { contractId, assignmentId } = useParams();
+  const [searchParams] = useSearchParams();
+  const excludedSpecialistId = searchParams.get('excludeSpecialistId');
   const navigate = useNavigate();
   const isEditMode = !!assignmentId;
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,7 @@ export default function TaskAssignmentWorkspace() {
   const [milestoneStats, setMilestoneStats] = useState({});
   const [instrumentDetails, setInstrumentDetails] = useState([]);
   const [currentAssignment, setCurrentAssignment] = useState(null);
+  const lastFetchParamsRef = useRef({ specialization: null, instruments: [] });
 
   const fetchContractDetail = useCallback(async () => {
     try {
@@ -239,6 +242,20 @@ export default function TaskAssignmentWorkspace() {
     }
   }, [assignmentId, contractId]);
 
+  // Pre-fill từ query params khi tạo task mới
+  useEffect(() => {
+    if (!isEditMode) {
+      const milestoneId = searchParams.get('milestoneId');
+      const taskType = searchParams.get('taskType');
+      if (milestoneId) {
+        setSelectedMilestoneId(milestoneId);
+      }
+      if (taskType) {
+        setTaskType(taskType);
+      }
+    }
+  }, [isEditMode, searchParams]);
+
   useEffect(() => {
     fetchContractDetail();
     if (isEditMode) {
@@ -285,6 +302,9 @@ export default function TaskAssignmentWorkspace() {
   }, [contract]);
 
   useEffect(() => {
+    // Chỉ fetch khi contract đã load xong
+    if (!contract) return;
+    
     const effectiveTaskType =
       taskType ||
       (allowedTaskTypes.length === 1 ? allowedTaskTypes[0] : undefined);
@@ -309,13 +329,34 @@ export default function TaskAssignmentWorkspace() {
       })
       .map(item => item.name);
 
-    console.log('Instrument details for specialist filter', instrumentDetails);
+    // Kiểm tra xem params có thay đổi không để tránh fetch duplicate
+    const currentParams = {
+      specialization: specializationFilter,
+      instruments: JSON.stringify(requiredNames.sort()),
+    };
+    const lastParams = lastFetchParamsRef.current;
+    
+    if (
+      lastParams.specialization === currentParams.specialization &&
+      lastParams.instruments === currentParams.instruments
+    ) {
+      // Params không thay đổi, không cần fetch lại
+      return;
+    }
+
+    // Update ref và fetch
+    lastFetchParamsRef.current = currentParams;
+    console.log('Fetching specialists with filter:', { specializationFilter, requiredNames });
     fetchSpecialists(specializationFilter, requiredNames);
-  }, [allowedTaskTypes, taskType, fetchSpecialists, instrumentDetails]);
+  }, [contract, allowedTaskTypes, taskType, fetchSpecialists, instrumentDetails]);
 
   const filteredSpecialists = useMemo(() => {
     let result = specialists;
     
+    // Filter out specialist cũ nếu có excludeSpecialistId (khi tạo task mới từ task đã cancel)
+    if (excludedSpecialistId && !isEditMode) {
+      result = result.filter(s => s.specialistId !== excludedSpecialistId);
+    }
     
     // Filter theo search keyword
     if (!specialistSearch) return result;
@@ -331,7 +372,7 @@ export default function TaskAssignmentWorkspace() {
         bio.includes(keyword)
       );
     });
-  }, [specialistSearch, specialists, isEditMode, currentAssignment]);
+  }, [specialistSearch, specialists, isEditMode, currentAssignment, excludedSpecialistId]);
 
   const selectedMilestone = useMemo(() => {
     if (!contract?.milestones || !selectedMilestoneId) return null;

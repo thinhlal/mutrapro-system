@@ -44,5 +44,45 @@ public class TaskAssignmentResponse {
     Instant specialistRespondedAt;
 
     Integer usedRevisions;
+
+    // Issue reporting fields
+    Boolean hasIssue;
+    String issueReason;
+    Instant issueReportedAt;
+
+    // Request info (nested) - chỉ các field quan trọng cho specialist
+    RequestInfo request;
+
+    // Milestone info (nested) - name và description
+    MilestoneInfo milestone;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class RequestInfo {
+        String requestId;
+        String serviceType; // requestType từ ServiceRequest
+        String title;
+        String description;
+        Integer durationSeconds; // durationMinutes * 60 nếu có
+        Integer tempo;
+        String timeSignature;
+        String specialNotes;
+        Object instruments; // List instruments nếu có
+        Object files; // List files mà customer đã upload
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class MilestoneInfo {
+        String milestoneId;
+        String name;
+        String description;
+    }
 }
 

@@ -19,8 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface RequestServiceFeignClient {
 
     /**
-     * Lấy chi tiết service request theo requestId
+     * Lấy chi tiết service request theo requestId (đầy đủ thông tin)
      * GET /requests/{requestId}
+     * ServiceRequestInfoResponse đã được mở rộng để chứa đầy đủ thông tin
      */
     @GetMapping("/{requestId}")
     ApiResponse<ServiceRequestInfoResponse> getServiceRequestById(@PathVariable("requestId") String requestId);
@@ -34,4 +35,5 @@ public interface RequestServiceFeignClient {
         @PathVariable("requestId") String requestId,
         @RequestParam("status") String status);
 }
+
 

@@ -84,5 +84,11 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "AND c.status != com.mutrapro.project_service.enums.ContractStatus.signed " +
            "AND c.signedAt IS NULL")
     List<Contract> findExpiredContracts(@Param("now") Instant now);
+    
+    /**
+     * Lấy requestId từ contractId (projection query - chỉ lấy requestId, không fetch toàn bộ contract)
+     */
+    @Query("SELECT c.requestId FROM Contract c WHERE c.contractId = :contractId")
+    Optional<String> findRequestIdByContractId(@Param("contractId") String contractId);
 }
 

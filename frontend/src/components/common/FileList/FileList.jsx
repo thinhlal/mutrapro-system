@@ -80,9 +80,11 @@ const FileList = ({
         const filePath = file.filePath || file.url;
         const fileSize = file.fileSize || file.size;
         const mimeType = file.mimeType;
+        // Truncate file name nếu quá dài, nhưng đảm bảo không tràn layout
+        const effectiveMaxLength = maxNameLength || 40;
         const displayName =
-          maxNameLength && fileName.length > maxNameLength
-            ? `${fileName.slice(0, maxNameLength)}…`
+          fileName.length > effectiveMaxLength
+            ? `${fileName.slice(0, effectiveMaxLength)}…`
             : fileName;
 
         return (

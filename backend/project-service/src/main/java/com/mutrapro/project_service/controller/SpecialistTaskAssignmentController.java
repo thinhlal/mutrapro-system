@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CancelTaskAssignmentRequest;
+import com.mutrapro.project_service.dto.request.ReportIssueRequest;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.service.TaskAssignmentService;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -66,6 +67,22 @@ public class SpecialistTaskAssignmentController {
         TaskAssignmentResponse assignment = taskAssignmentService.cancelTaskAssignment(assignmentId, request.getReason());
         return ApiResponse.<TaskAssignmentResponse>builder()
                 .message("Task assignment cancelled successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{assignmentId}/report-issue")
+    @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
+    @Operation(summary = "Specialist báo issue (không kịp deadline, có vấn đề) - task vẫn IN_PROGRESS, chỉ đánh dấu có issue")
+    public ApiResponse<TaskAssignmentResponse> reportIssue(
+            @PathVariable String assignmentId,
+            @Valid @RequestBody ReportIssueRequest request) {
+        log.info("POST /specialist/task-assignments/{}/report-issue - Reporting issue", assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.reportIssue(assignmentId, request.getReason());
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Issue reported successfully")
                 .data(assignment)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

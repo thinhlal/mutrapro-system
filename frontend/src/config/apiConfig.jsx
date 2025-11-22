@@ -137,11 +137,16 @@ export const API_ENDPOINTS = {
   TASK_ASSIGNMENTS: {
     // Manager endpoints
     BASE: `${PROJECT_PATH}/task-assignments`,
+    RESOLVE_ISSUE: (contractId, assignmentId) =>
+      `${PROJECT_PATH}/task-assignments/${assignmentId}/resolve-issue?contractId=${contractId}`,
+    CANCEL_BY_MANAGER: (contractId, assignmentId) =>
+      `${PROJECT_PATH}/task-assignments/${assignmentId}/cancel?contractId=${contractId}`,
     // Specialist endpoints
     MY_TASKS: `${PROJECT_PATH}/specialist/task-assignments`,
     MY_TASK_DETAIL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}`,
     ACCEPT: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/accept`,
     CANCEL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
+    REPORT_ISSUE: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/report-issue`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===

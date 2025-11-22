@@ -68,5 +68,16 @@ public class TaskAssignment {
     @Builder.Default
     @Column(name = "used_revisions", nullable = false)
     Integer usedRevisions = 0;  // Số lần revision đã sử dụng cho task này
+
+    // Issue reporting (khi specialist báo không kịp deadline)
+    @Builder.Default
+    @Column(name = "has_issue", nullable = false)
+    Boolean hasIssue = false;  // Flag đánh dấu task có vấn đề/risk
+
+    @Column(name = "issue_reason", columnDefinition = "text")
+    String issueReason;  // Lý do báo issue (ví dụ: không kịp deadline)
+
+    @Column(name = "issue_reported_at")
+    Instant issueReportedAt;  // Thời gian specialist báo issue
 }
 

@@ -130,13 +130,25 @@ const MyTasksPage = ({ onOpenTask }) => {
     loadTasks();
   }, [loadTasks]);
 
-  useEffect(() => {
-    applyFilters();
-  }, [tasks, searchText, statusFilter, onlyActive]);
+  // Sort tasks: mới nhất lên trước (theo assignedDate hoặc createdAt)
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      // Ưu tiên assignedDate, nếu không có thì dùng createdAt hoặc assignmentId
+      const dateA = a.assignedDate || a.createdAt || a.assignmentId || '';
+      const dateB = b.assignedDate || b.createdAt || b.assignmentId || '';
+      
+      // Sort descending (mới nhất lên trước)
+      if (dateA && dateB) {
+        return new Date(dateB) - new Date(dateA);
+      }
+      // Nếu không có date, sort theo assignmentId (UUID - mới hơn thường có ID lớn hơn)
+      return (b.assignmentId || '').localeCompare(a.assignmentId || '');
+    });
+  }, [tasks]);
 
   // Filter logic: search by assignmentId/notes, filter by status, and only active
-  const applyFilters = () => {
-    let next = [...tasks];
+  const applyFilters = useCallback(() => {
+    let next = [...sortedTasks];
     if (searchText.trim()) {
       const q = searchText.trim().toLowerCase();
       next = next.filter(
@@ -165,7 +177,11 @@ const MyTasksPage = ({ onOpenTask }) => {
       );
     }
     setFilteredTasks(next);
-  };
+  }, [sortedTasks, searchText, statusFilter, onlyActive]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleAccept = useCallback(async (task) => {
     try {

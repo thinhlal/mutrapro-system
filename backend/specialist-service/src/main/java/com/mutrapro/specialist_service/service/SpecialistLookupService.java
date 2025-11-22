@@ -4,6 +4,7 @@ import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
 import com.mutrapro.specialist_service.entity.Specialist;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
+import com.mutrapro.specialist_service.exception.SpecialistNotFoundException;
 import com.mutrapro.specialist_service.client.IdentityServiceFeignClient;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
@@ -109,6 +110,15 @@ public class SpecialistLookupService {
             .trim()
             .toLowerCase()
             .replaceAll("[^a-z0-9]", "");
+    }
+
+    /**
+     * Lấy specialist theo specialistId (cho manager)
+     */
+    public SpecialistResponse getSpecialistById(String specialistId) {
+        Specialist specialist = specialistRepository.findById(specialistId)
+            .orElseThrow(() -> SpecialistNotFoundException.byId(specialistId));
+        return specialistMapper.toSpecialistResponse(specialist);
     }
 }
 

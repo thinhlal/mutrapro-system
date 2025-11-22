@@ -135,5 +135,41 @@ public class TaskAssignmentController {
                 .build();
     }
 
+    @PostMapping("/{assignmentId}/resolve-issue")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Manager resolve issue (clear hasIssue flag - cho specialist tiếp tục)")
+    public ApiResponse<TaskAssignmentResponse> resolveIssue(
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            @Parameter(description = "ID của task assignment")
+            @PathVariable String assignmentId) {
+        log.info("Resolving issue: contractId={}, assignmentId={}", contractId, assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.resolveIssue(contractId, assignmentId);
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Issue resolved successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{assignmentId}/cancel")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Manager cancel task (có thể cancel task ở bất kỳ status nào, trừ completed)")
+    public ApiResponse<TaskAssignmentResponse> cancelTaskByManager(
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            @Parameter(description = "ID của task assignment")
+            @PathVariable String assignmentId) {
+        log.info("Manager cancelling task: contractId={}, assignmentId={}", contractId, assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.cancelTaskByManager(contractId, assignmentId);
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Task assignment cancelled successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
 }
 
