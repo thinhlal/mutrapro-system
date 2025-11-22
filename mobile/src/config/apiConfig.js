@@ -81,6 +81,25 @@ export const API_ENDPOINTS = {
     MARK_AS_READ: (notificationId) => `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
     MARK_ALL_AS_READ: `${NOTIFICATIONS_PATH}/notifications/mark-all-read`,
   },
+
+  // === Pricing Management ===
+  PRICING: {
+    // GET /pricing-matrix
+    GET_ALL: `${REQUEST_PATH}/pricing-matrix`,
+    // GET /pricing-matrix/{serviceType}
+    GET_BY_SERVICE_TYPE: (serviceType) => `${REQUEST_PATH}/pricing-matrix/${serviceType}`,
+    // GET /pricing-matrix/calculate/{serviceType}?durationMinutes=X
+    CALCULATE: (serviceType, durationMinutes) =>
+      `${REQUEST_PATH}/pricing-matrix/calculate/${serviceType}?durationMinutes=${durationMinutes}`,
+  },
+
+  // === Notation Instruments Management ===
+  NOTATION_INSTRUMENTS: {
+    // GET /notation-instruments?usage=transcription|arrangement|both&includeInactive=true
+    GET_ALL: `${REQUEST_PATH}/notation-instruments`,
+    // GET /notation-instruments/by-ids?ids=id1&ids=id2
+    GET_BY_IDS: `${REQUEST_PATH}/notation-instruments/by-ids`,
+  },
 };
 
 // Log configuration in development
