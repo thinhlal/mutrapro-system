@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, ImageSlider } from '../../components';
+import { Button, ImageSlider, DiscoverServices } from '../../components';
 import {
   COLORS,
   FONT_SIZES,
@@ -48,6 +48,21 @@ const HomeScreen = ({ navigation }) => {
     >
       {/* Image Slider */}
       <ImageSlider />
+
+      {/* Discover Our Services */}
+      <DiscoverServices />
+
+      {/* Recent Activity */}
+      <Text style={styles.sectionTitle}>Recent Activity</Text>
+      <View style={styles.activityCard}>
+        <View style={styles.emptyState}>
+          <Ionicons name="time-outline" size={48} color={COLORS.gray[400]} />
+          <Text style={styles.emptyStateText}>No recent activity</Text>
+          <Text style={styles.emptyStateSubtext}>
+            Your recent activities will appear here
+          </Text>
+        </View>
+      </View>
 
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -101,46 +116,6 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Recent Activity */}
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
-      <View style={styles.activityCard}>
-        <View style={styles.emptyState}>
-          <Ionicons name="time-outline" size={48} color={COLORS.gray[400]} />
-          <Text style={styles.emptyStateText}>No recent activity</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Your recent activities will appear here
-          </Text>
-        </View>
-      </View>
-
-      {/* Services */}
-      <Text style={styles.sectionTitle}>Our Services</Text>
-      <View style={styles.servicesContainer}>
-        <View style={styles.serviceCard}>
-          <Ionicons name="musical-note" size={32} color={COLORS.primary} />
-          <Text style={styles.serviceTitle}>Transcription</Text>
-          <Text style={styles.serviceDescription}>
-            Professional music transcription services
-          </Text>
-        </View>
-
-        <View style={styles.serviceCard}>
-          <Ionicons name="color-palette" size={32} color={COLORS.secondary} />
-          <Text style={styles.serviceTitle}>Arrangement</Text>
-          <Text style={styles.serviceDescription}>
-            Custom music arrangement solutions
-          </Text>
-        </View>
-
-        <View style={styles.serviceCard}>
-          <Ionicons name="mic" size={32} color={COLORS.success} />
-          <Text style={styles.serviceTitle}>Recording</Text>
-          <Text style={styles.serviceDescription}>
-            High-quality recording services
-          </Text>
-        </View>
-      </View>
-
       {/* Logout Button */}
       <Button
         title="Logout"
@@ -167,13 +142,14 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
+    marginTop: SPACING.xl,
   },
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -SPACING.xs,
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   actionCard: {
     width: '50%',
@@ -225,38 +201,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
     textAlign: 'center',
-  },
-  servicesContainer: {
-    marginBottom: SPACING.xl,
-  },
-  serviceCard: {
-    backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  serviceTitle: {
-    fontSize: FONT_SIZES.base,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.xs,
-  },
-  serviceDescription: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
   },
   logoutButton: {
     marginBottom: SPACING.lg,
