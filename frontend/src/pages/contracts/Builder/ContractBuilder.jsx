@@ -15,8 +15,13 @@ import {
   Alert,
   Tag,
   Tooltip,
+  Card,
 } from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { 
+  QuestionCircleOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   useSearchParams,
   useNavigate,
@@ -185,7 +190,6 @@ const ContractBuilder = () => {
       additionalRevisionFeeVnd:
         currentFormValues.additional_revision_fee_vnd ?? 500000,
       depositPercent: currentFormValues.deposit_percent ?? 40,
-      finalAmount: currentFormValues.final_amount ?? 0,
     };
 
     // Only auto-fill if fields are empty or contain default values
@@ -303,10 +307,6 @@ const ContractBuilder = () => {
         const defaultTerms = getDefaultTermsAndConditions(contractType);
         const defaultClauses = getDefaultSpecialClauses(contractType);
 
-        // Calculate initial values for template replacement
-        const initialDepositAmount = totalPrice * (depositPercent / 100);
-        const initialFinalAmount = totalPrice - initialDepositAmount;
-
         // Auto-fill form with service request data
         // Contract number sẽ được generate ở backend, nhưng set để hiển thị
         form.setFieldsValue({
@@ -322,6 +322,7 @@ const ContractBuilder = () => {
           free_revisions_included: 1,
           revision_deadline_days: defaultRevisionDeadlineDays,
           additional_revision_fee_vnd: getDefaultAdditionalRevisionFeeVnd(),
+          milestones: [], // Empty milestones array - manager will add milestones
           // Auto-fill terms and clauses with default values for this contract type
           // Pass values directly to getDefaultTermsAndConditions
           terms_and_conditions: getDefaultTermsAndConditions(contractType, {
@@ -329,7 +330,6 @@ const ContractBuilder = () => {
             revisionDeadlineDays: defaultRevisionDeadlineDays,
             additionalRevisionFeeVnd: getDefaultAdditionalRevisionFeeVnd(),
             depositPercent: depositPercent,
-            finalAmount: initialFinalAmount,
           }),
           special_clauses: defaultClauses,
         });
@@ -346,8 +346,8 @@ const ContractBuilder = () => {
         // Load pricing breakdown information
         await loadPricingBreakdown(request);
 
-        // Trigger recompute to calculate deposit and final amount
-        setTimeout(() => {
+          // Update terms if needed
+          setTimeout(() => {
           // Nếu có copyFromContract, override các giá trị từ contract cũ
           if (copyFromContract) {
             const overrideValues = {};
@@ -391,9 +391,7 @@ const ContractBuilder = () => {
             message.success('Service request data loaded successfully');
           }
 
-          recompute();
-
-          // After recompute, update terms & conditions with actual values if it's still default
+          // Update terms & conditions with actual values if it's still default
           const currentTerms = form.getFieldValue('terms_and_conditions');
           const updatedValues = form.getFieldsValue();
           const termsParams = {
@@ -402,7 +400,6 @@ const ContractBuilder = () => {
             additionalRevisionFeeVnd:
               updatedValues.additional_revision_fee_vnd ?? 500000,
             depositPercent: updatedValues.deposit_percent ?? 40,
-            finalAmount: updatedValues.final_amount ?? 0,
           };
           const defaultTerms = getDefaultTermsAndConditions(
             contractType,
@@ -456,8 +453,15 @@ const ContractBuilder = () => {
           contract_type: contract.contractType,
           deposit_percent: contract.depositPercent,
           total_price: contract.totalPrice,
-          deposit_amount: contract.depositAmount,
-          final_amount: contract.finalAmount,
+          milestones: contract.milestones?.map(m => ({
+            name: m.name,
+            description: m.description,
+            orderIndex: m.orderIndex,
+            paymentStatus: m.paymentStatus,
+            hasPayment: false, // Will be determined from installments
+            paymentPercent: null, // Will be determined from installments
+            milestoneSlaDays: m.milestoneSlaDays || null,
+          })) || [],
           sla_days: contract.slaDays,
           show_watermark: false, // Always show watermark in edit mode
           free_revisions_included: contract.freeRevisionsIncluded,
@@ -535,9 +539,7 @@ const ContractBuilder = () => {
 
             total_price: Number(currentFormValues.total_price || 0),
             currency: 'VND',
-            deposit_percent: Number(currentFormValues.deposit_percent || 0),
-            deposit_amount: Number(currentFormValues.deposit_amount || 0),
-            final_amount: Number(currentFormValues.final_amount || 0),
+        deposit_percent: Number(currentFormValues.deposit_percent || 0),
 
             expected_start_date: null,
             sla_days: Number(currentFormValues.sla_days || 0),
@@ -645,7 +647,6 @@ const ContractBuilder = () => {
         additionalRevisionFeeVnd:
           formValues.additional_revision_fee_vnd ?? 500000,
         depositPercent: formValues.deposit_percent ?? 40,
-        finalAmount: formValues.final_amount ?? 0,
       };
       const updatedTerms = getDefaultTermsAndConditions(
         contractType,
@@ -658,26 +659,65 @@ const ContractBuilder = () => {
     }
   };
 
-  // auto-calc pricing (due_date sẽ tự động tính khi customer ký)
-  const recompute = () => {
-    const v = form.getFieldsValue(true);
-    const total = Number(v.total_price ?? 0);
+  // Validate payment percentages
+  const validatePaymentPercentages = (depositPercent, milestones) => {
+    if (!depositPercent || depositPercent <= 0) {
+      return { valid: false, message: 'Deposit percent is required and must be greater than 0' };
+    }
+    
+    const totalPaymentPercent = (milestones || []).reduce((sum, m) => {
+      if (m?.hasPayment && m?.paymentPercent) {
+        return sum + (Number(m.paymentPercent) || 0);
+      }
+      return sum;
+    }, 0);
+    
+    const total = depositPercent + totalPaymentPercent;
+    if (Math.abs(total - 100) >= 0.01) {
+      return {
+        valid: false,
+        message: `Total payment percentage must equal 100%. Current: ${total.toFixed(2)}% (deposit: ${depositPercent}% + milestones: ${totalPaymentPercent.toFixed(2)}%)`
+      };
+    }
+    
+    return { valid: true };
+  };
 
-    const depPct = Number(v.deposit_percent ?? 0);
-    const depositAmount = +(total * (depPct / 100)).toFixed(2);
-    const finalAmount = +(total - depositAmount).toFixed(2);
-
-    form.setFieldsValue({
-      deposit_amount: depositAmount,
-      final_amount: finalAmount,
-    });
-
-    // Update terms & conditions if it's still using default template
-    updateTermsIfDefault({ ...v, final_amount: finalAmount });
+  // Validate milestone SLA days
+  const validateMilestoneSlaDays = (contractSlaDays, milestones) => {
+    if (!contractSlaDays || contractSlaDays <= 0) {
+      return { valid: false, message: 'Contract SLA days is required and must be greater than 0' };
+    }
+    
+    if (!milestones || milestones.length === 0) {
+      return { valid: false, message: 'At least one milestone is required' };
+    }
+    
+    // Check each milestone has milestoneSlaDays
+    for (const m of milestones) {
+      if (!m.milestoneSlaDays || m.milestoneSlaDays <= 0) {
+        return { 
+          valid: false, 
+          message: `Milestone "${m.name || 'N/A'}" must have milestoneSlaDays greater than 0` 
+        };
+      }
+    }
+    
+    const totalMilestoneSlaDays = milestones.reduce((sum, m) => {
+      return sum + (Number(m.milestoneSlaDays) || 0);
+    }, 0);
+    
+    if (totalMilestoneSlaDays !== contractSlaDays) {
+      return {
+        valid: false,
+        message: `Total milestone SLA days must equal contract SLA days. Current: ${totalMilestoneSlaDays} days (contract: ${contractSlaDays} days)`
+      };
+    }
+    
+    return { valid: true };
   };
 
   const onValuesChange = (changedValues, allValues) => {
-    recompute();
     // Also update terms when revision or payment fields change
     if (
       changedValues.free_revisions_included !== undefined ||
@@ -708,9 +748,7 @@ const ContractBuilder = () => {
 
     total_price: Number(values.total_price || 0),
     currency: 'VND',
-    deposit_percent: Number(values.deposit_percent || 0),
-    deposit_amount: Number(values.deposit_amount || 0),
-    final_amount: Number(values.final_amount || 0),
+        deposit_percent: Number(values.deposit_percent || 0),
 
     // Expected start optional: backend will default to now if null
     expected_start_date: null,
@@ -762,6 +800,27 @@ const ContractBuilder = () => {
       await form.validateFields();
       const values = form.getFieldsValue();
 
+      // Validate payment percentages
+      const depositPercent = Number(values.deposit_percent || 40);
+      const milestones = values.milestones || [];
+      const paymentValidation = validatePaymentPercentages(depositPercent, milestones);
+      
+      if (!paymentValidation.valid) {
+        message.error(paymentValidation.message);
+        setError(paymentValidation.message);
+        return;
+      }
+
+      // Validate milestone SLA days
+      const contractSlaDays = Number(values.sla_days || 7);
+      const slaValidation = validateMilestoneSlaDays(contractSlaDays, milestones);
+      
+      if (!slaValidation.valid) {
+        message.error(slaValidation.message);
+        setError(slaValidation.message);
+        return;
+      }
+
       setCreatingContract(true);
       setError(null);
 
@@ -771,7 +830,7 @@ const ContractBuilder = () => {
         contractType: values.contract_type,
         totalPrice: totalPrice,
         currency: 'VND',
-        depositPercent: Number(values.deposit_percent || 40),
+        depositPercent: depositPercent,
         slaDays: Number(values.sla_days || 7),
         autoDueDate: true,
         expectedStartDate: null,
@@ -790,6 +849,23 @@ const ContractBuilder = () => {
           ? Number(values.additional_revision_fee_vnd)
           : getDefaultAdditionalRevisionFeeVnd(),
       };
+
+      // Only include milestones when creating new contract (not in edit mode)
+      if (!isEditMode) {
+        const milestonesData = (milestones || []).map((m, index) => ({
+          name: m.name,
+          description: m.description || '',
+          orderIndex: m.orderIndex || (index + 1),
+          paymentStatus: m.paymentStatus || 'NOT_DUE',
+          hasPayment: m.hasPayment || false,
+          paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
+          milestoneSlaDays: m.milestoneSlaDays ? Number(m.milestoneSlaDays) : null,
+        }));
+        
+        if (milestonesData.length > 0) {
+          contractData.milestones = milestonesData;
+        }
+      }
 
       let response;
       if (isEditMode) {
@@ -1098,38 +1174,262 @@ const ContractBuilder = () => {
                     name="deposit_percent"
                     label="Deposit %"
                     initialValue={40}
+                    rules={[
+                      { required: true, message: 'Please enter deposit percent' },
+                      { 
+                        type: 'number', 
+                        min: 1, 
+                        max: 100,
+                        message: 'Deposit percent must be between 1 and 100'
+                      },
+                    ]}
                   >
                     <InputNumber
-                      min={0}
+                      min={1}
                       max={100}
                       step={1}
                       style={{ width: '100%' }}
                     />
                   </Form.Item>
-                  <Form.Item
-                    name="deposit_amount"
-                    label="Deposit Amount"
-                    className={styles.disabledInput}
-                  >
-                    <InputNumber
-                      min={0}
-                      step={1000}
-                      style={{ width: '100%' }}
-                      disabled
-                    />
-                  </Form.Item>
-                  <Form.Item
-                    name="final_amount"
-                    label="Final Amount"
-                    className={styles.disabledInput}
-                  >
-                    <InputNumber
-                      min={0}
-                      step={1000}
-                      style={{ width: '100%' }}
-                      disabled
-                    />
-                  </Form.Item>
+
+                  {!isEditMode && (
+                    <>
+                      <Divider className={styles.fullRow}>
+                        Payment Milestones
+                      </Divider>
+                      
+                      <Form.Item
+                        className={styles.fullRow}
+                        label={
+                          <span>
+                            Milestones{' '}
+                            <Tooltip title="Cấu hình các milestones và phần trăm thanh toán. Tổng depositPercent + sum(paymentPercent của milestones có hasPayment=true) phải = 100%">
+                              <QuestionCircleOutlined
+                                style={{ color: '#1890ff', cursor: 'help' }}
+                              />
+                            </Tooltip>
+                          </span>
+                        }
+                      >
+                        <Form.List name="milestones" initialValue={[]}>
+                      {(fields, { add, remove }) => (
+                        <>
+                          {fields.map(({ key, name, ...restField }) => {
+                            const hasPayment = Form.useWatch(['milestones', name, 'hasPayment'], form);
+                            return (
+                              <Card
+                                key={key}
+                                size="small"
+                                style={{ marginBottom: 16 }}
+                                title={`Milestone ${name + 1}`}
+                                extra={
+                                  fields.length > 0 ? (
+                                    <MinusCircleOutlined
+                                      onClick={() => remove(name)}
+                                      style={{ color: '#ff4d4f', cursor: 'pointer' }}
+                                    />
+                                  ) : null
+                                }
+                              >
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'orderIndex']}
+                                    label="Order Index"
+                                    initialValue={name + 1}
+                                    rules={[{ required: true }]}
+                                  >
+                                    <InputNumber min={1} style={{ width: '100%' }} disabled />
+                                  </Form.Item>
+                                  
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'name']}
+                                    label="Name"
+                                    rules={[{ required: true, message: 'Please enter milestone name' }]}
+                                  >
+                                    <Input placeholder="e.g., Milestone 1: Deposit & Start Transcription" />
+                                  </Form.Item>
+                                  
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'description']}
+                                    label="Description"
+                                  >
+                                    <Input.TextArea 
+                                      rows={2} 
+                                      placeholder="Mô tả công việc trong milestone này"
+                                    />
+                                  </Form.Item>
+                                  
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'paymentStatus']}
+                                    label="Payment Status"
+                                    initialValue="NOT_DUE"
+                                    rules={[{ required: true }]}
+                                  >
+                                    <Select>
+                                      <Select.Option value="NOT_DUE">Not Due</Select.Option>
+                                      <Select.Option value="DUE">Due</Select.Option>
+                                    </Select>
+                                  </Form.Item>
+                                  
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'hasPayment']}
+                                    label="Has Payment"
+                                    valuePropName="checked"
+                                    initialValue={false}
+                                    rules={[{ required: true }]}
+                                  >
+                                    <Switch />
+                                  </Form.Item>
+                                  
+                                  {hasPayment && (
+                                    <Form.Item
+                                      {...restField}
+                                      name={[name, 'paymentPercent']}
+                                      label="Payment Percent"
+                                      rules={[
+                                        { required: true, message: 'Please enter payment percent' },
+                                        { 
+                                          type: 'number', 
+                                          min: 0.01, 
+                                          max: 100,
+                                          message: 'Payment percent must be between 0.01 and 100'
+                                        },
+                                      ]}
+                                    >
+                                      <InputNumber
+                                        min={0.01}
+                                        max={100}
+                                        step={0.01}
+                                        style={{ width: '100%' }}
+                                        placeholder="Phần trăm thanh toán cho milestone này"
+                                      />
+                                    </Form.Item>
+                                  )}
+                                  
+                                  <Form.Item
+                                    {...restField}
+                                    name={[name, 'milestoneSlaDays']}
+                                    label={
+                                      <span>
+                                        Milestone SLA Days{' '}
+                                        <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
+                                          <QuestionCircleOutlined
+                                            style={{ color: '#1890ff', cursor: 'help' }}
+                                          />
+                                        </Tooltip>
+                                      </span>
+                                    }
+                                    rules={[
+                                      { required: true, message: 'Please enter milestone SLA days' },
+                                      { 
+                                        type: 'number', 
+                                        min: 1,
+                                        message: 'Milestone SLA days must be at least 1'
+                                      },
+                                    ]}
+                                  >
+                                    <InputNumber
+                                      min={1}
+                                      max={365}
+                                      step={1}
+                                      style={{ width: '100%' }}
+                                      placeholder="Số ngày SLA cho milestone này"
+                                    />
+                                  </Form.Item>
+                                </Space>
+                              </Card>
+                            );
+                          })}
+                          
+                          <Form.Item>
+                            <Button
+                              type="dashed"
+                              onClick={() => add()}
+                              block
+                              icon={<PlusOutlined />}
+                            >
+                              Add Milestone
+                            </Button>
+                          </Form.Item>
+                        </>
+                      )}
+                    </Form.List>
+                      </Form.Item>
+                      
+                      {/* Validation message */}
+                      <Form.Item shouldUpdate className={styles.fullRow}>
+                    {() => {
+                      const depositPercent = form.getFieldValue('deposit_percent') || 0;
+                      const milestones = form.getFieldValue('milestones') || [];
+                      const totalPaymentPercent = milestones.reduce((sum, m) => {
+                        if (m?.hasPayment && m?.paymentPercent) {
+                          return sum + (Number(m.paymentPercent) || 0);
+                        }
+                        return sum;
+                      }, 0);
+                      const total = depositPercent + totalPaymentPercent;
+                      const isValid = Math.abs(total - 100) < 0.01; // Allow small floating point errors
+                      
+                      if (milestones.length > 0 && !isValid) {
+                        return (
+                          <Alert
+                            message={`Total payment percentage: ${total.toFixed(2)}%`}
+                            description={`Deposit: ${depositPercent}% + Milestones: ${totalPaymentPercent.toFixed(2)}% = ${total.toFixed(2)}%. Must equal 100%`}
+                            type="error"
+                            showIcon
+                            style={{ marginTop: 8 }}
+                          />
+                        );
+                      }
+                      if (milestones.length > 0 && isValid) {
+                        // Validate milestone SLA days
+                        const contractSlaDays = form.getFieldValue('sla_days') || 0;
+                        const totalMilestoneSlaDays = milestones.reduce((sum, m) => {
+                          return sum + (Number(m.milestoneSlaDays) || 0);
+                        }, 0);
+                        const slaIsValid = totalMilestoneSlaDays === contractSlaDays;
+                        
+                        return (
+                          <>
+                            <Alert
+                              message="Payment percentage validation: OK"
+                              description={`Total: ${total.toFixed(2)}% = 100%`}
+                              type="success"
+                              showIcon
+                              style={{ marginTop: 8 }}
+                            />
+                            {milestones.length > 0 && contractSlaDays > 0 && (
+                              slaIsValid ? (
+                                <Alert
+                                  message="Milestone SLA days validation: OK"
+                                  description={`Total: ${totalMilestoneSlaDays} days = Contract SLA: ${contractSlaDays} days`}
+                                  type="success"
+                                  showIcon
+                                  style={{ marginTop: 8 }}
+                                />
+                              ) : (
+                                <Alert
+                                  message={`Total milestone SLA days: ${totalMilestoneSlaDays} days`}
+                                  description={`Contract SLA: ${contractSlaDays} days. Total milestone SLA days must equal contract SLA days.`}
+                                  type="error"
+                                  showIcon
+                                  style={{ marginTop: 8 }}
+                                />
+                              )
+                            )}
+                          </>
+                        );
+                      }
+                      return null;
+                    }}
+                      </Form.Item>
+                    </>
+                  )}
 
                   <Divider className={styles.fullRow}>
                     Timeline & Revision Policy
@@ -1611,33 +1911,7 @@ const ContractBuilder = () => {
                           backgroundColor: '#fff',
                         }}
                       >
-                        {data?.deposit_amount?.toLocaleString?.() ??
-                          data?.deposit_amount}{' '}
-                        {data?.currency || 'VND'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          border: '1px solid #000',
-                          padding: '10px',
-                          fontWeight: 'bold',
-                          backgroundColor: '#e8e8e8',
-                        }}
-                      >
-                        Final Amount
-                      </td>
-                      <td
-                        style={{
-                          border: '1px solid #000',
-                          padding: '10px',
-                          textAlign: 'right',
-                          fontWeight: 'bold',
-                          backgroundColor: '#fff',
-                        }}
-                      >
-                        {data?.final_amount?.toLocaleString?.() ??
-                          data?.final_amount}{' '}
+                        {((data?.total_price || 0) * ((data?.deposit_percent || 0) / 100)).toLocaleString()}{' '}
                         {data?.currency || 'VND'}
                       </td>
                     </tr>

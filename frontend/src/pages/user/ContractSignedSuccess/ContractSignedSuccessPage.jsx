@@ -117,7 +117,7 @@ const ContractSignedSuccessPage = () => {
     );
   }
 
-  const depositAmount = depositMilestone?.amount || contract?.depositAmount || 0;
+  const depositAmount = depositMilestone?.amount || 0;
   const depositPercent = contract?.depositPercent || 0;
   const totalPrice = contract?.totalPrice || 0;
 
@@ -154,9 +154,6 @@ const ContractSignedSuccessPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Deposit">
                 {depositPercent}% = {formatCurrency(depositAmount, contract.currency)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Final Payment">
-                {formatCurrency(totalPrice - depositAmount, contract.currency)}
               </Descriptions.Item>
               {depositMilestone?.plannedDueDate && (
                 <Descriptions.Item label="Deposit Deadline">

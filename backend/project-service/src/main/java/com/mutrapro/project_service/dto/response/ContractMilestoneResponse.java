@@ -42,7 +42,11 @@ public class ContractMilestoneResponse {
     
     MilestonePaymentStatus paymentStatus;
     
-    LocalDateTime plannedDueDate;
+    Integer milestoneSlaDays;  // SLA ngày cho milestone này
+    
+    LocalDateTime plannedStartAt;  // BE tính khi contract có start date
+    
+    LocalDateTime plannedDueDate;  // BE tính khi contract có start date
     
     Instant paidAt;
     

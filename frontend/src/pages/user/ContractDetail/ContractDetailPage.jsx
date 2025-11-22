@@ -1342,36 +1342,6 @@ const ContractDetailPage = () => {
                 {contract.currency || 'VND'}
               </Text>
             </Descriptions.Item>
-            {contract?.milestones && contract.milestones.length > 0 ? (
-              <>
-                <Descriptions.Item
-                  label={`Deposit (${contract.depositPercent || 0}%)`}
-                >
-                  {contract.milestones[0]?.amount?.toLocaleString()}{' '}
-                  {contract.currency || 'VND'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Final Amount">
-                  {contract.milestones
-                    .slice(1)
-                    .reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0)
-                    .toLocaleString()}{' '}
-                  {contract.currency || 'VND'}
-                </Descriptions.Item>
-              </>
-            ) : (
-              <>
-                <Descriptions.Item
-                  label={`Deposit (${contract.depositPercent || 0}%)`}
-                >
-                  {contract.depositAmount?.toLocaleString()}{' '}
-                  {contract.currency || 'VND'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Final Amount">
-                  {contract.finalAmount?.toLocaleString()}{' '}
-                  {contract.currency || 'VND'}
-                </Descriptions.Item>
-              </>
-            )}
             <Descriptions.Item label="SLA Days">
               {contract.slaDays || 0} days
             </Descriptions.Item>
@@ -1998,56 +1968,6 @@ const ContractDetailPage = () => {
                     </>
                   ) : (
                     <>
-                      <tr>
-                        <td
-                          style={{
-                            border: '1px solid #000',
-                            padding: '10px',
-                            fontWeight: 'bold',
-                            backgroundColor: '#e8e8e8',
-                          }}
-                        >
-                          Deposit ({contract.depositPercent || 0}%)
-                        </td>
-                        <td
-                          style={{
-                            border: '1px solid #000',
-                            padding: '10px',
-                            textAlign: 'right',
-                            fontWeight: 'bold',
-                            backgroundColor: '#fff',
-                          }}
-                        >
-                          {contract.depositAmount?.toLocaleString?.() ??
-                            contract.depositAmount}{' '}
-                          {contract.currency || 'VND'}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td
-                          style={{
-                            border: '1px solid #000',
-                            padding: '10px',
-                            fontWeight: 'bold',
-                            backgroundColor: '#e8e8e8',
-                          }}
-                        >
-                          Final Amount
-                        </td>
-                        <td
-                          style={{
-                            border: '1px solid #000',
-                            padding: '10px',
-                            textAlign: 'right',
-                            fontWeight: 'bold',
-                            backgroundColor: '#fff',
-                          }}
-                        >
-                          {contract.finalAmount?.toLocaleString?.() ??
-                            contract.finalAmount}{' '}
-                          {contract.currency || 'VND'}
-                        </td>
-                      </tr>
                     </>
                   )}
                 </tbody>

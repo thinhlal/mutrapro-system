@@ -94,12 +94,6 @@ public class Contract {
     @Column(name = "deposit_percent", precision = 5, scale = 2)
     BigDecimal depositPercent;
 
-    @Column(name = "deposit_amount", precision = 12, scale = 2)
-    BigDecimal depositAmount;
-
-    @Column(name = "final_amount", precision = 12, scale = 2)
-    BigDecimal finalAmount;
-
     // Timeline & SLA
     @Column(name = "expected_start_date")
     Instant expectedStartDate;
@@ -118,6 +112,10 @@ public class Contract {
     @Builder.Default
     @Column(name = "free_revisions_included", nullable = false)
     Integer freeRevisionsIncluded = 1;
+
+    @Builder.Default
+    @Column(name = "revision_used_count", nullable = false)
+    Integer revisionUsedCount = 0;  // Số lần revision đã sử dụng
 
     @Column(name = "additional_revision_fee_vnd", precision = 12, scale = 2)
     BigDecimal additionalRevisionFeeVnd;

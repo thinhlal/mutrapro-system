@@ -106,6 +106,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     INVALID_MILESTONE_ID("CONTRACT_7022", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7022",
         "Milestone ID cannot be blank",
+        Retryable.NON_TRANSIENT),
+    
+    CONTRACT_VALIDATION_ERROR("CONTRACT_7023", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7023",
+        "Contract validation failed",
         Retryable.NON_TRANSIENT);
 
     private final String code;

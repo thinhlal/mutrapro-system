@@ -70,9 +70,15 @@ public class ContractMilestone {
     @Column(name = "payment_status", nullable = false, length = 20)
     MilestonePaymentStatus paymentStatus = MilestonePaymentStatus.NOT_DUE;
 
-    // Optional fields
+    // SLA và planned dates
+    @Column(name = "milestone_sla_days")
+    Integer milestoneSlaDays;  // SLA ngày cho milestone này (FE gửi, BE lưu)
+
+    @Column(name = "planned_start_at")
+    LocalDateTime plannedStartAt;  // BE tính khi contract có start date
+
     @Column(name = "planned_due_date")
-    LocalDateTime plannedDueDate;
+    LocalDateTime plannedDueDate;  // BE tính khi contract có start date (plannedStartAt + milestoneSlaDays)
 
     @Column(name = "paid_at")
     Instant paidAt;

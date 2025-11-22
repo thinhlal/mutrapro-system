@@ -62,10 +62,6 @@ public class ContractResponse {
     
     BigDecimal depositPercent;
     
-    BigDecimal depositAmount;
-    
-    BigDecimal finalAmount;
-    
     // Timeline & SLA
     Instant expectedStartDate;
     
@@ -103,5 +99,8 @@ public class ContractResponse {
     
     // Milestones
     List<ContractMilestoneResponse> milestones;
+    
+    // Installments
+    List<ContractInstallmentResponse> installments;
 }
 

@@ -9,17 +9,12 @@ export const getDefaultTermsAndConditions = (
     revisionDeadlineDays = 30,
     additionalRevisionFeeVnd = 500000,
     depositPercent = 40,
-    finalAmount = 0,
   } = {}
 ) => {
   const freeRevisionsText =
     freeRevisionsIncluded === 1
       ? '1 free revision'
       : `${freeRevisionsIncluded} free revisions`;
-  const finalAmountFormatted =
-    typeof finalAmount === 'number'
-      ? finalAmount.toLocaleString()
-      : finalAmount;
   const revisionFeeFormatted =
     typeof additionalRevisionFeeVnd === 'number'
       ? additionalRevisionFeeVnd.toLocaleString()
@@ -42,7 +37,7 @@ Party A agrees to provide professional music transcription services, converting 
 
 4. PAYMENT TERMS
 - Deposit: ${depositPercent}% of total price due upon contract signing.
-- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
+- Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -78,7 +73,7 @@ Party A agrees to provide professional music arrangement services, creating musi
 
 4. PAYMENT TERMS
 - Deposit: ${depositPercent}% of total price due upon contract signing.
-- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
+- Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -119,7 +114,7 @@ Party A agrees to provide professional music arrangement and recording services,
 
 4. PAYMENT TERMS
 - Deposit: ${depositPercent}% of total price due upon contract signing.
-- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
+- Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -155,7 +150,7 @@ Party A agrees to provide professional music recording services in a studio sett
 
 4. PAYMENT TERMS
 - Deposit: ${depositPercent}% of total price due upon contract signing.
-- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
+- Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -197,7 +192,7 @@ Party A agrees to provide comprehensive music services including:
 
 4. PAYMENT TERMS
 - Deposit: ${depositPercent}% of total price due upon contract signing.
-- Final payment: Remaining ${finalAmountFormatted} VND due upon delivery and acceptance.
+- Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
 5. INTELLECTUAL PROPERTY
@@ -273,9 +268,5 @@ export const replaceTemplateVariables = (text, formValues) => {
       /\{additional_revision_fee_vnd\}/g,
       formValues?.additional_revision_fee_vnd?.toLocaleString() || '0'
     )
-    .replace(/\{deposit_percent\}/g, formValues?.deposit_percent || 40)
-    .replace(
-      /\{final_amount\}/g,
-      formValues?.final_amount?.toLocaleString() || '0'
-    );
+    .replace(/\{deposit_percent\}/g, formValues?.deposit_percent || 40);
 };

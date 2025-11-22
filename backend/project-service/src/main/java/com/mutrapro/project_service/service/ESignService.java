@@ -19,9 +19,13 @@ import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.exception.*;
+import com.mutrapro.project_service.repository.ContractInstallmentRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.ContractSignSessionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
+import com.mutrapro.project_service.entity.ContractInstallment;
+import com.mutrapro.project_service.enums.InstallmentStatus;
+import com.mutrapro.project_service.enums.InstallmentType;
 import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +42,7 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -53,6 +58,7 @@ public class ESignService {
     final ContractRepository contractRepository;
     final ContractSignSessionRepository signSessionRepository;
     final OutboxEventRepository outboxEventRepository;
+    final ContractInstallmentRepository contractInstallmentRepository;
     final ObjectMapper objectMapper;
     final S3Service s3Service;
     final RequestServiceFeignClient requestServiceFeignClient;
@@ -225,6 +231,19 @@ public class ESignService {
         contract.setDueDate(null);
 
         contractRepository.save(contract);
+
+        // Cập nhật DEPOSIT installment: PENDING -> DUE khi contract được ký
+        List<ContractInstallment> depositInstallments = contractInstallmentRepository
+            .findByContractIdAndStatus(contractId, InstallmentStatus.PENDING);
+        for (ContractInstallment installment : depositInstallments) {
+            if (installment.getType() == InstallmentType.DEPOSIT) {
+                installment.setStatus(InstallmentStatus.DUE);
+                installment.setUpdatedAt(now);
+                contractInstallmentRepository.save(installment);
+                log.info("Updated DEPOSIT installment to DUE: installmentId={}, contractId={}", 
+                    installment.getInstallmentId(), contractId);
+            }
+        }
 
         // Mark sign session as verified
         signSession.setStatus(SignSessionStatus.VERIFIED);

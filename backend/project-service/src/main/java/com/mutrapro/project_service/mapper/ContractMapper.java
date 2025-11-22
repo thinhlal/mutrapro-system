@@ -24,8 +24,6 @@ public interface ContractMapper {
     @Mapping(target = "emailSnapshot", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "depositAmount", ignore = true)
-    @Mapping(target = "finalAmount", ignore = true)
     @Mapping(target = "dueDate", ignore = true)
     @Mapping(target = "freeRevisionsIncluded", ignore = true)
     Contract toEntity(CreateContractRequest request);
