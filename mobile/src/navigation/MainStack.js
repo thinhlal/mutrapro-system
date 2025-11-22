@@ -9,11 +9,13 @@ import { CustomDrawerContent } from '../components';
 import HomeScreen from '../screens/Main/HomeScreen';
 import ProfileScreen from '../screens/Main/ProfileScreen';
 import EditProfileScreen from '../screens/Main/EditProfileScreen';
+import ServiceRequestScreen from '../screens/Services/ServiceRequestScreen';
+import ServiceQuoteScreen from '../screens/Services/ServiceQuoteScreen';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
-// Stack Navigator for screens that need stack navigation
+// Stack Navigator for Profile screens
 const ProfileStack = () => {
   return (
     <Stack.Navigator
@@ -37,6 +39,53 @@ const ProfileStack = () => {
         name={SCREEN_NAMES.EDIT_PROFILE}
         component={EditProfileScreen}
         options={{ title: 'Edit Profile' }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Stack Navigator for Home screens (includes services flow)
+const HomeStack = ({ navigation }) => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerTitleAlign: 'center',
+        headerStyle: {
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: '#E5E5E5',
+          backgroundColor: COLORS.white,
+        },
+        headerTintColor: COLORS.text,
+      }}
+    >
+      <Stack.Screen
+        name="HomeMain"
+        component={HomeScreen}
+        options={{
+          title: 'MuTraPro',
+          headerLeft: () => (
+            <Ionicons
+              name="menu"
+              size={28}
+              color={COLORS.text}
+              style={{ marginLeft: 15 }}
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="ServiceRequest"
+        component={ServiceRequestScreen}
+        options={{ title: 'Service Request' }}
+      />
+      <Stack.Screen
+        name="ServiceQuote"
+        component={ServiceQuoteScreen}
+        options={{ title: 'Review Quote' }}
       />
     </Stack.Navigator>
   );
@@ -68,12 +117,13 @@ const MainStack = () => {
     >
       <Drawer.Screen
         name={SCREEN_NAMES.HOME}
-        component={HomeScreen}
+        component={HomeStack}
         options={{
-          title: 'MuTraPro',
+          title: 'Home',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
+          headerShown: false, // Hide drawer header, use stack header instead
         }}
       />
       <Drawer.Screen
