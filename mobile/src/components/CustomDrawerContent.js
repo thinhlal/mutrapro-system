@@ -32,61 +32,67 @@ const CustomDrawerContent = (props) => {
 
   const menuItems = [
     {
+      id: 'home',
       label: 'Home',
       icon: 'home-outline',
-      screen: SCREEN_NAMES.HOME,
-      onPress: () => navigation.navigate(SCREEN_NAMES.HOME),
+      screen: 'MainTabs',
+      tab: 'Home',
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
     },
     {
+      id: 'my-requests',
       label: 'My Requests',
       icon: 'list-outline',
-      screen: SCREEN_NAMES.MY_REQUESTS,
-      onPress: () => navigation.navigate(SCREEN_NAMES.HOME),
+      screen: 'MyRequests',
+      tab: null,
+      onPress: () => navigation.navigate('MyRequests'),
     },
     {
+      id: 'contracts',
       label: 'Contracts',
       icon: 'document-text-outline',
-      screen: SCREEN_NAMES.MY_CONTRACTS,
-      onPress: () => navigation.navigate(SCREEN_NAMES.HOME),
+      screen: 'MainTabs',
+      tab: 'Home',
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
     },
     {
+      id: 'wallet',
       label: 'Wallet',
       icon: 'wallet-outline',
-      screen: SCREEN_NAMES.WALLET,
-      onPress: () => navigation.navigate(SCREEN_NAMES.HOME),
+      screen: 'MainTabs',
+      tab: 'Home',
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
     },
     {
+      id: 'profile',
       label: 'Profile',
       icon: 'person-outline',
-      screen: 'ProfileStack',
-      onPress: () => navigation.navigate('ProfileStack'),
+      screen: 'MainTabs',
+      tab: 'Profile',
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Profile' }),
     },
     {
+      id: 'settings',
       label: 'Settings',
       icon: 'settings-outline',
-      screen: SCREEN_NAMES.SETTINGS,
-      onPress: () => navigation.navigate(SCREEN_NAMES.HOME),
+      screen: 'MainTabs',
+      tab: 'Home',
+      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
     },
   ];
 
   const getCurrentRoute = () => {
     try {
       const state = navigation.getState();
-      if (!state || !state.routes) return SCREEN_NAMES.HOME;
+      if (!state || !state.routes) return 'MainTabs';
 
       const route = state.routes[state.index];
-      if (!route) return SCREEN_NAMES.HOME;
+      if (!route) return 'MainTabs';
 
-      if (route.state && route.state.routes) {
-        if (route.name === 'ProfileStack') {
-          return 'ProfileStack';
-        }
-      }
-
-      return route.name || SCREEN_NAMES.HOME;
+      return route.name || 'MainTabs';
     } catch (error) {
       console.error('Error getting current route:', error);
-      return SCREEN_NAMES.HOME;
+      return 'MainTabs';
     }
   };
 
@@ -120,10 +126,19 @@ const CustomDrawerContent = (props) => {
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item) => {
-            const isActive = currentRoute === item.screen;
+            // Determine if this item is active
+            let isActive = false;
+            if (item.screen === 'MyRequests') {
+              isActive = currentRoute === 'MyRequests';
+            } else if (item.screen === 'MainTabs' && item.tab) {
+              // For MainTabs items, check if on MainTabs screen
+              // In a real app, you'd check the nested route too
+              isActive = currentRoute === 'MainTabs' && item.id === 'home'; // Only home is active for now
+            }
+            
             return (
               <TouchableOpacity
-                key={item.screen}
+                key={item.id}
                 style={[styles.menuItem, isActive && styles.menuItemActive]}
                 onPress={() => {
                   item.onPress();

@@ -1,111 +1,21 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SCREEN_NAMES, COLORS } from '../config/constants';
 import { CustomDrawerContent } from '../components';
-
-// Import screens
-import HomeScreen from '../screens/Main/HomeScreen';
-import ProfileScreen from '../screens/Main/ProfileScreen';
-import EditProfileScreen from '../screens/Main/EditProfileScreen';
-import ServiceRequestScreen from '../screens/Services/ServiceRequestScreen';
-import ServiceQuoteScreen from '../screens/Services/ServiceQuoteScreen';
+import BottomTabNavigator from './BottomTabNavigator';
+import MyRequestsScreen from '../screens/Requests/MyRequestsScreen';
 
 const Drawer = createDrawerNavigator();
-const Stack = createStackNavigator();
 
-// Stack Navigator for Profile screens
-const ProfileStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: 'center',
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5E5',
-        },
-      }}
-    >
-      <Stack.Screen
-        name={SCREEN_NAMES.PROFILE}
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
-      <Stack.Screen
-        name={SCREEN_NAMES.EDIT_PROFILE}
-        component={EditProfileScreen}
-        options={{ title: 'Edit Profile' }}
-      />
-    </Stack.Navigator>
-  );
-};
-
-// Stack Navigator for Home screens (includes services flow)
-const HomeStack = ({ navigation }) => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: 'center',
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5E5',
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
-    >
-      <Stack.Screen
-        name="HomeMain"
-        component={HomeScreen}
-        options={{
-          title: 'MuTraPro',
-          headerLeft: () => (
-            <Ionicons
-              name="menu"
-              size={28}
-              color={COLORS.text}
-              style={{ marginLeft: 15 }}
-              onPress={() => navigation.openDrawer()}
-            />
-          ),
-        }}
-      />
-      <Stack.Screen
-        name="ServiceRequest"
-        component={ServiceRequestScreen}
-        options={{ title: 'Service Request' }}
-      />
-      <Stack.Screen
-        name="ServiceQuote"
-        component={ServiceQuoteScreen}
-        options={{ title: 'Review Quote' }}
-      />
-    </Stack.Navigator>
-  );
-};
+// Main Drawer Navigator integrated with Bottom Tabs
 
 const MainStack = () => {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
-        headerShown: true,
-        headerTitleAlign: 'center',
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#E5E5E5',
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
+        headerShown: false, // Bottom tabs handle their own headers
         drawerActiveTintColor: COLORS.primary,
         drawerInactiveTintColor: COLORS.text,
         drawerStyle: {
@@ -113,28 +23,27 @@ const MainStack = () => {
           width: 280,
         },
       }}
-      initialRouteName={SCREEN_NAMES.HOME}
+      initialRouteName="MainTabs"
     >
       <Drawer.Screen
-        name={SCREEN_NAMES.HOME}
-        component={HomeStack}
+        name="MainTabs"
+        component={BottomTabNavigator}
         options={{
           title: 'Home',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
-          headerShown: false, // Hide drawer header, use stack header instead
         }}
       />
       <Drawer.Screen
-        name="ProfileStack"
-        component={ProfileStack}
+        name="MyRequests"
+        component={MyRequestsScreen}
         options={{
-          title: 'Profile',
+          title: 'My Requests',
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="document-text-outline" size={size} color={color} />
           ),
-          headerShown: false,
+          headerShown: true,
         }}
       />
     </Drawer.Navigator>
