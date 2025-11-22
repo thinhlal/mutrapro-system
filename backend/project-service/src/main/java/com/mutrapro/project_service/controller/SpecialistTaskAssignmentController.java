@@ -1,7 +1,6 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CancelTaskAssignmentRequest;
-import com.mutrapro.project_service.dto.request.RequestReassignRequest;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.service.TaskAssignmentService;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -67,22 +66,6 @@ public class SpecialistTaskAssignmentController {
         TaskAssignmentResponse assignment = taskAssignmentService.cancelTaskAssignment(assignmentId, request.getReason());
         return ApiResponse.<TaskAssignmentResponse>builder()
                 .message("Task assignment cancelled successfully")
-                .data(assignment)
-                .statusCode(HttpStatus.OK.value())
-                .status("success")
-                .build();
-    }
-
-    @PostMapping("/{assignmentId}/request-reassign")
-    @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
-    @Operation(summary = "Specialist request reassign task (in_progress → reassign_requested)")
-    public ApiResponse<TaskAssignmentResponse> requestReassign(
-            @PathVariable String assignmentId,
-            @Valid @RequestBody RequestReassignRequest request) {
-        log.info("POST /specialist/task-assignments/{}/request-reassign - Requesting reassign", assignmentId);
-        TaskAssignmentResponse assignment = taskAssignmentService.requestReassign(assignmentId, request.getReason());
-        return ApiResponse.<TaskAssignmentResponse>builder()
-                .message("Reassign request submitted successfully")
                 .data(assignment)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

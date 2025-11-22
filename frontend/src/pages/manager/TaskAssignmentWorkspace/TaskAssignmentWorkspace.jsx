@@ -314,9 +314,13 @@ export default function TaskAssignmentWorkspace() {
   }, [allowedTaskTypes, taskType, fetchSpecialists, instrumentDetails]);
 
   const filteredSpecialists = useMemo(() => {
-    if (!specialistSearch) return specialists;
+    let result = specialists;
+    
+    
+    // Filter theo search keyword
+    if (!specialistSearch) return result;
     const keyword = specialistSearch.toLowerCase();
-    return specialists.filter(s => {
+    return result.filter(s => {
       const name =
         (s.fullName || s.email || s.specialistId || '').toLowerCase();
       const specialization = s.specialization?.toLowerCase() || '';
@@ -327,7 +331,7 @@ export default function TaskAssignmentWorkspace() {
         bio.includes(keyword)
       );
     });
-  }, [specialistSearch, specialists]);
+  }, [specialistSearch, specialists, isEditMode, currentAssignment]);
 
   const selectedMilestone = useMemo(() => {
     if (!contract?.milestones || !selectedMilestoneId) return null;

@@ -64,28 +64,6 @@ public class TaskAssignment {
     @Column(name = "specialist_responded_at")
     Instant specialistRespondedAt;
 
-    // Reassign request fields (khi specialist request reassign từ in_progress)
-    @Column(name = "reassign_reason", columnDefinition = "text")
-    String reassignReason;  // Lý do request reassign
-
-    @Column(name = "reassign_requested_at")
-    Instant reassignRequestedAt;  // Thời gian specialist request
-
-    @Column(name = "reassign_requested_by")
-    String reassignRequestedBy;  // Specialist ID
-
-    @Column(name = "reassign_approved_by")
-    String reassignApprovedBy;  // Manager user ID
-
-    @Column(name = "reassign_approved_at")
-    Instant reassignApprovedAt;  // Thời gian manager approve/reject
-
-    @Column(name = "reassign_decision", length = 20)
-    String reassignDecision;  // "APPROVED" hoặc "REJECTED"
-
-    @Column(name = "reassign_decision_reason", columnDefinition = "text")
-    String reassignDecisionReason;  // Lý do manager approve/reject
-
     // Revision tracking (chỉ cho transcription và arrangement)
     @Builder.Default
     @Column(name = "used_revisions", nullable = false)

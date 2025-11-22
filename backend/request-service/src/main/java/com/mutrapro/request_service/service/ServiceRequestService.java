@@ -679,7 +679,7 @@ public class ServiceRequestService {
         if (serviceRequest.getManagerUserId() != null) {
             // Nếu đã có manager và không phải là manager hiện tại
             if (!serviceRequest.getManagerUserId().equals(managerId)) {
-                // Request đã có manager khác - không cho phép reassign
+                // Request đã có manager khác - không cho phép assign lại
                 throw RequestAlreadyHasManagerException.create(requestId, serviceRequest.getManagerUserId());
             }
             // Nếu đã có manager và là chính manager hiện tại - không cần làm gì, chỉ return response

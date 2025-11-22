@@ -29,7 +29,6 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   getMyTaskAssignmentById,
-  requestReassign,
   acceptTaskAssignment,
 } from '../../../services/taskAssignmentService';
 import styles from './TranscriptionTaskDetailPage.module.css';
@@ -208,10 +207,7 @@ const TranscriptionTaskDetailPage = () => {
   const [error, setError] = useState(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadForm] = Form.useForm();
-  const [reassignModalVisible, setReassignModalVisible] = useState(false);
-  const [reassignSubmitting, setReassignSubmitting] = useState(false);
   const [acceptingTask, setAcceptingTask] = useState(false);
-  const [reassignForm] = Form.useForm();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -310,36 +306,6 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [files, uploadForm]);
 
-  const handleOpenReassignModal = useCallback(() => {
-    reassignForm.resetFields();
-    setReassignModalVisible(true);
-  }, [reassignForm]);
-
-  const handleReassignCancel = useCallback(() => {
-    setReassignModalVisible(false);
-    reassignForm.resetFields();
-  }, [reassignForm]);
-
-  const handleReassignSubmit = useCallback(async () => {
-    if (!task) return;
-    try {
-      const { reason } = await reassignForm.validateFields();
-      setReassignSubmitting(true);
-      const response = await requestReassign(task.assignmentId, reason);
-      if (response?.status === 'success') {
-        message.success('Đã gửi yêu cầu reassign cho Manager');
-        setReassignModalVisible(false);
-        reassignForm.resetFields();
-        await loadData();
-      }
-    } catch (error) {
-      if (error?.errorFields) return;
-      console.error('Error requesting reassign:', error);
-      message.error(error?.message || 'Lỗi khi gửi yêu cầu reassign');
-    } finally {
-      setReassignSubmitting(false);
-    }
-  }, [task, reassignForm, loadData]);
 
 
   const latestVersion = useMemo(() => {
@@ -499,6 +465,7 @@ const TranscriptionTaskDetailPage = () => {
                     <Text>{formatDateTime(task.completedDate)}</Text>
                   </div>
                 )}
+                
                 <Space>
                   {task.status?.toLowerCase() === 'assigned' && (
                     <Button
@@ -516,13 +483,6 @@ const TranscriptionTaskDetailPage = () => {
                     }
                   >
                     Submit for Review
-                  </Button>
-                  <Button
-                    danger
-                    onClick={handleOpenReassignModal}
-                    disabled={task.status?.toLowerCase() !== 'in_progress'}
-                  >
-                    Request Reassign
                   </Button>
                 </Space>
               </Space>
@@ -602,40 +562,6 @@ const TranscriptionTaskDetailPage = () => {
         </Form>
       </Modal>
 
-      <Modal
-        title="Request Reassign"
-        open={reassignModalVisible}
-        onOk={handleReassignSubmit}
-        onCancel={handleReassignCancel}
-        okText="Gửi yêu cầu"
-        cancelText="Hủy"
-        confirmLoading={reassignSubmitting}
-      >
-        <Form layout="vertical" form={reassignForm}>
-          <Form.Item
-            label="Lý do request reassign (bắt buộc)"
-            name="reason"
-            rules={[
-              { required: true, message: 'Vui lòng nhập lý do request reassign' },
-              { min: 10, message: 'Lý do phải có ít nhất 10 ký tự' },
-            ]}
-          >
-            <Input.TextArea
-              rows={4}
-              placeholder="Mô tả lý do bạn cần được reassign..."
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
-        </Form>
-        <Alert
-          message="Lưu ý"
-          description="Yêu cầu reassign sẽ được gửi tới Manager. Manager cần approve thì task mới được giao lại cho người khác."
-          type="info"
-          showIcon
-          style={{ marginTop: 16 }}
-        />
-      </Modal>
     </div>
   );
 };

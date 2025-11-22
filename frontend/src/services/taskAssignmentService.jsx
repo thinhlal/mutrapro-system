@@ -222,30 +222,6 @@ export const cancelTaskAssignment = async (assignmentId, reason) => {
 };
 
 /**
- * Specialist request reassign task (in_progress → reassign_requested)
- * POST /specialist/task-assignments/{assignmentId}/request-reassign
- *
- * @param {string} assignmentId - ID của task assignment
- * @param {string} reason - Lý do request reassign (required)
- * @returns {Promise} ApiResponse với task assignment đã request reassign
- */
-export const requestReassign = async (assignmentId, reason) => {
-  try {
-    const response = await axiosInstance.post(
-      API_ENDPOINTS.TASK_ASSIGNMENTS.REQUEST_REASSIGN(assignmentId),
-      { reason }
-    );
-    return response.data;
-  } catch (error) {
-    throw (
-      error.response?.data || {
-        message: 'Lỗi khi request reassign task assignment',
-      }
-    );
-  }
-};
-
-/**
  * Lấy chi tiết task assignment của specialist hiện tại
  * GET /specialist/task-assignments/{assignmentId}
  *
@@ -262,56 +238,6 @@ export const getMyTaskAssignmentById = async assignmentId => {
     throw (
       error.response?.data || {
         message: 'Lỗi khi lấy chi tiết task assignment',
-      }
-    );
-  }
-};
-
-/**
- * Manager approve reassign request
- * POST /task-assignments/{assignmentId}/approve-reassign?contractId={contractId}
- *
- * @param {string} contractId - ID của contract
- * @param {string} assignmentId - ID của task assignment
- * @param {string} reason - Lý do approve (required)
- * @returns {Promise} ApiResponse với task assignment đã approve
- */
-export const approveReassign = async (contractId, assignmentId, reason) => {
-  try {
-    const response = await axiosInstance.post(
-      API_ENDPOINTS.TASK_ASSIGNMENTS.APPROVE_REASSIGN(contractId, assignmentId),
-      { reason }
-    );
-    return response.data;
-  } catch (error) {
-    throw (
-      error.response?.data || {
-        message: 'Lỗi khi approve reassign request',
-      }
-    );
-  }
-};
-
-/**
- * Manager reject reassign request
- * POST /task-assignments/{assignmentId}/reject-reassign?contractId={contractId}
- *
- * @param {string} contractId - ID của contract
- * @param {string} assignmentId - ID của task assignment
- * @param {string} reason - Lý do reject (required)
- * @returns {Promise} ApiResponse với task assignment đã reject
- */
-export const rejectReassign = async (contractId, assignmentId, reason) => {
-  try {
-    const response = await axiosInstance.post(
-      API_ENDPOINTS.TASK_ASSIGNMENTS.REJECT_REASSIGN(contractId, assignmentId),
-      { reason }
-    );
-    return response.data;
-  } catch (error) {
-    throw (
-      error.response?.data || {
-        message: 'Lỗi khi reject reassign request',
       }
     );
   }
