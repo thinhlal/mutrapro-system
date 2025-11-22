@@ -49,14 +49,15 @@ export const updateFullUser = async (userId, payload) => {
 
 /**
  * Verify email with OTP
- * @param {object} verificationData - { email, code }
+ * @param {string} email 
+ * @param {string} code 
  * @returns {Promise<object>}
  */
-export const verifyEmail = async (verificationData) => {
+export const verifyEmail = async (email, code) => {
   try {
+    // Backend yêu cầu code và email qua query parameters, không phải body
     const response = await axiosInstancePublic.post(
-      API_ENDPOINTS.USER.VERIFY_EMAIL,
-      verificationData
+      `${API_ENDPOINTS.USER.VERIFY_EMAIL}?code=${code}&email=${encodeURIComponent(email)}`
     );
     return response.data;
   } catch (error) {
