@@ -120,9 +120,15 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
           {
             text: "OK",
             onPress: () => {
-              // Navigate to home or my requests
-              navigation.navigate("MainStack", {
-                screen: "Home",
+              // Navigate back to home
+              navigation.reset({
+                index: 0,
+                routes: [
+                  {
+                    name: "MainTabs",
+                    params: { screen: "Home" },
+                  },
+                ],
               });
             },
           },

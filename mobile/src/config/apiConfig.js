@@ -100,6 +100,32 @@ export const API_ENDPOINTS = {
     // GET /notation-instruments/by-ids?ids=id1&ids=id2
     GET_BY_IDS: `${REQUEST_PATH}/notation-instruments/by-ids`,
   },
+
+  // === Chat Service ===
+  CHAT: {
+    // GET /chat/conversations
+    GET_CONVERSATIONS: `${CHAT_PATH}/conversations`,
+    // POST /chat/conversations
+    CREATE_CONVERSATION: `${CHAT_PATH}/conversations`,
+    // GET /chat/conversations/{conversationId}/messages
+    GET_MESSAGES: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/messages`,
+    // POST /chat/conversations/{conversationId}/messages
+    SEND_MESSAGE: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/messages`,
+    // PATCH /chat/messages/{messageId}/read
+    MARK_MESSAGE_AS_READ: (messageId) => `${CHAT_PATH}/messages/${messageId}/read`,
+    // PATCH /chat/conversations/{conversationId}/read
+    MARK_CONVERSATION_AS_READ: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/read`,
+    // GET /chat/unread-count
+    GET_UNREAD_COUNT: `${CHAT_PATH}/unread-count`,
+    // DELETE /chat/messages/{messageId}
+    DELETE_MESSAGE: (messageId) => `${CHAT_PATH}/messages/${messageId}`,
+    // DELETE /chat/conversations/{conversationId}
+    DELETE_CONVERSATION: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}`,
+    // POST /chat/upload
+    UPLOAD_FILE: `${CHAT_PATH}/upload`,
+    // POST /chat/conversations/{conversationId}/typing
+    TYPING_INDICATOR: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/typing`,
+  },
 };
 
 // Log configuration in development
