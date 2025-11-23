@@ -558,17 +558,17 @@ const ContractDetailPage = () => {
       padding: 40,
       fontSize: 11,
       lineHeight: 1.6,
-      fontFamily: 'BeVietnamPro', // Will fallback to default if font not loaded
+      fontFamily: 'BeVietnamPro', // Required for Vietnamese text support
     },
     header: {
       marginBottom: 20,
-      borderBottom: '2px solid #1890ff',
+      borderBottom: '2px solid #333',
       paddingBottom: 10,
     },
     title: {
       fontSize: 20,
       fontWeight: 'bold',
-      color: '#1890ff',
+      color: '#111', // Match preview text color
       marginBottom: 10,
     },
     section: {
@@ -578,11 +578,11 @@ const ContractDetailPage = () => {
       fontSize: 14,
       fontWeight: 'bold',
       marginBottom: 8,
-      color: '#333',
+      color: '#111', // Match preview text color
     },
     text: {
       marginBottom: 5,
-      color: '#555',
+      color: '#111', // Match preview text color
     },
     row: {
       flexDirection: 'row',
@@ -799,101 +799,354 @@ const ContractDetailPage = () => {
         {/* Pricing */}
         <View style={pdfStyles.section}>
           <PdfText style={pdfStyles.sectionTitle}>Pricing & Payment</PdfText>
-          {pricingBreakdown?.transcriptionDetails && (
-            <View style={{ marginBottom: 10 }}>
-              <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
-                Price Breakdown:
-              </PdfText>
-              {pricingBreakdown.transcriptionDetails.breakdown?.map(
-                (item, idx) => (
-                  <PdfText key={idx} style={pdfStyles.text}>
-                    {item.label}: {item.amount?.toLocaleString()}{' '}
-                    {contract?.currency || 'VND'}
-                    {item.description && ` (${item.description})`}
-                  </PdfText>
-                )
-              )}
-            </View>
-          )}
-          {pricingBreakdown?.instruments?.length > 0 && (
-            <View style={{ marginBottom: 10 }}>
-              <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
-                Instruments Surcharge:
-              </PdfText>
-              {pricingBreakdown.instruments.map((instr, idx) => (
-                <PdfText key={idx} style={pdfStyles.text}>
-                  • {instr.instrumentName}: {instr.basePrice?.toLocaleString()}{' '}
-                  {contract?.currency || 'VND'}
-                </PdfText>
-              ))}
-            </View>
-          )}
-          <PdfText style={pdfStyles.text}>
-            Total Price: {contract?.totalPrice?.toLocaleString()} VND
-          </PdfText>
-
-          {/* Payment Milestones Schedule */}
-          {contract?.milestones && contract.milestones.length > 0 && (
-            <View style={{ marginTop: 10, marginBottom: 10 }}>
-              <PdfText
-                style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 12 }}
+          
+          {/* Price Breakdown Table */}
+          {(pricingBreakdown?.transcriptionDetails ||
+            pricingBreakdown?.instruments?.length > 0) && (
+            <View
+              style={{
+                marginBottom: 10,
+                border: '1px solid #000',
+                backgroundColor: '#fff',
+              }}
+            >
+              {/* Table Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  borderBottom: '1px solid #000',
+                  backgroundColor: '#e8e8e8',
+                }}
               >
-                Payment Milestones Schedule:
-              </PdfText>
-              {contract.milestones
-                .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
-                .map((milestone, index) => (
+                <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
+                  <PdfText style={{ fontWeight: 'bold' }}>Item</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 120,
+                    padding: 10,
+                    alignItems: 'flex-end',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>
+                    Amount ({contract?.currency || 'VND'})
+                  </PdfText>
+                </View>
+              </View>
+
+              {/* Transcription Details Rows */}
+              {pricingBreakdown?.transcriptionDetails?.breakdown?.map(
+                (item, idx) => (
                   <View
-                    key={milestone.milestoneId || index}
+                    key={`transcription-${idx}`}
                     style={{
-                      marginBottom:
-                        index < contract.milestones.length - 1 ? 8 : 0,
-                      paddingBottom:
-                        index < contract.milestones.length - 1 ? 8 : 0,
+                      flexDirection: 'row',
                       borderBottom:
-                        index < contract.milestones.length - 1
-                          ? '1px solid #e0e0e0'
+                        idx <
+                        pricingBreakdown.transcriptionDetails.breakdown.length - 1
+                          ? '1px solid #000'
+                          : pricingBreakdown?.instruments?.length > 0
+                          ? '1px solid #000'
                           : 'none',
                     }}
                   >
-                    <PdfText
+                    <View
                       style={{
-                        fontWeight: 'bold',
-                        fontSize: 11,
-                        marginBottom: 4,
+                        flex: 1,
+                        padding: 8,
+                        borderRight: '1px solid #000',
                       }}
                     >
-                      Milestone {milestone.orderIndex || index + 1}:{' '}
-                      {milestone.name || 'N/A'}
-                    </PdfText>
-                    {milestone.description && (
-                      <PdfText
-                        style={{ fontSize: 10, color: '#666', marginBottom: 4 }}
-                      >
-                        {milestone.description}
+                      <PdfText style={{ fontSize: 11 }}>{item.label}</PdfText>
+                      {item.description && (
+                        <PdfText
+                          style={{
+                            fontSize: 9,
+                            color: '#666',
+                            marginTop: 2,
+                          }}
+                        >
+                          ({formatDescriptionDuration(item.description)})
+                        </PdfText>
+                      )}
+                    </View>
+                    <View
+                      style={{
+                        width: 120,
+                        padding: 8,
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
+                        {item.amount?.toLocaleString?.() ?? item.amount}
                       </PdfText>
-                    )}
-                    <PdfText style={pdfStyles.text}>
-                      Amount: {milestone.amount?.toLocaleString()}{' '}
-                      {contract?.currency || 'VND'}
-                      {milestone.billingType === 'PERCENTAGE' &&
-                        milestone.billingValue &&
-                        ` (${milestone.billingValue}%)`}
-                    </PdfText>
-                    {milestone.plannedDueDate && (
-                      <PdfText
-                        style={{ fontSize: 10, color: '#666', marginTop: 2 }}
-                      >
-                        Planned Due Date:{' '}
-                        {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
-                      </PdfText>
-                    )}
+                    </View>
                   </View>
-                ))}
+                )
+              )}
+
+              {/* Instruments Section */}
+              {pricingBreakdown?.instruments?.length > 0 && (
+                <>
+                  {/* Instruments Header Row */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      borderBottom: '1px solid #000',
+                      backgroundColor: '#f0f0f0',
+                    }}
+                  >
+                    <View
+                      style={{
+                        flex: 1,
+                        padding: 8,
+                        borderRight: '1px solid #000',
+                      }}
+                    >
+                      <PdfText style={{ fontWeight: 'bold' }}>
+                        Instruments Surcharge:
+                      </PdfText>
+                    </View>
+                    <View style={{ width: 120, padding: 8 }} />
+                  </View>
+
+                  {/* Instrument Rows */}
+                  {pricingBreakdown.instruments.map((instr, idx) => (
+                    <View
+                      key={`instrument-${idx}`}
+                      style={{
+                        flexDirection: 'row',
+                        borderBottom:
+                          idx < pricingBreakdown.instruments.length - 1
+                            ? '1px solid #000'
+                            : 'none',
+                      }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          padding: 8,
+                          paddingLeft: 24,
+                          borderRight: '1px solid #000',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 11 }}>
+                          • {instr.instrumentName}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          width: 120,
+                          padding: 8,
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
+                          {instr.basePrice?.toLocaleString?.() ??
+                            instr.basePrice}
+                        </PdfText>
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Instruments Total Row */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      borderTop: '1px solid #000',
+                      backgroundColor: '#e8e8e8',
+                    }}
+                  >
+                    <View
+                      style={{
+                        flex: 1,
+                        padding: 8,
+                        borderRight: '1px solid #000',
+                      }}
+                    >
+                      <PdfText style={{ fontWeight: 'bold' }}>
+                        Instruments Total:
+                      </PdfText>
+                    </View>
+                    <View
+                      style={{
+                        width: 120,
+                        padding: 8,
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <PdfText style={{ fontWeight: 'bold' }}>
+                        {pricingBreakdown.instruments
+                          .reduce(
+                            (sum, instr) => sum + (instr.basePrice || 0),
+                            0
+                          )
+                          .toLocaleString()}
+                      </PdfText>
+                    </View>
+                  </View>
+                </>
+              )}
+
+              {/* Total Price Row */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  borderTop: '1px solid #000',
+                  backgroundColor: '#e8e8e8',
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    padding: 8,
+                    borderRight: '1px solid #000',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>Total Price:</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 120,
+                    padding: 8,
+                    alignItems: 'flex-end',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>
+                    {contract?.totalPrice?.toLocaleString()}{' '}
+                    {contract?.currency || 'VND'}
+                  </PdfText>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Milestones Table */}
+          {contract?.milestones && contract.milestones.length > 0 && (
+            <View style={{ marginTop: 15, marginBottom: 10 }}>
+              <PdfText style={pdfStyles.sectionTitle}>Milestones</PdfText>
+              <View
+                style={{
+                  marginTop: 5,
+                  border: '1px solid #000',
+                  backgroundColor: '#fff',
+                }}
+              >
+              {/* Table Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  borderBottom: '1px solid #000',
+                  backgroundColor: '#e8e8e8',
+                }}
+              >
+                <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
+                  <PdfText style={{ fontWeight: 'bold' }}>Milestone</PdfText>
+                </View>
+                <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
+                  <PdfText style={{ fontWeight: 'bold' }}>Description</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 100,
+                    padding: 10,
+                    borderRight: '1px solid #000',
+                    alignItems: 'center',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>Payment %</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 80,
+                    padding: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>SLA Days</PdfText>
+                </View>
+              </View>
+
+              {/* Milestone Rows */}
+              {contract.milestones
+                .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                .map((milestone, index) => {
+                  // Find installment for this milestone
+                  const installment = contract?.installments?.find(
+                    inst => inst.milestoneId === milestone.milestoneId
+                  );
+                  const paymentPercent =
+                    installment?.percent || milestone.paymentPercent;
+                  const slaDays =
+                    milestone.milestoneSlaDays || milestone.slaDays;
+
+                  return (
+                    <View
+                      key={milestone.milestoneId || index}
+                      style={{
+                        flexDirection: 'row',
+                        borderBottom:
+                          index < contract.milestones.length - 1
+                            ? '1px solid #000'
+                            : 'none',
+                      }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                        }}
+                      >
+                        <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
+                          {milestone.name || `Milestone ${index + 1}`}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {milestone.description || '-'}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          width: 100,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {paymentPercent ? `${paymentPercent}%` : 'N/A'}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          width: 80,
+                          padding: 10,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {slaDays ? `${slaDays} days` : '-'}
+                        </PdfText>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
         </View>
+      </Page>
 
+      {/* Page 2: Transcription Preferences and below */}
+      <Page size="A4" style={pdfStyles.page}>
         {/* Transcription Preferences */}
         {contract?.contractType?.toLowerCase() === 'transcription' &&
           requestDetails?.tempoPercentage && (
