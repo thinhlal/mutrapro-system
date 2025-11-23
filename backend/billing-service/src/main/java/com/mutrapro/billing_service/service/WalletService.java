@@ -2,7 +2,8 @@ package com.mutrapro.billing_service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mutrapro.billing_service.dto.request.DebitWalletRequest;
+import com.mutrapro.billing_service.dto.request.PayDepositRequest;
+import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -10,6 +11,7 @@ import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.Wallet;
 import com.mutrapro.billing_service.entity.WalletTransaction;
 import com.mutrapro.billing_service.repository.OutboxEventRepository;
+import com.mutrapro.shared.event.DepositPaidEvent;
 import com.mutrapro.shared.event.MilestonePaidEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
 import com.mutrapro.billing_service.enums.WalletTxType;
@@ -175,10 +177,10 @@ public class WalletService {
     }
 
     /**
-     * Trừ tiền từ ví (debit)
+     * Thanh toán DEPOSIT
      */
     @Transactional
-    public WalletTransactionResponse debitWallet(String walletId, DebitWalletRequest request) {
+    public WalletTransactionResponse payDeposit(String walletId, PayDepositRequest request) {
         String userId = getCurrentUserId();
 
         // Lấy wallet với lock để tránh race condition
@@ -219,10 +221,121 @@ public class WalletService {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("debit_amount", request.getAmount().toString());
         metadata.put("currency", currency.name());
-        metadata.put("payment_method", "wallet");  // Luôn là wallet vì thanh toán từ ví
-        if (request.getPaymentId() != null) {
-            metadata.put("payment_id", request.getPaymentId().toString());
+        metadata.put("payment_method", "wallet");
+        metadata.put("installment_id", request.getInstallmentId());
+        metadata.put("payment_type", "DEPOSIT");
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.payment)
+                .amount(request.getAmount())
+                .currency(currency)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .contractId(request.getContractId())
+                .createdAt(Instant.now())
+                .build();
+
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        // Gửi DepositPaidEvent cho DEPOSIT
+        try {
+            Instant paidAt = Instant.now();
+            
+            UUID eventId = UUID.randomUUID();
+            DepositPaidEvent event = DepositPaidEvent.builder()
+                .eventId(eventId)
+                .contractId(request.getContractId())
+                .installmentId(request.getInstallmentId())
+                .paidAt(paidAt)
+                .amount(request.getAmount())
+                .currency(currency.name())
+                .timestamp(Instant.now())
+                .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(request.getContractId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+                log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                    request.getContractId());
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType("Contract")
+                .eventType("billing.deposit-paid")
+                .eventPayload(payload)
+                .build();
+            
+            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            
+            log.info("✅ Queued DepositPaidEvent in outbox: outboxId={}, eventId={}, contractId={}, installmentId={}, paidAt={}",
+                saved.getOutboxId(), eventId, request.getContractId(), request.getInstallmentId(), paidAt);
+        } catch (Exception e) {
+            log.error("❌ Failed to enqueue DepositPaidEvent: contractId={}, error={}",
+                request.getContractId(), e.getMessage(), e);
+            // Không throw exception - transaction đã được tạo thành công
         }
+
+        log.info("Pay deposit: walletId={}, contractId={}, amount={}, balanceBefore={}, balanceAfter={}",
+                walletId, request.getContractId(), request.getAmount(), balanceBefore, balanceAfter);
+
+        return walletMapper.toResponse(savedTransaction);
+    }
+
+    /**
+     * Thanh toán Milestone
+     */
+    @Transactional
+    public WalletTransactionResponse payMilestone(String walletId, PayMilestoneRequest request) {
+        String userId = getCurrentUserId();
+
+        // Lấy wallet với lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Kiểm tra quyền truy cập
+        if (!wallet.getUserId().equals(userId)) {
+            throw UnauthorizedWalletAccessException.create(walletId);
+        }
+
+        // Validate amount
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw InvalidAmountException.forDebit(request.getAmount());
+        }
+
+        // Kiểm tra số dư
+        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+            throw InsufficientBalanceException.create(
+                    walletId, wallet.getBalance(), request.getAmount());
+        }
+
+        // Validate currency
+        CurrencyType currency = request.getCurrency() != null ? request.getCurrency() : CurrencyType.VND;
+        if (!wallet.getCurrency().equals(currency)) {
+            throw CurrencyMismatchException.create(wallet.getCurrency(), currency);
+        }
+
+        // Tính toán số dư mới
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.subtract(request.getAmount());
+
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+
+        // Tạo transaction record
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("debit_amount", request.getAmount().toString());
+        metadata.put("currency", currency.name());
+        metadata.put("payment_method", "wallet");
+        metadata.put("installment_id", request.getInstallmentId());
+        metadata.put("payment_type", "MILESTONE");
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
@@ -234,63 +347,58 @@ public class WalletService {
                 .metadata(metadata)
                 .contractId(request.getContractId())
                 .milestoneId(request.getMilestoneId())
-                .bookingId(request.getBookingId())
                 .createdAt(Instant.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
-        // Nếu có milestoneId, gửi MilestonePaidEvent để project-service update milestone status
-        if (request.getMilestoneId() != null && !request.getMilestoneId().isBlank() 
-            && request.getContractId() != null && !request.getContractId().isBlank()) {
+        // Gửi MilestonePaidEvent cho milestone payment
+        try {
+            Instant paidAt = Instant.now();
+            
+            UUID eventId = UUID.randomUUID();
+            MilestonePaidEvent event = MilestonePaidEvent.builder()
+                .eventId(eventId)
+                .contractId(request.getContractId())
+                .milestoneId(request.getMilestoneId())
+                .orderIndex(request.getOrderIndex())
+                .paidAt(paidAt)
+                .amount(request.getAmount())
+                .currency(currency.name())
+                .timestamp(Instant.now())
+                .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            
+            UUID aggregateId;
             try {
-                Instant paidAt = Instant.now();
-                
-                // Tạo MilestonePaidEvent
-                UUID eventId = UUID.randomUUID();
-                MilestonePaidEvent event = MilestonePaidEvent.builder()
-                    .eventId(eventId)
-                    .contractId(request.getContractId())
-                    .milestoneId(request.getMilestoneId())
-                    .orderIndex(request.getOrderIndex())  // Optional, project-service có thể lấy từ milestoneId
-                    .paidAt(paidAt)
-                    .amount(request.getAmount())
-                    .currency(currency.name())
-                    .timestamp(Instant.now())
-                    .build();
-                
-                JsonNode payload = objectMapper.valueToTree(event);
-                
-                UUID aggregateId;
-                try {
-                    aggregateId = UUID.fromString(request.getContractId());
-                } catch (IllegalArgumentException ex) {
-                    aggregateId = UUID.randomUUID();
-                    log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                        request.getContractId());
-                }
-                
-                OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateId(aggregateId)
-                    .aggregateType("ContractMilestone")
-                    .eventType("billing.milestone-paid")
-                    .eventPayload(payload)
-                    .build();
-                
-                OutboxEvent saved = outboxEventRepository.save(outboxEvent);
-                
-                log.info("✅ Queued MilestonePaidEvent in outbox: outboxId={}, eventId={}, contractId={}, milestoneId={}, orderIndex={}, paidAt={}",
-                    saved.getOutboxId(), eventId, request.getContractId(), 
-                    request.getMilestoneId(), request.getOrderIndex(), paidAt);
-            } catch (Exception e) {
-                log.error("❌ Failed to enqueue MilestonePaidEvent: contractId={}, milestoneId={}, error={}",
-                    request.getContractId(), request.getMilestoneId(), e.getMessage(), e);
-                // Không throw exception - transaction đã được tạo thành công
+                aggregateId = UUID.fromString(request.getContractId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+                log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                    request.getContractId());
             }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType("ContractMilestone")
+                .eventType("billing.milestone-paid")
+                .eventPayload(payload)
+                .build();
+            
+            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            
+            log.info("✅ Queued Milestone MilestonePaidEvent in outbox: outboxId={}, eventId={}, contractId={}, milestoneId={}, orderIndex={}, paidAt={}",
+                saved.getOutboxId(), eventId, request.getContractId(), 
+                request.getMilestoneId(), request.getOrderIndex(), paidAt);
+        } catch (Exception e) {
+            log.error("❌ Failed to enqueue Milestone MilestonePaidEvent: contractId={}, milestoneId={}, error={}",
+                request.getContractId(), request.getMilestoneId(), e.getMessage(), e);
+            // Không throw exception - transaction đã được tạo thành công
         }
 
-        log.info("Debit wallet: walletId={}, amount={}, balanceBefore={}, balanceAfter={}",
-                walletId, request.getAmount(), balanceBefore, balanceAfter);
+        log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}, balanceBefore={}, balanceAfter={}",
+                walletId, request.getContractId(), request.getMilestoneId(), request.getAmount(), balanceBefore, balanceAfter);
 
         return walletMapper.toResponse(savedTransaction);
     }

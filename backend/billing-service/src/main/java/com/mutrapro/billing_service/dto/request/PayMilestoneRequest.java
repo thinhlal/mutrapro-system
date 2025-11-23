@@ -2,6 +2,7 @@ package com.mutrapro.billing_service.dto.request;
 
 import com.mutrapro.billing_service.enums.CurrencyType;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +19,7 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class DebitWalletRequest {
+public class PayMilestoneRequest {
     
     @NotNull(message = "Số tiền trừ không được để trống")
     @DecimalMin(value = "0.01", message = "Số tiền trừ phải lớn hơn 0")
@@ -26,14 +27,15 @@ public class DebitWalletRequest {
     
     CurrencyType currency;  // Optional, default VND
     
-    String paymentId;  // Optional, reference to payment
+    @NotBlank(message = "Contract ID không được để trống")
+    String contractId;
     
-    String contractId;  // Optional, for audit trail
+    @NotBlank(message = "Milestone ID không được để trống")
+    String milestoneId;
     
-    String milestoneId;  // Optional, for milestone payment
+    @NotBlank(message = "Installment ID không được để trống")
+    String installmentId;
     
     Integer orderIndex;  // Optional, milestone order index (1, 2, 3...)
-    
-    String bookingId;  // Optional, for audit trail
 }
 

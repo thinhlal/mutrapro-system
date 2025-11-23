@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card,
   Button,
@@ -12,29 +12,26 @@ import {
   Radio,
   Form,
   Modal,
-  InputNumber,
   Divider,
 } from 'antd';
 import {
   DollarOutlined,
   WalletOutlined,
-  CreditCardOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { getContractById } from '../../../services/contractService';
-import { getOrCreateMyWallet, payMilestone } from '../../../services/walletService';
+import { getOrCreateMyWallet, payDeposit } from '../../../services/walletService';
 import Header from '../../../components/common/Header/Header';
-import styles from './PayMilestonePage.module.css';
+import styles from './PayDepositPage.module.css';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-const PayMilestonePage = () => {
+const PayDepositPage = () => {
   const { contractId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [contract, setContract] = useState(null);
-  const [targetMilestone, setTargetMilestone] = useState(null);
+  const [depositInstallment, setDepositInstallment] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -42,14 +39,9 @@ const PayMilestonePage = () => {
   const [topupModalVisible, setTopupModalVisible] = useState(false);
   const [topupForm] = Form.useForm();
 
-  // Get milestoneId or orderIndex from location state or URL params
-  const milestoneId = location.state?.milestoneId;
-  const orderIndex = location.state?.orderIndex;
-  const installmentId = location.state?.installmentId;
-
   useEffect(() => {
     loadData();
-  }, [contractId, milestoneId, orderIndex, installmentId]);
+  }, [contractId]);
 
   const loadData = async () => {
     try {
@@ -61,81 +53,18 @@ const PayMilestonePage = () => {
         const contractData = contractResponse.data;
         setContract(contractData);
         
-        // Kiểm tra DEPOSIT status - nếu chưa thanh toán, redirect về pay-deposit
-        const depositInstallment = contractData.installments?.find(
+        // Tìm DEPOSIT installment
+        const deposit = contractData.installments?.find(
           inst => inst.type === 'DEPOSIT'
         );
-        const isDepositPaid = depositInstallment?.status === 'PAID';
         
-        if (!isDepositPaid) {
-          message.warning('Please pay the deposit first');
-          navigate(`/contracts/${contractId}/pay-deposit`);
+        if (!deposit) {
+          message.error('Deposit installment not found for this contract');
+          navigate(`/contracts/${contractId}`);
           return;
         }
         
-        // Tìm milestone và installment cần thanh toán (chỉ milestone installments, không phải DEPOSIT)
-        if (contractData.milestones && contractData.milestones.length > 0) {
-          let foundMilestone = null;
-          let foundInstallment = null;
-          
-          // Nếu có installmentId từ state, tìm theo installmentId
-          if (installmentId) {
-            foundInstallment = contractData.installments?.find(
-              inst => inst.installmentId === installmentId && inst.type !== 'DEPOSIT'
-            );
-            if (foundInstallment && foundInstallment.milestoneId) {
-              foundMilestone = contractData.milestones.find(
-                m => m.milestoneId === foundInstallment.milestoneId
-              );
-            }
-          }
-          // Nếu có milestoneId từ state, tìm theo milestoneId
-          else if (milestoneId) {
-            foundMilestone = contractData.milestones.find(
-              m => m.milestoneId === milestoneId && m.hasPayment
-            );
-            if (foundMilestone) {
-              foundInstallment = contractData.installments?.find(
-                inst => inst.milestoneId === milestoneId && inst.type !== 'DEPOSIT'
-              );
-            }
-          }
-          // Nếu có orderIndex từ state, tìm theo orderIndex
-          else if (orderIndex) {
-            foundMilestone = contractData.milestones.find(
-              m => m.orderIndex === orderIndex && m.hasPayment
-            );
-            if (foundMilestone) {
-              foundInstallment = contractData.installments?.find(
-                inst => inst.milestoneId === foundMilestone.milestoneId && inst.type !== 'DEPOSIT'
-              );
-            }
-          }
-          // Nếu không có, tìm milestone installment có status DUE hoặc PENDING
-          else {
-            foundInstallment = contractData.installments?.find(
-              inst => inst.status === 'DUE' && inst.type !== 'DEPOSIT'
-            ) || contractData.installments?.find(
-              inst => inst.status === 'PENDING' && inst.type !== 'DEPOSIT'
-            );
-            
-            if (foundInstallment && foundInstallment.milestoneId) {
-              foundMilestone = contractData.milestones.find(
-                m => m.milestoneId === foundInstallment.milestoneId
-              );
-            }
-          }
-          
-          if (foundMilestone && foundInstallment) {
-            setTargetMilestone({
-              ...foundMilestone,
-              installment: foundInstallment
-            });
-          } else {
-            message.warning('No milestone payment available');
-            navigate(`/contracts/${contractId}`);
-          }
-        }
+        setDepositInstallment(deposit);
       }
 
       // Load wallet
@@ -167,16 +96,15 @@ const PayMilestonePage = () => {
   };
 
   const handlePayWithWallet = async () => {
-    if (!wallet || !targetMilestone || !targetMilestone.installment) {
-      message.error('Wallet or installment information not available');
+    if (!wallet || !depositInstallment) {
+      message.error('Wallet or deposit information not available');
       return;
     }
 
-    const installment = targetMilestone.installment;
-    const installmentAmount = parseFloat(installment.amount);
+    const depositAmount = parseFloat(depositInstallment.amount);
     const walletBalance = parseFloat(wallet.balance || 0);
 
-    if (walletBalance < installmentAmount) {
+    if (walletBalance < depositAmount) {
       message.warning('Insufficient wallet balance. Please top up your wallet first.');
       setTopupModalVisible(true);
       return;
@@ -185,25 +113,23 @@ const PayMilestonePage = () => {
     try {
       setPaying(true);
       
-      // Call pay milestone API
-      const response = await payMilestone(wallet.walletId, {
-        amount: installmentAmount,
-        currency: installment.currency || contract?.currency || 'VND',
+      // Call pay deposit API
+      const response = await payDeposit(wallet.walletId, {
+        amount: depositAmount,
+        currency: depositInstallment.currency || contract?.currency || 'VND',
         contractId: contractId,
-        milestoneId: targetMilestone.milestoneId,
-        installmentId: installment.installmentId,
-        orderIndex: targetMilestone.orderIndex,
+        installmentId: depositInstallment.installmentId,
       });
 
       if (response?.status === 'success') {
-        message.success(`Milestone "${targetMilestone.name}" payment successful!`);
-        // Redirect to contract detail or success page
+        message.success('Deposit payment successful!');
+        // Redirect to contract detail
         navigate(`/contracts/${contractId}`, { 
           state: { paymentSuccess: true } 
         });
       }
     } catch (error) {
-      console.error('Error paying milestone:', error);
+      console.error('Error paying deposit:', error);
       message.error(error?.message || 'Failed to process payment');
     } finally {
       setPaying(false);
@@ -212,8 +138,6 @@ const PayMilestonePage = () => {
 
   const handleTopup = async (values) => {
     try {
-      // This will be handled by wallet service
-      // For now, just close modal and reload wallet
       setTopupModalVisible(false);
       topupForm.resetFields();
       await loadData();
@@ -243,14 +167,14 @@ const PayMilestonePage = () => {
     );
   }
 
-  if (!contract || !targetMilestone) {
+  if (!contract || !depositInstallment) {
     return (
       <div className={styles.page}>
         <Header />
         <div className={styles.container}>
           <Alert
-            message="Payment information not available"
-            description="The milestone for this contract is not available or has already been paid."
+            message="Deposit payment information not available"
+            description="The deposit for this contract is not available or has already been paid."
             type="error"
             action={
               <Button onClick={() => navigate(`/contracts/${contractId}`)}>
@@ -263,10 +187,53 @@ const PayMilestonePage = () => {
     );
   }
 
-  const installment = targetMilestone?.installment;
-  const milestoneAmount = installment ? parseFloat(installment.amount) : 0;
+  const depositAmount = parseFloat(depositInstallment.amount);
   const walletBalance = parseFloat(wallet?.balance || 0);
-  const hasEnoughBalance = walletBalance >= milestoneAmount;
+  const hasEnoughBalance = walletBalance >= depositAmount;
+  const isDepositPaid = depositInstallment.status === 'PAID';
+  const isDepositDue = depositInstallment.status === 'DUE';
+
+  // Nếu đã thanh toán, redirect về contract detail
+  if (isDepositPaid) {
+    return (
+      <div className={styles.page}>
+        <Header />
+        <div className={styles.container}>
+          <Alert
+            message="Deposit Already Paid"
+            description="This deposit has already been paid. Redirecting to contract details..."
+            type="success"
+            action={
+              <Button onClick={() => navigate(`/contracts/${contractId}`)}>
+                Back to Contract
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Nếu chưa đến hạn thanh toán
+  if (!isDepositDue && depositInstallment.status === 'PENDING') {
+    return (
+      <div className={styles.page}>
+        <Header />
+        <div className={styles.container}>
+          <Alert
+            message="Deposit Not Yet Due"
+            description="The deposit payment is not yet due. Please wait for the contract to be signed first."
+            type="info"
+            action={
+              <Button onClick={() => navigate(`/contracts/${contractId}`)}>
+                Back to Contract
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -281,9 +248,9 @@ const PayMilestonePage = () => {
         </Button>
 
         <Card className={styles.paymentCard}>
-          <Title level={3}>Pay Milestone</Title>
+          <Title level={3}>Pay Deposit</Title>
           <Text type="secondary">
-            Complete payment for milestone {targetMilestone.orderIndex}: {targetMilestone.name}
+            Complete your deposit payment to activate the contract and start the work.
           </Text>
 
           <Divider />
@@ -293,39 +260,27 @@ const PayMilestonePage = () => {
             <Descriptions.Item label="Contract Number">
               {contract.contractNumber || contract.contractId}
             </Descriptions.Item>
-            <Descriptions.Item label="Milestone">
-              <Text strong>
-                Milestone {targetMilestone.orderIndex}: {targetMilestone.name}
-              </Text>
-              {targetMilestone.description && (
-                <div style={{ marginTop: 8 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {targetMilestone.description}
-                  </Text>
-                </div>
-              )}
+            <Descriptions.Item label="Payment Type">
+              <Text strong>Deposit Payment</Text>
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Initial deposit payment required to activate the contract
+                </Text>
+              </div>
             </Descriptions.Item>
             <Descriptions.Item label="Amount">
               <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
-                {formatCurrency(milestoneAmount, installment?.currency || contract?.currency || 'VND')}
+                {formatCurrency(depositAmount, depositInstallment?.currency || contract?.currency || 'VND')}
               </Text>
-              {installment?.percent && (
+              {depositInstallment?.percent && (
                 <Text type="secondary" style={{ marginLeft: 8 }}>
-                  ({installment.percent}%)
+                  ({depositInstallment.percent}%)
                 </Text>
               )}
             </Descriptions.Item>
-            {installment?.dueDate && (
+            {depositInstallment?.dueDate && (
               <Descriptions.Item label="Due Date">
-                {dayjs(installment.dueDate).format('DD/MM/YYYY HH:mm')}
-              </Descriptions.Item>
-            )}
-            {installment?.type && (
-              <Descriptions.Item label="Type">
-                {installment.type === 'INTERMEDIATE' ? 'Intermediate Payment' :
-                 installment.type === 'FINAL' ? 'Final Payment' :
-                 installment.type === 'EXTRA_REVISION' ? 'Extra Revision Payment' :
-                 installment.type}
+                {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY HH:mm')}
               </Descriptions.Item>
             )}
           </Descriptions>
@@ -339,7 +294,7 @@ const PayMilestonePage = () => {
                   <span>Wallet Balance: {formatCurrency(walletBalance, wallet.currency)}</span>
                   {!hasEnoughBalance && (
                     <Text type="danger">
-                      (Insufficient balance. Need {formatCurrency(milestoneAmount - walletBalance, wallet.currency)} more)
+                      (Insufficient balance. Need {formatCurrency(depositAmount - walletBalance, wallet.currency)} more)
                     </Text>
                   )}
                 </Space>
@@ -387,7 +342,7 @@ const PayMilestonePage = () => {
             >
               {paymentMethod === 'wallet' && !hasEnoughBalance
                 ? 'Insufficient Balance - Top Up Required'
-                : `Pay ${formatCurrency(milestoneAmount, contract?.currency || 'VND')}`}
+                : `Pay Deposit ${formatCurrency(depositAmount, contract?.currency || 'VND')}`}
             </Button>
           </div>
         </Card>
@@ -407,7 +362,7 @@ const PayMilestonePage = () => {
           <Form form={topupForm} layout="vertical" onFinish={handleTopup}>
             <Alert
               message="Top Up Required"
-              description={`You need to top up at least ${formatCurrency(milestoneAmount - walletBalance, wallet?.currency || 'VND')} to complete this payment.`}
+              description={`You need to top up at least ${formatCurrency(depositAmount - walletBalance, wallet?.currency || 'VND')} to complete this payment.`}
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}
@@ -422,5 +377,5 @@ const PayMilestonePage = () => {
   );
 };
 
-export default PayMilestonePage;
+export default PayDepositPage;
 

@@ -3,6 +3,7 @@ package com.mutrapro.project_service.entity;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
+import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -26,7 +27,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Contract {
+public class Contract extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -60,10 +61,6 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     ContractStatus status = ContractStatus.draft;
-
-    @Builder.Default
-    @Column(name = "created_at", nullable = false)
-    Instant createdAt = Instant.now();
 
     @Column(name = "sent_to_customer_at")
     Instant sentToCustomerAt;
@@ -143,8 +140,5 @@ public class Contract {
     
     @Column(name = "b_signed_at")
     Instant bSignedAt;  // When customer actually signed (different from signedAt which is when approved)
-    
-    @Column(name = "updated_at")
-    Instant updatedAt;
 }
 

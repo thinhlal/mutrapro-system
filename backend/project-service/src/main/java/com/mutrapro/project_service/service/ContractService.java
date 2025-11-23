@@ -22,19 +22,24 @@ import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.GateCondition;
 import com.mutrapro.project_service.enums.InstallmentStatus;
 import com.mutrapro.project_service.enums.InstallmentType;
-import com.mutrapro.project_service.enums.MilestoneBillingType;
-import com.mutrapro.project_service.enums.MilestonePaymentStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.exception.ContractExpiredException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
+import com.mutrapro.project_service.exception.ContractInstallmentNotFoundException;
+import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
+import com.mutrapro.project_service.exception.ContractPdfUploadException;
 import com.mutrapro.project_service.exception.ContractValidationException;
 import com.mutrapro.project_service.exception.InvalidContractStatusException;
+import com.mutrapro.project_service.exception.InvalidInstallmentTypeException;
 import com.mutrapro.project_service.exception.InvalidRequestIdException;
 import com.mutrapro.project_service.exception.InvalidRequestStatusException;
+import com.mutrapro.project_service.exception.MilestonePaymentException;
+import com.mutrapro.project_service.exception.MissingReasonException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
+import com.mutrapro.project_service.exception.SignatureRetrieveException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
@@ -232,7 +237,6 @@ public class ContractService {
             .nameSnapshot(serviceRequest.getContactName() != null ? serviceRequest.getContactName() : "N/A")
             .phoneSnapshot(serviceRequest.getContactPhone() != null ? serviceRequest.getContactPhone() : "N/A")
             .emailSnapshot(serviceRequest.getContactEmail() != null ? serviceRequest.getContactEmail() : "N/A")
-            .createdAt(Instant.now())
             .build();
         
         Contract saved = contractRepository.save(contract);
@@ -454,14 +458,10 @@ public class ContractService {
             .description(milestone.getDescription())
             .orderIndex(milestone.getOrderIndex())
             .workStatus(milestone.getWorkStatus())
-            .billingType(milestone.getBillingType())
-            .billingValue(milestone.getBillingValue())
-            .amount(milestone.getAmount())
-            .paymentStatus(milestone.getPaymentStatus())
+            .hasPayment(milestone.getHasPayment())
             .milestoneSlaDays(milestone.getMilestoneSlaDays())
             .plannedStartAt(milestone.getPlannedStartAt())
             .plannedDueDate(milestone.getPlannedDueDate())
-            .paidAt(milestone.getPaidAt())
             .createdAt(milestone.getCreatedAt())
             .updatedAt(milestone.getUpdatedAt())
             .build();
@@ -803,7 +803,7 @@ public class ContractService {
         
         // Validate reason
         if (request.getReason() == null || request.getReason().isBlank()) {
-            throw new IllegalArgumentException("Reason is required for request change");
+            throw MissingReasonException.forRequestChange();
         }
         
         // Update status và lưu lý do
@@ -895,7 +895,7 @@ public class ContractService {
         
         // Validate reason
         if (request.getReason() == null || request.getReason().isBlank()) {
-            throw new IllegalArgumentException("Reason is required for cancellation");
+            throw MissingReasonException.forCancellation();
         }
         
         // Update status và lưu lý do
@@ -990,7 +990,7 @@ public class ContractService {
         
         // Validate reason
         if (request.getReason() == null || request.getReason().isBlank()) {
-            throw new IllegalArgumentException("Reason is required for cancellation");
+            throw MissingReasonException.forCancellation();
         }
         
         // Update status và lưu lý do
@@ -1051,6 +1051,106 @@ public class ContractService {
     }
     
     /**
+     * Xử lý khi DEPOSIT được thanh toán
+     * @param contractId ID của contract
+     * @param installmentId ID của DEPOSIT installment
+     * @param paidAt Thời điểm thanh toán
+     */
+    @Transactional
+    public void handleDepositPaid(String contractId, String installmentId, Instant paidAt) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Tìm DEPOSIT installment
+        ContractInstallment depositInstallment = contractInstallmentRepository.findById(installmentId)
+            .orElseThrow(() -> ContractInstallmentNotFoundException.byId(installmentId));
+        
+        // Validate installment type
+        if (depositInstallment.getType() != InstallmentType.DEPOSIT) {
+            throw InvalidInstallmentTypeException.notDepositType(installmentId, depositInstallment.getType());
+        }
+        
+        // Update installment status
+        depositInstallment.setStatus(InstallmentStatus.PAID);
+        depositInstallment.setPaidAt(paidAt);
+        contractInstallmentRepository.save(depositInstallment);
+        log.info("Updated DEPOSIT installment to PAID: contractId={}, installmentId={}", 
+            contractId, installmentId);
+        
+        // Gửi notification cho manager
+        try {
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.MILESTONE_PAID)
+                    .title("Deposit đã được thanh toán")
+                    .content(String.format("Customer đã thanh toán deposit cho contract #%s. Số tiền: %s %s", 
+                            contract.getContractNumber(),
+                            depositInstallment.getAmount().toPlainString(),
+                            contract.getCurrency() != null ? contract.getCurrency() : "VND"))
+                    .referenceId(contractId)
+                    .referenceType("CONTRACT")
+                    .actionUrl("/manager/contracts/" + contractId)
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent deposit paid notification to manager: userId={}, contractId={}", 
+                    contract.getManagerUserId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to send deposit paid notification: userId={}, contractId={}, error={}", 
+                    contract.getManagerUserId(), contractId, e.getMessage(), e);
+        }
+        
+        // Gửi system message vào chat room
+        String systemMessage = String.format(
+            "💰 Customer đã thanh toán deposit cho contract #%s.\nSố tiền: %s %s",
+            contract.getContractNumber(),
+            depositInstallment.getAmount().toPlainString(),
+            contract.getCurrency() != null ? contract.getCurrency() : "VND"
+        );
+        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        
+        // Nếu contract status = signed, activate contract
+        if (contract.getStatus() == ContractStatus.signed) {
+            // Set expectedStartDate = ngày thanh toán DEPOSIT
+            contract.setExpectedStartDate(paidAt);
+            
+            // Tính planned dates cho tất cả milestones
+            calculateMilestonePlannedDates(contractId, paidAt);
+            
+            // Milestone đầu tiên: PLANNED → IN_PROGRESS (bắt đầu làm việc sau khi DEPOSIT paid)
+            Optional<ContractMilestone> firstMilestoneOpt = contractMilestoneRepository
+                .findByContractIdAndOrderIndex(contractId, 1);
+            
+            if (firstMilestoneOpt.isPresent()) {
+                ContractMilestone firstMilestone = firstMilestoneOpt.get();
+                if (firstMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+                    firstMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
+                    firstMilestone.setUpdatedAt(Instant.now());
+                    contractMilestoneRepository.save(firstMilestone);
+                    log.info("✅ Started milestone 1 work after DEPOSIT paid: contractId={}, milestoneId={}, workStatus=IN_PROGRESS", 
+                        contractId, firstMilestone.getMilestoneId());
+                }
+            }
+            
+            // Update status từ "signed" → "active" (đã thanh toán DEPOSIT, có thể bắt đầu công việc)
+            contract.setStatus(ContractStatus.active);
+            contractRepository.save(contract);
+            log.info("Updated contract to active after DEPOSIT paid: contractId={}, expectedStartDate={}, status=active", 
+                contractId, paidAt);
+            
+            // Update request status từ "contract_signed" → "in_progress" (đã thanh toán, bắt đầu làm việc)
+            try {
+                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "in_progress");
+                log.info("Updated request status to in_progress: requestId={}, contractId={}", 
+                    contract.getRequestId(), contractId);
+            } catch (Exception e) {
+                log.error("Failed to update request status to in_progress: requestId={}, contractId={}, error={}", 
+                    contract.getRequestId(), contractId, e.getMessage(), e);
+            }
+        }
+    }
+    
+    /**
      * Xử lý khi milestone được thanh toán
      * @param contractId ID của contract
      * @param milestoneId ID của milestone được thanh toán
@@ -1062,43 +1162,35 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
+        // Tìm milestone và installment
         ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)
-            .orElseThrow(() -> new IllegalArgumentException("Milestone not found: " + milestoneId));
+            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
         
-        // Validation: Milestone từ thứ 2 trở đi chỉ được thanh toán khi work status = READY_FOR_PAYMENT hoặc COMPLETED
-        // Milestone đầu tiên (orderIndex = 1) có thể thanh toán ngay khi DUE
-        if (orderIndex > 1) {
-            MilestoneWorkStatus workStatus = milestone.getWorkStatus();
-            if (workStatus != MilestoneWorkStatus.READY_FOR_PAYMENT 
-                && workStatus != MilestoneWorkStatus.COMPLETED) {
-                log.warn("❌ Cannot pay milestone: milestone must be READY_FOR_PAYMENT or COMPLETED. " +
-                    "contractId={}, milestoneId={}, orderIndex={}, currentWorkStatus={}", 
-                    contractId, milestoneId, orderIndex, workStatus);
-                throw new IllegalStateException(
-                    String.format("Milestone %d chỉ có thể thanh toán khi công việc đã hoàn thành (READY_FOR_PAYMENT hoặc COMPLETED). " +
-                        "Hiện tại work status: %s", orderIndex, workStatus));
-            }
+        ContractInstallment installment = contractInstallmentRepository.findByContractIdAndMilestoneId(contractId, milestoneId)
+            .orElseThrow(() -> ContractInstallmentNotFoundException.forMilestone(milestoneId, contractId));
+        
+        // Validation: Milestone chỉ được thanh toán khi work status = READY_FOR_PAYMENT hoặc COMPLETED
+        MilestoneWorkStatus workStatus = milestone.getWorkStatus();
+        if (workStatus != MilestoneWorkStatus.READY_FOR_PAYMENT 
+            && workStatus != MilestoneWorkStatus.COMPLETED) {
+            log.warn("❌ Cannot pay milestone: milestone must be READY_FOR_PAYMENT or COMPLETED. " +
+                "contractId={}, milestoneId={}, orderIndex={}, currentWorkStatus={}", 
+                contractId, milestoneId, orderIndex, workStatus);
+            throw MilestonePaymentException.milestoneNotCompleted(contractId, milestoneId, orderIndex, workStatus);
         }
+
+        // Update installment status
+        installment.setStatus(InstallmentStatus.PAID);
+        installment.setPaidAt(paidAt);
+        contractInstallmentRepository.save(installment);
+        log.info("Updated milestone installment to PAID: contractId={}, installmentId={}, milestoneId={}", 
+            contractId, installment.getInstallmentId(), milestoneId);
         
-        // Update milestone payment status và paidAt
-        milestone.setPaymentStatus(MilestonePaymentStatus.PAID);
-        milestone.setPaidAt(paidAt);
+        // Update milestone work status
         milestone.setUpdatedAt(Instant.now());
-        
-        // Update milestone work status:
-        // - Milestone đầu tiên (orderIndex = 1): PLANNED → COMPLETED khi thanh toán thành công
-        // - Milestone từ thứ 2 trở đi: đã có work status = READY_FOR_PAYMENT hoặc COMPLETED (không cần update)
-        if (orderIndex == 1 && milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-            milestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
-            log.info("✅ Milestone 1 completed after payment: contractId={}, milestoneId={}", 
-                contractId, milestoneId);
-        }
-        
         contractMilestoneRepository.save(milestone);
-        log.info("Updated milestone payment status to PAID: contractId={}, milestoneId={}, orderIndex={}", 
-            contractId, milestoneId, orderIndex);
         
-        // Gửi notification cho manager khi milestone được thanh toán
+        // Gửi notification cho manager
         try {
             CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
                     .userId(contract.getManagerUserId())
@@ -1107,7 +1199,7 @@ public class ContractService {
                     .content(String.format("Customer đã thanh toán milestone \"%s\" cho contract #%s. Số tiền: %s %s", 
                             milestone.getName(), 
                             contract.getContractNumber(),
-                            milestone.getAmount().toPlainString(),
+                            installment.getAmount().toPlainString(),
                             contract.getCurrency() != null ? contract.getCurrency() : "VND"))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
@@ -1118,7 +1210,6 @@ public class ContractService {
             log.info("Sent milestone paid notification to manager: userId={}, contractId={}, milestoneId={}", 
                     contract.getManagerUserId(), contractId, milestoneId);
         } catch (Exception e) {
-            // Log error nhưng không fail transaction
             log.error("Failed to send milestone paid notification: userId={}, contractId={}, milestoneId={}, error={}", 
                     contract.getManagerUserId(), contractId, milestoneId, e.getMessage(), e);
         }
@@ -1128,88 +1219,53 @@ public class ContractService {
             "💰 Customer đã thanh toán milestone \"%s\" cho contract #%s.\nSố tiền: %s %s",
             milestone.getName(),
             contract.getContractNumber(),
-            milestone.getAmount().toPlainString(),
+            installment.getAmount().toPlainString(),
             contract.getCurrency() != null ? contract.getCurrency() : "VND"
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        // Nếu là milestone đầu tiên (orderIndex = 1) và contract chưa active
-        // Hoặc nếu là DEPOSIT installment được thanh toán
-        if (orderIndex == 1 && contract.getStatus() == ContractStatus.signed) {
-            // Set expectedStartDate = ngày thanh toán milestone đầu tiên (hoặc DEPOSIT)
-            contract.setExpectedStartDate(paidAt);
-            
-            // Tính planned dates cho tất cả milestones
-            calculateMilestonePlannedDates(contractId, paidAt);
-            
-            // Update status từ "signed" → "active" (đã thanh toán milestone đầu tiên, có thể bắt đầu công việc)
-            contract.setStatus(ContractStatus.active);
-            contractRepository.save(contract);
-            log.info("Updated contract to active after first milestone paid: contractId={}, expectedStartDate={}, status=active", 
-                contractId, paidAt);
-            
-            // Update request status từ "contract_signed" → "in_progress" (đã thanh toán, bắt đầu làm việc)
-            try {
-                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "in_progress");
-                log.info("Updated request status to in_progress: requestId={}, contractId={}", 
-                    contract.getRequestId(), contractId);
-            } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to update request status to in_progress: requestId={}, contractId={}, error={}", 
-                    contract.getRequestId(), contractId, e.getMessage(), e);
-            }
-        }
-        
         // Tự động kích hoạt milestone tiếp theo: Khi milestone N được thanh toán → milestone N+1 bắt đầu làm việc
-        Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
-            .findByContractIdAndOrderIndex(contractId, orderIndex + 1);
-        
-        if (nextMilestoneOpt.isPresent()) {
-            ContractMilestone nextMilestone = nextMilestoneOpt.get();
+        if (orderIndex > 0) {
+            Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
+                .findByContractIdAndOrderIndex(contractId, orderIndex + 1);
             
-            // Milestone tiếp theo tự động bắt đầu làm việc (IN_PROGRESS) khi milestone trước được thanh toán
-            if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-                nextMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
-                nextMilestone.setUpdatedAt(Instant.now());
-                log.info("✅ Auto-started next milestone work: contractId={}, milestoneId={}, orderIndex={}, workStatus=IN_PROGRESS", 
-                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
-            }
-            
-            // Payment status: Milestone tiếp theo chuyển từ NOT_DUE → DUE (nhưng chỉ thanh toán được khi hoàn thành công việc)
-            // Logic thanh toán sẽ được kiểm tra ở frontend/backend khi customer cố gắng thanh toán
-            if (nextMilestone.getPaymentStatus() == MilestonePaymentStatus.NOT_DUE) {
-                nextMilestone.setPaymentStatus(MilestonePaymentStatus.DUE);
-                nextMilestone.setUpdatedAt(Instant.now());
-                contractMilestoneRepository.save(nextMilestone);
-                log.info("✅ Auto-opened next milestone for payment (will be payable when work completed): contractId={}, milestoneId={}, orderIndex={}", 
-                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
-            } else {
-                // Nếu đã update work status, cần save lại
-                contractMilestoneRepository.save(nextMilestone);
+            if (nextMilestoneOpt.isPresent()) {
+                ContractMilestone nextMilestone = nextMilestoneOpt.get();
+                
+                // Milestone tiếp theo tự động bắt đầu làm việc (IN_PROGRESS) khi milestone trước được thanh toán
+                if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+                    nextMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
+                    nextMilestone.setUpdatedAt(Instant.now());
+                    contractMilestoneRepository.save(nextMilestone);
+                    log.info("✅ Auto-started next milestone work: contractId={}, milestoneId={}, orderIndex={}, workStatus=IN_PROGRESS", 
+                        contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                }
             }
         }
         
-        // Kiểm tra xem tất cả milestones đã được thanh toán chưa
-        List<ContractMilestone> allMilestones = contractMilestoneRepository
-            .findByContractIdOrderByOrderIndexAsc(contractId);
+        // Kiểm tra xem tất cả installments đã được thanh toán chưa
+        List<ContractInstallment> allInstallments = contractInstallmentRepository
+            .findByContractIdOrderByCreatedAtAsc(contractId);
         
-        boolean allMilestonesPaid = allMilestones.stream()
-            .allMatch(m -> m.getPaymentStatus() == MilestonePaymentStatus.PAID);
+        boolean allInstallmentsPaid = allInstallments.stream()
+            .allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
         
-        if (allMilestonesPaid && contract.getStatus() == ContractStatus.active) {
-            // Tất cả milestones đã được thanh toán → contract completed
-            // Note: ContractStatus có thể không có "completed", có thể dùng status khác hoặc giữ nguyên active
-            // contract.setStatus(ContractStatus.completed);
+        if (allInstallmentsPaid && contract.getStatus() == ContractStatus.active) {
+            // Tất cả installments đã được thanh toán → contract completed
             contractRepository.save(contract);
-            log.info("All milestones paid for contract: contractId={}, allMilestonesCount={}", 
-                contractId, allMilestones.size());
+            log.info("All installments paid for contract: contractId={}, allInstallmentsCount={}", 
+                contractId, allInstallments.size());
             
             // Update work status của milestone cuối cùng thành COMPLETED
-            ContractMilestone lastMilestone = allMilestones.get(allMilestones.size() - 1);
-            if (lastMilestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
-                lastMilestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
-                lastMilestone.setUpdatedAt(Instant.now());
-                contractMilestoneRepository.save(lastMilestone);
+            List<ContractMilestone> allMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+            if (!allMilestones.isEmpty()) {
+                ContractMilestone lastMilestone = allMilestones.get(allMilestones.size() - 1);
+                if (lastMilestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
+                    lastMilestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+                    lastMilestone.setUpdatedAt(Instant.now());
+                    contractMilestoneRepository.save(lastMilestone);
+                }
             }
             
             // Update request status to COMPLETED khi tất cả milestones đã được thanh toán
@@ -1254,46 +1310,6 @@ public class ContractService {
         }
     }
     
-    /**
-     * Helper method để tạo một milestone
-     */
-    private ContractMilestone createMilestone(
-            String contractId, 
-            Integer orderIndex,
-            String name,
-            String description,
-            MilestoneBillingType billingType,
-            BigDecimal billingValue,
-            BigDecimal totalPrice,
-            MilestonePaymentStatus paymentStatus) {
-        
-        // Tính số tiền thực tế của milestone
-        BigDecimal amount;
-        if (billingType == MilestoneBillingType.PERCENTAGE) {
-            // Tính từ phần trăm: totalPrice * billingValue / 100
-            amount = totalPrice.multiply(billingValue).divide(BigDecimal.valueOf(100), 2, 
-                java.math.RoundingMode.HALF_UP);
-        } else if (billingType == MilestoneBillingType.FIXED) {
-            // Nếu FIXED thì amount = billingValue
-            amount = billingValue;
-        } else {
-            // NO_PAYMENT
-            amount = BigDecimal.ZERO;
-        }
-        
-        return ContractMilestone.builder()
-            .contractId(contractId)
-            .orderIndex(orderIndex)
-            .name(name)
-            .description(description)
-            .billingType(billingType)
-            .billingValue(billingValue)
-            .amount(amount)
-            .paymentStatus(paymentStatus)
-            .workStatus(MilestoneWorkStatus.PLANNED)
-            .createdAt(Instant.now())
-            .build();
-    }
     
     /**
      * Validate milestone SLA days: sum(milestoneSlaDays) = contract slaDays
@@ -1384,7 +1400,6 @@ public class ContractService {
             .currency(currency)
             .status(InstallmentStatus.PENDING)  // Sẽ chuyển thành DUE khi contract được accept/ký
             .gateCondition(GateCondition.BEFORE_START)
-            .createdAt(Instant.now())
             .build());
         
         // 2. Tạo installments cho các milestones có hasPayment = true
@@ -1424,7 +1439,6 @@ public class ContractService {
                         .currency(currency)
                         .status(InstallmentStatus.PENDING)
                         .gateCondition(GateCondition.AFTER_MILESTONE_DONE)
-                        .createdAt(Instant.now())
                         .build());
                 }
             }
@@ -1445,42 +1459,19 @@ public class ContractService {
      */
     private List<ContractMilestone> createMilestonesFromRequest(Contract contract, List<CreateMilestoneRequest> milestoneRequests) {
         String contractId = contract.getContractId();
-        BigDecimal totalPrice = contract.getTotalPrice() != null ? contract.getTotalPrice() : BigDecimal.ZERO;
         
         List<ContractMilestone> milestones = new java.util.ArrayList<>();
         
         for (CreateMilestoneRequest milestoneRequest : milestoneRequests) {
-            // Mặc định billingType = PERCENTAGE
-            MilestoneBillingType billingType = milestoneRequest.getBillingType() != null 
-                ? milestoneRequest.getBillingType() 
-                : MilestoneBillingType.PERCENTAGE;
-            
-            // Mặc định billingValue = paymentPercent nếu hasPayment = true, hoặc 0
-            BigDecimal billingValue;
-            if (milestoneRequest.getBillingValue() != null) {
-                billingValue = milestoneRequest.getBillingValue();
-            } else if (milestoneRequest.getHasPayment() != null && milestoneRequest.getHasPayment() 
-                    && milestoneRequest.getPaymentPercent() != null) {
-                billingValue = milestoneRequest.getPaymentPercent();
-            } else {
-                billingValue = BigDecimal.ZERO;
-            }
-            
-            ContractMilestone milestone = createMilestone(
-                contractId,
-                milestoneRequest.getOrderIndex(),
-                milestoneRequest.getName(),
-                milestoneRequest.getDescription(),
-                billingType,
-                billingValue,
-                totalPrice,
-                milestoneRequest.getPaymentStatus()
-            );
-            
-            // Lưu milestoneSlaDays (chưa tính planned dates)
-            if (milestoneRequest.getMilestoneSlaDays() != null) {
-                milestone.setMilestoneSlaDays(milestoneRequest.getMilestoneSlaDays());
-            }
+            ContractMilestone milestone = ContractMilestone.builder()
+                .contractId(contractId)
+                .orderIndex(milestoneRequest.getOrderIndex())
+                .name(milestoneRequest.getName())
+                .description(milestoneRequest.getDescription())
+                .workStatus(MilestoneWorkStatus.PLANNED)
+                .hasPayment(milestoneRequest.getHasPayment() != null ? milestoneRequest.getHasPayment() : false)
+                .milestoneSlaDays(milestoneRequest.getMilestoneSlaDays())
+                .build();
             
             milestones.add(milestone);
         }
@@ -1569,6 +1560,70 @@ public class ContractService {
             .createdAt(installment.getCreatedAt())
             .updatedAt(installment.getUpdatedAt())
             .build();
+    }
+    
+    /**
+     * Mở installment DUE cho milestone khi milestone work status = READY_FOR_PAYMENT hoặc COMPLETED
+     * (theo GateCondition.AFTER_MILESTONE_DONE)
+     * 
+     * Logic: 
+     * - Mở installment DUE cho milestone hiện tại khi milestone đó READY_FOR_PAYMENT/COMPLETED
+     * - Nếu milestone COMPLETED → auto mở installment DUE cho milestone tiếp theo (N+1)
+     * 
+     * @param milestoneId ID của milestone
+     */
+    public void openInstallmentForMilestoneIfReady(String milestoneId) {
+        ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)
+            .orElse(null);
+        
+        if (milestone == null) {
+            log.warn("Milestone not found: milestoneId={}", milestoneId);
+            return;
+        }
+        
+        // Chỉ mở installment nếu milestone work status = READY_FOR_PAYMENT hoặc COMPLETED
+        if (milestone.getWorkStatus() != MilestoneWorkStatus.READY_FOR_PAYMENT 
+            && milestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
+            return;
+        }
+        
+        // Mở installment DUE cho milestone hiện tại (nếu status = PENDING)
+        openInstallmentForMilestone(milestone.getContractId(), milestoneId);
+        
+        // Nếu milestone COMPLETED → auto mở installment DUE cho milestone tiếp theo (N+1)
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED) {
+            Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
+                .findByContractIdAndOrderIndex(milestone.getContractId(), milestone.getOrderIndex() + 1);
+            
+            if (nextMilestoneOpt.isPresent()) {
+                ContractMilestone nextMilestone = nextMilestoneOpt.get();
+                openInstallmentForMilestone(milestone.getContractId(), nextMilestone.getMilestoneId());
+            }
+        }
+    }
+    
+    /**
+     * Mở installment DUE cho một milestone cụ thể (nếu status = PENDING và gateCondition = AFTER_MILESTONE_DONE)
+     * 
+     * @param contractId ID của contract
+     * @param milestoneId ID của milestone cần mở installment
+     */
+    private void openInstallmentForMilestone(String contractId, String milestoneId) {
+        Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
+            .findByContractIdAndMilestoneId(contractId, milestoneId);
+        
+        if (installmentOpt.isPresent()) {
+            ContractInstallment installment = installmentOpt.get();
+            
+            // Chỉ mở nếu installment có gateCondition = AFTER_MILESTONE_DONE và status = PENDING
+            if (installment.getGateCondition() == GateCondition.AFTER_MILESTONE_DONE 
+                && installment.getStatus() == InstallmentStatus.PENDING) {
+                installment.setStatus(InstallmentStatus.DUE);
+                contractInstallmentRepository.save(installment);
+                log.info("✅ Auto-opened milestone installment for payment: contractId={}, milestoneId={}, installmentId={}", 
+                    contractId, milestoneId, installment.getInstallmentId());
+            }
+        }
     }
     
     /**
@@ -1689,8 +1744,7 @@ public class ContractService {
      * @param contractId ID của contract
      * @return Base64 data URL của signature image
      * @throws SignatureImageNotFoundException nếu signature image không tồn tại
-     * @throws IllegalStateException nếu S3 service không available
-     * @throws RuntimeException nếu có lỗi khi download từ S3
+     * @throws SignatureRetrieveException nếu có lỗi khi download từ S3
      */
     public String getSignatureImageBase64(String contractId) {
         ContractResponse contract = getContractById(contractId);
@@ -1708,7 +1762,7 @@ public class ContractService {
             return "data:image/png;base64," + base64Image;
         } catch (Exception e) {
             log.error("Error downloading signature image from S3 for contract {}: {}", contractId, e.getMessage(), e);
-            throw new RuntimeException("Failed to retrieve signature image: " + e.getMessage(), e);
+            throw SignatureRetrieveException.failed(contractId, e.getMessage(), e);
         }
     }
 
@@ -1766,7 +1820,6 @@ public class ContractService {
 
             // Link PDF with contract
             contract.setFileId(savedFile.getFileId());
-            contract.setUpdatedAt(Instant.now());
             contractRepository.save(contract);
 
             log.info("Contract PDF uploaded successfully: contractId={}, fileId={}, s3Url={}", 
@@ -1775,7 +1828,7 @@ public class ContractService {
             return savedFile.getFileId();
         } catch (Exception e) {
             log.error("Error uploading contract PDF for contract {}: {}", contractId, e.getMessage(), e);
-            throw new RuntimeException("Failed to upload contract PDF: " + e.getMessage(), e);
+            throw ContractPdfUploadException.failed(contractId, e.getMessage(), e);
         }
     }
 }

@@ -44,7 +44,6 @@ import {
   getSignatureImage,
   uploadContractPdf,
 } from '../../../services/contractService';
-import { getOrCreateMyWallet, debitWallet } from '../../../services/walletService';
 import {
   getServiceRequestById,
   calculatePricing,
@@ -256,48 +255,6 @@ const ContractDetailPage = () => {
     navigate(`/contracts/${contractId}/pay-deposit`);
   };
 
-  // Handle pay milestone
-  const handlePayMilestone = async (milestone) => {
-    try {
-      setActionLoading(true);
-      
-      // Get wallet
-      const walletResponse = await getOrCreateMyWallet();
-      if (walletResponse?.status !== 'success' || !walletResponse?.data) {
-        message.error('Failed to load wallet information');
-        return;
-      }
-      
-      const wallet = walletResponse.data;
-      const milestoneAmount = parseFloat(milestone.amount);
-      const walletBalance = parseFloat(wallet.balance || 0);
-      
-      if (walletBalance < milestoneAmount) {
-        message.warning('Insufficient wallet balance. Please top up your wallet first.');
-        navigate('/wallet');
-        return;
-      }
-      
-      // Debit wallet
-      const debitResponse = await debitWallet(wallet.walletId, {
-        amount: milestoneAmount,
-        currency: contract?.currency || 'VND',
-        milestoneId: milestone.milestoneId,
-        orderIndex: milestone.orderIndex,
-        contractId: contractId,
-      });
-      
-      if (debitResponse?.status === 'success') {
-        message.success(`Milestone "${milestone.name}" payment successful!`);
-        await loadContract(); // Reload to get updated milestone status
-      }
-    } catch (error) {
-      console.error('Error paying milestone:', error);
-      message.error(error?.message || 'Failed to process payment');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   // Handle approve
   const handleApprove = async () => {
@@ -1401,6 +1358,93 @@ const ContractDetailPage = () => {
 
           <Divider />
 
+          {/* DEPOSIT Section - Hiển thị riêng */}
+          {contract?.installments && (() => {
+            const depositInstallment = contract.installments.find(
+              inst => inst.type === 'DEPOSIT'
+            );
+            if (!depositInstallment) return null;
+            
+            const depositStatus = depositInstallment.status || 'PENDING';
+            const isDepositPaid = depositStatus === 'PAID';
+            const isDepositDue = depositStatus === 'DUE';
+            
+            return (
+              <>
+                <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                  Deposit Payment
+                </Title>
+                <Card
+                  size="small"
+                  style={{
+                    borderLeft: isDepositPaid ? '4px solid #52c41a' : isDepositDue ? '4px solid #faad14' : '4px solid #d9d9d9',
+                    marginBottom: 16
+                  }}
+                >
+                  <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <Text strong style={{ fontSize: 16 }}>
+                          Deposit ({depositInstallment.percent}%)
+                        </Text>
+                        <div style={{ marginTop: 8, marginBottom: 8 }}>
+                          <Text type="secondary" style={{ fontSize: 13 }}>
+                            Initial deposit payment required to activate the contract
+                          </Text>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                        <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                          {depositInstallment.amount?.toLocaleString()} {depositInstallment.currency || contract?.currency || 'VND'}
+                        </Text>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                      <Space size="small">
+                        <Tag color={isDepositPaid ? 'success' : isDepositDue ? 'warning' : 'default'}>
+                          Payment: {isDepositPaid ? 'PAID' : isDepositDue ? 'DUE' : 'PENDING'}
+                        </Tag>
+                        {depositInstallment.paidAt && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Paid: {dayjs(depositInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
+                          </Text>
+                        )}
+                        {depositInstallment.dueDate && !isDepositPaid && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Due: {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY')}
+                          </Text>
+                        )}
+                      </Space>
+                      
+                      {isDepositDue && !isDepositPaid && canPayMilestones && (
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<DollarOutlined />}
+                          onClick={() => navigate(`/contracts/${contractId}/pay-deposit`)}
+                        >
+                          Pay Deposit
+                        </Button>
+                      )}
+                      {isDepositDue && !isDepositPaid && !canPayMilestones && (
+                        <Tag color="default">
+                          Waiting for signature
+                        </Tag>
+                      )}
+                      {isDepositPaid && (
+                        <Tag color="success" icon={<CheckOutlined />}>
+                          Paid
+                        </Tag>
+                      )}
+                    </div>
+                  </Space>
+                </Card>
+                <Divider />
+              </>
+            );
+          })()}
+
           {/* Milestones Section - Show when milestones exist */}
           {contract?.milestones && contract.milestones.length > 0 && (
             <>
@@ -1411,11 +1455,17 @@ const ContractDetailPage = () => {
                 {contract.milestones
                   .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                   .map((milestone, index) => {
-                    const paymentStatus = milestone.paymentStatus || 'NOT_DUE';
+                    // Chỉ hiển thị installment của milestone này (không hiển thị DEPOSIT)
+                    const targetInstallment = milestone.hasPayment
+                      ? contract?.installments?.find(
+                          inst => inst.milestoneId === milestone.milestoneId
+                        )
+                      : null;
+                    
                     const workStatus = milestone.workStatus || 'PLANNED';
-                    const isPaid = paymentStatus === 'PAID';
-                    const isDue = paymentStatus === 'DUE';
-                    const isNotDue = paymentStatus === 'NOT_DUE';
+                    const installmentStatus = targetInstallment?.status || 'PENDING';
+                    const isPaid = installmentStatus === 'PAID';
+                    const isDue = installmentStatus === 'DUE';
                     
                     const getPaymentStatusColor = () => {
                       if (isPaid) return 'success';
@@ -1426,7 +1476,7 @@ const ContractDetailPage = () => {
                     const getPaymentStatusText = () => {
                       if (isPaid) return 'PAID';
                       if (isDue) return 'DUE';
-                      return 'NOT DUE';
+                      return 'PENDING';
                     };
                     
                     const getWorkStatusColor = () => {
@@ -1461,39 +1511,55 @@ const ContractDetailPage = () => {
                                 </div>
                               )}
                             </div>
-                            <div style={{ textAlign: 'right', marginLeft: 16 }}>
-                              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                                {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
-                              </Text>
-                            </div>
+                            {targetInstallment && (
+                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                                <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                                  {targetInstallment.amount?.toLocaleString()} {targetInstallment.currency || contract?.currency || 'VND'}
+                                </Text>
+                                {targetInstallment.percent && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                      ({targetInstallment.percent}%)
+                                    </Text>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {!targetInstallment && milestone.hasPayment === false && (
+                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                                <Text type="secondary" style={{ fontSize: 14 }}>
+                                  No payment required
+                                </Text>
+                              </div>
+                            )}
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                             <Space size="small">
-                              <Tag color={getPaymentStatusColor()}>
-                                Payment: {getPaymentStatusText()}
-                              </Tag>
+                              {targetInstallment && (
+                                <Tag color={getPaymentStatusColor()}>
+                                  Payment: {getPaymentStatusText()}
+                                </Tag>
+                              )}
                               <Tag color={getWorkStatusColor()}>
                                 Work: {workStatus}
                               </Tag>
-                              {milestone.paidAt && (
+                              {targetInstallment?.paidAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Paid: {dayjs(milestone.paidAt).format('DD/MM/YYYY HH:mm')}
+                                  Paid: {dayjs(targetInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
                                 </Text>
                               )}
-                              {milestone.plannedDueDate && !isPaid && (
+                              {targetInstallment?.dueDate && !isPaid && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Due: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                                  Due: {dayjs(targetInstallment.dueDate).format('DD/MM/YYYY')}
                                 </Text>
                               )}
                             </Space>
                             
-                            {isDue && !isPaid && canPayMilestones && (
+                            {isDue && !isPaid && canPayMilestones && targetInstallment && (
                               <>
-                                {/* Milestone đầu tiên: có thể thanh toán ngay khi DUE */}
-                                {/* Milestone từ thứ 2 trở đi: chỉ thanh toán được khi work status = READY_FOR_PAYMENT hoặc COMPLETED */}
-                                {(milestone.orderIndex === 1 || 
-                                  workStatus === 'READY_FOR_PAYMENT' || 
+                                {/* Milestone chỉ có thể thanh toán khi work status = READY_FOR_PAYMENT hoặc COMPLETED */}
+                                {(workStatus === 'READY_FOR_PAYMENT' || 
                                   workStatus === 'COMPLETED') ? (
                                   <Button
                                     type="primary"
@@ -1502,7 +1568,8 @@ const ContractDetailPage = () => {
                                     onClick={() => navigate(`/contracts/${contractId}/pay-milestone`, {
                                       state: {
                                         milestoneId: milestone.milestoneId,
-                                        orderIndex: milestone.orderIndex
+                                        orderIndex: milestone.orderIndex,
+                                        installmentId: targetInstallment?.installmentId
                                       }
                                     })}
                                   >
@@ -1520,9 +1587,14 @@ const ContractDetailPage = () => {
                                 Waiting for signature
                               </Tag>
                             )}
-                            {isPaid && (
+                            {isPaid && targetInstallment && (
                               <Tag color="success" icon={<CheckOutlined />}>
                                 Paid
+                              </Tag>
+                            )}
+                            {!targetInstallment && milestone.hasPayment === false && (
+                              <Tag color="default">
+                                No payment required
                               </Tag>
                             )}
                           </div>

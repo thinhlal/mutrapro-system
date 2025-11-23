@@ -1,0 +1,55 @@
+.page {
+  min-height: 100vh;
+  background: #f0f2f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.paymentCard {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.descriptions {
+  margin: 24px 0;
+}
+
+.paymentMethodSection {
+  margin: 32px 0;
+}
+
+.paymentMethodGroup {
+  width: 100%;
+  display: flex;
+  gap: 16px;
+}
+
+.paymentMethodOption {
+  flex: 1;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.payButtonSection {
+  margin-top: 32px;
+}
+
+.payButton {
+  height: 50px;
+  font-size: 16px;
+}
+

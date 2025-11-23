@@ -1,7 +1,6 @@
 package com.mutrapro.project_service.repository;
 
 import com.mutrapro.project_service.entity.ContractMilestone;
-import com.mutrapro.project_service.enums.MilestonePaymentStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,8 +14,6 @@ public interface ContractMilestoneRepository extends JpaRepository<ContractMiles
     List<ContractMilestone> findByContractIdOrderByOrderIndexAsc(String contractId);
     
     Optional<ContractMilestone> findByContractIdAndOrderIndex(String contractId, Integer orderIndex);
-    
-    List<ContractMilestone> findByContractIdAndPaymentStatus(String contractId, MilestonePaymentStatus paymentStatus);
     
     List<ContractMilestone> findByContractIdAndWorkStatus(String contractId, MilestoneWorkStatus workStatus);
     

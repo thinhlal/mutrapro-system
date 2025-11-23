@@ -111,7 +111,37 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     CONTRACT_VALIDATION_ERROR("CONTRACT_7023", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7023",
         "Contract validation failed",
-        Retryable.NON_TRANSIENT);
+        Retryable.NON_TRANSIENT),
+    
+    MILESTONE_PAYMENT_ERROR("CONTRACT_7024", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7024",
+        "Milestone payment error",
+        Retryable.NON_TRANSIENT),
+    
+    CONTRACT_INSTALLMENT_NOT_FOUND("CONTRACT_7025", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7025",
+        "Contract installment not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_INSTALLMENT_TYPE("CONTRACT_7026", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7026",
+        "Invalid installment type",
+        Retryable.NON_TRANSIENT),
+    
+    MISSING_REASON("CONTRACT_7027", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7027",
+        "Reason is required",
+        Retryable.NON_TRANSIENT),
+    
+    SIGNATURE_RETRIEVE_ERROR("CONTRACT_7028", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7028",
+        "Failed to retrieve signature image",
+        Retryable.TRANSIENT),
+    
+    CONTRACT_PDF_UPLOAD_ERROR("CONTRACT_7029", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7029",
+        "Failed to upload contract PDF",
+        Retryable.TRANSIENT);
 
     private final String code;
     private final int httpStatus;

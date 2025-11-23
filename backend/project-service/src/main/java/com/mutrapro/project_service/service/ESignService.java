@@ -221,7 +221,6 @@ public class ESignService {
         Instant now = Instant.now();
         contract.setBSignedAt(now);
         contract.setSignedAt(now);
-        contract.setUpdatedAt(now);
         contract.setStatus(ContractStatus.signed);
 
         // KHÔNG set expectedStartDate khi ký - sẽ set khi deposit được thanh toán
@@ -238,7 +237,6 @@ public class ESignService {
         for (ContractInstallment installment : depositInstallments) {
             if (installment.getType() == InstallmentType.DEPOSIT) {
                 installment.setStatus(InstallmentStatus.DUE);
-                installment.setUpdatedAt(now);
                 contractInstallmentRepository.save(installment);
                 log.info("Updated DEPOSIT installment to DUE: installmentId={}, contractId={}", 
                     installment.getInstallmentId(), contractId);

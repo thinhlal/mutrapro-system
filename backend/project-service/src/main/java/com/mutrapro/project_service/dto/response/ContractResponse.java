@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -41,7 +42,7 @@ public class ContractResponse {
     
     ContractStatus status;
     
-    Instant createdAt;
+    LocalDateTime createdAt;
     
     Instant sentToCustomerAt;
     
@@ -92,7 +93,7 @@ public class ContractResponse {
     @JsonProperty("bSignedAt")
     Instant bSignedAt;  // When customer actually signed
     
-    Instant updatedAt;  // Last update timestamp
+    LocalDateTime updatedAt;
     
     // Customer action reason
     String cancellationReason;

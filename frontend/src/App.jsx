@@ -42,6 +42,7 @@ import RequestDetailPage from './pages/user/RequestDetail/RequestDetailPage';
 import ContractDetailPage from './pages/user/ContractDetail/ContractDetailPage';
 import ContractSignedSuccessPage from './pages/user/ContractSignedSuccess/ContractSignedSuccessPage';
 import PayMilestonePage from './pages/user/PayMilestone/PayMilestonePage';
+import PayDepositPage from './pages/user/PayDeposit/PayDepositPage';
 import WalletPage from './pages/user/Wallet/WalletPage';
 import WalletManagement from './pages/admin/WalletManagement/WalletManagement';
 
@@ -178,16 +179,15 @@ function App() {
             }
           />
           <Route
-            path="/contracts/:contractId/pay-milestone"
+            path="/contracts/:contractId/pay-deposit"
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
-                <PayMilestonePage />
+                <PayDepositPage />
               </ProtectedRoute>
             }
           />
-          {/* Backward compatibility - redirect old route to new route */}
           <Route
-            path="/contracts/:contractId/pay-deposit"
+            path="/contracts/:contractId/pay-milestone"
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <PayMilestonePage />

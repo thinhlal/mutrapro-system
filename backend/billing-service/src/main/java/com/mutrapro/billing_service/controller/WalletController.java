@@ -1,6 +1,7 @@
 package com.mutrapro.billing_service.controller;
 
-import com.mutrapro.billing_service.dto.request.DebitWalletRequest;
+import com.mutrapro.billing_service.dto.request.PayDepositRequest;
+import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -78,16 +79,33 @@ public class WalletController {
                 .build();
     }
 
-    @PostMapping("/{walletId}/debit")
-    @Operation(summary = "Trừ tiền từ ví")
-    public ApiResponse<WalletTransactionResponse> debitWallet(
+    @PostMapping("/{walletId}/debit/deposit")
+    @Operation(summary = "Thanh toán DEPOSIT")
+    public ApiResponse<WalletTransactionResponse> payDeposit(
             @Parameter(description = "ID của ví")
             @PathVariable String walletId,
-            @Valid @RequestBody DebitWalletRequest request) {
-        log.info("Debit wallet: walletId={}, amount={}", walletId, request.getAmount());
-        WalletTransactionResponse transaction = walletService.debitWallet(walletId, request);
+            @Valid @RequestBody PayDepositRequest request) {
+        log.info("Pay deposit: walletId={}, contractId={}, amount={}", walletId, request.getContractId(), request.getAmount());
+        WalletTransactionResponse transaction = walletService.payDeposit(walletId, request);
         return ApiResponse.<WalletTransactionResponse>builder()
-                .message("Debit successful")
+                .message("Deposit payment successful")
+                .data(transaction)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{walletId}/debit/milestone")
+    @Operation(summary = "Thanh toán Milestone")
+    public ApiResponse<WalletTransactionResponse> payMilestone(
+            @Parameter(description = "ID của ví")
+            @PathVariable String walletId,
+            @Valid @RequestBody PayMilestoneRequest request) {
+        log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}", 
+            walletId, request.getContractId(), request.getMilestoneId(), request.getAmount());
+        WalletTransactionResponse transaction = walletService.payMilestone(walletId, request);
+        return ApiResponse.<WalletTransactionResponse>builder()
+                .message("Milestone payment successful")
                 .data(transaction)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

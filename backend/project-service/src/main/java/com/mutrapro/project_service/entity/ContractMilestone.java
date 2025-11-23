@@ -1,13 +1,10 @@
 package com.mutrapro.project_service.entity;
 
-import com.mutrapro.project_service.enums.MilestoneBillingType;
-import com.mutrapro.project_service.enums.MilestonePaymentStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
@@ -15,8 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "contract_milestones", indexes = {
     @Index(name = "idx_milestones_contract_id", columnList = "contract_id"),
     @Index(name = "idx_milestones_order_index", columnList = "contract_id, order_index"),
-    @Index(name = "idx_milestones_work_status", columnList = "work_status"),
-    @Index(name = "idx_milestones_payment_status", columnList = "payment_status")
+    @Index(name = "idx_milestones_work_status", columnList = "work_status")
 })
 @Getter
 @Setter
@@ -49,26 +45,10 @@ public class ContractMilestone {
     @Column(name = "work_status", nullable = false, length = 20)
     MilestoneWorkStatus workStatus = MilestoneWorkStatus.PLANNED;
 
-    // Phần COST
+    // Payment flag: milestone này có installment tương ứng không
     @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "billing_type", nullable = false, length = 20)
-    MilestoneBillingType billingType = MilestoneBillingType.PERCENTAGE;
-
-    @Column(name = "billing_value", precision = 12, scale = 2)
-    BigDecimal billingValue;  
-    // Nếu PERCENTAGE -> 30, 40, 30 (phần trăm)
-    // Nếu FIXED -> số tiền cố định
-
-    @Column(name = "amount", precision = 12, scale = 2)
-    BigDecimal amount;  
-    // Số tiền thực tế của milestone (tính từ totalPrice * billingValue / 100 nếu PERCENTAGE)
-    // Hoặc = billingValue nếu FIXED
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 20)
-    MilestonePaymentStatus paymentStatus = MilestonePaymentStatus.NOT_DUE;
+    @Column(name = "has_payment", nullable = false)
+    Boolean hasPayment = false;
 
     // SLA và planned dates
     @Column(name = "milestone_sla_days")
@@ -79,9 +59,6 @@ public class ContractMilestone {
 
     @Column(name = "planned_due_date")
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date (plannedStartAt + milestoneSlaDays)
-
-    @Column(name = "paid_at")
-    Instant paidAt;
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)

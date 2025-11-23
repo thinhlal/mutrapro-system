@@ -167,8 +167,10 @@ export const API_ENDPOINTS = {
     GET_BY_ID: walletId => `${BILLING_PATH}/wallets/${walletId}`,
     // POST /api/v1/billing/wallets/{walletId}/topup
     TOPUP: walletId => `${BILLING_PATH}/wallets/${walletId}/topup`,
-    // POST /api/v1/billing/wallets/{walletId}/debit
-    DEBIT: walletId => `${BILLING_PATH}/wallets/${walletId}/debit`,
+    // POST /api/v1/billing/wallets/{walletId}/debit/deposit
+    PAY_DEPOSIT: walletId => `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
+    // POST /api/v1/billing/wallets/{walletId}/debit/milestone
+    PAY_MILESTONE: walletId => `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
     // GET /api/v1/billing/wallets/{walletId}/transactions
     GET_TRANSACTIONS: walletId => `${BILLING_PATH}/wallets/${walletId}/transactions`,
     // GET /api/v1/billing/wallets/me/transactions

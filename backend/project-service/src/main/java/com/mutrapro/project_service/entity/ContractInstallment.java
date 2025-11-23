@@ -4,6 +4,7 @@ import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.GateCondition;
 import com.mutrapro.project_service.enums.InstallmentStatus;
 import com.mutrapro.project_service.enums.InstallmentType;
+import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -25,7 +26,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ContractInstallment {
+public class ContractInstallment extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -72,12 +73,5 @@ public class ContractInstallment {
 
     @Column(name = "paid_at")
     Instant paidAt;
-
-    @Builder.Default
-    @Column(name = "created_at", nullable = false)
-    Instant createdAt = Instant.now();
-
-    @Column(name = "updated_at")
-    Instant updatedAt;
 }
 

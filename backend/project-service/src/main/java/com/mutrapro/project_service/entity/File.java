@@ -3,6 +3,7 @@ package com.mutrapro.project_service.entity;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
+import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -26,7 +27,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
-public class File {
+public class File extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

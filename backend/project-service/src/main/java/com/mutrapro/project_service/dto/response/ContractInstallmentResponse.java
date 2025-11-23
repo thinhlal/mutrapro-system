@@ -47,8 +47,8 @@ public class ContractInstallmentResponse {
     
     Instant paidAt;
     
-    Instant createdAt;
+    LocalDateTime createdAt;
     
-    Instant updatedAt;
+    LocalDateTime updatedAt;
 }
 

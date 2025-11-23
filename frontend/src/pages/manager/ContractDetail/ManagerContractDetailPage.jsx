@@ -1055,6 +1055,76 @@ const ManagerContractDetailPage = () => {
 
           <Divider />
 
+          {/* DEPOSIT Section - Hiển thị riêng */}
+          {contract?.installments && (() => {
+            const depositInstallment = contract.installments.find(
+              inst => inst.type === 'DEPOSIT'
+            );
+            if (!depositInstallment) return null;
+            
+            const depositStatus = depositInstallment.status || 'PENDING';
+            const isDepositPaid = depositStatus === 'PAID';
+            const isDepositDue = depositStatus === 'DUE';
+            
+            return (
+              <>
+                <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                  Deposit Payment
+                </Title>
+                <Card
+                  size="small"
+                  style={{
+                    borderLeft: isDepositPaid ? '4px solid #52c41a' : isDepositDue ? '4px solid #faad14' : '4px solid #d9d9d9',
+                    marginBottom: 16
+                  }}
+                >
+                  <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <Text strong style={{ fontSize: 16 }}>
+                          Deposit ({depositInstallment.percent}%)
+                        </Text>
+                        <div style={{ marginTop: 8, marginBottom: 8 }}>
+                          <Text type="secondary" style={{ fontSize: 13 }}>
+                            Initial deposit payment required to activate the contract
+                          </Text>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                        <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                          {depositInstallment.amount?.toLocaleString()} {depositInstallment.currency || contract?.currency || 'VND'}
+                        </Text>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                      <Space size="small">
+                        <Tag color={isDepositPaid ? 'success' : isDepositDue ? 'warning' : 'default'}>
+                          Payment: {isDepositPaid ? 'PAID' : isDepositDue ? 'DUE' : 'PENDING'}
+                        </Tag>
+                        {depositInstallment.paidAt && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Paid: {dayjs(depositInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
+                          </Text>
+                        )}
+                        {depositInstallment.dueDate && !isDepositPaid && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Due: {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY')}
+                          </Text>
+                        )}
+                      </Space>
+                      
+                      {isDepositPaid && (
+                        <Tag color="success">Paid</Tag>
+                      )}
+                    </div>
+                  </Space>
+                </Card>
+                <Divider />
+              </>
+            );
+          })()}
+
           {/* Milestones Section - Show when milestones exist */}
           {contract?.milestones && contract.milestones.length > 0 && (
             <>
@@ -1065,10 +1135,17 @@ const ManagerContractDetailPage = () => {
                 {contract.milestones
                   .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                   .map((milestone, index) => {
-                    const paymentStatus = milestone.paymentStatus || 'NOT_DUE';
+                    // Chỉ hiển thị installment của milestone này (không hiển thị DEPOSIT)
+                    const targetInstallment = milestone.hasPayment
+                      ? contract?.installments?.find(
+                          inst => inst.milestoneId === milestone.milestoneId
+                        )
+                      : null;
+                    
                     const workStatus = milestone.workStatus || 'PLANNED';
-                    const isPaid = paymentStatus === 'PAID';
-                    const isDue = paymentStatus === 'DUE';
+                    const installmentStatus = targetInstallment?.status || 'PENDING';
+                    const isPaid = installmentStatus === 'PAID';
+                    const isDue = installmentStatus === 'DUE';
                     
                     const getPaymentStatusColor = () => {
                       if (isPaid) return 'success';
@@ -1079,7 +1156,7 @@ const ManagerContractDetailPage = () => {
                     const getPaymentStatusText = () => {
                       if (isPaid) return 'PAID';
                       if (isDue) return 'DUE';
-                      return 'NOT DUE';
+                      return 'PENDING';
                     };
                     
                     const getWorkStatusColor = () => {
@@ -1114,35 +1191,56 @@ const ManagerContractDetailPage = () => {
                                 </div>
                               )}
                             </div>
-                            <div style={{ textAlign: 'right', marginLeft: 16 }}>
-                              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                                {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
-                              </Text>
-                            </div>
+                            {targetInstallment && (
+                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                                <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                                  {targetInstallment.amount?.toLocaleString()} {targetInstallment.currency || contract?.currency || 'VND'}
+                                </Text>
+                                {targetInstallment.percent && (
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                      ({targetInstallment.percent}%)
+                                    </Text>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {!targetInstallment && milestone.hasPayment === false && (
+                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                                <Text type="secondary" style={{ fontSize: 14 }}>
+                                  No payment required
+                                </Text>
+                              </div>
+                            )}
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                             <Space size="small">
-                              <Tag color={getPaymentStatusColor()}>
-                                Payment: {getPaymentStatusText()}
-                              </Tag>
+                              {targetInstallment && (
+                                <Tag color={getPaymentStatusColor()}>
+                                  Payment: {getPaymentStatusText()}
+                                </Tag>
+                              )}
                               <Tag color={getWorkStatusColor()}>
                                 Work: {workStatus}
                               </Tag>
-                              {milestone.paidAt && (
+                              {targetInstallment?.paidAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Paid: {dayjs(milestone.paidAt).format('DD/MM/YYYY HH:mm')}
+                                  Paid: {dayjs(targetInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
                                 </Text>
                               )}
-                              {milestone.plannedDueDate && !isPaid && (
+                              {targetInstallment?.dueDate && !isPaid && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Due: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                                  Due: {dayjs(targetInstallment.dueDate).format('DD/MM/YYYY')}
                                 </Text>
                               )}
                             </Space>
                             
-                            {isPaid && (
+                            {isPaid && targetInstallment && (
                               <Tag color="success">Paid</Tag>
+                            )}
+                            {!targetInstallment && milestone.hasPayment === false && (
+                              <Tag color="default">No payment required</Tag>
                             )}
                           </div>
                         </Space>

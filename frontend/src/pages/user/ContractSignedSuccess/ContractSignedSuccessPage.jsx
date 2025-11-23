@@ -28,7 +28,7 @@ const ContractSignedSuccessPage = () => {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);
-  const [depositMilestone, setDepositMilestone] = useState(null);
+  const [depositInstallment, setDepositInstallment] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,15 +45,15 @@ const ContractSignedSuccessPage = () => {
         const contractData = contractResponse.data;
         setContract(contractData);
         
-        // Lấy milestone đầu tiên (deposit milestone) từ contract.milestones
-        if (contractData.milestones && contractData.milestones.length > 0) {
-          // Tìm milestone đầu tiên có paymentStatus = DUE hoặc NOT_DUE (chưa thanh toán)
-          const firstMilestone = contractData.milestones.find(
-            m => m.paymentStatus === 'DUE' || m.paymentStatus === 'NOT_DUE'
-          ) || contractData.milestones[0]; // Fallback: lấy milestone đầu tiên
+        // Lấy DEPOSIT installment từ contract.installments
+        // DEPOSIT không gắn với milestone nào (milestone_id = NULL)
+        if (contractData.installments && contractData.installments.length > 0) {
+          const depositInst = contractData.installments.find(
+            inst => inst.type === 'DEPOSIT'
+          );
           
-          if (firstMilestone) {
-            setDepositMilestone(firstMilestone);
+          if (depositInst) {
+            setDepositInstallment(depositInst);
           }
         }
       }
@@ -77,7 +77,7 @@ const ContractSignedSuccessPage = () => {
   };
 
   const handlePayDeposit = () => {
-    navigate(`/contracts/${contractId}/pay-milestone`);
+    navigate(`/contracts/${contractId}/pay-deposit`);
   };
 
   const handleViewContract = () => {
@@ -117,7 +117,7 @@ const ContractSignedSuccessPage = () => {
     );
   }
 
-  const depositAmount = depositMilestone?.amount || 0;
+  const depositAmount = depositInstallment?.amount || 0;
   const depositPercent = contract?.depositPercent || 0;
   const totalPrice = contract?.totalPrice || 0;
 
@@ -155,9 +155,9 @@ const ContractSignedSuccessPage = () => {
               <Descriptions.Item label="Deposit">
                 {depositPercent}% = {formatCurrency(depositAmount, contract.currency)}
               </Descriptions.Item>
-              {depositMilestone?.plannedDueDate && (
-                <Descriptions.Item label="Deposit Deadline">
-                  {dayjs(depositMilestone.plannedDueDate).format('DD/MM/YYYY HH:mm')}
+              {depositInstallment?.dueDate && (
+                <Descriptions.Item label="Deposit Due Date">
+                  {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY HH:mm')}
                 </Descriptions.Item>
               )}
             </Descriptions>

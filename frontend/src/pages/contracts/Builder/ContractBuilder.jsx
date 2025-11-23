@@ -453,15 +453,21 @@ const ContractBuilder = () => {
           contract_type: contract.contractType,
           deposit_percent: contract.depositPercent,
           total_price: contract.totalPrice,
-          milestones: contract.milestones?.map(m => ({
-            name: m.name,
-            description: m.description,
-            orderIndex: m.orderIndex,
-            paymentStatus: m.paymentStatus,
-            hasPayment: false, // Will be determined from installments
-            paymentPercent: null, // Will be determined from installments
-            milestoneSlaDays: m.milestoneSlaDays || null,
-          })) || [],
+          milestones: contract.milestones?.map(m => {
+            // Tìm installment tương ứng để lấy paymentPercent
+            const installment = contract.installments?.find(
+              inst => inst.milestoneId === m.milestoneId
+            );
+            
+            return {
+              name: m.name,
+              description: m.description,
+              orderIndex: m.orderIndex,
+              hasPayment: m.hasPayment || false,
+              paymentPercent: installment?.percent || null,
+              milestoneSlaDays: m.milestoneSlaDays || null,
+            };
+          }) || [],
           sla_days: contract.slaDays,
           show_watermark: false, // Always show watermark in edit mode
           free_revisions_included: contract.freeRevisionsIncluded,
@@ -856,7 +862,6 @@ const ContractBuilder = () => {
           name: m.name,
           description: m.description || '',
           orderIndex: m.orderIndex || (index + 1),
-          paymentStatus: m.paymentStatus || 'NOT_DUE',
           hasPayment: m.hasPayment || false,
           paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
           milestoneSlaDays: m.milestoneSlaDays ? Number(m.milestoneSlaDays) : null,
@@ -1261,20 +1266,7 @@ const ContractBuilder = () => {
                                       placeholder="Mô tả công việc trong milestone này"
                                     />
                                   </Form.Item>
-                                  
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'paymentStatus']}
-                                    label="Payment Status"
-                                    initialValue="NOT_DUE"
-                                    rules={[{ required: true }]}
-                                  >
-                                    <Select>
-                                      <Select.Option value="NOT_DUE">Not Due</Select.Option>
-                                      <Select.Option value="DUE">Due</Select.Option>
-                                    </Select>
-                                  </Form.Item>
-                                  
+                                                                    
                                   <Form.Item
                                     {...restField}
                                     name={[name, 'hasPayment']}

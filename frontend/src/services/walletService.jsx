@@ -55,29 +55,52 @@ export const topupWallet = async (walletId, topupData) => {
 };
 
 /**
- * Trừ tiền từ ví
- * POST /wallets/{walletId}/debit
+ * Thanh toán DEPOSIT
+ * POST /wallets/{walletId}/debit/deposit
  *
  * @param {string} walletId - ID của ví
- * @param {Object} debitData - Thông tin trừ tiền
- * @param {number} debitData.amount - Số tiền trừ
- * @param {string} debitData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
- * @param {string} debitData.paymentId - ID thanh toán (optional)
- * @param {string} debitData.contractId - ID hợp đồng (optional)
- * @param {string} debitData.milestoneId - ID milestone (optional)
- * @param {number} debitData.orderIndex - Thứ tự milestone (1, 2, 3...) (optional)
- * @param {string} debitData.bookingId - ID đặt chỗ (optional)
+ * @param {Object} depositData - Thông tin thanh toán DEPOSIT
+ * @param {number} depositData.amount - Số tiền thanh toán
+ * @param {string} depositData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} depositData.contractId - ID hợp đồng (bắt buộc)
+ * @param {string} depositData.installmentId - ID installment DEPOSIT (bắt buộc)
  * @returns {Promise} ApiResponse với thông tin giao dịch
  */
-export const debitWallet = async (walletId, debitData) => {
+export const payDeposit = async (walletId, depositData) => {
   try {
     const response = await axiosInstance.post(
-      API_ENDPOINTS.WALLET.DEBIT(walletId),
-      debitData
+      API_ENDPOINTS.WALLET.PAY_DEPOSIT(walletId),
+      depositData
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi trừ tiền từ ví' };
+    throw error.response?.data || { message: 'Lỗi khi thanh toán DEPOSIT' };
+  }
+};
+
+/**
+ * Thanh toán Milestone
+ * POST /wallets/{walletId}/debit/milestone
+ *
+ * @param {string} walletId - ID của ví
+ * @param {Object} milestoneData - Thông tin thanh toán Milestone
+ * @param {number} milestoneData.amount - Số tiền thanh toán
+ * @param {string} milestoneData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} milestoneData.contractId - ID hợp đồng (bắt buộc)
+ * @param {string} milestoneData.milestoneId - ID milestone (bắt buộc)
+ * @param {string} milestoneData.installmentId - ID installment (bắt buộc)
+ * @param {number} milestoneData.orderIndex - Thứ tự milestone (1, 2, 3...) (optional)
+ * @returns {Promise} ApiResponse với thông tin giao dịch
+ */
+export const payMilestone = async (walletId, milestoneData) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.PAY_MILESTONE(walletId),
+      milestoneData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi thanh toán Milestone' };
   }
 };
 

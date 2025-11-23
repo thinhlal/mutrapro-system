@@ -1,7 +1,5 @@
 package com.mutrapro.project_service.dto.response;
 
-import com.mutrapro.project_service.enums.MilestoneBillingType;
-import com.mutrapro.project_service.enums.MilestonePaymentStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
@@ -34,21 +31,13 @@ public class ContractMilestoneResponse {
     
     MilestoneWorkStatus workStatus;
     
-    MilestoneBillingType billingType;
-    
-    BigDecimal billingValue;
-    
-    BigDecimal amount;
-    
-    MilestonePaymentStatus paymentStatus;
+    Boolean hasPayment;  // Milestone này có installment tương ứng không
     
     Integer milestoneSlaDays;  // SLA ngày cho milestone này
     
     LocalDateTime plannedStartAt;  // BE tính khi contract có start date
     
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date
-    
-    Instant paidAt;
     
     Instant createdAt;
     
