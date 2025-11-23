@@ -64,6 +64,24 @@ const PayMilestonePage = () => {
         const contractData = contractResponse.data;
         setContract(contractData);
 
+        // Validation: Contract phải ở trạng thái signed hoặc active để thanh toán
+        const contractStatus = contractData.status?.toLowerCase();
+        const isCanceled = contractStatus === 'canceled_by_customer' || contractStatus === 'canceled_by_manager';
+        const isExpired = contractStatus === 'expired';
+        const isValidStatus = contractStatus === 'signed' || contractStatus === 'active';
+
+        if (isCanceled || isExpired || !isValidStatus) {
+          message.error(
+            isCanceled 
+              ? 'Contract has been canceled. Payment is not allowed.' 
+              : isExpired 
+              ? 'Contract has expired. Payment is not allowed.'
+              : 'Contract is not in a valid status for payment.'
+          );
+          navigate(`/contracts/${contractId}`);
+          return;
+        }
+
         // Kiểm tra DEPOSIT status - nếu chưa thanh toán, redirect về pay-deposit
         const depositInstallment = contractData.installments?.find(
           inst => inst.type === 'DEPOSIT'

@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.exception;
 
+import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
 import com.mutrapro.shared.exception.BusinessException;
@@ -33,6 +34,24 @@ public class MilestonePaymentException extends BusinessException {
                 "orderIndex", orderIndex,
                 "currentWorkStatus", currentWorkStatus != null ? currentWorkStatus.name() : "UNKNOWN",
                 "requiredWorkStatus", "READY_FOR_PAYMENT or COMPLETED"
+            )
+        );
+    }
+
+    /**
+     * Error khi contract không ở trạng thái hợp lệ để thanh toán (phải là signed hoặc active)
+     */
+    public static MilestonePaymentException contractNotActive(String contractId, String milestoneId, 
+            Integer orderIndex, ContractStatus currentContractStatus) {
+        return new MilestonePaymentException(
+            String.format("Không thể thanh toán milestone: contract phải ở trạng thái signed hoặc active. " +
+                "Hiện tại contract status: %s", currentContractStatus),
+            Map.of(
+                "contractId", contractId,
+                "milestoneId", milestoneId,
+                "orderIndex", orderIndex,
+                "currentContractStatus", currentContractStatus != null ? currentContractStatus.name() : "UNKNOWN",
+                "requiredContractStatus", "signed or active"
             )
         );
     }

@@ -57,6 +57,24 @@ const PayDepositPage = () => {
         setContract(contractData);
 
         // Tìm DEPOSIT installment
+        // Validation: Contract phải ở trạng thái signed để thanh toán deposit
+        const contractStatus = contractData.status?.toLowerCase();
+        const isCanceled = contractStatus === 'canceled_by_customer' || contractStatus === 'canceled_by_manager';
+        const isExpired = contractStatus === 'expired';
+        const isValidStatus = contractStatus === 'signed';
+
+        if (isCanceled || isExpired || !isValidStatus) {
+          message.error(
+            isCanceled 
+              ? 'Contract has been canceled. Payment is not allowed.' 
+              : isExpired 
+              ? 'Contract has expired. Payment is not allowed.'
+              : 'Contract must be signed before deposit payment.'
+          );
+          navigate(`/contracts/${contractId}`);
+          return;
+        }
+
         const deposit = contractData.installments?.find(
           inst => inst.type === 'DEPOSIT'
         );

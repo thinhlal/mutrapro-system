@@ -1039,6 +1039,15 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
+        // Validation: Contract phải ở trạng thái signed để cho phép thanh toán deposit
+        ContractStatus contractStatus = contract.getStatus();
+        if (contractStatus != ContractStatus.signed) {
+            log.warn("❌ Cannot pay deposit: contract must be signed. " +
+                "contractId={}, installmentId={}, currentContractStatus={}", 
+                contractId, installmentId, contractStatus);
+            throw MilestonePaymentException.contractNotActive(contractId, null, null, contractStatus);
+        }
+        
         // Tìm DEPOSIT installment
         ContractInstallment depositInstallment = contractInstallmentRepository.findById(installmentId)
             .orElseThrow(() -> ContractInstallmentNotFoundException.byId(installmentId));
@@ -1139,6 +1148,15 @@ public class ContractService {
     public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, Instant paidAt) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Validation: Contract phải ở trạng thái signed hoặc active để cho phép thanh toán
+        ContractStatus contractStatus = contract.getStatus();
+        if (contractStatus != ContractStatus.signed && contractStatus != ContractStatus.active) {
+            log.warn("❌ Cannot pay milestone: contract must be signed or active. " +
+                "contractId={}, milestoneId={}, orderIndex={}, currentContractStatus={}", 
+                contractId, milestoneId, orderIndex, contractStatus);
+            throw MilestonePaymentException.contractNotActive(contractId, milestoneId, orderIndex, contractStatus);
+        }
         
         // Tìm milestone và installment
         ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)

@@ -1215,8 +1215,8 @@ const ContractDetailPage = () => {
   const isNeedRevision = currentStatus === 'need_revision';
   const isExpired = currentStatus === 'expired';
 
-  // Contract is signed or active - milestones can be paid
-  const canPayMilestones = isSigned || isActive;
+  // Contract is signed or active - milestones can be paid (but not if canceled or expired)
+  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
 
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;

@@ -907,9 +907,10 @@ const ManagerContractDetailPage = () => {
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
   const isNeedRevision = currentStatus === 'need_revision';
+  const isExpired = currentStatus === 'expired';
 
-  // Contract is signed or active - milestones can be paid
-  const canPayMilestones = isSigned || isActive;
+  // Contract is signed or active - milestones can be paid (but not if canceled or expired)
+  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
 
   const canViewReason = isCanceled || isNeedRevision;
 
