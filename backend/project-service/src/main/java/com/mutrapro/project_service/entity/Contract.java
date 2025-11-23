@@ -95,15 +95,9 @@ public class Contract extends BaseEntity<String> {
     @Column(name = "expected_start_date")
     Instant expectedStartDate;
 
-    @Column(name = "due_date")
-    Instant dueDate;
 
     @Column(name = "sla_days")
     Integer slaDays;
-
-    @Builder.Default
-    @Column(name = "auto_due_date", nullable = false)
-    Boolean autoDueDate = true;
 
     // Revision policy
     @Builder.Default

@@ -11,6 +11,7 @@ import {
   Space,
   Divider,
   message,
+  notification,
   Spin,
   Alert,
   Tag,
@@ -21,6 +22,8 @@ import {
   QuestionCircleOutlined,
   MinusCircleOutlined,
   PlusOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import {
   useSearchParams,
@@ -50,6 +53,156 @@ import {
 import styles from './ContractBuilder.module.css';
 
 const { Title } = Typography;
+
+// Milestone Item Component - tách ra để tránh lỗi hook trong map
+const MilestoneItem = ({ field, form, onRemove, index }) => {
+  const hasPayment = Form.useWatch(
+    ['milestones', field.name, 'hasPayment'],
+    form
+  );
+
+  // Tách key ra khỏi field để tránh lỗi React key prop
+  const { key, ...restField } = field;
+
+  return (
+    <Card
+      key={key}
+      size="small"
+      style={{ marginBottom: 16 }}
+      title={`Milestone ${index + 1}`}
+      extra={
+        <MinusCircleOutlined
+          onClick={() => onRemove(field.name)}
+          style={{
+            color: '#ff4d4f',
+            cursor: 'pointer',
+          }}
+        />
+      }
+    >
+      <Space
+        direction="vertical"
+        style={{ width: '100%' }}
+        size="small"
+      >
+        <Form.Item
+          {...restField}
+          name={[field.name, 'orderIndex']}
+          label="Order Index"
+          initialValue={index + 1}
+          rules={[{ required: true }]}
+        >
+          <InputNumber
+            min={1}
+            style={{ width: '100%' }}
+            disabled
+          />
+        </Form.Item>
+
+        <Form.Item
+          {...restField}
+          name={[field.name, 'name']}
+          label="Name"
+          rules={[
+            {
+              required: true,
+              message: 'Please enter milestone name',
+            },
+          ]}
+        >
+          <Input placeholder="e.g., Milestone 1: Deposit & Start Transcription" />
+        </Form.Item>
+
+        <Form.Item
+          {...restField}
+          name={[field.name, 'description']}
+          label="Description"
+        >
+          <Input.TextArea
+            rows={2}
+            placeholder="Mô tả công việc trong milestone này"
+          />
+        </Form.Item>
+
+        <Form.Item
+          {...restField}
+          name={[field.name, 'hasPayment']}
+          label="Has Payment"
+          valuePropName="checked"
+          initialValue={false}
+        >
+          <Switch />
+        </Form.Item>
+
+        {hasPayment && (
+          <Form.Item
+            {...restField}
+            name={[field.name, 'paymentPercent']}
+            label="Payment Percent (%)"
+            rules={[
+              {
+                required: true,
+                message: 'Payment percent is required when hasPayment is true',
+              },
+              {
+                type: 'number',
+                min: 0.01,
+                max: 100,
+                message: 'Payment percent must be between 0.01 and 100',
+              },
+            ]}
+          >
+            <InputNumber
+              min={0.01}
+              max={100}
+              step={0.01}
+              precision={2}
+              style={{ width: '100%' }}
+              placeholder="e.g., 30.00"
+            />
+          </Form.Item>
+        )}
+
+        <Form.Item
+          {...restField}
+          name={[field.name, 'milestoneSlaDays']}
+          label={
+            <span>
+              Milestone SLA Days{' '}
+              <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
+                <QuestionCircleOutlined
+                  style={{
+                    color: '#1890ff',
+                    cursor: 'help',
+                  }}
+                />
+              </Tooltip>
+            </span>
+          }
+          rules={[
+            {
+              required: true,
+              message: 'Milestone SLA days is required',
+            },
+            {
+              type: 'number',
+              min: 1,
+              message: 'Milestone SLA days must be at least 1',
+            },
+          ]}
+        >
+          <InputNumber
+            min={1}
+            max={365}
+            step={1}
+            style={{ width: '100%' }}
+            placeholder="Số ngày SLA cho milestone này"
+          />
+        </Form.Item>
+      </Space>
+    </Card>
+  );
+};
 
 // Helper function để format description, thay thế "X.XX phút" bằng format mm:ss
 const formatDescriptionDuration = description => {
@@ -547,7 +700,6 @@ const ContractBuilder = () => {
 
             expected_start_date: null,
             sla_days: Number(currentFormValues.sla_days || 0),
-            auto_due_date: true,
             free_revisions_included: Number(
               currentFormValues.free_revisions_included || 1
             ),
@@ -558,6 +710,18 @@ const ContractBuilder = () => {
             revision_deadline_days: Number(
               currentFormValues.revision_deadline_days || 30
             ),
+
+            // Milestones - use from form values or contract
+            milestones: (currentFormValues.milestones || contract.milestones || []).map((m, index) => ({
+              name: m.name || `Milestone ${index + 1}`,
+              description: m.description || '',
+              orderIndex: m.orderIndex || index + 1,
+              hasPayment: m.hasPayment || false,
+              paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
+              milestoneSlaDays: m.milestoneSlaDays
+                ? Number(m.milestoneSlaDays)
+                : null,
+            })),
 
             // Use newPartyInfo directly instead of state
             partyA: newPartyInfo.partyA,
@@ -766,11 +930,22 @@ const ContractBuilder = () => {
     // Expected start optional: backend will default to now if null
     expected_start_date: null,
     sla_days: Number(values.sla_days || 0),
-    auto_due_date: true,
     free_revisions_included: Number(values.free_revisions_included || 1),
     additional_revision_fee_vnd: values.additional_revision_fee_vnd
       ? Number(values.additional_revision_fee_vnd)
       : null,
+
+    // Milestones
+    milestones: (values.milestones || []).map((m, index) => ({
+      name: m.name || `Milestone ${index + 1}`,
+      description: m.description || '',
+      orderIndex: m.orderIndex || index + 1,
+      hasPayment: m.hasPayment || false,
+      paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
+      milestoneSlaDays: m.milestoneSlaDays
+        ? Number(m.milestoneSlaDays)
+        : null,
+    })),
 
     // preview-only - lấy từ state partyInfo
     partyA: partyInfo.partyA,
@@ -813,17 +988,61 @@ const ContractBuilder = () => {
       await form.validateFields();
       const values = form.getFieldsValue();
 
+      // Validate at least one milestone is required
+      const milestones = values.milestones || [];
+      if (!isEditMode && (!milestones || milestones.length === 0)) {
+        // Set field error to highlight the milestones field
+        form.setFields([
+          {
+            name: ['milestones'],
+            errors: ['At least one milestone is required'],
+          },
+        ]);
+        return;
+      }
+
+      // Validate milestone data is complete
+      if (!isEditMode && milestones.length > 0) {
+        for (let i = 0; i < milestones.length; i++) {
+          const m = milestones[i];
+          if (!m.name || !m.name.trim()) {
+            form.setFields([
+              {
+                name: ['milestones', i, 'name'],
+                errors: ['Milestone name is required'],
+              },
+            ]);
+            return;
+          }
+          if (!m.milestoneSlaDays || Number(m.milestoneSlaDays) <= 0) {
+            form.setFields([
+              {
+                name: ['milestones', i, 'milestoneSlaDays'],
+                errors: ['Milestone SLA days must be greater than 0'],
+              },
+            ]);
+            return;
+          }
+          if (m.hasPayment && (!m.paymentPercent || Number(m.paymentPercent) <= 0)) {
+            form.setFields([
+              {
+                name: ['milestones', i, 'paymentPercent'],
+                errors: ['Payment percent is required when hasPayment is enabled'],
+              },
+            ]);
+            return;
+          }
+        }
+      }
+
       // Validate payment percentages
       const depositPercent = Number(values.deposit_percent || 40);
-      const milestones = values.milestones || [];
       const paymentValidation = validatePaymentPercentages(
         depositPercent,
         milestones
       );
 
       if (!paymentValidation.valid) {
-        message.error(paymentValidation.message);
-        setError(paymentValidation.message);
         return;
       }
 
@@ -835,8 +1054,6 @@ const ContractBuilder = () => {
       );
 
       if (!slaValidation.valid) {
-        message.error(slaValidation.message);
-        setError(slaValidation.message);
         return;
       }
 
@@ -851,7 +1068,6 @@ const ContractBuilder = () => {
         currency: 'VND',
         depositPercent: depositPercent,
         slaDays: Number(values.sla_days || 7),
-        autoDueDate: true,
         expectedStartDate: null,
         termsAndConditions: values.terms_and_conditions?.trim(),
         specialClauses: values.special_clauses?.trim(),
@@ -875,16 +1091,20 @@ const ContractBuilder = () => {
 
       // Only include milestones when creating new contract (not in edit mode)
       if (!isEditMode) {
-        const milestonesData = (milestones || []).map((m, index) => ({
-          name: m.name,
-          description: m.description || '',
-          orderIndex: m.orderIndex || index + 1,
-          hasPayment: m.hasPayment || false,
-          paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
-          milestoneSlaDays: m.milestoneSlaDays
-            ? Number(m.milestoneSlaDays)
-            : null,
-        }));
+        const milestonesData = (milestones || [])
+          .filter(m => m && m.name && m.name.trim()) // Filter out empty milestones
+          .map((m, index) => ({
+            name: m.name.trim(),
+            description: (m.description || '').trim(),
+            orderIndex: m.orderIndex || index + 1,
+            hasPayment: m.hasPayment || false,
+            paymentPercent: m.hasPayment && m.paymentPercent
+              ? Number(m.paymentPercent)
+              : null,
+            milestoneSlaDays: m.milestoneSlaDays
+              ? Number(m.milestoneSlaDays)
+              : null,
+          }));
 
         if (milestonesData.length > 0) {
           contractData.milestones = milestonesData;
@@ -895,41 +1115,61 @@ const ContractBuilder = () => {
       if (isEditMode) {
         // Update existing contract
         response = await updateContract(contractId, contractData);
-        if (response?.status === 'success') {
-          message.success('Contract updated successfully!');
-        }
       } else {
         // Create new contract
         response = await createContractFromRequest(requestId, contractData);
-        if (response?.status === 'success') {
-          message.success('Contract created successfully!');
-        }
       }
 
+      // Check response status
       if (response?.status === 'success' && response?.data) {
-        const contractResponse = response.data;
+        notification.success({
+          message: 'Success',
+          description: `Contract ${isEditMode ? 'updated' : 'created'} successfully!`,
+          placement: 'topRight',
+        });
         // Navigate to contracts list
         navigate('/manager/contracts');
       } else {
-        throw new Error(
+        const errorMessage =
           response?.message ||
-            `Failed to ${isEditMode ? 'update' : 'create'} contract`
-        );
+          `Failed to ${isEditMode ? 'update' : 'create'} contract`;
+        notification.error({
+          message: 'Error',
+          description: errorMessage,
+          placement: 'topRight',
+        });
+        // Don't set error state to avoid redirecting to error page
+        // setError(errorMessage);
       }
     } catch (error) {
       console.error(
         `Error ${isEditMode ? 'updating' : 'creating'} contract:`,
         error
       );
-      setError(
-        error?.message ||
-          error?.response?.data?.message ||
-          `Failed to ${isEditMode ? 'update' : 'create'} contract`
-      );
-      message.error(
-        error?.message ||
-          `Failed to ${isEditMode ? 'update' : 'create'} contract`
-      );
+      
+      // Extract error message from different error formats
+      let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} contract`;
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.response?.data) {
+        // Handle case where error.response.data is the error object
+        errorMessage = error.response.data.message || JSON.stringify(error.response.data);
+      }
+      
+      notification.error({
+        message: 'Error',
+        description: errorMessage,
+        placement: 'topRight',
+        duration: 5,
+      });
+      // Don't set error state to avoid redirecting to error page for validation errors
+      // Only set for critical errors that require redirect
+      // setError(errorMessage);
     } finally {
       setCreatingContract(false);
     }
@@ -1208,275 +1448,6 @@ const ContractBuilder = () => {
                     />
                   </Form.Item>
 
-                  {!isEditMode && (
-                    <>
-                      <Divider className={styles.fullRow}>
-                        Payment Milestones
-                      </Divider>
-
-                      <Form.Item
-                        className={styles.fullRow}
-                        label={
-                          <span>
-                            Milestones{' '}
-                            <Tooltip title="Cấu hình các milestones và phần trăm thanh toán. Tổng depositPercent + sum(paymentPercent của milestones có hasPayment=true) phải = 100%">
-                              <QuestionCircleOutlined
-                                style={{ color: '#1890ff', cursor: 'help' }}
-                              />
-                            </Tooltip>
-                          </span>
-                        }
-                      >
-                        <Form.List name="milestones" initialValue={[]}>
-                          {(fields, { add, remove }) => (
-                            <>
-                              {fields.map(({ key, name, ...restField }) => {
-                                const hasPayment = Form.useWatch(
-                                  ['milestones', name, 'hasPayment'],
-                                  form
-                                );
-                                return (
-                                  <Card
-                                    key={key}
-                                    size="small"
-                                    style={{ marginBottom: 16 }}
-                                    title={`Milestone ${name + 1}`}
-                                    extra={
-                                      fields.length > 0 ? (
-                                        <MinusCircleOutlined
-                                          onClick={() => remove(name)}
-                                          style={{
-                                            color: '#ff4d4f',
-                                            cursor: 'pointer',
-                                          }}
-                                        />
-                                      ) : null
-                                    }
-                                  >
-                                    <Space
-                                      direction="vertical"
-                                      style={{ width: '100%' }}
-                                      size="small"
-                                    >
-                                      <Form.Item
-                                        {...restField}
-                                        name={[name, 'orderIndex']}
-                                        label="Order Index"
-                                        initialValue={name + 1}
-                                        rules={[{ required: true }]}
-                                      >
-                                        <InputNumber
-                                          min={1}
-                                          style={{ width: '100%' }}
-                                          disabled
-                                        />
-                                      </Form.Item>
-
-                                      <Form.Item
-                                        {...restField}
-                                        name={[name, 'name']}
-                                        label="Name"
-                                        rules={[
-                                          {
-                                            required: true,
-                                            message:
-                                              'Please enter milestone name',
-                                          },
-                                        ]}
-                                      >
-                                        <Input placeholder="e.g., Milestone 1: Deposit & Start Transcription" />
-                                      </Form.Item>
-
-                                      <Form.Item
-                                        {...restField}
-                                        name={[name, 'description']}
-                                        label="Description"
-                                      >
-                                        <Input.TextArea
-                                          rows={2}
-                                          placeholder="Mô tả công việc trong milestone này"
-                                        />
-                                      </Form.Item>
-
-                                      <Form.Item
-                                        {...restField}
-                                        name={[name, 'hasPayment']}
-                                        label="Has Payment"
-                                        valuePropName="checked"
-                                        initialValue={false}
-                                        rules={[{ required: true }]}
-                                      >
-                                        <Switch />
-                                      </Form.Item>
-
-                                      {hasPayment && (
-                                        <Form.Item
-                                          {...restField}
-                                          name={[name, 'paymentPercent']}
-                                          label="Payment Percent"
-                                          rules={[
-                                            {
-                                              required: true,
-                                              message:
-                                                'Please enter payment percent',
-                                            },
-                                            {
-                                              type: 'number',
-                                              min: 0.01,
-                                              max: 100,
-                                              message:
-                                                'Payment percent must be between 0.01 and 100',
-                                            },
-                                          ]}
-                                        >
-                                          <InputNumber
-                                            min={0.01}
-                                            max={100}
-                                            step={0.01}
-                                            style={{ width: '100%' }}
-                                            placeholder="Phần trăm thanh toán cho milestone này"
-                                          />
-                                        </Form.Item>
-                                      )}
-
-                                      <Form.Item
-                                        {...restField}
-                                        name={[name, 'milestoneSlaDays']}
-                                        label={
-                                          <span>
-                                            Milestone SLA Days{' '}
-                                            <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
-                                              <QuestionCircleOutlined
-                                                style={{
-                                                  color: '#1890ff',
-                                                  cursor: 'help',
-                                                }}
-                                              />
-                                            </Tooltip>
-                                          </span>
-                                        }
-                                        rules={[
-                                          {
-                                            required: true,
-                                            message:
-                                              'Please enter milestone SLA days',
-                                          },
-                                          {
-                                            type: 'number',
-                                            min: 1,
-                                            message:
-                                              'Milestone SLA days must be at least 1',
-                                          },
-                                        ]}
-                                      >
-                                        <InputNumber
-                                          min={1}
-                                          max={365}
-                                          step={1}
-                                          style={{ width: '100%' }}
-                                          placeholder="Số ngày SLA cho milestone này"
-                                        />
-                                      </Form.Item>
-                                    </Space>
-                                  </Card>
-                                );
-                              })}
-
-                              <Form.Item>
-                                <Button
-                                  type="dashed"
-                                  onClick={() => add()}
-                                  block
-                                  icon={<PlusOutlined />}
-                                >
-                                  Add Milestone
-                                </Button>
-                              </Form.Item>
-                            </>
-                          )}
-                        </Form.List>
-                      </Form.Item>
-
-                      {/* Validation message */}
-                      <Form.Item shouldUpdate className={styles.fullRow}>
-                        {() => {
-                          const depositPercent =
-                            form.getFieldValue('deposit_percent') || 0;
-                          const milestones =
-                            form.getFieldValue('milestones') || [];
-                          const totalPaymentPercent = milestones.reduce(
-                            (sum, m) => {
-                              if (m?.hasPayment && m?.paymentPercent) {
-                                return sum + (Number(m.paymentPercent) || 0);
-                              }
-                              return sum;
-                            },
-                            0
-                          );
-                          const total = depositPercent + totalPaymentPercent;
-                          const isValid = Math.abs(total - 100) < 0.01; // Allow small floating point errors
-
-                          if (milestones.length > 0 && !isValid) {
-                            return (
-                              <Alert
-                                message={`Total payment percentage: ${total.toFixed(2)}%`}
-                                description={`Deposit: ${depositPercent}% + Milestones: ${totalPaymentPercent.toFixed(2)}% = ${total.toFixed(2)}%. Must equal 100%`}
-                                type="error"
-                                showIcon
-                                style={{ marginTop: 8 }}
-                              />
-                            );
-                          }
-                          if (milestones.length > 0 && isValid) {
-                            // Validate milestone SLA days
-                            const contractSlaDays =
-                              form.getFieldValue('sla_days') || 0;
-                            const totalMilestoneSlaDays = milestones.reduce(
-                              (sum, m) => {
-                                return sum + (Number(m.milestoneSlaDays) || 0);
-                              },
-                              0
-                            );
-                            const slaIsValid =
-                              totalMilestoneSlaDays === contractSlaDays;
-
-                            return (
-                              <>
-                                <Alert
-                                  message="Payment percentage validation: OK"
-                                  description={`Total: ${total.toFixed(2)}% = 100%`}
-                                  type="success"
-                                  showIcon
-                                  style={{ marginTop: 8 }}
-                                />
-                                {milestones.length > 0 &&
-                                  contractSlaDays > 0 &&
-                                  (slaIsValid ? (
-                                    <Alert
-                                      message="Milestone SLA days validation: OK"
-                                      description={`Total: ${totalMilestoneSlaDays} days = Contract SLA: ${contractSlaDays} days`}
-                                      type="success"
-                                      showIcon
-                                      style={{ marginTop: 8 }}
-                                    />
-                                  ) : (
-                                    <Alert
-                                      message={`Total milestone SLA days: ${totalMilestoneSlaDays} days`}
-                                      description={`Contract SLA: ${contractSlaDays} days. Total milestone SLA days must equal contract SLA days.`}
-                                      type="error"
-                                      showIcon
-                                      style={{ marginTop: 8 }}
-                                    />
-                                  ))}
-                              </>
-                            );
-                          }
-                          return null;
-                        }}
-                      </Form.Item>
-                    </>
-                  )}
-
                   <Divider className={styles.fullRow}>
                     Timeline & Revision Policy
                   </Divider>
@@ -1485,7 +1456,7 @@ const ContractBuilder = () => {
                     label={
                       <span>
                         SLA Days (Service Level Agreement){' '}
-                        <Tooltip title="Number of days to complete the work. Due Date will be automatically calculated from signing date + SLA Days">
+                        <Tooltip title="Total number of SLA days for all milestones. Due date will be calculated from the last milestone's plannedDueDate after payments are made">
                           <QuestionCircleOutlined
                             style={{ color: '#1890ff', cursor: 'help' }}
                           />
@@ -1611,6 +1582,202 @@ const ContractBuilder = () => {
                     />
                   </Form.Item>
 
+                  {!isEditMode && (
+                    <>
+                      <Divider className={styles.fullRow}>
+                        Milestones
+                      </Divider>
+
+                      <Form.Item
+                        className={styles.fullRow}
+                        label={
+                          <span>
+                            Milestones{' '}
+                            <Tooltip title="Cấu hình các milestones và phần trăm thanh toán. Tổng depositPercent + sum(paymentPercent của milestones có hasPayment=true) phải = 100%">
+                              <QuestionCircleOutlined
+                                style={{ color: '#1890ff', cursor: 'help' }}
+                              />
+                            </Tooltip>
+                          </span>
+                        }
+                        rules={[
+                          {
+                            validator: (_, value) => {
+                              if (!isEditMode && (!value || value.length === 0)) {
+                                return Promise.reject(
+                                  new Error('At least one milestone is required')
+                                );
+                              }
+                              return Promise.resolve();
+                            },
+                          },
+                        ]}
+                      >
+                        <Form.List name="milestones" initialValue={[]}>
+                          {(fields, { add, remove }) => (
+                            <>
+                              {fields.map((field, index) => (
+                                <MilestoneItem
+                                  key={field.key}
+                                  field={field}
+                                  form={form}
+                                  onRemove={remove}
+                                  index={index}
+                                />
+                              ))}
+
+                              <Form.Item>
+                                <Button
+                                  type="dashed"
+                                  onClick={() => add()}
+                                  block
+                                  icon={<PlusOutlined />}
+                                >
+                                  Add Milestone
+                                </Button>
+                              </Form.Item>
+                            </>
+                          )}
+                        </Form.List>
+                      </Form.Item>
+
+                      {/* Validation message */}
+                      <Form.Item shouldUpdate className={styles.fullRow}>
+                        {() => {
+                          const depositPercent =
+                            form.getFieldValue('deposit_percent') || 0;
+                          const milestones =
+                            form.getFieldValue('milestones') || [];
+                          const contractSlaDays =
+                            form.getFieldValue('sla_days') || 0;
+
+                          // Payment percentage validation
+                          const totalPaymentPercent = milestones.reduce(
+                            (sum, m) => {
+                              if (m?.hasPayment && m?.paymentPercent) {
+                                return sum + (Number(m.paymentPercent) || 0);
+                              }
+                              return sum;
+                            },
+                            0
+                          );
+                          const total = depositPercent + totalPaymentPercent;
+                          const paymentIsValid = Math.abs(total - 100) < 0.01; // Allow small floating point errors
+
+                          // Milestone SLA days validation
+                          const totalMilestoneSlaDays = milestones.reduce(
+                            (sum, m) => {
+                              return sum + (Number(m.milestoneSlaDays) || 0);
+                            },
+                            0
+                          );
+                          const slaIsValid =
+                            milestones.length > 0 &&
+                            contractSlaDays > 0 &&
+                            totalMilestoneSlaDays === contractSlaDays;
+
+                          // Build validation messages
+                          const messages = [];
+
+                          // Check if at least one milestone is required
+                          if (!isEditMode && milestones.length === 0) {
+                            messages.push(
+                              <div
+                                key="milestone-required"
+                                style={{
+                                  fontSize: '12px',
+                                  color: '#ff4d4f',
+                                  marginTop: 4,
+                                }}
+                              >
+                                <CloseCircleOutlined
+                                  style={{ marginRight: 4, color: '#ff4d4f' }}
+                                />
+                                At least one milestone is required
+                              </div>
+                            );
+                          }
+
+                          if (milestones.length > 0) {
+                            // Payment validation message
+                            if (!paymentIsValid) {
+                              messages.push(
+                                <div
+                                  key="payment-error"
+                                  style={{
+                                    fontSize: '12px',
+                                    color: '#ff4d4f',
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  <CheckCircleOutlined
+                                    style={{ marginRight: 4, color: '#ff4d4f' }}
+                                  />
+                                  Payment: {total.toFixed(2)}% (Deposit: {depositPercent}% + Milestones: {totalPaymentPercent.toFixed(2)}%) - Must equal 100%
+                                </div>
+                              );
+                            } else {
+                              messages.push(
+                                <div
+                                  key="payment-success"
+                                  style={{
+                                    fontSize: '12px',
+                                    color: '#52c41a',
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  <CheckCircleOutlined
+                                    style={{ marginRight: 4, color: '#52c41a' }}
+                                  />
+                                  Payment: {total.toFixed(2)}% ✓
+                                </div>
+                              );
+                            }
+
+                            // SLA validation message
+                            if (contractSlaDays > 0) {
+                              if (slaIsValid) {
+                                messages.push(
+                                  <div
+                                    key="sla-success"
+                                    style={{
+                                      fontSize: '12px',
+                                      color: '#52c41a',
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    <CheckCircleOutlined
+                                      style={{ marginRight: 4, color: '#52c41a' }}
+                                    />
+                                    SLA: {totalMilestoneSlaDays} days = Contract SLA ✓
+                                  </div>
+                                );
+                              } else {
+                                messages.push(
+                                  <div
+                                    key="sla-error"
+                                    style={{
+                                      fontSize: '12px',
+                                      color: '#ff4d4f',
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    <CloseCircleOutlined
+                                      style={{ marginRight: 4, color: '#ff4d4f' }}
+                                    />
+                                    SLA: {totalMilestoneSlaDays} days ≠ Contract SLA: {contractSlaDays} days
+                                  </div>
+                                );
+                              }
+                            }
+                          }
+
+                          return messages.length > 0 ? <>{messages}</> : null;
+                        }}
+                      </Form.Item>
+                    </>
+                  )}
+
                   <Divider className={styles.fullRow}>Terms</Divider>
                   <Form.Item
                     name="terms_and_conditions"
@@ -1721,15 +1888,10 @@ const ContractBuilder = () => {
                   <div
                     style={{
                       marginBottom: '16px',
-                      padding: '12px',
                       backgroundColor: '#f5f5f5',
                       borderRadius: '4px',
                     }}
                   >
-                    <strong style={{ display: 'block', marginBottom: '12px' }}>
-                      Price Breakdown:
-                    </strong>
-
                     <table
                       style={{
                         width: '100%',
@@ -1910,28 +2072,6 @@ const ContractBuilder = () => {
                           padding: '10px',
                           fontWeight: 'bold',
                           backgroundColor: '#e8e8e8',
-                          width: '200px',
-                        }}
-                      >
-                        Currency
-                      </td>
-                      <td
-                        style={{
-                          border: '1px solid #000',
-                          padding: '10px',
-                          backgroundColor: '#fff',
-                        }}
-                      >
-                        {data?.currency || 'VND'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td
-                        style={{
-                          border: '1px solid #000',
-                          padding: '10px',
-                          fontWeight: 'bold',
-                          backgroundColor: '#e8e8e8',
                         }}
                       >
                         Total Price
@@ -1998,14 +2138,113 @@ const ContractBuilder = () => {
                     </>
                   )}
 
+                {/* Milestones */}
+                {data?.milestones && data.milestones.length > 0 && (
+                  <>
+                    <h3>Milestones</h3>
+                    <table
+                      style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <thead>
+                        <tr>
+                          <th
+                            style={{
+                              border: '1px solid #000',
+                              padding: '10px',
+                              backgroundColor: '#e8e8e8',
+                              textAlign: 'left',
+                            }}
+                          >
+                            Milestone
+                          </th>
+                          <th
+                            style={{
+                              border: '1px solid #000',
+                              padding: '10px',
+                              backgroundColor: '#e8e8e8',
+                              textAlign: 'left',
+                            }}
+                          >
+                            Description
+                          </th>
+                          <th
+                            style={{
+                              border: '1px solid #000',
+                              padding: '10px',
+                              backgroundColor: '#e8e8e8',
+                              textAlign: 'center',
+                            }}
+                          >
+                            Payment %
+                          </th>
+                          <th
+                            style={{
+                              border: '1px solid #000',
+                              padding: '10px',
+                              backgroundColor: '#e8e8e8',
+                              textAlign: 'center',
+                            }}
+                          >
+                            SLA Days
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.milestones.map((milestone, index) => (
+                          <tr key={index}>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                              }}
+                            >
+                              <strong>
+                                {milestone.name || `Milestone ${index + 1}`}
+                              </strong>
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                              }}
+                            >
+                              {milestone.description || '-'}
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {milestone.hasPayment
+                                ? `${milestone.paymentPercent || 0}%`
+                                : 'N/A'}
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {milestone.milestoneSlaDays || '-'} days
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
                 <h3>Timeline & SLA</h3>
                 <p>
                   <strong>SLA Days (Service Level Agreement):</strong>{' '}
-                  {data?.sla_days || 0} days &nbsp;|&nbsp;
-                  <strong>Due Date (Deadline):</strong>{' '}
-                  {data?.due_date
-                    ? dayjs(data.due_date).format('YYYY-MM-DD')
-                    : `Within ${data?.sla_days || 0} days from the date of signing the contract`}
+                  {data?.sla_days || 0} days
                 </p>
 
                 {data?.terms_and_conditions && (

@@ -40,8 +40,6 @@ public class UpdateContractRequest {
     
     Integer slaDays;  // Optional
     
-    Boolean autoDueDate;  // Optional
-    
     // Revision policy
     Integer freeRevisionsIncluded;  // Optional
     

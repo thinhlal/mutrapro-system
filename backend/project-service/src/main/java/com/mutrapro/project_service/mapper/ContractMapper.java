@@ -23,12 +23,9 @@ public interface ContractMapper {
     @Mapping(target = "phoneSnapshot", ignore = true)
     @Mapping(target = "emailSnapshot", ignore = true)
     @Mapping(target = "status", ignore = true)
-    @Mapping(target = "dueDate", ignore = true)
     @Mapping(target = "freeRevisionsIncluded", ignore = true)
     Contract toEntity(CreateContractRequest request);
     
-    @Mapping(source = "BSignatureS3Url", target = "BSignatureS3Url")
-    @Mapping(source = "BSignedAt", target = "BSignedAt")
     ContractResponse toResponse(Contract contract);
 }
 

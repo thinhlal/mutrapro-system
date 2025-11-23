@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -39,8 +38,8 @@ public class ContractMilestoneResponse {
     
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date
     
-    Instant createdAt;
+    LocalDateTime createdAt;
     
-    Instant updatedAt;
+    LocalDateTime updatedAt;
 }
 

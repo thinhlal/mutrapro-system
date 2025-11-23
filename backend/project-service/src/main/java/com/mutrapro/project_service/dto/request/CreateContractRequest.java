@@ -43,8 +43,6 @@ public class CreateContractRequest {
     
     Integer slaDays;  // Default based on contract type
     
-    Boolean autoDueDate;  // Default true
-    
     // Revision policy
     Integer freeRevisionsIncluded;  // Default 1
     

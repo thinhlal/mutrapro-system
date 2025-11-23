@@ -1,11 +1,11 @@
 package com.mutrapro.project_service.entity;
 
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
+import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ContractMilestone {
+public class ContractMilestone extends BaseEntity<String> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -59,12 +59,5 @@ public class ContractMilestone {
 
     @Column(name = "planned_due_date")
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date (plannedStartAt + milestoneSlaDays)
-
-    @Builder.Default
-    @Column(name = "created_at", nullable = false)
-    Instant createdAt = Instant.now();
-
-    @Column(name = "updated_at")
-    Instant updatedAt;
 }
 

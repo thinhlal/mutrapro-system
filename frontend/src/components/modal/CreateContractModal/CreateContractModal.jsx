@@ -79,7 +79,6 @@ export default function CreateContractModal({
         currency: currency,
         depositPercent: depositPercent,
         slaDays: defaultSlaDays,
-        autoDueDate: true,
         expectedStartDate: dayjs(),
         freeRevisionsIncluded: 1,
       });
@@ -102,7 +101,6 @@ export default function CreateContractModal({
         currency: values.currency,
         depositPercent: values.depositPercent || 40,
         slaDays: values.slaDays,
-        autoDueDate: values.autoDueDate !== false, // Default true
         expectedStartDate: values.expectedStartDate
           ? values.expectedStartDate.toISOString()
           : new Date().toISOString(),
@@ -183,7 +181,6 @@ export default function CreateContractModal({
         onValuesChange={handleValuesChange}
         initialValues={{
           depositPercent: 40,
-          autoDueDate: true,
           freeRevisionsIncluded: 1,
         }}
       >
@@ -260,14 +257,6 @@ export default function CreateContractModal({
           rules={[{ required: true, message: 'Please enter SLA days' }]}
         >
           <InputNumber min={1} max={120} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          name="autoDueDate"
-          label="Auto Calculate Due Date"
-          valuePropName="checked"
-        >
-          <Switch />
         </Form.Item>
 
         <Form.Item name="freeRevisionsIncluded" label="Free Revisions Included">

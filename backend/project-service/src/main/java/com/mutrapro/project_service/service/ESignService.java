@@ -225,9 +225,8 @@ public class ESignService {
 
         // KHÔNG set expectedStartDate khi ký - sẽ set khi deposit được thanh toán
         // expectedStartDate = null cho đến khi deposit paid
-        // dueDate cũng sẽ được tính lại từ expectedStartDate khi deposit paid
+        // Due date sẽ được tính từ plannedDueDate của milestone cuối cùng
         contract.setExpectedStartDate(null);
-        contract.setDueDate(null);
 
         contractRepository.save(contract);
 

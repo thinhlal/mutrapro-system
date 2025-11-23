@@ -43,6 +43,7 @@ import com.mutrapro.project_service.exception.SignatureRetrieveException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.mapper.ContractMapper;
+import com.mutrapro.project_service.mapper.ContractMilestoneMapper;
 import com.mutrapro.project_service.repository.ContractInstallmentRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
@@ -56,6 +57,8 @@ import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import com.mutrapro.project_service.exception.SignatureImageNotFoundException;
 import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
@@ -92,6 +95,7 @@ public class ContractService {
     ContractMilestoneRepository contractMilestoneRepository;
     ContractInstallmentRepository contractInstallmentRepository;
     ContractMapper contractMapper;
+    ContractMilestoneMapper contractMilestoneMapper;
     RequestServiceFeignClient requestServiceFeignClient;
     ChatServiceFeignClient chatServiceFeignClient;
     NotificationServiceFeignClient notificationServiceFeignClient;
@@ -205,10 +209,9 @@ public class ContractService {
         // Revision deadline days - lấy từ request
         Integer revisionDeadlineDays = createRequest.getRevisionDeadlineDays();
         
-        // KHÔNG set expectedStartDate và dueDate lúc tạo contract
-        // Chỉ set khi customer KÝ để đảm bảo tính đúng từ ngày ký
+        // KHÔNG set expectedStartDate lúc tạo contract
+        // Chỉ set khi deposit được thanh toán để đảm bảo tính đúng từ ngày thanh toán
         Instant expectedStartDate = null;
-        Instant dueDate = null;
         
         // Tạo contract entity
         Contract contract = Contract.builder()
@@ -225,9 +228,7 @@ public class ContractService {
             .currency(currency)
             .depositPercent(depositPercent)
             .expectedStartDate(expectedStartDate)
-            .dueDate(dueDate)
             .slaDays(slaDays)
-            .autoDueDate(createRequest.getAutoDueDate() != null ? createRequest.getAutoDueDate() : true)
             .freeRevisionsIncluded(createRequest.getFreeRevisionsIncluded() != null 
                 ? createRequest.getFreeRevisionsIncluded() : 1)
             .additionalRevisionFeeVnd(createRequest.getAdditionalRevisionFeeVnd())
@@ -332,10 +333,6 @@ public class ContractService {
         
         if (updateRequest.getSlaDays() != null) {
             contract.setSlaDays(updateRequest.getSlaDays());
-        }
-        
-        if (updateRequest.getAutoDueDate() != null) {
-            contract.setAutoDueDate(updateRequest.getAutoDueDate());
         }
         
         if (updateRequest.getFreeRevisionsIncluded() != null) {
@@ -447,25 +444,6 @@ public class ContractService {
         return enrichWithMilestonesAndInstallments(response);
     }
     
-    /**
-     * Map ContractMilestone entity to ContractMilestoneResponse DTO
-     */
-    private ContractMilestoneResponse mapToMilestoneResponse(ContractMilestone milestone) {
-        return ContractMilestoneResponse.builder()
-            .milestoneId(milestone.getMilestoneId())
-            .contractId(milestone.getContractId())
-            .name(milestone.getName())
-            .description(milestone.getDescription())
-            .orderIndex(milestone.getOrderIndex())
-            .workStatus(milestone.getWorkStatus())
-            .hasPayment(milestone.getHasPayment())
-            .milestoneSlaDays(milestone.getMilestoneSlaDays())
-            .plannedStartAt(milestone.getPlannedStartAt())
-            .plannedDueDate(milestone.getPlannedDueDate())
-            .createdAt(milestone.getCreatedAt())
-            .updatedAt(milestone.getUpdatedAt())
-            .build();
-    }
     
     /**
      * Enrich ContractResponse với milestones và installments
@@ -480,7 +458,7 @@ public class ContractService {
             .findByContractIdOrderByOrderIndexAsc(response.getContractId());
         
         List<ContractMilestoneResponse> milestoneResponses = milestones.stream()
-            .map(this::mapToMilestoneResponse)
+            .map(contractMilestoneMapper::toResponse)
             .collect(Collectors.toList());
         
         response.setMilestones(milestoneResponses);
@@ -1114,8 +1092,9 @@ public class ContractService {
             // Set expectedStartDate = ngày thanh toán DEPOSIT
             contract.setExpectedStartDate(paidAt);
             
-            // Tính planned dates cho tất cả milestones
-            calculateMilestonePlannedDates(contractId, paidAt);
+            // Chỉ tính planned dates cho milestone đầu tiên khi DEPOSIT paid
+            // Milestone sau sẽ được tính khi milestone trước được thanh toán
+            calculatePlannedDatesForMilestone(contractId, 1, paidAt);
             
             // Milestone đầu tiên: PLANNED → IN_PROGRESS (bắt đầu làm việc sau khi DEPOSIT paid)
             Optional<ContractMilestone> firstMilestoneOpt = contractMilestoneRepository
@@ -1125,7 +1104,6 @@ public class ContractService {
                 ContractMilestone firstMilestone = firstMilestoneOpt.get();
                 if (firstMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
                     firstMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
-                    firstMilestone.setUpdatedAt(Instant.now());
                     contractMilestoneRepository.save(firstMilestone);
                     log.info("✅ Started milestone 1 work after DEPOSIT paid: contractId={}, milestoneId={}, workStatus=IN_PROGRESS", 
                         contractId, firstMilestone.getMilestoneId());
@@ -1186,8 +1164,6 @@ public class ContractService {
         log.info("Updated milestone installment to PAID: contractId={}, installmentId={}, milestoneId={}", 
             contractId, installment.getInstallmentId(), milestoneId);
         
-        // Update milestone work status
-        milestone.setUpdatedAt(Instant.now());
         contractMilestoneRepository.save(milestone);
         
         // Gửi notification cho manager
@@ -1232,10 +1208,12 @@ public class ContractService {
             if (nextMilestoneOpt.isPresent()) {
                 ContractMilestone nextMilestone = nextMilestoneOpt.get();
                 
+                // Tính planned dates cho milestone tiếp theo (plannedStartAt = paidAt, plannedDueDate = paidAt + milestoneSlaDays)
+                calculatePlannedDatesForMilestone(contractId, orderIndex + 1, paidAt);
+                
                 // Milestone tiếp theo tự động bắt đầu làm việc (IN_PROGRESS) khi milestone trước được thanh toán
                 if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
                     nextMilestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
-                    nextMilestone.setUpdatedAt(Instant.now());
                     contractMilestoneRepository.save(nextMilestone);
                     log.info("✅ Auto-started next milestone work: contractId={}, milestoneId={}, orderIndex={}, workStatus=IN_PROGRESS", 
                         contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
@@ -1263,7 +1241,6 @@ public class ContractService {
                 ContractMilestone lastMilestone = allMilestones.get(allMilestones.size() - 1);
                 if (lastMilestone.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
                     lastMilestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
-                    lastMilestone.setUpdatedAt(Instant.now());
                     contractMilestoneRepository.save(lastMilestone);
                 }
             }
@@ -1486,58 +1463,42 @@ public class ContractService {
     }
     
     /**
-     * Tính plannedStartAt và plannedDueDate cho tất cả milestones khi contract có start date
+     * Tính plannedStartAt và plannedDueDate cho một milestone cụ thể
      * @param contractId ID của contract
-     * @param contractStartAt Thời điểm bắt đầu contract (thường là khi DEPOSIT = PAID)
+     * @param orderIndex Thứ tự milestone (1, 2, 3...)
+     * @param startAt Thời điểm bắt đầu milestone (thường là khi milestone trước được thanh toán hoặc DEPOSIT paid)
      */
-    private void calculateMilestonePlannedDates(String contractId, Instant contractStartAt) {
-        List<ContractMilestone> milestones = contractMilestoneRepository
-            .findByContractIdOrderByOrderIndexAsc(contractId);
+    private void calculatePlannedDatesForMilestone(String contractId, Integer orderIndex, Instant startAt) {
+        Optional<ContractMilestone> milestoneOpt = contractMilestoneRepository
+            .findByContractIdAndOrderIndex(contractId, orderIndex);
         
-        if (milestones.isEmpty()) {
-            log.warn("No milestones found for contract: contractId={}", contractId);
+        if (!milestoneOpt.isPresent()) {
+            log.warn("Milestone not found: contractId={}, orderIndex={}", contractId, orderIndex);
             return;
         }
         
-        LocalDateTime currentStart = contractStartAt.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-        LocalDateTime contractDueAt = null;
+        ContractMilestone milestone = milestoneOpt.get();
+        Integer milestoneSlaDays = milestone.getMilestoneSlaDays();
         
-        for (ContractMilestone milestone : milestones) {
-            Integer milestoneSlaDays = milestone.getMilestoneSlaDays();
-            if (milestoneSlaDays == null || milestoneSlaDays <= 0) {
-                log.warn("Milestone has no SLA days, skipping planned date calculation: contractId={}, milestoneId={}, orderIndex={}", 
-                    contractId, milestone.getMilestoneId(), milestone.getOrderIndex());
-                continue;
-            }
-            
-            // milestone.plannedStartAt = currentStart
-            milestone.setPlannedStartAt(currentStart);
-            
-            // milestone.plannedDueDate = currentStart + milestoneSlaDays
-            LocalDateTime plannedDueDate = currentStart.plusDays(milestoneSlaDays);
-            milestone.setPlannedDueDate(plannedDueDate);
-            
-            // currentStart = milestone.plannedDueDate (cho milestone tiếp theo)
-            currentStart = plannedDueDate;
-            
-            // contractDueAt = plannedDueDate của milestone cuối
-            contractDueAt = plannedDueDate;
-            
-            milestone.setUpdatedAt(Instant.now());
+        if (milestoneSlaDays == null || milestoneSlaDays <= 0) {
+            log.warn("Milestone has no SLA days, skipping planned date calculation: contractId={}, milestoneId={}, orderIndex={}", 
+                contractId, milestone.getMilestoneId(), orderIndex);
+            return;
         }
         
-        // Lưu milestones với planned dates
-        contractMilestoneRepository.saveAll(milestones);
+        LocalDateTime startDateTime = startAt.atZone(ZoneId.systemDefault()).toLocalDateTime();
         
-        // Cập nhật contractDueAt cho contract
-        if (contractDueAt != null) {
-            Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
-            contract.setDueDate(contractDueAt.atZone(java.time.ZoneId.systemDefault()).toInstant());
-            contractRepository.save(contract);
-            log.info("Calculated planned dates for milestones: contractId={}, contractStartAt={}, contractDueAt={}, milestonesCount={}", 
-                contractId, contractStartAt, contractDueAt, milestones.size());
-        }
+        // milestone.plannedStartAt = startAt
+        milestone.setPlannedStartAt(startDateTime);
+        
+        // milestone.plannedDueDate = startAt + milestoneSlaDays
+        LocalDateTime plannedDueDate = startDateTime.plusDays(milestoneSlaDays);
+        milestone.setPlannedDueDate(plannedDueDate);
+        
+        contractMilestoneRepository.save(milestone);
+        
+        log.info("Calculated planned dates for milestone: contractId={}, milestoneId={}, orderIndex={}, plannedStartAt={}, plannedDueDate={}", 
+            contractId, milestone.getMilestoneId(), orderIndex, startDateTime, plannedDueDate);
     }
     
     /**

@@ -321,13 +321,21 @@ export default function ContractsManagement() {
           </div>
           <div>
             <span className={styles.sub}>Due</span>{' '}
-            {r.dueDate ? (
-              dayjs(r.dueDate).format('YYYY-MM-DD')
-            ) : (
-              <span style={{ fontStyle: 'italic', color: '#999' }}>
-                +{r.slaDays || 0}d
-              </span>
-            )}{' '}
+            {(() => {
+              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              if (r?.milestones && r.milestones.length > 0) {
+                const lastMilestone = r.milestones[r.milestones.length - 1];
+                if (lastMilestone?.plannedDueDate) {
+                  return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
+                }
+              }
+              // No plannedDueDate yet (not calculated)
+              return (
+                <span style={{ fontStyle: 'italic', color: '#999' }}>
+                  N/A
+                </span>
+              );
+            })()}{' '}
             <span className={styles.sub}>({r.slaDays || 0}d)</span>
           </div>
         </div>

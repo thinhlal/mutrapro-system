@@ -923,9 +923,17 @@ const ContractDetailPage = () => {
               ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
               : 'After deposit payment'}{' '}
             | Due Date:{' '}
-            {contract?.dueDate
-              ? dayjs(contract.dueDate).format('YYYY-MM-DD')
-              : `+${contract?.slaDays || 0} days from start date`}
+            {(() => {
+              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              if (contract?.milestones && contract.milestones.length > 0) {
+                const lastMilestone = contract.milestones[contract.milestones.length - 1];
+                if (lastMilestone?.plannedDueDate) {
+                  return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
+                }
+              }
+              // No plannedDueDate yet (not calculated)
+              return 'N/A';
+            })()}
           </PdfText>
         </View>
 
@@ -1344,23 +1352,31 @@ const ContractDetailPage = () => {
                 {dayjs(contract.expectedStartDate).format('YYYY-MM-DD')}
               </Descriptions.Item>
             )}
-            {contract.dueDate && (
-              <Descriptions.Item label="Due Date">
-                {dayjs(contract.dueDate).format('YYYY-MM-DD')}
-              </Descriptions.Item>
-            )}
+            {(() => {
+              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              if (contract?.milestones && contract.milestones.length > 0) {
+                const lastMilestone = contract.milestones[contract.milestones.length - 1];
+                if (lastMilestone?.plannedDueDate) {
+                  return (
+                    <Descriptions.Item label="Due Date">
+                      {dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD')}
+                    </Descriptions.Item>
+                  );
+                }
+              }
+              // No plannedDueDate yet (not calculated)
+              return (
+                <Descriptions.Item label="Due Date">
+                  <Text type="secondary" italic>
+                    N/A
+                  </Text>
+                </Descriptions.Item>
+              );
+            })()}
             {!contract.expectedStartDate && (
               <Descriptions.Item label="Expected Start">
                 <Text type="secondary" italic>
                   Will be set after deposit payment
-                </Text>
-              </Descriptions.Item>
-            )}
-            {!contract.dueDate && contract.slaDays && (
-              <Descriptions.Item label="Due Date">
-                <Text type="secondary" italic>
-                  +{contract.slaDays} days from start date (after deposit
-                  payment)
                 </Text>
               </Descriptions.Item>
             )}
@@ -2324,14 +2340,21 @@ const ContractDetailPage = () => {
                 )}
                 &nbsp;|&nbsp;
                 <strong>Due Date:</strong>{' '}
-                {contract.dueDate ? (
-                  dayjs(contract.dueDate).format('YYYY-MM-DD')
-                ) : (
-                  <span style={{ fontStyle: 'italic', color: '#999' }}>
-                    +{contract.slaDays || 0} days from start date (after deposit
-                    payment)
-                  </span>
-                )}
+                {(() => {
+                  // Get due date from last milestone's plannedDueDate (calculated by backend)
+                  if (contract?.milestones && contract.milestones.length > 0) {
+                    const lastMilestone = contract.milestones[contract.milestones.length - 1];
+                    if (lastMilestone?.plannedDueDate) {
+                      return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
+                    }
+                  }
+                  // No plannedDueDate yet (not calculated)
+                  return (
+                    <span style={{ fontStyle: 'italic', color: '#999' }}>
+                      N/A
+                    </span>
+                  );
+                })()}
               </p>
 
               <h3>Revision Policy</h3>

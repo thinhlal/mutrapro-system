@@ -237,9 +237,17 @@ export default function ServiceRequestContracts() {
           </div>
           <div>
             <span className={styles.subText}>Due:</span>{' '}
-            {record.dueDate
-              ? dayjs(record.dueDate).format('DD/MM/YYYY')
-              : `+${record.slaDays || 0} ngày`}
+            {(() => {
+              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              if (record?.milestones && record.milestones.length > 0) {
+                const lastMilestone = record.milestones[record.milestones.length - 1];
+                if (lastMilestone?.plannedDueDate) {
+                  return dayjs(lastMilestone.plannedDueDate).format('DD/MM/YYYY');
+                }
+              }
+              // No plannedDueDate yet (not calculated)
+              return 'N/A';
+            })()}
           </div>
         </div>
       ),

@@ -66,11 +66,7 @@ public class ContractResponse {
     // Timeline & SLA
     Instant expectedStartDate;
     
-    Instant dueDate;
-    
     Integer slaDays;
-    
-    Boolean autoDueDate;
     
     // Revision policy
     Integer freeRevisionsIncluded;

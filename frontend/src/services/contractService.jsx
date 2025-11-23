@@ -12,7 +12,6 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {string} contractData.currency - Loại tiền: VND, USD, EUR
  * @param {number} contractData.depositPercent - Phần trăm đặt cọc (mặc định 40)
  * @param {number} contractData.slaDays - Số ngày SLA
- * @param {boolean} contractData.autoDueDate - Tự động tính due date
  * @param {string} contractData.expectedStartDate - Ngày bắt đầu dự kiến (ISO string)
  * @param {string} contractData.termsAndConditions - Điều khoản và điều kiện
  * @param {string} contractData.specialClauses - Điều khoản đặc biệt
