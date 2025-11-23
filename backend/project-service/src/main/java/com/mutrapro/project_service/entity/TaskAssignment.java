@@ -15,8 +15,7 @@ import java.time.Instant;
     @Index(name = "idx_task_assignments_specialist_id", columnList = "specialist_id"),
     @Index(name = "idx_task_assignments_milestone_id", columnList = "milestone_id"),
     @Index(name = "idx_task_assignments_status", columnList = "status"),
-    @Index(name = "idx_task_assignments_task_type", columnList = "task_type"),
-    @Index(name = "idx_task_assignments_specialist_can_do", columnList = "specialist_can_do")
+    @Index(name = "idx_task_assignments_task_type", columnList = "task_type")
 })
 @Getter
 @Setter
