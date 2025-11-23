@@ -142,15 +142,72 @@ const ContractDetailPage = () => {
     }
   }, [contractId]);
 
-  // Reload contract when returning from payment page
+  // Reload contract when returning from payment page with polling
   useEffect(() => {
     if (location.state?.paymentSuccess) {
       // Clear the state to avoid reloading on every render
       window.history.replaceState({}, document.title);
-      // Reload contract to get updated milestone status
-      loadContract();
+      
+      // Poll for payment status update (Kafka event processing is async)
+      const pollPaymentStatus = async () => {
+        const maxRetries = 8; // Try for ~8 seconds
+        const delay = 1000; // 1 second between retries
+        
+        // Store initial payment status to detect changes
+        let initialPaidCount = 0;
+        try {
+          const initialResponse = await getContractById(contractId);
+          if (initialResponse?.status === 'success' && initialResponse?.data) {
+            const initialData = initialResponse.data;
+            // Count how many installments/milestones are currently paid
+            initialPaidCount = 
+              (initialData.installments?.filter(inst => inst.status === 'PAID').length || 0) +
+              (initialData.milestones?.filter(m => m.paymentStatus === 'PAID').length || 0);
+          }
+        } catch (error) {
+          console.error('Error getting initial payment status:', error);
+        }
+        
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          // Wait before checking (except first attempt)
+          if (attempt > 0) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          
+          try {
+            const response = await getContractById(contractId);
+            if (response?.status === 'success' && response?.data) {
+              const contractData = response.data;
+              
+              // Count current paid installments/milestones
+              const currentPaidCount = 
+                (contractData.installments?.filter(inst => inst.status === 'PAID').length || 0) +
+                (contractData.milestones?.filter(m => m.paymentStatus === 'PAID').length || 0);
+              
+              // If payment count increased, payment was processed
+              if (currentPaidCount > initialPaidCount) {
+                setContract(contractData);
+                message.success('Payment confirmed!');
+                return;
+              }
+              
+              // Update contract data even if not paid yet (to show latest state)
+              setContract(contractData);
+            }
+          } catch (error) {
+            console.error('Error polling payment status:', error);
+          }
+        }
+        
+        // After max retries, show info message
+        message.info('Payment is processing. Please refresh if status is not updated.');
+      };
+      
+      // Start polling
+      pollPaymentStatus();
     }
-  }, [location.state?.paymentSuccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.paymentSuccess, contractId]);
 
   const loadContract = async () => {
     try {
