@@ -42,5 +42,5 @@ jwt:
 app:
   event-topics:
     mappings:
-      # billing.deposit-paid: billing-deposit-paid  # Deprecated - đã chuyển sang billing.milestone-paid
+      billing.deposit-paid: billing-deposit-paid
       billing.milestone-paid: billing-milestone-paid

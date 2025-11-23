@@ -178,13 +178,17 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public ChatRoomResponse getChatRoomByContext(String roomType, String contextId) {
         String userId = getCurrentUserId();
+        String role = getCurrentUserRole(); // scope claim contains role value
         
         RoomType type = RoomType.valueOf(roomType);
         ChatRoom chatRoom = chatRoomRepository.findByRoomTypeAndContextId(type, contextId)
                 .orElseThrow(() -> ChatRoomNotFoundException.byContext(type, contextId));
         
-        // Verify user is participant
-        if (!chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(
+        // Allow SYSTEM_ADMIN to access any chat room (for system messages)
+        boolean isSystemAdmin = "SYSTEM_ADMIN".equals(userId) || "SYSTEM_ADMIN".equals(role);
+        
+        // Verify user is participant (unless system admin)
+        if (!isSystemAdmin && !chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(
                 chatRoom.getRoomId(), userId)) {
             throw ChatRoomAccessDeniedException.create(chatRoom.getRoomId(), userId);
         }
@@ -277,6 +281,18 @@ public class ChatRoomService {
             return jwt.getSubject(); // Return email as fallback
         }
         throw UnauthorizedException.create();
+    }
+
+    /**
+     * Get current user's role from JWT token
+     * Note: The "scope" claim in JWT token actually contains the role value (ADMIN, MANAGER, CUSTOMER, etc.)
+     */
+    private String getCurrentUserRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            return jwt.getClaim("scope"); // scope claim contains role
+        }
+        return null;
     }
 }
 
