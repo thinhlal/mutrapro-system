@@ -56,6 +56,13 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     Page<ServiceRequest> findByStatusAndRequestTypeAndManagerUserId(
             RequestStatus status, ServiceType requestType, String managerUserId, Pageable pageable);
     
+    // Filter những request chưa assign (managerUserId IS NULL)
+    Page<ServiceRequest> findByManagerUserIdIsNull(Pageable pageable);
+    Page<ServiceRequest> findByStatusAndManagerUserIdIsNull(RequestStatus status, Pageable pageable);
+    Page<ServiceRequest> findByRequestTypeAndManagerUserIdIsNull(ServiceType requestType, Pageable pageable);
+    Page<ServiceRequest> findByStatusAndRequestTypeAndManagerUserIdIsNull(
+            RequestStatus status, ServiceType requestType, Pageable pageable);
+    
     // Pagination methods cho user requests
     Page<ServiceRequest> findByUserId(String userId, Pageable pageable);
     

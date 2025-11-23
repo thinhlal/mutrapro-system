@@ -312,7 +312,6 @@ const ContractBuilder = () => {
         form.setFieldsValue({
           request_id: request.requestId || request.id,
           customer_id: request.userId,
-          manager_id: request.managerUserId,
           contract_type: contractType, // Ẩn field, chỉ dùng để generate title
           // Currency luôn là VND, không cần set
           deposit_percent: depositPercent,
@@ -449,7 +448,6 @@ const ContractBuilder = () => {
         form.setFieldsValue({
           request_id: contract.requestId,
           customer_id: contract.userId,
-          manager_id: contract.managerUserId,
           contract_type: contract.contractType,
           deposit_percent: contract.depositPercent,
           total_price: contract.totalPrice,
@@ -536,7 +534,6 @@ const ContractBuilder = () => {
 
             request_id: currentFormValues.request_id || null,
             customer_id: currentFormValues.customer_id || null,
-            manager_id: currentFormValues.manager_id || null,
 
             contract_type: currentFormValues.contract_type,
             terms_and_conditions:
@@ -756,7 +753,6 @@ const ContractBuilder = () => {
 
     request_id: values.request_id || null,
     customer_id: values.customer_id || null,
-    manager_id: values.manager_id || null,
 
     contract_type: values.contract_type,
     terms_and_conditions: values.terms_and_conditions?.trim(),
@@ -1163,18 +1159,7 @@ const ContractBuilder = () => {
                       placeholder="Auto-filled from service request"
                     />
                   </Form.Item>
-                  <Form.Item
-                    name="manager_id"
-                    label="Manager ID"
-                    className={styles.disabledInput}
-                  >
-                    <Input
-                      disabled
-                      placeholder="Auto-filled from service request"
-                    />
-                  </Form.Item>
-                  {/* Contract Number: Backend will generate automatically */}
-                  {/* Contract Type - ẩn field, chỉ dùng để gửi lên backend */}
+
                   <Form.Item name="contract_type" hidden>
                     <Input />
                   </Form.Item>

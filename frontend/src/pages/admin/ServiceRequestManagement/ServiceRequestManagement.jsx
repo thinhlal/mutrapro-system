@@ -10,6 +10,7 @@ import {
   Card,
   Typography,
   Badge,
+  Select,
 } from 'antd';
 import {
   EyeOutlined,
@@ -73,18 +74,22 @@ export default function ServiceRequestManagement() {
     total: 0,
   });
 
+  // Sort state
+  const [allSort, setAllSort] = useState('createdAt,desc');
+  const [mySort, setMySort] = useState('createdAt,desc');
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Fetch tất cả requests với phân trang
-  const fetchAllRequests = async (page = 0, size = 10) => {
+  const fetchAllRequests = async (page = 0, size = 10, sort = allSort) => {
     try {
       setLoadingAll(true);
       const response = await getAllServiceRequests({
         page: page,
         size: size,
-        sort: 'createdAt,desc',
+        sort: sort,
       });
 
       if (response?.status === 'success') {
@@ -117,13 +122,13 @@ export default function ServiceRequestManagement() {
   };
 
   // Fetch requests đã được assign cho user hiện tại với phân trang
-  const fetchMyRequests = async (page = 0, size = 10) => {
+  const fetchMyRequests = async (page = 0, size = 10, sort = mySort) => {
     try {
       setLoadingMy(true);
       const response = await getMyAssignedRequests(user?.id, {
         page: page,
         size: size,
-        sort: 'createdAt,desc',
+        sort: sort,
       });
 
       if (response?.status === 'success') {
@@ -236,8 +241,8 @@ export default function ServiceRequestManagement() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Refresh danh sách khi tab được focus lại
-        fetchAllRequests();
-        fetchMyRequests();
+        fetchAllRequests(allPagination.current - 1, allPagination.pageSize, allSort);
+        fetchMyRequests(myPagination.current - 1, myPagination.pageSize, mySort);
       }
     };
 
@@ -245,11 +250,12 @@ export default function ServiceRequestManagement() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [allPagination, myPagination, allSort, mySort]);
 
   useEffect(() => {
-    fetchAllRequests(0, allPagination.pageSize);
-    fetchMyRequests(0, myPagination.pageSize);
+    fetchAllRequests(0, allPagination.pageSize, allSort);
+    fetchMyRequests(0, myPagination.pageSize, mySort);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Columns cho bảng
@@ -405,19 +411,42 @@ export default function ServiceRequestManagement() {
     },
   ];
 
+  const sortOptions = [
+    { value: 'createdAt,desc', label: 'Created Date (Newest)' },
+    { value: 'createdAt,asc', label: 'Created Date (Oldest)' },
+    { value: 'updatedAt,desc', label: 'Updated Date (Newest)' },
+    { value: 'updatedAt,asc', label: 'Updated Date (Oldest)' },
+    { value: 'totalPrice,desc', label: 'Price (High to Low)' },
+    { value: 'totalPrice,asc', label: 'Price (Low to High)' },
+    { value: 'title,asc', label: 'Title (A-Z)' },
+    { value: 'title,desc', label: 'Title (Z-A)' },
+  ];
+
+  const handleAllSortChange = value => {
+    setAllSort(value);
+    fetchAllRequests(0, allPagination.pageSize, value);
+  };
+
+  const handleMySortChange = value => {
+    setMySort(value);
+    fetchMyRequests(0, myPagination.pageSize, value);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <Title level={3}>Service Request Management</Title>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            fetchAllRequests(allPagination.current - 1, allPagination.pageSize);
-            fetchMyRequests(myPagination.current - 1, myPagination.pageSize);
-          }}
-        >
-          Refresh
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              fetchAllRequests(allPagination.current - 1, allPagination.pageSize, allSort);
+              fetchMyRequests(myPagination.current - 1, myPagination.pageSize, mySort);
+            }}
+          >
+            Refresh
+          </Button>
+        </Space>
       </div>
 
       <Card>
@@ -434,6 +463,15 @@ export default function ServiceRequestManagement() {
             }
             key="all"
           >
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500 }}>Sort by:</span>
+              <Select
+                value={allSort}
+                onChange={handleAllSortChange}
+                style={{ width: 200 }}
+                options={sortOptions}
+              />
+            </div>
             <Table
               columns={columns}
               dataSource={allRequests}
@@ -447,10 +485,10 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} requests`,
                 onChange: (page, pageSize) => {
-                  fetchAllRequests(page - 1, pageSize); // Spring Data page starts from 0
+                  fetchAllRequests(page - 1, pageSize, allSort); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchAllRequests(0, size);
+                  fetchAllRequests(0, size, allSort);
                 },
               }}
             />
@@ -468,6 +506,15 @@ export default function ServiceRequestManagement() {
             }
             key="my"
           >
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 500 }}>Sort by:</span>
+              <Select
+                value={mySort}
+                onChange={handleMySortChange}
+                style={{ width: 200 }}
+                options={sortOptions}
+              />
+            </div>
             <Table
               columns={columns}
               dataSource={myRequests}
@@ -481,10 +528,10 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} assigned requests`,
                 onChange: (page, pageSize) => {
-                  fetchMyRequests(page - 1, pageSize); // Spring Data page starts from 0
+                  fetchMyRequests(page - 1, pageSize, mySort); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchMyRequests(0, size);
+                  fetchMyRequests(0, size, mySort);
                 },
               }}
             />

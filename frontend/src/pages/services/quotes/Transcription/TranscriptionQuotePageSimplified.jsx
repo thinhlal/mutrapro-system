@@ -338,9 +338,8 @@ export default function TranscriptionQuotePageSimplified() {
                               title: 'Instrument Name',
                               dataIndex: 'instrumentName',
                               key: 'instrumentName',
-                              render: (text, record) => (
+                              render: (text) => (
                                 <Space>
-                                  <Tag color="orange">{record.usage}</Tag>
                                   <Text strong>{text}</Text>
                                 </Space>
                               ),

@@ -86,11 +86,14 @@ export const createServiceRequest = async requestData => {
 
 /**
  * Lấy tất cả service requests với filter
- * GET /requests?status=&assignedTo=&requestType=&page=&size=&sort=
+ * GET /requests?status=&managerUserId=&requestType=&page=&size=&sort=
+ * 
+ * Lưu ý: Mặc định chỉ lấy những request chưa assign (managerUserId IS NULL)
+ * Để lấy request đã assign, truyền managerUserId vào filter
  *
  * @param {Object} filters - Các filter tùy chọn
  * @param {string} filters.status - Trạng thái: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
- * @param {string} filters.assignedTo - ID của người được assign
+ * @param {string} filters.managerUserId - ID của manager được assign (nếu có thì lấy request đã assign cho manager này)
  * @param {string} filters.requestType - Loại: transcription, arrangement
  * @param {number} filters.page - Trang (default: 0)
  * @param {number} filters.size - Số lượng (default: 20)
@@ -103,7 +106,7 @@ export const getAllServiceRequests = async (filters = {}) => {
     const params = new URLSearchParams();
 
     if (filters.status) params.append('status', filters.status);
-    if (filters.assignedTo) params.append('assignedTo', filters.assignedTo);
+    if (filters.managerUserId) params.append('managerUserId', filters.managerUserId);
     if (filters.requestType) params.append('requestType', filters.requestType);
     if (filters.page !== undefined) params.append('page', filters.page);
     if (filters.size !== undefined) params.append('size', filters.size);
@@ -160,16 +163,16 @@ export const assignServiceRequest = async (requestId, managerId) => {
 
 /**
  * Lấy các requests đã được assign cho user hiện tại
- * Sử dụng getAllServiceRequests với filter assignedTo = current user ID
+ * Sử dụng getAllServiceRequests với filter managerUserId = current user ID
  *
- * @param {string} userId - ID của user hiện tại
+ * @param {string} userId - ID của user hiện tại (manager)
  * @param {Object} additionalFilters - Các filter bổ sung
  * @returns {Promise} ApiResponse với danh sách requests đã assign
  */
 export const getMyAssignedRequests = async (userId, additionalFilters = {}) => {
   try {
     return await getAllServiceRequests({
-      assignedTo: userId,
+      managerUserId: userId,
       ...additionalFilters,
     });
   } catch (error) {

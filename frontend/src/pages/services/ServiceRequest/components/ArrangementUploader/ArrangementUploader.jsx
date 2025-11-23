@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './ArrangementUploader.module.css';
 import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
 import { createServiceRequest } from '../../../../../services/serviceRequestService';
+import { formatDurationMMSS } from '../../../../../utils/timeUtils';
 const { Dragger } = Upload;
 
 const toSize = (bytes = 0) =>
@@ -133,9 +134,6 @@ export default function ArrangementUploader({
     });
   };
 
-  const toMMSS = (s = 0) =>
-    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
   return (
     <section
       id="arrangement-uploader"
@@ -222,8 +220,7 @@ export default function ArrangementUploader({
                   </span>
                   {isAudioFile && detectedDurationMinutes > 0 && (
                     <Tag color="cyan" style={{ marginLeft: 8 }}>
-                      Detected: {detectedDurationMinutes} min (~{' '}
-                      {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                      Detected: {formatDurationMMSS(detectedDurationMinutes)}
                     </Tag>
                   )}
                 </div>
@@ -274,8 +271,7 @@ export default function ArrangementUploader({
                 </div>
 
                 <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-                  Hiện tại: {adjustedDurationMinutes} phút (~{' '}
-                  {toMMSS(Math.round(adjustedDurationMinutes * 60))})
+                  Hiện tại: {formatDurationMMSS(adjustedDurationMinutes)}
                 </div>
 
                 <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>

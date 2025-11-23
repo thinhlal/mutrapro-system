@@ -13,14 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import styles from './TranscriptionUploader.module.css';
 import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
 import { createServiceRequest } from '../../../../../services/serviceRequestService';
+import { formatDurationMMSS } from '../../../../../utils/timeUtils';
 
 const { Dragger } = Upload;
-
-const toMMSS = (s = 0) =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(
-    2,
-    '0'
-  )}`;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
@@ -206,8 +201,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Detected Duration: {detectedDurationMinutes} minutes (~{' '}
-                    {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                    • Detected Duration: {formatDurationMMSS(detectedDurationMinutes)}
                   </span>
                 </Space>
                 <Button
@@ -235,73 +229,7 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   </div>
                 )}
 
-              {/* Duration Adjustment */}
-              {/* {detectedDurationMinutes > 0 && (
-                <div style={{ padding: '16px 0', marginTop: 16 }}>
-                  <div style={{ marginBottom: 12 }}>
-                    <ClockCircleOutlined style={{ marginRight: 8 }} />
-                    <span style={{ fontWeight: 600 }}>
-                      Adjust Duration (Minutes):
-                    </span>
-                  </div>
-
-                  <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 12 }}
-                  >
-                    <Button
-                      icon={<MinusOutlined />}
-                      onClick={() =>
-                        handleDurationChange(
-                          Math.max(0.01, adjustedDurationMinutes - 0.01)
-                        )
-                      }
-                      disabled={adjustedDurationMinutes <= 0.01}
-                    >
-                      -0.01
-                    </Button>
-
-                    <InputNumber
-                      min={0.01}
-                      max={999}
-                      step={0.01}
-                      value={adjustedDurationMinutes}
-                      onChange={handleDurationChange}
-                      precision={2}
-                      style={{ width: 120 }}
-                      addonAfter="min"
-                    />
-
-                    <Button
-                      icon={<PlusOutlined />}
-                      onClick={() =>
-                        handleDurationChange(adjustedDurationMinutes + 0.01)
-                      }
-                    >
-                      +0.01
-                    </Button>
-
-                    <Button
-                      type="link"
-                      onClick={() =>
-                        setAdjustedDurationMinutes(detectedDurationMinutes)
-                      }
-                    >
-                      Reset to {detectedDurationMinutes} min
-                    </Button>
-                  </div>
-
-                  <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                    💡 Điều chỉnh thời lượng để tính giá (phát hiện:{' '}
-                    {detectedDurationMinutes} phút ~{' '}
-                    {toMMSS(Math.round(detectedDurationMinutes * 60))}). Cho
-                    phép số thập phân 2 chữ số.
-                  </div>
-                  <div style={{ marginTop: 4, color: '#888', fontSize: 12 }}>
-                    Hiện tại: {adjustedDurationMinutes} phút (~{' '}
-                    {toMMSS(Math.round(adjustedDurationMinutes * 60))})
-                  </div>
-                </div>
-              )} */}
+              
             </Space>
           </div>
         )}

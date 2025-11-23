@@ -25,6 +25,7 @@ import {
 import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
+import { formatDurationMMSS } from '../../../utils/timeUtils';
 import {
   getContractsByRequestId,
   approveContract,
@@ -342,7 +343,7 @@ const RequestDetailPage = () => {
 
             {request.durationMinutes && (
               <Descriptions.Item label="Duration">
-                <Tag color="green">{request.durationMinutes} minutes</Tag>
+                <Tag color="green">{formatDurationMMSS(request.durationMinutes)}</Tag>
               </Descriptions.Item>
             )}
 

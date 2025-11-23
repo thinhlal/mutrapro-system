@@ -381,27 +381,28 @@ public class ServiceRequestService {
             // Filter theo cả 3 tham số
             requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserId(
                     status, requestType, managerUserId, pageable);
-        } else if (status != null && requestType != null) {
-            // Filter theo status và requestType
-            requestsPage = serviceRequestRepository.findByStatusAndRequestType(status, requestType, pageable);
+        } else if (status != null && requestType != null && managerUserId == null) {
+            // Filter theo status và requestType, chỉ lấy những request chưa assign
+            requestsPage = serviceRequestRepository.findByStatusAndRequestTypeAndManagerUserIdIsNull(
+                    status, requestType, pageable);
         } else if (status != null && managerUserId != null) {
             // Filter theo status và managerUserId
             requestsPage = serviceRequestRepository.findByStatusAndManagerUserId(status, managerUserId, pageable);
         } else if (requestType != null && managerUserId != null) {
             // Filter theo requestType và managerUserId
             requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserId(requestType, managerUserId, pageable);
-        } else if (status != null) {
-            // Filter theo status
-            requestsPage = serviceRequestRepository.findByStatus(status, pageable);
-        } else if (requestType != null) {
-            // Filter theo requestType
-            requestsPage = serviceRequestRepository.findByRequestType(requestType, pageable);
+        } else if (status != null && managerUserId == null) {
+            // Filter theo status, chỉ lấy những request chưa assign
+            requestsPage = serviceRequestRepository.findByStatusAndManagerUserIdIsNull(status, pageable);
+        } else if (requestType != null && managerUserId == null) {
+            // Filter theo requestType, chỉ lấy những request chưa assign
+            requestsPage = serviceRequestRepository.findByRequestTypeAndManagerUserIdIsNull(requestType, pageable);
         } else if (managerUserId != null) {
-            // Filter theo managerUserId
+            // Filter theo managerUserId (lấy những request đã assign cho manager này)
             requestsPage = serviceRequestRepository.findByManagerUserId(managerUserId, pageable);
         } else {
-            // Lấy tất cả
-            requestsPage = serviceRequestRepository.findAll(pageable);
+            // Mặc định: chỉ lấy những request chưa assign (managerUserId IS NULL)
+            requestsPage = serviceRequestRepository.findByManagerUserIdIsNull(pageable);
         }
         
         log.info("Retrieved {} service requests (page {}/{}) with filters: status={}, requestType={}, managerUserId={}", 

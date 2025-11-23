@@ -14,13 +14,11 @@ import { useNavigate } from 'react-router-dom';
 import styles from './RecordingUploader.module.css';
 import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
 import { createServiceRequest } from '../../../../../services/serviceRequestService';
+import { formatDurationMMSS } from '../../../../../utils/timeUtils';
 const { Dragger } = Upload;
 
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
-
-const toMMSS = (s = 0) =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 export default function RecordingUploader({ serviceType, formData }) {
   const [files, setFiles] = useState([]);
@@ -168,8 +166,7 @@ export default function RecordingUploader({ serviceType, formData }) {
               </span>
               {detectedDurationMinutes > 0 && (
                 <Tag color="cyan" style={{ marginLeft: 8 }}>
-                  Detected: {detectedDurationMinutes} min (~{' '}
-                  {toMMSS(Math.round(detectedDurationMinutes * 60))})
+                  Detected: {formatDurationMMSS(detectedDurationMinutes)}
                 </Tag>
               )}
             </div>
@@ -220,8 +217,7 @@ export default function RecordingUploader({ serviceType, formData }) {
             </div>
 
             <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-              Hiện tại: {adjustedDurationMinutes} phút (~{' '}
-              {toMMSS(Math.round(adjustedDurationMinutes * 60))})
+              Hiện tại: {formatDurationMMSS(adjustedDurationMinutes)}
             </div>
           </div>
         </div>
