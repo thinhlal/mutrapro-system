@@ -76,7 +76,8 @@ export const getWalletTransactions = async (walletId, filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' }
+    );
   }
 };
-

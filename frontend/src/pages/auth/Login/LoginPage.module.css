@@ -5,7 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url('../../../assets/images/LoginPage/Classical_Music-495872600.jpg') center/cover no-repeat;
+  background: url('../../../assets/images/LoginPage/Classical_Music-495872600.jpg')
+    center/cover no-repeat;
   color: #e6e6f0;
   overflow: hidden;
 }
@@ -26,16 +27,13 @@
   position: absolute;
   inset: -10% -10% -10% -10%;
   /* Đã đổi màu conic-gradient sang các tông màu nóng */
-  background: conic-gradient(from 220deg at 50% 50%,
-      rgba(245, 158, 11, 0.12),
-      /* Đổi từ xanh */
-      rgba(251, 146, 60, 0.12),
-      /* Đổi từ hồng */
-      rgba(234, 179, 8, 0.12),
-      /* Đổi từ xanh lá */
-      rgba(245, 158, 11, 0.12)
-      /* Đổi từ xanh */
-    );
+  background: conic-gradient(
+    from 220deg at 50% 50%,
+    rgba(245, 158, 11, 0.12),
+    /* Đổi từ xanh */ rgba(251, 146, 60, 0.12),
+    /* Đổi từ hồng */ rgba(234, 179, 8, 0.12),
+    /* Đổi từ xanh lá */ rgba(245, 158, 11, 0.12) /* Đổi từ xanh */
+  );
   filter: blur(60px);
   animation: rotate 16s linear infinite;
   pointer-events: none;
@@ -265,8 +263,8 @@
   background: transparent;
 }
 
-.input:focus+.label,
-.input:not(:placeholder-shown)+.label {
+.input:focus + .label,
+.input:not(:placeholder-shown) + .label {
   top: 6px;
   transform: none;
   font-size: 12px;
@@ -304,7 +302,6 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
-
 
 .optionsRow {
   display: flex;
@@ -371,10 +368,12 @@
   content: '';
   height: 1px;
   /* Đổi màu gradient của divider */
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(245, 158, 11, 0.35),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 158, 11, 0.35),
+    transparent
+  );
   flex: 1;
 }
 

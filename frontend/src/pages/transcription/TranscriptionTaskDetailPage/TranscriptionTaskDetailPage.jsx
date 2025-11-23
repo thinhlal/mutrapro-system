@@ -42,7 +42,7 @@ const { TextArea } = Input;
 // Uploaded notation files by taskId
 // status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
 const mockFilesByTaskId = {
-  '1': [
+  1: [
     {
       id: 'file-1',
       version: 1,
@@ -52,7 +52,7 @@ const mockFilesByTaskId = {
       note: 'First draft',
     },
   ],
-  '2': [
+  2: [
     {
       id: 'file-2',
       version: 1,
@@ -91,7 +91,8 @@ const mockTasks = [
     priority: 'HIGH',
     lastUpdatedAt: '2025-11-15T08:00:00Z',
     customerName: 'Nguyen Minh',
-    specialNotes: 'Focus only on right-hand melody. No dynamics needed for now.',
+    specialNotes:
+      'Focus only on right-hand melody. No dynamics needed for now.',
     tempo: 120,
     timeSignature: '4/4',
   },
@@ -110,7 +111,8 @@ const mockTasks = [
     priority: 'MEDIUM',
     lastUpdatedAt: '2025-11-15T12:45:00Z',
     customerName: 'Tran Hoang',
-    specialNotes: 'Customer wants detailed drum notation including ghost notes.',
+    specialNotes:
+      'Customer wants detailed drum notation including ghost notes.',
     tempo: 140,
     timeSignature: '4/4',
     revisionRequest: {
@@ -126,7 +128,7 @@ const mockTasks = [
 function fetchTaskDetail(taskId) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      const task = mockTasks.find((t) => t.id === taskId);
+      const task = mockTasks.find(t => t.id === taskId);
       if (!task) {
         reject(new Error('Task not found'));
       } else {
@@ -137,7 +139,7 @@ function fetchTaskDetail(taskId) {
 }
 
 function fetchTaskFiles(taskId) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(() => {
       resolve(mockFilesByTaskId[taskId] || []);
     }, 400);
@@ -197,7 +199,6 @@ function getTaskTypeLabel(taskType) {
   return labels[taskType.toLowerCase()] || taskType;
 }
 
-
 // ---------------- Component ----------------
 const TranscriptionTaskDetailPage = () => {
   const navigate = useNavigate();
@@ -225,12 +226,12 @@ const TranscriptionTaskDetailPage = () => {
       if (response?.status === 'success' && response?.data) {
         const taskData = response.data;
         setTask(taskData);
-        
+
         // Extract request từ response (nếu có)
         if (taskData.request) {
           setRequest(taskData.request);
         }
-        
+
         // Files sẽ được load sau khi có request info
         setFiles([]);
       } else {
@@ -253,10 +254,15 @@ const TranscriptionTaskDetailPage = () => {
   }, [loadData]);
 
   const handleSubmitForReview = useCallback(() => {
-    if (!task || task.status?.toLowerCase() !== 'in_progress' || files.length === 0) return;
+    if (
+      !task ||
+      task.status?.toLowerCase() !== 'in_progress' ||
+      files.length === 0
+    )
+      return;
     message.info('Chức năng submit for review sẽ được implement sau');
   }, [task, files.length]);
-  
+
   const handleAcceptTask = useCallback(async () => {
     if (!task || task.status?.toLowerCase() !== 'assigned') return;
     try {
@@ -276,7 +282,12 @@ const TranscriptionTaskDetailPage = () => {
 
   const handleSubmitRevision = useCallback(() => {
     // TODO: Implement submit revision API
-    if (!task || task.status?.toLowerCase() !== 'revision_requested' || files.length === 0) return;
+    if (
+      !task ||
+      task.status?.toLowerCase() !== 'revision_requested' ||
+      files.length === 0
+    )
+      return;
     message.info('Chức năng submit revision sẽ được implement sau');
   }, [task, files.length]);
 
@@ -324,7 +335,7 @@ const TranscriptionTaskDetailPage = () => {
     try {
       const values = await uploadForm.validateFields();
       const currentMaxVersion =
-        files.length > 0 ? Math.max(...files.map((f) => f.version)) : 0;
+        files.length > 0 ? Math.max(...files.map(f => f.version)) : 0;
       const version = currentMaxVersion + 1;
       const newFile = {
         id: 'file-' + Date.now(),
@@ -334,9 +345,9 @@ const TranscriptionTaskDetailPage = () => {
         status: 'PENDING_REVIEW',
         note: values.note || '',
       };
-      setFiles((prev) => [...prev, newFile]);
+      setFiles(prev => [...prev, newFile]);
       // Auto mark in progress if starting from ASSIGNED
-      setTask((prev) => {
+      setTask(prev => {
         if (!prev) return prev;
         if (prev.status === 'ASSIGNED') {
           return { ...prev, status: 'IN_PROGRESS' };
@@ -351,11 +362,9 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [files, uploadForm]);
 
-
-
   const latestVersion = useMemo(() => {
     if (files.length === 0) return 0;
-    return Math.max(...files.map((f) => f.version));
+    return Math.max(...files.map(f => f.version));
   }, [files]);
 
   const fileColumns = useMemo(
@@ -365,13 +374,13 @@ const TranscriptionTaskDetailPage = () => {
         dataIndex: 'version',
         key: 'version',
         width: 90,
-        render: (v) => `v${v}`,
+        render: v => `v${v}`,
       },
       {
         title: 'File name',
         dataIndex: 'fileName',
         key: 'fileName',
-        render: (text) =>
+        render: text =>
           text && text.length > 40 ? (
             <Tooltip title={text}>
               <span>{text.slice(0, 40)}...</span>
@@ -385,14 +394,14 @@ const TranscriptionTaskDetailPage = () => {
         dataIndex: 'uploadedAt',
         key: 'uploadedAt',
         width: 180,
-        render: (iso) => formatDateTime(iso),
+        render: iso => formatDateTime(iso),
       },
       {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
         width: 160,
-        render: (s) => getFileStatusTag(s),
+        render: s => getFileStatusTag(s),
       },
       {
         title: 'Note',
@@ -491,19 +500,29 @@ const TranscriptionTaskDetailPage = () => {
                       </div>
                     )}
                     <div style={{ marginTop: 4 }}>
-                      <Text copyable type="secondary" style={{ fontSize: '12px' }}>
+                      <Text
+                        copyable
+                        type="secondary"
+                        style={{ fontSize: '12px' }}
+                      >
                         ID: {task.milestone.milestoneId}
                       </Text>
                     </div>
                   </div>
                 ) : (
-                  <Text copyable type="secondary">{task.milestoneId}</Text>
+                  <Text copyable type="secondary">
+                    {task.milestoneId}
+                  </Text>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Status">
                 {getStatusTag(task.status)}
                 {task.hasIssue && (
-                  <Tag color="orange" icon={<ExclamationCircleOutlined />} style={{ marginLeft: 8 }}>
+                  <Tag
+                    color="orange"
+                    icon={<ExclamationCircleOutlined />}
+                    style={{ marginLeft: 8 }}
+                  >
                     Có issue
                   </Tag>
                 )}
@@ -530,7 +549,8 @@ const TranscriptionTaskDetailPage = () => {
                   {task.specialistRespondedAt && (
                     <div style={{ marginTop: 4 }}>
                       <Text type="secondary" style={{ fontSize: '12px' }}>
-                        (Canceled at: {formatDateTime(task.specialistRespondedAt)})
+                        (Canceled at:{' '}
+                        {formatDateTime(task.specialistRespondedAt)})
                       </Text>
                     </div>
                   )}
@@ -553,7 +573,8 @@ const TranscriptionTaskDetailPage = () => {
                         )}
                         <div style={{ marginTop: 8 }}>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Manager đã được thông báo. Vui lòng chờ quyết định từ Manager.
+                            Manager đã được thông báo. Vui lòng chờ quyết định
+                            từ Manager.
                           </Text>
                         </div>
                       </div>
@@ -573,7 +594,9 @@ const TranscriptionTaskDetailPage = () => {
                 <Card title="Request Information" size="small" bordered>
                   <Descriptions column={1} size="small" bordered>
                     <Descriptions.Item label="Request ID">
-                      <Text copyable type="secondary">{request.requestId}</Text>
+                      <Text copyable type="secondary">
+                        {request.requestId}
+                      </Text>
                     </Descriptions.Item>
                     {request.serviceType && (
                       <Descriptions.Item label="Service Type">
@@ -621,94 +644,142 @@ const TranscriptionTaskDetailPage = () => {
                         <Text>{request.specialNotes}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.files && Array.isArray(request.files) && (() => {
-                      // Filter out contract PDF files - specialist không cần thấy contract files
-                      const filteredFiles = request.files.filter(file => {
-                        const contentType = file.contentType || '';
-                        const fileName = (file.fileName || file.name || '').toLowerCase();
-                        // Loại bỏ contract PDF files
-                        return !(
-                          contentType === 'contract_pdf' || 
-                          contentType === 'CONTRACT_PDF' ||
-                          (fileName.includes('contract') && fileName.endsWith('.pdf'))
-                        );
-                      });
-                      return filteredFiles.length > 0 ? (
-                        <Descriptions.Item label="Files" span={2} contentStyle={{ 
-                          width: 0,
-                          maxWidth: '100%',
-                          overflow: 'hidden',
-                          padding: '4px 0',
-                          boxSizing: 'border-box'
-                        }}>
-                          <div style={{ 
-                            width: '100%', 
-                            maxWidth: '100%', 
-                            overflow: 'hidden',
-                            boxSizing: 'border-box'
-                          }}>
-                            <FileList files={filteredFiles} maxNameLength={30} />
-                          </div>
-                        </Descriptions.Item>
-                      ) : null;
-                    })()}
+                    {request.files &&
+                      Array.isArray(request.files) &&
+                      (() => {
+                        // Filter out contract PDF files - specialist không cần thấy contract files
+                        const filteredFiles = request.files.filter(file => {
+                          const contentType = file.contentType || '';
+                          const fileName = (
+                            file.fileName ||
+                            file.name ||
+                            ''
+                          ).toLowerCase();
+                          // Loại bỏ contract PDF files
+                          return !(
+                            contentType === 'contract_pdf' ||
+                            contentType === 'CONTRACT_PDF' ||
+                            (fileName.includes('contract') &&
+                              fileName.endsWith('.pdf'))
+                          );
+                        });
+                        return filteredFiles.length > 0 ? (
+                          <Descriptions.Item
+                            label="Files"
+                            span={2}
+                            contentStyle={{
+                              width: 0,
+                              maxWidth: '100%',
+                              overflow: 'hidden',
+                              padding: '4px 0',
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '100%',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                boxSizing: 'border-box',
+                              }}
+                            >
+                              <FileList
+                                files={filteredFiles}
+                                maxNameLength={30}
+                              />
+                            </div>
+                          </Descriptions.Item>
+                        ) : null;
+                      })()}
                   </Descriptions>
                 </Card>
               )}
-              
+
               {/* Quick Actions */}
               {(() => {
                 // Kiểm tra issue report: có thể có issueReason ngay cả khi hasIssue = false (nếu task đã cancelled)
-                const hasIssueAlert = task.issueReason && task.issueReason.trim().length > 0;
-                const hasAcceptButton = task.status?.toLowerCase() === 'assigned';
-                const hasSubmitButton = task.status?.toLowerCase() !== 'cancelled';
-                const hasIssueButton = task.status?.toLowerCase() === 'in_progress' && !task.hasIssue;
+                const hasIssueAlert =
+                  task.issueReason && task.issueReason.trim().length > 0;
+                const hasAcceptButton =
+                  task.status?.toLowerCase() === 'assigned';
+                const hasSubmitButton =
+                  task.status?.toLowerCase() !== 'cancelled';
+                const hasIssueButton =
+                  task.status?.toLowerCase() === 'in_progress' &&
+                  !task.hasIssue;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
-                const hasAnyAction = hasIssueAlert || hasAcceptButton || hasSubmitButton || hasIssueButton;
-                
+                const hasAnyAction =
+                  hasIssueAlert ||
+                  hasAcceptButton ||
+                  hasSubmitButton ||
+                  hasIssueButton;
+
                 if (!hasAnyAction) return null;
-                
+
                 return (
                   <Card size="small" bordered title="Quick Actions">
                     <Space direction="vertical" style={{ width: '100%' }}>
                       {/* Hiển thị thông tin issue nếu đã báo (kể cả khi task đã cancelled) */}
                       {hasIssueAlert && (
                         <Alert
-                          message={task.status?.toLowerCase() === 'cancelled' 
-                            ? "Task đã bị hủy sau khi báo issue" 
-                            : "Đã báo issue / không kịp deadline"}
+                          message={
+                            task.status?.toLowerCase() === 'cancelled'
+                              ? 'Task đã bị hủy sau khi báo issue'
+                              : 'Đã báo issue / không kịp deadline'
+                          }
                           description={
                             <div>
                               <Text strong>Lý do: </Text>
                               <Text>{task.issueReason}</Text>
                               {task.issueReportedAt && (
                                 <div style={{ marginTop: 8 }}>
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    Báo lúc: {formatDateTime(task.issueReportedAt)}
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: '12px' }}
+                                  >
+                                    Báo lúc:{' '}
+                                    {formatDateTime(task.issueReportedAt)}
                                   </Text>
                                 </div>
                               )}
                               {task.status?.toLowerCase() === 'cancelled' ? (
                                 <div style={{ marginTop: 8 }}>
-                                  <Text type="danger" style={{ fontSize: '12px', fontWeight: 500 }}>
-                                    Task này đã bị Manager hủy sau khi bạn báo issue.
+                                  <Text
+                                    type="danger"
+                                    style={{
+                                      fontSize: '12px',
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Task này đã bị Manager hủy sau khi bạn báo
+                                    issue.
                                   </Text>
                                 </div>
                               ) : task.hasIssue ? (
                                 <div style={{ marginTop: 8 }}>
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    Manager đã được thông báo. Vui lòng chờ quyết định từ Manager.
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: '12px' }}
+                                  >
+                                    Manager đã được thông báo. Vui lòng chờ
+                                    quyết định từ Manager.
                                   </Text>
                                 </div>
                               ) : null}
                             </div>
                           }
-                          type={task.status?.toLowerCase() === 'cancelled' ? 'error' : 'warning'}
+                          type={
+                            task.status?.toLowerCase() === 'cancelled'
+                              ? 'error'
+                              : 'warning'
+                          }
                           showIcon
                         />
                       )}
-                      
-                      {(hasAcceptButton || hasSubmitButton || hasIssueButton) && (
+
+                      {(hasAcceptButton ||
+                        hasSubmitButton ||
+                        hasIssueButton) && (
                         <Space wrap>
                           {hasAcceptButton && (
                             <Button
@@ -723,7 +794,8 @@ const TranscriptionTaskDetailPage = () => {
                             <Button
                               onClick={handleSubmitForReview}
                               disabled={
-                                task.status?.toLowerCase() !== 'in_progress' || files.length === 0
+                                task.status?.toLowerCase() !== 'in_progress' ||
+                                files.length === 0
                               }
                             >
                               Submit for Review
@@ -761,10 +833,16 @@ const TranscriptionTaskDetailPage = () => {
       {/* Files & Versions */}
       <Card
         className={styles.section}
-        title={<div className={styles.filesHeader}>Notation Files & Versions</div>}
+        title={
+          <div className={styles.filesHeader}>Notation Files & Versions</div>
+        }
         extra={
           task.status?.toLowerCase() !== 'cancelled' && (
-            <Button type="primary" icon={<UploadOutlined />} onClick={handleOpenUploadModal}>
+            <Button
+              type="primary"
+              icon={<UploadOutlined />}
+              onClick={handleOpenUploadModal}
+            >
               Upload new version
             </Button>
           )
@@ -817,7 +895,10 @@ const TranscriptionTaskDetailPage = () => {
             <Input placeholder="e.g., My_Piece_v3.musicxml" />
           </Form.Item>
           <Form.Item label="Note" name="note">
-            <TextArea rows={3} placeholder="Optional notes about this version" />
+            <TextArea
+              rows={3}
+              placeholder="Optional notes about this version"
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -862,5 +943,3 @@ const TranscriptionTaskDetailPage = () => {
 };
 
 export default TranscriptionTaskDetailPage;
-
-

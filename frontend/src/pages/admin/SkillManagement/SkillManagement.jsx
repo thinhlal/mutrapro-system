@@ -69,7 +69,10 @@ const SkillManagement = () => {
       await createSkill({
         skillName: values.skillName,
         skillType: values.skillType,
-        recordingCategory: values.skillType === 'RECORDING_ARTIST' ? values.recordingCategory : undefined,
+        recordingCategory:
+          values.skillType === 'RECORDING_ARTIST'
+            ? values.recordingCategory
+            : undefined,
         description: values.description,
         isActive: values.isActive !== false,
       });
@@ -105,7 +108,10 @@ const SkillManagement = () => {
       await updateSkill(selectedSkill.skillId, {
         skillName: values.skillName,
         skillType: values.skillType,
-        recordingCategory: values.skillType === 'RECORDING_ARTIST' ? values.recordingCategory : undefined,
+        recordingCategory:
+          values.skillType === 'RECORDING_ARTIST'
+            ? values.recordingCategory
+            : undefined,
         description: values.description,
         isActive: values.isActive,
       });
@@ -114,7 +120,8 @@ const SkillManagement = () => {
       editForm.resetFields();
       fetchSkills();
     } catch (error) {
-      const errorMsg = error.message || error.error || 'Không thể cập nhật skill';
+      const errorMsg =
+        error.message || error.error || 'Không thể cập nhật skill';
       message.error(errorMsg);
     } finally {
       setEditLoading(false);
@@ -235,7 +242,11 @@ const SkillManagement = () => {
   return (
     <div className={styles.skillManagement}>
       <Card
-        title={<Title level={3} style={{ margin: 0 }}>Skill Management</Title>}
+        title={
+          <Title level={3} style={{ margin: 0 }}>
+            Skill Management
+          </Title>
+        }
         extra={
           <Space>
             <Button
@@ -282,11 +293,7 @@ const SkillManagement = () => {
         confirmLoading={createLoading}
         width={600}
       >
-        <Form
-          form={createForm}
-          layout="vertical"
-          onFinish={handleCreate}
-        >
+        <Form form={createForm} layout="vertical" onFinish={handleCreate}>
           <Form.Item
             name="skillName"
             label="Skill Name"
@@ -302,7 +309,7 @@ const SkillManagement = () => {
             label="Skill Type"
             rules={[{ required: true, message: 'Vui lòng chọn skill type' }]}
           >
-            <Select 
+            <Select
               placeholder="Chọn skill type"
               onChange={() => {
                 // Reset recordingCategory when skillType changes
@@ -311,7 +318,9 @@ const SkillManagement = () => {
             >
               <Select.Option value="TRANSCRIPTION">Transcription</Select.Option>
               <Select.Option value="ARRANGEMENT">Arrangement</Select.Option>
-              <Select.Option value="RECORDING_ARTIST">Recording Artist</Select.Option>
+              <Select.Option value="RECORDING_ARTIST">
+                Recording Artist
+              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -326,10 +335,10 @@ const SkillManagement = () => {
                   name="recordingCategory"
                   label="Recording Category"
                   rules={[
-                    { 
-                      required: true, 
-                      message: 'Vui lòng chọn recording category' 
-                    }
+                    {
+                      required: true,
+                      message: 'Vui lòng chọn recording category',
+                    },
                   ]}
                 >
                   <Select placeholder="Chọn recording category">
@@ -371,11 +380,7 @@ const SkillManagement = () => {
         confirmLoading={editLoading}
         width={600}
       >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={handleUpdate}
-        >
+        <Form form={editForm} layout="vertical" onFinish={handleUpdate}>
           <Form.Item
             name="skillName"
             label="Skill Name"
@@ -391,7 +396,7 @@ const SkillManagement = () => {
             label="Skill Type"
             rules={[{ required: true, message: 'Vui lòng chọn skill type' }]}
           >
-            <Select 
+            <Select
               placeholder="Chọn skill type"
               onChange={() => {
                 // Reset recordingCategory when skillType changes
@@ -400,7 +405,9 @@ const SkillManagement = () => {
             >
               <Select.Option value="TRANSCRIPTION">Transcription</Select.Option>
               <Select.Option value="ARRANGEMENT">Arrangement</Select.Option>
-              <Select.Option value="RECORDING_ARTIST">Recording Artist</Select.Option>
+              <Select.Option value="RECORDING_ARTIST">
+                Recording Artist
+              </Select.Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -415,10 +422,10 @@ const SkillManagement = () => {
                   name="recordingCategory"
                   label="Recording Category"
                   rules={[
-                    { 
-                      required: true, 
-                      message: 'Vui lòng chọn recording category' 
-                    }
+                    {
+                      required: true,
+                      message: 'Vui lòng chọn recording category',
+                    },
                   ]}
                 >
                   <Select placeholder="Chọn recording category">
@@ -436,11 +443,7 @@ const SkillManagement = () => {
           >
             <TextArea rows={4} placeholder="Enter description" />
           </Form.Item>
-          <Form.Item
-            name="isActive"
-            label="Active"
-            valuePropName="checked"
-          >
+          <Form.Item name="isActive" label="Active" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>
@@ -450,4 +453,3 @@ const SkillManagement = () => {
 };
 
 export default SkillManagement;
-

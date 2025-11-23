@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Form, message, Card, Image, Typography } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Tag,
+  Form,
+  message,
+  Card,
+  Image,
+  Typography,
+} from 'antd';
 import { PlusOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   getAllNotationInstruments,
@@ -219,7 +229,11 @@ const NotationInstruments = () => {
   return (
     <div className={styles.container}>
       <Card
-        title={<Title level={3} style={{ margin: 0 }}>Notation Instruments</Title>}
+        title={
+          <Title level={3} style={{ margin: 0 }}>
+            Notation Instruments
+          </Title>
+        }
         extra={
           <Space>
             <Button

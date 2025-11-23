@@ -239,7 +239,11 @@ const UserManagement = () => {
   return (
     <div className={styles.userManagement}>
       <Card
-        title={<Title level={3} style={{ margin: 0 }}>User Management</Title>}
+        title={
+          <Title level={3} style={{ margin: 0 }}>
+            User Management
+          </Title>
+        }
         extra={
           <Button
             type="primary"

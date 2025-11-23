@@ -27,8 +27,8 @@ function CustomPayment() {
               <br />
               <p className={styles.text}>
                 Our options include: 50–50% payments, multiple milestone payment
-                plans, dividing the project in batches that you can afford,
-                and others.
+                plans, dividing the project in batches that you can afford, and
+                others.
               </p>
             </Col>
 

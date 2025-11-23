@@ -143,10 +143,14 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/task-assignments/${assignmentId}/cancel?contractId=${contractId}`,
     // Specialist endpoints
     MY_TASKS: `${PROJECT_PATH}/specialist/task-assignments`,
-    MY_TASK_DETAIL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}`,
-    ACCEPT: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/accept`,
-    CANCEL: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
-    REPORT_ISSUE: assignmentId => `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/report-issue`,
+    MY_TASK_DETAIL: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}`,
+    ACCEPT: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/accept`,
+    CANCEL: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
+    REPORT_ISSUE: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/report-issue`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===
@@ -158,7 +162,7 @@ export const API_ENDPOINTS = {
     REFRESH_STATUS: orderId =>
       `${BILLING_PATH}/payments/orders/refresh/${orderId}`,
   },
-  
+
   // === Wallet Management ===
   WALLET: {
     // GET /api/v1/billing/wallets/me
@@ -168,11 +172,14 @@ export const API_ENDPOINTS = {
     // POST /api/v1/billing/wallets/{walletId}/topup
     TOPUP: walletId => `${BILLING_PATH}/wallets/${walletId}/topup`,
     // POST /api/v1/billing/wallets/{walletId}/debit/deposit
-    PAY_DEPOSIT: walletId => `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
+    PAY_DEPOSIT: walletId =>
+      `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
     // POST /api/v1/billing/wallets/{walletId}/debit/milestone
-    PAY_MILESTONE: walletId => `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
+    PAY_MILESTONE: walletId =>
+      `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
     // GET /api/v1/billing/wallets/{walletId}/transactions
-    GET_TRANSACTIONS: walletId => `${BILLING_PATH}/wallets/${walletId}/transactions`,
+    GET_TRANSACTIONS: walletId =>
+      `${BILLING_PATH}/wallets/${walletId}/transactions`,
     // GET /api/v1/billing/wallets/me/transactions
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
     // === Admin Wallet Management ===
@@ -181,7 +188,8 @@ export const API_ENDPOINTS = {
     // GET /api/v1/billing/admin/wallets/{walletId}
     ADMIN_GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
     // GET /api/v1/billing/admin/wallets/{walletId}/transactions
-    ADMIN_GET_TRANSACTIONS: walletId => `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
+    ADMIN_GET_TRANSACTIONS: walletId =>
+      `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
   },
 
   // === Request Service (Quản lý Notation, Requests) ===
@@ -277,11 +285,13 @@ export const API_ENDPOINTS = {
       // GET /admin/specialists/{id}
       GET_BY_ID: id => `${SPECIALIST_PATH}/admin/specialists/${id}`,
       // GET /admin/specialists/user/{userId}
-      GET_BY_USER_ID: userId => `${SPECIALIST_PATH}/admin/specialists/user/${userId}`,
+      GET_BY_USER_ID: userId =>
+        `${SPECIALIST_PATH}/admin/specialists/user/${userId}`,
       // PUT /admin/specialists/{id}/status
       UPDATE_STATUS: id => `${SPECIALIST_PATH}/admin/specialists/${id}/status`,
       // PUT /admin/specialists/{id}/settings
-      UPDATE_SETTINGS: id => `${SPECIALIST_PATH}/admin/specialists/${id}/settings`,
+      UPDATE_SETTINGS: id =>
+        `${SPECIALIST_PATH}/admin/specialists/${id}/settings`,
       // GET /admin/specialists/filter?specialization=&status=
       FILTER: `${SPECIALIST_PATH}/admin/specialists/filter`,
     },
@@ -305,7 +315,8 @@ export const API_ENDPOINTS = {
       // GET /admin/demos/{demoId}
       GET_BY_ID: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}`,
       // PUT /admin/demos/{demoId}/visibility
-      UPDATE_VISIBILITY: demoId => `${SPECIALIST_PATH}/admin/demos/${demoId}/visibility`,
+      UPDATE_VISIBILITY: demoId =>
+        `${SPECIALIST_PATH}/admin/demos/${demoId}/visibility`,
     },
     // Specialist Profile Management (Self-service)
     MANAGER: {
@@ -326,17 +337,21 @@ export const API_ENDPOINTS = {
       // POST /specialists/me/skills
       ADD_SKILL: `${SPECIALIST_PATH}/specialists/me/skills`,
       // PUT /specialists/me/skills/{skillId}
-      UPDATE_SKILL: skillId => `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
+      UPDATE_SKILL: skillId =>
+        `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
       // DELETE /specialists/me/skills/{skillId}
-      DELETE_SKILL: skillId => `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
+      DELETE_SKILL: skillId =>
+        `${SPECIALIST_PATH}/specialists/me/skills/${skillId}`,
       // GET /specialists/me/demos
       GET_MY_DEMOS: `${SPECIALIST_PATH}/specialists/me/demos`,
       // POST /specialists/me/demos
       CREATE_DEMO: `${SPECIALIST_PATH}/specialists/me/demos`,
       // PUT /specialists/me/demos/{demoId}
-      UPDATE_DEMO: demoId => `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
+      UPDATE_DEMO: demoId =>
+        `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
       // DELETE /specialists/me/demos/{demoId}
-      DELETE_DEMO: demoId => `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
+      DELETE_DEMO: demoId =>
+        `${SPECIALIST_PATH}/specialists/me/demos/${demoId}`,
     },
   },
 };

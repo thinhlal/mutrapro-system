@@ -179,7 +179,6 @@
   min-height: 0;
 }
 
-
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -215,7 +214,7 @@
   .balanceIcon {
     font-size: 24px;
   }
-  
+
   .walletCard :global(.ant-card-body) {
     padding: 16px;
   }

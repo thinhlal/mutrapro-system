@@ -59,7 +59,7 @@ const NotificationBell = () => {
   /**
    * Handle dropdown open change
    */
-  const handleOpenChange = (flag) => {
+  const handleOpenChange = flag => {
     setOpen(flag);
     if (flag) {
       fetchLatestNotifications();
@@ -97,7 +97,7 @@ const NotificationBell = () => {
             type="text"
             size="small"
             icon={<CheckOutlined />}
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               markAllAsRead();
             }}

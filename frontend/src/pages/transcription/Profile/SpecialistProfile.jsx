@@ -462,7 +462,11 @@ const SpecialistProfile = () => {
                       name="experienceYears"
                       label="Experience Years"
                       rules={[
-                        { type: 'number', min: 0, message: 'Must be non-negative' },
+                        {
+                          type: 'number',
+                          min: 0,
+                          message: 'Must be non-negative',
+                        },
                       ]}
                     >
                       <InputNumber
@@ -493,7 +497,11 @@ const SpecialistProfile = () => {
                     </Form.Item>
 
                     <Form.Item>
-                      <Button type="primary" htmlType="submit" loading={loading}>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                      >
                         Save Changes
                       </Button>
                     </Form.Item>
@@ -518,9 +526,10 @@ const SpecialistProfile = () => {
                           color={
                             profileDetail?.specialist?.status === 'ACTIVE'
                               ? 'green'
-                              : profileDetail?.specialist?.status === 'SUSPENDED'
-                              ? 'orange'
-                              : 'red'
+                              : profileDetail?.specialist?.status ===
+                                  'SUSPENDED'
+                                ? 'orange'
+                                : 'red'
                           }
                         >
                           {profileDetail?.specialist?.status || 'N/A'}
@@ -685,7 +694,9 @@ const SpecialistProfile = () => {
                   .filter(
                     skill =>
                       !skills.some(
-                        mySkill => (mySkill.skill?.skillId || mySkill.skillId) === skill.skillId
+                        mySkill =>
+                          (mySkill.skill?.skillId || mySkill.skillId) ===
+                          skill.skillId
                       )
                   )
                   .map(skill => (
@@ -746,7 +757,10 @@ const SpecialistProfile = () => {
                   name="certificationDetails"
                   label="Certification Details"
                 >
-                  <TextArea rows={3} placeholder="Enter certification details" />
+                  <TextArea
+                    rows={3}
+                    placeholder="Enter certification details"
+                  />
                 </Form.Item>
               ) : null
             }
@@ -826,11 +840,7 @@ const SpecialistProfile = () => {
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="isFeatured"
-            label="Featured"
-            valuePropName="checked"
-          >
+          <Form.Item name="isFeatured" label="Featured" valuePropName="checked">
             <Switch />
           </Form.Item>
         </Form>

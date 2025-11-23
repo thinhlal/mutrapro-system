@@ -1,5 +1,9 @@
 import { Space, Button, Typography } from 'antd';
-import { FileTextOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
+import {
+  FileTextOutlined,
+  DownloadOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import styles from './FileList.module.css';
 
@@ -89,9 +93,7 @@ const FileList = ({
 
         return (
           <div key={file.fileId || file.id} className={styles.fileItem}>
-            <div className={styles.fileIcon}>
-              {getFileIcon(mimeType)}
-            </div>
+            <div className={styles.fileIcon}>{getFileIcon(mimeType)}</div>
             <div className={styles.fileInfo}>
               <div className={styles.fileNameRow}>
                 <Text strong className={styles.fileName} title={fileName}>
@@ -113,7 +115,15 @@ const FileList = ({
                       type="text"
                       size="small"
                       icon={<DownloadOutlined />}
-                      onClick={e => handleDownloadFile(e, filePath, null, fileName, file.name)}
+                      onClick={e =>
+                        handleDownloadFile(
+                          e,
+                          filePath,
+                          null,
+                          fileName,
+                          file.name
+                        )
+                      }
                       className={styles.actionButton}
                       title="Download file"
                     >
@@ -167,4 +177,3 @@ FileList.propTypes = {
 };
 
 export default FileList;
-

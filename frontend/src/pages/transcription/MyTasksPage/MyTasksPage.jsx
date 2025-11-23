@@ -19,7 +19,11 @@ import {
   Form,
   message,
 } from 'antd';
-import { ReloadOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  ReloadOutlined,
+  CheckOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import {
   getMyTaskAssignments,
@@ -86,8 +90,6 @@ function formatDateTime(iso) {
   return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
 }
 
-
-
 // -------- Component --------
 /**
  * MyTasksPage: List and manage Specialist Transcription tasks
@@ -136,7 +138,7 @@ const MyTasksPage = ({ onOpenTask }) => {
       // Ưu tiên assignedDate, nếu không có thì dùng createdAt hoặc assignmentId
       const dateA = a.assignedDate || a.createdAt || a.assignmentId || '';
       const dateB = b.assignedDate || b.createdAt || b.assignmentId || '';
-      
+
       // Sort descending (mới nhất lên trước)
       if (dateA && dateB) {
         return new Date(dateB) - new Date(dateA);
@@ -152,7 +154,7 @@ const MyTasksPage = ({ onOpenTask }) => {
     if (searchText.trim()) {
       const q = searchText.trim().toLowerCase();
       next = next.filter(
-        (t) =>
+        t =>
           (t.assignmentId || '').toLowerCase().includes(q) ||
           (t.notes || '').toLowerCase().includes(q) ||
           (t.taskType || '').toLowerCase().includes(q)
@@ -168,12 +170,14 @@ const MyTasksPage = ({ onOpenTask }) => {
       };
       const backendStatus = statusMap[statusFilter];
       if (backendStatus) {
-        next = next.filter((t) => t.status?.toLowerCase() === backendStatus);
+        next = next.filter(t => t.status?.toLowerCase() === backendStatus);
       }
     }
     if (onlyActive) {
       next = next.filter(
-        (t) => t.status?.toLowerCase() !== 'completed' && t.status?.toLowerCase() !== 'cancelled'
+        t =>
+          t.status?.toLowerCase() !== 'completed' &&
+          t.status?.toLowerCase() !== 'cancelled'
       );
     }
     setFilteredTasks(next);
@@ -183,29 +187,38 @@ const MyTasksPage = ({ onOpenTask }) => {
     applyFilters();
   }, [applyFilters]);
 
-  const handleAccept = useCallback(async (task) => {
-    try {
-      const response = await acceptTaskAssignment(task.assignmentId);
-      if (response?.status === 'success') {
-        message.success('Task đã được accept thành công');
-        await loadTasks();
+  const handleAccept = useCallback(
+    async task => {
+      try {
+        const response = await acceptTaskAssignment(task.assignmentId);
+        if (response?.status === 'success') {
+          message.success('Task đã được accept thành công');
+          await loadTasks();
+        }
+      } catch (error) {
+        console.error('Error accepting task:', error);
+        message.error(error?.message || 'Lỗi khi accept task');
       }
-    } catch (error) {
-      console.error('Error accepting task:', error);
-      message.error(error?.message || 'Lỗi khi accept task');
-    }
-  }, [loadTasks]);
+    },
+    [loadTasks]
+  );
 
-  const handleCancel = useCallback((task) => {
-    setCancelTask(task);
-    setCancelModalVisible(true);
-    cancelForm.resetFields();
-  }, [cancelForm]);
+  const handleCancel = useCallback(
+    task => {
+      setCancelTask(task);
+      setCancelModalVisible(true);
+      cancelForm.resetFields();
+    },
+    [cancelForm]
+  );
 
   const handleCancelConfirm = useCallback(async () => {
     try {
       const values = await cancelForm.validateFields();
-      const response = await cancelTaskAssignment(cancelTask.assignmentId, values.reason);
+      const response = await cancelTaskAssignment(
+        cancelTask.assignmentId,
+        values.reason
+      );
       if (response?.status === 'success') {
         message.success('Task đã được cancel thành công');
         setCancelModalVisible(false);
@@ -226,7 +239,7 @@ const MyTasksPage = ({ onOpenTask }) => {
   }, [cancelForm]);
 
   const handleOpenTask = useCallback(
-    (task) => {
+    task => {
       if (typeof onOpenTask === 'function') {
         onOpenTask(task.assignmentId);
       } else {
@@ -244,7 +257,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         key: 'assignmentId',
         width: 200,
         ellipsis: true,
-        render: (id) => (
+        render: id => (
           <Tooltip title={id}>
             <span>{id?.substring(0, 8)}...</span>
           </Tooltip>
@@ -255,14 +268,14 @@ const MyTasksPage = ({ onOpenTask }) => {
         dataIndex: 'taskType',
         key: 'taskType',
         width: 150,
-        render: (taskType) => <Tag>{getTaskTypeLabel(taskType)}</Tag>,
+        render: taskType => <Tag>{getTaskTypeLabel(taskType)}</Tag>,
       },
       {
         title: 'Notes',
         dataIndex: 'notes',
         key: 'notes',
         ellipsis: true,
-        render: (text) =>
+        render: text =>
           text && text.length > 50 ? (
             <Tooltip title={text}>
               <span>{text.slice(0, 50)}...</span>
@@ -276,14 +289,14 @@ const MyTasksPage = ({ onOpenTask }) => {
         dataIndex: 'assignedDate',
         key: 'assignedDate',
         width: 170,
-        render: (iso) => formatDateTime(iso),
+        render: iso => formatDateTime(iso),
       },
       {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
         width: 150,
-        render: (status) => {
+        render: status => {
           const statusDisplay = getStatusDisplay(status);
           return <Tag color={statusDisplay.color}>{statusDisplay.text}</Tag>;
         },
@@ -323,7 +336,11 @@ const MyTasksPage = ({ onOpenTask }) => {
                   </Button>
                 </>
               )}
-              <Button type="link" size="small" onClick={() => handleOpenTask(record)}>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => handleOpenTask(record)}
+              >
                 View / Work
               </Button>
             </Space>
@@ -337,7 +354,10 @@ const MyTasksPage = ({ onOpenTask }) => {
   const tableLocale = useMemo(
     () => ({
       emptyText: (
-        <Empty description="No tasks found with current filters" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty
+          description="No tasks found with current filters"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       ),
     }),
     []
@@ -350,7 +370,9 @@ const MyTasksPage = ({ onOpenTask }) => {
           <Title level={3} style={{ marginBottom: 0 }}>
             My Tasks
           </Title>
-          <Text type="secondary">View and manage your assigned transcription jobs</Text>
+          <Text type="secondary">
+            View and manage your assigned transcription jobs
+          </Text>
         </div>
         <div className={styles.headerRight}>
           <Button icon={<ReloadOutlined />} onClick={loadTasks}>
@@ -367,8 +389,8 @@ const MyTasksPage = ({ onOpenTask }) => {
               allowClear
               enterButton
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onSearch={(value) => setSearchText(value)}
+              onChange={e => setSearchText(e.target.value)}
+              onSearch={value => setSearchText(value)}
             />
           </Col>
           <Col xs={24} md={8} lg={6}>
@@ -441,11 +463,8 @@ const MyTasksPage = ({ onOpenTask }) => {
           </Form.Item>
         </Form>
       </Modal>
-
     </div>
   );
 };
 
 export default MyTasksPage;
-
-

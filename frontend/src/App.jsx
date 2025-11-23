@@ -97,7 +97,6 @@ import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/Tas
 
 import './App.css';
 
-
 function App() {
   return (
     <Router>
@@ -217,9 +216,7 @@ function App() {
           <Route
             path="/wallet"
             element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}
-              >
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
                 <WalletPage />
               </ProtectedRoute>
             }
@@ -346,7 +343,10 @@ function App() {
               path="contracts/:contractId"
               element={<ManagerContractDetailPage />}
             />
-            <Route path="task-assignments" element={<TaskAssignmentManagement />} />
+            <Route
+              path="task-assignments"
+              element={<TaskAssignmentManagement />}
+            />
             <Route
               path="task-assignments/:contractId/new"
               element={<TaskAssignmentWorkspace />}
@@ -405,7 +405,10 @@ function App() {
             <Route index element={<Navigate to="edit-tool" replace />} />
             <Route path="edit-tool" element={<NotationEditor />} />
             <Route path="my-tasks" element={<MyTasksPage />} />
-            <Route path="my-tasks/:taskId" element={<TranscriptionTaskDetailPage />} />
+            <Route
+              path="my-tasks/:taskId"
+              element={<TranscriptionTaskDetailPage />}
+            />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 
@@ -426,7 +429,9 @@ function App() {
           <Route
             path="/recording-artist"
             element={
-              <ProtectedRoute allowedRoles={['RECORDING_ARTIST', 'SYSTEM_ADMIN']}>
+              <ProtectedRoute
+                allowedRoles={['RECORDING_ARTIST', 'SYSTEM_ADMIN']}
+              >
                 <RecordingArtistLayout />
               </ProtectedRoute>
             }

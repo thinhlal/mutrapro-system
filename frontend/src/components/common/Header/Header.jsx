@@ -128,7 +128,9 @@ function Header() {
             {/* Auth Section */}
             <div className={styles.authSection}>
               {isAuthenticated ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
+                >
                   <NotificationBell />
                   <UserMenu />
                 </div>
@@ -217,7 +219,14 @@ function Header() {
             {/* Mobile Auth Section */}
             <div className={styles.mobileAuthSection}>
               {isAuthenticated ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 0' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    padding: '16px 0',
+                  }}
+                >
                   <Link
                     to="/notifications"
                     className={styles.mobileNavLink}
@@ -234,17 +243,30 @@ function Header() {
                   </Link>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px 0' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    padding: '16px 0',
+                  }}
+                >
                   <Link
                     to="/login"
-                    className={classNames(styles.mobileNavLink, styles.authLink)}
+                    className={classNames(
+                      styles.mobileNavLink,
+                      styles.authLink
+                    )}
                     onClick={closeMobileMenu}
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
-                    className={classNames(styles.mobileNavLink, styles.authSignup)}
+                    className={classNames(
+                      styles.mobileNavLink,
+                      styles.authSignup
+                    )}
                     onClick={closeMobileMenu}
                   >
                     Sign up

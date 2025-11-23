@@ -23,7 +23,11 @@ import {
   HistoryOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { getAllWallets, getWalletById, getWalletTransactions } from '../../../services/adminWalletService';
+import {
+  getAllWallets,
+  getWalletById,
+  getWalletTransactions,
+} from '../../../services/adminWalletService';
 import dayjs from 'dayjs';
 import styles from './WalletManagement.module.css';
 
@@ -87,7 +91,7 @@ const WalletManagement = () => {
   };
 
   // Load wallet detail
-  const loadWalletDetail = async (walletId) => {
+  const loadWalletDetail = async walletId => {
     try {
       const response = await getWalletById(walletId);
       if (response.status === 'success' && response.data) {
@@ -100,11 +104,14 @@ const WalletManagement = () => {
   };
 
   // Load transactions
-  const loadTransactions = async (walletId) => {
+  const loadTransactions = async walletId => {
     if (!walletId) return;
     setTransactionsLoading(true);
     try {
-      const response = await getWalletTransactions(walletId, transactionFilters);
+      const response = await getWalletTransactions(
+        walletId,
+        transactionFilters
+      );
       if (response.status === 'success' && response.data) {
         setTransactions(response.data.content || []);
         setTransactionsPagination({
@@ -134,7 +141,7 @@ const WalletManagement = () => {
   }, [filters]);
 
   // Handle view detail
-  const handleViewDetail = (wallet) => {
+  const handleViewDetail = wallet => {
     setSelectedWallet(wallet);
     setDetailModalVisible(true);
     setTransactionFilters(prev => ({ ...prev, page: 0 }));
@@ -142,7 +149,7 @@ const WalletManagement = () => {
   };
 
   // Handle search by userId
-  const handleSearch = (value) => {
+  const handleSearch = value => {
     setFilters(prev => ({
       ...prev,
       userId: value || null,
@@ -163,7 +170,7 @@ const WalletManagement = () => {
   };
 
   // Get transaction type color
-  const getTxTypeColor = (type) => {
+  const getTxTypeColor = type => {
     const colors = {
       topup: 'success',
       payment: 'error',
@@ -175,7 +182,7 @@ const WalletManagement = () => {
   };
 
   // Get transaction type label
-  const getTxTypeLabel = (type) => {
+  const getTxTypeLabel = type => {
     const labels = {
       topup: 'Top Up',
       payment: 'Payment',
@@ -193,14 +200,22 @@ const WalletManagement = () => {
       dataIndex: 'walletId',
       key: 'walletId',
       width: 120,
-      render: (text) => <Text code style={{ fontSize: '12px' }}>{text.substring(0, 8)}...</Text>,
+      render: text => (
+        <Text code style={{ fontSize: '12px' }}>
+          {text.substring(0, 8)}...
+        </Text>
+      ),
     },
     {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
       width: 120,
-      render: (text) => <Text code style={{ fontSize: '12px' }}>{text.substring(0, 8)}...</Text>,
+      render: text => (
+        <Text code style={{ fontSize: '12px' }}>
+          {text.substring(0, 8)}...
+        </Text>
+      ),
     },
     {
       title: 'Balance',
@@ -218,14 +233,14 @@ const WalletManagement = () => {
       dataIndex: 'currency',
       key: 'currency',
       width: 120,
-      render: (currency) => <Tag color="orange">{currency}</Tag>,
+      render: currency => <Tag color="orange">{currency}</Tag>,
     },
     {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
+      render: date => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
     },
     {
       title: 'Actions',
@@ -251,14 +266,18 @@ const WalletManagement = () => {
       dataIndex: 'walletTxId',
       key: 'walletTxId',
       width: 250,
-      render: (text) => <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>{text || '-'}</Text>,
+      render: text => (
+        <Text code copyable={{ tooltips: ['Copy', 'Copied!'] }}>
+          {text || '-'}
+        </Text>
+      ),
     },
     {
       title: 'Transaction Type',
       dataIndex: 'txType',
       key: 'txType',
       width: 150,
-      render: (type) => (
+      render: type => (
         <Tag color={getTxTypeColor(type)}>{getTxTypeLabel(type)}</Tag>
       ),
     },
@@ -271,7 +290,10 @@ const WalletManagement = () => {
         <Text
           strong
           style={{
-            color: record.txType === 'topup' || record.txType === 'refund' ? '#52c41a' : '#ff4d4f',
+            color:
+              record.txType === 'topup' || record.txType === 'refund'
+                ? '#52c41a'
+                : '#ff4d4f',
             fontSize: '16px',
           }}
         >
@@ -301,16 +323,14 @@ const WalletManagement = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
+      render: date => dayjs(date).format('DD/MM/YYYY HH:mm:ss'),
     },
   ];
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title level={3}>
-          Wallet Management
-        </Title>
+        <Title level={3}>Wallet Management</Title>
         <Space>
           <Search
             placeholder="Search by User ID"
@@ -341,7 +361,7 @@ const WalletManagement = () => {
             pageSize: pagination.pageSize,
             total: pagination.total,
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} wallets`,
+            showTotal: total => `Tổng ${total} wallets`,
             onChange: (page, pageSize) => {
               setFilters(prev => ({
                 ...prev,
@@ -389,14 +409,19 @@ const WalletManagement = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Balance">
                   <Text strong style={{ fontSize: '18px', color: '#ec8a1c' }}>
-                    {formatCurrency(selectedWallet.balance, selectedWallet.currency)}
+                    {formatCurrency(
+                      selectedWallet.balance,
+                      selectedWallet.currency
+                    )}
                   </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Currency">
                   <Tag color="orange">{selectedWallet.currency}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Created At" span={2}>
-                  {dayjs(selectedWallet.createdAt).format('DD/MM/YYYY HH:mm:ss')}
+                  {dayjs(selectedWallet.createdAt).format(
+                    'DD/MM/YYYY HH:mm:ss'
+                  )}
                 </Descriptions.Item>
               </Descriptions>
             </TabPane>
@@ -409,15 +434,23 @@ const WalletManagement = () => {
               }
               key="transactions"
             >
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Space
+                direction="vertical"
+                style={{ width: '100%' }}
+                size="middle"
+              >
                 {/* Filters */}
                 <Space wrap>
                   <Search
                     placeholder="Search by Transaction ID, Contract ID..."
                     allowClear
                     style={{ width: 300 }}
-                    onSearch={(value) => {
-                      setTransactionFilters(prev => ({ ...prev, search: value || null, page: 0 }));
+                    onSearch={value => {
+                      setTransactionFilters(prev => ({
+                        ...prev,
+                        search: value || null,
+                        page: 0,
+                      }));
                     }}
                     enterButton
                   />
@@ -426,8 +459,12 @@ const WalletManagement = () => {
                     allowClear
                     style={{ width: 200 }}
                     value={transactionFilters.txType}
-                    onChange={(value) => {
-                      setTransactionFilters(prev => ({ ...prev, txType: value, page: 0 }));
+                    onChange={value => {
+                      setTransactionFilters(prev => ({
+                        ...prev,
+                        txType: value,
+                        page: 0,
+                      }));
                     }}
                   >
                     <Option value="topup">Nạp tiền</Option>
@@ -437,7 +474,7 @@ const WalletManagement = () => {
                     <Option value="adjustment">Điều chỉnh</Option>
                   </Select>
                   <RangePicker
-                    onChange={(dates) => {
+                    onChange={dates => {
                       if (dates && dates.length === 2) {
                         setTransactionFilters(prev => ({
                           ...prev,
@@ -483,7 +520,7 @@ const WalletManagement = () => {
                       pageSize: transactionsPagination.pageSize,
                       total: transactionsPagination.total,
                       showSizeChanger: true,
-                      showTotal: (total) => `Tổng ${total} giao dịch`,
+                      showTotal: total => `Tổng ${total} giao dịch`,
                       onChange: (page, pageSize) => {
                         setTransactionFilters(prev => ({
                           ...prev,
@@ -514,4 +551,3 @@ const WalletManagement = () => {
 };
 
 export default WalletManagement;
-

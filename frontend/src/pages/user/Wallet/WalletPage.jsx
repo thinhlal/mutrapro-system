@@ -28,7 +28,11 @@ import {
   DollarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getOrCreateMyWallet, topupWallet, getMyWalletTransactions } from '../../../services/walletService';
+import {
+  getOrCreateMyWallet,
+  topupWallet,
+  getMyWalletTransactions,
+} from '../../../services/walletService';
 import Header from '../../../components/common/Header/Header';
 import WalletPageStyles from './WalletPage.module.css';
 
@@ -94,7 +98,11 @@ const WalletContent = () => {
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
-      message.error(error.message || error.response?.data?.message || 'Error loading transaction list');
+      message.error(
+        error.message ||
+          error.response?.data?.message ||
+          'Error loading transaction list'
+      );
       setTransactions([]);
     } finally {
       setTransactionsLoading(false);
@@ -111,7 +119,7 @@ const WalletContent = () => {
   }, [filters]);
 
   // Handle topup
-  const handleTopup = async (values) => {
+  const handleTopup = async values => {
     try {
       const response = await topupWallet(wallet.walletId, {
         amount: values.amount,
@@ -125,7 +133,9 @@ const WalletContent = () => {
         loadTransactions();
       }
     } catch (error) {
-      message.error(error.message || error.details?.message || 'Error processing deposit');
+      message.error(
+        error.message || error.details?.message || 'Error processing deposit'
+      );
     }
   };
 
@@ -140,7 +150,7 @@ const WalletContent = () => {
   };
 
   // Handle date range change
-  const handleDateRangeChange = (dates) => {
+  const handleDateRangeChange = dates => {
     if (dates && dates.length === 2) {
       handleFilterChange('fromDate', dates[0].toISOString());
       handleFilterChange('toDate', dates[1].toISOString());
@@ -151,7 +161,7 @@ const WalletContent = () => {
   };
 
   // Handle pagination change
-  const handleTableChange = (pagination) => {
+  const handleTableChange = pagination => {
     setFilters(prev => ({
       ...prev,
       page: pagination.current - 1,
@@ -171,7 +181,7 @@ const WalletContent = () => {
   };
 
   // Get transaction type color
-  const getTxTypeColor = (type) => {
+  const getTxTypeColor = type => {
     const colors = {
       topup: 'success',
       payment: 'error',
@@ -183,7 +193,7 @@ const WalletContent = () => {
   };
 
   // Get transaction type label
-  const getTxTypeLabel = (type) => {
+  const getTxTypeLabel = type => {
     const labels = {
       topup: 'Deposit',
       payment: 'Payment',
@@ -195,7 +205,7 @@ const WalletContent = () => {
   };
 
   // Get transaction icon
-  const getTxIcon = (type) => {
+  const getTxIcon = type => {
     if (type === 'topup' || type === 'refund') {
       return <ArrowUpOutlined style={{ color: '#52c41a' }} />;
     }
@@ -207,14 +217,19 @@ const WalletContent = () => {
     if (!transactions || transactions.length === 0) {
       return { totalTopup: 0, totalPayment: 0, totalRefund: 0 };
     }
-    
-    const stats = transactions.reduce((acc, tx) => {
-      if (tx.txType === 'topup') acc.totalTopup += parseFloat(tx.amount) || 0;
-      if (tx.txType === 'payment') acc.totalPayment += parseFloat(tx.amount) || 0;
-      if (tx.txType === 'refund') acc.totalRefund += parseFloat(tx.amount) || 0;
-      return acc;
-    }, { totalTopup: 0, totalPayment: 0, totalRefund: 0 });
-    
+
+    const stats = transactions.reduce(
+      (acc, tx) => {
+        if (tx.txType === 'topup') acc.totalTopup += parseFloat(tx.amount) || 0;
+        if (tx.txType === 'payment')
+          acc.totalPayment += parseFloat(tx.amount) || 0;
+        if (tx.txType === 'refund')
+          acc.totalRefund += parseFloat(tx.amount) || 0;
+        return acc;
+      },
+      { totalTopup: 0, totalPayment: 0, totalRefund: 0 }
+    );
+
     return stats;
   };
 
@@ -227,7 +242,7 @@ const WalletContent = () => {
       dataIndex: 'txType',
       key: 'txType',
       width: 150,
-      render: (type) => (
+      render: type => (
         <Space>
           {getTxIcon(type)}
           <Tag color={getTxTypeColor(type)}>{getTxTypeLabel(type)}</Tag>
@@ -243,7 +258,10 @@ const WalletContent = () => {
         <Text
           strong
           style={{
-            color: record.txType === 'topup' || record.txType === 'refund' ? '#52c41a' : '#ff4d4f',
+            color:
+              record.txType === 'topup' || record.txType === 'refund'
+                ? '#52c41a'
+                : '#ff4d4f',
             fontSize: '16px',
           }}
         >
@@ -277,9 +295,7 @@ const WalletContent = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 200,
-      render: (date) => (
-        <Text>{dayjs(date).format('DD/MM/YYYY HH:mm:ss')}</Text>
-      ),
+      render: date => <Text>{dayjs(date).format('DD/MM/YYYY HH:mm:ss')}</Text>,
     },
   ];
 
@@ -300,18 +316,27 @@ const WalletContent = () => {
           {/* Wallet Balance Card */}
           <Card className={WalletPageStyles.walletCard} loading={loading}>
             <div className={WalletPageStyles.balanceSection}>
-              <Text className={WalletPageStyles.balanceLabel}>Current Balance</Text>
+              <Text className={WalletPageStyles.balanceLabel}>
+                Current Balance
+              </Text>
               <div className={WalletPageStyles.balanceAmount}>
                 <Text className={WalletPageStyles.balanceValue}>
-                  {formatCurrency(wallet?.balance || 0, wallet?.currency || 'VND')}
+                  {formatCurrency(
+                    wallet?.balance || 0,
+                    wallet?.currency || 'VND'
+                  )}
                 </Text>
               </div>
               <Tag className={WalletPageStyles.currencyTag}>
                 {wallet?.currency || 'VND'}
               </Tag>
             </div>
-            
-            <Space direction="vertical" style={{ width: '100%', marginTop: 20 }} size="small">
+
+            <Space
+              direction="vertical"
+              style={{ width: '100%', marginTop: 20 }}
+              size="small"
+            >
               <Button
                 icon={<PlusOutlined />}
                 onClick={() => setTopupModalVisible(true)}
@@ -320,11 +345,7 @@ const WalletContent = () => {
               >
                 Deposit
               </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={loadWallet}
-                block
-              >
+              <Button icon={<ReloadOutlined />} onClick={loadWallet} block>
                 Refresh
               </Button>
             </Space>
@@ -374,75 +395,75 @@ const WalletContent = () => {
         {/* Right Column: Transaction History */}
         <Col xs={24} lg={20}>
           <Card
-        title={
-          <Space>
-            <HistoryOutlined />
-            <span>Transaction History</span>
-          </Space>
-        }
-        extra={
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={loadTransactions}
-            loading={transactionsLoading}
+            title={
+              <Space>
+                <HistoryOutlined />
+                <span>Transaction History</span>
+              </Space>
+            }
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadTransactions}
+                loading={transactionsLoading}
+              >
+                Refresh
+              </Button>
+            }
+            className={WalletPageStyles.transactionsCard}
           >
-            Refresh
-          </Button>
-        }
-        className={WalletPageStyles.transactionsCard}
-      >
-        {/* Filters */}
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={12} md={6}>
-            <Select
-              placeholder="Transaction Type"
-              allowClear
-              style={{ width: '100%' }}
-              value={filters.txType}
-              onChange={(value) => handleFilterChange('txType', value)}
-            >
-              <Option value="topup">Deposit</Option>
-              <Option value="payment">Payment</Option>
-              <Option value="refund">Refund</Option>
-              <Option value="withdrawal">Withdrawal</Option>
-              <Option value="adjustment">Adjustment</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={12}>
-            <RangePicker
-              style={{ width: '100%' }}
-              onChange={handleDateRangeChange}
-              format="DD/MM/YYYY"
-              placeholder={['From Date', 'To Date']}
-            />
-          </Col>
-        </Row>
+            {/* Filters */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+              <Col xs={24} sm={12} md={6}>
+                <Select
+                  placeholder="Transaction Type"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={filters.txType}
+                  onChange={value => handleFilterChange('txType', value)}
+                >
+                  <Option value="topup">Deposit</Option>
+                  <Option value="payment">Payment</Option>
+                  <Option value="refund">Refund</Option>
+                  <Option value="withdrawal">Withdrawal</Option>
+                  <Option value="adjustment">Adjustment</Option>
+                </Select>
+              </Col>
+              <Col xs={24} sm={12} md={12}>
+                <RangePicker
+                  style={{ width: '100%' }}
+                  onChange={handleDateRangeChange}
+                  format="DD/MM/YYYY"
+                  placeholder={['From Date', 'To Date']}
+                />
+              </Col>
+            </Row>
 
-        {/* Transactions Table */}
-        {transactionsLoading && transactions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <Spin size="large" />
-          </div>
-        ) : transactions.length === 0 ? (
-          <Empty description="No transactions yet" />
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={transactions}
-            rowKey="walletTxId"
-            loading={transactionsLoading}
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-              showTotal: (total) => `Total ${total} transactions`,
-              pageSizeOptions: ['10', '20', '50', '100'],
-            }}
-            onChange={handleTableChange}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 450px)' }}
-          />
-        )}
+            {/* Transactions Table */}
+            {transactionsLoading && transactions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <Spin size="large" />
+              </div>
+            ) : transactions.length === 0 ? (
+              <Empty description="No transactions yet" />
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={transactions}
+                rowKey="walletTxId"
+                loading={transactionsLoading}
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showTotal: total => `Total ${total} transactions`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                }}
+                onChange={handleTableChange}
+                scroll={{ x: 'max-content', y: 'calc(100vh - 450px)' }}
+              />
+            )}
           </Card>
         </Col>
       </Row>
@@ -465,24 +486,26 @@ const WalletContent = () => {
         cancelText="Cancel"
         width={500}
       >
-        <Form
-          form={topupForm}
-          layout="vertical"
-          onFinish={handleTopup}
-        >
+        <Form form={topupForm} layout="vertical" onFinish={handleTopup}>
           <Form.Item
             label="Deposit Amount (VND)"
             name="amount"
             rules={[
               { required: true, message: 'Please enter deposit amount' },
-              { type: 'number', min: 1000, message: 'Minimum amount is 1,000 VND' },
+              {
+                type: 'number',
+                min: 1000,
+                message: 'Minimum amount is 1,000 VND',
+              },
             ]}
           >
             <InputNumber
               style={{ width: '100%' }}
               placeholder="Enter amount"
-              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+              formatter={value =>
+                `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              }
+              parser={value => value.replace(/\$\s?|(,*)/g, '')}
               min={1000}
               size="large"
             />

@@ -102,7 +102,8 @@ export default function TaskAssignmentManagement() {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [contractSearch, setContractSearch] = useState('');
   const [contractTaskStats, setContractTaskStats] = useState({});
-  const [cancelledTaskModalVisible, setCancelledTaskModalVisible] = useState(false);
+  const [cancelledTaskModalVisible, setCancelledTaskModalVisible] =
+    useState(false);
   const [selectedCancelledTask, setSelectedCancelledTask] = useState(null);
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [selectedIssueTask, setSelectedIssueTask] = useState(null);
@@ -116,32 +117,29 @@ export default function TaskAssignmentManagement() {
     }));
   }, []);
 
-  const fetchContractTaskStats = useCallback(
-    async contractList => {
-      if (!contractList || contractList.length === 0) return;
-      const statsEntries = {};
-      await Promise.allSettled(
-        contractList.map(contract =>
-          getTaskAssignmentsByContract(contract.contractId)
-            .then(response => {
-              const tasks =
-                response?.status === 'success' && response?.data
-                  ? response.data
-                  : [];
-              statsEntries[contract.contractId] = computeTaskStats(tasks);
-            })
-            .catch(() => {
-              statsEntries[contract.contractId] = { ...defaultTaskStats };
-            })
-        )
-      );
-      setContractTaskStats(prev => ({
-        ...prev,
-        ...statsEntries,
-      }));
-    },
-    []
-  );
+  const fetchContractTaskStats = useCallback(async contractList => {
+    if (!contractList || contractList.length === 0) return;
+    const statsEntries = {};
+    await Promise.allSettled(
+      contractList.map(contract =>
+        getTaskAssignmentsByContract(contract.contractId)
+          .then(response => {
+            const tasks =
+              response?.status === 'success' && response?.data
+                ? response.data
+                : [];
+            statsEntries[contract.contractId] = computeTaskStats(tasks);
+          })
+          .catch(() => {
+            statsEntries[contract.contractId] = { ...defaultTaskStats };
+          })
+      )
+    );
+    setContractTaskStats(prev => ({
+      ...prev,
+      ...statsEntries,
+    }));
+  }, []);
 
   const fetchContracts = useCallback(async () => {
     try {
@@ -239,24 +237,32 @@ export default function TaskAssignmentManagement() {
     contractId => {
       const stats = contractTaskStats[contractId];
       if (!stats) return null;
-      
+
       // Tính số task active (không phải cancelled)
       const activeTasks = stats.total - stats.cancelled;
-      
+
       // Ưu tiên hiển thị issue nếu có (cần manager xử lý) và có task active
       if (stats.hasIssue > 0 && activeTasks > 0) {
-        return { label: `có issue (${stats.hasIssue})`, color: 'orange', priority: 0 };
+        return {
+          label: `có issue (${stats.hasIssue})`,
+          color: 'orange',
+          priority: 0,
+        };
       }
-      
+
       if (stats.total === 0) {
         return { label: 'need assignment', color: 'orange', priority: 1 };
       }
-      
+
       // Chỉ hiển thị cancelled nếu TẤT CẢ task đều cancelled (không còn task active)
       if (stats.cancelled > 0 && activeTasks === 0) {
-        return { label: `cancelled (${stats.cancelled})`, color: 'red', priority: -1 };
+        return {
+          label: `cancelled (${stats.cancelled})`,
+          color: 'red',
+          priority: -1,
+        };
       }
-      
+
       // Nếu có task cancelled nhưng vẫn còn task active, hiển thị thông tin task active
       if (stats.inProgress > 0) {
         return { label: 'in progress', color: 'green', priority: 2 };
@@ -267,7 +273,7 @@ export default function TaskAssignmentManagement() {
       if (stats.assigned > 0) {
         return { label: 'assigned', color: 'blue', priority: 1 };
       }
-      
+
       return null;
     },
     [contractTaskStats]
@@ -292,9 +298,7 @@ export default function TaskAssignmentManagement() {
       const priorityA = badgeA?.priority ?? 99;
       const priorityB = badgeB?.priority ?? 99;
       if (priorityA !== priorityB) return priorityA - priorityB;
-      return (
-        (a.contractNumber || '').localeCompare(b.contractNumber || '')
-      );
+      return (a.contractNumber || '').localeCompare(b.contractNumber || '');
     });
   }, [contracts, contractSearch, getContractBadge]);
 
@@ -308,7 +312,8 @@ export default function TaskAssignmentManagement() {
       const status = task.status?.toLowerCase();
       stats[task.milestoneId].total += 1;
       if (status === 'completed') stats[task.milestoneId].completed += 1;
-      else if (status === 'in_progress') stats[task.milestoneId].inProgress += 1;
+      else if (status === 'in_progress')
+        stats[task.milestoneId].inProgress += 1;
       else if (status === 'cancelled') stats[task.milestoneId].cancelled += 1;
       else stats[task.milestoneId].assigned += 1;
       // Đếm task có issue
@@ -328,7 +333,7 @@ export default function TaskAssignmentManagement() {
       // Ưu tiên assignedDate, nếu không có thì dùng createdAt hoặc assignmentId
       const dateA = a.assignedDate || a.createdAt || a.assignmentId || '';
       const dateB = b.assignedDate || b.createdAt || b.assignmentId || '';
-      
+
       // Sort descending (mới nhất lên trước)
       if (dateA && dateB) {
         return new Date(dateB) - new Date(dateA);
@@ -360,7 +365,9 @@ export default function TaskAssignmentManagement() {
       message.warning('Vui lòng chọn contract trước');
       return;
     }
-    navigate(`/manager/task-assignments/${selectedContractId}/edit/${record.assignmentId}`);
+    navigate(
+      `/manager/task-assignments/${selectedContractId}/edit/${record.assignmentId}`
+    );
   };
 
   // Handle delete task assignment
@@ -409,7 +416,10 @@ export default function TaskAssignmentManagement() {
   const handleResolveIssue = async () => {
     if (!selectedIssueTask || !selectedContractId) return;
     try {
-      const response = await resolveIssue(selectedContractId, selectedIssueTask.assignmentId);
+      const response = await resolveIssue(
+        selectedContractId,
+        selectedIssueTask.assignmentId
+      );
       if (response?.status === 'success') {
         message.success('Đã cho phép specialist tiếp tục task');
         setIssueModalVisible(false);
@@ -432,11 +442,13 @@ export default function TaskAssignmentManagement() {
         selectedIssueTask.assignmentId
       );
       if (response?.status === 'success') {
-        message.success('Đã hủy task thành công. Đang chuyển đến trang tạo task mới...');
+        message.success(
+          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
+        );
         setIssueModalVisible(false);
         const taskToCreate = selectedIssueTask;
         setSelectedIssueTask(null);
-        
+
         // Navigate đến workspace với data pre-filled từ task cũ
         // Thêm excludeSpecialistId để filter out specialist cũ
         navigate(
@@ -470,7 +482,6 @@ export default function TaskAssignmentManagement() {
     return milestone ? milestone.name : milestoneId;
   };
 
-
   // Table columns
   const columns = [
     {
@@ -478,18 +489,14 @@ export default function TaskAssignmentManagement() {
       dataIndex: 'taskType',
       key: 'taskType',
       width: 150,
-      render: type => (
-        <Tag color="cyan">{TASK_TYPE_LABELS[type] || type}</Tag>
-      ),
+      render: type => <Tag color="cyan">{TASK_TYPE_LABELS[type] || type}</Tag>,
     },
     {
       title: 'Specialist',
       dataIndex: 'specialistId',
       key: 'specialistId',
       width: 250,
-      render: specialistId => (
-        <Text>{getSpecialistName(specialistId)}</Text>
-      ),
+      render: specialistId => <Text>{getSpecialistName(specialistId)}</Text>,
     },
     {
       title: 'Milestone',
@@ -523,16 +530,14 @@ export default function TaskAssignmentManagement() {
       dataIndex: 'assignedDate',
       key: 'assignedDate',
       width: 150,
-      render: date =>
-        date ? dayjs(date).format('YYYY-MM-DD HH:mm') : 'N/A',
+      render: date => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : 'N/A'),
     },
     {
       title: 'Completed Date',
       dataIndex: 'completedDate',
       key: 'completedDate',
       width: 150,
-      render: date =>
-        date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-',
+      render: date => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
     },
     {
       title: 'Notes',
@@ -552,7 +557,7 @@ export default function TaskAssignmentManagement() {
         const isCancelled = status === 'cancelled';
         const isCompleted = status === 'completed';
         const hasIssue = record.hasIssue;
-        
+
         // Nếu task có issue, ưu tiên hiển thị nút "Xử lý issue"
         if (hasIssue && !isCancelled) {
           return (
@@ -570,7 +575,7 @@ export default function TaskAssignmentManagement() {
             </Space>
           );
         }
-        
+
         // Nếu task bị hủy, chỉ hiển thị chi tiết
         if (isCancelled) {
           return (
@@ -587,7 +592,7 @@ export default function TaskAssignmentManagement() {
             </Space>
           );
         }
-        
+
         // Nếu task chưa bị hủy và không có issue, hiển thị Edit và Delete
         return (
           <Space size="small">
@@ -706,7 +711,11 @@ export default function TaskAssignmentManagement() {
         <Col xs={24} lg={16}>
           <Card>
             {selectedContract ? (
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="large"
+                style={{ width: '100%' }}
+              >
                 <div className={styles.contractInfo}>
                   <div>
                     <Text strong>Contract Number: </Text>
@@ -739,98 +748,116 @@ export default function TaskAssignmentManagement() {
                       {selectedContractSummary.inProgress} · Hoàn thành:{' '}
                       {selectedContractSummary.completed}
                       {selectedContractSummary.hasIssue > 0 && (
-                        <> · <Text type="warning">Có issue: {selectedContractSummary.hasIssue}</Text></>
+                        <>
+                          {' '}
+                          ·{' '}
+                          <Text type="warning">
+                            Có issue: {selectedContractSummary.hasIssue}
+                          </Text>
+                        </>
                       )}
                       {selectedContractSummary.cancelled > 0 && (
-                        <> · <Text type="danger">Đã hủy: {selectedContractSummary.cancelled}</Text></>
+                        <>
+                          {' '}
+                          ·{' '}
+                          <Text type="danger">
+                            Đã hủy: {selectedContractSummary.cancelled}
+                          </Text>
+                        </>
                       )}
                     </Text>
                   </div>
 
-                <Card
-                  size="small"
-                  title="Milestones"
-                  className={styles.milestoneCard}
-                >
-                  {selectedContract.milestones &&
-                  selectedContract.milestones.length > 0 ? (
-                    <List
-                      dataSource={selectedContract.milestones}
-                      rowKey="milestoneId"
-                      renderItem={item => {
-                        const stats = milestoneTaskStats[item.milestoneId] || {
-                          total: 0,
-                          completed: 0,
-                          inProgress: 0,
-                          assigned: 0,
-                          cancelled: 0,
-                          hasIssue: 0,
-                        };
-                        return (
-                          <List.Item className={styles.milestoneItem}>
-                            <div className={styles.milestoneInfo}>
-                              <div className={styles.milestoneHeader}>
-                                <Text strong>{item.name}</Text>
-                                <Tag>{item.workStatus}</Tag>
-                              </div>
-                              <div className={styles.milestoneMeta}>
-                                {item.plannedDueDate && (
+                  <Card
+                    size="small"
+                    title="Milestones"
+                    className={styles.milestoneCard}
+                  >
+                    {selectedContract.milestones &&
+                    selectedContract.milestones.length > 0 ? (
+                      <List
+                        dataSource={selectedContract.milestones}
+                        rowKey="milestoneId"
+                        renderItem={item => {
+                          const stats = milestoneTaskStats[
+                            item.milestoneId
+                          ] || {
+                            total: 0,
+                            completed: 0,
+                            inProgress: 0,
+                            assigned: 0,
+                            cancelled: 0,
+                            hasIssue: 0,
+                          };
+                          return (
+                            <List.Item className={styles.milestoneItem}>
+                              <div className={styles.milestoneInfo}>
+                                <div className={styles.milestoneHeader}>
+                                  <Text strong>{item.name}</Text>
+                                  <Tag>{item.workStatus}</Tag>
+                                </div>
+                                <div className={styles.milestoneMeta}>
+                                  {item.plannedDueDate && (
+                                    <span>
+                                      <Text type="secondary">Due: </Text>
+                                      {dayjs(item.plannedDueDate).format(
+                                        'YYYY-MM-DD'
+                                      )}
+                                    </span>
+                                  )}
                                   <span>
-                                    <Text type="secondary">Due: </Text>
-                                    {dayjs(item.plannedDueDate).format(
-                                      'YYYY-MM-DD'
-                                    )}
+                                    <Text type="secondary">Payment: </Text>
+                                    <Tag>{item.paymentStatus}</Tag>
                                   </span>
-                                )}
-                                <span>
-                                  <Text type="secondary">Payment: </Text>
-                                  <Tag>{item.paymentStatus}</Tag>
-                                </span>
+                                </div>
                               </div>
-                            </div>
-                            {stats.total > 0 && (
-                              <div className={styles.milestoneStats}>
-                                <div>
-                                  <Text strong>{stats.total}</Text>
-                                  <Text type="secondary">Task tổng</Text>
-                                </div>
-                                <div>
-                                  <Text strong>{stats.inProgress}</Text>
-                                  <Text type="secondary">Đang làm</Text>
-                                </div>
-                                <div>
-                                  <Text strong>{stats.completed}</Text>
-                                  <Text type="secondary">Hoàn thành</Text>
-                                </div>
-                                <div>
-                                  <Text strong>{stats.assigned}</Text>
-                                  <Text type="secondary">Chưa bắt đầu</Text>
-                                </div>
-                                {stats.hasIssue > 0 && (
+                              {stats.total > 0 && (
+                                <div className={styles.milestoneStats}>
                                   <div>
-                                    <Text strong type="warning">{stats.hasIssue}</Text>
-                                    <Text type="secondary">Có issue</Text>
+                                    <Text strong>{stats.total}</Text>
+                                    <Text type="secondary">Task tổng</Text>
                                   </div>
-                                )}
-                                {stats.cancelled > 0 && (
                                   <div>
-                                    <Text strong type="danger">{stats.cancelled}</Text>
-                                    <Text type="secondary">Đã hủy</Text>
+                                    <Text strong>{stats.inProgress}</Text>
+                                    <Text type="secondary">Đang làm</Text>
                                   </div>
-                                )}
-                              </div>
-                            )}
-                          </List.Item>
-                        );
-                      }}
-                    />
-                  ) : (
-                    <Empty
-                      description="Chưa tạo milestone"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
-                  )}
-                </Card>
+                                  <div>
+                                    <Text strong>{stats.completed}</Text>
+                                    <Text type="secondary">Hoàn thành</Text>
+                                  </div>
+                                  <div>
+                                    <Text strong>{stats.assigned}</Text>
+                                    <Text type="secondary">Chưa bắt đầu</Text>
+                                  </div>
+                                  {stats.hasIssue > 0 && (
+                                    <div>
+                                      <Text strong type="warning">
+                                        {stats.hasIssue}
+                                      </Text>
+                                      <Text type="secondary">Có issue</Text>
+                                    </div>
+                                  )}
+                                  {stats.cancelled > 0 && (
+                                    <div>
+                                      <Text strong type="danger">
+                                        {stats.cancelled}
+                                      </Text>
+                                      <Text type="secondary">Đã hủy</Text>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </List.Item>
+                          );
+                        }}
+                      />
+                    ) : (
+                      <Empty
+                        description="Chưa tạo milestone"
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    )}
+                  </Card>
                 </div>
 
                 <div className={styles.taskHeader}>
@@ -908,38 +935,69 @@ export default function TaskAssignmentManagement() {
       >
         {selectedCancelledTask && (
           <div style={{ marginTop: 16 }}>
-            <p><strong>Assignment ID:</strong> {selectedCancelledTask.assignmentId}</p>
-            <p><strong>Task Type:</strong> {TASK_TYPE_LABELS[selectedCancelledTask.taskType] || selectedCancelledTask.taskType}</p>
-            <p><strong>Milestone ID:</strong> {selectedCancelledTask.milestoneId}</p>
-            <p><strong>Status:</strong> <Tag color="red">Đã hủy</Tag></p>
-            <p><strong>Assigned Date:</strong> {selectedCancelledTask.assignedDate ? dayjs(selectedCancelledTask.assignedDate).format('YYYY-MM-DD HH:mm') : 'N/A'}</p>
+            <p>
+              <strong>Assignment ID:</strong>{' '}
+              {selectedCancelledTask.assignmentId}
+            </p>
+            <p>
+              <strong>Task Type:</strong>{' '}
+              {TASK_TYPE_LABELS[selectedCancelledTask.taskType] ||
+                selectedCancelledTask.taskType}
+            </p>
+            <p>
+              <strong>Milestone ID:</strong> {selectedCancelledTask.milestoneId}
+            </p>
+            <p>
+              <strong>Status:</strong> <Tag color="red">Đã hủy</Tag>
+            </p>
+            <p>
+              <strong>Assigned Date:</strong>{' '}
+              {selectedCancelledTask.assignedDate
+                ? dayjs(selectedCancelledTask.assignedDate).format(
+                    'YYYY-MM-DD HH:mm'
+                  )
+                : 'N/A'}
+            </p>
             {selectedCancelledTask.specialistRespondedAt && (
-              <p><strong>Thời gian hủy:</strong> {dayjs(selectedCancelledTask.specialistRespondedAt).format('YYYY-MM-DD HH:mm')}</p>
+              <p>
+                <strong>Thời gian hủy:</strong>{' '}
+                {dayjs(selectedCancelledTask.specialistRespondedAt).format(
+                  'YYYY-MM-DD HH:mm'
+                )}
+              </p>
             )}
             {selectedCancelledTask.specialistResponseReason && (
               <div style={{ marginTop: 12 }}>
-                <p><strong>Lý do hủy:</strong></p>
-                <p style={{ 
-                  padding: 12, 
-                  background: '#f5f5f5', 
-                  borderRadius: 4,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
+                <p>
+                  <strong>Lý do hủy:</strong>
+                </p>
+                <p
+                  style={{
+                    padding: 12,
+                    background: '#f5f5f5',
+                    borderRadius: 4,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {selectedCancelledTask.specialistResponseReason}
                 </p>
               </div>
             )}
             {selectedCancelledTask.notes && (
               <div style={{ marginTop: 12 }}>
-                <p><strong>Ghi chú:</strong></p>
-                <p style={{ 
-                  padding: 12, 
-                  background: '#f5f5f5', 
-                  borderRadius: 4,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
+                <p>
+                  <strong>Ghi chú:</strong>
+                </p>
+                <p
+                  style={{
+                    padding: 12,
+                    background: '#f5f5f5',
+                    borderRadius: 4,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {selectedCancelledTask.notes}
                 </p>
               </div>
@@ -957,11 +1015,7 @@ export default function TaskAssignmentManagement() {
           <Button key="close" onClick={handleCloseIssueModal}>
             Đóng
           </Button>,
-          <Button
-            key="continue"
-            type="primary"
-            onClick={handleResolveIssue}
-          >
+          <Button key="continue" type="primary" onClick={handleResolveIssue}>
             Cho tiếp tục
           </Button>,
           <Popconfirm
@@ -982,28 +1036,60 @@ export default function TaskAssignmentManagement() {
       >
         {selectedIssueTask && (
           <div style={{ marginTop: 16 }}>
-            <p><strong>Assignment ID:</strong> {selectedIssueTask.assignmentId}</p>
-            <p><strong>Task Type:</strong> {TASK_TYPE_LABELS[selectedIssueTask.taskType] || selectedIssueTask.taskType}</p>
-            <p><strong>Specialist:</strong> {getSpecialistName(selectedIssueTask.specialistId)}</p>
-            <p><strong>Milestone:</strong> {getMilestoneName(selectedIssueTask.milestoneId)}</p>
-            <p><strong>Status:</strong> <Tag color="processing">Đang thực hiện</Tag> <Tag color="orange">Có issue</Tag></p>
-            <p><strong>Assigned Date:</strong> {selectedIssueTask.assignedDate ? dayjs(selectedIssueTask.assignedDate).format('YYYY-MM-DD HH:mm') : 'N/A'}</p>
-            
+            <p>
+              <strong>Assignment ID:</strong> {selectedIssueTask.assignmentId}
+            </p>
+            <p>
+              <strong>Task Type:</strong>{' '}
+              {TASK_TYPE_LABELS[selectedIssueTask.taskType] ||
+                selectedIssueTask.taskType}
+            </p>
+            <p>
+              <strong>Specialist:</strong>{' '}
+              {getSpecialistName(selectedIssueTask.specialistId)}
+            </p>
+            <p>
+              <strong>Milestone:</strong>{' '}
+              {getMilestoneName(selectedIssueTask.milestoneId)}
+            </p>
+            <p>
+              <strong>Status:</strong>{' '}
+              <Tag color="processing">Đang thực hiện</Tag>{' '}
+              <Tag color="orange">Có issue</Tag>
+            </p>
+            <p>
+              <strong>Assigned Date:</strong>{' '}
+              {selectedIssueTask.assignedDate
+                ? dayjs(selectedIssueTask.assignedDate).format(
+                    'YYYY-MM-DD HH:mm'
+                  )
+                : 'N/A'}
+            </p>
+
             {selectedIssueTask.issueReportedAt && (
-              <p><strong>Thời gian báo issue:</strong> {dayjs(selectedIssueTask.issueReportedAt).format('YYYY-MM-DD HH:mm')}</p>
+              <p>
+                <strong>Thời gian báo issue:</strong>{' '}
+                {dayjs(selectedIssueTask.issueReportedAt).format(
+                  'YYYY-MM-DD HH:mm'
+                )}
+              </p>
             )}
-            
+
             {selectedIssueTask.issueReason && (
               <div style={{ marginTop: 12 }}>
-                <p><strong>Lý do báo issue:</strong></p>
-                <p style={{ 
-                  padding: 12, 
-                  background: '#fff7e6', 
-                  border: '1px solid #ffd591',
-                  borderRadius: 4,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
+                <p>
+                  <strong>Lý do báo issue:</strong>
+                </p>
+                <p
+                  style={{
+                    padding: 12,
+                    background: '#fff7e6',
+                    border: '1px solid #ffd591',
+                    borderRadius: 4,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {selectedIssueTask.issueReason}
                 </p>
               </div>
@@ -1011,14 +1097,18 @@ export default function TaskAssignmentManagement() {
 
             {selectedIssueTask.notes && (
               <div style={{ marginTop: 12 }}>
-                <p><strong>Ghi chú:</strong></p>
-                <p style={{ 
-                  padding: 12, 
-                  background: '#f5f5f5', 
-                  borderRadius: 4,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
+                <p>
+                  <strong>Ghi chú:</strong>
+                </p>
+                <p
+                  style={{
+                    padding: 12,
+                    background: '#f5f5f5',
+                    borderRadius: 4,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {selectedIssueTask.notes}
                 </p>
               </div>
@@ -1034,8 +1124,6 @@ export default function TaskAssignmentManagement() {
           </div>
         )}
       </Modal>
-
     </div>
   );
 }
-

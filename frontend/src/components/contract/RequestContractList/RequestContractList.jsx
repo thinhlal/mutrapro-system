@@ -133,9 +133,7 @@ const RequestContractList = ({
                 {/* View Details Button - Always visible */}
                 <Button
                   icon={<EyeOutlined />}
-                  onClick={() =>
-                    navigate(`/contracts/${contract.contractId}`)
-                  }
+                  onClick={() => navigate(`/contracts/${contract.contractId}`)}
                   style={{ marginBottom: canCustomerAction || canSign ? 8 : 0 }}
                 >
                   View Details
@@ -179,7 +177,9 @@ const RequestContractList = ({
                     <Button
                       type="primary"
                       icon={<EyeOutlined />}
-                      onClick={() => navigate(`/contracts/${contract.contractId}`)}
+                      onClick={() =>
+                        navigate(`/contracts/${contract.contractId}`)
+                      }
                       size="large"
                     >
                       Vào chi tiết để ký

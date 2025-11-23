@@ -41,7 +41,9 @@ export default function DiscoverProsPage() {
         }
       } catch (error) {
         console.error('Error fetching pricing:', error);
-        message.error('Unable to load pricing information. Using default data.');
+        message.error(
+          'Unable to load pricing information. Using default data.'
+        );
         // Fallback to original data
         setCategories(PROS_CATEGORIES);
       } finally {

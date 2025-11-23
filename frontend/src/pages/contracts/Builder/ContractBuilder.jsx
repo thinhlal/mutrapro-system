@@ -17,7 +17,7 @@ import {
   Tooltip,
   Card,
 } from 'antd';
-import { 
+import {
   QuestionCircleOutlined,
   MinusCircleOutlined,
   PlusOutlined,
@@ -346,8 +346,8 @@ const ContractBuilder = () => {
         // Load pricing breakdown information
         await loadPricingBreakdown(request);
 
-          // Update terms if needed
-          setTimeout(() => {
+        // Update terms if needed
+        setTimeout(() => {
           // Nếu có copyFromContract, override các giá trị từ contract cũ
           if (copyFromContract) {
             const overrideValues = {};
@@ -453,21 +453,22 @@ const ContractBuilder = () => {
           contract_type: contract.contractType,
           deposit_percent: contract.depositPercent,
           total_price: contract.totalPrice,
-          milestones: contract.milestones?.map(m => {
-            // Tìm installment tương ứng để lấy paymentPercent
-            const installment = contract.installments?.find(
-              inst => inst.milestoneId === m.milestoneId
-            );
-            
-            return {
-              name: m.name,
-              description: m.description,
-              orderIndex: m.orderIndex,
-              hasPayment: m.hasPayment || false,
-              paymentPercent: installment?.percent || null,
-              milestoneSlaDays: m.milestoneSlaDays || null,
-            };
-          }) || [],
+          milestones:
+            contract.milestones?.map(m => {
+              // Tìm installment tương ứng để lấy paymentPercent
+              const installment = contract.installments?.find(
+                inst => inst.milestoneId === m.milestoneId
+              );
+
+              return {
+                name: m.name,
+                description: m.description,
+                orderIndex: m.orderIndex,
+                hasPayment: m.hasPayment || false,
+                paymentPercent: installment?.percent || null,
+                milestoneSlaDays: m.milestoneSlaDays || null,
+              };
+            }) || [],
           sla_days: contract.slaDays,
           show_watermark: false, // Always show watermark in edit mode
           free_revisions_included: contract.freeRevisionsIncluded,
@@ -545,7 +546,7 @@ const ContractBuilder = () => {
 
             total_price: Number(currentFormValues.total_price || 0),
             currency: 'VND',
-        deposit_percent: Number(currentFormValues.deposit_percent || 0),
+            deposit_percent: Number(currentFormValues.deposit_percent || 0),
 
             expected_start_date: null,
             sla_days: Number(currentFormValues.sla_days || 0),
@@ -591,7 +592,11 @@ const ContractBuilder = () => {
         transcriptionDetails: null,
       };
       // Use full instruments info from response (backend trả về đầy đủ thông tin)
-      if (request.instruments && Array.isArray(request.instruments) && request.instruments.length > 0) {
+      if (
+        request.instruments &&
+        Array.isArray(request.instruments) &&
+        request.instruments.length > 0
+      ) {
         const selectedInstruments = request.instruments.map(instr => ({
           instrumentId: instr.instrumentId,
           instrumentName: instr.instrumentName,
@@ -668,58 +673,64 @@ const ContractBuilder = () => {
   // Validate payment percentages
   const validatePaymentPercentages = (depositPercent, milestones) => {
     if (!depositPercent || depositPercent <= 0) {
-      return { valid: false, message: 'Deposit percent is required and must be greater than 0' };
+      return {
+        valid: false,
+        message: 'Deposit percent is required and must be greater than 0',
+      };
     }
-    
+
     const totalPaymentPercent = (milestones || []).reduce((sum, m) => {
       if (m?.hasPayment && m?.paymentPercent) {
         return sum + (Number(m.paymentPercent) || 0);
       }
       return sum;
     }, 0);
-    
+
     const total = depositPercent + totalPaymentPercent;
     if (Math.abs(total - 100) >= 0.01) {
       return {
         valid: false,
-        message: `Total payment percentage must equal 100%. Current: ${total.toFixed(2)}% (deposit: ${depositPercent}% + milestones: ${totalPaymentPercent.toFixed(2)}%)`
+        message: `Total payment percentage must equal 100%. Current: ${total.toFixed(2)}% (deposit: ${depositPercent}% + milestones: ${totalPaymentPercent.toFixed(2)}%)`,
       };
     }
-    
+
     return { valid: true };
   };
 
   // Validate milestone SLA days
   const validateMilestoneSlaDays = (contractSlaDays, milestones) => {
     if (!contractSlaDays || contractSlaDays <= 0) {
-      return { valid: false, message: 'Contract SLA days is required and must be greater than 0' };
+      return {
+        valid: false,
+        message: 'Contract SLA days is required and must be greater than 0',
+      };
     }
-    
+
     if (!milestones || milestones.length === 0) {
       return { valid: false, message: 'At least one milestone is required' };
     }
-    
+
     // Check each milestone has milestoneSlaDays
     for (const m of milestones) {
       if (!m.milestoneSlaDays || m.milestoneSlaDays <= 0) {
-        return { 
-          valid: false, 
-          message: `Milestone "${m.name || 'N/A'}" must have milestoneSlaDays greater than 0` 
+        return {
+          valid: false,
+          message: `Milestone "${m.name || 'N/A'}" must have milestoneSlaDays greater than 0`,
         };
       }
     }
-    
+
     const totalMilestoneSlaDays = milestones.reduce((sum, m) => {
       return sum + (Number(m.milestoneSlaDays) || 0);
     }, 0);
-    
+
     if (totalMilestoneSlaDays !== contractSlaDays) {
       return {
         valid: false,
-        message: `Total milestone SLA days must equal contract SLA days. Current: ${totalMilestoneSlaDays} days (contract: ${contractSlaDays} days)`
+        message: `Total milestone SLA days must equal contract SLA days. Current: ${totalMilestoneSlaDays} days (contract: ${contractSlaDays} days)`,
       };
     }
-    
+
     return { valid: true };
   };
 
@@ -754,7 +765,7 @@ const ContractBuilder = () => {
 
     total_price: Number(values.total_price || 0),
     currency: 'VND',
-        deposit_percent: Number(values.deposit_percent || 0),
+    deposit_percent: Number(values.deposit_percent || 0),
 
     // Expected start optional: backend will default to now if null
     expected_start_date: null,
@@ -809,8 +820,11 @@ const ContractBuilder = () => {
       // Validate payment percentages
       const depositPercent = Number(values.deposit_percent || 40);
       const milestones = values.milestones || [];
-      const paymentValidation = validatePaymentPercentages(depositPercent, milestones);
-      
+      const paymentValidation = validatePaymentPercentages(
+        depositPercent,
+        milestones
+      );
+
       if (!paymentValidation.valid) {
         message.error(paymentValidation.message);
         setError(paymentValidation.message);
@@ -819,8 +833,11 @@ const ContractBuilder = () => {
 
       // Validate milestone SLA days
       const contractSlaDays = Number(values.sla_days || 7);
-      const slaValidation = validateMilestoneSlaDays(contractSlaDays, milestones);
-      
+      const slaValidation = validateMilestoneSlaDays(
+        contractSlaDays,
+        milestones
+      );
+
       if (!slaValidation.valid) {
         message.error(slaValidation.message);
         setError(slaValidation.message);
@@ -843,14 +860,18 @@ const ContractBuilder = () => {
         termsAndConditions: values.terms_and_conditions?.trim(),
         specialClauses: values.special_clauses?.trim(),
         notes: values.notes?.trim(),
-        freeRevisionsIncluded: values.free_revisions_included !== undefined && values.free_revisions_included !== null
-          ? Number(values.free_revisions_included)
-          : 1,
-        revisionDeadlineDays: values.revision_deadline_days !== undefined && values.revision_deadline_days !== null
-          ? Number(values.revision_deadline_days)
-          : getDefaultRevisionDeadlineDays(
-              values.contract_type || 'transcription'
-            ),
+        freeRevisionsIncluded:
+          values.free_revisions_included !== undefined &&
+          values.free_revisions_included !== null
+            ? Number(values.free_revisions_included)
+            : 1,
+        revisionDeadlineDays:
+          values.revision_deadline_days !== undefined &&
+          values.revision_deadline_days !== null
+            ? Number(values.revision_deadline_days)
+            : getDefaultRevisionDeadlineDays(
+                values.contract_type || 'transcription'
+              ),
         additionalRevisionFeeVnd: values.additional_revision_fee_vnd
           ? Number(values.additional_revision_fee_vnd)
           : getDefaultAdditionalRevisionFeeVnd(),
@@ -861,12 +882,14 @@ const ContractBuilder = () => {
         const milestonesData = (milestones || []).map((m, index) => ({
           name: m.name,
           description: m.description || '',
-          orderIndex: m.orderIndex || (index + 1),
+          orderIndex: m.orderIndex || index + 1,
           hasPayment: m.hasPayment || false,
           paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
-          milestoneSlaDays: m.milestoneSlaDays ? Number(m.milestoneSlaDays) : null,
+          milestoneSlaDays: m.milestoneSlaDays
+            ? Number(m.milestoneSlaDays)
+            : null,
         }));
-        
+
         if (milestonesData.length > 0) {
           contractData.milestones = milestonesData;
         }
@@ -1180,12 +1203,15 @@ const ContractBuilder = () => {
                     label="Deposit %"
                     initialValue={40}
                     rules={[
-                      { required: true, message: 'Please enter deposit percent' },
-                      { 
-                        type: 'number', 
-                        min: 1, 
+                      {
+                        required: true,
+                        message: 'Please enter deposit percent',
+                      },
+                      {
+                        type: 'number',
+                        min: 1,
                         max: 100,
-                        message: 'Deposit percent must be between 1 and 100'
+                        message: 'Deposit percent must be between 1 and 100',
                       },
                     ]}
                   >
@@ -1202,7 +1228,7 @@ const ContractBuilder = () => {
                       <Divider className={styles.fullRow}>
                         Payment Milestones
                       </Divider>
-                      
+
                       <Form.Item
                         className={styles.fullRow}
                         label={
@@ -1217,208 +1243,251 @@ const ContractBuilder = () => {
                         }
                       >
                         <Form.List name="milestones" initialValue={[]}>
-                      {(fields, { add, remove }) => (
-                        <>
-                          {fields.map(({ key, name, ...restField }) => {
-                            const hasPayment = Form.useWatch(['milestones', name, 'hasPayment'], form);
-                            return (
-                              <Card
-                                key={key}
-                                size="small"
-                                style={{ marginBottom: 16 }}
-                                title={`Milestone ${name + 1}`}
-                                extra={
-                                  fields.length > 0 ? (
-                                    <MinusCircleOutlined
-                                      onClick={() => remove(name)}
-                                      style={{ color: '#ff4d4f', cursor: 'pointer' }}
-                                    />
-                                  ) : null
-                                }
-                              >
-                                <Space direction="vertical" style={{ width: '100%' }} size="small">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'orderIndex']}
-                                    label="Order Index"
-                                    initialValue={name + 1}
-                                    rules={[{ required: true }]}
-                                  >
-                                    <InputNumber min={1} style={{ width: '100%' }} disabled />
-                                  </Form.Item>
-                                  
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'name']}
-                                    label="Name"
-                                    rules={[{ required: true, message: 'Please enter milestone name' }]}
-                                  >
-                                    <Input placeholder="e.g., Milestone 1: Deposit & Start Transcription" />
-                                  </Form.Item>
-                                  
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'description']}
-                                    label="Description"
-                                  >
-                                    <Input.TextArea 
-                                      rows={2} 
-                                      placeholder="Mô tả công việc trong milestone này"
-                                    />
-                                  </Form.Item>
-                                                                    
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'hasPayment']}
-                                    label="Has Payment"
-                                    valuePropName="checked"
-                                    initialValue={false}
-                                    rules={[{ required: true }]}
-                                  >
-                                    <Switch />
-                                  </Form.Item>
-                                  
-                                  {hasPayment && (
-                                    <Form.Item
-                                      {...restField}
-                                      name={[name, 'paymentPercent']}
-                                      label="Payment Percent"
-                                      rules={[
-                                        { required: true, message: 'Please enter payment percent' },
-                                        { 
-                                          type: 'number', 
-                                          min: 0.01, 
-                                          max: 100,
-                                          message: 'Payment percent must be between 0.01 and 100'
-                                        },
-                                      ]}
-                                    >
-                                      <InputNumber
-                                        min={0.01}
-                                        max={100}
-                                        step={0.01}
-                                        style={{ width: '100%' }}
-                                        placeholder="Phần trăm thanh toán cho milestone này"
-                                      />
-                                    </Form.Item>
-                                  )}
-                                  
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'milestoneSlaDays']}
-                                    label={
-                                      <span>
-                                        Milestone SLA Days{' '}
-                                        <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
-                                          <QuestionCircleOutlined
-                                            style={{ color: '#1890ff', cursor: 'help' }}
-                                          />
-                                        </Tooltip>
-                                      </span>
+                          {(fields, { add, remove }) => (
+                            <>
+                              {fields.map(({ key, name, ...restField }) => {
+                                const hasPayment = Form.useWatch(
+                                  ['milestones', name, 'hasPayment'],
+                                  form
+                                );
+                                return (
+                                  <Card
+                                    key={key}
+                                    size="small"
+                                    style={{ marginBottom: 16 }}
+                                    title={`Milestone ${name + 1}`}
+                                    extra={
+                                      fields.length > 0 ? (
+                                        <MinusCircleOutlined
+                                          onClick={() => remove(name)}
+                                          style={{
+                                            color: '#ff4d4f',
+                                            cursor: 'pointer',
+                                          }}
+                                        />
+                                      ) : null
                                     }
-                                    rules={[
-                                      { required: true, message: 'Please enter milestone SLA days' },
-                                      { 
-                                        type: 'number', 
-                                        min: 1,
-                                        message: 'Milestone SLA days must be at least 1'
-                                      },
-                                    ]}
                                   >
-                                    <InputNumber
-                                      min={1}
-                                      max={365}
-                                      step={1}
+                                    <Space
+                                      direction="vertical"
                                       style={{ width: '100%' }}
-                                      placeholder="Số ngày SLA cho milestone này"
-                                    />
-                                  </Form.Item>
-                                </Space>
-                              </Card>
-                            );
-                          })}
-                          
-                          <Form.Item>
-                            <Button
-                              type="dashed"
-                              onClick={() => add()}
-                              block
-                              icon={<PlusOutlined />}
-                            >
-                              Add Milestone
-                            </Button>
-                          </Form.Item>
-                        </>
-                      )}
-                    </Form.List>
+                                      size="small"
+                                    >
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'orderIndex']}
+                                        label="Order Index"
+                                        initialValue={name + 1}
+                                        rules={[{ required: true }]}
+                                      >
+                                        <InputNumber
+                                          min={1}
+                                          style={{ width: '100%' }}
+                                          disabled
+                                        />
+                                      </Form.Item>
+
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'name']}
+                                        label="Name"
+                                        rules={[
+                                          {
+                                            required: true,
+                                            message:
+                                              'Please enter milestone name',
+                                          },
+                                        ]}
+                                      >
+                                        <Input placeholder="e.g., Milestone 1: Deposit & Start Transcription" />
+                                      </Form.Item>
+
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'description']}
+                                        label="Description"
+                                      >
+                                        <Input.TextArea
+                                          rows={2}
+                                          placeholder="Mô tả công việc trong milestone này"
+                                        />
+                                      </Form.Item>
+
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'hasPayment']}
+                                        label="Has Payment"
+                                        valuePropName="checked"
+                                        initialValue={false}
+                                        rules={[{ required: true }]}
+                                      >
+                                        <Switch />
+                                      </Form.Item>
+
+                                      {hasPayment && (
+                                        <Form.Item
+                                          {...restField}
+                                          name={[name, 'paymentPercent']}
+                                          label="Payment Percent"
+                                          rules={[
+                                            {
+                                              required: true,
+                                              message:
+                                                'Please enter payment percent',
+                                            },
+                                            {
+                                              type: 'number',
+                                              min: 0.01,
+                                              max: 100,
+                                              message:
+                                                'Payment percent must be between 0.01 and 100',
+                                            },
+                                          ]}
+                                        >
+                                          <InputNumber
+                                            min={0.01}
+                                            max={100}
+                                            step={0.01}
+                                            style={{ width: '100%' }}
+                                            placeholder="Phần trăm thanh toán cho milestone này"
+                                          />
+                                        </Form.Item>
+                                      )}
+
+                                      <Form.Item
+                                        {...restField}
+                                        name={[name, 'milestoneSlaDays']}
+                                        label={
+                                          <span>
+                                            Milestone SLA Days{' '}
+                                            <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
+                                              <QuestionCircleOutlined
+                                                style={{
+                                                  color: '#1890ff',
+                                                  cursor: 'help',
+                                                }}
+                                              />
+                                            </Tooltip>
+                                          </span>
+                                        }
+                                        rules={[
+                                          {
+                                            required: true,
+                                            message:
+                                              'Please enter milestone SLA days',
+                                          },
+                                          {
+                                            type: 'number',
+                                            min: 1,
+                                            message:
+                                              'Milestone SLA days must be at least 1',
+                                          },
+                                        ]}
+                                      >
+                                        <InputNumber
+                                          min={1}
+                                          max={365}
+                                          step={1}
+                                          style={{ width: '100%' }}
+                                          placeholder="Số ngày SLA cho milestone này"
+                                        />
+                                      </Form.Item>
+                                    </Space>
+                                  </Card>
+                                );
+                              })}
+
+                              <Form.Item>
+                                <Button
+                                  type="dashed"
+                                  onClick={() => add()}
+                                  block
+                                  icon={<PlusOutlined />}
+                                >
+                                  Add Milestone
+                                </Button>
+                              </Form.Item>
+                            </>
+                          )}
+                        </Form.List>
                       </Form.Item>
-                      
+
                       {/* Validation message */}
                       <Form.Item shouldUpdate className={styles.fullRow}>
-                    {() => {
-                      const depositPercent = form.getFieldValue('deposit_percent') || 0;
-                      const milestones = form.getFieldValue('milestones') || [];
-                      const totalPaymentPercent = milestones.reduce((sum, m) => {
-                        if (m?.hasPayment && m?.paymentPercent) {
-                          return sum + (Number(m.paymentPercent) || 0);
-                        }
-                        return sum;
-                      }, 0);
-                      const total = depositPercent + totalPaymentPercent;
-                      const isValid = Math.abs(total - 100) < 0.01; // Allow small floating point errors
-                      
-                      if (milestones.length > 0 && !isValid) {
-                        return (
-                          <Alert
-                            message={`Total payment percentage: ${total.toFixed(2)}%`}
-                            description={`Deposit: ${depositPercent}% + Milestones: ${totalPaymentPercent.toFixed(2)}% = ${total.toFixed(2)}%. Must equal 100%`}
-                            type="error"
-                            showIcon
-                            style={{ marginTop: 8 }}
-                          />
-                        );
-                      }
-                      if (milestones.length > 0 && isValid) {
-                        // Validate milestone SLA days
-                        const contractSlaDays = form.getFieldValue('sla_days') || 0;
-                        const totalMilestoneSlaDays = milestones.reduce((sum, m) => {
-                          return sum + (Number(m.milestoneSlaDays) || 0);
-                        }, 0);
-                        const slaIsValid = totalMilestoneSlaDays === contractSlaDays;
-                        
-                        return (
-                          <>
-                            <Alert
-                              message="Payment percentage validation: OK"
-                              description={`Total: ${total.toFixed(2)}% = 100%`}
-                              type="success"
-                              showIcon
-                              style={{ marginTop: 8 }}
-                            />
-                            {milestones.length > 0 && contractSlaDays > 0 && (
-                              slaIsValid ? (
+                        {() => {
+                          const depositPercent =
+                            form.getFieldValue('deposit_percent') || 0;
+                          const milestones =
+                            form.getFieldValue('milestones') || [];
+                          const totalPaymentPercent = milestones.reduce(
+                            (sum, m) => {
+                              if (m?.hasPayment && m?.paymentPercent) {
+                                return sum + (Number(m.paymentPercent) || 0);
+                              }
+                              return sum;
+                            },
+                            0
+                          );
+                          const total = depositPercent + totalPaymentPercent;
+                          const isValid = Math.abs(total - 100) < 0.01; // Allow small floating point errors
+
+                          if (milestones.length > 0 && !isValid) {
+                            return (
+                              <Alert
+                                message={`Total payment percentage: ${total.toFixed(2)}%`}
+                                description={`Deposit: ${depositPercent}% + Milestones: ${totalPaymentPercent.toFixed(2)}% = ${total.toFixed(2)}%. Must equal 100%`}
+                                type="error"
+                                showIcon
+                                style={{ marginTop: 8 }}
+                              />
+                            );
+                          }
+                          if (milestones.length > 0 && isValid) {
+                            // Validate milestone SLA days
+                            const contractSlaDays =
+                              form.getFieldValue('sla_days') || 0;
+                            const totalMilestoneSlaDays = milestones.reduce(
+                              (sum, m) => {
+                                return sum + (Number(m.milestoneSlaDays) || 0);
+                              },
+                              0
+                            );
+                            const slaIsValid =
+                              totalMilestoneSlaDays === contractSlaDays;
+
+                            return (
+                              <>
                                 <Alert
-                                  message="Milestone SLA days validation: OK"
-                                  description={`Total: ${totalMilestoneSlaDays} days = Contract SLA: ${contractSlaDays} days`}
+                                  message="Payment percentage validation: OK"
+                                  description={`Total: ${total.toFixed(2)}% = 100%`}
                                   type="success"
                                   showIcon
                                   style={{ marginTop: 8 }}
                                 />
-                              ) : (
-                                <Alert
-                                  message={`Total milestone SLA days: ${totalMilestoneSlaDays} days`}
-                                  description={`Contract SLA: ${contractSlaDays} days. Total milestone SLA days must equal contract SLA days.`}
-                                  type="error"
-                                  showIcon
-                                  style={{ marginTop: 8 }}
-                                />
-                              )
-                            )}
-                          </>
-                        );
-                      }
-                      return null;
-                    }}
+                                {milestones.length > 0 &&
+                                  contractSlaDays > 0 &&
+                                  (slaIsValid ? (
+                                    <Alert
+                                      message="Milestone SLA days validation: OK"
+                                      description={`Total: ${totalMilestoneSlaDays} days = Contract SLA: ${contractSlaDays} days`}
+                                      type="success"
+                                      showIcon
+                                      style={{ marginTop: 8 }}
+                                    />
+                                  ) : (
+                                    <Alert
+                                      message={`Total milestone SLA days: ${totalMilestoneSlaDays} days`}
+                                      description={`Contract SLA: ${contractSlaDays} days. Total milestone SLA days must equal contract SLA days.`}
+                                      type="error"
+                                      showIcon
+                                      style={{ marginTop: 8 }}
+                                    />
+                                  ))}
+                              </>
+                            );
+                          }
+                          return null;
+                        }}
                       </Form.Item>
                     </>
                   )}
@@ -1454,7 +1523,9 @@ const ContractBuilder = () => {
                         validator: (_, value) => {
                           if (value === 0) {
                             return Promise.reject(
-                              new Error('Warning: Setting free revisions to 0 means no free revisions will be provided. Please confirm this is intentional.')
+                              new Error(
+                                'Warning: Setting free revisions to 0 means no free revisions will be provided. Please confirm this is intentional.'
+                              )
                             );
                           }
                           return Promise.resolve();
@@ -1465,7 +1536,9 @@ const ContractBuilder = () => {
                     help={
                       <Form.Item noStyle shouldUpdate>
                         {({ getFieldValue }) => {
-                          const value = getFieldValue('free_revisions_included');
+                          const value = getFieldValue(
+                            'free_revisions_included'
+                          );
                           if (value === 0) {
                             return (
                               <Alert
@@ -1500,7 +1573,9 @@ const ContractBuilder = () => {
                         validator: (_, value) => {
                           if (value === 0) {
                             return Promise.reject(
-                              new Error('Warning: Setting revision deadline to 0 means no deadline period for free revisions. Please confirm this is intentional.')
+                              new Error(
+                                'Warning: Setting revision deadline to 0 means no deadline period for free revisions. Please confirm this is intentional.'
+                              )
                             );
                           }
                           return Promise.resolve();
@@ -1728,7 +1803,11 @@ const ContractBuilder = () => {
                                       fontStyle: 'italic',
                                     }}
                                   >
-                                    ({formatDescriptionDuration(item.description)})
+                                    (
+                                    {formatDescriptionDuration(
+                                      item.description
+                                    )}
+                                    )
                                   </div>
                                 )}
                               </td>
@@ -1763,32 +1842,34 @@ const ContractBuilder = () => {
                                 Instruments Surcharge:
                               </td>
                             </tr>
-                            {pricingBreakdown.instruments.map((instr, index) => (
-                              <tr key={`instrument-${index}`}>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  • {instr.instrumentName}
-                                </td>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  {instr.basePrice?.toLocaleString?.() ??
-                                    instr.basePrice}
-                                </td>
-                              </tr>
-                            ))}
+                            {pricingBreakdown.instruments.map(
+                              (instr, index) => (
+                                <tr key={`instrument-${index}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    • {instr.instrumentName}
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {instr.basePrice?.toLocaleString?.() ??
+                                      instr.basePrice}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                             <tr>
                               <td
                                 style={{
@@ -1811,7 +1892,8 @@ const ContractBuilder = () => {
                               >
                                 {pricingBreakdown.instruments
                                   .reduce(
-                                    (sum, instr) => sum + (instr.basePrice || 0),
+                                    (sum, instr) =>
+                                      sum + (instr.basePrice || 0),
                                     0
                                   )
                                   .toLocaleString()}
@@ -1903,7 +1985,10 @@ const ContractBuilder = () => {
                           backgroundColor: '#fff',
                         }}
                       >
-                        {((data?.total_price || 0) * ((data?.deposit_percent || 0) / 100)).toLocaleString()}{' '}
+                        {(
+                          (data?.total_price || 0) *
+                          ((data?.deposit_percent || 0) / 100)
+                        ).toLocaleString()}{' '}
                         {data?.currency || 'VND'}
                       </td>
                     </tr>

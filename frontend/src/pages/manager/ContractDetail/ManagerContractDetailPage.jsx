@@ -150,7 +150,11 @@ const ManagerContractDetailPage = () => {
       };
 
       // Use full instruments info from response (backend trả về đầy đủ thông tin)
-      if (request.instruments && Array.isArray(request.instruments) && request.instruments.length > 0) {
+      if (
+        request.instruments &&
+        Array.isArray(request.instruments) &&
+        request.instruments.length > 0
+      ) {
         const selectedInstruments = request.instruments.map(instr => ({
           instrumentId: instr.instrumentId,
           instrumentName: instr.instrumentName,
@@ -196,7 +200,11 @@ const ManagerContractDetailPage = () => {
 
     // Fetch Party B signature image via backend proxy
     let partyBSignatureBase64 = null;
-    if ((contractData?.status === 'signed' || contractData?.status === 'active') && contractData?.bSignatureS3Url) {
+    if (
+      (contractData?.status === 'signed' ||
+        contractData?.status === 'active') &&
+      contractData?.bSignatureS3Url
+    ) {
       try {
         const signatureResponse = await getSignatureImage(contractId);
         if (signatureResponse?.data) {
@@ -421,7 +429,7 @@ const ManagerContractDetailPage = () => {
         )}
 
         {/* Watermark - Only show if not signed or active */}
-        {(contract?.status !== 'signed' && contract?.status !== 'active') && (
+        {contract?.status !== 'signed' && contract?.status !== 'active' && (
           <View style={pdfStyles.watermark}>
             <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
           </View>
@@ -511,14 +519,17 @@ const ManagerContractDetailPage = () => {
             </View>
           )}
           <PdfText style={pdfStyles.text}>
-            Total Price: {contract?.totalPrice?.toLocaleString()} {contract?.currency || 'VND'}
+            Total Price: {contract?.totalPrice?.toLocaleString()}{' '}
+            {contract?.currency || 'VND'}
           </PdfText>
         </View>
 
         {/* Payment Milestones Schedule */}
         {contract?.milestones && contract.milestones.length > 0 && (
           <View style={{ marginTop: 10, marginBottom: 10 }}>
-            <PdfText style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 12 }}>
+            <PdfText
+              style={{ fontWeight: 'bold', marginBottom: 8, fontSize: 12 }}
+            >
               Payment Milestones Schedule:
             </PdfText>
             {contract.milestones
@@ -527,27 +538,46 @@ const ManagerContractDetailPage = () => {
                 <View
                   key={milestone.milestoneId || index}
                   style={{
-                    marginBottom: index < contract.milestones.length - 1 ? 8 : 0,
-                    paddingBottom: index < contract.milestones.length - 1 ? 8 : 0,
-                    borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                    marginBottom:
+                      index < contract.milestones.length - 1 ? 8 : 0,
+                    paddingBottom:
+                      index < contract.milestones.length - 1 ? 8 : 0,
+                    borderBottom:
+                      index < contract.milestones.length - 1
+                        ? '1px solid #e0e0e0'
+                        : 'none',
                   }}
                 >
-                  <PdfText style={{ fontWeight: 'bold', fontSize: 11, marginBottom: 4 }}>
-                    Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                  <PdfText
+                    style={{
+                      fontWeight: 'bold',
+                      fontSize: 11,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Milestone {milestone.orderIndex || index + 1}:{' '}
+                    {milestone.name || 'N/A'}
                   </PdfText>
                   {milestone.description && (
-                    <PdfText style={{ fontSize: 10, color: '#666', marginBottom: 4 }}>
+                    <PdfText
+                      style={{ fontSize: 10, color: '#666', marginBottom: 4 }}
+                    >
                       {milestone.description}
                     </PdfText>
                   )}
                   <PdfText style={pdfStyles.text}>
-                    Amount: {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
-                    {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && 
+                    Amount: {milestone.amount?.toLocaleString()}{' '}
+                    {contract?.currency || 'VND'}
+                    {milestone.billingType === 'PERCENTAGE' &&
+                      milestone.billingValue &&
                       ` (${milestone.billingValue}%)`}
                   </PdfText>
                   {milestone.plannedDueDate && (
-                    <PdfText style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
-                      Planned Due Date: {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                    <PdfText
+                      style={{ fontSize: 10, color: '#666', marginTop: 2 }}
+                    >
+                      Planned Due Date:{' '}
+                      {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
                     </PdfText>
                   )}
                 </View>
@@ -636,38 +666,40 @@ const ManagerContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party A Representative
             </PdfText>
-            {(contract?.status === 'signed' || contract?.status === 'active') && partyASignatureBase64 && (
-              <>
-                <PdfImage
-                  src={partyASignatureBase64}
-                  style={{ width: 100, height: 50, marginBottom: 5 }}
-                />
-                <PdfText style={pdfStyles.text}>
-                  CEO - MuTraPro Studio Co., Ltd
-                </PdfText>
-                <PdfText style={pdfStyles.text}>
-                  Signed on:{' '}
-                  {contract?.signedAt
-                    ? formatDate(contract.signedAt)
-                    : formatDate(contract?.sentAt)}
-                </PdfText>
-              </>
-            )}
-            {(contract?.status === 'signed' || contract?.status === 'active') && !partyASignatureBase64 && (
-              <>
-                <View style={pdfStyles.signatureLine} />
-                <PdfText style={pdfStyles.text}>
-                  CEO - MuTraPro Studio Co., Ltd
-                </PdfText>
-                <PdfText style={pdfStyles.text}>
-                  Signed on:{' '}
-                  {contract?.signedAt
-                    ? formatDate(contract.signedAt)
-                    : formatDate(contract?.sentAt)}
-                </PdfText>
-              </>
-            )}
-            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
+            {(contract?.status === 'signed' || contract?.status === 'active') &&
+              partyASignatureBase64 && (
+                <>
+                  <PdfImage
+                    src={partyASignatureBase64}
+                    style={{ width: 100, height: 50, marginBottom: 5 }}
+                  />
+                  <PdfText style={pdfStyles.text}>
+                    CEO - MuTraPro Studio Co., Ltd
+                  </PdfText>
+                  <PdfText style={pdfStyles.text}>
+                    Signed on:{' '}
+                    {contract?.signedAt
+                      ? formatDate(contract.signedAt)
+                      : formatDate(contract?.sentAt)}
+                  </PdfText>
+                </>
+              )}
+            {(contract?.status === 'signed' || contract?.status === 'active') &&
+              !partyASignatureBase64 && (
+                <>
+                  <View style={pdfStyles.signatureLine} />
+                  <PdfText style={pdfStyles.text}>
+                    CEO - MuTraPro Studio Co., Ltd
+                  </PdfText>
+                  <PdfText style={pdfStyles.text}>
+                    Signed on:{' '}
+                    {contract?.signedAt
+                      ? formatDate(contract.signedAt)
+                      : formatDate(contract?.sentAt)}
+                  </PdfText>
+                </>
+              )}
+            {contract?.status !== 'signed' && contract?.status !== 'active' && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -679,42 +711,44 @@ const ManagerContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party B Representative
             </PdfText>
-            {(contract?.status === 'signed' || contract?.status === 'active') && partyBSignatureBase64 && (
-              <>
-                <PdfImage
-                  src={partyBSignatureBase64}
-                  style={{ width: 100, height: 50, marginBottom: 5 }}
-                />
-                <PdfText style={pdfStyles.text}>
-                  {contract?.nameSnapshot || 'Customer'}
-                </PdfText>
-                <PdfText style={pdfStyles.text}>
-                  Signed on:{' '}
-                  {contract?.bSignedAt
-                    ? formatDate(contract.bSignedAt)
-                    : contract?.signedAt
-                      ? formatDate(contract.signedAt)
-                      : 'Pending'}
-                </PdfText>
-              </>
-            )}
-            {(contract?.status === 'signed' || contract?.status === 'active') && !partyBSignatureBase64 && (
-              <>
-                <View style={pdfStyles.signatureLine} />
-                <PdfText style={pdfStyles.text}>
-                  {contract?.nameSnapshot || 'Customer'}
-                </PdfText>
-                <PdfText style={pdfStyles.text}>
-                  Signed on:{' '}
-                  {contract?.bSignedAt
-                    ? formatDate(contract.bSignedAt)
-                    : contract?.signedAt
-                      ? formatDate(contract.signedAt)
-                      : 'Pending'}
-                </PdfText>
-              </>
-            )}
-            {(contract?.status !== 'signed' && contract?.status !== 'active') && (
+            {(contract?.status === 'signed' || contract?.status === 'active') &&
+              partyBSignatureBase64 && (
+                <>
+                  <PdfImage
+                    src={partyBSignatureBase64}
+                    style={{ width: 100, height: 50, marginBottom: 5 }}
+                  />
+                  <PdfText style={pdfStyles.text}>
+                    {contract?.nameSnapshot || 'Customer'}
+                  </PdfText>
+                  <PdfText style={pdfStyles.text}>
+                    Signed on:{' '}
+                    {contract?.bSignedAt
+                      ? formatDate(contract.bSignedAt)
+                      : contract?.signedAt
+                        ? formatDate(contract.signedAt)
+                        : 'Pending'}
+                  </PdfText>
+                </>
+              )}
+            {(contract?.status === 'signed' || contract?.status === 'active') &&
+              !partyBSignatureBase64 && (
+                <>
+                  <View style={pdfStyles.signatureLine} />
+                  <PdfText style={pdfStyles.text}>
+                    {contract?.nameSnapshot || 'Customer'}
+                  </PdfText>
+                  <PdfText style={pdfStyles.text}>
+                    Signed on:{' '}
+                    {contract?.bSignedAt
+                      ? formatDate(contract.bSignedAt)
+                      : contract?.signedAt
+                        ? formatDate(contract.signedAt)
+                        : 'Pending'}
+                  </PdfText>
+                </>
+              )}
+            {contract?.status !== 'signed' && contract?.status !== 'active' && (
               <>
                 <View style={pdfStyles.signatureLine} />
                 <PdfText style={pdfStyles.text}>Name, Title</PdfText>
@@ -809,22 +843,26 @@ const ManagerContractDetailPage = () => {
 
   if (loading) {
     return (
-      <div className={styles.page}
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-      }}>
-        <div className={styles.loading}
+      <div
+        className={styles.page}
         style={{
-          textAlign: 'center',
-          padding: '50px',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
           justifyContent: 'center',
-        }}>
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <div
+          className={styles.loading}
+          style={{
+            textAlign: 'center',
+            padding: '50px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>Loading contract...</div>
         </div>
@@ -840,7 +878,11 @@ const ManagerContractDetailPage = () => {
           description={error || 'Contract not found'}
           type="error"
           showIcon
-          action={<Button onClick={() => navigate('/manager/contracts')}>Go Back</Button>}
+          action={
+            <Button onClick={() => navigate('/manager/contracts')}>
+              Go Back
+            </Button>
+          }
         />
       </div>
     );
@@ -1056,74 +1098,120 @@ const ManagerContractDetailPage = () => {
           <Divider />
 
           {/* DEPOSIT Section - Hiển thị riêng */}
-          {contract?.installments && (() => {
-            const depositInstallment = contract.installments.find(
-              inst => inst.type === 'DEPOSIT'
-            );
-            if (!depositInstallment) return null;
-            
-            const depositStatus = depositInstallment.status || 'PENDING';
-            const isDepositPaid = depositStatus === 'PAID';
-            const isDepositDue = depositStatus === 'DUE';
-            
-            return (
-              <>
-                <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
-                  Deposit Payment
-                </Title>
-                <Card
-                  size="small"
-                  style={{
-                    borderLeft: isDepositPaid ? '4px solid #52c41a' : isDepositDue ? '4px solid #faad14' : '4px solid #d9d9d9',
-                    marginBottom: 16
-                  }}
-                >
-                  <Space direction="vertical" style={{ width: '100%' }} size="small">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <Text strong style={{ fontSize: 16 }}>
-                          Deposit ({depositInstallment.percent}%)
-                        </Text>
-                        <div style={{ marginTop: 8, marginBottom: 8 }}>
-                          <Text type="secondary" style={{ fontSize: 13 }}>
-                            Initial deposit payment required to activate the contract
+          {contract?.installments &&
+            (() => {
+              const depositInstallment = contract.installments.find(
+                inst => inst.type === 'DEPOSIT'
+              );
+              if (!depositInstallment) return null;
+
+              const depositStatus = depositInstallment.status || 'PENDING';
+              const isDepositPaid = depositStatus === 'PAID';
+              const isDepositDue = depositStatus === 'DUE';
+
+              return (
+                <>
+                  <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
+                    Deposit Payment
+                  </Title>
+                  <Card
+                    size="small"
+                    style={{
+                      borderLeft: isDepositPaid
+                        ? '4px solid #52c41a'
+                        : isDepositDue
+                          ? '4px solid #faad14'
+                          : '4px solid #d9d9d9',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Space
+                      direction="vertical"
+                      style={{ width: '100%' }}
+                      size="small"
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <Text strong style={{ fontSize: 16 }}>
+                            Deposit ({depositInstallment.percent}%)
+                          </Text>
+                          <div style={{ marginTop: 8, marginBottom: 8 }}>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                              Initial deposit payment required to activate the
+                              contract
+                            </Text>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', marginLeft: 16 }}>
+                          <Text
+                            strong
+                            style={{ fontSize: 16, color: '#1890ff' }}
+                          >
+                            {depositInstallment.amount?.toLocaleString()}{' '}
+                            {depositInstallment.currency ||
+                              contract?.currency ||
+                              'VND'}
                           </Text>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', marginLeft: 16 }}>
-                        <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                          {depositInstallment.amount?.toLocaleString()} {depositInstallment.currency || contract?.currency || 'VND'}
-                        </Text>
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 8,
+                        }}
+                      >
+                        <Space size="small">
+                          <Tag
+                            color={
+                              isDepositPaid
+                                ? 'success'
+                                : isDepositDue
+                                  ? 'warning'
+                                  : 'default'
+                            }
+                          >
+                            Payment:{' '}
+                            {isDepositPaid
+                              ? 'PAID'
+                              : isDepositDue
+                                ? 'DUE'
+                                : 'PENDING'}
+                          </Tag>
+                          {depositInstallment.paidAt && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              Paid:{' '}
+                              {dayjs(depositInstallment.paidAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
+                            </Text>
+                          )}
+                          {depositInstallment.dueDate && !isDepositPaid && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              Due:{' '}
+                              {dayjs(depositInstallment.dueDate).format(
+                                'DD/MM/YYYY'
+                              )}
+                            </Text>
+                          )}
+                        </Space>
+
+                        {isDepositPaid && <Tag color="success">Paid</Tag>}
                       </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                      <Space size="small">
-                        <Tag color={isDepositPaid ? 'success' : isDepositDue ? 'warning' : 'default'}>
-                          Payment: {isDepositPaid ? 'PAID' : isDepositDue ? 'DUE' : 'PENDING'}
-                        </Tag>
-                        {depositInstallment.paidAt && (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            Paid: {dayjs(depositInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
-                          </Text>
-                        )}
-                        {depositInstallment.dueDate && !isDepositPaid && (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            Due: {dayjs(depositInstallment.dueDate).format('DD/MM/YYYY')}
-                          </Text>
-                        )}
-                      </Space>
-                      
-                      {isDepositPaid && (
-                        <Tag color="success">Paid</Tag>
-                      )}
-                    </div>
-                  </Space>
-                </Card>
-                <Divider />
-              </>
-            );
-          })()}
+                    </Space>
+                  </Card>
+                  <Divider />
+                </>
+              );
+            })()}
 
           {/* Milestones Section - Show when milestones exist */}
           {contract?.milestones && contract.milestones.length > 0 && (
@@ -1131,7 +1219,11 @@ const ManagerContractDetailPage = () => {
               <Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
                 Payment Milestones
               </Title>
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Space
+                direction="vertical"
+                style={{ width: '100%' }}
+                size="middle"
+              >
                 {contract.milestones
                   .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
                   .map((milestone, index) => {
@@ -1141,80 +1233,128 @@ const ManagerContractDetailPage = () => {
                           inst => inst.milestoneId === milestone.milestoneId
                         )
                       : null;
-                    
+
                     const workStatus = milestone.workStatus || 'PLANNED';
-                    const installmentStatus = targetInstallment?.status || 'PENDING';
+                    const installmentStatus =
+                      targetInstallment?.status || 'PENDING';
                     const isPaid = installmentStatus === 'PAID';
                     const isDue = installmentStatus === 'DUE';
-                    
+
                     const getPaymentStatusColor = () => {
                       if (isPaid) return 'success';
                       if (isDue) return 'warning';
                       return 'default';
                     };
-                    
+
                     const getPaymentStatusText = () => {
                       if (isPaid) return 'PAID';
                       if (isDue) return 'DUE';
                       return 'PENDING';
                     };
-                    
+
                     const getWorkStatusColor = () => {
                       switch (workStatus) {
-                        case 'COMPLETED': return 'success';
-                        case 'IN_PROGRESS': return 'processing';
-                        case 'WAITING_CUSTOMER': return 'warning';
-                        case 'READY_FOR_PAYMENT': return 'cyan';
-                        default: return 'default';
+                        case 'COMPLETED':
+                          return 'success';
+                        case 'IN_PROGRESS':
+                          return 'processing';
+                        case 'WAITING_CUSTOMER':
+                          return 'warning';
+                        case 'READY_FOR_PAYMENT':
+                          return 'cyan';
+                        default:
+                          return 'default';
                       }
                     };
-                    
+
                     return (
                       <Card
                         key={milestone.milestoneId || index}
                         size="small"
                         style={{
-                          borderLeft: isPaid ? '4px solid #52c41a' : isDue ? '4px solid #faad14' : '4px solid #d9d9d9',
+                          borderLeft: isPaid
+                            ? '4px solid #52c41a'
+                            : isDue
+                              ? '4px solid #faad14'
+                              : '4px solid #d9d9d9',
                         }}
                       >
-                        <Space direction="vertical" style={{ width: '100%' }} size="small">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Space
+                          direction="vertical"
+                          style={{ width: '100%' }}
+                          size="small"
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                            }}
+                          >
                             <div style={{ flex: 1 }}>
                               <Text strong style={{ fontSize: 16 }}>
-                                {milestone.name || `Milestone ${milestone.orderIndex || index + 1}`}
+                                {milestone.name ||
+                                  `Milestone ${milestone.orderIndex || index + 1}`}
                               </Text>
                               {milestone.description && (
                                 <div style={{ marginTop: 8, marginBottom: 8 }}>
-                                  <Text type="secondary" style={{ fontSize: 13 }}>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 13 }}
+                                  >
                                     {milestone.description}
                                   </Text>
                                 </div>
                               )}
                             </div>
                             {targetInstallment && (
-                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
-                                <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                                  {targetInstallment.amount?.toLocaleString()} {targetInstallment.currency || contract?.currency || 'VND'}
+                              <div
+                                style={{ textAlign: 'right', marginLeft: 16 }}
+                              >
+                                <Text
+                                  strong
+                                  style={{ fontSize: 16, color: '#1890ff' }}
+                                >
+                                  {targetInstallment.amount?.toLocaleString()}{' '}
+                                  {targetInstallment.currency ||
+                                    contract?.currency ||
+                                    'VND'}
                                 </Text>
                                 {targetInstallment.percent && (
                                   <div>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 12 }}
+                                    >
                                       ({targetInstallment.percent}%)
                                     </Text>
                                   </div>
                                 )}
                               </div>
                             )}
-                            {!targetInstallment && milestone.hasPayment === false && (
-                              <div style={{ textAlign: 'right', marginLeft: 16 }}>
-                                <Text type="secondary" style={{ fontSize: 14 }}>
-                                  No payment required
-                                </Text>
-                              </div>
-                            )}
+                            {!targetInstallment &&
+                              milestone.hasPayment === false && (
+                                <div
+                                  style={{ textAlign: 'right', marginLeft: 16 }}
+                                >
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 14 }}
+                                  >
+                                    No payment required
+                                  </Text>
+                                </div>
+                              )}
                           </div>
-                          
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginTop: 8,
+                            }}
+                          >
                             <Space size="small">
                               {targetInstallment && (
                                 <Tag color={getPaymentStatusColor()}>
@@ -1226,22 +1366,29 @@ const ManagerContractDetailPage = () => {
                               </Tag>
                               {targetInstallment?.paidAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Paid: {dayjs(targetInstallment.paidAt).format('DD/MM/YYYY HH:mm')}
+                                  Paid:{' '}
+                                  {dayjs(targetInstallment.paidAt).format(
+                                    'DD/MM/YYYY HH:mm'
+                                  )}
                                 </Text>
                               )}
                               {targetInstallment?.dueDate && !isPaid && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Due: {dayjs(targetInstallment.dueDate).format('DD/MM/YYYY')}
+                                  Due:{' '}
+                                  {dayjs(targetInstallment.dueDate).format(
+                                    'DD/MM/YYYY'
+                                  )}
                                 </Text>
                               )}
                             </Space>
-                            
+
                             {isPaid && targetInstallment && (
                               <Tag color="success">Paid</Tag>
                             )}
-                            {!targetInstallment && milestone.hasPayment === false && (
-                              <Tag color="default">No payment required</Tag>
-                            )}
+                            {!targetInstallment &&
+                              milestone.hasPayment === false && (
+                                <Tag color="default">No payment required</Tag>
+                              )}
                           </div>
                         </Space>
                       </Card>
@@ -1258,7 +1405,9 @@ const ManagerContractDetailPage = () => {
               <Button
                 type="primary"
                 icon={<EditOutlined />}
-                onClick={() => navigate(`/manager/contracts/${contractId}/edit`)}
+                onClick={() =>
+                  navigate(`/manager/contracts/${contractId}/edit`)
+                }
                 block
                 size="large"
               >
@@ -1436,7 +1585,8 @@ const ManagerContractDetailPage = () => {
                                     fontStyle: 'italic',
                                   }}
                                 >
-                                  ({formatDescriptionDuration(item.description)})
+                                  ({formatDescriptionDuration(item.description)}
+                                  )
                                 </div>
                               )}
                             </td>
@@ -1606,7 +1756,13 @@ const ManagerContractDetailPage = () => {
                     border: '1px solid #d4edda',
                   }}
                 >
-                  <strong style={{ display: 'block', marginBottom: '12px', fontSize: '16px' }}>
+                  <strong
+                    style={{
+                      display: 'block',
+                      marginBottom: '12px',
+                      fontSize: '16px',
+                    }}
+                  >
                     Payment Milestones Schedule:
                   </strong>
                   {contract.milestones
@@ -1615,36 +1771,66 @@ const ManagerContractDetailPage = () => {
                       <div
                         key={milestone.milestoneId || index}
                         style={{
-                          marginBottom: index < contract.milestones.length - 1 ? '12px' : '0',
-                          paddingBottom: index < contract.milestones.length - 1 ? '12px' : '0',
-                          borderBottom: index < contract.milestones.length - 1 ? '1px solid #e0e0e0' : 'none',
+                          marginBottom:
+                            index < contract.milestones.length - 1
+                              ? '12px'
+                              : '0',
+                          paddingBottom:
+                            index < contract.milestones.length - 1
+                              ? '12px'
+                              : '0',
+                          borderBottom:
+                            index < contract.milestones.length - 1
+                              ? '1px solid #e0e0e0'
+                              : 'none',
                         }}
                       >
                         <div style={{ marginBottom: '4px' }}>
                           <strong style={{ fontSize: '14px' }}>
-                            Milestone {milestone.orderIndex || index + 1}: {milestone.name || 'N/A'}
+                            Milestone {milestone.orderIndex || index + 1}:{' '}
+                            {milestone.name || 'N/A'}
                           </strong>
                         </div>
                         {milestone.description && (
-                          <div style={{ marginBottom: '6px', fontSize: '13px', color: '#666' }}>
+                          <div
+                            style={{
+                              marginBottom: '6px',
+                              fontSize: '13px',
+                              color: '#666',
+                            }}
+                          >
                             {milestone.description}
                           </div>
                         )}
                         <div style={{ fontSize: '14px' }}>
                           <strong>Amount:</strong>{' '}
-                          <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
-                            {milestone.amount?.toLocaleString()} {contract?.currency || 'VND'}
+                          <span
+                            style={{ color: '#1890ff', fontWeight: 'bold' }}
+                          >
+                            {milestone.amount?.toLocaleString()}{' '}
+                            {contract?.currency || 'VND'}
                           </span>
-                          {milestone.billingType === 'PERCENTAGE' && milestone.billingValue && (
-                            <span style={{ color: '#666', marginLeft: '8px' }}>
-                              ({milestone.billingValue}%)
-                            </span>
-                          )}
+                          {milestone.billingType === 'PERCENTAGE' &&
+                            milestone.billingValue && (
+                              <span
+                                style={{ color: '#666', marginLeft: '8px' }}
+                              >
+                                ({milestone.billingValue}%)
+                              </span>
+                            )}
                         </div>
                         {milestone.plannedDueDate && (
-                          <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                          <div
+                            style={{
+                              fontSize: '13px',
+                              color: '#666',
+                              marginTop: '4px',
+                            }}
+                          >
                             <strong>Planned Due Date:</strong>{' '}
-                            {dayjs(milestone.plannedDueDate).format('DD/MM/YYYY')}
+                            {dayjs(milestone.plannedDueDate).format(
+                              'DD/MM/YYYY'
+                            )}
                           </div>
                         )}
                       </div>
@@ -1855,4 +2041,3 @@ const ManagerContractDetailPage = () => {
 };
 
 export default ManagerContractDetailPage;
-

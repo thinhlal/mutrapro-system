@@ -9,7 +9,9 @@ import axiosInstance from '../utils/axiosInstance';
  */
 export const getOrCreateMyWallet = async () => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.WALLET.GET_OR_CREATE_MY_WALLET);
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.WALLET.GET_OR_CREATE_MY_WALLET
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy thông tin ví' };
@@ -25,7 +27,9 @@ export const getOrCreateMyWallet = async () => {
  */
 export const getWalletById = async walletId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.WALLET.GET_BY_ID(walletId));
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.WALLET.GET_BY_ID(walletId)
+    );
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy thông tin ví' };
@@ -134,7 +138,9 @@ export const getWalletTransactions = async (walletId, filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' }
+    );
   }
 };
 
@@ -161,7 +167,8 @@ export const getMyWalletTransactions = async (filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' }
+    );
   }
 };
-

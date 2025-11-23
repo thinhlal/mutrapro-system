@@ -190,7 +190,6 @@ export const approveContract = async contractId => {
   }
 };
 
-
 /**
  * Initialize E-signature process - send signature and get OTP
  * POST /contracts/{contractId}/init-esign

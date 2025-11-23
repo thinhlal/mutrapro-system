@@ -20,7 +20,10 @@ import {
   ArrowLeftOutlined,
 } from '@ant-design/icons';
 import { getContractById } from '../../../services/contractService';
-import { getOrCreateMyWallet, payDeposit } from '../../../services/walletService';
+import {
+  getOrCreateMyWallet,
+  payDeposit,
+} from '../../../services/walletService';
 import Header from '../../../components/common/Header/Header';
 import styles from './PayDepositPage.module.css';
 import dayjs from 'dayjs';
@@ -46,24 +49,24 @@ const PayDepositPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load contract
       const contractResponse = await getContractById(contractId);
       if (contractResponse?.status === 'success' && contractResponse?.data) {
         const contractData = contractResponse.data;
         setContract(contractData);
-        
+
         // Tìm DEPOSIT installment
         const deposit = contractData.installments?.find(
           inst => inst.type === 'DEPOSIT'
         );
-        
+
         if (!deposit) {
           message.error('Deposit installment not found for this contract');
           navigate(`/contracts/${contractId}`);
           return;
         }
-        
+
         setDepositInstallment(deposit);
       }
 
@@ -105,14 +108,16 @@ const PayDepositPage = () => {
     const walletBalance = parseFloat(wallet.balance || 0);
 
     if (walletBalance < depositAmount) {
-      message.warning('Insufficient wallet balance. Please top up your wallet first.');
+      message.warning(
+        'Insufficient wallet balance. Please top up your wallet first.'
+      );
       setTopupModalVisible(true);
       return;
     }
 
     try {
       setPaying(true);
-      
+
       // Call pay deposit API
       const response = await payDeposit(wallet.walletId, {
         amount: depositAmount,
@@ -124,8 +129,8 @@ const PayDepositPage = () => {
       if (response?.status === 'success') {
         message.success('Deposit payment successful!');
         // Redirect to contract detail
-        navigate(`/contracts/${contractId}`, { 
-          state: { paymentSuccess: true } 
+        navigate(`/contracts/${contractId}`, {
+          state: { paymentSuccess: true },
         });
       }
     } catch (error) {
@@ -136,7 +141,7 @@ const PayDepositPage = () => {
     }
   };
 
-  const handleTopup = async (values) => {
+  const handleTopup = async values => {
     try {
       setTopupModalVisible(false);
       topupForm.resetFields();
@@ -250,7 +255,8 @@ const PayDepositPage = () => {
         <Card className={styles.paymentCard}>
           <Title level={3}>Pay Deposit</Title>
           <Text type="secondary">
-            Complete your deposit payment to activate the contract and start the work.
+            Complete your deposit payment to activate the contract and start the
+            work.
           </Text>
 
           <Divider />
@@ -270,7 +276,10 @@ const PayDepositPage = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Amount">
               <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
-                {formatCurrency(depositAmount, depositInstallment?.currency || contract?.currency || 'VND')}
+                {formatCurrency(
+                  depositAmount,
+                  depositInstallment?.currency || contract?.currency || 'VND'
+                )}
               </Text>
               {depositInstallment?.percent && (
                 <Text type="secondary" style={{ marginLeft: 8 }}>
@@ -291,10 +300,18 @@ const PayDepositPage = () => {
               message={
                 <Space>
                   <WalletOutlined />
-                  <span>Wallet Balance: {formatCurrency(walletBalance, wallet.currency)}</span>
+                  <span>
+                    Wallet Balance:{' '}
+                    {formatCurrency(walletBalance, wallet.currency)}
+                  </span>
                   {!hasEnoughBalance && (
                     <Text type="danger">
-                      (Insufficient balance. Need {formatCurrency(depositAmount - walletBalance, wallet.currency)} more)
+                      (Insufficient balance. Need{' '}
+                      {formatCurrency(
+                        depositAmount - walletBalance,
+                        wallet.currency
+                      )}{' '}
+                      more)
                     </Text>
                   )}
                 </Space>
@@ -319,10 +336,13 @@ const PayDepositPage = () => {
             <Title level={4}>Payment Method</Title>
             <Radio.Group
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={e => setPaymentMethod(e.target.value)}
               className={styles.paymentMethodGroup}
             >
-              <Radio.Button value="wallet" className={styles.paymentMethodOption}>
+              <Radio.Button
+                value="wallet"
+                className={styles.paymentMethodOption}
+              >
                 <WalletOutlined /> Wallet
               </Radio.Button>
             </Radio.Group>
@@ -378,4 +398,3 @@ const PayDepositPage = () => {
 };
 
 export default PayDepositPage;
-

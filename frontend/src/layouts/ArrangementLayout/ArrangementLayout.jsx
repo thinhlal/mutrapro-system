@@ -12,12 +12,8 @@ const menuItems = [
 
 const ArrangementLayout = () => {
   return (
-    <SpecialistLayout
-      specialization="ARRANGEMENT"
-      menuItems={menuItems}
-    />
+    <SpecialistLayout specialization="ARRANGEMENT" menuItems={menuItems} />
   );
 };
 
 export default ArrangementLayout;
-

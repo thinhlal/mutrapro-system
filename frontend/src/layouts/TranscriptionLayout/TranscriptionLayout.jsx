@@ -9,15 +9,7 @@ import {
   ProfileOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Layout,
-  Menu,
-  theme,
-  Avatar,
-  Dropdown,
-  message,
-} from 'antd';
+import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import NotificationBell from '../../components/NotificationBell/NotificationBell';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './TranscriptionLayout.module.css';
@@ -134,4 +126,3 @@ const TranscriptionLayout = () => {
 };
 
 export default TranscriptionLayout;
-

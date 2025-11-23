@@ -38,20 +38,20 @@ const ContractSignedSuccessPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load contract
       const contractResponse = await getContractById(contractId);
       if (contractResponse?.status === 'success' && contractResponse?.data) {
         const contractData = contractResponse.data;
         setContract(contractData);
-        
+
         // Lấy DEPOSIT installment từ contract.installments
         // DEPOSIT không gắn với milestone nào (milestone_id = NULL)
         if (contractData.installments && contractData.installments.length > 0) {
           const depositInst = contractData.installments.find(
             inst => inst.type === 'DEPOSIT'
           );
-          
+
           if (depositInst) {
             setDepositInstallment(depositInst);
           }
@@ -153,7 +153,8 @@ const ContractSignedSuccessPage = () => {
                 {formatCurrency(totalPrice, contract.currency)}
               </Descriptions.Item>
               <Descriptions.Item label="Deposit">
-                {depositPercent}% = {formatCurrency(depositAmount, contract.currency)}
+                {depositPercent}% ={' '}
+                {formatCurrency(depositAmount, contract.currency)}
               </Descriptions.Item>
               {depositInstallment?.dueDate && (
                 <Descriptions.Item label="Deposit Due Date">
@@ -172,8 +173,9 @@ const ContractSignedSuccessPage = () => {
                   <strong>To start the work, please pay the deposit.</strong>
                 </p>
                 <p>
-                  The contract will only become active after the deposit payment is completed.
-                  The start date will be calculated from the deposit payment date.
+                  The contract will only become active after the deposit payment
+                  is completed. The start date will be calculated from the
+                  deposit payment date.
                 </p>
               </div>
             }
@@ -185,7 +187,11 @@ const ContractSignedSuccessPage = () => {
           {/* Payment CTA */}
           <div className={styles.paymentSection}>
             <Card className={styles.paymentCard}>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="large"
+                style={{ width: '100%' }}
+              >
                 <div className={styles.paymentInfo}>
                   <DollarOutlined className={styles.paymentIcon} />
                   <div>
@@ -236,4 +242,3 @@ const ContractSignedSuccessPage = () => {
 };
 
 export default ContractSignedSuccessPage;
-

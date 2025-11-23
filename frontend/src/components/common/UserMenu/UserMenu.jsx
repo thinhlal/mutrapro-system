@@ -107,7 +107,9 @@ function UserMenu() {
 
   const truncateText = (text, maxLength = 16) => {
     if (!text) return '';
-    return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+    return text.length > maxLength
+      ? `${text.slice(0, maxLength).trim()}...`
+      : text;
   };
 
   const getInitials = email => {

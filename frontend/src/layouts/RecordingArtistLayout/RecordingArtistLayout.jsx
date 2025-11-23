@@ -12,12 +12,8 @@ const menuItems = [
 
 const RecordingArtistLayout = () => {
   return (
-    <SpecialistLayout
-      specialization="RECORDING_ARTIST"
-      menuItems={menuItems}
-    />
+    <SpecialistLayout specialization="RECORDING_ARTIST" menuItems={menuItems} />
   );
 };
 
 export default RecordingArtistLayout;
-

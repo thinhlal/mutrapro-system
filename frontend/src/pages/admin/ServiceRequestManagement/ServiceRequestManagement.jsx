@@ -355,11 +355,7 @@ export default function ServiceRequestManagement() {
         const hasContract = record.hasContract === true;
 
         return (
-          <Space
-            direction="vertical"
-            size="small"
-            style={{ width: '100%' }}
-          >
+          <Space direction="vertical" size="small" style={{ width: '100%' }}>
             {!hasManager && (
               <Button
                 type="primary"

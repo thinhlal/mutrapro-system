@@ -1,7 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import Embed from 'flat-embed';
-import { Button, Card, Space, Upload, Alert, Form, Input, Select, InputNumber, Typography, Divider, Modal } from 'antd';
-import { UploadOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined, FileTextOutlined, FileImageOutlined, PlusOutlined, CloseOutlined, AudioOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Space,
+  Upload,
+  Alert,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  Typography,
+  Divider,
+  Modal,
+} from 'antd';
+import {
+  UploadOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StopOutlined,
+  FileTextOutlined,
+  FileImageOutlined,
+  PlusOutlined,
+  CloseOutlined,
+  AudioOutlined,
+} from '@ant-design/icons';
 import styles from './FlatDemo.module.css';
 
 export default function FlatDemo() {
@@ -225,14 +248,12 @@ export default function FlatDemo() {
             accept=".musicxml,.xml,.mxl,.mid,.midi"
             showUploadList={false}
             beforeUpload={() => false}
-            onChange={(info) => {
+            onChange={info => {
               const file = info.file.originFileObj || info.file;
               handleUpload({ target: { files: [file] } });
             }}
           >
-            <Button icon={<UploadOutlined />}>
-              Upload (XML/MXL/MIDI)
-            </Button>
+            <Button icon={<UploadOutlined />}>Upload (XML/MXL/MIDI)</Button>
           </Upload>
 
           <Button
@@ -242,36 +263,20 @@ export default function FlatDemo() {
           >
             Play
           </Button>
-          <Button
-            icon={<PauseCircleOutlined />}
-            onClick={() => embed?.pause()}
-          >
+          <Button icon={<PauseCircleOutlined />} onClick={() => embed?.pause()}>
             Pause
           </Button>
-          <Button
-            danger
-            icon={<StopOutlined />}
-            onClick={() => embed?.stop()}
-          >
+          <Button danger icon={<StopOutlined />} onClick={() => embed?.stop()}>
             Stop
           </Button>
 
-          <Button
-            icon={<FileTextOutlined />}
-            onClick={exportXML}
-          >
+          <Button icon={<FileTextOutlined />} onClick={exportXML}>
             Export XML
           </Button>
-          <Button
-            icon={<AudioOutlined />}
-            onClick={exportMIDI}
-          >
+          <Button icon={<AudioOutlined />} onClick={exportMIDI}>
             Export MIDI
           </Button>
-          <Button
-            icon={<FileImageOutlined />}
-            onClick={exportPNG}
-          >
+          <Button icon={<FileImageOutlined />} onClick={exportPNG}>
             Export PNG
           </Button>
         </Space>
@@ -319,7 +324,12 @@ export default function FlatDemo() {
                 <Input
                   value="/"
                   readOnly
-                  style={{ width: '10%', textAlign: 'center', borderLeft: 0, borderRight: 0 }}
+                  style={{
+                    width: '10%',
+                    textAlign: 'center',
+                    borderLeft: 0,
+                    borderRight: 0,
+                  }}
                 />
                 <InputNumber
                   value={beatType}
@@ -361,9 +371,7 @@ export default function FlatDemo() {
           <Divider />
 
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={() => setModalVisible(false)}>
-              Cancel
-            </Button>
+            <Button onClick={() => setModalVisible(false)}>Cancel</Button>
             <Button type="primary" onClick={handleCreate}>
               Create New Score
             </Button>
@@ -388,7 +396,7 @@ export default function FlatDemo() {
           showIcon
           closable
           onClose={() => setShowWelcomeMessage(false)}
-          style={{ 
+          style={{
             marginBottom: 16,
             borderRadius: '8px',
           }}
@@ -396,10 +404,7 @@ export default function FlatDemo() {
       )}
 
       <Card className={styles.editorContainer} bordered={false}>
-        <div
-          ref={hostRef}
-          className={styles.iframe}
-        />
+        <div ref={hostRef} className={styles.iframe} />
       </Card>
     </div>
   );

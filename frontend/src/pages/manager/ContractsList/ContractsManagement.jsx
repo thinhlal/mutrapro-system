@@ -353,11 +353,7 @@ export default function ContractsManagement() {
         const canEdit = isDraft; // Only editable when DRAFT
 
         return (
-          <Space
-            direction="vertical"
-            size="small"
-            style={{ width: '100%' }}
-          >
+          <Space direction="vertical" size="small" style={{ width: '100%' }}>
             <Tooltip title="View Details">
               <Button
                 icon={<EyeOutlined />}
@@ -437,7 +433,9 @@ export default function ContractsManagement() {
             )}
             {canManagerCancel && (
               <Tooltip
-                title={isDraft ? 'Cancel DRAFT contract' : 'Recall sent contract'}
+                title={
+                  isDraft ? 'Cancel DRAFT contract' : 'Recall sent contract'
+                }
               >
                 <Button
                   danger
@@ -798,7 +796,12 @@ export default function ContractsManagement() {
                   </div>
                   <div>
                     <strong>Status:</strong>{' '}
-                    <Tag color={statusColor[canceledContract.status?.toLowerCase()] || 'default'}>
+                    <Tag
+                      color={
+                        statusColor[canceledContract.status?.toLowerCase()] ||
+                        'default'
+                      }
+                    >
                       {canceledContract.status?.toUpperCase()}
                     </Tag>
                   </div>
@@ -839,4 +842,3 @@ export default function ContractsManagement() {
     </div>
   );
 }
-

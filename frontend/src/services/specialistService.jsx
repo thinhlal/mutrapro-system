@@ -24,12 +24,12 @@ export const createSpecialist = async specialistData => {
 export const getAllSpecialists = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
-    
+
     // Xử lý từng filter
     if (filters.specialization) {
       params.append('specialization', filters.specialization);
     }
-    
+
     // Xử lý skillNames array: Spring Boot nhận format ?skillNames=value1&skillNames=value2
     if (Array.isArray(filters.skillNames) && filters.skillNames.length > 0) {
       filters.skillNames.forEach(skillName => {
@@ -38,16 +38,18 @@ export const getAllSpecialists = async (filters = {}) => {
         }
       });
     }
-    
+
     const queryString = params.toString();
     const url = `${API_ENDPOINTS.SPECIALISTS.MANAGER.GET_AVAILABLE}${
       queryString ? `?${queryString}` : ''
     }`;
-    
+
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách specialist' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách specialist' }
+    );
   }
 };
 
@@ -61,7 +63,9 @@ export const getSpecialistById = async specialistId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
+    );
   }
 };
 
@@ -75,7 +79,9 @@ export const getSpecialistByUserId = async userId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
+    );
   }
 };
 
@@ -117,7 +123,7 @@ export const filterSpecialists = async (specialization, status) => {
     const params = new URLSearchParams();
     if (specialization) params.append('specialization', specialization);
     if (status) params.append('status', status);
-    
+
     const response = await axiosInstance.get(
       `${API_ENDPOINTS.SPECIALISTS.ADMIN.FILTER}?${params.toString()}`
     );
@@ -242,7 +248,9 @@ export const updateDemoVisibility = async (demoId, visibilityData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi cập nhật demo visibility' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi cập nhật demo visibility' }
+    );
   }
 };
 
@@ -420,4 +428,3 @@ export const deleteMyDemo = async demoId => {
     throw error.response?.data || { message: 'Lỗi khi xóa demo' };
   }
 };
-

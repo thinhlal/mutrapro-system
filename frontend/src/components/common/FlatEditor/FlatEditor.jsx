@@ -2,7 +2,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Embed from 'flat-embed';
 import { Button, Card, Space, Upload, message, Alert } from 'antd';
-import { UploadOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined, FileTextOutlined, AudioOutlined } from '@ant-design/icons';
+import {
+  UploadOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  StopOutlined,
+  FileTextOutlined,
+  AudioOutlined,
+} from '@ant-design/icons';
 import styles from './FlatEditor.module.css';
 
 // Piano C-major 4/4, 2 ô nhịp — demo siêu gọn
@@ -121,7 +128,7 @@ export default function FlatEditor() {
             accept=".musicxml,.xml,.mxl,.mid,.midi"
             showUploadList={false}
             beforeUpload={() => false}
-            onChange={(info) => {
+            onChange={info => {
               const file = info.file.originFileObj || info.file;
               handleUpload({ target: { files: [file] } });
             }}
@@ -131,9 +138,7 @@ export default function FlatEditor() {
             </Button>
           </Upload>
 
-          <Button onClick={loadDemo}>
-            Load Demo
-          </Button>
+          <Button onClick={loadDemo}>Load Demo</Button>
           <Button
             type="primary"
             icon={<PlayCircleOutlined />}
@@ -141,29 +146,16 @@ export default function FlatEditor() {
           >
             Play
           </Button>
-          <Button
-            icon={<PauseCircleOutlined />}
-            onClick={() => embed?.pause()}
-          >
+          <Button icon={<PauseCircleOutlined />} onClick={() => embed?.pause()}>
             Pause
           </Button>
-          <Button
-            danger
-            icon={<StopOutlined />}
-            onClick={() => embed?.stop()}
-          >
+          <Button danger icon={<StopOutlined />} onClick={() => embed?.stop()}>
             Stop
           </Button>
-          <Button
-            icon={<FileTextOutlined />}
-            onClick={exportXML}
-          >
+          <Button icon={<FileTextOutlined />} onClick={exportXML}>
             Export XML
           </Button>
-          <Button
-            icon={<AudioOutlined />}
-            onClick={exportMIDI}
-          >
+          <Button icon={<AudioOutlined />} onClick={exportMIDI}>
             Export MIDI
           </Button>
         </Space>
@@ -188,10 +180,7 @@ export default function FlatEditor() {
       )}
 
       <Card className={styles.editorContainer} bordered={false}>
-        <div
-          ref={hostRef}
-          className={styles.iframe}
-        />
+        <div ref={hostRef} className={styles.iframe} />
       </Card>
     </div>
   );

@@ -161,7 +161,9 @@ export default function ServiceRequestContracts() {
   };
 
   const handleViewContract = contractId => {
-    const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/manager';
+    const basePath = location.pathname.startsWith('/admin')
+      ? '/admin'
+      : '/manager';
     navigate(`${basePath}/contracts/${contractId}`);
   };
 

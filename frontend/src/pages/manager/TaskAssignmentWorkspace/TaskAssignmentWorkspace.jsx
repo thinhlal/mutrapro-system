@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   Card,
   Spin,
@@ -177,25 +183,25 @@ export default function TaskAssignmentWorkspace() {
 
   const fetchSpecialists = useCallback(
     async (specializationFilter, requiredInstrumentNames = []) => {
-    try {
-      setSpecialistsLoading(true);
+      try {
+        setSpecialistsLoading(true);
         const response = await getAllSpecialists({
           specialization: specializationFilter,
           skillNames: requiredInstrumentNames,
-      });
-      if (response?.status === 'success' && response?.data) {
-        const activeSpecialists = response.data.filter(
-          s => s.status?.toLowerCase() === 'active'
-        );
-        console.log('Loaded specialists', activeSpecialists);
-        setSpecialists(activeSpecialists);
+        });
+        if (response?.status === 'success' && response?.data) {
+          const activeSpecialists = response.data.filter(
+            s => s.status?.toLowerCase() === 'active'
+          );
+          console.log('Loaded specialists', activeSpecialists);
+          setSpecialists(activeSpecialists);
+        }
+      } catch (error) {
+        console.error('Error fetching specialists:', error);
+        message.error('Không thể tải danh sách specialists');
+      } finally {
+        setSpecialistsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching specialists:', error);
-      message.error('Không thể tải danh sách specialists');
-    } finally {
-      setSpecialistsLoading(false);
-    }
     },
     []
   );
@@ -212,9 +218,12 @@ export default function TaskAssignmentWorkspace() {
           }
           const status = task.status?.toLowerCase();
           statsMap[task.milestoneId].total += 1;
-          if (status === 'in_progress') statsMap[task.milestoneId].inProgress += 1;
-          else if (status === 'completed') statsMap[task.milestoneId].completed += 1;
-          else if (status === 'cancelled') statsMap[task.milestoneId].cancelled += 1;
+          if (status === 'in_progress')
+            statsMap[task.milestoneId].inProgress += 1;
+          else if (status === 'completed')
+            statsMap[task.milestoneId].completed += 1;
+          else if (status === 'cancelled')
+            statsMap[task.milestoneId].cancelled += 1;
           else statsMap[task.milestoneId].assigned += 1;
         });
         setMilestoneStats(statsMap);
@@ -286,7 +295,12 @@ export default function TaskAssignmentWorkspace() {
 
   // Set selected specialist when specialists are loaded and we have assignment data
   useEffect(() => {
-    if (isEditMode && currentAssignment && specialists.length > 0 && !selectedSpecialist) {
+    if (
+      isEditMode &&
+      currentAssignment &&
+      specialists.length > 0 &&
+      !selectedSpecialist
+    ) {
       const specialist = specialists.find(
         s => s.specialistId === currentAssignment.specialistId
       );
@@ -304,7 +318,7 @@ export default function TaskAssignmentWorkspace() {
   useEffect(() => {
     // Chỉ fetch khi contract đã load xong
     if (!contract) return;
-    
+
     const effectiveTaskType =
       taskType ||
       (allowedTaskTypes.length === 1 ? allowedTaskTypes[0] : undefined);
@@ -335,7 +349,7 @@ export default function TaskAssignmentWorkspace() {
       instruments: JSON.stringify(requiredNames.sort()),
     };
     const lastParams = lastFetchParamsRef.current;
-    
+
     if (
       lastParams.specialization === currentParams.specialization &&
       lastParams.instruments === currentParams.instruments
@@ -346,24 +360,37 @@ export default function TaskAssignmentWorkspace() {
 
     // Update ref và fetch
     lastFetchParamsRef.current = currentParams;
-    console.log('Fetching specialists with filter:', { specializationFilter, requiredNames });
+    console.log('Fetching specialists with filter:', {
+      specializationFilter,
+      requiredNames,
+    });
     fetchSpecialists(specializationFilter, requiredNames);
-  }, [contract, allowedTaskTypes, taskType, fetchSpecialists, instrumentDetails]);
+  }, [
+    contract,
+    allowedTaskTypes,
+    taskType,
+    fetchSpecialists,
+    instrumentDetails,
+  ]);
 
   const filteredSpecialists = useMemo(() => {
     let result = specialists;
-    
+
     // Filter out specialist cũ nếu có excludeSpecialistId (khi tạo task mới từ task đã cancel)
     if (excludedSpecialistId && !isEditMode) {
       result = result.filter(s => s.specialistId !== excludedSpecialistId);
     }
-    
+
     // Filter theo search keyword
     if (!specialistSearch) return result;
     const keyword = specialistSearch.toLowerCase();
     return result.filter(s => {
-      const name =
-        (s.fullName || s.email || s.specialistId || '').toLowerCase();
+      const name = (
+        s.fullName ||
+        s.email ||
+        s.specialistId ||
+        ''
+      ).toLowerCase();
       const specialization = s.specialization?.toLowerCase() || '';
       const bio = s.bio?.toLowerCase() || '';
       return (
@@ -372,13 +399,17 @@ export default function TaskAssignmentWorkspace() {
         bio.includes(keyword)
       );
     });
-  }, [specialistSearch, specialists, isEditMode, currentAssignment, excludedSpecialistId]);
+  }, [
+    specialistSearch,
+    specialists,
+    isEditMode,
+    currentAssignment,
+    excludedSpecialistId,
+  ]);
 
   const selectedMilestone = useMemo(() => {
     if (!contract?.milestones || !selectedMilestoneId) return null;
-    return contract.milestones.find(
-      m => m.milestoneId === selectedMilestoneId
-    );
+    return contract.milestones.find(m => m.milestoneId === selectedMilestoneId);
   }, [contract, selectedMilestoneId]);
 
   const handleAssign = async () => {
@@ -416,7 +447,9 @@ export default function TaskAssignmentWorkspace() {
 
       if (response?.status === 'success') {
         message.success(
-          isEditMode ? 'Cập nhật task assignment thành công' : 'Gán task thành công'
+          isEditMode
+            ? 'Cập nhật task assignment thành công'
+            : 'Gán task thành công'
         );
         navigate('/manager/task-assignments');
       }
@@ -524,9 +557,7 @@ export default function TaskAssignmentWorkspace() {
                       <Text strong>Required Instruments:</Text>
                       <Space wrap style={{ marginTop: 4 }}>
                         {instrumentDetails.map(inst => (
-                          <Tag key={inst.id || inst.name}>
-                            {inst.name}
-                          </Tag>
+                          <Tag key={inst.id || inst.name}>{inst.name}</Tag>
                         ))}
                       </Space>
                     </div>
@@ -563,7 +594,8 @@ export default function TaskAssignmentWorkspace() {
                 dataSource={contract.milestones}
                 rowKey="milestoneId"
                 renderItem={item => {
-                  const stats = milestoneStats[item.milestoneId] || defaultStats;
+                  const stats =
+                    milestoneStats[item.milestoneId] || defaultStats;
                   const isSelected = item.milestoneId === selectedMilestoneId;
                   const isCompleted =
                     item.workStatus?.toLowerCase() === 'completed';
@@ -697,7 +729,10 @@ export default function TaskAssignmentWorkspace() {
                       if (ratio >= 1)
                         return { color: 'red', text: `${open}/${max} Full` };
                       if (ratio >= 0.75)
-                        return { color: 'volcano', text: `${open}/${max} Busy` };
+                        return {
+                          color: 'volcano',
+                          text: `${open}/${max} Busy`,
+                        };
                       if (ratio >= 0.5)
                         return { color: 'gold', text: `${open}/${max} Normal` };
                       return {
@@ -746,7 +781,10 @@ export default function TaskAssignmentWorkspace() {
                             </Paragraph>
                           )}
                         </div>
-                        <Button type={active ? 'primary' : 'default'} size="small">
+                        <Button
+                          type={active ? 'primary' : 'default'}
+                          size="small"
+                        >
                           {active ? 'Đang chọn' : 'Chọn'}
                         </Button>
                       </List.Item>
@@ -763,7 +801,9 @@ export default function TaskAssignmentWorkspace() {
           </Card>
         </Col>
         <Col xs={24} lg={10}>
-          <Card className={`${styles.assignmentCard} ${styles.fixedHeightCard}`}>
+          <Card
+            className={`${styles.assignmentCard} ${styles.fixedHeightCard}`}
+          >
             <Title level={4}>
               {isEditMode ? 'Chỉnh sửa Task' : 'Thiết lập Task'}
             </Title>
@@ -831,8 +871,7 @@ export default function TaskAssignmentWorkspace() {
                               {selectedSpecialist.experienceYears || 0} yrs exp
                             </Tag>
                             <Tag color="green">
-                              Load:{' '}
-                              {selectedSpecialist.totalOpenTasks ?? 0}/
+                              Load: {selectedSpecialist.totalOpenTasks ?? 0}/
                               {selectedSpecialist.maxConcurrentTasks || 1}
                             </Tag>
                             <Tag color="purple">
@@ -863,7 +902,9 @@ export default function TaskAssignmentWorkspace() {
                   onClick={handleAssign}
                   block
                 >
-                  {isEditMode ? 'Cập nhật task assignment' : 'Xác nhận gán task'}
+                  {isEditMode
+                    ? 'Cập nhật task assignment'
+                    : 'Xác nhận gán task'}
                 </Button>
               </Col>
             </Row>
@@ -873,4 +914,3 @@ export default function TaskAssignmentWorkspace() {
     </div>
   );
 }
-

@@ -12,11 +12,7 @@ import {
   Typography,
   Descriptions,
 } from 'antd';
-import {
-  EditOutlined,
-  ReloadOutlined,
-  EyeOutlined,
-} from '@ant-design/icons';
+import { EditOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import {
   getAllDemos,
   getDemoById,
@@ -86,7 +82,8 @@ const DemoManagement = () => {
       setVisibilityModalVisible(false);
       fetchDemos();
     } catch (error) {
-      const errorMsg = error.message || error.error || 'Không thể cập nhật visibility';
+      const errorMsg =
+        error.message || error.error || 'Không thể cập nhật visibility';
       message.error(errorMsg);
     } finally {
       setVisibilityLoading(false);
@@ -117,9 +114,8 @@ const DemoManagement = () => {
       title: 'Skill',
       dataIndex: ['skill', 'skillName'],
       key: 'skill',
-      render: (skillName, record) => (
-        skillName ? <Tag color="blue">{skillName}</Tag> : 'N/A'
-      ),
+      render: (skillName, record) =>
+        skillName ? <Tag color="blue">{skillName}</Tag> : 'N/A',
     },
     {
       title: 'Public',
@@ -165,7 +161,7 @@ const DemoManagement = () => {
       dataIndex: 'customerRating',
       key: 'customerRating',
       align: 'center',
-      render: rating => rating ? rating.toFixed(2) : 'N/A',
+      render: rating => (rating ? rating.toFixed(2) : 'N/A'),
     },
     {
       title: 'Actions',
@@ -196,7 +192,11 @@ const DemoManagement = () => {
   return (
     <div className={styles.demoManagement}>
       <Card
-        title={<Title level={3} style={{ margin: 0 }}>Demo Management</Title>}
+        title={
+          <Title level={3} style={{ margin: 0 }}>
+            Demo Management
+          </Title>
+        }
         extra={
           <Button
             icon={<ReloadOutlined />}
@@ -246,17 +246,25 @@ const DemoManagement = () => {
             <Descriptions.Item label="Skill">
               {selectedDemo.skill?.skillName ? (
                 <Tag color="blue">{selectedDemo.skill.skillName}</Tag>
-              ) : 'N/A'}
+              ) : (
+                'N/A'
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="File ID">
               {selectedDemo.fileId}
             </Descriptions.Item>
             <Descriptions.Item label="Preview URL" span={2}>
               {selectedDemo.previewUrl ? (
-                <a href={selectedDemo.previewUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={selectedDemo.previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {selectedDemo.previewUrl}
                 </a>
-              ) : 'N/A'}
+              ) : (
+                'N/A'
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="Public">
               <Tag color={selectedDemo.isPublic ? 'green' : 'red'}>
@@ -272,13 +280,17 @@ const DemoManagement = () => {
               {selectedDemo.viewCount || 0}
             </Descriptions.Item>
             <Descriptions.Item label="Rating">
-              {selectedDemo.customerRating ? selectedDemo.customerRating.toFixed(2) : 'N/A'}
+              {selectedDemo.customerRating
+                ? selectedDemo.customerRating.toFixed(2)
+                : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Demo Order">
               {selectedDemo.demoOrder || 1}
             </Descriptions.Item>
             <Descriptions.Item label="Last Played At">
-              {selectedDemo.lastPlayedAt ? new Date(selectedDemo.lastPlayedAt).toLocaleString() : 'N/A'}
+              {selectedDemo.lastPlayedAt
+                ? new Date(selectedDemo.lastPlayedAt).toLocaleString()
+                : 'N/A'}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -301,18 +313,10 @@ const DemoManagement = () => {
           layout="vertical"
           onFinish={handleVisibilitySubmit}
         >
-          <Form.Item
-            name="isPublic"
-            label="Public"
-            valuePropName="checked"
-          >
+          <Form.Item name="isPublic" label="Public" valuePropName="checked">
             <Switch checkedChildren="Public" unCheckedChildren="Private" />
           </Form.Item>
-          <Form.Item
-            name="isFeatured"
-            label="Featured"
-            valuePropName="checked"
-          >
+          <Form.Item name="isFeatured" label="Featured" valuePropName="checked">
             <Switch checkedChildren="Featured" unCheckedChildren="Normal" />
           </Form.Item>
         </Form>
@@ -322,4 +326,3 @@ const DemoManagement = () => {
 };
 
 export default DemoManagement;
-

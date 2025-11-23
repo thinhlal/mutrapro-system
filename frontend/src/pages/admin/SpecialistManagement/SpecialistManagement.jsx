@@ -58,7 +58,10 @@ const SpecialistManagement = () => {
     try {
       let response;
       if (filters.specialization || filters.status) {
-        response = await filterSpecialists(filters.specialization, filters.status);
+        response = await filterSpecialists(
+          filters.specialization,
+          filters.status
+        );
       } else {
         response = await getAllSpecialists();
       }
@@ -90,7 +93,8 @@ const SpecialistManagement = () => {
       createForm.resetFields();
       fetchSpecialists();
     } catch (error) {
-      const errorMsg = error.message || error.error || 'Không thể tạo specialist';
+      const errorMsg =
+        error.message || error.error || 'Không thể tạo specialist';
       message.error(errorMsg);
     } finally {
       setCreateLoading(false);
@@ -118,12 +122,16 @@ const SpecialistManagement = () => {
   const handleStatusSubmit = async values => {
     setStatusLoading(true);
     try {
-      await updateSpecialistStatus(selectedSpecialist.specialistId, values.status);
+      await updateSpecialistStatus(
+        selectedSpecialist.specialistId,
+        values.status
+      );
       message.success('Cập nhật status thành công');
       setStatusModalVisible(false);
       fetchSpecialists();
     } catch (error) {
-      const errorMsg = error.message || error.error || 'Không thể cập nhật status';
+      const errorMsg =
+        error.message || error.error || 'Không thể cập nhật status';
       message.error(errorMsg);
     } finally {
       setStatusLoading(false);
@@ -147,7 +155,8 @@ const SpecialistManagement = () => {
       setSettingsModalVisible(false);
       fetchSpecialists();
     } catch (error) {
-      const errorMsg = error.message || error.error || 'Không thể cập nhật settings';
+      const errorMsg =
+        error.message || error.error || 'Không thể cập nhật settings';
       message.error(errorMsg);
     } finally {
       setSettingsLoading(false);
@@ -278,10 +287,7 @@ const SpecialistManagement = () => {
           >
             Status
           </Button>
-          <Button
-            type="link"
-            onClick={() => handleUpdateSettings(record)}
-          >
+          <Button type="link" onClick={() => handleUpdateSettings(record)}>
             Settings
           </Button>
         </Space>
@@ -292,14 +298,20 @@ const SpecialistManagement = () => {
   return (
     <div className={styles.specialistManagement}>
       <Card
-        title={<Title level={3} style={{ margin: 0 }}>Specialist Management</Title>}
+        title={
+          <Title level={3} style={{ margin: 0 }}>
+            Specialist Management
+          </Title>
+        }
         extra={
           <Space>
             <Select
               placeholder="Filter by Specialization"
               allowClear
               style={{ width: 200 }}
-              onChange={value => setFilters({ ...filters, specialization: value })}
+              onChange={value =>
+                setFilters({ ...filters, specialization: value })
+              }
             >
               <Option value="TRANSCRIPTION">Transcription</Option>
               <Option value="ARRANGEMENT">Arrangement</Option>
@@ -359,11 +371,7 @@ const SpecialistManagement = () => {
         confirmLoading={createLoading}
         width={600}
       >
-        <Form
-          form={createForm}
-          layout="vertical"
-          onFinish={handleCreate}
-        >
+        <Form form={createForm} layout="vertical" onFinish={handleCreate}>
           <Form.Item
             name="email"
             label="Email"
@@ -377,7 +385,9 @@ const SpecialistManagement = () => {
           <Form.Item
             name="specialization"
             label="Specialization"
-            rules={[{ required: true, message: 'Vui lòng chọn specialization' }]}
+            rules={[
+              { required: true, message: 'Vui lòng chọn specialization' },
+            ]}
           >
             <Select placeholder="Select specialization">
               <Option value="TRANSCRIPTION">Transcription</Option>
@@ -413,7 +423,9 @@ const SpecialistManagement = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Specialization">
               <Tag color="blue">
-                {getSpecializationDisplayName(selectedSpecialist.specialization)}
+                {getSpecializationDisplayName(
+                  selectedSpecialist.specialization
+                )}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
@@ -455,11 +467,7 @@ const SpecialistManagement = () => {
         onOk={() => statusForm.submit()}
         confirmLoading={statusLoading}
       >
-        <Form
-          form={statusForm}
-          layout="vertical"
-          onFinish={handleStatusSubmit}
-        >
+        <Form form={statusForm} layout="vertical" onFinish={handleStatusSubmit}>
           <Form.Item
             name="status"
             label="Status"
@@ -508,4 +516,3 @@ const SpecialistManagement = () => {
 };
 
 export default SpecialistManagement;
-
