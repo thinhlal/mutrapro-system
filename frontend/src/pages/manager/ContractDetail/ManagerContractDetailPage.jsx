@@ -1536,15 +1536,10 @@ const ManagerContractDetailPage = () => {
                 <div
                   style={{
                     marginBottom: '16px',
-                    padding: '12px',
                     backgroundColor: '#f5f5f5',
                     borderRadius: '4px',
                   }}
                 >
-                  <strong style={{ display: 'block', marginBottom: '12px' }}>
-                    Price Breakdown:
-                  </strong>
-
                   <table
                     style={{
                       width: '100%',
@@ -1719,28 +1714,6 @@ const ManagerContractDetailPage = () => {
                         padding: '10px',
                         fontWeight: 'bold',
                         backgroundColor: '#e8e8e8',
-                        width: '200px',
-                      }}
-                    >
-                      Currency
-                    </td>
-                    <td
-                      style={{
-                        border: '1px solid #000',
-                        padding: '10px',
-                        backgroundColor: '#fff',
-                      }}
-                    >
-                      {contract.currency || 'VND'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style={{
-                        border: '1px solid #000',
-                        padding: '10px',
-                        fontWeight: 'bold',
-                        backgroundColor: '#e8e8e8',
                       }}
                     >
                       Total Price
@@ -1759,102 +1732,47 @@ const ManagerContractDetailPage = () => {
                       {contract.currency || 'VND'}
                     </td>
                   </tr>
+                  <tr>
+                    <td
+                      style={{
+                        border: '1px solid #000',
+                        padding: '10px',
+                        fontWeight: 'bold',
+                        backgroundColor: '#e8e8e8',
+                      }}
+                    >
+                      Deposit ({(() => {
+                        const depositInstallment = contract?.installments?.find(
+                          inst => inst.type === 'DEPOSIT'
+                        );
+                        return depositInstallment?.percent || contract?.depositPercent || 0;
+                      })()}%)
+                    </td>
+                    <td
+                      style={{
+                        border: '1px solid #000',
+                        padding: '10px',
+                        textAlign: 'right',
+                        fontWeight: 'bold',
+                        backgroundColor: '#fff',
+                      }}
+                    >
+                      {(() => {
+                        const depositInstallment = contract?.installments?.find(
+                          inst => inst.type === 'DEPOSIT'
+                        );
+                        const depositPercent = depositInstallment?.percent || contract?.depositPercent || 0;
+                        const totalPrice = contract?.totalPrice || 0;
+                        const depositAmount = depositInstallment?.amount && depositInstallment.amount > 0
+                          ? depositInstallment.amount
+                          : (totalPrice * depositPercent) / 100;
+                        return depositAmount?.toLocaleString();
+                      })()}{' '}
+                      {contract.currency || 'VND'}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
-
-              {/* Payment Milestones Schedule */}
-              {contract?.milestones && contract.milestones.length > 0 && (
-                <div
-                  style={{
-                    marginTop: '16px',
-                    marginBottom: '16px',
-                    padding: '12px',
-                    backgroundColor: '#f0f7ff',
-                    borderRadius: '4px',
-                    border: '1px solid #d4edda',
-                  }}
-                >
-                  <strong
-                    style={{
-                      display: 'block',
-                      marginBottom: '12px',
-                      fontSize: '16px',
-                    }}
-                  >
-                    Payment Milestones Schedule:
-                  </strong>
-                  {contract.milestones
-                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
-                    .map((milestone, index) => (
-                      <div
-                        key={milestone.milestoneId || index}
-                        style={{
-                          marginBottom:
-                            index < contract.milestones.length - 1
-                              ? '12px'
-                              : '0',
-                          paddingBottom:
-                            index < contract.milestones.length - 1
-                              ? '12px'
-                              : '0',
-                          borderBottom:
-                            index < contract.milestones.length - 1
-                              ? '1px solid #e0e0e0'
-                              : 'none',
-                        }}
-                      >
-                        <div style={{ marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '14px' }}>
-                            Milestone {milestone.orderIndex || index + 1}:{' '}
-                            {milestone.name || 'N/A'}
-                          </strong>
-                        </div>
-                        {milestone.description && (
-                          <div
-                            style={{
-                              marginBottom: '6px',
-                              fontSize: '13px',
-                              color: '#666',
-                            }}
-                          >
-                            {milestone.description}
-                          </div>
-                        )}
-                        <div style={{ fontSize: '14px' }}>
-                          <strong>Amount:</strong>{' '}
-                          <span
-                            style={{ color: '#1890ff', fontWeight: 'bold' }}
-                          >
-                            {milestone.amount?.toLocaleString()}{' '}
-                            {contract?.currency || 'VND'}
-                          </span>
-                          {milestone.billingType === 'PERCENTAGE' &&
-                            milestone.billingValue && (
-                              <span
-                                style={{ color: '#666', marginLeft: '8px' }}
-                              >
-                                ({milestone.billingValue}%)
-                              </span>
-                            )}
-                        </div>
-                        {milestone.plannedDueDate && (
-                          <div
-                            style={{
-                              fontSize: '13px',
-                              color: '#666',
-                              marginTop: '4px',
-                            }}
-                          >
-                            <strong>Planned Due Date:</strong>{' '}
-                            {dayjs(milestone.plannedDueDate).format(
-                              'DD/MM/YYYY'
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              )}
 
               {contract.contractType?.toLowerCase() === 'transcription' &&
                 requestDetails?.tempoPercentage && (
@@ -1874,53 +1792,130 @@ const ManagerContractDetailPage = () => {
                   </>
                 )}
 
+              {/* Milestones */}
+              {contract?.milestones && contract.milestones.length > 0 && (
+                <>
+                  <h3>Milestones</h3>
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        <th
+                          style={{
+                            border: '1px solid #000',
+                            padding: '10px',
+                            backgroundColor: '#e8e8e8',
+                            textAlign: 'left',
+                          }}
+                        >
+                          Milestone
+                        </th>
+                        <th
+                          style={{
+                            border: '1px solid #000',
+                            padding: '10px',
+                            backgroundColor: '#e8e8e8',
+                            textAlign: 'left',
+                          }}
+                        >
+                          Description
+                        </th>
+                        <th
+                          style={{
+                            border: '1px solid #000',
+                            padding: '10px',
+                            backgroundColor: '#e8e8e8',
+                            textAlign: 'center',
+                          }}
+                        >
+                          Payment %
+                        </th>
+                        <th
+                          style={{
+                            border: '1px solid #000',
+                            padding: '10px',
+                            backgroundColor: '#e8e8e8',
+                            textAlign: 'center',
+                          }}
+                        >
+                          SLA Days
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contract.milestones
+                        .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                        .map((milestone, index) => (
+                          <tr key={milestone.milestoneId || index}>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                              }}
+                            >
+                              <strong>
+                                {milestone.name || `Milestone ${index + 1}`}
+                              </strong>
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                                whiteSpace: 'pre-line',
+                              }}
+                            >
+                              {milestone.description || '-'}
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {(() => {
+                                // Find installment for this milestone
+                                const installment = contract?.installments?.find(
+                                  inst => inst.milestoneId === milestone.milestoneId
+                                );
+                                return installment?.percent || milestone.paymentPercent || 'N/A';
+                              })()}
+                              {(() => {
+                                const installment = contract?.installments?.find(
+                                  inst => inst.milestoneId === milestone.milestoneId
+                                );
+                                return (installment?.percent || milestone.paymentPercent) ? '%' : '';
+                              })()}
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '10px',
+                                textAlign: 'center',
+                              }}
+                            >
+                              {milestone.milestoneSlaDays || milestone.slaDays || '-'} days
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
               <h3>Timeline & SLA</h3>
               <p>
-                <strong>SLA Days:</strong> {contract.slaDays || 0} days
-                &nbsp;|&nbsp;
-                <strong>Expected Start:</strong>{' '}
-                {contract.expectedStartDate ? (
-                  dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
-                ) : (
-                  <span style={{ fontStyle: 'italic', color: '#999' }}>
-                    Upon signing
-                  </span>
-                )}
-                &nbsp;|&nbsp;
-                <strong>Due Date:</strong>{' '}
-                {(() => {
-                  // Get due date from last milestone's plannedDueDate (calculated by backend)
-                  if (contract?.milestones && contract.milestones.length > 0) {
-                    const lastMilestone = contract.milestones[contract.milestones.length - 1];
-                    if (lastMilestone?.plannedDueDate) {
-                      return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
-                    }
-                  }
-                  // No plannedDueDate yet (not calculated)
-                  return (
-                    <span style={{ fontStyle: 'italic', color: '#999' }}>
-                      N/A
-                    </span>
-                  );
-                })()}
-              </p>
-
-              <h3>Revision Policy</h3>
-              <p>
-                <strong>Free Revisions Included:</strong>{' '}
-                {contract.freeRevisionsIncluded || 0}
-                {contract.revisionDeadlineDays && (
+                <strong>SLA Days (Service Level Agreement):</strong>{' '}
+                {contract.slaDays || 0} days
+                {contract.slaDays > 0 && (
                   <>
                     {' '}
-                    &nbsp;|&nbsp; <strong>Revision Deadline:</strong>{' '}
-                    {contract.revisionDeadlineDays} days after delivery
-                  </>
-                )}
-                {contract.additionalRevisionFeeVnd && (
-                  <>
-                    {' '}
-                    &nbsp;|&nbsp; <strong>Additional Revision Fee:</strong>{' '}
-                    {contract.additionalRevisionFeeVnd.toLocaleString()} VND
+                    | <strong>Due:</strong> After {contract.slaDays} days if payment is on time
                   </>
                 )}
               </p>

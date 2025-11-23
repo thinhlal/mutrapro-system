@@ -2245,6 +2245,12 @@ const ContractBuilder = () => {
                 <p>
                   <strong>SLA Days (Service Level Agreement):</strong>{' '}
                   {data?.sla_days || 0} days
+                  {data?.sla_days > 0 && (
+                    <>
+                      {' '}
+                      | <strong>Due:</strong> After {data.sla_days} days if payment is on time
+                    </>
+                  )}
                 </p>
 
                 {data?.terms_and_conditions && (
