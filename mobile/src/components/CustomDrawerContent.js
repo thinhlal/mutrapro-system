@@ -59,9 +59,9 @@ const CustomDrawerContent = (props) => {
       id: 'wallet',
       label: 'Wallet',
       icon: 'wallet-outline',
-      screen: 'MainTabs',
-      tab: 'Home',
-      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+      screen: 'Wallet',
+      tab: null,
+      onPress: () => navigation.navigate('Wallet'),
     },
     {
       id: 'profile',
@@ -130,6 +130,8 @@ const CustomDrawerContent = (props) => {
             let isActive = false;
             if (item.screen === 'MyRequests') {
               isActive = currentRoute === 'MyRequests';
+            } else if (item.screen === 'Wallet') {
+              isActive = currentRoute === 'Wallet';
             } else if (item.screen === 'MainTabs' && item.tab) {
               // For MainTabs items, check if on MainTabs screen
               // In a real app, you'd check the nested route too

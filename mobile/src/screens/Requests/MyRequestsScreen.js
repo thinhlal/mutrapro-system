@@ -140,8 +140,7 @@ const MyRequestsScreen = ({ navigation }) => {
 
   const handleRequestPress = (request) => {
     // Navigate to request detail screen
-    // navigation.navigate("RequestDetail", { requestId: request.requestId });
-    console.log("Navigate to request:", request.requestId);
+    navigation.navigate("RequestDetail", { requestId: request.requestId });
   };
 
   const renderFilterModal = () => (
