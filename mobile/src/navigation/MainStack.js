@@ -5,6 +5,9 @@ import { SCREEN_NAMES, COLORS } from '../config/constants';
 import { CustomDrawerContent } from '../components';
 import BottomTabNavigator from './BottomTabNavigator';
 import MyRequestsScreen from '../screens/Requests/MyRequestsScreen';
+import RequestDetailScreen from '../screens/Requests/RequestDetailScreen';
+import ContractDetailScreen from '../screens/Contracts/ContractDetailScreen';
+import WalletScreen from '../screens/Wallet/WalletScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -44,6 +47,35 @@ const MainStack = () => {
             <Ionicons name="document-text-outline" size={size} color={color} />
           ),
           headerShown: true,
+        }}
+      />
+      <Drawer.Screen
+        name="Wallet"
+        component={WalletScreen}
+        options={{
+          title: 'Wallet',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="wallet-outline" size={size} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="RequestDetail"
+        component={RequestDetailScreen}
+        options={{
+          title: 'Request Detail',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="ContractDetail"
+        component={ContractDetailScreen}
+        options={{
+          title: 'Contract Detail',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
         }}
       />
     </Drawer.Navigator>

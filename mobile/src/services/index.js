@@ -4,6 +4,7 @@ export * from './userService';
 export * from './pricingMatrixService';
 export * from './serviceRequestService';
 export * from './instrumentService';
+export * from './contractService';
 export * from './notificationService';
 export * from './chatService';
 
