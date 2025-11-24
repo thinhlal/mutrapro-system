@@ -63,6 +63,10 @@ export const API_ENDPOINTS = {
   WALLET: {
     GET_OR_CREATE_MY_WALLET: `${BILLING_PATH}/wallets/me`,
     GET_BY_ID: (walletId) => `${BILLING_PATH}/wallets/${walletId}`,
+    TOPUP: (walletId) => `${BILLING_PATH}/wallets/${walletId}/topup`,
+    PAY_DEPOSIT: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
+    PAY_MILESTONE: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
+    GET_TRANSACTIONS: (walletId) => `${BILLING_PATH}/wallets/${walletId}/transactions`,
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
   },
 
