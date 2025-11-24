@@ -6,6 +6,7 @@ import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.service.ContractService;
@@ -92,6 +93,23 @@ public class ContractController {
         return ApiResponse.<List<ContractResponse>>builder()
                 .message("Contracts retrieved successfully")
                 .data(contracts)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @GetMapping("/{contractId}/milestones/{milestoneId}")
+    @Operation(summary = "Lấy thông tin milestone theo milestoneId và contractId")
+    public ApiResponse<ContractMilestoneResponse> getMilestoneById(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @Parameter(description = "ID của milestone")
+            @PathVariable String milestoneId) {
+        log.info("Getting milestone: contractId={}, milestoneId={}", contractId, milestoneId);
+        ContractMilestoneResponse milestone = contractService.getMilestoneById(contractId, milestoneId);
+        return ApiResponse.<ContractMilestoneResponse>builder()
+                .message("Milestone retrieved successfully")
+                .data(milestone)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

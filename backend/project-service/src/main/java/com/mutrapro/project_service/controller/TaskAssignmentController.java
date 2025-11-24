@@ -171,5 +171,22 @@ public class TaskAssignmentController {
                 .build();
     }
 
+    @GetMapping("/by-specialist/{specialistId}")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Lấy danh sách task assignments theo specialistId (cho internal use)")
+    public ApiResponse<List<TaskAssignmentResponse>> getTaskAssignmentsBySpecialistId(
+            @Parameter(description = "ID của specialist")
+            @PathVariable String specialistId) {
+        log.info("Getting task assignments for specialist: specialistId={}", specialistId);
+        List<TaskAssignmentResponse> assignments = taskAssignmentService
+            .getTaskAssignmentsBySpecialistId(specialistId);
+        return ApiResponse.<List<TaskAssignmentResponse>>builder()
+                .message("Task assignments retrieved successfully")
+                .data(assignments)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
 }
 

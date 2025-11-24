@@ -104,6 +104,50 @@ public class TaskAssignmentService {
     }
 
     /**
+     * Lấy danh sách task assignments theo specialistId (cho internal use bởi specialist-service)
+     * Không cần verify permission vì đây là internal API
+     */
+    public List<TaskAssignmentResponse> getTaskAssignmentsBySpecialistId(String specialistId) {
+        log.info("Getting task assignments for specialist: specialistId={}", specialistId);
+        
+        List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistId(specialistId);
+        return assignments.stream()
+            .map(this::enrichTaskAssignment)
+            .toList();
+    }
+
+    /**
+     * Enrich TaskAssignmentResponse với milestone info (bao gồm plannedDueDate)
+     */
+    private TaskAssignmentResponse enrichTaskAssignment(TaskAssignment assignment) {
+        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
+        
+        // Fetch milestone info với plannedDueDate
+        try {
+            ContractMilestone milestone = contractMilestoneRepository
+                .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                .orElse(null);
+            if (milestone != null) {
+                TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
+                    .milestoneId(milestone.getMilestoneId())
+                    .name(milestone.getName())
+                    .description(milestone.getDescription())
+                    .plannedStartAt(milestone.getPlannedStartAt())
+                    .plannedDueDate(milestone.getPlannedDueDate())
+                    .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                    .build();
+                response.setMilestone(milestoneInfo);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
+                assignment.getMilestoneId(), assignment.getContractId(), e.getMessage());
+            // Không fail nếu không load được milestone
+        }
+        
+        return response;
+    }
+
+    /**
      * Lấy chi tiết task assignment
      */
     public TaskAssignmentResponse getTaskAssignmentById(String contractId, String assignmentId) {

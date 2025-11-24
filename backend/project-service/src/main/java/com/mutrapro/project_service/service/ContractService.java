@@ -443,6 +443,18 @@ public class ContractService {
         
         return enrichWithMilestonesAndInstallments(response);
     }
+
+    /**
+     * Lấy milestone theo milestoneId và contractId
+     */
+    @Transactional(readOnly = true)
+    public ContractMilestoneResponse getMilestoneById(String contractId, String milestoneId) {
+        ContractMilestone milestone = contractMilestoneRepository
+            .findByMilestoneIdAndContractId(milestoneId, contractId)
+            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
+        
+        return contractMilestoneMapper.toResponse(milestone);
+    }
     
     
     /**
@@ -1120,7 +1132,7 @@ public class ContractService {
             }
             
             // Update status từ "signed" → "active" (đã thanh toán DEPOSIT, có thể bắt đầu công việc)
-            contract.setStatus(ContractStatus.active);
+        contract.setStatus(ContractStatus.active);
             contractRepository.save(contract);
             log.info("Updated contract to active after DEPOSIT paid: contractId={}, expectedStartDate={}, status=active", 
                 contractId, paidAt);
@@ -1248,7 +1260,7 @@ public class ContractService {
         
         if (allInstallmentsPaid && contract.getStatus() == ContractStatus.active) {
             // Tất cả installments đã được thanh toán → contract completed
-            contractRepository.save(contract);
+        contractRepository.save(contract);
             log.info("All installments paid for contract: contractId={}, allInstallmentsCount={}", 
                 contractId, allInstallments.size());
             

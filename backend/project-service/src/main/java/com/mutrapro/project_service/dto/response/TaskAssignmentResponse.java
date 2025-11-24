@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -83,6 +84,9 @@ public class TaskAssignmentResponse {
         String milestoneId;
         String name;
         String description;
+        LocalDateTime plannedStartAt;
+        LocalDateTime plannedDueDate;  // Deadline của milestone để tính tasksInSlaWindow
+        Integer milestoneSlaDays;
     }
 }
 

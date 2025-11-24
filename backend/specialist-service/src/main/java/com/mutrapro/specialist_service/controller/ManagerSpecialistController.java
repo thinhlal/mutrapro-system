@@ -28,14 +28,20 @@ public class ManagerSpecialistController {
 
     /**
      * Lấy danh sách specialists đang active (hoặc filter theo specialization)
+     * @param milestoneId (optional) ID của milestone đang assign - dùng để tính tasksInSlaWindow
+     * @param contractId (optional) ID của contract - cần khi có milestoneId
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
     public ApiResponse<List<SpecialistResponse>> getAvailableSpecialists(
             @RequestParam(required = false) String specialization,
-            @RequestParam(required = false, name = "skillNames") List<String> skillNames) {
-        log.info("GET /manager/specialists - specialization: {}, skillNames: {}", specialization, skillNames);
-        List<SpecialistResponse> specialists = specialistLookupService.getAvailableSpecialists(specialization, skillNames);
+            @RequestParam(required = false, name = "skillNames") List<String> skillNames,
+            @RequestParam(required = false) String milestoneId,
+            @RequestParam(required = false) String contractId) {
+        log.info("GET /manager/specialists - specialization: {}, skillNames: {}, milestoneId: {}, contractId: {}", 
+            specialization, skillNames, milestoneId, contractId);
+        List<SpecialistResponse> specialists = specialistLookupService.getAvailableSpecialists(
+            specialization, skillNames, milestoneId, contractId);
         return ApiResponse.<List<SpecialistResponse>>builder()
                 .message("Available specialists retrieved successfully")
                 .data(specialists)

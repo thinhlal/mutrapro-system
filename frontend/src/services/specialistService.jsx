@@ -20,6 +20,7 @@ export const createSpecialist = async specialistData => {
 
 /**
  * Lấy tất cả specialists cho Manager (có thể filter)
+ * @param {Object} filters - Filters: specialization, skillNames, milestoneId, contractId
  */
 export const getAllSpecialists = async (filters = {}) => {
   try {
@@ -37,6 +38,14 @@ export const getAllSpecialists = async (filters = {}) => {
           params.append('skillNames', skillName);
         }
       });
+    }
+
+    // Thêm milestoneId và contractId để tính tasksInSlaWindow theo milestone
+    if (filters.milestoneId) {
+      params.append('milestoneId', filters.milestoneId);
+    }
+    if (filters.contractId) {
+      params.append('contractId', filters.contractId);
     }
 
     const queryString = params.toString();

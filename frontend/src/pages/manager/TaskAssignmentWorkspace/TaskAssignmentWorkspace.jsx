@@ -197,14 +197,16 @@ export default function TaskAssignmentWorkspace() {
     }
   };
 
-  const fetchSpecialists = useCallback(
-    async (specializationFilter, requiredInstrumentNames = []) => {
-      try {
-        setSpecialistsLoading(true);
-        const response = await getAllSpecialists({
-          specialization: specializationFilter,
-          skillNames: requiredInstrumentNames,
-        });
+              const fetchSpecialists = useCallback(
+                async (specializationFilter, requiredInstrumentNames = []) => {
+                  try {
+                    setSpecialistsLoading(true);
+                    const response = await getAllSpecialists({
+                      specialization: specializationFilter,
+                      skillNames: requiredInstrumentNames,
+                      milestoneId: selectedMilestoneId, // Truyền milestoneId để tính tasksInSlaWindow
+                      contractId: contractId, // Truyền contractId để tính tasksInSlaWindow
+                    });
         if (response?.status === 'success' && response?.data) {
           const activeSpecialists = response.data.filter(
             s => s.status?.toLowerCase() === 'active'
@@ -219,7 +221,7 @@ export default function TaskAssignmentWorkspace() {
         setSpecialistsLoading(false);
       }
     },
-    []
+    [selectedMilestoneId, contractId] // Thêm dependencies để fetch lại khi milestone thay đổi
   );
 
   const fetchTaskStats = async id => {
@@ -365,12 +367,16 @@ export default function TaskAssignmentWorkspace() {
     const currentParams = {
       specialization: specializationFilter,
       instruments: JSON.stringify(requiredNames.sort()),
+      milestoneId: selectedMilestoneId || 'none',
+      contractId: contractId || 'none',
     };
     const lastParams = lastFetchParamsRef.current;
 
     if (
       lastParams.specialization === currentParams.specialization &&
-      lastParams.instruments === currentParams.instruments
+      lastParams.instruments === currentParams.instruments &&
+      lastParams.milestoneId === currentParams.milestoneId &&
+      lastParams.contractId === currentParams.contractId
     ) {
       // Params không thay đổi, không cần fetch lại
       return;
@@ -389,6 +395,8 @@ export default function TaskAssignmentWorkspace() {
     taskType,
     fetchSpecialists,
     instrumentDetails,
+    selectedMilestoneId,
+    contractId,
   ]);
 
   const filteredSpecialists = useMemo(() => {
