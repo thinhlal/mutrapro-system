@@ -55,6 +55,9 @@ public class ChatParticipant extends BaseEntity<String> {
     @Column(name = "left_at")
     java.time.Instant leftAt;
 
+    @Column(name = "last_seen_at")
+    java.time.Instant lastSeenAt;
+
     public String getId() {
         return participantId;
     }
@@ -62,6 +65,10 @@ public class ChatParticipant extends BaseEntity<String> {
     public void leave() {
         this.isActive = false;
         this.leftAt = java.time.Instant.now();
+    }
+
+    public void markAsSeen() {
+        this.lastSeenAt = java.time.Instant.now();
     }
 }
 

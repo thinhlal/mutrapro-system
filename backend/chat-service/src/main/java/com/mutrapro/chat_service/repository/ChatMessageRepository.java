@@ -32,5 +32,24 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
            "WHERE m.chatRoom.roomId = :roomId " +
            "ORDER BY m.sentAt DESC")
     List<ChatMessage> findLatestMessage(@Param("roomId") String roomId, Pageable pageable);
+    
+    /**
+     * Count messages excluding specific sender IDs
+     */
+    long countByChatRoom_RoomIdAndSenderIdNotAndSenderIdNot(
+            String roomId, 
+            String excludeSenderId1, 
+            String excludeSenderId2
+    );
+    
+    /**
+     * Count messages after a timestamp, excluding specific sender IDs
+     */
+    long countByChatRoom_RoomIdAndSentAtAfterAndSenderIdNotAndSenderIdNot(
+            String roomId,
+            Instant after,
+            String excludeSenderId1,
+            String excludeSenderId2
+    );
 }
 

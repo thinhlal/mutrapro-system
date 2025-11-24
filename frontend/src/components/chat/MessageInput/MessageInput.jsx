@@ -3,7 +3,6 @@ import { Input, Button, Upload } from 'antd';
 import {
   SendOutlined,
   PaperClipOutlined,
-  SmileOutlined,
 } from '@ant-design/icons';
 import styles from './MessageInput.module.css';
 
@@ -60,17 +59,10 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
           value={message}
           onChange={e => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Nhập tin nhắn... (Enter để gửi, Shift+Enter để xuống dòng)"
-          autoSize={{ minRows: 1, maxRows: 4 }}
+          placeholder="Nhập tin nhắn..."
+          autoSize={{ minRows: 1}}
           disabled={disabled || sending}
           className={styles.textarea}
-        />
-
-        <Button
-          type="text"
-          icon={<SmileOutlined />}
-          disabled={disabled || sending}
-          className={styles.actionButton}
         />
 
         <Button

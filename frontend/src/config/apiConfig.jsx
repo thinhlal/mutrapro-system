@@ -230,6 +230,7 @@ export const API_ENDPOINTS = {
     // Chat Rooms
     GET_ALL_ROOMS: `${CHAT_PATH}/chat-rooms`,
     GET_ROOM: roomId => `${CHAT_PATH}/chat-rooms/${roomId}`,
+    GET_ROOM_BY_CONTEXT: `${CHAT_PATH}/chat-rooms/by-context`,
     CREATE_ROOM: `${CHAT_PATH}/chat-rooms`,
     ADD_PARTICIPANT: roomId => `${CHAT_PATH}/chat-rooms/${roomId}/participants`,
     REMOVE_PARTICIPANT: (roomId, userId) =>
@@ -239,6 +240,8 @@ export const API_ENDPOINTS = {
     GET_MESSAGES: roomId => `${CHAT_PATH}/messages/room/${roomId}`,
     GET_RECENT_MESSAGES: (roomId, sinceTimestamp) =>
       `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
+    GET_UNREAD_COUNT: roomId => `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
+    MARK_AS_READ: roomId => `${CHAT_PATH}/messages/room/${roomId}/mark-read`,
 
     // WebSocket (for real-time messaging)
     WS_ENDPOINT: `${CHAT_PATH}/ws`,

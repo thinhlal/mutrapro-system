@@ -35,6 +35,7 @@ import {
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RequestContractList from '../../../components/contract/RequestContractList/RequestContractList';
 import FileList from '../../../components/common/FileList/FileList';
+import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './RequestDetailPage.module.css';
 
 const { TextArea } = Input;
@@ -509,6 +510,11 @@ const RequestDetailPage = () => {
             maxLength={500}
           />
         </Modal>
+
+        {/* Chat Popup - Facebook Messenger style */}
+        {requestId && (
+          <ChatPopup requestId={requestId} roomType="REQUEST_CHAT" />
+        )}
       </div>
     );
   };

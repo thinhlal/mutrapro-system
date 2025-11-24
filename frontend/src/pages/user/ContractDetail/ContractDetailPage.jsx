@@ -58,6 +58,7 @@ import RevisionRequestModal from '../../../components/modal/RevisionRequestModal
 import ViewCancellationReasonModal from '../../../components/modal/ViewCancellationReasonModal/ViewCancellationReasonModal';
 import SignaturePadModal from '../../../components/modal/SignaturePadModal/SignaturePadModal';
 import OTPVerificationModal from '../../../components/modal/OTPVerificationModal/OTPVerificationModal';
+import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './ContractDetailPage.module.css';
 import Header from '../../../components/common/Header/Header';
 
@@ -2811,6 +2812,11 @@ const ContractDetailPage = () => {
           reason={contract.cancellationReason || 'No reason provided'}
           isCanceled={isCanceled}
         />
+      )}
+
+      {/* Chat Popup - Facebook Messenger style for request chat */}
+      {contract?.requestId && (
+        <ChatPopup requestId={contract.requestId} roomType="REQUEST_CHAT" />
       )}
     </div>
   );

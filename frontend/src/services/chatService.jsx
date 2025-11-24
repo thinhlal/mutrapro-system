@@ -24,6 +24,19 @@ export const getChatRoomById = async roomId => {
 };
 
 /**
+ * Get chat room by context (roomType and contextId)
+ */
+export const getChatRoomByContext = async (roomType, contextId) => {
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.CHAT.GET_ROOM_BY_CONTEXT,
+    {
+      params: { roomType, contextId },
+    }
+  );
+  return response.data;
+};
+
+/**
  * Create a new chat room (manual - for SUPPORT_CHAT or DIRECT_MESSAGE only)
  */
 export const createChatRoom = async data => {
@@ -81,12 +94,35 @@ export const getRecentMessages = async (roomId, sinceTimestamp) => {
   return response.data;
 };
 
+/**
+ * Get unread message count for a chat room
+ */
+export const getUnreadCount = async roomId => {
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.CHAT.GET_UNREAD_COUNT(roomId)
+  );
+  return response.data;
+};
+
+/**
+ * Mark messages as read in a chat room
+ */
+export const markAsRead = async roomId => {
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.CHAT.MARK_AS_READ(roomId)
+  );
+  return response.data;
+};
+
 export default {
   getChatRooms,
   getChatRoomById,
+  getChatRoomByContext,
   createChatRoom,
   addParticipant,
   removeParticipant,
   getMessages,
   getRecentMessages,
+  getUnreadCount,
+  markAsRead,
 };

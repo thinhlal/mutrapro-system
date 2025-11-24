@@ -45,6 +45,7 @@ import {
 } from '../../../utils/timeUtils';
 import { API_CONFIG } from '../../../config/apiConfig';
 import ViewCancellationReasonModal from '../../../components/modal/ViewCancellationReasonModal/ViewCancellationReasonModal';
+import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './ManagerContractDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -2308,6 +2309,11 @@ const ManagerContractDetailPage = () => {
           reason={contract.cancellationReason || 'No reason provided'}
           isCanceled={isCanceled}
         />
+      )}
+
+      {/* Chat Popup - Facebook Messenger style for request chat */}
+      {contract?.requestId && (
+        <ChatPopup requestId={contract.requestId} roomType="REQUEST_CHAT" />
       )}
     </div>
   );

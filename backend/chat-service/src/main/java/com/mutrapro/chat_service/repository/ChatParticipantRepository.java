@@ -14,6 +14,8 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     
     Optional<ChatParticipant> findByChatRoom_RoomIdAndUserId(String roomId, String userId);
     
+    Optional<ChatParticipant> findByChatRoom_RoomIdAndUserIdAndIsActiveTrue(String roomId, String userId);
+    
     List<ChatParticipant> findAllByChatRoom_RoomIdAndIsActiveTrue(String roomId);
     
     boolean existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(String roomId, String userId);

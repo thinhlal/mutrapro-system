@@ -1,5 +1,5 @@
 import { Modal, Button, Descriptions, Tag } from 'antd';
-import { CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import FileList from '../../common/FileList/FileList';
 
@@ -51,19 +51,6 @@ export default function ServiceRequestDetailModal({
             onClick={() => onAssign(request.id)}
           >
             Assign to Me
-          </Button>
-        ),
-        isAssignedToCurrentUser && onCreateContract && (
-          <Button
-            key="createContract"
-            type="default"
-            icon={<FileTextOutlined />}
-            onClick={() => {
-              onCreateContract(request);
-              onCancel();
-            }}
-          >
-            Create Contract
           </Button>
         ),
       ]}

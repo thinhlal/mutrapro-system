@@ -3,6 +3,7 @@ package com.mutrapro.chat_service.service;
 import com.mutrapro.chat_service.dto.request.SendMessageRequest;
 import com.mutrapro.chat_service.dto.response.ChatMessageResponse;
 import com.mutrapro.chat_service.entity.ChatMessage;
+import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
 import com.mutrapro.chat_service.enums.MessageStatus;
 import com.mutrapro.chat_service.exception.ChatRoomAccessDeniedException;
@@ -157,6 +158,57 @@ public class ChatMessageService {
         return messages.stream()
                 .map(chatMessageMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get unread message count for current user in a chat room
+     * Unread = messages sent after lastSeenAt, excluding user's own messages and SYSTEM messages
+     */
+    @Transactional(readOnly = true)
+    public long getUnreadCount(String roomId) {
+        String userId = getCurrentUserId();
+        
+        // Get participant to check lastSeenAt
+        ChatParticipant participant = chatParticipantRepository
+                .findByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)
+                .orElseThrow(() -> ChatRoomAccessDeniedException.create(roomId, userId));
+        
+        // If never seen, count all messages (except own and SYSTEM)
+        if (participant.getLastSeenAt() == null) {
+            long count = chatMessageRepository.countByChatRoom_RoomIdAndSenderIdNotAndSenderIdNot(
+                    roomId, userId, "SYSTEM");
+            log.debug("Unread count (never seen): roomId={}, userId={}, count={}", roomId, userId, count);
+            return count;
+        }
+        
+        // Count messages after lastSeenAt, excluding user's own messages and SYSTEM
+        long count = chatMessageRepository.countByChatRoom_RoomIdAndSentAtAfterAndSenderIdNotAndSenderIdNot(
+                roomId, participant.getLastSeenAt(), userId, "SYSTEM");
+        
+        log.debug("Unread count: roomId={}, userId={}, lastSeenAt={}, count={}", 
+                roomId, userId, participant.getLastSeenAt(), count);
+        return count;
+    }
+
+    /**
+     * Mark messages as read for current user in a chat room
+     * Updates lastSeenAt to current time
+     */
+    @Transactional
+    public void markAsRead(String roomId) {
+        String userId = getCurrentUserId();
+        
+        // Get participant
+        ChatParticipant participant = chatParticipantRepository
+                .findByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)
+                .orElseThrow(() -> ChatRoomAccessDeniedException.create(roomId, userId));
+        
+        // Update lastSeenAt
+        participant.markAsSeen();
+        chatParticipantRepository.save(participant);
+        
+        log.info("Marked messages as read: roomId={}, userId={}, lastSeenAt={}", 
+                roomId, userId, participant.getLastSeenAt());
     }
 
     private void verifyParticipantAccess(String roomId, String userId) {

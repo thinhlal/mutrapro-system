@@ -24,6 +24,7 @@ import dayjs from 'dayjs';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractsByRequestId } from '../../../services/contractService';
 import FileList from '../../../components/common/FileList/FileList';
+import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './ServiceRequestContracts.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -428,6 +429,11 @@ export default function ServiceRequestContracts() {
           }}
         />
       </Card>
+
+      {/* Chat Popup */}
+      {requestId && (
+        <ChatPopup requestId={requestId} roomType="REQUEST_CHAT" />
+      )}
     </div>
   );
 }

@@ -15,6 +15,9 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
+
+    this.currentToken = null;    // token hiện tại
+    this.shouldReconnect = false; // có cho phép reconnect không
   }
 
   /**
@@ -24,55 +27,25 @@ class WebSocketService {
   connect(token) {
     return new Promise((resolve, reject) => {
       try {
-        // Create STOMP client with SockJS
-        this.client = new Client({
-          webSocketFactory: () => {
-            // Use SockJS for better browser compatibility
-            const wsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT.WS_ENDPOINT}`;
-            return new SockJS(wsUrl);
-          },
+        this.currentToken = token;      // lưu token mới
+        this.shouldReconnect = true;    // cho phép reconnect
 
-          connectHeaders: {
-            Authorization: `Bearer ${token}`,
-          },
+        // Nếu đang có connection cũ → disconnect sạch rồi connect lại
+        if (this.client && this.connected) {
+          // Tạm thời tắt reconnect khi disconnect chủ động
+          this.shouldReconnect = false;
 
-          debug: str => {
-            if (import.meta.env.DEV) {
-              console.log('[STOMP Debug]:', str);
-            }
-          },
+          // Giữ token (vì đang chuyển user / đổi token, không phải logout)
+          this.disconnect({ preserveToken: true });
 
-          reconnectDelay: this.reconnectDelay,
-          heartbeatIncoming: 10000,
-          heartbeatOutgoing: 10000,
-
-          onConnect: () => {
-            console.log('✅ WebSocket Connected');
-            this.connected = true;
-            this.reconnectAttempts = 0;
-            resolve();
-          },
-
-          onStompError: frame => {
-            console.error('❌ STOMP Error:', frame.headers['message']);
-            console.error('Error details:', frame.body);
-            reject(new Error(frame.headers['message']));
-          },
-
-          onWebSocketError: error => {
-            console.error('❌ WebSocket Error:', error);
-            reject(error);
-          },
-
-          onDisconnect: () => {
-            console.log('⚠️ WebSocket Disconnected');
-            this.connected = false;
-            this.handleReconnect(token);
-          },
-        });
-
-        // Activate connection
-        this.client.activate();
+          // Đợi 1 chút cho WS đóng hẳn rồi connect lại
+          setTimeout(() => {
+            this.shouldReconnect = true;
+            this.doConnect(resolve, reject);
+          }, 200);
+        } else {
+          this.doConnect(resolve, reject);
+        }
       } catch (error) {
         console.error('❌ Failed to create WebSocket connection:', error);
         reject(error);
@@ -81,9 +54,76 @@ class WebSocketService {
   }
 
   /**
+   * Internal method to actually connect to WebSocket
+   */
+  doConnect(resolve, reject) {
+    try {
+      // Create STOMP client with SockJS
+      this.client = new Client({
+        webSocketFactory: () => {
+          // Use SockJS for better browser compatibility
+          const wsUrl = `${API_CONFIG.BASE_URL}${API_ENDPOINTS.CHAT.WS_ENDPOINT}`;
+          return new SockJS(wsUrl);
+        },
+
+        connectHeaders: {
+          Authorization: `Bearer ${this.currentToken}`, // dùng currentToken
+        },
+
+        debug: str => {
+          if (import.meta.env.DEV) {
+            console.log('[STOMP Debug]:', str);
+          }
+        },
+
+        reconnectDelay: this.reconnectDelay,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
+
+        onConnect: () => {
+          console.log('✅ WebSocket Connected');
+          this.connected = true;
+          this.reconnectAttempts = 0;
+          resolve();
+        },
+
+        onStompError: frame => {
+          console.error('❌ STOMP Error:', frame.headers['message']);
+          console.error('Error details:', frame.body);
+          reject(new Error(frame.headers['message']));
+        },
+
+        onWebSocketError: error => {
+          console.error('❌ WebSocket Error:', error);
+          reject(error);
+        },
+
+        onDisconnect: () => {
+          console.log('⚠️ WebSocket Disconnected');
+          this.connected = false;
+          if (this.shouldReconnect) {
+            this.handleReconnect(); // KHÔNG truyền token cố định nữa
+          }
+        },
+      });
+
+      // Activate connection
+      this.client.activate();
+    } catch (error) {
+      console.error('❌ Failed to create WebSocket connection:', error);
+      reject(error);
+    }
+  }
+
+  /**
    * Handle reconnection logic
    */
-  handleReconnect(token) {
+  handleReconnect() {
+    if (!this.currentToken) {
+      console.warn('⚠️ No token available for reconnect, skipping.');
+      return;
+    }
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(
@@ -91,7 +131,7 @@ class WebSocketService {
       );
 
       setTimeout(() => {
-        this.connect(token).catch(error => {
+        this.connect(this.currentToken).catch(error => {
           console.error('❌ Reconnection failed:', error);
         });
       }, this.reconnectDelay * this.reconnectAttempts);
@@ -178,11 +218,22 @@ class WebSocketService {
 
   /**
    * Disconnect from WebSocket server
+   * @param {{preserveToken?: boolean}} options
+   *  - preserveToken = true: dùng cho trường hợp đổi token / đổi user trong connect()
+   *  - preserveToken = false (default): dùng cho logout
    */
-  disconnect() {
+  disconnect(options = {}) {
+    const { preserveToken = false } = options;
+
+    this.shouldReconnect = false;  // tắt auto reconnect
+
+    if (!preserveToken) {
+      this.currentToken = null;    // chỉ xoá token khi logout
+    }
+
     if (this.client) {
       // Unsubscribe from all rooms
-      this.subscriptions.forEach((subscription, roomId) => {
+      this.subscriptions.forEach(subscription => {
         subscription.unsubscribe();
       });
       this.subscriptions.clear();
@@ -190,6 +241,7 @@ class WebSocketService {
 
       // Deactivate client
       this.client.deactivate();
+      this.client = null;
       this.connected = false;
       console.log('✅ WebSocket Disconnected');
     }

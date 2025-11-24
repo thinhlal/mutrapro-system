@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as authService from '../services/authService';
 import { setItem, getItem, removeItem } from '../services/localStorageService';
+import websocketService from '../services/websocketService';
 
 export const AuthContext = createContext();
 
@@ -28,6 +29,9 @@ export const AuthProvider = ({ children }) => {
   // Handle auto logout when refresh token fails
   useEffect(() => {
     const handleAutoLogout = async () => {
+      // Disconnect WebSocket trước khi auto logout
+      websocketService.disconnect();
+      
       // Delay để hiển thị loading animation
       await new Promise(resolve => setTimeout(resolve, 500));
       removeItem('user');
@@ -52,6 +56,8 @@ export const AuthProvider = ({ children }) => {
 
       if (token) {
         setItem('accessToken', token);
+        // Connect WebSocket với token mới sau khi login thành công
+        await websocketService.connect(token);
       }
       if (user) {
         setItem('user', user);
@@ -74,6 +80,9 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setLoading(true);
     try {
+      // Disconnect WebSocket trước khi logout
+      websocketService.disconnect();
+      
       await authService.logout(getItem('accessToken'));
     } catch (_) {
       // bỏ qua lỗi logout để đảm bảo client state được dọn sạch

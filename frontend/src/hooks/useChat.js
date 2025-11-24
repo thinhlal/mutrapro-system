@@ -140,9 +140,13 @@ export const useChat = roomId => {
 
     const setupWebSocket = async () => {
       try {
-        // Connect if not already connected
+        // Connect if not already connected (e.g., after page refresh)
+        // Note: WebSocket should already be connected after login via AuthContext
         if (!websocketService.isConnected()) {
+          console.log('useChat - WebSocket not connected, connecting...');
           await websocketService.connect(token);
+        } else {
+          console.log('useChat - WebSocket already connected, skipping connect');
         }
 
         // Subscribe to room
@@ -150,7 +154,7 @@ export const useChat = roomId => {
         subscribed = true;
         setConnected(true);
 
-        console.log(`✅ Connected to chat room: ${roomId}`);
+        console.log(`✅ Subscribed to chat room: ${roomId}`);
       } catch (error) {
         console.error('Failed to setup WebSocket:', error);
         toast.error('Không thể kết nối chat');

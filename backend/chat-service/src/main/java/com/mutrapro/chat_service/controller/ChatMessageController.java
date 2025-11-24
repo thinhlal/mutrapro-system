@@ -72,5 +72,28 @@ public class ChatMessageController {
                 .statusCode(200)
                 .build();
     }
+
+    @GetMapping("/room/{roomId}/unread-count")
+    @Operation(summary = "Lấy số lượng tin nhắn chưa đọc trong phòng chat")
+    public ApiResponse<Long> getUnreadCount(@PathVariable String roomId) {
+        log.info("Getting unread count for room: roomId={}", roomId);
+        long count = chatMessageService.getUnreadCount(roomId);
+        return ApiResponse.<Long>builder()
+                .message("Unread count retrieved successfully")
+                .data(count)
+                .statusCode(200)
+                .build();
+    }
+
+    @PostMapping("/room/{roomId}/mark-read")
+    @Operation(summary = "Đánh dấu tin nhắn đã đọc trong phòng chat")
+    public ApiResponse<Void> markAsRead(@PathVariable String roomId) {
+        log.info("Marking messages as read for room: roomId={}", roomId);
+        chatMessageService.markAsRead(roomId);
+        return ApiResponse.<Void>builder()
+                .message("Messages marked as read successfully")
+                .statusCode(200)
+                .build();
+    }
 }
 
