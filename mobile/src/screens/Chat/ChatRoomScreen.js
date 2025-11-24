@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,232 +6,245 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, STORAGE_KEYS } from "../../config/constants";
 import { ChatMessage, ChatInput } from "../../components";
+import { useChat } from "../../hooks/useChat";
+import { getItem } from "../../utils/storage";
+import * as chatApi from "../../services/chatService";
 
 const ChatRoomScreen = ({ route, navigation }) => {
-  const { conversation } = route.params;
-  const [messages, setMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
+  // Can receive either { room } or { roomId }
+  const { room: roomParam, roomId: roomIdParam } = route.params || {};
   const flatListRef = useRef(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [room, setRoom] = useState(roomParam); // Initialize with roomParam if available
+  const [loadingRoom, setLoadingRoom] = useState(!roomParam); // If no room, need to load
+  
+  // IMPORTANT: Use roomIdParam directly if available to prevent re-subscription
+  // when room state changes after fetching room data
+  const roomId = roomIdParam || roomParam?.roomId;
+
+  const {
+    messages,
+    loading,
+    sending,
+    connected,
+    hasMore,
+    sendMessage,
+    loadMoreMessages,
+  } = useChat(roomId);
+
+  // Get current user ID
+  useEffect(() => {
+    const getUserId = async () => {
+      const userData = await getItem(STORAGE_KEYS.USER_DATA);
+      
+      console.log('[Mobile] User data from storage:', userData);
+      console.log('[Mobile] User data type:', typeof userData);
+      console.log('[Mobile] User data keys:', userData ? Object.keys(userData) : 'null');
+      
+      if (userData?.id) {
+        console.log('[Mobile] ✅ Setting currentUserId:', userData.id);
+        setCurrentUserId(userData.id);
+      } else {
+        console.error('[Mobile] ❌ No user ID found in storage!', userData);
+      }
+    };
+    getUserId();
+  }, []);
+
+  // Fetch room data if only roomId is provided (e.g., from notification)
+  useEffect(() => {
+    const fetchRoomData = async () => {
+      if (!room && roomIdParam) {
+        console.log('[Mobile] Fetching room data for roomId:', roomIdParam);
+        setLoadingRoom(true);
+        try {
+          const response = await chatApi.getChatRoomById(roomIdParam);
+          if (response.status === 'success' && response.data) {
+            setRoom(response.data);
+            console.log('[Mobile] Room data loaded:', response.data);
+          } else {
+            console.error('[Mobile] Failed to load room:', response.message);
+            // Navigate back if room not found
+            navigation.goBack();
+          }
+        } catch (error) {
+          console.error('[Mobile] Error fetching room:', error);
+          navigation.goBack();
+        } finally {
+          setLoadingRoom(false);
+        }
+      }
+    };
+
+    fetchRoomData();
+  }, [roomIdParam, room, navigation]);
 
   useEffect(() => {
-    // Set header title
+    // Set header title - only update if room is available
+    if (!room) return;
+    
     navigation.setOptions({
+      // headerLeft: () => (
+      //   <TouchableOpacity
+      //     style={styles.backButton}
+      //     onPress={() => navigation.goBack()}
+      //   >
+      //     <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+      //   </TouchableOpacity>
+      // ),
       headerTitle: () => (
-        <TouchableOpacity
-          style={styles.headerTitle}
-          onPress={() => {
-            // Navigate to user profile
-            // navigation.navigate('UserProfile', { userId: conversation.user.id });
-          }}
-        >
-          <Image
-            source={{ uri: conversation.user.avatar }}
-            style={styles.headerAvatar}
-          />
+        <TouchableOpacity style={styles.headerTitle}>
+          <View style={styles.headerIconContainer}>
+            <Ionicons name="chatbubbles" size={24} color={COLORS.primary} />
+            {connected && <View style={styles.connectedDot} />}
+          </View>
           <View>
-            <Text style={styles.headerName}>{conversation.user.name}</Text>
-            {conversation.user.isOnline && (
-              <Text style={styles.headerStatus}>Active now</Text>
-            )}
+            <Text style={styles.headerName}>{room?.roomName || 'Chat Room'}</Text>
+            <Text style={styles.headerStatus}>
+              {connected ? 'Connected' : 'Connecting...'}
+            </Text>
           </View>
         </TouchableOpacity>
       ),
       headerRight: () => (
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="call-outline" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="videocam-outline" size={24} color={COLORS.primary} />
+            <Ionicons name="information-circle-outline" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       ),
     });
+  }, [room, connected, navigation]);
 
-    // Load messages
-    loadMessages();
-  }, []);
-
-  const loadMessages = async () => {
-    // TODO: Replace with actual API call
-    // const response = await getChatMessages(conversation.id);
+  // Auto scroll to bottom when messages change
+  useEffect(() => {
+    console.log('[Mobile] Messages state updated:', {
+      count: messages.length,
+      messageIds: messages.map(m => m.messageId),
+    });
     
-    // Mock data
-    const mockMessages = [
-      {
-        id: "1",
-        text: "Hi! I'm interested in your transcription service.",
-        senderId: conversation.user.id,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        status: "read",
-      },
-      {
-        id: "2",
-        text: "Hello! I'd be happy to help. What kind of music do you need transcribed?",
-        senderId: "me",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2 + 1000 * 60 * 2).toISOString(),
-        status: "read",
-      },
-      {
-        id: "3",
-        text: "It's a piano piece, about 3 minutes long. Do you have time this week?",
-        senderId: conversation.user.id,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2 + 1000 * 60 * 5).toISOString(),
-        status: "read",
-      },
-      {
-        id: "4",
-        text: "Yes! I can start working on it tomorrow. Could you send me the audio file?",
-        senderId: "me",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1 + 1000 * 60 * 30).toISOString(),
-        status: "read",
-      },
-      {
-        id: "5",
-        text: "Perfect! I'll upload it through the service request form.",
-        senderId: conversation.user.id,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1 + 1000 * 60 * 32).toISOString(),
-        status: "read",
-      },
-      {
-        id: "6",
-        text: "Great! Once I receive it, I'll send you a quote with the estimated delivery time.",
-        senderId: "me",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1 + 1000 * 60 * 35).toISOString(),
-        status: "read",
-      },
-      {
-        id: "7",
-        text: "Sounds good! Looking forward to working with you 🎵",
-        senderId: conversation.user.id,
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        status: "read",
-      },
-      {
-        id: "8",
-        text: "Hey! How's the transcription coming along?",
-        senderId: conversation.user.id,
-        timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        status: "delivered",
-      },
-    ];
-
-    setMessages(mockMessages.reverse()); // Reverse to show latest at bottom
-  };
+    if (messages.length > 0 && !loading) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages, loading]);
 
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
-    const newMessage = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      senderId: "me",
-      timestamp: new Date().toISOString(),
-      status: "sending",
-    };
-
-    // Optimistic update
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Scroll to bottom
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
     try {
-      // TODO: Replace with actual API call
-      // await sendChatMessage(conversation.id, text);
-      
-      // Update status to sent
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === newMessage.id ? { ...msg, status: "sent" } : msg
-          )
-        );
-      }, 500);
-
-      // Simulate delivered status
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === newMessage.id ? { ...msg, status: "delivered" } : msg
-          )
-        );
-      }, 1000);
-
-      // Simulate typing indicator (mock response)
-      setTimeout(() => {
-        setIsTyping(true);
-      }, 2000);
-
-      setTimeout(() => {
-        setIsTyping(false);
-        const responseMessage = {
-          id: (Date.now() + 1).toString(),
-          text: "Thanks for the update! I'll check it out.",
-          senderId: conversation.user.id,
-          timestamp: new Date().toISOString(),
-          status: "read",
-        };
-        setMessages((prev) => [...prev, responseMessage]);
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }, 4000);
+      await sendMessage(text);
     } catch (error) {
-      console.error("Error sending message:", error);
-      // Update status to failed
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "failed" } : msg
-        )
-      );
+      console.error('[Mobile] Error sending message:', error);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      loadMoreMessages();
     }
   };
 
   const renderMessage = ({ item, index }) => {
-    const isFromMe = item.senderId === "me";
+    console.log('🎨 [Mobile] Rendering message:', {
+      messageId: item.messageId,
+      content: item.content,
+      senderId: item.senderId,
+      currentUserId,
+      isFromMe: item.senderId === currentUserId,
+    });
+    
+    const isFromMe = item.senderId === currentUserId;
     const prevMessage = index > 0 ? messages[index - 1] : null;
     const showAvatar =
       !isFromMe &&
       (!prevMessage || prevMessage.senderId !== item.senderId);
 
+    // Convert message format to match ChatMessage component
+    const formattedMessage = {
+      ...item,
+      text: item.content,
+      timestamp: item.sentAt,
+      status: 'delivered', // Default status
+    };
+
     return (
       <ChatMessage
-        message={item}
+        message={formattedMessage}
         isFromMe={isFromMe}
         showAvatar={showAvatar}
-        userAvatar={conversation.user.avatar}
+        userAvatar={`https://ui-avatars.com/api/?name=${item.senderName || 'User'}`}
       />
     );
   };
 
-  const renderTypingIndicator = () => {
-    if (!isTyping) return null;
+  const renderHeader = () => {
+    if (!hasMore) return null;
 
     return (
-      <View style={styles.typingContainer}>
-        <Image
-          source={{ uri: conversation.user.avatar }}
-          style={styles.typingAvatar}
-        />
-        <View style={styles.typingBubble}>
-          <View style={styles.typingDots}>
-            <View style={[styles.typingDot, styles.typingDot1]} />
-            <View style={[styles.typingDot, styles.typingDot2]} />
-            <View style={[styles.typingDot, styles.typingDot3]} />
-          </View>
-        </View>
+      <View style={styles.loadMoreContainer}>
+        {loading ? (
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        ) : (
+          <TouchableOpacity onPress={handleLoadMore}>
+            <Text style={styles.loadMoreText}>Load more messages</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
+
+  const renderEmpty = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading messages...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="chatbubbles-outline" size={64} color={COLORS.textSecondary} />
+        <Text style={styles.emptyText}>No messages yet</Text>
+        <Text style={styles.emptySubtext}>Start the conversation!</Text>
+      </View>
+    );
+  };
+
+  // Show loading screen while fetching room data
+  if (loadingRoom) {
+    return (
+      <View style={styles.loadingScreenContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading chat room...</Text>
+      </View>
+    );
+  }
+
+  // Show error if room is not available
+  if (!room) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.error} />
+        <Text style={styles.errorText}>Chat room not found</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -239,19 +252,38 @@ const ChatRoomScreen = ({ route, navigation }) => {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      {/* Connection Status Banner */}
+      {!connected && (
+        <View style={styles.connectionBanner}>
+          <Ionicons name="cloud-offline-outline" size={16} color={COLORS.white} />
+          <Text style={styles.connectionBannerText}>
+            Connecting...
+          </Text>
+        </View>
+      )}
+
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => {
+          console.log('🔑 [Mobile] FlatList key:', item.messageId);
+          return item.messageId;
+        }}
         renderItem={renderMessage}
         contentContainerStyle={styles.messagesList}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: false })
-        }
-        ListFooterComponent={renderTypingIndicator}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+        }}
+        extraData={messages.length} // Force re-render when messages change
       />
-      <ChatInput onSendMessage={handleSendMessage} />
+
+      <ChatInput
+        onSendMessage={handleSendMessage}
+        disabled={!connected || sending}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -261,15 +293,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  backButton: {
+    paddingLeft: SPACING.md,
+    paddingRight: SPACING.sm,
+    paddingVertical: SPACING.sm,
+  },
   headerTitle: {
     flexDirection: "row",
     alignItems: "center",
   },
-  headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  headerIconContainer: {
+    position: 'relative',
     marginRight: SPACING.sm,
+  },
+  connectedDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.success,
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
   headerName: {
     fontSize: FONT_SIZES.base,
@@ -278,7 +324,7 @@ const styles = StyleSheet.create({
   },
   headerStatus: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.success,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   headerRight: {
@@ -289,49 +335,94 @@ const styles = StyleSheet.create({
   headerButton: {
     marginLeft: SPACING.md,
   },
+  connectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warning,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+  },
+  connectionBannerText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    marginLeft: SPACING.xs,
+  },
   messagesList: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+    flexGrow: 1,
   },
-  typingContainer: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: SPACING.sm,
+  loadMoreContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+  },
+  loadMoreText: {
+    color: COLORS.primary,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl * 2,
+  },
+  emptyText: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  emptySubtext: {
     marginTop: SPACING.xs,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.textSecondary,
   },
-  typingAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    marginRight: SPACING.xs,
+  loadingScreenContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
-  typingBubble: {
-    backgroundColor: COLORS.gray[200],
-    borderRadius: BORDER_RADIUS.lg,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.xl,
   },
-  typingDots: {
-    flexDirection: "row",
-    alignItems: "center",
+  errorText: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: COLORS.error,
+    textAlign: 'center',
   },
-  typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.textSecondary,
-    marginHorizontal: 2,
+  backButton: {
+    marginTop: SPACING.xl,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
   },
-  typingDot1: {
-    animation: "typing 1.4s infinite",
-  },
-  typingDot2: {
-    animation: "typing 1.4s infinite 0.2s",
-  },
-  typingDot3: {
-    animation: "typing 1.4s infinite 0.4s",
+  backButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
   },
 });
 
 export default ChatRoomScreen;
-

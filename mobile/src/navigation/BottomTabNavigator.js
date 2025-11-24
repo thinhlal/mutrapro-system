@@ -5,6 +5,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { View, Text, StyleSheet } from "react-native";
 import { COLORS, FONT_SIZES, SPACING } from "../config/constants";
 
+// Import hooks for real-time badge counts
+import { useUnreadMessagesCount } from "../hooks/useChat";
+import { useNotifications } from "../hooks/useNotifications";
+
 // Import screens
 import HomeScreen from "../screens/Main/HomeScreen";
 import ProfileScreen from "../screens/Main/ProfileScreen";
@@ -168,9 +172,9 @@ const TabBarBadge = ({ count }) => {
 };
 
 const BottomTabNavigator = ({ navigation }) => {
-  // Mock unread counts
-  const unreadNotifications = 3;
-  const unreadMessages = 2;
+  // Real-time unread counts from hooks
+  const unreadMessages = useUnreadMessagesCount();
+  const { unreadCount: unreadNotifications } = useNotifications();
 
   return (
     <Tab.Navigator

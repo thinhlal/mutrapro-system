@@ -80,6 +80,9 @@ export const API_ENDPOINTS = {
     GET_UNREAD_COUNT: `${NOTIFICATIONS_PATH}/notifications/unread-count`,
     MARK_AS_READ: (notificationId) => `${NOTIFICATIONS_PATH}/notifications/${notificationId}/read`,
     MARK_ALL_AS_READ: `${NOTIFICATIONS_PATH}/notifications/mark-all-read`,
+    
+    // WebSocket
+    WS_ENDPOINT: `${NOTIFICATIONS_PATH}/notifications-ws`,
   },
 
   // === Pricing Management ===
@@ -103,28 +106,23 @@ export const API_ENDPOINTS = {
 
   // === Chat Service ===
   CHAT: {
-    // GET /chat/conversations
-    GET_CONVERSATIONS: `${CHAT_PATH}/conversations`,
-    // POST /chat/conversations
-    CREATE_CONVERSATION: `${CHAT_PATH}/conversations`,
-    // GET /chat/conversations/{conversationId}/messages
-    GET_MESSAGES: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/messages`,
-    // POST /chat/conversations/{conversationId}/messages
-    SEND_MESSAGE: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/messages`,
-    // PATCH /chat/messages/{messageId}/read
-    MARK_MESSAGE_AS_READ: (messageId) => `${CHAT_PATH}/messages/${messageId}/read`,
-    // PATCH /chat/conversations/{conversationId}/read
-    MARK_CONVERSATION_AS_READ: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/read`,
-    // GET /chat/unread-count
-    GET_UNREAD_COUNT: `${CHAT_PATH}/unread-count`,
-    // DELETE /chat/messages/{messageId}
-    DELETE_MESSAGE: (messageId) => `${CHAT_PATH}/messages/${messageId}`,
-    // DELETE /chat/conversations/{conversationId}
-    DELETE_CONVERSATION: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}`,
-    // POST /chat/upload
-    UPLOAD_FILE: `${CHAT_PATH}/upload`,
-    // POST /chat/conversations/{conversationId}/typing
-    TYPING_INDICATOR: (conversationId) => `${CHAT_PATH}/conversations/${conversationId}/typing`,
+    // Chat Rooms
+    GET_ALL_ROOMS: `${CHAT_PATH}/chat-rooms`,
+    GET_ROOM: (roomId) => `${CHAT_PATH}/chat-rooms/${roomId}`,
+    GET_ROOM_BY_CONTEXT: `${CHAT_PATH}/chat-rooms/by-context`,
+    CREATE_ROOM: `${CHAT_PATH}/chat-rooms`,
+    ADD_PARTICIPANT: (roomId) => `${CHAT_PATH}/chat-rooms/${roomId}/participants`,
+    REMOVE_PARTICIPANT: (roomId, userId) => `${CHAT_PATH}/chat-rooms/${roomId}/participants/${userId}`,
+    
+    // Messages
+    GET_MESSAGES: (roomId) => `${CHAT_PATH}/messages/room/${roomId}`,
+    GET_RECENT_MESSAGES: (roomId, sinceTimestamp) => 
+      `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
+    GET_UNREAD_COUNT: (roomId) => `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
+    MARK_AS_READ: (roomId) => `${CHAT_PATH}/messages/room/${roomId}/mark-read`,
+    
+    // WebSocket
+    WS_ENDPOINT: `${CHAT_PATH}/ws`,
   },
 };
 
