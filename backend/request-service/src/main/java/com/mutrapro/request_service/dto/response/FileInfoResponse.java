@@ -22,6 +22,7 @@ public class FileInfoResponse {
     Long fileSize;
     String mimeType;
     String contentType;
+    String fileSource;
     Instant uploadDate;
 }
 

@@ -92,6 +92,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
         "Contract milestone not found",
         Retryable.NON_TRANSIENT),
     
+    INVALID_MILESTONE_WORK_STATUS("CONTRACT_7016", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7016",
+        "Invalid milestone work status for the requested action",
+        Retryable.NON_TRANSIENT),
+    
     // Task Assignment Errors (7020-7029)
     INVALID_TASK_TYPE("CONTRACT_7020", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7020",

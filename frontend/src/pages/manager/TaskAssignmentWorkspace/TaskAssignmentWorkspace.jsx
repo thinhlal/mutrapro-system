@@ -76,6 +76,22 @@ const TASK_TYPE_TO_SPECIALIST = {
   recording: 'RECORDING_ARTIST',
 };
 
+// Milestone work status colors
+const MILESTONE_WORK_STATUS_COLORS = {
+  PLANNED: 'default',
+  IN_PROGRESS: 'processing',
+  READY_FOR_PAYMENT: 'warning',
+  COMPLETED: 'success',
+};
+
+// Milestone work status labels
+const MILESTONE_WORK_STATUS_LABELS = {
+  PLANNED: 'Đã lên kế hoạch',
+  IN_PROGRESS: 'Đang thực hiện',
+  READY_FOR_PAYMENT: 'Sẵn sàng thanh toán',
+  COMPLETED: 'Hoàn thành',
+};
+
 const INSTRUMENT_USAGE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
@@ -274,9 +290,11 @@ export default function TaskAssignmentWorkspace() {
 
   useEffect(() => {
     if (contract?.milestones?.length && !selectedMilestoneId && !isEditMode) {
-      const availableMilestones = contract.milestones.filter(
-        m => m.workStatus?.toLowerCase() !== 'completed'
-      );
+      // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
+      const availableMilestones = contract.milestones.filter(m => {
+        const status = m.workStatus?.toUpperCase();
+        return status === 'PLANNED' || status === 'IN_PROGRESS';
+      });
       const preferred =
         availableMilestones.find(m => m.orderIndex !== 1) ||
         availableMilestones[0];
@@ -425,6 +443,18 @@ export default function TaskAssignmentWorkspace() {
       message.warning('Vui lòng chọn task type');
       return;
     }
+    
+    // Validate milestone work status
+    if (selectedMilestone) {
+      const workStatus = selectedMilestone.workStatus?.toUpperCase();
+      if (workStatus !== 'PLANNED' && workStatus !== 'IN_PROGRESS') {
+        message.error(
+          `Không thể tạo task: Milestone phải ở trạng thái PLANNED hoặc IN_PROGRESS. ` +
+          `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
+        );
+        return;
+      }
+    }
     try {
       setAssigning(true);
       const assignmentData = {
@@ -568,12 +598,32 @@ export default function TaskAssignmentWorkspace() {
                       {requestData.contactName} · {requestData.contactEmail}
                     </Text>
                   </div>
-                  {requestData.files && requestData.files.length > 0 && (
-                    <div>
-                      <Text strong>Files:</Text>
-                      <FileList files={requestData.files} maxNameLength={32} />
-                    </div>
-                  )}
+                  
+                  {/* Contract Files */}
+                  {(() => {
+                    const files = (requestData.files || []).filter(
+                      f => f.fileSource?.toLowerCase() === 'contract_pdf'
+                    );
+                    return files.length > 0 && (
+                      <div>
+                        <Text strong>Contract Files:</Text>
+                        <FileList files={files} maxNameLength={32} />
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Music Files */}
+                  {(() => {
+                    const files = (requestData.files || []).filter(
+                      f => f.fileSource?.toLowerCase() === 'customer_upload'
+                    );
+                    return files.length > 0 && (
+                      <div>
+                        <Text strong>Music Files (Customer Upload):</Text>
+                        <FileList files={files} maxNameLength={32} />
+                      </div>
+                    );
+                  })()}
                 </Space>
               ) : (
                 <Text type="secondary">Không tìm thấy thông tin request</Text>
@@ -597,27 +647,59 @@ export default function TaskAssignmentWorkspace() {
                   const stats =
                     milestoneStats[item.milestoneId] || defaultStats;
                   const isSelected = item.milestoneId === selectedMilestoneId;
-                  const isCompleted =
-                    item.workStatus?.toLowerCase() === 'completed';
+                  const workStatus = item.workStatus?.toUpperCase() || 'PLANNED';
+                  const isCompleted = workStatus === 'COMPLETED';
+                  const isCancelled = workStatus === 'CANCELLED';
+                  // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
+                  const canSelect = workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
+                  const isDisabled = !canSelect || isCompleted || isCancelled;
+                  
+                  const getWorkStatusColor = () => {
+                    switch (workStatus) {
+                      case 'PLANNED':
+                        return 'default';
+                      case 'IN_PROGRESS':
+                        return 'processing';
+                      case 'READY_FOR_PAYMENT':
+                        return 'warning';
+                      case 'COMPLETED':
+                        return 'success';
+                      case 'CANCELLED':
+                        return 'error';
+                      default:
+                        return 'default';
+                    }
+                  };
                   return (
                     <List.Item
                       className={`${styles.milestoneItem} ${
                         isSelected ? styles.milestoneItemActive : ''
-                      } ${isCompleted ? styles.milestoneItemDisabled : ''}`}
+                      } ${isDisabled ? styles.milestoneItemDisabled : ''}`}
                       onClick={() => {
-                        if (!isCompleted) {
+                        if (!isDisabled) {
                           // Cho phép bỏ chọn nếu đã chọn rồi
                           setSelectedMilestoneId(
                             isSelected ? null : item.milestoneId
                           );
+                        } else {
+                          // Hiển thị thông báo nếu milestone không thể chọn
+                          const reason = isCompleted
+                            ? 'Milestone đã hoàn thành'
+                            : isCancelled
+                            ? 'Milestone đã bị hủy'
+                            : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED hoặc IN_PROGRESS';
+                          message.warning(reason);
                         }
                       }}
                     >
                       <div>
                         <div className={styles.milestoneHeader}>
-                          <Text strong>{item.name}</Text>
-                          <Tag color={isCompleted ? 'green' : 'default'}>
-                            {item.workStatus}
+                          <Text strong>
+                            {item.orderIndex && `Milestone ${item.orderIndex}: `}
+                            {item.name}
+                          </Text>
+                          <Tag color={getWorkStatusColor()}>
+                            {MILESTONE_WORK_STATUS_LABELS[workStatus] || workStatus}
                           </Tag>
                         </div>
                         {item.description && (
@@ -630,16 +712,24 @@ export default function TaskAssignmentWorkspace() {
                           </Paragraph>
                         )}
                         <div className={styles.milestoneMeta}>
+                          {item.plannedStartAt && (
+                            <span>
+                              <Text type="secondary">Start: </Text>
+                              {dayjs(item.plannedStartAt).format('YYYY-MM-DD')}
+                            </span>
+                          )}
                           {item.plannedDueDate && (
                             <span>
                               <Text type="secondary">Due: </Text>
                               {dayjs(item.plannedDueDate).format('YYYY-MM-DD')}
                             </span>
                           )}
-                          <span>
-                            <Text type="secondary">Payment: </Text>
-                            <Tag>{item.paymentStatus}</Tag>
-                          </span>
+                          {item.milestoneSlaDays && (
+                            <span>
+                              <Text type="secondary">SLA: </Text>
+                              {item.milestoneSlaDays} ngày
+                            </span>
+                          )}
                         </div>
                       </div>
                       {stats.total > 0 && (

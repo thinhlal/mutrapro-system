@@ -108,9 +108,7 @@ const FileList = ({
                       onClick={() => handleViewFile(filePath)}
                       className={styles.actionButton}
                       title="View file"
-                    >
-                      View
-                    </Button>
+                    />
                     <Button
                       type="text"
                       size="small"
@@ -126,9 +124,7 @@ const FileList = ({
                       }
                       className={styles.actionButton}
                       title="Download file"
-                    >
-                      Download
-                    </Button>
+                    />
                   </Space>
                 )}
               </div>

@@ -65,6 +65,7 @@ public class FileService {
                         .fileSize(f.getFileSize())
                         .mimeType(f.getMimeType())
                         .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                        .fileSource(f.getFileSource())  // Thêm fileSource vào response
                         .uploadDate(f.getUploadDate())
                         .build())
                 .collect(Collectors.toList());

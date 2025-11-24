@@ -11,6 +11,7 @@ import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
@@ -22,6 +23,7 @@ import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidContractStatusException;
 import com.mutrapro.project_service.exception.InvalidMilestoneIdException;
+import com.mutrapro.project_service.exception.InvalidMilestoneWorkStatusException;
 import com.mutrapro.project_service.exception.InvalidTaskTypeException;
 import com.mutrapro.project_service.exception.TaskAssignmentAlreadyCompletedException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
@@ -153,10 +155,21 @@ public class TaskAssignmentService {
             throw InvalidTaskTypeException.create(taskType, contract.getContractType().toString());
         }
         
-        // Milestone is mandatory
-        contractMilestoneRepository
+        // Milestone is mandatory and must exist
+        ContractMilestone milestone = contractMilestoneRepository
             .findByMilestoneIdAndContractId(request.getMilestoneId(), contractId)
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(request.getMilestoneId(), contractId));
+        
+        // Verify milestone work status allows task assignment creation
+        // Only PLANNED and IN_PROGRESS milestones can have tasks assigned
+        MilestoneWorkStatus workStatus = milestone.getWorkStatus();
+        if (workStatus != MilestoneWorkStatus.PLANNED 
+            && workStatus != MilestoneWorkStatus.IN_PROGRESS) {
+            throw InvalidMilestoneWorkStatusException.cannotCreateTask(
+                request.getMilestoneId(), 
+                workStatus
+            );
+        }
         
         // Create task assignment
         TaskAssignment assignment = TaskAssignment.builder()

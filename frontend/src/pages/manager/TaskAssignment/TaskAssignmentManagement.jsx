@@ -67,6 +67,22 @@ const STATUS_LABELS = {
   cancelled: 'Đã hủy',
 };
 
+// Milestone work status colors
+const MILESTONE_WORK_STATUS_COLORS = {
+  PLANNED: 'default',
+  IN_PROGRESS: 'processing',
+  READY_FOR_PAYMENT: 'warning',
+  COMPLETED: 'success',
+};
+
+// Milestone work status labels
+const MILESTONE_WORK_STATUS_LABELS = {
+  PLANNED: 'Đã lên kế hoạch',
+  IN_PROGRESS: 'Đang thực hiện',
+  READY_FOR_PAYMENT: 'Sẵn sàng thanh toán',
+  COMPLETED: 'Hoàn thành',
+};
+
 const defaultTaskStats = {
   total: 0,
   assigned: 0,
@@ -789,26 +805,53 @@ export default function TaskAssignmentManagement() {
                             cancelled: 0,
                             hasIssue: 0,
                           };
+                          const workStatus = item.workStatus || 'PLANNED';
+                          const getWorkStatusColor = () => {
+                            switch (workStatus) {
+                              case 'PLANNED':
+                                return 'default';
+                              case 'IN_PROGRESS':
+                                return 'processing';
+                              case 'READY_FOR_PAYMENT':
+                                return 'warning';
+                              case 'COMPLETED':
+                                return 'success';
+                              default:
+                                return 'default';
+                            }
+                          };
+
                           return (
                             <List.Item className={styles.milestoneItem}>
                               <div className={styles.milestoneInfo}>
                                 <div className={styles.milestoneHeader}>
-                                  <Text strong>{item.name}</Text>
-                                  <Tag>{item.workStatus}</Tag>
+                                  <Text strong>
+                                    {item.orderIndex && `Milestone ${item.orderIndex}: `}
+                                    {item.name}
+                                  </Text>
+                                  <Tag color={getWorkStatusColor()}>
+                                    {MILESTONE_WORK_STATUS_LABELS[workStatus] || workStatus}
+                                  </Tag>
                                 </div>
                                 <div className={styles.milestoneMeta}>
+                                  {item.plannedStartAt && (
+                                    <span>
+                                      <Text type="secondary">Start: </Text>
+                                      {dayjs(item.plannedStartAt).format('YYYY-MM-DD')}
+                                    </span>
+                                  )}
                                   {item.plannedDueDate && (
                                     <span>
                                       <Text type="secondary">Due: </Text>
-                                      {dayjs(item.plannedDueDate).format(
-                                        'YYYY-MM-DD'
-                                      )}
+                                      {dayjs(item.plannedDueDate).format('YYYY-MM-DD')}
                                     </span>
                                   )}
-                                  <span>
-                                    <Text type="secondary">Payment: </Text>
-                                    <Tag>{item.paymentStatus}</Tag>
-                                  </span>
+                                  {item.milestoneSlaDays && (
+                                    <span>
+                                      <Text type="secondary">SLA: </Text>
+                                      {item.milestoneSlaDays} ngày
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               {stats.total > 0 && (

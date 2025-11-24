@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.dto.response;
 
+import com.mutrapro.project_service.enums.FileSourceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,5 +23,6 @@ public class FileInfoResponse {
     Long fileSize;
     String mimeType;
     String contentType;
+    FileSourceType fileSource;  // Thêm field để phân biệt loại file
     Instant uploadDate;
 }
