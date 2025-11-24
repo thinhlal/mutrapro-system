@@ -11,140 +11,162 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { NotificationItem } from "../../components";
+import { useNotifications } from "../../hooks/useNotifications";
+import * as notificationApi from "../../services/notificationService";
 
 const NotificationScreen = ({ navigation }) => {
-  const [notifications, setNotifications] = useState([]);
+  const {
+    notifications: realtimeNotifications,
+    unreadCount: realtimeUnreadCount,
+    connected,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
+
+  const [allNotifications, setAllNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all"); // all, unread, read
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [filter]);
-
-  const fetchNotifications = async () => {
+  // Fetch all notifications
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await getNotifications(filter);
-      
-      // Mock data for now
-      const mockNotifications = [
-        {
-          id: "1",
-          type: "service_update",
-          title: "Service Request Updated",
-          message: "Your transcription request has been accepted by a professional.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-          isRead: false,
-          icon: "musical-notes",
-          iconColor: COLORS.primary,
-        },
-        {
-          id: "2",
-          type: "payment",
-          title: "Payment Successful",
-          message: "Your payment of $150.00 for arrangement service has been processed.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-          isRead: false,
-          icon: "card",
-          iconColor: COLORS.success,
-        },
-        {
-          id: "3",
-          type: "message",
-          title: "New Message",
-          message: "John Doe sent you a message regarding your recording session.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-          isRead: true,
-          icon: "chatbubble",
-          iconColor: COLORS.info,
-        },
-        {
-          id: "4",
-          type: "service_complete",
-          title: "Service Completed",
-          message: "Your arrangement request has been completed. Download your files now.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-          isRead: true,
-          icon: "checkmark-circle",
-          iconColor: COLORS.success,
-        },
-        {
-          id: "5",
-          type: "reminder",
-          title: "Session Reminder",
-          message: "Your recording session is scheduled for tomorrow at 2:00 PM.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-          isRead: true,
-          icon: "time",
-          iconColor: COLORS.warning,
-        },
-      ];
-
-      // Filter based on selected filter
-      const filteredNotifications = mockNotifications.filter((notif) => {
-        if (filter === "unread") return !notif.isRead;
-        if (filter === "read") return notif.isRead;
-        return true;
+      const response = await notificationApi.getNotifications({
+        filter,
+        page: 0,
+        limit: 50,
       });
-
-      setNotifications(filteredNotifications);
+      
+      // Ensure response.data is array
+      const notificationsData = response.data;
+      if (Array.isArray(notificationsData)) {
+        setAllNotifications(notificationsData);
+      } else if (notificationsData && Array.isArray(notificationsData.content)) {
+        // Handle paginated response
+        setAllNotifications(notificationsData.content);
+      } else {
+        console.warn('[Mobile] Invalid notifications response format:', notificationsData);
+        setAllNotifications([]);
+      }
     } catch (error) {
-      console.error("Error fetching notifications:", error);
+      console.error('[Mobile] Error fetching notifications:', error);
+      setAllNotifications([]); // Ensure it's always an array on error
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchNotifications();
     setRefreshing(false);
-  }, [filter]);
+  }, [fetchNotifications]);
 
-  const handleNotificationPress = (notification) => {
-    // Mark as read
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === notification.id ? { ...notif, isRead: true } : notif
-      )
-    );
+  const handleNotificationPress = async (notification) => {
+    // Mark as read if unread
+    if (!notification.isRead) {
+      await markAsRead(notification.notificationId);
+      
+      // Update local list
+      setAllNotifications((prev) =>
+        Array.isArray(prev) 
+          ? prev.map((n) =>
+              n.notificationId === notification.notificationId
+                ? { ...n, isRead: true }
+                : n
+            )
+          : []
+      );
+    }
 
-    // Navigate based on notification type
-    switch (notification.type) {
-      case "service_update":
-      case "service_complete":
-        // Navigate to service details
-        // navigation.navigate("ServiceDetails", { id: notification.serviceId });
-        break;
-      case "message":
-        // Navigate to messages
-        // navigation.navigate("Messages", { chatId: notification.chatId });
-        break;
-      default:
-        break;
+    // Navigate based on actionUrl
+    if (notification.actionUrl) {
+      const url = notification.actionUrl;
+      console.log('[Mobile] Navigate to:', url);
+      
+      try {
+        // Parse the URL and navigate to appropriate screen
+        // Format: /path/id or /path
+        
+        // Chat navigation: /chat/{roomId}
+        if (url.startsWith('/chat/')) {
+          const roomId = url.split('/chat/')[1];
+          if (roomId) {
+            navigation.navigate('Chat', {
+              screen: 'ChatRoom',
+              params: { roomId },
+            });
+          }
+        }
+        // Request navigation: /requests/{requestId}
+        else if (url.startsWith('/requests/') || url.startsWith('/request/')) {
+          const requestId = url.split('/').pop();
+          if (requestId) {
+            navigation.navigate('Home', {
+              screen: 'RequestDetail',
+              params: { requestId },
+            });
+          }
+        }
+        // Service navigation: /services/{serviceId}
+        else if (url.startsWith('/services/') || url.startsWith('/service/')) {
+          const serviceId = url.split('/').pop();
+          if (serviceId) {
+            navigation.navigate('Home', {
+              screen: 'ServiceDetail',
+              params: { serviceId },
+            });
+          }
+        }
+        // Profile navigation: /profile
+        else if (url.startsWith('/profile')) {
+          navigation.navigate('Profile');
+        }
+        // Default: just log it
+        else {
+          console.log('[Mobile] Unhandled actionUrl:', url);
+        }
+      } catch (error) {
+        console.error('[Mobile] Error navigating from notification:', error);
+      }
     }
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, isRead: true }))
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
+    // Update local list
+    setAllNotifications((prev) =>
+      Array.isArray(prev) ? prev.map((n) => ({ ...n, isRead: true })) : []
     );
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = Array.isArray(allNotifications) 
+    ? allNotifications.filter((n) => !n.isRead).length 
+    : 0;
 
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <View>
           <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadCount > 0 && (
-            <Text style={styles.unreadCountText}>
-              {unreadCount} unread notification{unreadCount > 1 ? "s" : ""}
-            </Text>
-          )}
+          <View style={styles.statusRow}>
+            {unreadCount > 0 && (
+              <Text style={styles.unreadCountText}>
+                {unreadCount} unread notification{unreadCount > 1 ? "s" : ""}
+              </Text>
+            )}
+            {connected && (
+              <View style={styles.connectedIndicator}>
+                <View style={styles.connectedDot} />
+                <Text style={styles.connectedText}>Live</Text>
+              </View>
+            )}
+          </View>
         </View>
         {unreadCount > 0 && (
           <TouchableOpacity
@@ -152,7 +174,7 @@ const NotificationScreen = ({ navigation }) => {
             onPress={handleMarkAllAsRead}
           >
             <Ionicons name="checkmark-done" size={20} color={COLORS.primary} />
-            <Text style={styles.markAllButtonText}>Mark all read</Text>
+            <Text style={styles.markAllButtonText}>Mark all</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -216,7 +238,29 @@ const NotificationScreen = ({ navigation }) => {
     </View>
   );
 
-  if (loading) {
+  // Format notification to match NotificationItem component
+  const formatNotification = (notification) => {
+    // Map notification type to icon and color
+    const typeMap = {
+      SERVICE_UPDATE: { icon: 'musical-notes', color: COLORS.primary },
+      PAYMENT: { icon: 'card', color: COLORS.success },
+      MESSAGE: { icon: 'chatbubble', color: COLORS.info },
+      SERVICE_COMPLETE: { icon: 'checkmark-circle', color: COLORS.success },
+      REMINDER: { icon: 'time', color: COLORS.warning },
+      REQUEST_ASSIGNED: { icon: 'person-add', color: COLORS.primary },
+    };
+
+    const type = typeMap[notification.notificationType] || { icon: 'notifications', color: COLORS.primary };
+
+    return {
+      ...notification,
+      icon: type.icon,
+      iconColor: type.color,
+      message: notification.content || notification.message,
+    };
+  };
+
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -228,11 +272,11 @@ const NotificationScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
+        data={Array.isArray(allNotifications) ? allNotifications : []}
+        keyExtractor={(item) => item.notificationId}
         renderItem={({ item }) => (
           <NotificationItem
-            notification={item}
+            notification={formatNotification(item)}
             onPress={() => handleNotificationPress(item)}
           />
         )}
@@ -247,7 +291,9 @@ const NotificationScreen = ({ navigation }) => {
           />
         }
         contentContainerStyle={
-          notifications.length === 0 ? styles.emptyListContent : styles.listContent
+          (Array.isArray(allNotifications) && allNotifications.length === 0) 
+            ? styles.emptyListContent 
+            : styles.listContent
         }
         showsVerticalScrollIndicator={false}
       />
@@ -291,9 +337,34 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.xs / 2,
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   unreadCountText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+  },
+  connectedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success + '20',
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  connectedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.success,
+    marginRight: SPACING.xs / 2,
+  },
+  connectedText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.success,
+    fontWeight: '600',
   },
   markAllButton: {
     flexDirection: "row",
@@ -370,4 +441,3 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationScreen;
-

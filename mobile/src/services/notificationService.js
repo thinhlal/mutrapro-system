@@ -1,4 +1,4 @@
-import api from './api';
+import axiosInstance from '../utils/axiosInstance';
 import { API_ENDPOINTS } from '../config/apiConfig';
 
 /**
@@ -27,7 +27,7 @@ export const getNotifications = async (params = {}) => {
       queryParams.append('status', filter);
     }
 
-    const response = await api.get(
+    const response = await axiosInstance.get(
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}?${queryParams.toString()}`
     );
     
@@ -41,7 +41,7 @@ export const getNotifications = async (params = {}) => {
     return {
       status: 'error',
       message: error.response?.data?.message || 'Failed to fetch notifications',
-      data: null,
+      data: [], // Return empty array instead of null
     };
   }
 };
@@ -53,7 +53,7 @@ export const getNotifications = async (params = {}) => {
  */
 export const getNotificationById = async (notificationId) => {
   try {
-    const response = await api.get(
+    const response = await axiosInstance.get(
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}/${notificationId}`
     );
     
@@ -78,7 +78,7 @@ export const getNotificationById = async (notificationId) => {
  */
 export const markNotificationAsRead = async (notificationId) => {
   try {
-    const response = await api.patch(
+    const response = await axiosInstance.post(
       API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(notificationId)
     );
     
@@ -102,7 +102,7 @@ export const markNotificationAsRead = async (notificationId) => {
  */
 export const markAllNotificationsAsRead = async () => {
   try {
-    const response = await api.patch(
+    const response = await axiosInstance.post(
       API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ
     );
     
@@ -127,7 +127,7 @@ export const markAllNotificationsAsRead = async () => {
  */
 export const deleteNotification = async (notificationId) => {
   try {
-    const response = await api.delete(
+    const response = await axiosInstance.delete(
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}/${notificationId}`
     );
     
@@ -151,7 +151,7 @@ export const deleteNotification = async (notificationId) => {
  */
 export const getUnreadNotificationCount = async () => {
   try {
-    const response = await api.get(
+    const response = await axiosInstance.get(
       API_ENDPOINTS.NOTIFICATIONS.GET_UNREAD_COUNT
     );
     
@@ -176,7 +176,7 @@ export const getUnreadNotificationCount = async () => {
  */
 export const updateNotificationPreferences = async (preferences) => {
   try {
-    const response = await api.put(
+    const response = await axiosInstance.put(
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}/preferences`,
       preferences
     );
@@ -201,7 +201,7 @@ export const updateNotificationPreferences = async (preferences) => {
  */
 export const getNotificationPreferences = async () => {
   try {
-    const response = await api.get(
+    const response = await axiosInstance.get(
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}/preferences`
     );
     

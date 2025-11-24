@@ -1,204 +1,169 @@
-import api from './api';
+import axiosInstance from '../utils/axiosInstance';
 import { API_ENDPOINTS } from '../config/apiConfig';
 
 /**
- * Chat Service
- * Handles all chat-related API calls
+ * Chat Service - REST API for Chat Service (Mobile)
+ * Updated to match backend chat-service endpoints
  */
+
+// ==================== Chat Rooms ====================
 
 /**
- * Get all conversations for the current user
- * @param {Object} params - Query parameters
- * @param {number} params.page - Page number
- * @param {number} params.limit - Items per page
- * @returns {Promise} API response with conversations array
+ * Get all chat rooms for current user
  */
-export const getChatConversations = async (params = {}) => {
+export const getChatRooms = async () => {
   try {
-    const { page = 1, limit = 20 } = params;
-    
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    const response = await api.get(
-      `${API_ENDPOINTS.CHAT.GET_CONVERSATIONS}?${queryParams.toString()}`
-    );
-    
+    const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ALL_ROOMS);
     return {
       status: 'success',
       data: response.data.data || response.data,
-      pagination: response.data.pagination,
     };
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error('[Mobile] Error fetching chat rooms:', error);
     return {
       status: 'error',
-      message: error.response?.data?.message || 'Failed to fetch conversations',
+      message: error.response?.data?.message || 'Failed to fetch chat rooms',
+      data: [],
+    };
+  }
+};
+
+/**
+ * Get chat room by ID
+ */
+export const getChatRoomById = async (roomId) => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ROOM(roomId));
+    return {
+      status: 'success',
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error('[Mobile] Error fetching chat room:', error);
+    return {
+      status: 'error',
+      message: error.response?.data?.message || 'Failed to fetch chat room',
       data: null,
     };
   }
 };
 
 /**
- * Get messages for a specific conversation
- * @param {string} conversationId - Conversation ID
- * @param {Object} params - Query parameters
- * @param {number} params.page - Page number
- * @param {number} params.limit - Items per page
- * @returns {Promise} API response with messages array
+ * Get chat room by context (roomType and contextId)
+ * Used for REQUEST_CHAT rooms
  */
-export const getChatMessages = async (conversationId, params = {}) => {
+export const getChatRoomByContext = async (roomType, contextId) => {
   try {
-    const { page = 1, limit = 50 } = params;
-    
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CHAT.GET_ROOM_BY_CONTEXT,
+      {
+        params: { roomType, contextId },
+      }
+    );
+    return {
+      status: 'success',
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error('[Mobile] Error fetching chat room by context:', error);
+    return {
+      status: 'error',
+      message: error.response?.data?.message || 'Failed to fetch chat room',
+      data: null,
+    };
+  }
+};
 
-    const response = await api.get(
-      `${API_ENDPOINTS.CHAT.GET_MESSAGES(conversationId)}?${queryParams.toString()}`
+/**
+ * Create a new chat room (manual - for SUPPORT_CHAT or DIRECT_MESSAGE only)
+ */
+export const createChatRoom = async (data) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CHAT.CREATE_ROOM,
+      data
+    );
+    return {
+      status: 'success',
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error('[Mobile] Error creating chat room:', error);
+    return {
+      status: 'error',
+      message: error.response?.data?.message || 'Failed to create chat room',
+      data: null,
+    };
+  }
+};
+
+// ==================== Messages ====================
+
+/**
+ * Get messages in a chat room with pagination
+ * Note: To send messages, use WebSocket via websocketService.sendMessage()
+ */
+export const getChatMessages = async (roomId, params = {}) => {
+  try {
+    const { page = 0, size = 50 } = params;
+    
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CHAT.GET_MESSAGES(roomId),
+      {
+        params: { page, size },
+      }
     );
     
     return {
       status: 'success',
       data: response.data.data || response.data,
-      pagination: response.data.pagination,
     };
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('[Mobile] Error fetching messages:', error);
     return {
       status: 'error',
       message: error.response?.data?.message || 'Failed to fetch messages',
-      data: null,
+      data: { content: [], last: true },
     };
   }
 };
 
 /**
- * Send a message in a conversation
- * @param {string} conversationId - Conversation ID
- * @param {Object} messageData - Message data
- * @param {string} messageData.text - Message text
- * @param {string} messageData.type - Message type (text, image, file, etc.)
- * @param {Array} messageData.attachments - Optional attachments
- * @returns {Promise} API response with sent message
+ * Get recent messages since a specific timestamp (for sync after reconnect)
  */
-export const sendChatMessage = async (conversationId, messageData) => {
+export const getRecentMessages = async (roomId, sinceTimestamp) => {
   try {
-    const response = await api.post(
-      API_ENDPOINTS.CHAT.SEND_MESSAGE(conversationId),
-      messageData
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CHAT.GET_RECENT_MESSAGES(roomId, sinceTimestamp)
     );
-    
     return {
       status: 'success',
       data: response.data.data || response.data,
     };
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error('[Mobile] Error fetching recent messages:', error);
     return {
       status: 'error',
-      message: error.response?.data?.message || 'Failed to send message',
-      data: null,
+      message: error.response?.data?.message || 'Failed to fetch recent messages',
+      data: [],
     };
   }
 };
 
 /**
- * Create a new conversation
- * @param {Object} conversationData - Conversation data
- * @param {string} conversationData.recipientId - Recipient user ID
- * @param {string} conversationData.initialMessage - Optional initial message
- * @returns {Promise} API response with new conversation
+ * Get unread message count for a chat room
  */
-export const createConversation = async (conversationData) => {
+export const getUnreadCount = async (roomId) => {
   try {
-    const response = await api.post(
-      API_ENDPOINTS.CHAT.CREATE_CONVERSATION,
-      conversationData
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CHAT.GET_UNREAD_COUNT(roomId)
     );
-    
     return {
       status: 'success',
-      data: response.data.data || response.data,
+      data: response.data.data || response.data.count || 0,
     };
   } catch (error) {
-    console.error('Error creating conversation:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to create conversation',
-      data: null,
-    };
-  }
-};
-
-/**
- * Mark message as read
- * @param {string} messageId - Message ID
- * @returns {Promise} API response
- */
-export const markMessageAsRead = async (messageId) => {
-  try {
-    const response = await api.patch(
-      API_ENDPOINTS.CHAT.MARK_MESSAGE_AS_READ(messageId)
-    );
-    
-    return {
-      status: 'success',
-      data: response.data.data || response.data,
-    };
-  } catch (error) {
-    console.error('Error marking message as read:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to mark message as read',
-      data: null,
-    };
-  }
-};
-
-/**
- * Mark all messages in a conversation as read
- * @param {string} conversationId - Conversation ID
- * @returns {Promise} API response
- */
-export const markConversationAsRead = async (conversationId) => {
-  try {
-    const response = await api.patch(
-      API_ENDPOINTS.CHAT.MARK_CONVERSATION_AS_READ(conversationId)
-    );
-    
-    return {
-      status: 'success',
-      data: response.data.data || response.data,
-    };
-  } catch (error) {
-    console.error('Error marking conversation as read:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to mark conversation as read',
-      data: null,
-    };
-  }
-};
-
-/**
- * Get unread message count
- * @returns {Promise} API response with count
- */
-export const getUnreadMessageCount = async () => {
-  try {
-    const response = await api.get(API_ENDPOINTS.CHAT.GET_UNREAD_COUNT);
-    
-    return {
-      status: 'success',
-      data: response.data.count || 0,
-    };
-  } catch (error) {
-    console.error('Error fetching unread message count:', error);
+    console.error('[Mobile] Error fetching unread count:', error);
     return {
       status: 'error',
       message: error.response?.data?.message || 'Failed to fetch unread count',
@@ -208,117 +173,35 @@ export const getUnreadMessageCount = async () => {
 };
 
 /**
- * Delete a message
- * @param {string} messageId - Message ID
- * @returns {Promise} API response
+ * Mark messages as read in a chat room
  */
-export const deleteMessage = async (messageId) => {
+export const markAsRead = async (roomId) => {
   try {
-    const response = await api.delete(
-      API_ENDPOINTS.CHAT.DELETE_MESSAGE(messageId)
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CHAT.MARK_AS_READ(roomId)
     );
-    
-    return {
-      status: 'success',
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error deleting message:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to delete message',
-      data: null,
-    };
-  }
-};
-
-/**
- * Delete a conversation
- * @param {string} conversationId - Conversation ID
- * @returns {Promise} API response
- */
-export const deleteConversation = async (conversationId) => {
-  try {
-    const response = await api.delete(
-      API_ENDPOINTS.CHAT.DELETE_CONVERSATION(conversationId)
-    );
-    
-    return {
-      status: 'success',
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error deleting conversation:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to delete conversation',
-      data: null,
-    };
-  }
-};
-
-/**
- * Upload file/image for chat
- * @param {Object} file - File object from document picker or camera
- * @returns {Promise} API response with file URL
- */
-export const uploadChatFile = async (file) => {
-  try {
-    const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      type: file.mimeType || 'application/octet-stream',
-      name: file.name || 'file',
-    });
-
-    const response = await api.post(
-      API_ENDPOINTS.CHAT.UPLOAD_FILE,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    
     return {
       status: 'success',
       data: response.data.data || response.data,
     };
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('[Mobile] Error marking as read:', error);
     return {
       status: 'error',
-      message: error.response?.data?.message || 'Failed to upload file',
+      message: error.response?.data?.message || 'Failed to mark as read',
       data: null,
     };
   }
 };
 
-/**
- * Send typing indicator
- * @param {string} conversationId - Conversation ID
- * @param {boolean} isTyping - Typing status
- * @returns {Promise} API response
- */
-export const sendTypingIndicator = async (conversationId, isTyping) => {
-  try {
-    const response = await api.post(
-      API_ENDPOINTS.CHAT.TYPING_INDICATOR(conversationId),
-      { isTyping }
-    );
-    
-    return {
-      status: 'success',
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error sending typing indicator:', error);
-    return {
-      status: 'error',
-      message: error.response?.data?.message || 'Failed to send typing indicator',
-      data: null,
-    };
-  }
+// Export all functions
+export default {
+  getChatRooms,
+  getChatRoomById,
+  getChatRoomByContext,
+  createChatRoom,
+  getChatMessages,
+  getRecentMessages,
+  getUnreadCount,
+  markAsRead,
 };
-

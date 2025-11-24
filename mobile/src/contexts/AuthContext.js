@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import * as authService from '../services/authService';
 import { STORAGE_KEYS } from '../config/constants';
 import { getItem, setItem, removeItem } from '../utils/storage';
+import websocketService from '../services/websocketService';
 
 export const AuthContext = createContext();
 
@@ -41,6 +42,15 @@ export const AuthProvider = ({ children }) => {
 
       if (accessToken) {
         await setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+        
+        // Connect WebSocket with token after login success
+        try {
+          await websocketService.connect(accessToken);
+          console.log('✅ [Mobile] WebSocket connected after login');
+        } catch (wsError) {
+          console.error('[Mobile] WebSocket connection failed:', wsError);
+          // Don't fail login if WebSocket fails
+        }
       }
       if (user) {
         await setItem(STORAGE_KEYS.USER_DATA, user);
@@ -59,6 +69,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setLoading(true);
     try {
+      // Disconnect WebSocket before logout
+      websocketService.disconnect();
+      console.log('✅ [Mobile] WebSocket disconnected before logout');
+      
       const token = await getItem(STORAGE_KEYS.ACCESS_TOKEN);
       if (token) {
         await authService.logout(token);

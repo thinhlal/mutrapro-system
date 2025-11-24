@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -11,119 +11,17 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
+import { useChatRooms } from "../../hooks/useChat";
 
 const ChatListScreen = ({ navigation }) => {
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    fetchConversations();
-  }, []);
-
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await getChatConversations();
-      
-      // Mock data
-      const mockConversations = [
-        {
-          id: "1",
-          user: {
-            id: "user1",
-            name: "John Smith",
-            avatar: "https://i.pravatar.cc/150?img=1",
-            isOnline: true,
-          },
-          lastMessage: {
-            text: "Hey! How's the transcription coming along?",
-            timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
-            senderId: "user1",
-            isRead: false,
-          },
-          unreadCount: 2,
-        },
-        {
-          id: "2",
-          user: {
-            id: "user2",
-            name: "Sarah Johnson",
-            avatar: "https://i.pravatar.cc/150?img=2",
-            isOnline: true,
-          },
-          lastMessage: {
-            text: "Perfect! I'll send you the files tomorrow.",
-            timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-            senderId: "me",
-            isRead: true,
-          },
-          unreadCount: 0,
-        },
-        {
-          id: "3",
-          user: {
-            id: "user3",
-            name: "Mike Chen",
-            avatar: "https://i.pravatar.cc/150?img=3",
-            isOnline: false,
-          },
-          lastMessage: {
-            text: "Thanks for the arrangement! It sounds amazing 🎵",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-            senderId: "user3",
-            isRead: true,
-          },
-          unreadCount: 0,
-        },
-        {
-          id: "4",
-          user: {
-            id: "user4",
-            name: "Emily Davis",
-            avatar: "https://i.pravatar.cc/150?img=4",
-            isOnline: false,
-          },
-          lastMessage: {
-            text: "Can we schedule a recording session next week?",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-            senderId: "user4",
-            isRead: false,
-          },
-          unreadCount: 1,
-        },
-        {
-          id: "5",
-          user: {
-            id: "user5",
-            name: "David Brown",
-            avatar: "https://i.pravatar.cc/150?img=5",
-            isOnline: true,
-          },
-          lastMessage: {
-            text: "Got it! Let me know if you need any changes.",
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-            senderId: "me",
-            isRead: true,
-          },
-          unreadCount: 0,
-        },
-      ];
-
-      setConversations(mockConversations);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { rooms, loading, refreshRooms } = useChatRooms();
+  const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchConversations();
+    await refreshRooms();
     setRefreshing(false);
-  }, []);
+  }, [refreshRooms]);
 
   const getTimeAgo = (timestamp) => {
     const now = new Date();
@@ -140,20 +38,41 @@ const ChatListScreen = ({ navigation }) => {
     return messageTime.toLocaleDateString();
   };
 
+  const getRoomTypeColor = (roomType) => {
+    const colors = {
+      REQUEST_CHAT: COLORS.primary,
+      PROJECT_CHAT: COLORS.success,
+      REVISION_CHAT: COLORS.warning,
+      SUPPORT_CHAT: '#722ed1',
+      DIRECT_MESSAGE: '#eb2f96',
+    };
+    return colors[roomType] || COLORS.primary;
+  };
+
+  const getRoomTypeText = (roomType) => {
+    const types = {
+      REQUEST_CHAT: 'Request',
+      PROJECT_CHAT: 'Project',
+      REVISION_CHAT: 'Revision',
+      SUPPORT_CHAT: 'Support',
+      DIRECT_MESSAGE: 'Message',
+    };
+    return types[roomType] || roomType;
+  };
+
   const renderConversationItem = ({ item }) => {
-    const isUnread = item.unreadCount > 0;
-    const isFromMe = item.lastMessage.senderId === "me";
+    const isUnread = (item.unreadCount || 0) > 0;
+    const roomColor = getRoomTypeColor(item.roomType);
 
     return (
       <TouchableOpacity
         style={[styles.conversationItem, isUnread && styles.conversationItemUnread]}
-        onPress={() => navigation.navigate("ChatRoom", { conversation: item })}
+        onPress={() => navigation.navigate("ChatRoom", { room: item })}
         activeOpacity={0.7}
       >
-        {/* Avatar with Online Indicator */}
-        <View style={styles.avatarContainer}>
-          <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-          {item.user.isOnline && <View style={styles.onlineIndicator} />}
+        {/* Avatar/Icon for Room Type */}
+        <View style={[styles.avatarContainer, { backgroundColor: roomColor + '20' }]}>
+          <Ionicons name="chatbubbles" size={28} color={roomColor} />
         </View>
 
         {/* Content */}
@@ -163,27 +82,37 @@ const ChatListScreen = ({ navigation }) => {
               style={[styles.userName, isUnread && styles.userNameUnread]}
               numberOfLines={1}
             >
-              {item.user.name}
+              {item.roomName || 'Chat Room'}
             </Text>
-            <Text style={styles.timestamp}>{getTimeAgo(item.lastMessage.timestamp)}</Text>
+            <Text style={styles.timestamp}>
+              {getTimeAgo(item.updatedAt || item.createdAt)}
+            </Text>
           </View>
 
           <View style={styles.messagePreview}>
-            <Text
-              style={[
-                styles.lastMessage,
-                isUnread && styles.lastMessageUnread,
-              ]}
-              numberOfLines={1}
-            >
-              {isFromMe && "You: "}
-              {item.lastMessage.text}
-            </Text>
+            <View style={styles.roomTypeContainer}>
+              <Text style={[styles.roomType, { color: roomColor }]}>
+                {getRoomTypeText(item.roomType)}
+              </Text>
+              {item.description && (
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                  {' • ' + item.description}
+                </Text>
+              )}
+            </View>
             {isUnread && (
-              <View style={styles.unreadBadge}>
+              <View style={[styles.unreadBadge, { backgroundColor: roomColor }]}>
                 <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
               </View>
             )}
+          </View>
+
+          {/* Participant Count */}
+          <View style={styles.participantInfo}>
+            <Ionicons name="people-outline" size={14} color={COLORS.textSecondary} />
+            <Text style={styles.participantCount}>
+              {item.participantCount || 0} participants
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -195,7 +124,7 @@ const ChatListScreen = ({ navigation }) => {
       <Ionicons name="chatbubbles-outline" size={80} color={COLORS.textSecondary} />
       <Text style={styles.emptyStateTitle}>No Messages</Text>
       <Text style={styles.emptyStateText}>
-        Start a conversation with a specialist or client.
+        Your chat rooms will appear here when you start a conversation with a manager.
       </Text>
     </View>
   );
@@ -212,8 +141,8 @@ const ChatListScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={conversations}
-        keyExtractor={(item) => item.id}
+        data={rooms}
+        keyExtractor={(item) => item.roomId}
         renderItem={renderConversationItem}
         ListEmptyComponent={renderEmptyState}
         refreshControl={
@@ -225,7 +154,7 @@ const ChatListScreen = ({ navigation }) => {
           />
         }
         contentContainerStyle={
-          conversations.length === 0 ? styles.emptyListContent : null
+          rooms.length === 0 ? styles.emptyListContent : null
         }
         showsVerticalScrollIndicator={false}
       />
@@ -262,25 +191,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "05",
   },
   avatarContainer: {
-    position: "relative",
-    marginRight: SPACING.md,
-  },
-  avatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.gray[300],
-  },
-  onlineIndicator: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: COLORS.success,
-    borderWidth: 2,
-    borderColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
   },
   conversationContent: {
     flex: 1,
@@ -310,6 +226,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: SPACING.xs / 2,
+  },
+  roomTypeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  roomType: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
   },
   lastMessage: {
     flex: 1,
@@ -317,12 +243,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
-  lastMessageUnread: {
-    fontWeight: "600",
-    color: COLORS.text,
-  },
   unreadBadge: {
-    backgroundColor: COLORS.primary,
     minWidth: 20,
     height: 20,
     borderRadius: 10,
@@ -335,6 +256,15 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.white,
     fontWeight: "bold",
+  },
+  participantInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantCount: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs / 2,
   },
   emptyListContent: {
     flexGrow: 1,
@@ -362,4 +292,3 @@ const styles = StyleSheet.create({
 });
 
 export default ChatListScreen;
-
