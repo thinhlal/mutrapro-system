@@ -123,12 +123,14 @@ export default function TaskAssignmentWorkspace() {
   const [notes, setNotes] = useState('');
   const [milestoneStats, setMilestoneStats] = useState({});
   const [instrumentDetails, setInstrumentDetails] = useState([]);
+  const [instrumentFiltersReady, setInstrumentFiltersReady] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState(null);
   const lastFetchParamsRef = useRef({ specialization: null, instruments: [] });
 
   const fetchContractDetail = useCallback(async () => {
     try {
       setLoading(true);
+      setInstrumentFiltersReady(false);
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
@@ -141,6 +143,7 @@ export default function TaskAssignmentWorkspace() {
     } catch (error) {
       console.error('Error fetching contract detail:', error);
       message.error('Không thể tải thông tin contract');
+      setInstrumentFiltersReady(true);
     } finally {
       setLoading(false);
     }
@@ -160,10 +163,12 @@ export default function TaskAssignmentWorkspace() {
             .filter(detail => detail.name) || [];
         console.log('Loaded notation instruments', details);
         setInstrumentDetails(details);
+        setInstrumentFiltersReady(true);
       }
     } catch (error) {
       console.error('Error fetching instrument names:', error);
       setInstrumentDetails([]);
+      setInstrumentFiltersReady(true);
     }
   };
 
@@ -183,6 +188,7 @@ export default function TaskAssignmentWorkspace() {
         if (instrumentList.length > 0) {
           console.log('Using instruments from request payload', instrumentList);
           setInstrumentDetails(instrumentList);
+          setInstrumentFiltersReady(true);
         } else if (
           response.data.instrumentIds &&
           response.data.instrumentIds.length > 0
@@ -190,10 +196,12 @@ export default function TaskAssignmentWorkspace() {
           await fetchInstrumentDetails(response.data.instrumentIds);
         } else {
           setInstrumentDetails([]);
+          setInstrumentFiltersReady(true);
         }
       }
     } catch (error) {
       console.error('Error fetching request detail:', error);
+      setInstrumentFiltersReady(true);
     }
   };
 
@@ -291,27 +299,42 @@ export default function TaskAssignmentWorkspace() {
   }, [fetchContractDetail, isEditMode, fetchAssignmentDetail]);
 
   useEffect(() => {
-    if (contract?.milestones?.length && !selectedMilestoneId && !isEditMode) {
-      // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
-      const availableMilestones = contract.milestones.filter(m => {
+    if (!contract?.milestones?.length || isEditMode) return;
+
+    const getActiveCount = milestoneId => {
+      const stats = milestoneStats[milestoneId] || defaultStats;
+      return (stats.assigned || 0) + (stats.inProgress || 0);
+    };
+
+    const findSelectableMilestone = () => {
+      return contract.milestones.find(m => {
         const status = m.workStatus?.toUpperCase();
-        return status === 'PLANNED' || status === 'IN_PROGRESS';
+        const allowed = status === 'PLANNED' || status === 'IN_PROGRESS';
+        if (!allowed) return false;
+        return getActiveCount(m.milestoneId) === 0;
       });
-      const preferred =
-        availableMilestones.find(m => m.orderIndex !== 1) ||
-        availableMilestones[0];
-      setSelectedMilestoneId(
-        preferred ? preferred.milestoneId : contract.milestones[0].milestoneId
-      );
+    };
+
+    const selectedHasActive =
+      selectedMilestoneId &&
+      getActiveCount(selectedMilestoneId) > 0;
+
+    if (!selectedMilestoneId || selectedHasActive) {
+      const candidate = findSelectableMilestone() || contract.milestones[0];
+      if (candidate && candidate.milestoneId !== selectedMilestoneId) {
+        setSelectedMilestoneId(candidate.milestoneId);
+        setSelectedSpecialist(null);
+      }
     }
-    if (contract?.contractType && !taskType && !isEditMode) {
+
+    if (contract.contractType && !taskType) {
       const allowed =
         CONTRACT_TASK_MAP[contract.contractType.toLowerCase()] || [];
       if (allowed.length > 0) {
         setTaskType(allowed[0]);
       }
     }
-  }, [contract, selectedMilestoneId, taskType, isEditMode]);
+  }, [contract, milestoneStats, selectedMilestoneId, taskType, isEditMode]);
 
   // Set selected specialist when specialists are loaded and we have assignment data
   useEffect(() => {
@@ -336,8 +359,8 @@ export default function TaskAssignmentWorkspace() {
   }, [contract]);
 
   useEffect(() => {
-    // Chỉ fetch khi contract đã load xong
-    if (!contract) return;
+    // Chỉ fetch khi contract và milestone đã load xong
+    if (!contract || !selectedMilestoneId || !instrumentFiltersReady) return;
 
     const effectiveTaskType =
       taskType ||
@@ -397,15 +420,11 @@ export default function TaskAssignmentWorkspace() {
     instrumentDetails,
     selectedMilestoneId,
     contractId,
+    instrumentFiltersReady,
   ]);
 
   const filteredSpecialists = useMemo(() => {
     let result = specialists;
-
-    // Filter out specialist cũ nếu có excludeSpecialistId (khi tạo task mới từ task đã cancel)
-    if (excludedSpecialistId && !isEditMode) {
-      result = result.filter(s => s.specialistId !== excludedSpecialistId);
-    }
 
     // Filter theo search keyword
     if (!specialistSearch) return result;
@@ -419,11 +438,18 @@ export default function TaskAssignmentWorkspace() {
       ).toLowerCase();
       const specialization = s.specialization?.toLowerCase() || '';
       const bio = s.bio?.toLowerCase() || '';
-      return (
+      const matchesKeyword =
         name.includes(keyword) ||
         specialization.includes(keyword) ||
-        bio.includes(keyword)
-      );
+        bio.includes(keyword);
+
+      if (!matchesKeyword) return false;
+
+      if (!isEditMode && excludedSpecialistId) {
+        return s.specialistId !== excludedSpecialistId;
+      }
+
+      return true;
     });
   }, [
     specialistSearch,
@@ -659,8 +685,12 @@ export default function TaskAssignmentWorkspace() {
                   const isCompleted = workStatus === 'COMPLETED';
                   const isCancelled = workStatus === 'CANCELLED';
                   // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
-                  const canSelect = workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
-                  const isDisabled = !canSelect || isCompleted || isCancelled;
+                const canSelect = workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
+                const activeTaskCount =
+                  (stats.assigned || 0) + (stats.inProgress || 0);
+                const hasActiveTask = activeTaskCount > 0;
+                const isDisabled =
+                  !canSelect || isCompleted || isCancelled || hasActiveTask;
                   
                   const getWorkStatusColor = () => {
                     switch (workStatus) {
@@ -686,15 +716,19 @@ export default function TaskAssignmentWorkspace() {
                       onClick={() => {
                         if (!isDisabled) {
                           // Cho phép bỏ chọn nếu đã chọn rồi
-                          setSelectedMilestoneId(
-                            isSelected ? null : item.milestoneId
-                          );
+                          const nextSelectedId = isSelected ? null : item.milestoneId;
+                          setSelectedMilestoneId(nextSelectedId);
+                          if (nextSelectedId !== selectedMilestoneId) {
+                            setSelectedSpecialist(null);
+                          }
                         } else {
                           // Hiển thị thông báo nếu milestone không thể chọn
                           const reason = isCompleted
                             ? 'Milestone đã hoàn thành'
                             : isCancelled
                             ? 'Milestone đã bị hủy'
+                            : hasActiveTask
+                            ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
                             : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED hoặc IN_PROGRESS';
                           message.warning(reason);
                         }
@@ -710,6 +744,11 @@ export default function TaskAssignmentWorkspace() {
                             {MILESTONE_WORK_STATUS_LABELS[workStatus] || workStatus}
                           </Tag>
                         </div>
+                        {hasActiveTask && (
+                          <Tag color="magenta">
+                            {activeTaskCount} task đang hoạt động
+                          </Tag>
+                        )}
                         {item.description && (
                           <Paragraph
                             type="secondary"

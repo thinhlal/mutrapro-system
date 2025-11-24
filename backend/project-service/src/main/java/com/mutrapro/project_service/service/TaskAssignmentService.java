@@ -25,6 +25,7 @@ import com.mutrapro.project_service.exception.InvalidContractStatusException;
 import com.mutrapro.project_service.exception.InvalidMilestoneIdException;
 import com.mutrapro.project_service.exception.InvalidMilestoneWorkStatusException;
 import com.mutrapro.project_service.exception.InvalidTaskTypeException;
+import com.mutrapro.project_service.exception.TaskAssignmentAlreadyActiveException;
 import com.mutrapro.project_service.exception.TaskAssignmentAlreadyCompletedException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
@@ -213,6 +214,16 @@ public class TaskAssignmentService {
                 request.getMilestoneId(), 
                 workStatus
             );
+        }
+
+        // Ensure milestone does not already have an active task
+        boolean hasActiveTask = taskAssignmentRepository
+            .findByContractIdAndMilestoneId(contractId, request.getMilestoneId())
+            .stream()
+            .anyMatch(task -> task.getStatus() == AssignmentStatus.assigned
+                || task.getStatus() == AssignmentStatus.in_progress);
+        if (hasActiveTask) {
+            throw TaskAssignmentAlreadyActiveException.forMilestone(request.getMilestoneId());
         }
         
         // Create task assignment
