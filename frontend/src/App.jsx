@@ -96,6 +96,8 @@ import TaskAssignmentManagement from './pages/manager/TaskAssignment/TaskAssignm
 import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 
+// AI Transcription Pages
+import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
 import './App.css';
 
 function App() {
@@ -131,6 +133,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-transcription"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <KlangTranscriptionPanel />
               </ProtectedRoute>
             }
           />
