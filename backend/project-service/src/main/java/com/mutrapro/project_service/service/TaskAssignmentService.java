@@ -9,6 +9,9 @@ import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.shared.dto.PageResponse;
+import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotsResult;
+import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
@@ -48,7 +51,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -363,6 +368,224 @@ public class TaskAssignmentService {
 
     private String asString(Object value) {
         return value != null ? value.toString() : null;
+    }
+
+    /**
+     * Lấy danh sách milestone slots phục vụ assign task (paginate/filter ở FE).
+     */
+    public MilestoneAssignmentSlotsResult getMilestoneAssignmentSlots(
+            String contractId,
+            String status,
+            String taskType,
+            String keyword,
+            Boolean onlyUnassigned,
+            int page,
+            int size) {
+
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+
+        String managerUserId = getCurrentUserId();
+        List<Contract> contracts;
+
+        if (contractId != null && !contractId.isBlank()) {
+            Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+            verifyManagerPermission(contract);
+            contracts = List.of(contract);
+        } else {
+            contracts = contractRepository.findByManagerUserId(managerUserId);
+        }
+
+        if (contracts.isEmpty()) {
+            return MilestoneAssignmentSlotsResult.builder()
+                .page(PageResponse.<MilestoneAssignmentSlotResponse>builder()
+                    .content(List.of())
+                    .pageNumber(safePage)
+                    .pageSize(safeSize)
+                    .totalElements(0)
+                    .totalPages(0)
+                    .first(true)
+                    .last(true)
+                    .hasNext(false)
+                    .hasPrevious(false)
+                    .build())
+                .totalUnassigned(0)
+                .totalInProgress(0)
+                .totalCompleted(0)
+                .build();
+        }
+
+        Map<String, Contract> contractMap = contracts.stream()
+            .collect(Collectors.toMap(Contract::getContractId, c -> c));
+        List<String> contractIds = new ArrayList<>(contractMap.keySet());
+
+        List<ContractMilestone> milestones = contractMilestoneRepository.findByContractIdIn(contractIds);
+        if (milestones.isEmpty()) {
+            return MilestoneAssignmentSlotsResult.builder()
+                .page(PageResponse.<MilestoneAssignmentSlotResponse>builder()
+                    .content(List.of())
+                    .pageNumber(safePage)
+                    .pageSize(safeSize)
+                    .totalElements(0)
+                    .totalPages(0)
+                    .first(true)
+                    .last(true)
+                    .hasNext(false)
+                    .hasPrevious(false)
+                    .build())
+                .totalUnassigned(0)
+                .totalInProgress(0)
+                .totalCompleted(0)
+                .build();
+        }
+        List<String> milestoneIds = milestones.stream()
+            .map(ContractMilestone::getMilestoneId)
+            .collect(Collectors.toList());
+
+        List<TaskAssignment> assignments = taskAssignmentRepository.findByMilestoneIdIn(milestoneIds);
+        Map<String, TaskAssignment> assignmentMap = assignments.stream()
+            .collect(Collectors.groupingBy(TaskAssignment::getMilestoneId,
+                Collectors.collectingAndThen(Collectors.toList(), this::pickLatestAssignment)));
+
+        List<MilestoneAssignmentSlotResponse> slots = new ArrayList<>();
+
+        for (ContractMilestone milestone : milestones) {
+            Contract contract = contractMap.get(milestone.getContractId());
+            if (contract == null) {
+                continue;
+            }
+
+            TaskAssignment assignment = assignmentMap.get(milestone.getMilestoneId());
+            boolean isUnassigned = assignment == null || assignment.getStatus() == AssignmentStatus.cancelled;
+
+            if (Boolean.TRUE.equals(onlyUnassigned) && !isUnassigned) {
+                continue;
+            }
+            if (!matchesStatusFilter(assignment, status)) {
+                continue;
+            }
+            if (!matchesTaskTypeFilter(assignment, taskType)) {
+                continue;
+            }
+
+            MilestoneAssignmentSlotResponse slot = MilestoneAssignmentSlotResponse.builder()
+                .contractId(contract.getContractId())
+                .contractNumber(contract.getContractNumber())
+                .contractType(contract.getContractType() != null ? contract.getContractType().name() : null)
+                .customerName(contract.getNameSnapshot())
+                .milestoneId(milestone.getMilestoneId())
+                .milestoneOrderIndex(milestone.getOrderIndex())
+                .milestoneName(milestone.getName())
+                .milestoneDescription(milestone.getDescription())
+                .plannedStartAt(milestone.getPlannedStartAt())
+                .plannedDueDate(milestone.getPlannedDueDate())
+                .actualStartAt(milestone.getActualStartAt())
+                .actualEndAt(milestone.getActualEndAt())
+                .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .assignmentId(assignment != null ? assignment.getAssignmentId() : null)
+                .taskType(assignment != null ? assignment.getTaskType() : null)
+                .assignmentStatus(assignment != null && assignment.getStatus() != null
+                    ? assignment.getStatus().name()
+                    : (isUnassigned ? "unassigned" : null))
+                .specialistId(assignment != null ? assignment.getSpecialistId() : null)
+                .assignedDate(assignment != null ? assignment.getAssignedDate() : null)
+                .canAssign(isUnassigned)
+                .build();
+
+            slots.add(slot);
+        }
+
+        slots.sort(Comparator.comparing(
+            slot -> Optional.ofNullable(slot.getPlannedDueDate())
+                .orElseGet(() -> Optional.ofNullable(slot.getActualEndAt()).orElse(LocalDateTime.MAX))));
+
+        if (keyword != null && !keyword.isBlank()) {
+            String lowerKeyword = keyword.toLowerCase();
+            slots = slots.stream()
+                .filter(slot ->
+                    (slot.getContractNumber() != null
+                        && slot.getContractNumber().toLowerCase().contains(lowerKeyword))
+                        || (slot.getCustomerName() != null
+                        && slot.getCustomerName().toLowerCase().contains(lowerKeyword))
+                        || (slot.getMilestoneName() != null
+                        && slot.getMilestoneName().toLowerCase().contains(lowerKeyword)))
+                .collect(Collectors.toList());
+        }
+
+        long totalUnassigned = slots.stream()
+            .filter(slot -> slot.getAssignmentId() == null
+                || slot.getAssignmentStatus() == null
+                || "unassigned".equalsIgnoreCase(slot.getAssignmentStatus()))
+            .count();
+        long totalInProgress = slots.stream()
+            .filter(slot -> "in_progress".equalsIgnoreCase(slot.getAssignmentStatus()))
+            .count();
+        long totalCompleted = slots.stream()
+            .filter(slot -> "completed".equalsIgnoreCase(slot.getAssignmentStatus()))
+            .count();
+
+        int totalElements = slots.size();
+        int totalPages = (int) Math.ceil(totalElements / (double) safeSize);
+        int fromIndex = Math.min(safePage * safeSize, totalElements);
+        int toIndex = Math.min(fromIndex + safeSize, totalElements);
+        List<MilestoneAssignmentSlotResponse> pageItems =
+            fromIndex >= toIndex ? List.of() : slots.subList(fromIndex, toIndex);
+
+        PageResponse<MilestoneAssignmentSlotResponse> pageResponse =
+            PageResponse.<MilestoneAssignmentSlotResponse>builder()
+                .content(pageItems)
+                .pageNumber(safePage)
+                .pageSize(safeSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .first(safePage == 0)
+                .last(totalPages == 0 ? true : safePage >= totalPages - 1)
+                .hasNext(totalPages == 0 ? false : safePage < totalPages - 1)
+                .hasPrevious(safePage > 0)
+                .build();
+
+        return MilestoneAssignmentSlotsResult.builder()
+            .page(pageResponse)
+            .totalUnassigned(totalUnassigned)
+            .totalInProgress(totalInProgress)
+            .totalCompleted(totalCompleted)
+            .build();
+    }
+
+    private TaskAssignment pickLatestAssignment(List<TaskAssignment> assignments) {
+        if (assignments == null || assignments.isEmpty()) {
+            return null;
+        }
+        return assignments.stream()
+            .sorted(Comparator
+                .comparing((TaskAssignment a) -> a.getStatus() == AssignmentStatus.cancelled)
+                .thenComparing(TaskAssignment::getAssignedDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .findFirst()
+            .orElse(null);
+    }
+
+    private boolean matchesStatusFilter(TaskAssignment assignment, String statusFilter) {
+        if (statusFilter == null || statusFilter.isBlank() || "all".equalsIgnoreCase(statusFilter)) {
+            return true;
+        }
+        if ("unassigned".equalsIgnoreCase(statusFilter)) {
+            return assignment == null || assignment.getStatus() == AssignmentStatus.cancelled;
+        }
+        if (assignment == null || assignment.getStatus() == null) {
+            return false;
+        }
+        return assignment.getStatus().name().equalsIgnoreCase(statusFilter);
+    }
+
+    private boolean matchesTaskTypeFilter(TaskAssignment assignment, String taskTypeFilter) {
+        if (taskTypeFilter == null || taskTypeFilter.isBlank() || "all".equalsIgnoreCase(taskTypeFilter)) {
+            return true;
+        }
+        if (assignment == null || assignment.getTaskType() == null) {
+            return false;
+        }
+        return assignment.getTaskType().name().equalsIgnoreCase(taskTypeFilter);
     }
 
     private void notifySpecialistTaskAssigned(TaskAssignment assignment, Contract contract, ContractMilestone milestone) {
@@ -1066,7 +1289,7 @@ public class TaskAssignmentService {
                 Optional<Map<String, Object>> specialistDataOpt = fetchSpecialistData(assignment.getSpecialistId());
                 if (specialistDataOpt.isPresent()) {
                     String specialistUserId = asString(specialistDataOpt.get().get("userId"));
-
+                    
                     if (specialistUserId != null && !specialistUserId.isEmpty()) {
                         String issueInfo = "";
                         if (saved.getIssueReason() != null) {

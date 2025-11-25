@@ -464,11 +464,11 @@ export default function TaskProgressManagement() {
     );
   };
 
-  // Handle view task details
-  const handleViewTaskDetails = async record => {
-    setSelectedTask(record);
-    setTaskDetailModalVisible(true);
-    await fetchTaskFiles(record.assignmentId);
+  // Handle view task details - navigate to detail page
+  const handleViewTaskDetails = record => {
+    navigate(
+      `/manager/milestone-assignments/${record.contractId}/detail/${record.assignmentId}`
+    );
   };
 
   // Handle view issue details
@@ -520,9 +520,9 @@ export default function TaskProgressManagement() {
         setSelectedIssueTask(null);
 
         // Navigate đến workspace với data pre-filled từ task cũ
-        navigate(
-          `/manager/task-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
-        );
+      navigate(
+        `/manager/milestone-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
+      );
       }
     } catch (error) {
       console.error('Error cancelling task:', error);

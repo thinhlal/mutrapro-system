@@ -36,9 +36,9 @@ const menuItems = [
     label: <Link to="/manager/contracts">Contracts</Link>,
   },
   {
-    key: '/manager/task-assignments',
+    key: '/manager/milestone-assignments',
     icon: <UsergroupAddOutlined />,
-    label: <Link to="/manager/task-assignments">Task Assignments</Link>,
+    label: <Link to="/manager/milestone-assignments">Milestone Assignments</Link>,
   },
   {
     key: '/manager/task-progress',

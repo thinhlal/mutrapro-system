@@ -92,9 +92,10 @@ import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
 import ManagerContractDetailPage from './pages/manager/ContractDetail/ManagerContractDetailPage';
 import ContractsManagement from './pages/manager/ContractsList/ContractsManagement';
-import TaskAssignmentManagement from './pages/manager/TaskAssignment/TaskAssignmentManagement';
+import MilestoneAssignmentsPage from './pages/manager/MilestoneAssignments/MilestoneAssignmentsPage';
 import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
+import MilestoneAssignmentDetailPage from './pages/manager/MilestoneAssignmentDetail/MilestoneAssignmentDetailPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -357,20 +358,24 @@ function App() {
               element={<ManagerContractDetailPage />}
             />
             <Route
-              path="task-assignments"
-              element={<TaskAssignmentManagement />}
+              path="milestone-assignments"
+              element={<MilestoneAssignmentsPage />}
             />
             <Route
               path="task-progress"
               element={<TaskProgressManagement />}
             />
             <Route
-              path="task-assignments/:contractId/new"
+              path="milestone-assignments/:contractId/new"
               element={<TaskAssignmentWorkspace />}
             />
             <Route
-              path="task-assignments/:contractId/edit/:assignmentId"
+              path="milestone-assignments/:contractId/edit/:assignmentId"
               element={<TaskAssignmentWorkspace />}
+            />
+            <Route
+              path="milestone-assignments/:contractId/detail/:assignmentId"
+              element={<MilestoneAssignmentDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
           </Route>

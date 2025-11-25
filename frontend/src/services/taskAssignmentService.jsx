@@ -152,6 +152,26 @@ export const getTaskAssignmentById = async (contractId, assignmentId) => {
   }
 };
 
+/**
+ * Lấy danh sách milestone assignment slots cho manager gán task
+ * GET /task-assignments/slots
+ */
+export const getMilestoneAssignmentSlots = async params => {
+  try {
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.TASK_ASSIGNMENTS.BASE}/slots`,
+      { params }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách milestone slots',
+      }
+    );
+  }
+};
+
 // ===== SPECIALIST TASK ASSIGNMENT FUNCTIONS =====
 
 /**

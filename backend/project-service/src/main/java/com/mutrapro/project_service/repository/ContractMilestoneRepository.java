@@ -20,5 +20,7 @@ public interface ContractMilestoneRepository extends JpaRepository<ContractMiles
     Optional<ContractMilestone> findFirstByContractIdOrderByOrderIndexAsc(String contractId);
     
     Optional<ContractMilestone> findByMilestoneIdAndContractId(String milestoneId, String contractId);
+
+    List<ContractMilestone> findByContractIdIn(List<String> contractIds);
 }
 

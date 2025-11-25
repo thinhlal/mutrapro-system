@@ -515,7 +515,7 @@ export default function TaskAssignmentWorkspace() {
             ? 'Cập nhật task assignment thành công'
             : 'Gán task thành công'
         );
-        navigate('/manager/task-assignments');
+        navigate('/manager/milestone-assignments');
       }
     } catch (error) {
       console.error('Error assigning task:', error);
@@ -544,7 +544,7 @@ export default function TaskAssignmentWorkspace() {
           type="primary"
           icon={<ArrowLeftOutlined />}
           style={{ marginTop: 16 }}
-          onClick={() => navigate('/manager/task-assignments')}
+            onClick={() => navigate('/manager/milestone-assignments')}
         >
           Quay lại danh sách
         </Button>
@@ -557,7 +557,7 @@ export default function TaskAssignmentWorkspace() {
       <div className={styles.workspaceHeader}>
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/manager/task-assignments')}
+          onClick={() => navigate('/manager/milestone-assignments')}
         >
           Quay lại
         </Button>

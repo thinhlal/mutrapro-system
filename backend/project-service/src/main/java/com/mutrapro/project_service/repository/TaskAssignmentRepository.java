@@ -42,5 +42,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
 
     // Check if milestone already has accepted/active tasks
     boolean existsByMilestoneIdAndStatusIn(String milestoneId, Collection<AssignmentStatus> statuses);
+
+    List<TaskAssignment> findByMilestoneIdIn(Collection<String> milestoneIds);
 }
 
