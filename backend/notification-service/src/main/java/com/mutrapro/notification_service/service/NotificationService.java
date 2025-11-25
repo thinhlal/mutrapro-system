@@ -7,6 +7,7 @@ import com.mutrapro.notification_service.repository.NotificationRepository;
 import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.exception.NotificationNotFoundException;
 import com.mutrapro.shared.event.ChatRoomCreatedEvent;
+import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -75,6 +76,53 @@ public class NotificationService {
                 // Continue với participants khác
             }
         }
+    }
+
+    /**
+     * Tạo notification khi specialist được gán task mới (Kafka event).
+     */
+    @Transactional
+    public void createTaskAssignmentAssignedNotification(TaskAssignmentAssignedEvent event) {
+        if (event.getSpecialistUserId() == null || event.getSpecialistUserId().isBlank()) {
+            log.warn("Cannot create assignment notification, userId missing: assignmentId={}", event.getAssignmentId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+            ? event.getContractNumber()
+            : event.getContractId();
+        String milestoneLabel = event.getMilestoneName() != null && !event.getMilestoneName().isBlank()
+            ? event.getMilestoneName()
+            : event.getMilestoneId();
+
+        String defaultContent = String.format(
+            "Manager đã gán task %s cho contract #%s (Milestone: %s). Vui lòng kiểm tra mục My Tasks.",
+            event.getTaskType(),
+            contractLabel,
+            milestoneLabel
+        );
+
+        String title = event.getTitle() != null ? event.getTitle() : "Bạn được giao task mới";
+        String content = event.getContent() != null ? event.getContent() : defaultContent;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/transcription/my-tasks";
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+            .userId(event.getSpecialistUserId())
+            .type(NotificationType.TASK_ASSIGNMENT_ASSIGNED)
+            .title(title)
+            .content(content)
+            .referenceId(event.getAssignmentId())
+            .referenceType(referenceType)
+            .actionUrl(actionUrl)
+            .isRead(false)
+            .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getSpecialistUserId(), saved);
+
+        log.info("Task assignment notification created: assignmentId={}, userId={}",
+            event.getAssignmentId(), event.getSpecialistUserId());
     }
 
     

@@ -1,5 +1,7 @@
 package com.mutrapro.project_service.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
@@ -10,6 +12,7 @@ import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
+import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -18,6 +21,7 @@ import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.shared.enums.NotificationType;
+import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.project_service.mapper.TaskAssignmentMapper;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
@@ -32,6 +36,7 @@ import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -47,7 +52,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -65,6 +72,8 @@ public class TaskAssignmentService {
     SpecialistServiceFeignClient specialistServiceFeignClient;
     NotificationServiceFeignClient notificationServiceFeignClient;
     RequestServiceFeignClient requestServiceFeignClient;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -351,6 +360,109 @@ public class TaskAssignmentService {
         return value != null ? value.toString() : null;
     }
 
+    private void notifySpecialistTaskAssigned(TaskAssignment assignment, Contract contract, ContractMilestone milestone) {
+        if (assignment.getSpecialistId() == null) {
+            return;
+        }
+
+        Optional<Map<String, Object>> specialistDataOpt = fetchSpecialistData(assignment.getSpecialistId());
+        if (specialistDataOpt.isEmpty()) {
+            log.warn("Cannot enqueue assignment notification. Specialist info not found: specialistId={}",
+                    assignment.getSpecialistId());
+            return;
+        }
+
+        String specialistUserId = asString(specialistDataOpt.get().get("userId"));
+        if (specialistUserId == null || specialistUserId.isBlank()) {
+            log.warn("Cannot enqueue assignment notification. specialistUserId missing for specialistId={}",
+                    assignment.getSpecialistId());
+            return;
+        }
+
+        enqueueTaskAssignmentAssignedEvent(assignment, contract, milestone, specialistUserId);
+    }
+
+    private Optional<Map<String, Object>> fetchSpecialistData(String specialistId) {
+        if (specialistId == null || specialistId.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            ApiResponse<Map<String, Object>> specialistResponse =
+                specialistServiceFeignClient.getSpecialistById(specialistId);
+
+            if (specialistResponse != null
+                && "success".equalsIgnoreCase(specialistResponse.getStatus())
+                && specialistResponse.getData() != null) {
+                return Optional.of(specialistResponse.getData());
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to fetch specialist data: specialistId={}, error={}",
+                specialistId, ex.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    private void enqueueTaskAssignmentAssignedEvent(
+            TaskAssignment assignment,
+            Contract contract,
+            ContractMilestone milestone,
+            String specialistUserId) {
+
+        String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+            ? contract.getContractNumber()
+            : contract.getContractId();
+        String milestoneLabel = milestone != null && milestone.getName() != null
+            ? milestone.getName()
+            : assignment.getMilestoneId();
+
+        TaskAssignmentAssignedEvent event = TaskAssignmentAssignedEvent.builder()
+            .eventId(UUID.randomUUID())
+            .assignmentId(assignment.getAssignmentId())
+            .contractId(contract.getContractId())
+            .contractNumber(contractLabel)
+            .specialistId(assignment.getSpecialistId())
+            .specialistUserId(specialistUserId)
+            .taskType(assignment.getTaskType() != null ? assignment.getTaskType().name() : null)
+            .milestoneId(assignment.getMilestoneId())
+            .milestoneName(milestoneLabel)
+            .title("Bạn được giao task mới")
+            .content(String.format(
+                "Manager đã gán task %s cho contract #%s (Milestone: %s). Vui lòng kiểm tra mục My Tasks.",
+                assignment.getTaskType(),
+                contractLabel,
+                milestoneLabel))
+            .referenceType("TASK_ASSIGNMENT")
+            .actionUrl("/transcription/my-tasks")
+            .assignedAt(assignment.getAssignedDate())
+            .timestamp(Instant.now())
+            .build();
+
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(assignment.getAssignmentId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType("TaskAssignment")
+                .eventType("task.assignment.assigned")
+                .eventPayload(payload)
+                .build();
+
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued TaskAssignmentAssignedEvent: assignmentId={}, userId={}",
+                assignment.getAssignmentId(), specialistUserId);
+        } catch (Exception ex) {
+            log.error("Failed to enqueue TaskAssignmentAssignedEvent: assignmentId={}, error={}",
+                assignment.getAssignmentId(), ex.getMessage(), ex);
+        }
+    }
+
     private Integer asInteger(Object value) {
         if (value instanceof Number number) {
             return number.intValue();
@@ -471,6 +583,8 @@ public class TaskAssignmentService {
         
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment created successfully: assignmentId={}", saved.getAssignmentId());
+        
+        notifySpecialistTaskAssigned(saved, contract, milestone);
         
         return enrichTaskAssignment(saved);
     }
@@ -939,15 +1053,10 @@ public class TaskAssignmentService {
         // Gửi notification cho specialist
         try {
             if (assignment.getSpecialistId() != null) {
-                // Lấy userId của specialist từ specialistId
-                ApiResponse<Map<String, Object>> specialistResponse = 
-                    specialistServiceFeignClient.getSpecialistById(assignment.getSpecialistId());
-                
-                if (specialistResponse != null && "success".equals(specialistResponse.getStatus()) 
-                    && specialistResponse.getData() != null) {
-                    Map<String, Object> specialistData = specialistResponse.getData();
-                    String specialistUserId = (String) specialistData.get("userId");
-                    
+                Optional<Map<String, Object>> specialistDataOpt = fetchSpecialistData(assignment.getSpecialistId());
+                if (specialistDataOpt.isPresent()) {
+                    String specialistUserId = asString(specialistDataOpt.get().get("userId"));
+
                     if (specialistUserId != null && !specialistUserId.isEmpty()) {
                         String issueInfo = "";
                         if (saved.getIssueReason() != null) {

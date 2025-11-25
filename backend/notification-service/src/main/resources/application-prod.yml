@@ -51,6 +51,7 @@ app:
       password.reset: password-reset
       contract.otp-email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
       contract.signed-email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
+      task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
 
 logging:
   level:

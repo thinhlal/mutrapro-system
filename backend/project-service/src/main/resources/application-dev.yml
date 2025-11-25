@@ -49,6 +49,7 @@ app:
       contract.signed-email: contract-signed-email
       billing.deposit-paid: billing-deposit-paid
       billing.milestone-paid: billing-milestone-paid
+      task.assignment.assigned: task-assignment-assigned
 
 # Request Service Configuration
 request:

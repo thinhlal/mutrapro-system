@@ -17,6 +17,7 @@ public enum NotificationType {
     CONTRACT_CANCELED_BY_MANAGER,   // Contract bị manager hủy
     MILESTONE_PAID,             // Milestone đã được thanh toán
     ALL_MILESTONES_PAID,        // Tất cả milestones đã được thanh toán
+    TASK_ASSIGNMENT_ASSIGNED,   // Specialist được giao task mới
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist cancel
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }

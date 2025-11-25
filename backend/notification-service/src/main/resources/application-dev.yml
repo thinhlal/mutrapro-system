@@ -56,6 +56,7 @@ app:
       password.reset: password-reset
       contract.otp-email: contract-otp-email
       contract.signed-email: contract-signed-email
+      task.assignment.assigned: task-assignment-assigned
 
 logging:
   level:
