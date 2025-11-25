@@ -24,6 +24,9 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Find all task assignments by specialist ID
     List<TaskAssignment> findBySpecialistId(String specialistId);
 
+    // Find all task assignments by multiple specialist IDs (batch query)
+    List<TaskAssignment> findBySpecialistIdIn(List<String> specialistIds);
+
     // Find all task assignments by contract ID and task type
     List<TaskAssignment> findByContractIdAndTaskType(String contractId, TaskType taskType);
 

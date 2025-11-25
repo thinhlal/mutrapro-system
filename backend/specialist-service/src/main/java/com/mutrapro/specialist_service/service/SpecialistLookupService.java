@@ -75,11 +75,26 @@ public class SpecialistLookupService {
         
         List<SpecialistResponse> responses = specialistMapper.toSpecialistResponseList(specialists);
         final LocalDateTime finalSlaWindowEnd = slaWindowEnd; // Final reference for lambda
+        
+        // Batch fetch task assignments cho tất cả specialists cùng lúc
+        Map<String, List<Map<String, Object>>> tasksBySpecialist = fetchTaskAssignmentsBatch(
+            responses.stream().map(SpecialistResponse::getSpecialistId).collect(Collectors.toList())
+        );
+        
+        // Tạo cache chung cho contract timeline để tái sử dụng giữa các specialists
+        // (nhiều specialists có thể có tasks từ cùng 1 contract)
+        Map<String, ContractTimeline> sharedContractTimelineCache = new HashMap<>();
+        
+        // Tính stats cho từng specialist từ batch data
         responses.forEach(response -> {
             Specialist specialist = specialistMap.get(response.getSpecialistId());
             if (specialist != null) {
-                // Tính real-time totalOpenTasks và tasksInSlaWindow
-                calculateTaskStats(response, specialist.getSpecialistId(), finalSlaWindowEnd);
+                // Tính real-time totalOpenTasks và tasksInSlaWindow từ batch data
+                List<Map<String, Object>> tasks = tasksBySpecialist.getOrDefault(
+                    specialist.getSpecialistId(), 
+                    new ArrayList<>()
+                );
+                calculateTaskStatsFromData(response, tasks, finalSlaWindowEnd, sharedContractTimelineCache);
                 
                 try {
                     var userResponse = identityServiceFeignClient.getUserBasicInfo(specialist.getUserId());
@@ -194,80 +209,113 @@ public class SpecialistLookupService {
     }
 
     /**
-     * Tính real-time totalOpenTasks và tasksInSlaWindow từ task assignments
+     * Batch fetch task assignments cho nhiều specialists cùng lúc
+     */
+    private Map<String, List<Map<String, Object>>> fetchTaskAssignmentsBatch(List<String> specialistIds) {
+        if (specialistIds == null || specialistIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        
+        try {
+            ApiResponse<Map<String, List<Map<String, Object>>>> batchResponse = 
+                projectServiceFeignClient.getTaskAssignmentsBySpecialistIds(specialistIds);
+            
+            if (batchResponse != null && "success".equals(batchResponse.getStatus()) 
+                && batchResponse.getData() != null) {
+                return batchResponse.getData();
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to batch fetch task assignments for {} specialists: {}", 
+                specialistIds.size(), ex.getMessage());
+        }
+        
+        return new HashMap<>();
+    }
+
+    /**
+     * Tính real-time totalOpenTasks và tasksInSlaWindow từ task assignments data (đã có sẵn)
+     * @param tasks Danh sách tasks đã fetch sẵn
+     * @param slaWindowEnd SLA window end từ milestone đang assign (null nếu không có milestone)
+     * @param contractTimelineCache Cache chung cho contract timeline (để tái sử dụng giữa các specialists)
+     */
+    private void calculateTaskStatsFromData(SpecialistResponse response, List<Map<String, Object>> tasks, 
+            LocalDateTime slaWindowEnd, Map<String, ContractTimeline> contractTimelineCache) {
+        if (tasks == null || tasks.isEmpty()) {
+            response.setTotalOpenTasks(0);
+            response.setTasksInSlaWindow(0);
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Tính totalOpenTasks: đếm tasks có status = assigned hoặc in_progress
+        long totalOpenTasks = tasks.stream()
+            .filter(task -> {
+                String status = (String) task.get("status");
+                return "assigned".equalsIgnoreCase(status) || "in_progress".equalsIgnoreCase(status);
+            })
+            .count();
+        
+        // Tính tasksInSlaWindow: đếm tasks có plannedDueDate nằm trong [now, slaWindowEnd]
+        long tasksInSlaWindow = 0;
+        if (slaWindowEnd != null) {
+            tasksInSlaWindow = tasks.stream()
+                .filter(task -> {
+                    String status = (String) task.get("status");
+                    // Chỉ tính cho tasks đang làm (assigned hoặc in_progress)
+                    if (!"assigned".equalsIgnoreCase(status) && !"in_progress".equalsIgnoreCase(status)) {
+                        return false;
+                    }
+                    
+                    // Lấy plannedDueDate từ milestone của task
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> taskMilestone = (Map<String, Object>) task.get("milestone");
+                    if (taskMilestone == null) return false;
+                    
+                    Object plannedDueDateObj = taskMilestone.get("plannedDueDate");
+                    LocalDateTime taskPlannedDueDate = parseLocalDateTime(plannedDueDateObj);
+                    
+                    if (taskPlannedDueDate == null) {
+                        String contractId = (String) task.get("contractId");
+                        String milestoneId = taskMilestone.get("milestoneId") != null
+                            ? taskMilestone.get("milestoneId").toString()
+                            : null;
+                        
+                        TimelineDates fallbackDates = calculateFallbackTimelineDates(
+                            contractId,
+                            milestoneId,
+                            parseInteger(taskMilestone.get("milestoneSlaDays")),
+                            contractTimelineCache
+                        );
+                        if (fallbackDates != null) {
+                            taskPlannedDueDate = fallbackDates.dueDate();
+                        }
+                    }
+                    
+                    if (taskPlannedDueDate == null) return false;
+                    
+                    // Kiểm tra nếu task's plannedDueDate nằm trong [now, slaWindowEnd]
+                    return !taskPlannedDueDate.isBefore(now) && !taskPlannedDueDate.isAfter(slaWindowEnd);
+                })
+                .count();
+        }
+        
+        response.setTotalOpenTasks((int) totalOpenTasks);
+        response.setTasksInSlaWindow((int) tasksInSlaWindow);
+    }
+
+    /**
+     * Tính real-time totalOpenTasks và tasksInSlaWindow từ task assignments (gọi API riêng lẻ cho 1 specialist)
+     * Sử dụng batch API ngay cả khi chỉ có 1 specialist để tái sử dụng logic
      * @param slaWindowEnd SLA window end từ milestone đang assign (null nếu không có milestone)
      */
     private void calculateTaskStats(SpecialistResponse response, String specialistId, LocalDateTime slaWindowEnd) {
         try {
-            ApiResponse<List<Map<String, Object>>> tasksResponse = 
-                projectServiceFeignClient.getTaskAssignmentsBySpecialistId(specialistId);
-            
-            if (tasksResponse != null && "success".equals(tasksResponse.getStatus()) 
-                && tasksResponse.getData() != null) {
-                
-                List<Map<String, Object>> tasks = tasksResponse.getData();
-                Map<String, ContractTimeline> contractTimelineCache = new HashMap<>();
-                LocalDateTime now = LocalDateTime.now();
-                
-                // Tính totalOpenTasks: đếm tasks có status = assigned hoặc in_progress
-                long totalOpenTasks = tasks.stream()
-                    .filter(task -> {
-                        String status = (String) task.get("status");
-                        return "assigned".equalsIgnoreCase(status) || "in_progress".equalsIgnoreCase(status);
-                    })
-                    .count();
-                
-                // Tính tasksInSlaWindow: đếm tasks có plannedDueDate nằm trong [now, slaWindowEnd]
-                long tasksInSlaWindow = 0;
-                if (slaWindowEnd != null) {
-                    tasksInSlaWindow = tasks.stream()
-                        .filter(task -> {
-                            String status = (String) task.get("status");
-                            // Chỉ tính cho tasks đang làm (assigned hoặc in_progress)
-                            if (!"assigned".equalsIgnoreCase(status) && !"in_progress".equalsIgnoreCase(status)) {
-                                return false;
-                            }
-                            
-                            // Lấy plannedDueDate từ milestone của task
-                            @SuppressWarnings("unchecked")
-                            Map<String, Object> taskMilestone = (Map<String, Object>) task.get("milestone");
-                            if (taskMilestone == null) return false;
-                            
-                            Object plannedDueDateObj = taskMilestone.get("plannedDueDate");
-                            LocalDateTime taskPlannedDueDate = parseLocalDateTime(plannedDueDateObj);
-                            
-                            if (taskPlannedDueDate == null) {
-                                String contractId = (String) task.get("contractId");
-                                String milestoneId = taskMilestone.get("milestoneId") != null
-                                    ? taskMilestone.get("milestoneId").toString()
-                                    : null;
-                                
-                                TimelineDates fallbackDates = calculateFallbackTimelineDates(
-                                    contractId,
-                                    milestoneId,
-                                    parseInteger(taskMilestone.get("milestoneSlaDays")),
-                                    contractTimelineCache
-                                );
-                                if (fallbackDates != null) {
-                                    taskPlannedDueDate = fallbackDates.dueDate();
-                                }
-                            }
-                            
-                            if (taskPlannedDueDate == null) return false;
-                            
-                            // Kiểm tra nếu task's plannedDueDate nằm trong [now, slaWindowEnd]
-                            return !taskPlannedDueDate.isBefore(now) && !taskPlannedDueDate.isAfter(slaWindowEnd);
-                        })
-                        .count();
-                }
-                
-                response.setTotalOpenTasks((int) totalOpenTasks);
-                response.setTasksInSlaWindow((int) tasksInSlaWindow);
-            } else {
-                // Nếu không lấy được, set về 0
-                response.setTotalOpenTasks(0);
-                response.setTasksInSlaWindow(0);
-            }
+            // Dùng batch API ngay cả khi chỉ có 1 specialist để tái sử dụng logic
+            Map<String, List<Map<String, Object>>> batchResult = fetchTaskAssignmentsBatch(List.of(specialistId));
+            List<Map<String, Object>> tasks = batchResult.getOrDefault(specialistId, new ArrayList<>());
+            // Tạo cache riêng cho trường hợp single specialist (không cần share)
+            Map<String, ContractTimeline> contractTimelineCache = new HashMap<>();
+            calculateTaskStatsFromData(response, tasks, slaWindowEnd, contractTimelineCache);
         } catch (Exception ex) {
             log.warn("Failed to fetch task stats for specialist {}: {}", specialistId, ex.getMessage());
             // Nếu lỗi, set về 0
@@ -285,6 +333,18 @@ public class SpecialistLookupService {
         SpecialistResponse response = specialistMapper.toSpecialistResponse(specialist);
         // Tính real-time task stats (không có milestone context nên tasksInSlaWindow = 0)
         calculateTaskStats(response, specialistId, null);
+        
+        // Fetch user info từ identity-service để có fullName và email
+        try {
+            var userResponse = identityServiceFeignClient.getUserBasicInfo(specialist.getUserId());
+            if (userResponse != null && userResponse.getData() != null) {
+                response.setFullName(userResponse.getData().getFullName());
+                response.setEmail(userResponse.getData().getEmail());
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to fetch user info for specialist {}: {}", specialistId, ex.getMessage());
+        }
+        
         return response;
     }
     

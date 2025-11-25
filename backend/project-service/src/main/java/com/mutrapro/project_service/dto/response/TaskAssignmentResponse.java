@@ -25,6 +25,10 @@ public class TaskAssignmentResponse {
     String contractId;
 
     String specialistId;
+    String specialistName;
+    String specialistEmail;
+    String specialistSpecialization;
+    Integer specialistExperienceYears;
 
     TaskType taskType;
 

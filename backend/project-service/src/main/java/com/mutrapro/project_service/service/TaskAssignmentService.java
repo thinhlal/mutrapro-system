@@ -43,8 +43,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -76,7 +80,42 @@ public class TaskAssignmentService {
         verifyManagerPermission(contract);
         
         List<TaskAssignment> assignments = taskAssignmentRepository.findByContractId(contractId);
-        return taskAssignmentMapper.toResponseList(assignments);
+        
+        // Batch fetch specialist info để tránh N+1 Feign calls
+        // Logic: Thay vì gọi Feign từng specialist một (N lần), ta gọi một lần cho mỗi unique specialist
+        // Ví dụ: 100 tasks với 10 unique specialists → chỉ gọi Feign 10 lần thay vì 100 lần
+        
+        // Bước 1: Lấy tất cả unique specialist IDs từ assignments
+        Set<String> uniqueSpecialistIds = assignments.stream()
+            .map(TaskAssignment::getSpecialistId)
+            .filter(id -> id != null)
+            .collect(Collectors.toSet());
+        
+        // Bước 2: Tạo cache để lưu specialist info (key = specialistId, value = specialist data)
+        Map<String, Map<String, Object>> specialistCache = new HashMap<>();
+        if (!uniqueSpecialistIds.isEmpty() && hasManagerPrivileges()) {
+            // Bước 3: Batch fetch - gọi Feign một lần cho mỗi unique specialist
+            uniqueSpecialistIds.forEach(specialistId -> {
+                try {
+                    ApiResponse<Map<String, Object>> specialistResponse =
+                        specialistServiceFeignClient.getSpecialistById(specialistId);
+                    if (specialistResponse != null
+                        && "success".equalsIgnoreCase(specialistResponse.getStatus())
+                        && specialistResponse.getData() != null) {
+                        // Lưu vào cache để tái sử dụng
+                        specialistCache.put(specialistId, specialistResponse.getData());
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to fetch specialist info: specialistId={}, error={}",
+                        specialistId, ex.getMessage());
+                }
+            });
+        }
+        
+        // Bước 4: Enrich assignments từ cache (không cần gọi Feign nữa)
+        return assignments.stream()
+            .map(assignment -> enrichTaskAssignmentWithCache(assignment, specialistCache))
+            .toList();
     }
 
     /**
@@ -101,7 +140,9 @@ public class TaskAssignmentService {
         
         List<TaskAssignment> assignments = taskAssignmentRepository
             .findByContractIdAndMilestoneId(contractId, milestoneId);
-        return taskAssignmentMapper.toResponseList(assignments);
+        return assignments.stream()
+            .map(this::enrichTaskAssignment)
+            .toList();
     }
 
     /**
@@ -118,15 +159,114 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Enrich TaskAssignmentResponse với milestone info (bao gồm plannedDueDate)
+     * Lấy danh sách task assignments cho nhiều specialists cùng lúc (batch query)
+     * Trả về Map<specialistId, List<TaskAssignmentResponse>> để dễ lookup
+     * Không cần verify permission vì đây là internal API
+     * 
+     * Tối ưu: Batch fetch milestones và specialist info để tránh N+1 queries
+     */
+    public Map<String, List<TaskAssignmentResponse>> getTaskAssignmentsBySpecialistIds(List<String> specialistIds) {
+        if (specialistIds == null || specialistIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        log.info("Getting task assignments for {} specialists (batch)", specialistIds.size());
+        
+        List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistIdIn(specialistIds);
+        
+        // Batch fetch milestones để tránh N+1 query
+        Map<String, ContractMilestone> milestoneCache = new HashMap<>();
+        assignments.forEach(assignment -> {
+            String key = assignment.getMilestoneId() + ":" + assignment.getContractId();
+            if (!milestoneCache.containsKey(key)) {
+                contractMilestoneRepository
+                    .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                    .ifPresent(milestone -> milestoneCache.put(key, milestone));
+            }
+        });
+        
+        // KHÔNG enrich specialist info vì:
+        // 1. Đây là internal API được gọi từ specialist-service (tránh circular dependency)
+        // 2. Chỉ dùng để tính stats (totalOpenTasks, tasksInSlaWindow), không cần specialist info
+        // 3. Nếu cần specialist info, nên enrich ở nơi gọi hoặc ở API public khác
+        
+        // Group by specialistId và enrich chỉ milestone info
+        Map<String, List<TaskAssignmentResponse>> result = new HashMap<>();
+        assignments.stream()
+            .collect(Collectors.groupingBy(
+                TaskAssignment::getSpecialistId,
+                Collectors.mapping(
+                    assignment -> enrichTaskAssignmentForBatch(assignment, milestoneCache),
+                    Collectors.toList()
+                )
+            ))
+            .forEach((specialistId, responses) -> result.put(specialistId, responses));
+        
+        // Đảm bảo tất cả specialistIds đều có trong result (kể cả không có task)
+        specialistIds.forEach(id -> result.putIfAbsent(id, new ArrayList<>()));
+        
+        return result;
+    }
+    
+    /**
+     * Enrich task assignment cho batch API (chỉ enrich milestone info, KHÔNG enrich specialist info)
+     * Vì đây là internal API được gọi từ specialist-service, tránh circular dependency
+     */
+    private TaskAssignmentResponse enrichTaskAssignmentForBatch(
+            TaskAssignment assignment, 
+            Map<String, ContractMilestone> milestoneCache) {
+        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
+        
+        // Enrich milestone info (từ cache)
+        String key = assignment.getMilestoneId() + ":" + assignment.getContractId();
+        ContractMilestone milestone = milestoneCache.get(key);
+        if (milestone != null) {
+            TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
+                .milestoneId(milestone.getMilestoneId())
+                .name(milestone.getName())
+                .description(milestone.getDescription())
+                .plannedStartAt(milestone.getPlannedStartAt())
+                .plannedDueDate(milestone.getPlannedDueDate())
+                .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .build();
+            response.setMilestone(milestoneInfo);
+        }
+        
+        // KHÔNG enrich specialist info (tránh circular dependency với specialist-service)
+        
+        return response;
+    }
+
+    /**
+     * Enrich TaskAssignmentResponse với milestone info và specialist info
      */
     private TaskAssignmentResponse enrichTaskAssignment(TaskAssignment assignment) {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
-        
-        // Fetch milestone info với plannedDueDate
+        enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
+        enrichSpecialistInfo(response);
+        return response;
+    }
+    
+    /**
+     * Enrich TaskAssignmentResponse với milestone info và specialist info từ cache
+     * (tối ưu cho batch operations)
+     */
+    private TaskAssignmentResponse enrichTaskAssignmentWithCache(
+            TaskAssignment assignment,
+            Map<String, Map<String, Object>> specialistCache) {
+        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
+        enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
+        enrichSpecialistInfoFromCache(response, specialistCache);
+        return response;
+    }
+
+    private void enrichMilestoneInfo(TaskAssignmentResponse response, String milestoneId, String contractId) {
+        if (response == null || milestoneId == null || contractId == null) {
+            return;
+        }
+
         try {
             ContractMilestone milestone = contractMilestoneRepository
-                .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                .findByMilestoneIdAndContractId(milestoneId, contractId)
                 .orElse(null);
             if (milestone != null) {
                 TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
@@ -141,11 +281,102 @@ public class TaskAssignmentService {
             }
         } catch (Exception e) {
             log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
-                assignment.getMilestoneId(), assignment.getContractId(), e.getMessage());
-            // Không fail nếu không load được milestone
+                milestoneId, contractId, e.getMessage());
         }
-        
-        return response;
+    }
+
+    private void enrichSpecialistInfo(TaskAssignmentResponse response) {
+        if (response == null || response.getSpecialistId() == null) {
+            return;
+        }
+
+        if (!hasManagerPrivileges()) {
+            return;
+        }
+
+        try {
+            ApiResponse<Map<String, Object>> specialistResponse =
+                specialistServiceFeignClient.getSpecialistById(response.getSpecialistId());
+
+            if (specialistResponse != null
+                && "success".equalsIgnoreCase(specialistResponse.getStatus())
+                && specialistResponse.getData() != null) {
+                Map<String, Object> data = specialistResponse.getData();
+                response.setSpecialistName(asString(data.get("fullName")));
+                response.setSpecialistEmail(asString(data.get("email")));
+                response.setSpecialistSpecialization(asString(data.get("specialization")));
+                response.setSpecialistExperienceYears(asInteger(data.get("experienceYears")));
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to fetch specialist info: specialistId={}, error={}",
+                response.getSpecialistId(), ex.getMessage());
+        }
+    }
+    
+    /**
+     * Enrich specialist info từ cache (tránh N+1 Feign calls)
+     * 
+     * Logic cache:
+     * - Cache là một Map lưu specialist info đã fetch sẵn
+     * - Key = specialistId, Value = specialist data (fullName, email, specialization, ...)
+     * - Khi enrich assignment, chỉ cần lookup trong cache thay vì gọi Feign lại
+     * - Nhiều assignments cùng specialistId sẽ dùng chung 1 cache entry
+     */
+    private void enrichSpecialistInfoFromCache(
+            TaskAssignmentResponse response,
+            Map<String, Map<String, Object>> specialistCache) {
+        if (response == null || response.getSpecialistId() == null) {
+            return;
+        }
+
+        if (!hasManagerPrivileges()) {
+            return;
+        }
+
+        // Lookup specialist info từ cache (không cần gọi Feign)
+        Map<String, Object> specialistData = specialistCache.get(response.getSpecialistId());
+        if (specialistData != null) {
+            response.setSpecialistName(asString(specialistData.get("fullName")));
+            response.setSpecialistEmail(asString(specialistData.get("email")));
+            // specialization có thể là enum, cần convert
+            Object specialization = specialistData.get("specialization");
+            if (specialization != null) {
+                response.setSpecialistSpecialization(specialization.toString());
+            }
+            response.setSpecialistExperienceYears(asInteger(specialistData.get("experienceYears")));
+        }
+    }
+
+    private String asString(Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    private Integer asInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String str) {
+            try {
+                return Integer.parseInt(str);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private boolean hasManagerPrivileges() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            return true; // System context (Kafka, etc.)
+        }
+        String scope = jwt.getClaim("scope");
+        if (scope == null) {
+            return false;
+        }
+        return switch (scope) {
+            case "MANAGER", "ADMIN", "SYSTEM_ADMIN" -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -166,7 +397,7 @@ public class TaskAssignmentService {
             .findByContractIdAndAssignmentId(contractId, assignmentId)
             .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
         
-        return taskAssignmentMapper.toResponse(assignment);
+        return enrichTaskAssignment(assignment);
     }
 
     /**
@@ -241,7 +472,7 @@ public class TaskAssignmentService {
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment created successfully: assignmentId={}", saved.getAssignmentId());
         
-        return taskAssignmentMapper.toResponse(saved);
+        return enrichTaskAssignment(saved);
     }
 
     /**
@@ -293,7 +524,7 @@ public class TaskAssignmentService {
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment updated successfully: assignmentId={}", saved.getAssignmentId());
         
-        return taskAssignmentMapper.toResponse(saved);
+        return enrichTaskAssignment(saved);
     }
 
     /**
@@ -362,7 +593,9 @@ public class TaskAssignmentService {
         log.info("Getting task assignments for current specialist");
         String specialistId = getCurrentSpecialistId();
         List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistId(specialistId);
-        return taskAssignmentMapper.toResponseList(assignments);
+        return assignments.stream()
+            .map(this::enrichTaskAssignment)
+            .toList();
     }
 
     /**
@@ -381,27 +614,8 @@ public class TaskAssignmentService {
                 "You can only view your own task assignments");
         }
         
-        // Map task assignment to response
-        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
-        
-        // Fetch milestone info
-        try {
-            ContractMilestone milestone = contractMilestoneRepository
-                .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
-                .orElse(null);
-            if (milestone != null) {
-                TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
-                    .milestoneId(milestone.getMilestoneId())
-                    .name(milestone.getName())
-                    .description(milestone.getDescription())
-                    .build();
-                response.setMilestone(milestoneInfo);
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
-                assignment.getMilestoneId(), assignment.getContractId(), e.getMessage());
-            // Không fail nếu không load được milestone
-        }
+        // Map task assignment to response & enrich
+        TaskAssignmentResponse response = enrichTaskAssignment(assignment);
         
         // Fetch request info từ contract (chỉ cần requestId, không cần fetch toàn bộ contract)
         try {

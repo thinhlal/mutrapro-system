@@ -4,6 +4,8 @@ import com.mutrapro.shared.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,16 @@ public interface ProjectServiceFeignClient {
     @GetMapping("/task-assignments/by-specialist/{specialistId}")
     ApiResponse<List<Map<String, Object>>> getTaskAssignmentsBySpecialistId(
         @PathVariable("specialistId") String specialistId
+    );
+
+    /**
+     * Lấy danh sách task assignments cho nhiều specialists cùng lúc (batch query)
+     * POST /task-assignments/by-specialists
+     * Trả về Map<specialistId, List<Map>> để tránh dependency với project-service DTO
+     */
+    @PostMapping("/task-assignments/by-specialists")
+    ApiResponse<Map<String, List<Map<String, Object>>>> getTaskAssignmentsBySpecialistIds(
+        @RequestBody List<String> specialistIds
     );
 
     /**

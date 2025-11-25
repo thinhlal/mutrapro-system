@@ -39,7 +39,6 @@ import {
   resolveIssue,
   cancelTaskByManager,
 } from '../../../services/taskAssignmentService';
-import { getAllSpecialists } from '../../../services/specialistService';
 import styles from './TaskAssignmentManagement.module.css';
 
 const { Title, Text } = Typography;
@@ -113,7 +112,6 @@ export default function TaskAssignmentManagement() {
   const [selectedContractId, setSelectedContractId] = useState(null);
   const [selectedContract, setSelectedContract] = useState(null);
   const [taskAssignments, setTaskAssignments] = useState([]);
-  const [specialists, setSpecialists] = useState([]);
   const [contractsLoading, setContractsLoading] = useState(false);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [contractSearch, setContractSearch] = useState('');
@@ -188,27 +186,6 @@ export default function TaskAssignmentManagement() {
       setSelectedContractId(contracts[0].contractId);
     }
   }, [contracts, selectedContractId]);
-
-  // Fetch specialists
-  useEffect(() => {
-    const fetchSpecialists = async () => {
-      try {
-        const response = await getAllSpecialists();
-        if (response?.status === 'success' && response?.data) {
-          // Chỉ lấy specialists có status active
-          const activeSpecialists = response.data.filter(
-            s => s.status?.toLowerCase() === 'active'
-          );
-          setSpecialists(activeSpecialists);
-        }
-      } catch (error) {
-        console.error('Error fetching specialists:', error);
-        message.error('Lỗi khi tải danh sách specialists');
-      }
-    };
-
-    fetchSpecialists();
-  }, []);
 
   // Fetch task assignments when contract is selected
   useEffect(() => {
@@ -479,14 +456,38 @@ export default function TaskAssignmentManagement() {
     }
   };
 
-  // Get specialist name by ID
-  const getSpecialistName = specialistId => {
-    const specialist = specialists.find(s => s.specialistId === specialistId);
-    return specialist
-      ? `${specialist.fullName || specialist.email || 'N/A'} (${
-          specialist.specialization || 'N/A'
-        })`
-      : specialistId;
+  const formatSpecialistText = task => {
+    if (!task) return 'N/A';
+    const name =
+      task.specialistName ||
+      task.specialistEmail ||
+      task.specialistId ||
+      'N/A';
+    const specialization = task.specialistSpecialization;
+    return specialization ? `${name} (${specialization})` : name;
+  };
+
+  const renderSpecialistCell = task => {
+    if (!task) return <Text>N/A</Text>;
+    const name =
+      task.specialistName ||
+      task.specialistEmail ||
+      task.specialistId ||
+      'N/A';
+    const specialization = task.specialistSpecialization;
+    const email = task.specialistEmail;
+
+    return (
+      <Space direction="vertical" size={0}>
+        <Text strong>{name}</Text>
+        {specialization && (
+          <Text type="secondary">{specialization}</Text>
+        )}
+        {email && (
+          <Text type="secondary" style={{ fontSize: 12 }}>{email}</Text>
+        )}
+      </Space>
+    );
   };
 
   // Get milestone name by ID
@@ -512,7 +513,7 @@ export default function TaskAssignmentManagement() {
       dataIndex: 'specialistId',
       key: 'specialistId',
       width: 250,
-      render: specialistId => <Text>{getSpecialistName(specialistId)}</Text>,
+      render: (_, record) => renderSpecialistCell(record),
     },
     {
       title: 'Milestone',
@@ -1089,7 +1090,7 @@ export default function TaskAssignmentManagement() {
             </p>
             <p>
               <strong>Specialist:</strong>{' '}
-              {getSpecialistName(selectedIssueTask.specialistId)}
+              {formatSpecialistText(selectedIssueTask)}
             </p>
             <p>
               <strong>Milestone:</strong>{' '}

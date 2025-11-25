@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -181,6 +182,23 @@ public class TaskAssignmentController {
         List<TaskAssignmentResponse> assignments = taskAssignmentService
             .getTaskAssignmentsBySpecialistId(specialistId);
         return ApiResponse.<List<TaskAssignmentResponse>>builder()
+                .message("Task assignments retrieved successfully")
+                .data(assignments)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/by-specialists")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Lấy danh sách task assignments cho nhiều specialists cùng lúc (batch query, cho internal use)")
+    public ApiResponse<Map<String, List<TaskAssignmentResponse>>> getTaskAssignmentsBySpecialistIds(
+            @Parameter(description = "Danh sách ID của specialists")
+            @RequestBody List<String> specialistIds) {
+        log.info("Getting task assignments for {} specialists (batch)", specialistIds != null ? specialistIds.size() : 0);
+        Map<String, List<TaskAssignmentResponse>> assignments = taskAssignmentService
+            .getTaskAssignmentsBySpecialistIds(specialistIds);
+        return ApiResponse.<Map<String, List<TaskAssignmentResponse>>>builder()
                 .message("Task assignments retrieved successfully")
                 .data(assignments)
                 .statusCode(HttpStatus.OK.value())
