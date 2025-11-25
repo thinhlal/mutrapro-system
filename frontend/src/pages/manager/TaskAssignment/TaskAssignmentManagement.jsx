@@ -116,6 +116,7 @@ export default function TaskAssignmentManagement() {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [contractSearch, setContractSearch] = useState('');
   const [contractTaskStats, setContractTaskStats] = useState({});
+  const [contractsDisplayLimit, setContractsDisplayLimit] = useState(50); // Giới hạn số contracts hiển thị ban đầu
   const [cancelledTaskModalVisible, setCancelledTaskModalVisible] =
     useState(false);
   const [selectedCancelledTask, setSelectedCancelledTask] = useState(null);
@@ -131,29 +132,25 @@ export default function TaskAssignmentManagement() {
     }));
   }, []);
 
-  const fetchContractTaskStats = useCallback(async contractList => {
-    if (!contractList || contractList.length === 0) return;
-    const statsEntries = {};
-    await Promise.allSettled(
-      contractList.map(contract =>
-        getTaskAssignmentsByContract(contract.contractId)
-          .then(response => {
-            const tasks =
-              response?.status === 'success' && response?.data
-                ? response.data
-                : [];
-            statsEntries[contract.contractId] = computeTaskStats(tasks);
-          })
-          .catch(() => {
-            statsEntries[contract.contractId] = { ...defaultTaskStats };
-          })
-      )
-    );
-    setContractTaskStats(prev => ({
-      ...prev,
-      ...statsEntries,
-    }));
-  }, []);
+  // Fetch stats cho một contract cụ thể (lazy loading)
+  const fetchContractTaskStats = useCallback(async contractId => {
+    // Nếu đã có stats rồi thì không fetch lại
+    if (contractTaskStats[contractId]) {
+      return;
+    }
+    
+    try {
+      const response = await getTaskAssignmentsByContract(contractId);
+      const tasks =
+        response?.status === 'success' && response?.data
+          ? response.data
+          : [];
+      updateContractStats(contractId, tasks);
+    } catch (error) {
+      // Nếu lỗi, set default stats
+      updateContractStats(contractId, []);
+    }
+  }, [contractTaskStats, updateContractStats]);
 
   const fetchContracts = useCallback(async () => {
     try {
@@ -164,8 +161,10 @@ export default function TaskAssignmentManagement() {
           c => c.status?.toLowerCase() === 'active'
         );
         setContracts(activeContracts);
-        // Đợi fetch stats xong rồi mới tắt loading
-        await fetchContractTaskStats(activeContracts);
+        // Không fetch stats cho tất cả contracts nữa (quá chậm nếu có nhiều contracts)
+        // Stats sẽ được fetch khi:
+        // 1. Contract được chọn (trong fetchTaskAssignments)
+        // 2. Contract được hover/visible (lazy loading - có thể implement sau)
       }
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -173,7 +172,7 @@ export default function TaskAssignmentManagement() {
     } finally {
       setContractsLoading(false);
     }
-  }, [fetchContractTaskStats]);
+  }, []);
 
   // Fetch contracts
   useEffect(() => {
@@ -294,6 +293,26 @@ export default function TaskAssignmentManagement() {
       return (a.contractNumber || '').localeCompare(b.contractNumber || '');
     });
   }, [contracts, contractSearch, getContractBadge]);
+
+  // Chỉ hiển thị một số contracts đầu tiên (giới hạn để tránh quá nhiều)
+  const displayedContracts = useMemo(() => {
+    return filteredContracts.slice(0, contractsDisplayLimit);
+  }, [filteredContracts, contractsDisplayLimit]);
+
+  const hasMoreContracts = filteredContracts.length > contractsDisplayLimit;
+
+  // Lazy load stats cho contracts hiển thị (chỉ fetch cho contracts đang hiển thị)
+  useEffect(() => {
+    if (displayedContracts.length === 0) return;
+    
+    // Chỉ fetch stats cho contracts đang hiển thị (giới hạn để tránh quá nhiều API calls)
+    displayedContracts.forEach(contract => {
+      // Chỉ fetch nếu chưa có stats
+      if (!contractTaskStats[contract.contractId]) {
+        fetchContractTaskStats(contract.contractId);
+      }
+    });
+  }, [displayedContracts, contractTaskStats, fetchContractTaskStats]);
 
   const milestoneTaskStats = useMemo(() => {
     const stats = {};
@@ -670,19 +689,27 @@ export default function TaskAssignmentManagement() {
               placeholder="Tìm contract..."
               allowClear
               value={contractSearch}
-              onChange={e => setContractSearch(e.target.value)}
-              onSearch={value => setContractSearch(value)}
+              onChange={e => {
+                setContractSearch(e.target.value);
+                // Reset limit khi search thay đổi
+                setContractsDisplayLimit(50);
+              }}
+              onSearch={value => {
+                setContractSearch(value);
+                setContractsDisplayLimit(50);
+              }}
             />
             <div className={styles.contractList}>
               {contractsLoading ? (
                 <div className={styles.contractListLoading}>
                   <Spin />
                 </div>
-              ) : filteredContracts.length > 0 ? (
-                <List
-                  rowKey="contractId"
-                  dataSource={filteredContracts}
-                  renderItem={item => {
+              ) : displayedContracts.length > 0 ? (
+                <>
+                  <List
+                    rowKey="contractId"
+                    dataSource={displayedContracts}
+                    renderItem={item => {
                     const isActive = item.contractId === selectedContractId;
                     const badge = getContractBadge(item.contractId);
                     return (
@@ -716,6 +743,17 @@ export default function TaskAssignmentManagement() {
                     );
                   }}
                 />
+                  {hasMoreContracts && (
+                    <div style={{ textAlign: 'center', padding: '12px' }}>
+                      <Button
+                        type="link"
+                        onClick={() => setContractsDisplayLimit(prev => prev + 50)}
+                      >
+                        Xem thêm ({filteredContracts.length - contractsDisplayLimit} contracts)
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <Empty
                   description="Không có contract nào"
