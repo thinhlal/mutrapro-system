@@ -503,21 +503,6 @@ export default function TaskAssignmentManagement() {
       render: date => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : 'N/A'),
     },
     {
-      title: 'Completed Date',
-      dataIndex: 'completedDate',
-      key: 'completedDate',
-      width: 150,
-      render: date => (date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'),
-    },
-    {
-      title: 'Notes',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: true,
-      width: 150,
-      render: notes => (notes ? <Text type="secondary">{notes}</Text> : '-'),
-    },
-    {
       title: 'Actions',
       key: 'actions',
       width: 150,
@@ -564,15 +549,15 @@ export default function TaskAssignmentManagement() {
           );
         }
 
-        // Nếu task chưa bị hủy và không có issue, hiển thị Edit và Delete
-        return (
+        const canModify = status === 'assigned';
+
+        return canModify ? (
           <Space size="small">
             <Tooltip title="Chỉnh sửa">
               <Button
                 type="link"
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record)}
-                disabled={isCompleted}
               />
             </Tooltip>
             <Popconfirm
@@ -587,11 +572,14 @@ export default function TaskAssignmentManagement() {
                   type="link"
                   danger
                   icon={<DeleteOutlined />}
-                  disabled={isCompleted}
                 />
               </Tooltip>
             </Popconfirm>
           </Space>
+        ) : (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          -
+        </Text>
         );
       },
     },
@@ -828,42 +816,6 @@ export default function TaskAssignmentManagement() {
                                   )}
                                 </div>
                               </div>
-                              {stats.total > 0 && (
-                                <div className={styles.milestoneStats}>
-                                  <div>
-                                    <Text strong>{stats.total}</Text>
-                                    <Text type="secondary">Task tổng</Text>
-                                  </div>
-                                  <div>
-                                    <Text strong>{stats.inProgress}</Text>
-                                    <Text type="secondary">Đang làm</Text>
-                                  </div>
-                                  <div>
-                                    <Text strong>{stats.completed}</Text>
-                                    <Text type="secondary">Hoàn thành</Text>
-                                  </div>
-                                  <div>
-                                    <Text strong>{stats.assigned}</Text>
-                                    <Text type="secondary">Chưa bắt đầu</Text>
-                                  </div>
-                                  {stats.hasIssue > 0 && (
-                                    <div>
-                                      <Text strong type="warning">
-                                        {stats.hasIssue}
-                                      </Text>
-                                      <Text type="secondary">Có issue</Text>
-                                    </div>
-                                  )}
-                                  {stats.cancelled > 0 && (
-                                    <div>
-                                      <Text strong type="danger">
-                                        {stats.cancelled}
-                                      </Text>
-                                      <Text type="secondary">Đã hủy</Text>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </List.Item>
                           );
                         }}

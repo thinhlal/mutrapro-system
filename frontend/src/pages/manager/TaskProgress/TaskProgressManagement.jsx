@@ -90,6 +90,30 @@ const FILE_STATUS_COLORS = {
   delivered: 'green',
 };
 
+const getActualStartDayjs = milestone =>
+  milestone?.actualStartAt ? dayjs(milestone.actualStartAt) : null;
+
+const getPlannedStartDayjs = milestone =>
+  milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
+
+const getPlannedDeadlineDayjs = milestone =>
+  milestone?.plannedDueDate ? dayjs(milestone.plannedDueDate) : null;
+
+const getActualDeadlineDayjs = milestone => {
+  if (!milestone) return null;
+  const actualStart = getActualStartDayjs(milestone);
+  if (actualStart && milestone.milestoneSlaDays) {
+    return actualStart.add(milestone.milestoneSlaDays, 'day');
+  }
+  if (milestone.actualEndAt) {
+    return dayjs(milestone.actualEndAt);
+  }
+  return null;
+};
+
+const getTaskCompletionDate = task =>
+  task?.completedDate || task?.milestone?.actualEndAt || null;
+
 export default function TaskProgressManagement() {
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState(null);
@@ -548,10 +572,10 @@ export default function TaskProgressManagement() {
       }
       
       // 3. Nếu cùng status, sort theo deadline (sắp đến hạn lên trước)
-      const dueDateA = a.milestone?.plannedDueDate;
-      const dueDateB = b.milestone?.plannedDueDate;
+      const dueDateA = getActualDeadlineDayjs(a.milestone) || getPlannedDeadlineDayjs(a.milestone);
+      const dueDateB = getActualDeadlineDayjs(b.milestone) || getPlannedDeadlineDayjs(b.milestone);
       if (dueDateA && dueDateB) {
-        return new Date(dueDateA) - new Date(dueDateB);
+        return dayjs(dueDateA).valueOf() - dayjs(dueDateB).valueOf();
       }
       if (dueDateA && !dueDateB) return -1;
       if (!dueDateA && dueDateB) return 1;
@@ -640,30 +664,57 @@ export default function TaskProgressManagement() {
       key: 'milestoneDeadline',
       width: 140,
       render: (_, record) => {
-        const plannedDueDate = record.milestone?.plannedDueDate;
-        if (!plannedDueDate) {
+        const actualDeadline = getActualDeadlineDayjs(record.milestone);
+        const plannedDeadline = getPlannedDeadlineDayjs(record.milestone);
+        const actualStart = getActualStartDayjs(record.milestone);
+        const plannedStart = getPlannedStartDayjs(record.milestone);
+        if (!actualDeadline && !plannedDeadline) {
           return <Text type="secondary">-</Text>;
         }
-        
-        const dueDate = dayjs(plannedDueDate);
         const now = dayjs();
-        const isOverdue = dueDate.isBefore(now) && record.status !== 'completed';
-        const isNearDeadline = dueDate.diff(now, 'day') <= 3 && dueDate.diff(now, 'day') >= 0;
-        
+        const isOverdue =
+          actualDeadline && actualDeadline.isBefore(now) && record.status !== 'completed';
+        const diffDays = actualDeadline ? actualDeadline.diff(now, 'day') : null;
+        const isNearDeadline =
+          diffDays !== null && diffDays <= 3 && diffDays >= 0 && !isOverdue;
         return (
           <Space direction="vertical" size={0}>
-            <Text 
-              type={isOverdue ? 'danger' : isNearDeadline ? 'warning' : undefined}
-              strong={isOverdue || isNearDeadline}
-              style={{ fontSize: 12 }}
-            >
-              {dueDate.format('HH:mm DD/MM/YYYY')}
-            </Text>
-            {isOverdue && (
-              <Tag color="red" size="small">Quá hạn</Tag>
+            <Text strong>Actual timeline</Text>
+            {actualDeadline ? (
+              <Space direction="vertical" size={0}>
+                {actualStart && (
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Start: {actualStart.format('HH:mm DD/MM')}
+                  </Text>
+                )}
+                <Text
+                  type={isOverdue ? 'danger' : isNearDeadline ? 'warning' : undefined}
+                  strong={isOverdue || isNearDeadline}
+                  style={{ fontSize: 12 }}
+                >
+                  Deadline: {actualDeadline.format('HH:mm DD/MM')}
+                </Text>
+                {isOverdue && <Tag color="red" size="small">Quá hạn</Tag>}
+                {isNearDeadline && <Tag color="orange" size="small">Sắp hạn</Tag>}
+              </Space>
+            ) : (
+              <Text type="secondary">Chưa bắt đầu</Text>
             )}
-            {isNearDeadline && !isOverdue && (
-              <Tag color="orange" size="small">Sắp hạn</Tag>
+            <Divider style={{ margin: '4px 0' }} dashed />
+            <Text strong type="secondary">Planned timeline</Text>
+            {plannedDeadline ? (
+              <Space direction="vertical" size={0}>
+                {plannedStart && (
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Start: {plannedStart.format('HH:mm DD/MM')}
+                  </Text>
+                )}
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Deadline: {plannedDeadline.format('HH:mm DD/MM')}
+                </Text>
+              </Space>
+            ) : (
+              <Text type="secondary">-</Text>
             )}
           </Space>
         );
@@ -675,27 +726,41 @@ export default function TaskProgressManagement() {
       key: 'completedDate',
       width: 140,
       render: (date, record) => {
-        if (!date) {
+        const completionDate = getTaskCompletionDate(record);
+        const plannedDeadline = getPlannedDeadlineDayjs(record.milestone);
+        if (!completionDate && !plannedDeadline) {
           return <Text type="secondary">-</Text>;
         }
-        
-        const completedDate = dayjs(date);
-        const plannedDueDate = record.milestone?.plannedDueDate;
-        
+        const completedDate = completionDate ? dayjs(completionDate) : null;
+        const actualDeadline = getActualDeadlineDayjs(record.milestone);
         return (
           <Space direction="vertical" size={0}>
-            <Text style={{ fontSize: 12 }}>{completedDate.format('HH:mm DD/MM/YYYY')}</Text>
-            {plannedDueDate && (() => {
-              const dueDate = dayjs(plannedDueDate);
-              const isOnTime = completedDate.isBefore(dueDate) || completedDate.isSame(dueDate);
-              
-              if (isOnTime) {
-                return <Tag color="green" size="small">Đúng hạn</Tag>;
-              } else {
-                const daysLate = completedDate.diff(dueDate, 'day');
-                return <Tag color="red" size="small">Trễ {daysLate}d</Tag>;
-              }
-            })()}
+            <Text strong>Actual completion</Text>
+            {completedDate ? (
+              <Space direction="vertical" size={0}>
+                <Text style={{ fontSize: 12 }}>{completedDate.format('HH:mm DD/MM/YYYY')}</Text>
+                {actualDeadline && (() => {
+                  const isOnTime =
+                    completedDate.isBefore(actualDeadline) || completedDate.isSame(actualDeadline);
+                  if (isOnTime) {
+                    return <Tag color="green" size="small">Đúng hạn</Tag>;
+                  }
+                  const daysLate = completedDate.diff(actualDeadline, 'day');
+                  return <Tag color="red" size="small">Trễ {daysLate}d</Tag>;
+                })()}
+              </Space>
+            ) : (
+              <Text type="secondary">Chưa hoàn thành</Text>
+            )}
+            <Divider style={{ margin: '4px 0' }} dashed />
+            <Text strong type="secondary">Planned deadline</Text>
+            {plannedDeadline ? (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {plannedDeadline.format('HH:mm DD/MM/YYYY')}
+              </Text>
+            ) : (
+              <Text type="secondary">-</Text>
+            )}
           </Space>
         );
       },
@@ -951,52 +1016,65 @@ export default function TaskProgressManagement() {
                   : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Deadline">
-                {selectedTask.milestone?.plannedDueDate ? (
-                  <Space direction="vertical" size={0}>
-                    <Text>
-                      {dayjs(selectedTask.milestone.plannedDueDate).format('HH:mm DD/MM/YYYY')}
-                    </Text>
-                    {(() => {
-                      const dueDate = dayjs(selectedTask.milestone.plannedDueDate);
-                      const now = dayjs();
-                      const isOverdue = dueDate.isBefore(now) && selectedTask.status !== 'completed';
-                      const isNearDeadline = dueDate.diff(now, 'day') <= 3 && dueDate.diff(now, 'day') >= 0;
-                      
-                      if (isOverdue) {
-                        return <Tag color="red">Quá hạn</Tag>;
-                      }
-                      if (isNearDeadline) {
-                        return <Tag color="orange">Sắp đến hạn</Tag>;
-                      }
-                      return null;
-                    })()}
-                  </Space>
-                ) : (
-                  <Text type="secondary">-</Text>
-                )}
+                <Space direction="vertical" size="small">
+                  <div>
+                    <Text strong>Actual</Text>
+                    <Space direction="vertical" size={0}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        Start: {getActualStartDayjs(selectedTask.milestone)
+                          ? getActualStartDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          : 'Chưa có'}
+                      </Text>
+                      <Text>
+                        Deadline:{' '}
+                        {getActualDeadlineDayjs(selectedTask.milestone)
+                          ? getActualDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          : '-'}
+                      </Text>
+                    </Space>
+                  </div>
+                  <div>
+                    <Text strong type="secondary">Planned</Text>
+                    <Space direction="vertical" size={0}>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        Start:{' '}
+                        {getPlannedStartDayjs(selectedTask.milestone)
+                          ? getPlannedStartDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          : '-'}
+                      </Text>
+                      <Text type="secondary">
+                        Deadline:{' '}
+                        {getPlannedDeadlineDayjs(selectedTask.milestone)
+                          ? getPlannedDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          : '-'}
+                      </Text>
+                    </Space>
+                  </div>
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Completed Date">
-                {selectedTask.completedDate ? (
-                  <Space direction="vertical" size={0}>
-                    <Text>
-                      {dayjs(selectedTask.completedDate).format('HH:mm DD/MM/YYYY')}
-                    </Text>
-                    {selectedTask.milestone?.plannedDueDate && (() => {
-                      const completedDate = dayjs(selectedTask.completedDate);
-                      const dueDate = dayjs(selectedTask.milestone.plannedDueDate);
-                      const isOnTime = completedDate.isBefore(dueDate) || completedDate.isSame(dueDate);
-                      
-                      if (isOnTime) {
-                        return <Tag color="green">Đúng hạn</Tag>;
-                      } else {
-                        const daysLate = completedDate.diff(dueDate, 'day');
-                        return <Tag color="red">Trễ {daysLate} ngày</Tag>;
-                      }
-                    })()}
-                  </Space>
-                ) : (
-                  <Text type="secondary">-</Text>
-                )}
+                <Space direction="vertical" size="small">
+                  <div>
+                    <Text strong>Actual</Text>
+                    {getTaskCompletionDate(selectedTask) ? (
+                      <Text>
+                        {dayjs(getTaskCompletionDate(selectedTask)).format('HH:mm DD/MM/YYYY')}
+                      </Text>
+                    ) : (
+                      <Text type="secondary">Chưa có</Text>
+                    )}
+                  </div>
+                  <div>
+                    <Text strong type="secondary">Planned deadline</Text>
+                    {getPlannedDeadlineDayjs(selectedTask.milestone) ? (
+                      <Text type="secondary">
+                        {getPlannedDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')}
+                      </Text>
+                    ) : (
+                      <Text type="secondary">-</Text>
+                    )}
+                  </div>
+                </Space>
               </Descriptions.Item>
             </Descriptions>
 

@@ -18,6 +18,7 @@ import {
   Modal,
   Form,
   message,
+  Divider,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -88,6 +89,32 @@ function formatDateTime(iso) {
   const HH = String(d.getHours()).padStart(2, '0');
   const MM = String(d.getMinutes()).padStart(2, '0');
   return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
+}
+
+function getActualStartDate(milestone) {
+  return milestone?.actualStartAt ? new Date(milestone.actualStartAt) : null;
+}
+
+function getPlannedStartDate(milestone) {
+  return milestone?.plannedStartAt ? new Date(milestone.plannedStartAt) : null;
+}
+
+function getPlannedDeadline(milestone) {
+  return milestone?.plannedDueDate ? new Date(milestone.plannedDueDate) : null;
+}
+
+function getActualDeadline(milestone) {
+  if (!milestone) return null;
+  const actualStart = getActualStartDate(milestone);
+  if (actualStart && milestone.milestoneSlaDays) {
+    const dueDate = new Date(actualStart);
+    dueDate.setDate(dueDate.getDate() + Number(milestone.milestoneSlaDays || 0));
+    return dueDate;
+  }
+  if (milestone.actualEndAt) {
+    return new Date(milestone.actualEndAt);
+  }
+  return null;
 }
 
 // -------- Component --------
@@ -290,6 +317,55 @@ const MyTasksPage = ({ onOpenTask }) => {
         key: 'assignedDate',
         width: 170,
         render: iso => formatDateTime(iso),
+      },
+      {
+        title: 'Milestone Deadline',
+        dataIndex: ['milestone', 'plannedDueDate'],
+        key: 'milestoneDeadline',
+        width: 190,
+        render: (_, record) => {
+          const actualDeadline = getActualDeadline(record?.milestone);
+          const plannedDeadline = getPlannedDeadline(record?.milestone);
+          const actualStart = getActualStartDate(record?.milestone);
+          const plannedStart = getPlannedStartDate(record?.milestone);
+          if (!actualDeadline && !plannedDeadline) {
+            return <Text type="secondary">Chưa có</Text>;
+          }
+          const status = record.status?.toLowerCase();
+          const now = new Date();
+          const isCompleted =
+            record.status?.toLowerCase() === 'completed' ||
+            record.status?.toLowerCase() === 'cancelled';
+          const isOverdue =
+            !isCompleted && actualDeadline && actualDeadline.getTime() < now.getTime();
+          const daysDiff = actualDeadline
+            ? Math.floor((actualDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            : null;
+          const isNearDeadline =
+            !isOverdue && daysDiff !== null && daysDiff <= 3 && daysDiff >= 0;
+          const showActual = actualDeadline && status !== 'assigned';
+          return (
+            <Space direction="vertical" size={0}>
+              {showActual && (
+                <>
+                  <Text strong>Actual</Text>
+                  <Text>Deadline: {formatDateTime(actualDeadline)}</Text>
+                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                  {isNearDeadline && <Tag color="orange">Sắp hạn</Tag>}
+                  <Divider dashed style={{ margin: '4px 0' }} />
+                </>
+              )}
+              <Text strong type={showActual ? 'secondary' : undefined}>
+                Planned
+              </Text>
+              {plannedDeadline ? (
+                <Text type="secondary">Deadline: {formatDateTime(plannedDeadline)}</Text>
+              ) : (
+                <Text type="secondary">-</Text>
+              )}
+            </Space>
+          );
+        },
       },
       {
         title: 'Status',

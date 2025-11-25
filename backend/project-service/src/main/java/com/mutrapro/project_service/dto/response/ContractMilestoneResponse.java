@@ -37,6 +37,10 @@ public class ContractMilestoneResponse {
     LocalDateTime plannedStartAt;  // BE tính khi contract có start date
     
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date
+
+    LocalDateTime actualStartAt;   // Thời điểm milestone thực tế bắt đầu
+
+    LocalDateTime actualEndAt;     // Thời điểm milestone thực tế kết thúc
     
     LocalDateTime createdAt;
     

@@ -6,6 +6,7 @@ import com.mutrapro.project_service.enums.TaskType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,5 +39,8 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
 
     // Count active assignments for a specialist (status = assigned or in_progress)
     long countBySpecialistIdAndStatusIn(String specialistId, List<AssignmentStatus> statuses);
+
+    // Check if milestone already has accepted/active tasks
+    boolean existsByMilestoneIdAndStatusIn(String milestoneId, Collection<AssignmentStatus> statuses);
 }
 

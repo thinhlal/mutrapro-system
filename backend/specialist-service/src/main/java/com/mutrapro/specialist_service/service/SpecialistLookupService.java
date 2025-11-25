@@ -153,9 +153,7 @@ public class SpecialistLookupService {
     }
 
     /**
-     * Tính SLA window end từ milestone
-     * Option A: dùng plannedDueDate của milestone (nếu có)
-     * Option B: dùng milestoneSlaDays → slaWindowEnd = now + milestoneSlaDays
+     * Tính SLA window end từ milestone (ưu tiên actual timeline, fallback planned)
      */
     private LocalDateTime calculateSlaWindowEnd(String milestoneId, String contractId) {
         try {
@@ -166,25 +164,13 @@ public class SpecialistLookupService {
                 && milestoneResponse.getData() != null) {
                 
                 Map<String, Object> milestone = milestoneResponse.getData();
-                LocalDateTime now = LocalDateTime.now();
-                
-                // Option A: dùng plannedDueDate (nếu có)
-                Object plannedDueDateObj = milestone.get("plannedDueDate");
-                if (plannedDueDateObj != null) {
-                    LocalDateTime plannedDueDate = parseLocalDateTime(plannedDueDateObj);
-                    if (plannedDueDate != null) {
-                        return plannedDueDate;
-                    }
-                }
-                
                 Integer milestoneSlaDays = parseInteger(milestone.get("milestoneSlaDays"));
-                // Option B: dùng milestoneSlaDays với plannedStartAt (nếu có)
-                LocalDateTime plannedStartAt = parseLocalDateTime(milestone.get("plannedStartAt"));
-                if (plannedStartAt != null && milestoneSlaDays != null && milestoneSlaDays > 0) {
-                    return plannedStartAt.plusDays(milestoneSlaDays);
+                LocalDateTime deadline = resolveMilestoneDeadline(milestone, milestoneSlaDays);
+                if (deadline != null) {
+                    return deadline;
                 }
                 
-                // Option C: fallback theo expectedStart + cumulative SLA
+                // Option fallback theo expectedStart + cumulative SLA
                 TimelineDates fallbackDates = calculateFallbackTimelineDates(
                     contractId,
                     milestoneId,
@@ -195,7 +181,8 @@ public class SpecialistLookupService {
                     return fallbackDates.dueDate();
                 }
                 
-                // Option D: cuối cùng dùng now + slaDays
+                // Cuối cùng dùng now + slaDays nếu không có gì khác
+                LocalDateTime now = LocalDateTime.now();
                 if (milestoneSlaDays != null && milestoneSlaDays > 0) {
                     return now.plusDays(milestoneSlaDays);
                 }
@@ -255,26 +242,24 @@ public class SpecialistLookupService {
             })
             .count();
         
-        // Tính tasksInSlaWindow: đếm tasks có plannedDueDate nằm trong [now, slaWindowEnd]
+        // Tính tasksInSlaWindow: đếm tasks có deadline (actual hoặc planned) nằm trong [now, slaWindowEnd]
         long tasksInSlaWindow = 0;
         if (slaWindowEnd != null) {
             tasksInSlaWindow = tasks.stream()
                 .filter(task -> {
                     String status = (String) task.get("status");
-                    // Chỉ tính cho tasks đang làm (assigned hoặc in_progress)
                     if (!"assigned".equalsIgnoreCase(status) && !"in_progress".equalsIgnoreCase(status)) {
                         return false;
                     }
                     
-                    // Lấy plannedDueDate từ milestone của task
                     @SuppressWarnings("unchecked")
                     Map<String, Object> taskMilestone = (Map<String, Object>) task.get("milestone");
                     if (taskMilestone == null) return false;
                     
-                    Object plannedDueDateObj = taskMilestone.get("plannedDueDate");
-                    LocalDateTime taskPlannedDueDate = parseLocalDateTime(plannedDueDateObj);
+                    Integer milestoneSlaDays = parseInteger(taskMilestone.get("milestoneSlaDays"));
+                    LocalDateTime taskDeadline = resolveMilestoneDeadline(taskMilestone, milestoneSlaDays);
                     
-                    if (taskPlannedDueDate == null) {
+                    if (taskDeadline == null) {
                         String contractId = (String) task.get("contractId");
                         String milestoneId = taskMilestone.get("milestoneId") != null
                             ? taskMilestone.get("milestoneId").toString()
@@ -283,18 +268,17 @@ public class SpecialistLookupService {
                         TimelineDates fallbackDates = calculateFallbackTimelineDates(
                             contractId,
                             milestoneId,
-                            parseInteger(taskMilestone.get("milestoneSlaDays")),
+                            milestoneSlaDays,
                             contractTimelineCache
                         );
                         if (fallbackDates != null) {
-                            taskPlannedDueDate = fallbackDates.dueDate();
+                            taskDeadline = fallbackDates.dueDate();
                         }
                     }
                     
-                    if (taskPlannedDueDate == null) return false;
+                    if (taskDeadline == null) return false;
                     
-                    // Kiểm tra nếu task's plannedDueDate nằm trong [now, slaWindowEnd]
-                    return !taskPlannedDueDate.isBefore(now) && !taskPlannedDueDate.isAfter(slaWindowEnd);
+                    return !taskDeadline.isBefore(now) && !taskDeadline.isAfter(slaWindowEnd);
                 })
                 .count();
         }
@@ -322,6 +306,40 @@ public class SpecialistLookupService {
             response.setTotalOpenTasks(0);
             response.setTasksInSlaWindow(0);
         }
+    }
+
+    /**
+     * Tìm deadline thực tế của milestone:
+     * - Ưu tiên actual timeline (actualStartAt + SLA, hoặc actualEndAt nếu đã xong)
+     * - Fallback planned timeline nếu chưa có actual
+     */
+    private LocalDateTime resolveMilestoneDeadline(
+            Map<String, Object> milestone, Integer milestoneSlaDays) {
+        if (milestone == null) {
+            return null;
+        }
+
+        LocalDateTime actualStartAt = parseLocalDateTime(milestone.get("actualStartAt"));
+        if (actualStartAt != null && milestoneSlaDays != null && milestoneSlaDays > 0) {
+            return actualStartAt.plusDays(milestoneSlaDays);
+        }
+
+        LocalDateTime actualEndAt = parseLocalDateTime(milestone.get("actualEndAt"));
+        if (actualEndAt != null) {
+            return actualEndAt;
+        }
+
+        LocalDateTime plannedDueDate = parseLocalDateTime(milestone.get("plannedDueDate"));
+        if (plannedDueDate != null) {
+            return plannedDueDate;
+        }
+
+        LocalDateTime plannedStartAt = parseLocalDateTime(milestone.get("plannedStartAt"));
+        if (plannedStartAt != null && milestoneSlaDays != null && milestoneSlaDays > 0) {
+            return plannedStartAt.plusDays(milestoneSlaDays);
+        }
+
+        return null;
     }
 
     /**

@@ -59,5 +59,11 @@ public class ContractMilestone extends BaseEntity<String> {
 
     @Column(name = "planned_due_date")
     LocalDateTime plannedDueDate;  // BE tính khi contract có start date (plannedStartAt + milestoneSlaDays)
+
+    @Column(name = "actual_start_at")
+    LocalDateTime actualStartAt;  // Ghi nhận thời điểm milestone thực tế bắt đầu
+
+    @Column(name = "actual_end_at")
+    LocalDateTime actualEndAt;  // Ghi nhận thời điểm milestone thực tế kết thúc
 }
 

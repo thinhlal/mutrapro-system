@@ -199,6 +199,28 @@ function getTaskTypeLabel(taskType) {
   return labels[taskType.toLowerCase()] || taskType;
 }
 
+function getActualDeadline(milestone) {
+  if (!milestone) return null;
+  if (milestone.actualStartAt && milestone.milestoneSlaDays) {
+    const start = new Date(milestone.actualStartAt);
+    if (!Number.isFinite(start.getTime())) return null;
+    const due = new Date(start);
+    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
+    return due;
+  }
+  if (milestone.actualEndAt) {
+    const end = new Date(milestone.actualEndAt);
+    return Number.isFinite(end.getTime()) ? end : null;
+  }
+  return null;
+}
+
+function getPlannedDeadline(milestone) {
+  if (!milestone?.plannedDueDate) return null;
+  const due = new Date(milestone.plannedDueDate);
+  return Number.isFinite(due.getTime()) ? due : null;
+}
+
 // ---------------- Component ----------------
 const TranscriptionTaskDetailPage = () => {
   const navigate = useNavigate();
@@ -532,6 +554,32 @@ const TranscriptionTaskDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Completed Date">
                 {task.completedDate ? formatDateTime(task.completedDate) : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Milestone Deadline">
+                {task.milestone ? (
+                  <Space direction="vertical" size={2}>
+                    <div>
+                      <Text strong>Actual</Text>
+                      <div>
+                        {getActualDeadline(task.milestone)
+                          ? formatDateTime(getActualDeadline(task.milestone))
+                          : 'Chưa có'}
+                      </div>
+                    </div>
+                    <div>
+                      <Text strong type="secondary">
+                        Planned
+                      </Text>
+                      <Text type="secondary">
+                        {getPlannedDeadline(task.milestone)
+                          ? formatDateTime(getPlannedDeadline(task.milestone))
+                          : 'Chưa có'}
+                      </Text>
+                    </div>
+                  </Space>
+                ) : (
+                  <Text type="secondary">—</Text>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Used Revisions">
                 <Text strong>{task.usedRevisions || 0}</Text>

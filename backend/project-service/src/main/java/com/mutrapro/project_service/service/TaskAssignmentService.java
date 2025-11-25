@@ -74,6 +74,7 @@ public class TaskAssignmentService {
     RequestServiceFeignClient requestServiceFeignClient;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
+    MilestoneProgressService milestoneProgressService;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -235,6 +236,8 @@ public class TaskAssignmentService {
                 .description(milestone.getDescription())
                 .plannedStartAt(milestone.getPlannedStartAt())
                 .plannedDueDate(milestone.getPlannedDueDate())
+                .actualStartAt(milestone.getActualStartAt())
+                .actualEndAt(milestone.getActualEndAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
                 .build();
             response.setMilestone(milestoneInfo);
@@ -284,6 +287,8 @@ public class TaskAssignmentService {
                     .description(milestone.getDescription())
                     .plannedStartAt(milestone.getPlannedStartAt())
                     .plannedDueDate(milestone.getPlannedDueDate())
+                .actualStartAt(milestone.getActualStartAt())
+                .actualEndAt(milestone.getActualEndAt())
                     .milestoneSlaDays(milestone.getMilestoneSlaDays())
                     .build();
                 response.setMilestone(milestoneInfo);
@@ -837,6 +842,11 @@ public class TaskAssignmentService {
         assignment.setStatus(AssignmentStatus.in_progress);
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment accepted successfully: assignmentId={}", assignmentId);
+
+        milestoneProgressService.evaluateActualStart(
+            assignment.getContractId(),
+            assignment.getMilestoneId()
+        );
         
         return taskAssignmentMapper.toResponse(saved);
     }

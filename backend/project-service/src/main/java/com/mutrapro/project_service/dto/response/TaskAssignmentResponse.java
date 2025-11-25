@@ -90,6 +90,8 @@ public class TaskAssignmentResponse {
         String description;
         LocalDateTime plannedStartAt;
         LocalDateTime plannedDueDate;  // Deadline của milestone để tính tasksInSlaWindow
+        LocalDateTime actualStartAt;   // Thời điểm milestone thực tế bắt đầu
+        LocalDateTime actualEndAt;     // Thời điểm milestone thực tế kết thúc
         Integer milestoneSlaDays;
     }
 }
