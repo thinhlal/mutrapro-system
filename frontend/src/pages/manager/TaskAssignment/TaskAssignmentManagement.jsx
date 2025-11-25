@@ -36,8 +36,6 @@ import {
 import {
   getTaskAssignmentsByContract,
   deleteTaskAssignment,
-  resolveIssue,
-  cancelTaskByManager,
 } from '../../../services/taskAssignmentService';
 import styles from './TaskAssignmentManagement.module.css';
 
@@ -120,9 +118,6 @@ export default function TaskAssignmentManagement() {
   const [cancelledTaskModalVisible, setCancelledTaskModalVisible] =
     useState(false);
   const [selectedCancelledTask, setSelectedCancelledTask] = useState(null);
-  const [issueModalVisible, setIssueModalVisible] = useState(false);
-  const [selectedIssueTask, setSelectedIssueTask] = useState(null);
-  const [cancellingTask, setCancellingTask] = useState(false);
   const navigate = useNavigate();
 
   const updateContractStats = useCallback((contractId, tasks) => {
@@ -413,67 +408,6 @@ export default function TaskAssignmentManagement() {
     setSelectedCancelledTask(null);
   };
 
-  // Handle view issue details
-  const handleViewIssueDetails = record => {
-    setSelectedIssueTask(record);
-    setIssueModalVisible(true);
-  };
-
-  const handleCloseIssueModal = () => {
-    setIssueModalVisible(false);
-    setSelectedIssueTask(null);
-  };
-
-  // Handle resolve issue (cho specialist tiếp tục)
-  const handleResolveIssue = async () => {
-    if (!selectedIssueTask || !selectedContractId) return;
-    try {
-      const response = await resolveIssue(
-        selectedContractId,
-        selectedIssueTask.assignmentId
-      );
-      if (response?.status === 'success') {
-        message.success('Đã cho phép specialist tiếp tục task');
-        setIssueModalVisible(false);
-        setSelectedIssueTask(null);
-        await fetchTaskAssignments(selectedContractId);
-      }
-    } catch (error) {
-      console.error('Error resolving issue:', error);
-      message.error(error?.message || 'Lỗi khi resolve issue');
-    }
-  };
-
-  // Handle cancel task by manager and create new
-  const handleCancelAndCreateNew = async () => {
-    if (!selectedIssueTask || !selectedContractId) return;
-    try {
-      setCancellingTask(true);
-      const response = await cancelTaskByManager(
-        selectedContractId,
-        selectedIssueTask.assignmentId
-      );
-      if (response?.status === 'success') {
-        message.success(
-          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
-        );
-        setIssueModalVisible(false);
-        const taskToCreate = selectedIssueTask;
-        setSelectedIssueTask(null);
-
-        // Navigate đến workspace với data pre-filled từ task cũ
-        // Thêm excludeSpecialistId để filter out specialist cũ
-        navigate(
-          `/manager/task-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
-        );
-      }
-    } catch (error) {
-      console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Lỗi khi hủy task');
-    } finally {
-      setCancellingTask(false);
-    }
-  };
 
   const formatSpecialistText = task => {
     if (!task) return 'N/A';
@@ -594,18 +528,19 @@ export default function TaskAssignmentManagement() {
         const isCompleted = status === 'completed';
         const hasIssue = record.hasIssue;
 
-        // Nếu task có issue, ưu tiên hiển thị nút "Xử lý issue"
+        // Nếu task có issue, chỉ hiển thị nút "Xem" để chuyển sang TaskProgressManagement
         if (hasIssue && !isCancelled) {
           return (
             <Space size="small">
-              <Tooltip title="Xem và xử lý issue">
+              <Tooltip title="Xem chi tiết và xử lý issue ở trang Task Progress">
                 <Button
-                  type="primary"
-                  danger
-                  icon={<ExclamationCircleOutlined />}
-                  onClick={() => handleViewIssueDetails(record)}
+                  type="link"
+                  icon={<EyeOutlined />}
+                  onClick={() => {
+                    navigate(`/manager/task-progress?contractId=${record.contractId}`);
+                  }}
                 >
-                  Xử lý issue
+                  Xem
                 </Button>
               </Tooltip>
             </Space>
@@ -1088,124 +1023,6 @@ export default function TaskAssignmentManagement() {
         )}
       </Modal>
 
-      {/* Modal hiển thị và xử lý issue */}
-      <Modal
-        title="Chi tiết Issue / Vấn đề"
-        open={issueModalVisible}
-        onCancel={handleCloseIssueModal}
-        footer={[
-          <Button key="close" onClick={handleCloseIssueModal}>
-            Đóng
-          </Button>,
-          <Button key="continue" type="primary" onClick={handleResolveIssue}>
-            Cho tiếp tục
-          </Button>,
-          <Popconfirm
-            key="cancel"
-            title="Xác nhận hủy task và tạo task mới?"
-            description="Task hiện tại sẽ bị hủy và bạn sẽ được chuyển đến trang tạo task mới với thông tin tương tự (milestone, task type). Bạn chỉ cần chọn specialist mới."
-            onConfirm={handleCancelAndCreateNew}
-            okText="Xác nhận"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger loading={cancellingTask}>
-              Cancel and create new
-            </Button>
-          </Popconfirm>,
-        ]}
-        width={700}
-      >
-        {selectedIssueTask && (
-          <div style={{ marginTop: 16 }}>
-            <p>
-              <strong>Assignment ID:</strong> {selectedIssueTask.assignmentId}
-            </p>
-            <p>
-              <strong>Task Type:</strong>{' '}
-              {TASK_TYPE_LABELS[selectedIssueTask.taskType] ||
-                selectedIssueTask.taskType}
-            </p>
-            <p>
-              <strong>Specialist:</strong>{' '}
-              {formatSpecialistText(selectedIssueTask)}
-            </p>
-            <p>
-              <strong>Milestone:</strong>{' '}
-              {getMilestoneName(selectedIssueTask.milestoneId)}
-            </p>
-            <p>
-              <strong>Status:</strong>{' '}
-              <Tag color="processing">Đang thực hiện</Tag>{' '}
-              <Tag color="orange">Có issue</Tag>
-            </p>
-            <p>
-              <strong>Assigned Date:</strong>{' '}
-              {selectedIssueTask.assignedDate
-                ? dayjs(selectedIssueTask.assignedDate).format(
-                    'YYYY-MM-DD HH:mm'
-                  )
-                : 'N/A'}
-            </p>
-
-            {selectedIssueTask.issueReportedAt && (
-              <p>
-                <strong>Thời gian báo issue:</strong>{' '}
-                {dayjs(selectedIssueTask.issueReportedAt).format(
-                  'YYYY-MM-DD HH:mm'
-                )}
-              </p>
-            )}
-
-            {selectedIssueTask.issueReason && (
-              <div style={{ marginTop: 12 }}>
-                <p>
-                  <strong>Lý do báo issue:</strong>
-                </p>
-                <p
-                  style={{
-                    padding: 12,
-                    background: '#fff7e6',
-                    border: '1px solid #ffd591',
-                    borderRadius: 4,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {selectedIssueTask.issueReason}
-                </p>
-              </div>
-            )}
-
-            {selectedIssueTask.notes && (
-              <div style={{ marginTop: 12 }}>
-                <p>
-                  <strong>Ghi chú:</strong>
-                </p>
-                <p
-                  style={{
-                    padding: 12,
-                    background: '#f5f5f5',
-                    borderRadius: 4,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {selectedIssueTask.notes}
-                </p>
-              </div>
-            )}
-
-            <Alert
-              message="Quyết định"
-              description="Bạn có thể cho specialist tiếp tục (clear issue flag) hoặc cancel task nếu thấy không thể tiếp tục."
-              type="info"
-              showIcon
-              style={{ marginTop: 16 }}
-            />
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

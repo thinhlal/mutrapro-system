@@ -93,6 +93,7 @@ import ManagerProfile from './pages/manager/Profile/ManagerProfile';
 import ManagerContractDetailPage from './pages/manager/ContractDetail/ManagerContractDetailPage';
 import ContractsManagement from './pages/manager/ContractsList/ContractsManagement';
 import TaskAssignmentManagement from './pages/manager/TaskAssignment/TaskAssignmentManagement';
+import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 
 import './App.css';
@@ -348,6 +349,10 @@ function App() {
               element={<TaskAssignmentManagement />}
             />
             <Route
+              path="task-progress"
+              element={<TaskProgressManagement />}
+            />
+            <Route
               path="task-assignments/:contractId/new"
               element={<TaskAssignmentWorkspace />}
             />
@@ -355,7 +360,6 @@ function App() {
               path="task-assignments/:contractId/edit/:assignmentId"
               element={<TaskAssignmentWorkspace />}
             />
-            <Route path="task" element={<Tasks />} />
             <Route path="profile" element={<ManagerProfile />} />
           </Route>
 

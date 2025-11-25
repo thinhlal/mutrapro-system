@@ -41,9 +41,9 @@ const menuItems = [
     label: <Link to="/manager/task-assignments">Task Assignments</Link>,
   },
   {
-    key: '/manager/task',
+    key: '/manager/task-progress',
     icon: <UnorderedListOutlined />,
-    label: <Link to="/manager/task">Task</Link>,
+    label: <Link to="/manager/task-progress">Task Progress</Link>,
   },
 ];
 

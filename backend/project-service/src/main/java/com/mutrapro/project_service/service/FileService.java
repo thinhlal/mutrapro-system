@@ -70,5 +70,35 @@ public class FileService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    public List<FileInfoResponse> getFilesByAssignmentId(String assignmentId) {
+        if (assignmentId == null || assignmentId.trim().isEmpty()) {
+            log.warn("AssignmentId is null or empty");
+            return List.of();
+        }
+        
+        try {
+            List<File> files = fileRepository.findByAssignmentId(assignmentId);
+            return files.stream()
+                    .map(f -> FileInfoResponse.builder()
+                            .fileId(f.getFileId())
+                            .fileName(f.getFileName())
+                            .filePath(f.getFilePath())
+                            .fileSize(f.getFileSize())
+                            .mimeType(f.getMimeType())
+                            .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                            .fileSource(f.getFileSource())
+                            .uploadDate(f.getUploadDate())
+                            .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
+                            .deliveredToCustomer(f.getDeliveredToCustomer())
+                            .deliveredAt(f.getDeliveredAt())
+                            .reviewedAt(f.getReviewedAt())
+                            .build())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching files for assignmentId: {}", assignmentId, e);
+            throw e;
+        }
+    }
 }
 

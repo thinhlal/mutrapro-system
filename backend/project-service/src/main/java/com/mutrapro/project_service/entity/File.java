@@ -39,10 +39,10 @@ public class File extends BaseEntity<String> {
     String requestId;  // Soft reference to request-service
 
     @Column(name = "assignment_id")
-    UUID assignmentId;  // Reference to task_assignments
+    String assignmentId;  // Reference to task_assignments
 
     @Column(name = "booking_id")
-    UUID bookingId;  // Soft reference to studio-service
+    String bookingId;  // Soft reference to studio-service
 
     // File metadata
     @Column(name = "file_name", nullable = false, length = 255)

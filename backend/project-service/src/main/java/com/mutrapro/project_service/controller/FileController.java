@@ -39,5 +39,20 @@ public class FileController {
                 .statusCode(HttpStatus.OK.value())
                 .build();
     }
+
+    @GetMapping("/by-assignment/{assignmentId}")
+    @Operation(summary = "Lấy danh sách files theo assignmentId (files do specialist upload)")
+    public ApiResponse<List<FileInfoResponse>> getFilesByAssignmentId(
+            @Parameter(description = "ID của task assignment")
+            @PathVariable String assignmentId) {
+        log.info("Getting files by assignmentId: {}", assignmentId);
+        List<FileInfoResponse> fileResponses = fileService.getFilesByAssignmentId(assignmentId);
+
+        return ApiResponse.<List<FileInfoResponse>>builder()
+                .message("Files retrieved successfully")
+                .data(fileResponses)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
 }
 

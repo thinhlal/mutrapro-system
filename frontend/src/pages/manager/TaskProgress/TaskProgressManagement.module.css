@@ -1,0 +1,75 @@
+.container {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h3 {
+  margin: 0;
+}
+
+.layoutGrid {
+  width: 100%;
+}
+
+.contractList {
+  margin-top: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.contractListLoading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.contractItem {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contractItem:hover {
+  border-color: #1890ff;
+}
+
+.contractItemActive {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.contractMeta {
+  display: block;
+  font-size: 12px;
+  color: #888;
+}
+
+.contractStatus {
+  margin-left: 8px;
+}
+
+.contractInfo {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.contractInfo > div {
+  display: flex;
+  gap: 8px;
+}
+

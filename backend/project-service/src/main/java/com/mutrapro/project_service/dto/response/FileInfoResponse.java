@@ -25,4 +25,8 @@ public class FileInfoResponse {
     String contentType;
     FileSourceType fileSource;  // Thêm field để phân biệt loại file
     Instant uploadDate;
+    String fileStatus;  // uploaded, pending_review, approved, rejected, delivered
+    Boolean deliveredToCustomer;
+    Instant deliveredAt;
+    Instant reviewedAt;
 }
