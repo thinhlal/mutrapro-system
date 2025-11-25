@@ -95,6 +95,8 @@ import ContractsManagement from './pages/manager/ContractsList/ContractsManageme
 import TaskAssignmentManagement from './pages/manager/TaskAssignment/TaskAssignmentManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 
+// AI Transcription Pages
+import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
 import './App.css';
 
 function App() {
@@ -130,6 +132,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-transcription"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <KlangTranscriptionPanel />
               </ProtectedRoute>
             }
           />

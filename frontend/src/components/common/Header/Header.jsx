@@ -15,6 +15,7 @@ const SECTION_KEYS = new Map([
   ['/', 'home'],
   ['/introduction', 'audio'],
   ['/request-service', 'request'],
+  ['/ai-transcription', 'ai-transcription'],
   ['/pricing', 'pricing'],
   ['/reviews', 'reviews'],
   ['/chat', 'chat'],
@@ -123,6 +124,7 @@ function Header() {
               {navLink('/', 'home', 'Home')}
               {navLink('/introduction', 'audio', 'Introduciton')}
               {navLink('/request-service', 'request', 'Request Service')}
+              {navLink('/ai-transcription', 'ai-transcription', 'AI Transcription')}
             </Nav>
 
             {/* Auth Section */}
@@ -213,6 +215,17 @@ function Header() {
                 onClick={closeMobileMenu}
               >
                 Request Service
+              </Nav.Link>
+
+              <Nav.Link
+                as={Link}
+                to="/ai-transcription"
+                className={classNames(styles.mobileNavLink, {
+                  [styles.active]: activeKey === 'ai-transcription',
+                })}
+                onClick={closeMobileMenu}
+              >
+                AI Transcription
               </Nav.Link>
             </Nav>
 
