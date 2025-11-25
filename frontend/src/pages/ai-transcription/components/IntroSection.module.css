@@ -1,0 +1,165 @@
+.section {
+  background-color: #ffffff;
+  color: #1e1e1e;
+  margin-bottom: 40px;
+}
+
+.content {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.title {
+  color: #1e1e1e !important;
+  font-size: 48px !important;
+  font-weight: 700 !important;
+  margin-bottom: 24px !important;
+  line-height: 1.2 !important;
+}
+
+.subtitle {
+  color: #4a4a4a !important;
+  font-size: 18px !important;
+  max-width: 900px;
+  margin: 0 auto 48px auto !important;
+  line-height: 1.6 !important;
+}
+
+/* Video Container */
+.videoContainer {
+  margin: 0 auto 56px;
+  max-width: 1400px;
+  width: 100%;
+  padding: 0 24px;
+}
+
+.video {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: block;
+  margin: 0 auto;
+}
+
+/* Steps Row Below Video */
+.stepsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+  margin-top: 0;
+  text-align: left;
+  flex-wrap: wrap;
+}
+
+.stepItem {
+  flex: 1 1 280px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.stepNumber {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  color: #1e1e1e;
+  flex-shrink: 0;
+}
+
+.stepTitle {
+  display: block;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  color: #1e1e1e !important;
+}
+
+.stepText {
+  color: #5a5a5a !important;
+  font-size: 15px !important;
+  margin-bottom: 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .title {
+    font-size: 36px !important;
+  }
+
+  .subtitle {
+    font-size: 16px !important;
+  }
+
+  .stepsRow {
+    gap: 32px;
+  }
+
+  .stepNumber {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 48px 20px;
+  }
+
+  .title {
+    font-size: 32px !important;
+  }
+
+  .subtitle {
+    font-size: 15px !important;
+    margin-bottom: 36px !important;
+  }
+
+  .videoContainer {
+    margin-bottom: 40px;
+  }
+
+  .stepsRow {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .stepItem {
+    align-items: flex-start;
+  }
+
+  .stepNumber {
+    font-size: 36px;
+  }
+
+  .stepTitle {
+    font-size: 18px !important;
+  }
+
+  .stepText {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 36px 16px;
+  }
+
+  .title {
+    font-size: 28px !important;
+  }
+
+  .subtitle {
+    font-size: 14px !important;
+  }
+
+  .video {
+    border-radius: 8px;
+  }
+
+  .stepNumber {
+    font-size: 32px;
+  }
+}

@@ -1,149 +1,157 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Upload,
   Button,
   Select,
-  Space,
   Typography,
-  Tag,
-  Alert,
 } from "antd";
-import { UploadOutlined, PlayCircleOutlined, DownloadOutlined } from "@ant-design/icons";
+import {
+  UploadOutlined,
+  PlayCircleOutlined,
+} from "@ant-design/icons";
 import { KLANG_MODELS } from "../../config/klangConfig.js";
 import { useKlangTranscriptionStore } from "../../stores/useKlangTranscriptionStore.js";
 import Header from "../../components/common/Header/Header.jsx";
+import IntroSection from "./components/IntroSection.jsx";
+import styles from "./KlangTranscriptionPanel.module.css";
+import BackToTop from "../../components/common/BackToTop/BackToTop.jsx";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const KlangTranscriptionPanel = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     model,
     setModel,
-    jobId,
-    status,
-    loading,
-    error,
     createTranscription,
-    downloadResult,
     reset,
   } = useKlangTranscriptionStore();
 
   const handleBeforeUpload = (file) => {
     setFile(file);
     reset();
-    return false; // không upload lên server, giữ file trong state
+    return false; // Don't upload to server, keep in state
   };
 
-  const handleTranscribe = () => {
+  const handleTranscribe = async () => {
     if (!file) {
-      alert("Chọn file audio trước đã nhé");
+      alert("Please select an audio file first!");
       return;
     }
-    createTranscription(file);
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Start transcription
+      await createTranscription(file);
+      
+      // Navigate to process page
+      navigate("/ai-transcription/process", { state: { file } });
+    } catch (error) {
+      console.error("Transcription error:", error);
+      setIsSubmitting(false);
+    }
   };
-
-  const statusColor = {
-    CREATING: "default",
-    IN_QUEUE: "orange",
-    IN_PROGRESS: "processing",
-    COMPLETED: "green",
-    FAILED: "red",
-  }[status];
 
   return (
     <>
-    <Header />
-    <Card
-      title="Klangio Auto Transcription Demo"
-      style={{ maxWidth: 1400, margin: "140px auto" }}
-    >
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <div>
-          <Title level={5}>1. Chọn nhạc cụ (Model)</Title>
-          <Select
-            style={{ width: "100%" }}
-            value={model}
-            onChange={setModel}
-            options={KLANG_MODELS}
-          />
-          <Text type="secondary">
-            Đây là param <code>model</code> trong API: piano, guitar, vocal,
-            detect, ...
-          </Text>
-        </div>
+      <Header />
+      <BackToTop />
+      <div className={styles.container}>
+        {/* Intro Section */}
+        <IntroSection />
 
-        <div>
-          <Title level={5}>2. Chọn file audio (≤ 15s cho free plan)</Title>
-          <Upload
-            beforeUpload={handleBeforeUpload}
-            maxCount={1}
-            accept="audio/*"
-          >
-            <Button icon={<UploadOutlined />}>Chọn file audio</Button>
-          </Upload>
-          {file && (
-            <Text style={{ display: "block", marginTop: 8 }}>
-              File đã chọn: <b>{file.name}</b> ({(file.size / 1024).toFixed(1)} KB)
-            </Text>
-          )}
-        </div>
+        <Card className={styles.mainCard} bordered={false}>
+          <div className={styles.cardContent}>
+            {/* Step 1: Select Model */}
+            <div className={styles.stepSection}>
+              <div className={styles.stepTitle}>
+                <span className={styles.stepNumber}>1</span>
+                Select Instrument Type
+              </div>
+              <Select
+                className={styles.modelSelect}
+                size="large"
+                value={model}
+                onChange={setModel}
+                options={KLANG_MODELS}
+              />
+              <div className={styles.stepDescription}>
+                <Text type="secondary">
+                  AI will automatically detect and analyze the instrument from your audio file
+                </Text>
+              </div>
+            </div>
 
-        <div>
-          <Title level={5}>3. Gửi lên Klangio để kí âm</Title>
-          <Button
-            type="primary"
-            icon={<PlayCircleOutlined />}
-            onClick={handleTranscribe}
-            loading={loading}
-            disabled={!file}
-          >
-            Transcribe
-          </Button>
-        </div>
-
-        {jobId && (
-          <div>
-            <Title level={5}>4. Trạng thái job</Title>
-            <Space direction="vertical">
-              <Text>
-                Job ID: <code>{jobId}</code>
-              </Text>
-              {status && (
-                <Tag color={statusColor || "default"}>Status: {status}</Tag>
-              )}
-              {status === "COMPLETED" && (
-                <Space>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    onClick={() => downloadResult("xml")}
-                  >
-                    Download MusicXML
+            {/* Step 2: Upload Audio File */}
+            <div className={styles.stepSection}>
+              <div className={styles.stepTitle}>
+                <span className={styles.stepNumber}>2</span>
+                Upload Audio File
+              </div>
+              <div className={styles.uploadArea}>
+                <Upload
+                  beforeUpload={handleBeforeUpload}
+                  maxCount={1}
+                  accept="audio/*"
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />} size="large">
+                    Choose Audio File
                   </Button>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    onClick={() => downloadResult("midi")}
-                  >
-                    Download MIDI
-                  </Button>
-                </Space>
+                </Upload>
+              </div>
+              {file && (
+                <div className={styles.fileInfo}>
+                  <div className={styles.fileDetails}>
+                    <div className={styles.fileName}>{file.name}</div>
+                    <div className={styles.fileSize}>
+                      {(file.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
+                </div>
               )}
-            </Space>
+              <div className={styles.stepDescription}>
+                <Text type="secondary">
+                  Free plan supports audio files ≤ 15 seconds
+                </Text>
+              </div>
+            </div>
+
+            {/* Step 3: Start Transcription */}
+            <div className={styles.stepSection}>
+              <div className={styles.stepTitle}>
+                <span className={styles.stepNumber}>3</span>
+                Start Transcription
+              </div>
+              <Button
+                className={styles.transcribeButton}
+                type="primary"
+                icon={<PlayCircleOutlined />}
+                onClick={handleTranscribe}
+                disabled={!file || isSubmitting}
+                loading={isSubmitting}
+                size="large"
+                block
+              >
+                {isSubmitting ? "Processing..." : "Transcribe Now"}
+              </Button>
+              {isSubmitting && (
+                <div className={styles.submittingHint}>
+                  <Text type="secondary" className={styles.submittingText}>
+                    Preparing to switch to processing page...
+                  </Text>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-
-        {error && (
-          <Alert
-            type="error"
-            message="Có lỗi xảy ra"
-            description={error}
-            showIcon
-          />
-        )}
-      </Space>
-    </Card>
+        </Card>
+      </div>
     </>
   );
 };

@@ -10,6 +10,7 @@ export const useKlangTranscriptionStore = create((set, get) => ({
   status: null, // IN_QUEUE, IN_PROGRESS, COMPLETED, FAILED
   loading: false,
   error: null,
+  midiBlob: null, // Store MIDI blob for Flat display
 
   // actions
   setModel: model => set({ model }),
@@ -18,6 +19,7 @@ export const useKlangTranscriptionStore = create((set, get) => ({
       jobId: null,
       status: null,
       error: null,
+      midiBlob: null,
     }),
 
   // Tạo transcription job
@@ -98,7 +100,13 @@ export const useKlangTranscriptionStore = create((set, get) => ({
         const data = await res.json(); // { status: "IN_QUEUE" | ... }
         set({ status: data.status });
 
-        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+        if (data.status === 'COMPLETED') {
+          // Auto-fetch MIDI when completed
+          get().fetchMidiBlob();
+          return;
+        }
+
+        if (data.status === 'FAILED') {
           return;
         }
 
@@ -112,6 +120,29 @@ export const useKlangTranscriptionStore = create((set, get) => ({
 
     // kick off
     pollOnce();
+  },
+
+  // Fetch MIDI blob for display in Flat
+  fetchMidiBlob: async () => {
+    const { jobId } = get();
+    if (!jobId) return;
+
+    try {
+      const res = await fetch(`${KLANG_BASE_URL}/job/${jobId}/midi`, {
+        headers: { 'kl-api-key': KLANG_API_KEY },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Fetch MIDI HTTP ${res.status}: ${text}`);
+      }
+
+      const blob = await res.blob();
+      set({ midiBlob: blob });
+    } catch (err) {
+      console.error('Failed to fetch MIDI:', err);
+      set({ error: err.message });
+    }
   },
 
   // Download kết quả theo format (xml, midi, pdf, audio, ...)

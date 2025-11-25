@@ -99,6 +99,7 @@ import MilestoneAssignmentDetailPage from './pages/manager/MilestoneAssignmentDe
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
+import TranscriptionProcessPage from './pages/ai-transcription/TranscriptionProcessPage.jsx';
 import './App.css';
 
 function App() {
@@ -144,6 +145,16 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <KlangTranscriptionPanel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-transcription/process"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <TranscriptionProcessPage />
               </ProtectedRoute>
             }
           />
