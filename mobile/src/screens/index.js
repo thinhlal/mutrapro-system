@@ -33,3 +33,6 @@ export { default as ChatRoomScreen } from './Chat/ChatRoomScreen';
 // Wallet Screens
 export { default as WalletScreen } from './Wallet/WalletScreen';
 
+// Payment Screens
+export { default as PaymentDepositScreen } from './Payments/PaymentDepositScreen';
+export { default as PaymentMilestoneScreen } from './Payments/PaymentMilestoneScreen';
