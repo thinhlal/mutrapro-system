@@ -45,12 +45,18 @@ public class AdminSpecialistService {
         
         // Tìm user theo email để lấy userId
         String userId;
+        String normalizedEmail = email;
+        String fullNameSnapshot = null;
         try {
             var userResponse = identityServiceFeignClient.getUserByEmail(email);
             if (userResponse.getData() == null || userResponse.getData().getUserId() == null) {
                 throw new RuntimeException("User not found with email: " + email);
             }
             userId = userResponse.getData().getUserId();
+            if (userResponse.getData().getEmail() != null) {
+                normalizedEmail = userResponse.getData().getEmail();
+            }
+            fullNameSnapshot = userResponse.getData().getFullName();
             log.info("Found user ID: {} for email: {}", userId, email);
         } catch (Exception e) {
             log.error("Failed to find user by email: {}", email, e);
@@ -66,6 +72,8 @@ public class AdminSpecialistService {
         Specialist specialist = specialistMapper.toSpecialist(request);
         specialist.setUserId(userId);
         specialist.setStatus(SpecialistStatus.ACTIVE);
+        specialist.setFullNameSnapshot(fullNameSnapshot);
+        specialist.setEmailSnapshot(normalizedEmail);
         
         Specialist saved = specialistRepository.save(specialist);
         

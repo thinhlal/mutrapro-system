@@ -35,6 +35,12 @@ public class Specialist extends BaseEntity<String> {
     @Column(name = "user_id", nullable = false, unique = true)
     private String userId; // Soft reference to identity-service
     
+    @Column(name = "full_name_snapshot", length = 255)
+    private String fullNameSnapshot;
+    
+    @Column(name = "email_snapshot", length = 255)
+    private String emailSnapshot;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "specialization", nullable = false)
     private SpecialistType specialization;

@@ -5,20 +5,16 @@ import com.mutrapro.specialist_service.entity.Specialist;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.SpecialistNotFoundException;
-import com.mutrapro.specialist_service.client.IdentityServiceFeignClient;
 import com.mutrapro.specialist_service.client.ProjectServiceFeignClient;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.SpecialistTaskStats;
+import com.mutrapro.shared.dto.TaskStatsRequest;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +27,6 @@ public class SpecialistLookupService {
 
     private final SpecialistRepository specialistRepository;
     private final SpecialistMapper specialistMapper;
-    private final IdentityServiceFeignClient identityServiceFeignClient;
     private final ProjectServiceFeignClient projectServiceFeignClient;
 
     /**
@@ -63,49 +58,18 @@ public class SpecialistLookupService {
                 .filter(specialist -> hasAnySkillName(specialist, skillNames))
                 .collect(Collectors.toList());
         }
-        Map<String, Specialist> specialistMap = specialists.stream()
-            .collect(Collectors.toMap(Specialist::getSpecialistId, s -> s));
-        // Tính SLA window từ milestone (nếu có)
-        final LocalDateTime slaWindowEnd;
-        if (milestoneId != null && !milestoneId.isBlank() && contractId != null && !contractId.isBlank()) {
-            slaWindowEnd = calculateSlaWindowEnd(milestoneId, contractId);
-        } else {
-            slaWindowEnd = null;
-        }
-        
         List<SpecialistResponse> responses = specialistMapper.toSpecialistResponseList(specialists);
-        final LocalDateTime finalSlaWindowEnd = slaWindowEnd; // Final reference for lambda
-        
-        // Batch fetch task assignments cho tất cả specialists cùng lúc
-        Map<String, List<Map<String, Object>>> tasksBySpecialist = fetchTaskAssignmentsBatch(
-            responses.stream().map(SpecialistResponse::getSpecialistId).collect(Collectors.toList())
+
+        Map<String, SpecialistTaskStats> statsBySpecialist = fetchTaskStats(
+            responses.stream().map(SpecialistResponse::getSpecialistId).collect(Collectors.toList()),
+            milestoneId,
+            contractId
         );
-        
-        // Tạo cache chung cho contract timeline để tái sử dụng giữa các specialists
-        // (nhiều specialists có thể có tasks từ cùng 1 contract)
-        Map<String, ContractTimeline> sharedContractTimelineCache = new HashMap<>();
-        
-        // Tính stats cho từng specialist từ batch data
+
         responses.forEach(response -> {
-            Specialist specialist = specialistMap.get(response.getSpecialistId());
-            if (specialist != null) {
-                // Tính real-time totalOpenTasks và tasksInSlaWindow từ batch data
-                List<Map<String, Object>> tasks = tasksBySpecialist.getOrDefault(
-                    specialist.getSpecialistId(), 
-                    new ArrayList<>()
-                );
-                calculateTaskStatsFromData(response, tasks, finalSlaWindowEnd, sharedContractTimelineCache);
-                
-                try {
-                    var userResponse = identityServiceFeignClient.getUserBasicInfo(specialist.getUserId());
-                    if (userResponse != null && userResponse.getData() != null) {
-                        response.setFullName(userResponse.getData().getFullName());
-                        response.setEmail(userResponse.getData().getEmail());
-                    }
-                } catch (Exception ex) {
-                    log.warn("Failed to fetch user info for specialist {}: {}", specialist.getSpecialistId(), ex.getMessage());
-                }
-            }
+            SpecialistTaskStats stats = statsBySpecialist.get(response.getSpecialistId());
+            response.setTotalOpenTasks(stats != null ? stats.getTotalOpenTasks() : 0);
+            response.setTasksInSlaWindow(stats != null ? stats.getTasksInSlaWindow() : 0);
         });
         responses.sort((a, b) -> {
             int slaA = a.getTasksInSlaWindow() != null ? a.getTasksInSlaWindow() : 0;
@@ -152,195 +116,40 @@ public class SpecialistLookupService {
             .replaceAll("[^a-z0-9]", "");
     }
 
-    /**
-     * Tính SLA window end từ milestone (ưu tiên actual timeline, fallback planned)
-     */
-    private LocalDateTime calculateSlaWindowEnd(String milestoneId, String contractId) {
-        try {
-            ApiResponse<Map<String, Object>> milestoneResponse = 
-                projectServiceFeignClient.getMilestoneById(contractId, milestoneId);
-            
-            if (milestoneResponse != null && "success".equals(milestoneResponse.getStatus()) 
-                && milestoneResponse.getData() != null) {
-                
-                Map<String, Object> milestone = milestoneResponse.getData();
-                Integer milestoneSlaDays = parseInteger(milestone.get("milestoneSlaDays"));
-                LocalDateTime deadline = resolveMilestoneDeadline(milestone, milestoneSlaDays);
-                if (deadline != null) {
-                    return deadline;
-                }
-                
-                // Option fallback theo expectedStart + cumulative SLA
-                TimelineDates fallbackDates = calculateFallbackTimelineDates(
-                    contractId,
-                    milestoneId,
-                    milestoneSlaDays,
-                    null
-                );
-                if (fallbackDates != null && fallbackDates.dueDate() != null) {
-                    return fallbackDates.dueDate();
-                }
-                
-                // Cuối cùng dùng now + slaDays nếu không có gì khác
-                LocalDateTime now = LocalDateTime.now();
-                if (milestoneSlaDays != null && milestoneSlaDays > 0) {
-                    return now.plusDays(milestoneSlaDays);
-                }
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to fetch milestone info for SLA window calculation: milestoneId={}, contractId={}, error: {}", 
-                milestoneId, contractId, ex.getMessage());
-        }
-        
-        return null; // Không tính được SLA window
-    }
 
     /**
-     * Batch fetch task assignments cho nhiều specialists cùng lúc
+     * Fetch task stats từ project-service
      */
-    private Map<String, List<Map<String, Object>>> fetchTaskAssignmentsBatch(List<String> specialistIds) {
+    private Map<String, SpecialistTaskStats> fetchTaskStats(
+            List<String> specialistIds,
+            String milestoneId,
+            String contractId) {
         if (specialistIds == null || specialistIds.isEmpty()) {
             return new HashMap<>();
         }
-        
+
         try {
-            ApiResponse<Map<String, List<Map<String, Object>>>> batchResponse = 
-                projectServiceFeignClient.getTaskAssignmentsBySpecialistIds(specialistIds);
-            
-            if (batchResponse != null && "success".equals(batchResponse.getStatus()) 
-                && batchResponse.getData() != null) {
-                return batchResponse.getData();
+            TaskStatsRequest request = TaskStatsRequest.builder()
+                .specialistIds(specialistIds)
+                .contractId(contractId)
+                .milestoneId(milestoneId)
+                .build();
+
+            ApiResponse<Map<String, SpecialistTaskStats>> response =
+                projectServiceFeignClient.getTaskStats(request);
+
+            if (response != null && "success".equalsIgnoreCase(response.getStatus())
+                && response.getData() != null) {
+                return response.getData();
             }
         } catch (Exception ex) {
-            log.warn("Failed to batch fetch task assignments for {} specialists: {}", 
+            log.warn("Failed to fetch task stats for {} specialists: {}",
                 specialistIds.size(), ex.getMessage());
         }
-        
+
         return new HashMap<>();
     }
 
-    /**
-     * Tính real-time totalOpenTasks và tasksInSlaWindow từ task assignments data (đã có sẵn)
-     * @param tasks Danh sách tasks đã fetch sẵn
-     * @param slaWindowEnd SLA window end từ milestone đang assign (null nếu không có milestone)
-     * @param contractTimelineCache Cache chung cho contract timeline (để tái sử dụng giữa các specialists)
-     */
-    private void calculateTaskStatsFromData(SpecialistResponse response, List<Map<String, Object>> tasks, 
-            LocalDateTime slaWindowEnd, Map<String, ContractTimeline> contractTimelineCache) {
-        if (tasks == null || tasks.isEmpty()) {
-            response.setTotalOpenTasks(0);
-            response.setTasksInSlaWindow(0);
-            return;
-        }
-        LocalDateTime now = LocalDateTime.now();
-        
-        // Tính totalOpenTasks: đếm tasks có status = assigned hoặc in_progress
-        long totalOpenTasks = tasks.stream()
-            .filter(task -> {
-                String status = (String) task.get("status");
-                return "assigned".equalsIgnoreCase(status) || "in_progress".equalsIgnoreCase(status);
-            })
-            .count();
-        
-        // Tính tasksInSlaWindow: đếm tasks có deadline (actual hoặc planned) nằm trong [now, slaWindowEnd]
-        long tasksInSlaWindow = 0;
-        if (slaWindowEnd != null) {
-            tasksInSlaWindow = tasks.stream()
-                .filter(task -> {
-                    String status = (String) task.get("status");
-                    if (!"assigned".equalsIgnoreCase(status) && !"in_progress".equalsIgnoreCase(status)) {
-                        return false;
-                    }
-                    
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> taskMilestone = (Map<String, Object>) task.get("milestone");
-                    if (taskMilestone == null) return false;
-                    
-                    Integer milestoneSlaDays = parseInteger(taskMilestone.get("milestoneSlaDays"));
-                    LocalDateTime taskDeadline = resolveMilestoneDeadline(taskMilestone, milestoneSlaDays);
-                    
-                    if (taskDeadline == null) {
-                        String contractId = (String) task.get("contractId");
-                        String milestoneId = taskMilestone.get("milestoneId") != null
-                            ? taskMilestone.get("milestoneId").toString()
-                            : null;
-                        
-                        TimelineDates fallbackDates = calculateFallbackTimelineDates(
-                            contractId,
-                            milestoneId,
-                            milestoneSlaDays,
-                            contractTimelineCache
-                        );
-                        if (fallbackDates != null) {
-                            taskDeadline = fallbackDates.dueDate();
-                        }
-                    }
-                    
-                    if (taskDeadline == null) return false;
-                    
-                    return !taskDeadline.isBefore(now) && !taskDeadline.isAfter(slaWindowEnd);
-                })
-                .count();
-        }
-        
-        response.setTotalOpenTasks((int) totalOpenTasks);
-        response.setTasksInSlaWindow((int) tasksInSlaWindow);
-    }
-
-    /**
-     * Tính real-time totalOpenTasks và tasksInSlaWindow từ task assignments (gọi API riêng lẻ cho 1 specialist)
-     * Sử dụng batch API ngay cả khi chỉ có 1 specialist để tái sử dụng logic
-     * @param slaWindowEnd SLA window end từ milestone đang assign (null nếu không có milestone)
-     */
-    private void calculateTaskStats(SpecialistResponse response, String specialistId, LocalDateTime slaWindowEnd) {
-        try {
-            // Dùng batch API ngay cả khi chỉ có 1 specialist để tái sử dụng logic
-            Map<String, List<Map<String, Object>>> batchResult = fetchTaskAssignmentsBatch(List.of(specialistId));
-            List<Map<String, Object>> tasks = batchResult.getOrDefault(specialistId, new ArrayList<>());
-            // Tạo cache riêng cho trường hợp single specialist (không cần share)
-            Map<String, ContractTimeline> contractTimelineCache = new HashMap<>();
-            calculateTaskStatsFromData(response, tasks, slaWindowEnd, contractTimelineCache);
-        } catch (Exception ex) {
-            log.warn("Failed to fetch task stats for specialist {}: {}", specialistId, ex.getMessage());
-            // Nếu lỗi, set về 0
-            response.setTotalOpenTasks(0);
-            response.setTasksInSlaWindow(0);
-        }
-    }
-
-    /**
-     * Tìm deadline thực tế của milestone:
-     * - Ưu tiên actual timeline (actualStartAt + SLA, hoặc actualEndAt nếu đã xong)
-     * - Fallback planned timeline nếu chưa có actual
-     */
-    private LocalDateTime resolveMilestoneDeadline(
-            Map<String, Object> milestone, Integer milestoneSlaDays) {
-        if (milestone == null) {
-            return null;
-        }
-
-        LocalDateTime actualStartAt = parseLocalDateTime(milestone.get("actualStartAt"));
-        if (actualStartAt != null && milestoneSlaDays != null && milestoneSlaDays > 0) {
-            return actualStartAt.plusDays(milestoneSlaDays);
-        }
-
-        LocalDateTime actualEndAt = parseLocalDateTime(milestone.get("actualEndAt"));
-        if (actualEndAt != null) {
-            return actualEndAt;
-        }
-
-        LocalDateTime plannedDueDate = parseLocalDateTime(milestone.get("plannedDueDate"));
-        if (plannedDueDate != null) {
-            return plannedDueDate;
-        }
-
-        LocalDateTime plannedStartAt = parseLocalDateTime(milestone.get("plannedStartAt"));
-        if (plannedStartAt != null && milestoneSlaDays != null && milestoneSlaDays > 0) {
-            return plannedStartAt.plusDays(milestoneSlaDays);
-        }
-
-        return null;
-    }
 
     /**
      * Lấy specialist theo specialistId (cho manager)
@@ -349,160 +158,12 @@ public class SpecialistLookupService {
         Specialist specialist = specialistRepository.findById(specialistId)
             .orElseThrow(() -> SpecialistNotFoundException.byId(specialistId));
         SpecialistResponse response = specialistMapper.toSpecialistResponse(specialist);
-        // Tính real-time task stats (không có milestone context nên tasksInSlaWindow = 0)
-        calculateTaskStats(response, specialistId, null);
-        
-        // Fetch user info từ identity-service để có fullName và email
-        try {
-            var userResponse = identityServiceFeignClient.getUserBasicInfo(specialist.getUserId());
-            if (userResponse != null && userResponse.getData() != null) {
-                response.setFullName(userResponse.getData().getFullName());
-                response.setEmail(userResponse.getData().getEmail());
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to fetch user info for specialist {}: {}", specialistId, ex.getMessage());
-        }
+        Map<String, SpecialistTaskStats> stats = fetchTaskStats(List.of(specialistId), null, null);
+        SpecialistTaskStats stat = stats.get(specialistId);
+        response.setTotalOpenTasks(stat != null ? stat.getTotalOpenTasks() : 0);
+        response.setTasksInSlaWindow(stat != null ? stat.getTasksInSlaWindow() : 0);
         
         return response;
     }
-    
-    private TimelineDates calculateFallbackTimelineDates(
-            String contractId,
-            String milestoneId,
-            Integer milestoneSlaDays,
-            Map<String, ContractTimeline> timelineCache) {
-        if (contractId == null || milestoneId == null) {
-            return null;
-        }
-        
-        ContractTimeline timeline = getContractTimeline(contractId, timelineCache);
-        if (timeline == null) {
-            return null;
-        }
-        
-        LocalDateTime baseStart = timeline.expectedStart != null
-            ? timeline.expectedStart
-            : LocalDateTime.now();
-        
-        int cumulativeDays = 0;
-        for (MilestoneSummary summary : timeline.milestones) {
-            int sla = summary.slaDays != null ? summary.slaDays : 0;
-            if (milestoneId.equals(summary.milestoneId)) {
-                int effectiveSla = milestoneSlaDays != null ? milestoneSlaDays : sla;
-                LocalDateTime fallbackStart = baseStart.plusDays(cumulativeDays);
-                LocalDateTime fallbackDue = effectiveSla > 0 ? fallbackStart.plusDays(effectiveSla) : fallbackStart;
-                return new TimelineDates(fallbackStart, fallbackDue);
-            }
-            cumulativeDays += sla;
-        }
-        
-        return null;
-    }
-    
-    private ContractTimeline getContractTimeline(String contractId, Map<String, ContractTimeline> timelineCache) {
-        if (contractId == null) {
-            return null;
-        }
-        
-        if (timelineCache != null && timelineCache.containsKey(contractId)) {
-            return timelineCache.get(contractId);
-        }
-        
-        try {
-            ApiResponse<Map<String, Object>> contractResponse =
-                projectServiceFeignClient.getContractById(contractId);
-            if (contractResponse != null && "success".equals(contractResponse.getStatus())
-                && contractResponse.getData() != null) {
-                ContractTimeline timeline = buildContractTimeline(contractResponse.getData());
-                if (timelineCache != null && timeline != null) {
-                    timelineCache.put(contractId, timeline);
-                }
-                return timeline;
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to fetch contract timeline: contractId={}, error={}", contractId, ex.getMessage());
-        }
-        
-        return null;
-    }
-    
-    private ContractTimeline buildContractTimeline(Map<String, Object> contractData) {
-        LocalDateTime expectedStart = parseInstant(contractData.get("expectedStartDate"));
-        List<MilestoneSummary> milestones = parseMilestoneSummaries(contractData.get("milestones"));
-        return new ContractTimeline(expectedStart, milestones);
-    }
-    
-    private List<MilestoneSummary> parseMilestoneSummaries(Object milestonesObj) {
-        List<MilestoneSummary> summaries = new ArrayList<>();
-        if (milestonesObj instanceof List<?> list) {
-            for (Object item : list) {
-                if (item instanceof Map<?, ?> map) {
-                    String milestoneId = map.get("milestoneId") != null
-                        ? map.get("milestoneId").toString()
-                        : null;
-                    Integer orderIndex = parseInteger(map.get("orderIndex"));
-                    Integer slaDays = parseInteger(map.get("milestoneSlaDays"));
-                    summaries.add(new MilestoneSummary(milestoneId, orderIndex, slaDays));
-                }
-            }
-        }
-        summaries.sort(Comparator.comparingInt(ms -> ms.orderIndex != null ? ms.orderIndex : Integer.MAX_VALUE));
-        return summaries;
-    }
-    
-    /**
-     * Parse LocalDateTime từ Object (thường là String format ISO-8601)
-     */
-    private LocalDateTime parseLocalDateTime(Object obj) {
-        if (obj == null) return null;
-        
-        try {
-            if (obj instanceof String) {
-                String dateStr = (String) obj;
-                if (dateStr.contains(".")) {
-                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
-                }
-                return LocalDateTime.parse(dateStr);
-            }
-        } catch (Exception e) {
-            log.warn("Failed to parse LocalDateTime from object: {}, error: {}", obj, e.getMessage());
-        }
-        
-        return null;
-    }
-    
-    private LocalDateTime parseInstant(Object obj) {
-        if (obj == null) return null;
-        try {
-            if (obj instanceof String str && !str.isBlank()) {
-                Instant instant = Instant.parse(str);
-                return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-            }
-        } catch (Exception e) {
-            log.warn("Failed to parse Instant from object: {}, error: {}", obj, e.getMessage());
-        }
-        return null;
-    }
-    
-    private Integer parseInteger(Object obj) {
-        if (obj == null) return null;
-        if (obj instanceof Number number) {
-            return number.intValue();
-        }
-        if (obj instanceof String str && !str.isBlank()) {
-            try {
-                return Integer.parseInt(str);
-            } catch (NumberFormatException e) {
-                log.warn("Failed to parse integer from '{}': {}", str, e.getMessage());
-            }
-        }
-        return null;
-    }
-    
-    private record TimelineDates(LocalDateTime startDate, LocalDateTime dueDate) {}
-    
-    private record ContractTimeline(LocalDateTime expectedStart, List<MilestoneSummary> milestones) {}
-    
-    private record MilestoneSummary(String milestoneId, Integer orderIndex, Integer slaDays) {}
 }
 

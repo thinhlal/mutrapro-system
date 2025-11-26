@@ -25,6 +25,7 @@ public class TaskAssignmentResponse {
     String contractId;
 
     String specialistId;
+    String specialistUserId;
     String specialistName;
     String specialistEmail;
     String specialistSpecialization;

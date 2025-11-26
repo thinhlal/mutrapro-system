@@ -36,6 +36,21 @@ public class TaskAssignment extends BaseEntity<String> {
     @Column(name = "specialist_id", nullable = false)
     String specialistId;  // Soft reference to specialist-service
 
+    @Column(name = "specialist_name_snapshot", length = 255)
+    String specialistNameSnapshot;
+    
+    @Column(name = "specialist_email_snapshot", length = 255)
+    String specialistEmailSnapshot;
+    
+    @Column(name = "specialist_specialization_snapshot", length = 100)
+    String specialistSpecializationSnapshot;
+    
+    @Column(name = "specialist_experience_years_snapshot")
+    Integer specialistExperienceYearsSnapshot;
+    
+    @Column(name = "specialist_user_id_snapshot", length = 50)
+    String specialistUserIdSnapshot;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "task_type", nullable = false, length = 20)
     TaskType taskType;

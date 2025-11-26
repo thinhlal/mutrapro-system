@@ -19,6 +19,8 @@ import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.dto.SpecialistTaskStats;
+import com.mutrapro.shared.dto.TaskStatsRequest;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
@@ -57,8 +59,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -96,40 +98,8 @@ public class TaskAssignmentService {
         
         List<TaskAssignment> assignments = taskAssignmentRepository.findByContractId(contractId);
         
-        // Batch fetch specialist info để tránh N+1 Feign calls
-        // Logic: Thay vì gọi Feign từng specialist một (N lần), ta gọi một lần cho mỗi unique specialist
-        // Ví dụ: 100 tasks với 10 unique specialists → chỉ gọi Feign 10 lần thay vì 100 lần
-        
-        // Bước 1: Lấy tất cả unique specialist IDs từ assignments
-        Set<String> uniqueSpecialistIds = assignments.stream()
-            .map(TaskAssignment::getSpecialistId)
-            .filter(id -> id != null)
-            .collect(Collectors.toSet());
-        
-        // Bước 2: Tạo cache để lưu specialist info (key = specialistId, value = specialist data)
-        Map<String, Map<String, Object>> specialistCache = new HashMap<>();
-        if (!uniqueSpecialistIds.isEmpty() && hasManagerPrivileges()) {
-            // Bước 3: Batch fetch - gọi Feign một lần cho mỗi unique specialist
-            uniqueSpecialistIds.forEach(specialistId -> {
-                try {
-                    ApiResponse<Map<String, Object>> specialistResponse =
-                        specialistServiceFeignClient.getSpecialistById(specialistId);
-                    if (specialistResponse != null
-                        && "success".equalsIgnoreCase(specialistResponse.getStatus())
-                        && specialistResponse.getData() != null) {
-                        // Lưu vào cache để tái sử dụng
-                        specialistCache.put(specialistId, specialistResponse.getData());
-                    }
-                } catch (Exception ex) {
-                    log.warn("Failed to fetch specialist info: specialistId={}, error={}",
-                        specialistId, ex.getMessage());
-                }
-            });
-        }
-        
-        // Bước 4: Enrich assignments từ cache (không cần gọi Feign nữa)
         return assignments.stream()
-            .map(assignment -> enrichTaskAssignmentWithCache(assignment, specialistCache))
+            .map(this::enrichTaskAssignment)
             .toList();
     }
 
@@ -221,6 +191,125 @@ public class TaskAssignmentService {
         
         return result;
     }
+
+    /**
+     * Tính thống kê task (totalOpenTasks, tasksInSlaWindow) cho nhiều specialists cùng lúc
+     */
+    public Map<String, SpecialistTaskStats> getTaskStats(TaskStatsRequest request) {
+        if (request == null || request.getSpecialistIds() == null || request.getSpecialistIds().isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<String> specialistIds = request.getSpecialistIds().stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(id -> !id.isEmpty())
+            .distinct()
+            .toList();
+
+        if (specialistIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(request.getContractId(), request.getMilestoneId());
+        List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistIdIn(specialistIds);
+
+        Map<String, List<TaskAssignment>> assignmentsBySpecialist = assignments.stream()
+            .collect(Collectors.groupingBy(TaskAssignment::getSpecialistId));
+
+        Map<String, SpecialistTaskStats> result = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        assignmentsBySpecialist.forEach((specialistId, tasks) -> {
+            int totalOpenTasks = (int) tasks.stream()
+                .filter(task -> isOpenStatus(task.getStatus()))
+                .count();
+
+            int tasksInSlaWindow = 0;
+            if (slaWindowEnd != null) {
+                tasksInSlaWindow = (int) tasks.stream()
+                    .filter(task -> isOpenStatus(task.getStatus()))
+                    .map(this::resolveTaskDeadline)
+                    .filter(deadline -> deadline != null
+                        && !deadline.isBefore(now)
+                        && !deadline.isAfter(slaWindowEnd))
+                    .count();
+            }
+
+            result.put(specialistId, SpecialistTaskStats.builder()
+                .totalOpenTasks(totalOpenTasks)
+                .tasksInSlaWindow(tasksInSlaWindow)
+                .build());
+        });
+
+        specialistIds.forEach(id -> result.putIfAbsent(id,
+            SpecialistTaskStats.builder()
+                .totalOpenTasks(0)
+                .tasksInSlaWindow(0)
+                .build()
+        ));
+
+        return result;
+    }
+
+    private boolean isOpenStatus(AssignmentStatus status) {
+        return status == AssignmentStatus.assigned || status == AssignmentStatus.in_progress;
+    }
+
+    private LocalDateTime resolveTaskDeadline(TaskAssignment assignment) {
+        if (assignment.getMilestoneId() == null || assignment.getContractId() == null) {
+            return null;
+        }
+
+        ContractMilestone milestone = contractMilestoneRepository
+            .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+            .orElse(null);
+
+        return resolveMilestoneDeadline(milestone);
+    }
+
+    private LocalDateTime calculateSlaWindowEndInternal(String contractId, String milestoneId) {
+        if (contractId == null || contractId.isBlank() || milestoneId == null || milestoneId.isBlank()) {
+            return null;
+        }
+
+        return contractMilestoneRepository
+            .findByMilestoneIdAndContractId(milestoneId, contractId)
+            .map(this::resolveMilestoneDeadlineWithFallback)
+            .orElse(null);
+    }
+
+    private LocalDateTime resolveMilestoneDeadlineWithFallback(ContractMilestone milestone) {
+        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        if (deadline != null) {
+            return deadline;
+        }
+        Integer slaDays = milestone != null ? milestone.getMilestoneSlaDays() : null;
+        if (slaDays != null && slaDays > 0) {
+            return LocalDateTime.now().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    private LocalDateTime resolveMilestoneDeadline(ContractMilestone milestone) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
+            return milestone.getActualStartAt().plusDays(slaDays);
+        }
+        if (milestone.getActualEndAt() != null) {
+            return milestone.getActualEndAt();
+        }
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
     
     /**
      * Enrich task assignment cho batch API (chỉ enrich milestone info, KHÔNG enrich specialist info)
@@ -254,25 +343,11 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Enrich TaskAssignmentResponse với milestone info và specialist info
+     * Enrich TaskAssignmentResponse với milestone info
      */
     private TaskAssignmentResponse enrichTaskAssignment(TaskAssignment assignment) {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
         enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
-        enrichSpecialistInfo(response);
-        return response;
-    }
-    
-    /**
-     * Enrich TaskAssignmentResponse với milestone info và specialist info từ cache
-     * (tối ưu cho batch operations)
-     */
-    private TaskAssignmentResponse enrichTaskAssignmentWithCache(
-            TaskAssignment assignment,
-            Map<String, Map<String, Object>> specialistCache) {
-        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
-        enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
-        enrichSpecialistInfoFromCache(response, specialistCache);
         return response;
     }
 
@@ -301,68 +376,6 @@ public class TaskAssignmentService {
         } catch (Exception e) {
             log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
                 milestoneId, contractId, e.getMessage());
-        }
-    }
-
-    private void enrichSpecialistInfo(TaskAssignmentResponse response) {
-        if (response == null || response.getSpecialistId() == null) {
-            return;
-        }
-
-        if (!hasManagerPrivileges()) {
-            return;
-        }
-
-        try {
-            ApiResponse<Map<String, Object>> specialistResponse =
-                specialistServiceFeignClient.getSpecialistById(response.getSpecialistId());
-
-            if (specialistResponse != null
-                && "success".equalsIgnoreCase(specialistResponse.getStatus())
-                && specialistResponse.getData() != null) {
-                Map<String, Object> data = specialistResponse.getData();
-                response.setSpecialistName(asString(data.get("fullName")));
-                response.setSpecialistEmail(asString(data.get("email")));
-                response.setSpecialistSpecialization(asString(data.get("specialization")));
-                response.setSpecialistExperienceYears(asInteger(data.get("experienceYears")));
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to fetch specialist info: specialistId={}, error={}",
-                response.getSpecialistId(), ex.getMessage());
-        }
-    }
-    
-    /**
-     * Enrich specialist info từ cache (tránh N+1 Feign calls)
-     * 
-     * Logic cache:
-     * - Cache là một Map lưu specialist info đã fetch sẵn
-     * - Key = specialistId, Value = specialist data (fullName, email, specialization, ...)
-     * - Khi enrich assignment, chỉ cần lookup trong cache thay vì gọi Feign lại
-     * - Nhiều assignments cùng specialistId sẽ dùng chung 1 cache entry
-     */
-    private void enrichSpecialistInfoFromCache(
-            TaskAssignmentResponse response,
-            Map<String, Map<String, Object>> specialistCache) {
-        if (response == null || response.getSpecialistId() == null) {
-            return;
-        }
-
-        if (!hasManagerPrivileges()) {
-            return;
-        }
-
-        // Lookup specialist info từ cache (không cần gọi Feign)
-        Map<String, Object> specialistData = specialistCache.get(response.getSpecialistId());
-        if (specialistData != null) {
-            response.setSpecialistName(asString(specialistData.get("fullName")));
-            response.setSpecialistEmail(asString(specialistData.get("email")));
-            // specialization có thể là enum, cần convert
-            Object specialization = specialistData.get("specialization");
-            if (specialization != null) {
-                response.setSpecialistSpecialization(specialization.toString());
-            }
-            response.setSpecialistExperienceYears(asInteger(specialistData.get("experienceYears")));
         }
     }
 
@@ -594,14 +607,7 @@ public class TaskAssignmentService {
             return;
         }
 
-        Optional<Map<String, Object>> specialistDataOpt = fetchSpecialistData(assignment.getSpecialistId());
-        if (specialistDataOpt.isEmpty()) {
-            log.warn("Cannot enqueue assignment notification. Specialist info not found: specialistId={}",
-                    assignment.getSpecialistId());
-            return;
-        }
-
-        String specialistUserId = asString(specialistDataOpt.get().get("userId"));
+        String specialistUserId = assignment.getSpecialistUserIdSnapshot();
         if (specialistUserId == null || specialistUserId.isBlank()) {
             log.warn("Cannot enqueue assignment notification. specialistUserId missing for specialistId={}",
                     assignment.getSpecialistId());
@@ -609,27 +615,6 @@ public class TaskAssignmentService {
         }
 
         enqueueTaskAssignmentAssignedEvent(assignment, contract, milestone, specialistUserId);
-    }
-
-    private Optional<Map<String, Object>> fetchSpecialistData(String specialistId) {
-        if (specialistId == null || specialistId.isBlank()) {
-            return Optional.empty();
-        }
-
-        try {
-            ApiResponse<Map<String, Object>> specialistResponse =
-                specialistServiceFeignClient.getSpecialistById(specialistId);
-
-            if (specialistResponse != null
-                && "success".equalsIgnoreCase(specialistResponse.getStatus())
-                && specialistResponse.getData() != null) {
-                return Optional.of(specialistResponse.getData());
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to fetch specialist data: specialistId={}, error={}",
-                specialistId, ex.getMessage());
-        }
-        return Optional.empty();
     }
 
     private void enqueueTaskAssignmentAssignedEvent(
@@ -703,21 +688,6 @@ public class TaskAssignmentService {
             }
         }
         return null;
-    }
-
-    private boolean hasManagerPrivileges() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-            return true; // System context (Kafka, etc.)
-        }
-        String scope = jwt.getClaim("scope");
-        if (scope == null) {
-            return false;
-        }
-        return switch (scope) {
-            case "MANAGER", "ADMIN", "SYSTEM_ADMIN" -> true;
-            default -> false;
-        };
     }
 
     /**
@@ -798,10 +768,30 @@ public class TaskAssignmentService {
             throw TaskAssignmentAlreadyActiveException.forMilestone(request.getMilestoneId());
         }
         
+        Map<String, Object> specialistData;
+        try {
+            ApiResponse<Map<String, Object>> specialistResponse =
+                specialistServiceFeignClient.getSpecialistById(request.getSpecialistId());
+            if (specialistResponse == null
+                || !"success".equalsIgnoreCase(specialistResponse.getStatus())
+                || specialistResponse.getData() == null) {
+                throw new RuntimeException("Specialist not found: " + request.getSpecialistId());
+            }
+            specialistData = specialistResponse.getData();
+        } catch (Exception ex) {
+            log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
+            throw new RuntimeException("Failed to fetch specialist info: " + ex.getMessage(), ex);
+        }
+        
         // Create task assignment
         TaskAssignment assignment = TaskAssignment.builder()
             .contractId(contractId)
             .specialistId(request.getSpecialistId())
+            .specialistNameSnapshot(asString(specialistData.get("fullName")))
+            .specialistEmailSnapshot(asString(specialistData.get("email")))
+            .specialistSpecializationSnapshot(asString(specialistData.get("specialization")))
+            .specialistExperienceYearsSnapshot(asInteger(specialistData.get("experienceYears")))
+            .specialistUserIdSnapshot(asString(specialistData.get("userId")))
             .taskType(taskType)
             .status(AssignmentStatus.assigned)
             .milestoneId(request.getMilestoneId())
@@ -847,6 +837,25 @@ public class TaskAssignmentService {
         // Update fields
         if (request.getSpecialistId() != null) {
             assignment.setSpecialistId(request.getSpecialistId());
+            Map<String, Object> specialistData;
+            try {
+                ApiResponse<Map<String, Object>> specialistResponse =
+                    specialistServiceFeignClient.getSpecialistById(request.getSpecialistId());
+                if (specialistResponse == null
+                    || !"success".equalsIgnoreCase(specialistResponse.getStatus())
+                    || specialistResponse.getData() == null) {
+                    throw new RuntimeException("Specialist not found: " + request.getSpecialistId());
+                }
+                specialistData = specialistResponse.getData();
+            } catch (Exception ex) {
+                log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
+                throw new RuntimeException("Failed to fetch specialist info: " + ex.getMessage(), ex);
+            }
+            assignment.setSpecialistNameSnapshot(asString(specialistData.get("fullName")));
+            assignment.setSpecialistEmailSnapshot(asString(specialistData.get("email")));
+            assignment.setSpecialistSpecializationSnapshot(asString(specialistData.get("specialization")));
+            assignment.setSpecialistExperienceYearsSnapshot(asInteger(specialistData.get("experienceYears")));
+            assignment.setSpecialistUserIdSnapshot(asString(specialistData.get("userId")));
         }
         if (request.getTaskType() != null) {
             assignment.setTaskType(request.getTaskType());
@@ -1287,38 +1296,31 @@ public class TaskAssignmentService {
         // Gửi notification cho specialist
         try {
             if (assignment.getSpecialistId() != null) {
-                Optional<Map<String, Object>> specialistDataOpt = fetchSpecialistData(assignment.getSpecialistId());
-                if (specialistDataOpt.isPresent()) {
-                    String specialistUserId = asString(specialistDataOpt.get().get("userId"));
-                    
-                    if (specialistUserId != null && !specialistUserId.isEmpty()) {
-                        String issueInfo = "";
-                        if (saved.getIssueReason() != null) {
-                            issueInfo = String.format(" (Bạn đã báo issue: %s)", saved.getIssueReason());
-                        }
-                        
-                        CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
-                                .userId(specialistUserId)
-                                .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
-                                .title("Task đã bị hủy bởi Manager")
-                                .content(String.format("Manager đã hủy task %s cho contract #%s.%s Task sẽ được gán lại cho specialist khác.", 
-                                        assignment.getTaskType(),
-                                        contract.getContractNumber() != null ? contract.getContractNumber() : contractId,
-                                        issueInfo))
-                                .referenceId(assignmentId)
-                                .referenceType("TASK_ASSIGNMENT")
-                                .actionUrl("/transcription/my-tasks")
-                                .build();
-                        
-                        notificationServiceFeignClient.createNotification(specialistNotif);
-                        log.info("Sent task cancellation notification to specialist: userId={}, specialistId={}, assignmentId={}, contractId={}", 
-                            specialistUserId, assignment.getSpecialistId(), assignmentId, contractId);
-                    } else {
-                        log.warn("Specialist userId not found in response: specialistId={}, assignmentId={}", 
-                            assignment.getSpecialistId(), assignmentId);
+                String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+                if (specialistUserId != null && !specialistUserId.isBlank()) {
+                    String issueInfo = "";
+                    if (saved.getIssueReason() != null) {
+                        issueInfo = String.format(" (Bạn đã báo issue: %s)", saved.getIssueReason());
                     }
+                    
+                    CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
+                            .userId(specialistUserId)
+                            .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
+                            .title("Task đã bị hủy bởi Manager")
+                            .content(String.format("Manager đã hủy task %s cho contract #%s.%s Task sẽ được gán lại cho specialist khác.", 
+                                    assignment.getTaskType(),
+                                    contract.getContractNumber() != null ? contract.getContractNumber() : contractId,
+                                    issueInfo))
+                            .referenceId(assignmentId)
+                            .referenceType("TASK_ASSIGNMENT")
+                            .actionUrl("/transcription/my-tasks")
+                            .build();
+                    
+                    notificationServiceFeignClient.createNotification(specialistNotif);
+                    log.info("Sent task cancellation notification to specialist: userId={}, specialistId={}, assignmentId={}, contractId={}", 
+                        specialistUserId, assignment.getSpecialistId(), assignmentId, contractId);
                 } else {
-                    log.warn("Failed to get specialist info: specialistId={}, assignmentId={}", 
+                    log.warn("Specialist userId not available for specialistId={}, assignmentId={}", 
                         assignment.getSpecialistId(), assignmentId);
                 }
             }

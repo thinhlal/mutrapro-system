@@ -12,6 +12,8 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface SpecialistMapper {
     
+    @Mapping(target = "fullName", source = "fullNameSnapshot")
+    @Mapping(target = "email", source = "emailSnapshot")
     SpecialistResponse toSpecialistResponse(Specialist specialist);
     
     List<SpecialistResponse> toSpecialistResponseList(List<Specialist> specialists);
@@ -20,6 +22,8 @@ public interface SpecialistMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "rating", ignore = true)
     @Mapping(target = "totalProjects", ignore = true)
+    @Mapping(target = "fullNameSnapshot", ignore = true)
+    @Mapping(target = "emailSnapshot", ignore = true)
     Specialist toSpecialist(CreateSpecialistRequest request);
     
     @Mapping(target = "specialistId", ignore = true)
@@ -28,6 +32,8 @@ public interface SpecialistMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "rating", ignore = true)
     @Mapping(target = "totalProjects", ignore = true)
+    @Mapping(target = "fullNameSnapshot", ignore = true)
+    @Mapping(target = "emailSnapshot", ignore = true)
     void updateProfileFromRequest(@MappingTarget Specialist specialist, UpdateProfileRequest request);
     
     @Mapping(target = "specialistId", ignore = true)
@@ -39,6 +45,8 @@ public interface SpecialistMapper {
     @Mapping(target = "bio", ignore = true)
     @Mapping(target = "rating", ignore = true)
     @Mapping(target = "totalProjects", ignore = true)
+    @Mapping(target = "fullNameSnapshot", ignore = true)
+    @Mapping(target = "emailSnapshot", ignore = true)
     void updateSettingsFromRequest(@MappingTarget Specialist specialist, UpdateSpecialistSettingsRequest request);
 }
 
