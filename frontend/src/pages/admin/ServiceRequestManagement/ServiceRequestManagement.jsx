@@ -36,14 +36,35 @@ const { TabPane } = Tabs;
 // Màu sắc cho từng trạng thái (lowercase từ API)
 const STATUS_COLORS = {
   pending: 'gold',
+  contract_sent: 'blue',
+  contract_approved: 'cyan',
+  contract_signed: 'geekblue',
+  awaiting_assignment: 'gold',
   in_progress: 'blue',
   completed: 'green',
   cancelled: 'red',
   // Uppercase fallback
   PENDING: 'gold',
+  CONTRACT_SENT: 'blue',
+  CONTRACT_APPROVED: 'cyan',
+  CONTRACT_SIGNED: 'geekblue',
+  AWAITING_ASSIGNMENT: 'gold',
   IN_PROGRESS: 'blue',
   COMPLETED: 'green',
   CANCELLED: 'red',
+};
+
+// Nhãn hiển thị thân thiện cho status
+const STATUS_LABELS = {
+  pending: 'Pending',
+  contract_sent: 'Contract sent',
+  contract_approved: 'Contract approved',
+  contract_signed: 'Contract signed',
+  awaiting_assignment: 'Deposit paid - awaiting assignment',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
 };
 
 // Label cho request type
@@ -303,7 +324,7 @@ export default function ServiceRequestManagement() {
       width: 120,
       render: status => (
         <Tag color={STATUS_COLORS[status] || 'default'}>
-          {status?.toUpperCase() || 'UNKNOWN'}
+          {STATUS_LABELS[status] || status?.toUpperCase() || 'UNKNOWN'}
         </Tag>
       ),
     },
@@ -367,6 +388,16 @@ export default function ServiceRequestManagement() {
         const hasManager = !!record.managerUserId;
         // Sử dụng field hasContract từ response (đã được enrich từ backend)
         const hasContract = record.hasContract === true;
+        const status = (record.status || '').toLowerCase();
+
+        // Các trạng thái mà contract đã đi vào flow thực thi / chờ task,
+        // không cho tạo contract mới từ màn này nữa
+        const isContractFlowLocked =
+          status === 'awaiting_assignment' ||
+          status === 'in_progress' ||
+          status === 'completed' ||
+          status === 'cancelled' ||
+          status === 'rejected';
 
         return (
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -382,7 +413,7 @@ export default function ServiceRequestManagement() {
                 Assign to Me
               </Button>
             )}
-            {isAssignedToMe && !hasContract && (
+            {isAssignedToMe && !hasContract && !isContractFlowLocked && (
               <Button
                 type="default"
                 size="small"
@@ -391,9 +422,6 @@ export default function ServiceRequestManagement() {
               >
                 Create Contract
               </Button>
-            )}
-            {isAssignedToMe && hasContract && (
-              <Tag color="green">Contract Created</Tag>
             )}
             <Button
               type="default"

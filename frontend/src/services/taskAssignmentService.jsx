@@ -218,6 +218,25 @@ export const acceptTaskAssignment = async assignmentId => {
 };
 
 /**
+ * Specialist start task (READY_TO_START → IN_PROGRESS)
+ * POST /specialist/task-assignments/{assignmentId}/start
+ */
+export const startTaskAssignment = async assignmentId => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.START(assignmentId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi bắt đầu task assignment',
+      }
+    );
+  }
+};
+
+/**
  * Specialist cancel task (assigned → cancelled)
  * POST /specialist/task-assignments/{assignmentId}/cancel
  *

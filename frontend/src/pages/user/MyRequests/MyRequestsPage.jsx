@@ -145,44 +145,68 @@ const MyRequestsContent = () => {
           <ExclamationCircleOutlined />
         ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
+        description: hasManager
+          ? 'Manager đang chuẩn bị hợp đồng.'
+          : 'Đang chờ manager nhận request.',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
+        description: 'Hợp đồng đã được gửi cho bạn.',
       },
       contract_approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
         text: 'Đã duyệt hợp đồng - Chờ ký',
+        description: 'Bạn đã duyệt nội dung, vui lòng hoàn tất e-sign.',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
         text: 'Contract signed',
+        description: 'Hợp đồng đã ký, chờ thanh toán deposit.',
+      },
+      awaiting_assignment: {
+        color: 'gold',
+        icon: <ClockCircleOutlined />,
+        text: 'Deposit paid - awaiting assignment',
+        description:
+          'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
         text: 'In progress',
+        description: 'Dịch vụ đang được thực hiện.',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
         text: 'Completed',
+        description: 'Request đã hoàn thành.',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
         text: 'Cancelled',
+        description: 'Request đã bị hủy.',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
         text: 'Rejected',
+        description: 'Request đã bị từ chối.',
       },
     };
-    return configs[status] || { color: 'default', icon: null, text: status };
+    return (
+      configs[status] || {
+        color: 'default',
+        icon: null,
+        text: status,
+        description: 'Trạng thái hiện tại của request.',
+      }
+    );
   };
 
   const formatDate = dateString => {
@@ -221,6 +245,9 @@ const MyRequestsContent = () => {
             Contract approved - awaiting signature
           </Option>
           <Option value="contract_signed">Contract signed</Option>
+          <Option value="awaiting_assignment">
+            Deposit paid - awaiting assignment
+          </Option>
           <Option value="in_progress">In progress</Option>
           <Option value="completed">Completed</Option>
           <Option value="cancelled">Cancelled</Option>
@@ -262,6 +289,12 @@ const MyRequestsContent = () => {
                       color={statusConfig.color}
                       icon={statusConfig.icon}
                       className={styles.statusTag}
+                      style={{
+                        whiteSpace: 'normal',
+                        lineHeight: 1.3,
+                        textAlign: 'center',
+                        minWidth: 0,
+                      }}
                     >
                       {statusConfig.text}
                     </Tag>

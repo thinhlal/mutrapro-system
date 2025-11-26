@@ -109,6 +109,8 @@ export const API_ENDPOINTS = {
     SEND: contractId => `${PROJECT_PATH}/contracts/${contractId}/send`,
     // POST /api/v1/projects/contracts/{contractId}/approve
     APPROVE: contractId => `${PROJECT_PATH}/contracts/${contractId}/approve`,
+    // POST /api/v1/projects/contracts/{contractId}/start-work
+    START_WORK: contractId => `${PROJECT_PATH}/contracts/${contractId}/start-work`,
     // POST /api/v1/projects/contracts/{contractId}/sign
     SIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/sign`,
     // POST /api/v1/projects/contracts/{contractId}/request-change
@@ -150,6 +152,8 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}`,
     ACCEPT: assignmentId =>
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/accept`,
+    START: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/start`,
     CANCEL: assignmentId =>
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
     REPORT_ISSUE: assignmentId =>

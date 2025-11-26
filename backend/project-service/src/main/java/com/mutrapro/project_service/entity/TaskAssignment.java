@@ -57,7 +57,7 @@ public class TaskAssignment extends BaseEntity<String> {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 50)
     AssignmentStatus status = AssignmentStatus.assigned;
 
     @Column(name = "milestone_id", nullable = false)

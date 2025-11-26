@@ -5,13 +5,36 @@ import FileList from '../../common/FileList/FileList';
 
 const STATUS_COLORS = {
   pending: 'gold',
+  contract_sent: 'blue',
+  contract_approved: 'cyan',
+  contract_signed: 'geekblue',
+  awaiting_assignment: 'gold',
   in_progress: 'blue',
   completed: 'green',
   cancelled: 'red',
+  rejected: 'red',
+  // Uppercase fallback
   PENDING: 'gold',
+  CONTRACT_SENT: 'blue',
+  CONTRACT_APPROVED: 'cyan',
+  CONTRACT_SIGNED: 'geekblue',
+  AWAITING_ASSIGNMENT: 'gold',
   IN_PROGRESS: 'blue',
   COMPLETED: 'green',
   CANCELLED: 'red',
+  REJECTED: 'red',
+};
+
+const STATUS_LABELS = {
+  pending: 'Pending',
+  contract_sent: 'Contract sent',
+  contract_approved: 'Contract approved',
+  contract_signed: 'Contract signed',
+  awaiting_assignment: 'Deposit paid - awaiting assignment',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
 };
 
 const REQUEST_TYPE_LABELS = {
@@ -74,7 +97,9 @@ export default function ServiceRequestDetailModal({
         </Descriptions.Item>
         <Descriptions.Item label="Status">
           <Tag color={STATUS_COLORS[request.status] || 'default'}>
-            {request.status?.toUpperCase() || 'UNKNOWN'}
+            {STATUS_LABELS[request.status] ||
+              request.status?.toUpperCase() ||
+              'UNKNOWN'}
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Total Price">

@@ -59,6 +59,8 @@ const TASK_TYPE_LABELS = {
 // Assignment status colors
 const STATUS_COLORS = {
   assigned: 'blue',
+  accepted_waiting: 'gold',
+  ready_to_start: 'purple',
   in_progress: 'processing',
   completed: 'success',
   cancelled: 'error',
@@ -67,6 +69,8 @@ const STATUS_COLORS = {
 // Assignment status labels
 const STATUS_LABELS = {
   assigned: 'Đã gán',
+  accepted_waiting: 'Đã nhận - Chờ',
+  ready_to_start: 'Sẵn sàng làm',
   in_progress: 'Đang thực hiện',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
@@ -336,12 +340,18 @@ export default function TaskProgressManagement() {
   // - completed: 100% (hoàn thành)
   // - cancelled: 0% (đã hủy)
   const calculateProgress = record => {
-    if (record.status === 'assigned') return 0;
-    if (record.status === 'cancelled') return 0;
-    if (record.status === 'completed') return 100;
+    const status = record.status?.toLowerCase();
+    if (
+      status === 'assigned' ||
+      status === 'accepted_waiting' ||
+      status === 'ready_to_start'
+    )
+      return 0;
+    if (status === 'cancelled') return 0;
+    if (status === 'completed') return 100;
 
     // in_progress: tính dựa trên files
-    if (record.status === 'in_progress') {
+    if (status === 'in_progress') {
       const files = taskFilesMap[record.assignmentId] || [];
 
       if (files.length === 0) {

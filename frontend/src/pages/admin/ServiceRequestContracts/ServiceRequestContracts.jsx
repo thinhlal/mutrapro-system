@@ -31,12 +31,13 @@ const { Title, Text, Paragraph } = Typography;
 
 const REQUEST_STATUS_COLORS = {
   pending: 'gold',
-  in_progress: 'blue',
-  completed: 'green',
-  cancelled: 'red',
   contract_sent: 'geekblue',
   contract_approved: 'purple',
   contract_signed: 'green',
+  awaiting_assignment: 'gold',
+  in_progress: 'blue',
+  completed: 'green',
+  cancelled: 'red',
 };
 
 const REQUEST_TYPE_LABELS = {
@@ -52,6 +53,7 @@ const CONTRACT_STATUS_COLORS = {
   sent: 'geekblue',
   approved: 'green',
   signed: 'orange',
+  active_pending_assignment: 'gold',
   active: 'green',
   rejected_by_customer: 'red',
   need_revision: 'orange',
@@ -65,6 +67,7 @@ const CONTRACT_STATUS_TEXT = {
   sent: 'Đã gửi',
   approved: 'Đã duyệt',
   signed: 'Đã ký - Chờ thanh toán deposit',
+  active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
   active: 'Đã ký - Đã thanh toán deposit',
   rejected_by_customer: 'Khách từ chối',
   need_revision: 'Cần chỉnh sửa',
@@ -234,7 +237,7 @@ export default function ServiceRequestContracts() {
             <span className={styles.subText}>Start:</span>{' '}
             {record.expectedStartDate
               ? dayjs(record.expectedStartDate).format('DD/MM/YYYY')
-              : 'Khi ký'}
+              : 'Chưa lên lịch (sau khi Start Work)'}
           </div>
           <div>
             <span className={styles.subText}>Due:</span>{' '}

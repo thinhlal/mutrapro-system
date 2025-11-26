@@ -118,44 +118,68 @@ const RequestDetailPage = () => {
           <ExclamationCircleOutlined />
         ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
+        description: hasManager
+          ? 'Manager đã nhận request và đang chuẩn bị hợp đồng.'
+          : 'Đang chờ manager nhận xử lý request của bạn.',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
+        description: 'Hợp đồng đã được gửi. Vui lòng kiểm tra và phê duyệt.',
       },
       contract_approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
         text: 'Đã duyệt hợp đồng - Chờ ký',
+        description: 'Bạn đã duyệt nội dung. Hoàn tất e-sign để tiếp tục.',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
         text: 'Contract signed',
+        description: 'Hợp đồng đã ký, chờ thanh toán deposit để bắt đầu.',
+      },
+      awaiting_assignment: {
+        color: 'gold',
+        icon: <ClockCircleOutlined />,
+        text: 'Deposit paid - awaiting assignment',
+        description:
+          'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
         text: 'In progress',
+        description: 'Dịch vụ đang được thực hiện.',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
         text: 'Completed',
+        description: 'Request đã hoàn thành.',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
         text: 'Cancelled',
+        description: 'Request đã bị hủy.',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
         text: 'Rejected',
+        description: 'Request đã bị từ chối.',
       },
     };
-    return configs[status] || { color: 'default', icon: null, text: status };
+    return (
+      configs[status] || {
+        color: 'default',
+        icon: null,
+        text: status,
+        description: 'Trạng thái hiện tại của request.',
+      }
+    );
   };
 
   const getRequestTypeText = type => {
@@ -307,6 +331,12 @@ const RequestDetailPage = () => {
                 color={statusConfig.color}
                 icon={statusConfig.icon}
                 className={styles.statusTag}
+                style={{
+                  whiteSpace: 'normal',
+                  lineHeight: 1.3,
+                  textAlign: 'center',
+                  minWidth: 0,
+                }}
               >
                 {statusConfig.text}
               </Tag>

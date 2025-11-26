@@ -190,6 +190,27 @@ export const approveContract = async contractId => {
 };
 
 /**
+ * Manager start contract work (sau khi đã assign xong)
+ * POST /contracts/{contractId}/start-work
+ *
+ * @param {string} contractId
+ * @param {{startAt?: string}} payload - Optional custom start time (ISO string)
+ */
+export const startContractWork = async (contractId, payload) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.START_WORK(contractId),
+      payload || null
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || { message: 'Lỗi khi bắt đầu thực thi contract' }
+    );
+  }
+};
+
+/**
  * Initialize E-signature process - send signature and get OTP
  * POST /contracts/{contractId}/init-esign
  *

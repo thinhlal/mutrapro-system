@@ -10,6 +10,7 @@ import {
   Typography,
   Divider,
   message,
+  Modal,
 } from 'antd';
 import {
   EditOutlined,
@@ -34,7 +35,9 @@ import dayjs from 'dayjs';
 import {
   getContractById,
   getSignatureImage,
+  startContractWork,
 } from '../../../services/contractService';
+import { getTaskAssignmentsByContract } from '../../../services/taskAssignmentService';
 import {
   getServiceRequestById,
   calculatePricing,
@@ -93,6 +96,7 @@ const ManagerContractDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState(null);
   const [error, setError] = useState(null);
+  const [startingWork, setStartingWork] = useState(false);
 
   // Modals
   const [viewReasonModalOpen, setViewReasonModalOpen] = useState(false);
@@ -131,6 +135,141 @@ const ManagerContractDetailPage = () => {
       message.error('Failed to load contract data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStartWork = async () => {
+    try {
+      setStartingWork(true);
+
+      // Lấy danh sách task assignments
+      const resp = await getTaskAssignmentsByContract(contractId);
+      const assignments = Array.isArray(resp?.data)
+        ? resp.data
+        : resp?.data?.content || [];
+
+      const activeStatuses = new Set([
+        'assigned',
+        'accepted_waiting',
+        'ready_to_start',
+        'in_progress',
+      ]);
+
+      const byMilestone = assignments.reduce((acc, a) => {
+        if (!a.milestoneId) return acc;
+        const mId = a.milestoneId;
+        if (!acc[mId]) {
+          acc[mId] = { total: 0, active: 0 };
+        }
+        acc[mId].total += 1;
+        const st = (a.status || '').toLowerCase();
+        if (activeStatuses.has(st)) {
+          acc[mId].active += 1;
+        }
+        return acc;
+      }, {});
+
+      const milestones = Array.isArray(contract?.milestones)
+        ? contract.milestones
+        : [];
+      const milestoneSummaries = milestones.map(m => {
+        const stats = byMilestone[m.milestoneId] || { total: 0, active: 0 };
+        return {
+          id: m.milestoneId,
+          name: m.name || `Milestone ${m.orderIndex || ''}`.trim(),
+          ...stats,
+        };
+      });
+
+      const missingMilestones = milestoneSummaries.filter(
+        m => m.active === 0
+      );
+      const hasBlockingMissing = missingMilestones.length > 0;
+
+      Modal.confirm({
+        title: 'Start Work cho contract này?',
+        content: (
+          <div>
+            {milestoneSummaries.length === 0 ? (
+              <>
+                <p>
+                  Contract này hiện chưa có dữ liệu milestones hoặc task
+                  assignments, vì vậy chưa thể Start Work.
+                </p>
+                <p style={{ marginTop: 8 }}>
+                  Vui lòng kiểm tra lại trong Milestones / Task Progress và đảm
+                  bảo đã khởi tạo milestones và gán task trước khi Start Work.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Tình trạng task theo từng milestone (active = assigned /
+                  accepted_waiting / ready_to_start / in_progress):
+                </p>
+                <ul style={{ paddingLeft: 20 }}>
+                  {milestoneSummaries.map(m => (
+                    <li key={m.id || m.name}>
+                      <strong>{m.name}:</strong>{' '}
+                      {m.total === 0
+                        ? 'Chưa có task'
+                        : m.active > 0
+                          ? `${m.active}/${m.total} task active`
+                          : `${m.total} task (tất cả đã completed/cancelled)`}
+                    </li>
+                  ))}
+                </ul>
+                {hasBlockingMissing ? (
+                  <p style={{ marginTop: 8 }}>
+                    Có milestone chưa có task active, nên chưa thể Start Work.
+                    Vui lòng vào Milestones / Task Progress để gán task trước.
+                  </p>
+                ) : (
+                  <p style={{ marginTop: 8 }}>
+                    Tất cả milestones đã có ít nhất một task active. Bạn có chắc
+                    chắn muốn Start Work cho contract này không?
+                  </p>
+                )}
+                <p style={{ marginTop: 8 }}>
+                  Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
+                  đầu work, không phải ngày ký hợp đồng.
+                </p>
+              </>
+            )}
+          </div>
+        ),
+        okText: hasBlockingMissing ? 'Không thể Start Work' : 'Start Work',
+        okButtonProps: {
+          disabled: hasBlockingMissing,
+        },
+        cancelText: 'Đóng',
+        onOk: async () => {
+          if (hasBlockingMissing) return;
+          try {
+            setStartingWork(true);
+            await startContractWork(contractId);
+            message.success('Đã kích hoạt contract và bắt đầu tính SLA');
+            loadContract();
+          } catch (err) {
+            console.error('Failed to start contract work:', err);
+            message.error(err?.message || 'Không thể bắt đầu contract');
+          } finally {
+            setStartingWork(false);
+          }
+        },
+      });
+    } catch (err) {
+      console.error(
+        'Failed to load task assignments before starting work:',
+        err
+      );
+      Modal.error({
+        title: 'Không thể tải thông tin task',
+        content:
+          err?.message ||
+          'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
+      });
+      setStartingWork(false);
     }
   };
 
@@ -884,7 +1023,7 @@ const ManagerContractDetailPage = () => {
             SLA Days: {contract?.slaDays || 0} days | Expected Start:{' '}
             {contract?.expectedStartDate
               ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
-              : 'Upon signing'}{' '}
+              : 'Not scheduled (will be set when work starts)'}{' '}
             | Due Date:{' '}
             {(() => {
               // Get due date from last milestone's plannedDueDate (calculated by backend)
@@ -1090,7 +1229,11 @@ const ManagerContractDetailPage = () => {
       sent: { color: 'blue', text: 'Sent to Customer' },
       approved: { color: 'cyan', text: 'Approved - Waiting for Signature' },
       signed: { color: 'orange', text: 'Signed - Pending Deposit Payment' },
-      active: { color: 'green', text: 'Active - Deposit Paid' },
+      active_pending_assignment: {
+        color: 'gold',
+        text: 'Deposit Paid - Pending Assignment',
+      },
+      active: { color: 'green', text: 'Active - In Progress' },
       rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
       need_revision: { color: 'orange', text: 'Needs Revision' },
       canceled_by_customer: { color: 'red', text: 'Canceled by Customer' },
@@ -1177,6 +1320,7 @@ const ManagerContractDetailPage = () => {
   // Determine available actions based on status
   const isDraft = currentStatus === 'draft';
   const isSigned = currentStatus === 'signed';
+  const isPendingAssignment = currentStatus === 'active_pending_assignment';
   const isActive = currentStatus === 'active';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
@@ -1185,7 +1329,7 @@ const ManagerContractDetailPage = () => {
   const isExpired = currentStatus === 'expired';
 
   // Contract is signed or active - milestones can be paid (but not if canceled or expired)
-  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
+  const canPayMilestones = isActive && !isCanceled && !isExpired;
 
   const canViewReason = isCanceled || isNeedRevision;
 
@@ -1215,6 +1359,25 @@ const ManagerContractDetailPage = () => {
               type="success"
               showIcon
               style={{ marginBottom: 12 }}
+            />
+          )}
+
+          {isPendingAssignment && (
+            <Alert
+              message="Deposit received - Pending Manager Action"
+              description="Contract đã nhận cọc. Hãy hoàn tất việc giao task và bấm Start Work để bắt đầu tính SLA."
+              type="warning"
+              showIcon
+              style={{ marginBottom: 12 }}
+              action={
+                <Button
+                  type="primary"
+                  loading={startingWork}
+                  onClick={handleStartWork}
+                >
+                  Start Work
+                </Button>
+              }
             />
           )}
 
@@ -1276,7 +1439,18 @@ const ManagerContractDetailPage = () => {
               <Text strong>{contract.contractNumber || 'N/A'}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={statusConfig.color}>{statusConfig.text}</Tag>
+              <Tag
+                color={statusConfig.color}
+                style={{
+                  whiteSpace: 'normal',
+                  lineHeight: 1.3,
+                  textAlign: 'center',
+                  minWidth: 0,
+                  display: 'inline-block',
+                }}
+              >
+                {statusConfig.text}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Contract Type">
               <Tag color="blue">
@@ -1355,7 +1529,7 @@ const ManagerContractDetailPage = () => {
             {!contract.expectedStartDate && (
               <Descriptions.Item label="Expected Start">
                 <Text type="secondary" italic>
-                  Set upon signing
+                  Not scheduled (will be set when Start Work)
                 </Text>
               </Descriptions.Item>
             )}

@@ -5,6 +5,7 @@ import com.mutrapro.project_service.dto.request.UpdateContractRequest;
 import com.mutrapro.project_service.dto.request.CustomerActionRequest;
 import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
+import com.mutrapro.project_service.dto.request.StartContractWorkRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
@@ -19,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -183,6 +185,26 @@ public class ContractController {
         ContractResponse contract = contractService.approveContract(contractId);
         return ApiResponse.<ContractResponse>builder()
                 .message("Contract approved successfully")
+                .data(contract)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{contractId}/start-work")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Manager start contract work sau khi đã assign tasks (status phải là ACTIVE_PENDING_ASSIGNMENT)")
+    public ApiResponse<ContractResponse> startContractWork(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            @RequestBody(required = false) StartContractWorkRequest request) {
+        log.info("Manager starting contract work: contractId={}", contractId);
+        ContractResponse contract = contractService.startContractWork(
+            contractId,
+            request != null ? request.getStartAt() : null
+        );
+        return ApiResponse.<ContractResponse>builder()
+                .message("Contract work started successfully")
                 .data(contract)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

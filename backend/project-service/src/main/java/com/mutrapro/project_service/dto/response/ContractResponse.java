@@ -50,6 +50,10 @@ public class ContractResponse {
     
     Instant signedAt;
     
+    Instant depositPaidAt;
+    
+    Instant workStartAt;
+    
     Instant expiresAt;
     
     String fileId;

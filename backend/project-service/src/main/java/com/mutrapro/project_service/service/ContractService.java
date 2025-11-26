@@ -102,6 +102,7 @@ public class ContractService {
     ContractSignSessionRepository contractSignSessionRepository;
     FileRepository fileRepository;
     MilestoneProgressService milestoneProgressService;
+    TaskAssignmentService taskAssignmentService;
     
     @Autowired(required = false)
     S3Service s3Service;
@@ -1109,44 +1110,87 @@ public class ContractService {
         );
         sendSystemMessageToChat(contract.getRequestId(), systemMessage);
         
-        // Nếu contract status = signed, activate contract
+        contract.setDepositPaidAt(paidAt);
+
+        // Nếu contract status = signed, chuyển sang trạng thái chờ assign/start
         if (contract.getStatus() == ContractStatus.signed) {
-            // Set expectedStartDate = ngày thanh toán DEPOSIT
-            contract.setExpectedStartDate(paidAt);
-            
-            // Khi DEPOSIT paid, tính planned dates cho toàn bộ milestones để giữ baseline cố định
-            calculatePlannedDatesForAllMilestones(contractId, paidAt);
-            
-            // Milestone đầu tiên: unlocked → READY_TO_START (chưa thực sự làm việc)
-            Optional<ContractMilestone> firstMilestoneOpt = contractMilestoneRepository
-                .findByContractIdAndOrderIndex(contractId, 1);
-            
-            if (firstMilestoneOpt.isPresent()) {
-                ContractMilestone firstMilestone = firstMilestoneOpt.get();
-                if (firstMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-                    firstMilestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
-                    contractMilestoneRepository.save(firstMilestone);
-                    log.info("Milestone 1 is READY_TO_START after DEPOSIT paid: contractId={}, milestoneId={}", 
-                        contractId, firstMilestone.getMilestoneId());
-                }
-            }
-            
-            // Update status từ "signed" → "active" (đã thanh toán DEPOSIT, có thể bắt đầu công việc)
-            contract.setStatus(ContractStatus.active);
+            contract.setStatus(ContractStatus.active_pending_assignment);
             contractRepository.save(contract);
-            log.info("Updated contract to active after DEPOSIT paid: contractId={}, expectedStartDate={}, status=active", 
+            log.info("Contract moved to ACTIVE_PENDING_ASSIGNMENT after deposit: contractId={}, depositPaidAt={}",
                 contractId, paidAt);
-            
-            // Update request status từ "contract_signed" → "in_progress" (đã thanh toán, bắt đầu làm việc)
+
+            // Đồng bộ trạng thái request: đã đặt cọc, chờ manager gán task/bắt đầu công việc
             try {
-                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "in_progress");
-                log.info("Updated request status to in_progress: requestId={}, contractId={}", 
+                requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "awaiting_assignment");
+                log.info("Updated request status to awaiting_assignment after deposit paid: requestId={}, contractId={}",
                     contract.getRequestId(), contractId);
             } catch (Exception e) {
-                log.error("Failed to update request status to in_progress: requestId={}, contractId={}, error={}", 
+                log.error("Failed to update request status to awaiting_assignment after deposit paid: requestId={}, contractId={}, error={}",
                     contract.getRequestId(), contractId, e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * Manager xác nhận đã assign xong và bắt đầu thực thi contract.
+     */
+    @Transactional
+    public ContractResponse startContractWork(String contractId, Instant requestedStartAt) {
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+
+        if (contract.getStatus() != ContractStatus.active_pending_assignment) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                "Contract is not in ACTIVE_PENDING_ASSIGNMENT state. Current status: " + contract.getStatus()
+            );
+        }
+
+        if (contract.getDepositPaidAt() == null) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                "Cannot start work before deposit is paid."
+            );
+        }
+
+        Instant startAt = requestedStartAt != null ? requestedStartAt : Instant.now();
+        if (startAt.isBefore(contract.getDepositPaidAt())) {
+            startAt = contract.getDepositPaidAt();
+        }
+
+        contract.setWorkStartAt(startAt);
+        contract.setExpectedStartDate(startAt);
+
+        // Lấy milestone 1 trước để activate task assignments sau
+        String firstMilestoneId = contractMilestoneRepository
+            .findByContractIdAndOrderIndex(contractId, 1)
+            .map(ContractMilestone::getMilestoneId)
+            .orElse(null);
+
+        calculatePlannedDatesForAllMilestones(contractId, startAt, true); // true = unlock milestone 1
+        
+        // Activate task assignments cho milestone 1 sau khi đã unlock
+        if (firstMilestoneId != null) {
+            taskAssignmentService.activateAssignmentsForMilestone(contractId, firstMilestoneId);
+        }
+
+        contract.setStatus(ContractStatus.active);
+        Contract saved = contractRepository.save(contract);
+
+        try {
+            requestServiceFeignClient.updateRequestStatus(contract.getRequestId(), "in_progress");
+            log.info("Updated request status to in_progress after work start: requestId={}, contractId={}",
+                contract.getRequestId(), contractId);
+        } catch (Exception e) {
+            log.error("Failed to update request status to in_progress after work start: requestId={}, contractId={}, error={}",
+                contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+
+        log.info("Contract work started: contractId={}, workStartAt={}", contractId, startAt);
+        ContractResponse response = contractMapper.toResponse(saved);
+        return enrichWithMilestonesAndInstallments(response);
     }
     
     /**
@@ -1247,6 +1291,8 @@ public class ContractService {
                     log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}", 
                         contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
                 }
+
+                taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
             }
         }
         
@@ -1493,8 +1539,9 @@ public class ContractService {
     
     /**
      * Tính plannedStartAt/plannedDueDate cho toàn bộ milestones dựa trên expectedStartDate (baseline cố định).
+     * @param unlockFirstMilestone nếu true, set milestone đầu tiên thành READY_TO_START
      */
-    private void calculatePlannedDatesForAllMilestones(String contractId, Instant contractStartAt) {
+    private void calculatePlannedDatesForAllMilestones(String contractId, Instant contractStartAt, boolean unlockFirstMilestone) {
         List<ContractMilestone> milestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(contractId);
         if (milestones.isEmpty()) {
@@ -1516,12 +1563,42 @@ public class ContractService {
                 plannedDue = cursor.plusDays(slaDays);
             }
             milestone.setPlannedDueDate(plannedDue);
+            
+            // Unlock milestone đầu tiên nếu được yêu cầu
+            if (unlockFirstMilestone && milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+                if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+                    milestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
+                    log.info("Milestone 1 unlocked and READY_TO_START: contractId={}, milestoneId={}",
+                        contractId, milestone.getMilestoneId());
+                }
+            }
+            
             cursor = plannedDue;
         }
 
         contractMilestoneRepository.saveAll(milestones);
-        log.info("Calculated planned baseline dates for all milestones: contractId={}, milestoneCount={}",
-            contractId, milestones.size());
+        log.info("Calculated planned baseline dates for all milestones: contractId={}, milestoneCount={}, unlockFirst={}",
+            contractId, milestones.size(), unlockFirstMilestone);
+    }
+
+    private void unlockMilestoneForStart(String contractId, int orderIndex) {
+        Optional<ContractMilestone> milestoneOpt = contractMilestoneRepository
+            .findByContractIdAndOrderIndex(contractId, orderIndex);
+
+        if (milestoneOpt.isEmpty()) {
+            log.warn("Cannot unlock milestone: contractId={}, orderIndex={}", contractId, orderIndex);
+            return;
+        }
+
+        ContractMilestone milestone = milestoneOpt.get();
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+            milestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
+            contractMilestoneRepository.save(milestone);
+            log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}",
+                contractId, milestone.getMilestoneId(), orderIndex);
+        }
+
+        taskAssignmentService.activateAssignmentsForMilestone(contractId, milestone.getMilestoneId());
     }
     
     /**

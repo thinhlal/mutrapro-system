@@ -30,7 +30,10 @@ import {
   getAllContracts,
   cancelContract,
   sendContractToCustomer,
+  startContractWork,
+  getContractById,
 } from '../../../services/contractService';
+import { getTaskAssignmentsByContract } from '../../../services/taskAssignmentService';
 import { useNavigate } from 'react-router-dom';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 
@@ -84,6 +87,7 @@ const statusColor = {
   sent: 'geekblue',
   approved: 'green',
   signed: 'orange',
+  active_pending_assignment: 'gold',
   active: 'green',
   rejected_by_customer: 'red',
   need_revision: 'orange',
@@ -97,6 +101,7 @@ const statusText = {
   sent: 'Sent',
   approved: 'Approved',
   signed: 'Signed - Pending Deposit',
+  active_pending_assignment: 'Deposit Paid - Pending Assignment',
   active: 'Active - Deposit Paid',
   rejected_by_customer: 'Rejected by Customer',
   need_revision: 'Need Revision',
@@ -125,6 +130,12 @@ export default function ContractsManagement() {
   const [cancelReasonModalVisible, setCancelReasonModalVisible] =
     useState(false);
   const [canceledContract, setCanceledContract] = useState(null);
+  const [startWorkModalVisible, setStartWorkModalVisible] = useState(false);
+  const [startWorkContext, setStartWorkContext] = useState({
+    contract: null,
+    milestoneSummaries: [],
+    hasBlockingMissing: false,
+  });
   const navigate = useNavigate();
 
   // Fetch contracts từ API
@@ -316,7 +327,9 @@ export default function ContractsManagement() {
             {r.expectedStartDate ? (
               dayjs(r.expectedStartDate).format('YYYY-MM-DD')
             ) : (
-              <span style={{ fontStyle: 'italic', color: '#999' }}>Khi ký</span>
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                Chưa lên lịch (sau khi Start Work)
+              </span>
             )}
           </div>
           <div>
@@ -345,7 +358,7 @@ export default function ContractsManagement() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 160,
+      width: 200,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
@@ -354,11 +367,91 @@ export default function ContractsManagement() {
         const isCanceledByCustomer = statusLower === 'canceled_by_customer';
         const isCanceledByManager = statusLower === 'canceled_by_manager';
         const isCanceled = isCanceledByCustomer || isCanceledByManager;
+        const isPendingAssignment =
+          statusLower === 'active_pending_assignment';
         const canManagerCancel = isDraft || isSent; // Manager can cancel DRAFT or recall SENT
         const canSend = isDraft; // Manager can send DRAFT contract
         const canRevise = isNeedRevision; // Manager can view reason and create new contract
         const canViewCancelReason = isCanceled && r.cancellationReason; // Manager can view cancellation reason
         const canEdit = isDraft; // Only editable when DRAFT
+
+        const handleStartWorkFromList = async () => {
+          try {
+            setActionLoading(true);
+
+            // Lấy danh sách task assignments để kiểm tra milestone nào chưa có task
+            const resp = await getTaskAssignmentsByContract(r.contractId);
+            const assignments = Array.isArray(resp?.data)
+              ? resp.data
+              : resp?.data?.content || [];
+
+            const activeStatuses = new Set([
+              'assigned',
+              'accepted_waiting',
+              'ready_to_start',
+              'in_progress',
+            ]);
+
+            const byMilestone = assignments.reduce((acc, a) => {
+              if (!a.milestoneId) return acc;
+              const mId = a.milestoneId;
+              if (!acc[mId]) {
+                acc[mId] = { total: 0, active: 0 };
+              }
+              acc[mId].total += 1;
+              const st = (a.status || '').toLowerCase();
+              if (activeStatuses.has(st)) {
+                acc[mId].active += 1;
+              }
+              return acc;
+            }, {});
+
+            // Lấy danh sách milestones đầy đủ từ contract detail (vì list không có milestones)
+            const contractDetail = await getContractById(r.contractId);
+            const fullContract = contractDetail?.data || contractDetail;
+
+            const milestones = Array.isArray(fullContract?.milestones)
+              ? fullContract.milestones
+              : [];
+            const milestoneSummaries = milestones.map(m => {
+              const stats = byMilestone[m.milestoneId] || {
+                total: 0,
+                active: 0,
+              };
+              return {
+                id: m.milestoneId,
+                name: m.name || `Milestone ${m.orderIndex || ''}`.trim(),
+                ...stats,
+              };
+            });
+
+            // Milestone nào chưa có task active
+            const missingMilestones = milestoneSummaries.filter(
+              m => m.active === 0
+            );
+            // Nếu KHÔNG có milestone nào (chưa sync milestones) HOẶC còn milestone chưa có task active
+            const hasBlockingMissing =
+              milestoneSummaries.length === 0 || missingMilestones.length > 0;
+
+            // Lưu context và mở modal riêng thay vì dùng Modal.confirm
+            setStartWorkContext({
+              contract: r,
+              milestoneSummaries,
+              hasBlockingMissing,
+            });
+            setStartWorkModalVisible(true);
+          } catch (err) {
+            console.error('Failed to load task assignments for modal:', err);
+            Modal.error({
+              title: 'Không thể tải thông tin task',
+              content:
+                err?.message ||
+                'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
+            });
+          } finally {
+            setActionLoading(false);
+          }
+        };
 
         return (
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -456,6 +549,19 @@ export default function ContractsManagement() {
                   block
                 >
                   {isDraft ? 'Cancel' : 'Recall'}
+                </Button>
+              </Tooltip>
+            )}
+            {isPendingAssignment && (
+              <Tooltip title="Start Work">
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={actionLoading}
+                  style={{ width: '100%' }}
+                  onClick={handleStartWorkFromList}
+                >
+                  Start Work
                 </Button>
               </Tooltip>
             )}
@@ -845,6 +951,114 @@ export default function ContractsManagement() {
               showIcon
             />
           </Space>
+        )}
+      </Modal>
+
+      {/* Start Work Modal (từ Contracts Management list) */}
+      <Modal
+        title={
+          <Space>
+            <InfoCircleOutlined style={{ color: '#1890ff' }} />
+            <span>Start Work cho contract này?</span>
+          </Space>
+        }
+        open={startWorkModalVisible}
+        onCancel={() => {
+          setStartWorkModalVisible(false);
+          setStartWorkContext({
+            contract: null,
+            milestoneSummaries: [],
+            hasBlockingMissing: false,
+          });
+        }}
+        okText={
+          startWorkContext.hasBlockingMissing ? 'Không thể Start Work' : 'Start Work'
+        }
+        okButtonProps={{
+          disabled: startWorkContext.hasBlockingMissing,
+          loading: actionLoading,
+        }}
+        cancelText="Đóng"
+        onOk={async () => {
+          if (
+            !startWorkContext.contract ||
+            startWorkContext.hasBlockingMissing
+          ) {
+            return;
+          }
+          try {
+            setActionLoading(true);
+            await startContractWork(startWorkContext.contract.contractId);
+            message.success('Đã bắt đầu work cho contract');
+            const response = await getAllContracts();
+            setContracts(response.data || []);
+            setStartWorkModalVisible(false);
+            setStartWorkContext({
+              contract: null,
+              milestoneSummaries: [],
+              hasBlockingMissing: false,
+            });
+          } catch (err) {
+            console.error('Failed to start contract work from list:', err);
+            message.error(
+              err?.message || 'Không thể Start Work từ danh sách contracts'
+            );
+          } finally {
+            setActionLoading(false);
+          }
+        }}
+        width={700}
+      >
+        {startWorkContext.contract && (
+          <div>
+            {startWorkContext.milestoneSummaries.length === 0 ? (
+              <>
+                <p>
+                  Contract này hiện chưa có dữ liệu milestones hoặc task
+                  assignments, vì vậy chưa thể Start Work.
+                </p>
+                <p style={{ marginTop: 8 }}>
+                  Vui lòng kiểm tra lại trong Contract Detail / Milestones và
+                  đảm bảo đã khởi tạo milestones và gán task trước khi Start
+                  Work.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  Tình trạng task theo từng milestone (active = assigned /
+                  accepted_waiting / ready_to_start / in_progress):
+                </p>
+                <ul style={{ paddingLeft: 20 }}>
+                  {startWorkContext.milestoneSummaries.map(m => (
+                    <li key={m.id || m.name}>
+                      <strong>{m.name}:</strong>{' '}
+                      {m.total === 0
+                        ? 'Chưa có task'
+                        : m.active > 0
+                          ? `${m.active}/${m.total} task active`
+                          : `${m.total} task (tấtả đã completed/cancelled)`}
+                    </li>
+                  ))}
+                </ul>
+                {startWorkContext.hasBlockingMissing ? (
+                  <p style={{ marginTop: 8 }}>
+                    Có milestone chưa có task active, nên chưa thể Start Work.
+                    Vui lòng vào Milestones / Task Progress để gán task trước.
+                  </p>
+                ) : (
+                  <p style={{ marginTop: 8 }}>
+                    Tất cả milestones đã có ít nhất một task active. Bạn có chắc
+                    chắn muốn Start Work cho contract này không?
+                  </p>
+                )}
+                <p style={{ marginTop: 8 }}>
+                  Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
+                  đầu work, không phải ngày ký hợp đồng.
+                </p>
+              </>
+            )}
+          </div>
         )}
       </Modal>
     </div>

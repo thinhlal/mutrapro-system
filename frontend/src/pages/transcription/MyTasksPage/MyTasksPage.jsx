@@ -30,6 +30,7 @@ import {
   getMyTaskAssignments,
   acceptTaskAssignment,
   cancelTaskAssignment,
+  startTaskAssignment,
 } from '../../../services/taskAssignmentService';
 import styles from './MyTasksPage.module.css';
 
@@ -42,13 +43,16 @@ const { Search } = Input;
  */
 function getStatusDisplay(status) {
   if (!status) return { text: 'Assigned', color: 'blue' };
+  const lower = status.toLowerCase();
   const statusMap = {
     assigned: { text: 'Assigned', color: 'blue' },
+    accepted_waiting: { text: 'Đã nhận - Chờ tới lượt', color: 'gold' },
+    ready_to_start: { text: 'Ready to Start', color: 'purple' },
     in_progress: { text: 'In Progress', color: 'geekblue' },
     completed: { text: 'Completed', color: 'green' },
     cancelled: { text: 'Cancelled', color: 'default' },
   };
-  return statusMap[status.toLowerCase()] || { text: status, color: 'default' };
+  return statusMap[lower] || { text: status, color: 'default' };
 }
 
 /**
@@ -136,6 +140,7 @@ const MyTasksPage = ({ onOpenTask }) => {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelTask, setCancelTask] = useState(null);
   const [cancelForm] = Form.useForm();
+  const [startingAssignmentId, setStartingAssignmentId] = useState(null);
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -193,6 +198,8 @@ const MyTasksPage = ({ onOpenTask }) => {
       // Map statusFilter từ frontend format sang backend format
       const statusMap = {
         ASSIGNED: 'assigned',
+        ACCEPTED_WAITING: 'accepted_waiting',
+        READY_TO_START: 'ready_to_start',
         IN_PROGRESS: 'in_progress',
         COMPLETED: 'completed',
         CANCELLED: 'cancelled',
@@ -260,6 +267,25 @@ const MyTasksPage = ({ onOpenTask }) => {
       message.error(error?.message || 'Lỗi khi cancel task');
     }
   }, [cancelTask, cancelForm, loadTasks]);
+
+  const handleStartTask = useCallback(
+    async task => {
+      try {
+        setStartingAssignmentId(task.assignmentId);
+        const response = await startTaskAssignment(task.assignmentId);
+        if (response?.status === 'success') {
+          message.success('Đã bắt đầu task');
+          await loadTasks();
+        }
+      } catch (error) {
+        console.error('Error starting task:', error);
+        message.error(error?.message || 'Lỗi khi bắt đầu task');
+      } finally {
+        setStartingAssignmentId(null);
+      }
+    },
+    [loadTasks]
+  );
 
   const handleCancelModalCancel = useCallback(() => {
     setCancelModalVisible(false);
@@ -393,6 +419,8 @@ const MyTasksPage = ({ onOpenTask }) => {
         width: 200,
         render: (_, record) => {
           const status = record.status?.toLowerCase();
+          const isTakingAction = startingAssignmentId === record.assignmentId;
+
           return (
             <Space size="small">
               {status === 'assigned' && (
@@ -421,6 +449,31 @@ const MyTasksPage = ({ onOpenTask }) => {
                   </Button>
                 </>
               )}
+              {status === 'accepted_waiting' && (
+                <Tag color="gold" style={{ marginRight: 0 }}>
+                  Đã nhận – Chờ tới lượt
+                </Tag>
+              )}
+              {status === 'ready_to_start' && (
+                <>
+                  <Button
+                    type="primary"
+                    size="small"
+                    loading={isTakingAction}
+                    onClick={() => handleStartTask(record)}
+                  >
+                    Start Work
+                  </Button>
+                  <Button
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={() => handleCancel(record)}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
               <Button
                 type="link"
                 size="small"
@@ -433,7 +486,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         },
       },
     ],
-    [handleOpenTask, handleAccept, handleCancel]
+    [handleOpenTask, handleAccept, handleCancel, handleStartTask, startingAssignmentId]
   );
 
   const tableLocale = useMemo(
@@ -486,6 +539,11 @@ const MyTasksPage = ({ onOpenTask }) => {
               options={[
                 { label: 'All statuses', value: 'ALL' },
                 { label: 'Assigned', value: 'ASSIGNED' },
+                { label: 'Accepted - Waiting', value: 'ACCEPTED_WAITING' },
+                {
+                  label: 'Ready to Start',
+                  value: 'READY_TO_START',
+                },
                 { label: 'In Progress', value: 'IN_PROGRESS' },
                 { label: 'Completed', value: 'COMPLETED' },
                 { label: 'Cancelled', value: 'CANCELLED' },

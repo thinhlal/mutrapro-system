@@ -57,6 +57,21 @@ public class SpecialistTaskAssignmentController {
                 .build();
     }
 
+    @PostMapping("/{assignmentId}/start")
+    @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
+    @Operation(summary = "Specialist start task (READY_TO_START → IN_PROGRESS)")
+    public ApiResponse<TaskAssignmentResponse> startTaskAssignment(
+            @PathVariable String assignmentId) {
+        log.info("POST /specialist/task-assignments/{}/start - Starting task", assignmentId);
+        TaskAssignmentResponse assignment = taskAssignmentService.startTaskAssignment(assignmentId);
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Task assignment started successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
     @PostMapping("/{assignmentId}/cancel")
     @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
     @Operation(summary = "Specialist cancel task (assigned → cancelled)")

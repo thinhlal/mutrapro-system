@@ -1261,7 +1261,7 @@ const ContractDetailPage = () => {
             SLA Days: {contract?.slaDays || 0} days | Expected Start:{' '}
             {contract?.expectedStartDate
               ? dayjs(contract.expectedStartDate).format('YYYY-MM-DD')
-              : 'After deposit payment'}{' '}
+              : 'Not scheduled (will be set when work starts)'}{' '}
             | Due Date:{' '}
             {(() => {
               // Get due date from last milestone's plannedDueDate (calculated by backend)
@@ -1467,6 +1467,10 @@ const ContractDetailPage = () => {
       sent: { color: 'blue', text: 'Sent to Customer' },
       approved: { color: 'cyan', text: 'Approved - Waiting for Signature' },
       signed: { color: 'orange', text: 'Signed - Pending Deposit Payment' },
+      active_pending_assignment: {
+        color: 'gold',
+        text: 'Deposit Paid - Pending Assignment',
+      },
       active: { color: 'green', text: 'Active - Deposit Paid' },
       rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
       need_revision: { color: 'orange', text: 'Needs Revision' },
@@ -1674,7 +1678,18 @@ const ContractDetailPage = () => {
               <Text strong>{contract.contractNumber || 'N/A'}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={statusConfig.color}>{statusConfig.text}</Tag>
+              <Tag
+                color={statusConfig.color}
+                style={{
+                  whiteSpace: 'normal',
+                  lineHeight: 1.3,
+                  textAlign: 'center',
+                  minWidth: 0,
+                  display: 'inline-block',
+                }}
+              >
+                {statusConfig.text}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Contract Type">
               <Tag color="blue">
@@ -1720,7 +1735,7 @@ const ContractDetailPage = () => {
             {!contract.expectedStartDate && (
               <Descriptions.Item label="Expected Start">
                 <Text type="secondary" italic>
-                  Will be set after deposit payment
+                  Not scheduled (will be set when work starts)
                 </Text>
               </Descriptions.Item>
             )}

@@ -59,7 +59,7 @@ public class Contract extends BaseEntity<String> {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 50)
     ContractStatus status = ContractStatus.draft;
 
     @Column(name = "sent_to_customer_at")
@@ -70,6 +70,12 @@ public class Contract extends BaseEntity<String> {
 
     @Column(name = "signed_at")
     Instant signedAt;
+
+    @Column(name = "deposit_paid_at")
+    Instant depositPaidAt;
+
+    @Column(name = "work_start_at")
+    Instant workStartAt;
 
     @Column(name = "expires_at")
     Instant expiresAt;

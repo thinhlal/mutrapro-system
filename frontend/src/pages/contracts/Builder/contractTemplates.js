@@ -25,7 +25,7 @@ export const getDefaultTermsAndConditions = (
 Party A agrees to provide professional music transcription services, converting audio recordings into musical notation (sheet music) in the format specified by Party B.
 
 2. DELIVERY AND FORMAT
-- Party A will deliver the transcription in the agreed format (e.g., PDF, MusicXML, Sibelius, Finale).
+- Party A will deliver the transcription in the agreed format (e.g., PDF, MusicXML).
 - Delivery will be made electronically via the MuTraPro system.
 - Party A will ensure the transcription accurately represents the audio recording provided.
 
@@ -35,8 +35,10 @@ Party A agrees to provide professional music transcription services, converting 
 - Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and related to transcription accuracy.
 
-4. PAYMENT TERMS
+4. PAYMENT TERMS & WORK START
 - Deposit: ${depositPercent}% of total price due upon contract signing.
+- Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
+- SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
@@ -61,7 +63,7 @@ Party A agrees to provide professional music transcription services, converting 
 Party A agrees to provide professional music arrangement services, creating musical arrangements based on the materials provided by Party B.
 
 2. DELIVERY AND FORMAT
-- Party A will deliver the arrangement in the agreed format (e.g., PDF, MusicXML, Sibelius, Finale).
+- Party A will deliver the arrangement in the agreed format (e.g., PDF, MusicXML).
 - Delivery will be made electronically via the MuTraPro system.
 - Party A will ensure the arrangement meets the specifications provided by Party B.
 
@@ -71,8 +73,10 @@ Party A agrees to provide professional music arrangement services, creating musi
 - Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
-4. PAYMENT TERMS
+4. PAYMENT TERMS & WORK START
 - Deposit: ${depositPercent}% of total price due upon contract signing.
+- Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
+- SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
@@ -112,8 +116,10 @@ Party A agrees to provide professional music arrangement and recording services,
 - Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
-4. PAYMENT TERMS
+4. PAYMENT TERMS & WORK START
 - Deposit: ${depositPercent}% of total price due upon contract signing.
+- Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
+- SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
@@ -148,8 +154,10 @@ Party A agrees to provide professional music recording services in a studio sett
 - Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and related to recording quality.
 
-4. PAYMENT TERMS
+4. PAYMENT TERMS & WORK START
 - Deposit: ${depositPercent}% of total price due upon contract signing.
+- Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
+- SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
@@ -190,8 +198,10 @@ Party A agrees to provide comprehensive music services including:
 - Additional revisions beyond the free allowance will be charged at ${revisionFeeFormatted} VND per revision.
 - Revision requests must be specific and within the original scope of work.
 
-4. PAYMENT TERMS
+4. PAYMENT TERMS & WORK START
 - Deposit: ${depositPercent}% of total price due upon contract signing.
+- Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
+- SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 

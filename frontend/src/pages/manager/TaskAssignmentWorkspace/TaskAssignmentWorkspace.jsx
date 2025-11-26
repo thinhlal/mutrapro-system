@@ -98,6 +98,34 @@ const INSTRUMENT_USAGE_LABELS = {
   both: 'Both',
 };
 
+const CONTRACT_STATUS_COLORS = {
+  draft: 'default',
+  sent: 'geekblue',
+  approved: 'green',
+  signed: 'orange',
+  active_pending_assignment: 'gold',
+  active: 'green',
+  rejected_by_customer: 'red',
+  need_revision: 'orange',
+  canceled_by_customer: 'default',
+  canceled_by_manager: 'volcano',
+  expired: 'volcano',
+};
+
+const CONTRACT_STATUS_TEXT = {
+  draft: 'Draft',
+  sent: 'Đã gửi',
+  approved: 'Đã duyệt',
+  signed: 'Đã ký - Chờ thanh toán deposit',
+  active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
+  active: 'Đang thực thi',
+  rejected_by_customer: 'Khách từ chối',
+  need_revision: 'Cần chỉnh sửa',
+  canceled_by_customer: 'Khách hủy',
+  canceled_by_manager: 'Manager thu hồi',
+  expired: 'Hết hạn',
+};
+
 const getInstrumentUsageLabel = usage => {
   if (!usage) return '';
   const key = typeof usage === 'string' ? usage.toLowerCase() : usage;
@@ -116,7 +144,6 @@ export default function TaskAssignmentWorkspace() {
   const [requestData, setRequestData] = useState(null);
   const [specialists, setSpecialists] = useState([]);
   const [specialistSearch, setSpecialistSearch] = useState('');
-  const [specialistsLoading, setSpecialistsLoading] = useState(false);
   const [selectedSpecialist, setSelectedSpecialist] = useState(null);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState(null);
   const [taskType, setTaskType] = useState(null);
@@ -136,9 +163,9 @@ export default function TaskAssignmentWorkspace() {
         setContract(response.data);
         const requestId = response.data.requestId;
         if (requestId) {
-          fetchRequestDetail(requestId);
+          await fetchRequestDetail(requestId);
         }
-        fetchTaskStats(contractId);
+        await fetchTaskStats(contractId);
       }
     } catch (error) {
       console.error('Error fetching contract detail:', error);
@@ -208,7 +235,6 @@ export default function TaskAssignmentWorkspace() {
   const fetchSpecialists = useCallback(
     async (specializationFilter, requiredInstrumentNames = []) => {
       try {
-        setSpecialistsLoading(true);
         const response = await getAllSpecialists({
           specialization: specializationFilter,
           skillNames: requiredInstrumentNames,
@@ -225,8 +251,6 @@ export default function TaskAssignmentWorkspace() {
       } catch (error) {
         console.error('Error fetching specialists:', error);
         message.error('Không thể tải danh sách specialists');
-      } finally {
-        setSpecialistsLoading(false);
       }
     },
     [selectedMilestoneId, contractId] // Thêm dependencies để fetch lại khi milestone thay đổi
@@ -583,7 +607,14 @@ export default function TaskAssignmentWorkspace() {
               </div>
               <div>
                 <Text strong>Status: </Text>
-                <Tag color="green">{contract.status}</Tag>
+                {(() => {
+                  const statusLower = contract.status?.toLowerCase() || 'draft';
+                  const color =
+                    CONTRACT_STATUS_COLORS[statusLower] || 'default';
+                  const label =
+                    CONTRACT_STATUS_TEXT[statusLower] || contract.status;
+                  return <Tag color={color}>{label}</Tag>;
+                })()}
               </div>
               <div>
                 <Text strong>Total Price: </Text>
@@ -788,26 +819,6 @@ export default function TaskAssignmentWorkspace() {
                           )}
                         </div>
                       </div>
-                      {stats.total > 0 && (
-                        <div className={styles.milestoneStats}>
-                          <div>
-                            <Text strong>{stats.total}</Text>
-                            <Text type="secondary">Total</Text>
-                          </div>
-                          <div>
-                            <Text strong>{stats.inProgress}</Text>
-                            <Text type="secondary">In Progress</Text>
-                          </div>
-                          <div>
-                            <Text strong>{stats.completed}</Text>
-                            <Text type="secondary">Done</Text>
-                          </div>
-                          <div>
-                            <Text strong>{stats.assigned}</Text>
-                            <Text type="secondary">Assigned</Text>
-                          </div>
-                        </div>
-                      )}
                     </List.Item>
                   );
                 }}
@@ -836,11 +847,7 @@ export default function TaskAssignmentWorkspace() {
             }
           >
             <div className={styles.specialistList}>
-              {specialistsLoading ? (
-                <div className={styles.specialistLoading}>
-                  <Spin />
-                </div>
-              ) : filteredSpecialists.length > 0 ? (
+              {filteredSpecialists.length > 0 ? (
                 <List
                   dataSource={filteredSpecialists}
                   rowKey="specialistId"

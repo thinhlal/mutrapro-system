@@ -32,6 +32,7 @@ import {
   getMyTaskAssignmentById,
   acceptTaskAssignment,
   reportIssue,
+  startTaskAssignment,
 } from '../../../services/taskAssignmentService';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
@@ -171,6 +172,8 @@ function getStatusTag(status) {
   if (!status) return <Tag color="default">Unknown</Tag>;
   const map = {
     assigned: { color: 'blue', text: 'Assigned' },
+    accepted_waiting: { color: 'gold', text: 'Accepted - Waiting' },
+    ready_to_start: { color: 'purple', text: 'Ready to Start' },
     in_progress: { color: 'geekblue', text: 'In Progress' },
     completed: { color: 'green', text: 'Completed' },
     cancelled: { color: 'default', text: 'Cancelled' },
@@ -234,6 +237,7 @@ const TranscriptionTaskDetailPage = () => {
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [uploadForm] = Form.useForm();
   const [acceptingTask, setAcceptingTask] = useState(false);
+  const [startingTask, setStartingTask] = useState(false);
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
@@ -299,6 +303,23 @@ const TranscriptionTaskDetailPage = () => {
       message.error(error?.message || 'Lỗi khi accept task');
     } finally {
       setAcceptingTask(false);
+    }
+  }, [task, loadData]);
+
+  const handleStartTask = useCallback(async () => {
+    if (!task || task.status?.toLowerCase() !== 'ready_to_start') return;
+    try {
+      setStartingTask(true);
+      const response = await startTaskAssignment(task.assignmentId);
+      if (response?.status === 'success') {
+        message.success('Bạn đã bắt đầu task');
+        await loadData();
+      }
+    } catch (error) {
+      console.error('Error starting task:', error);
+      message.error(error?.message || 'Lỗi khi bắt đầu task');
+    } finally {
+      setStartingTask(false);
     }
   }, [task, loadData]);
 
@@ -748,17 +769,18 @@ const TranscriptionTaskDetailPage = () => {
                 // Kiểm tra issue report: có thể có issueReason ngay cả khi hasIssue = false (nếu task đã cancelled)
                 const hasIssueAlert =
                   task.issueReason && task.issueReason.trim().length > 0;
-                const hasAcceptButton =
-                  task.status?.toLowerCase() === 'assigned';
-                const hasSubmitButton =
-                  task.status?.toLowerCase() !== 'cancelled';
-                const hasIssueButton =
-                  task.status?.toLowerCase() === 'in_progress' &&
-                  !task.hasIssue;
+                const status = task.status?.toLowerCase();
+                const hasAcceptButton = status === 'assigned';
+                const hasStartButton = status === 'ready_to_start';
+                const awaitingAlert = status === 'accepted_waiting';
+                const hasSubmitButton = status !== 'cancelled';
+                const hasIssueButton = status === 'in_progress' && !task.hasIssue;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
                 const hasAnyAction =
                   hasIssueAlert ||
                   hasAcceptButton ||
+                  hasStartButton ||
+                  awaitingAlert ||
                   hasSubmitButton ||
                   hasIssueButton;
 
@@ -825,7 +847,17 @@ const TranscriptionTaskDetailPage = () => {
                         />
                       )}
 
+                      {awaitingAlert && (
+                        <Alert
+                          message="Đã nhận task - chờ tới lượt"
+                          description="Milestone này đang chờ hoàn tất các bước trước đó. Bạn sẽ được thông báo khi có thể bắt đầu."
+                          type="info"
+                          showIcon
+                        />
+                      )}
+
                       {(hasAcceptButton ||
+                        hasStartButton ||
                         hasSubmitButton ||
                         hasIssueButton) && (
                         <Space wrap>
@@ -847,6 +879,15 @@ const TranscriptionTaskDetailPage = () => {
                               }
                             >
                               Submit for Review
+                            </Button>
+                          )}
+                          {hasStartButton && (
+                            <Button
+                              type="primary"
+                              onClick={handleStartTask}
+                              loading={startingTask}
+                            >
+                              Start Task
                             </Button>
                           )}
                           {hasIssueButton && (

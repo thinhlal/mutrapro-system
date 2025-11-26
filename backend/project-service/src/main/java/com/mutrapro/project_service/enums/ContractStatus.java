@@ -9,7 +9,8 @@ public enum ContractStatus {
     canceled_by_customer,  // Khách hủy contract
     canceled_by_manager,   // Manager hủy contract
     signed,                // Đã ký nhưng chưa thanh toán deposit
-    active,                // Đã ký và đã thanh toán deposit - có thể bắt đầu công việc
+    active_pending_assignment, // Đã thanh toán deposit, chờ manager assign/start
+    active,                // Đang thực thi (đã start work)
     expired
 }
 

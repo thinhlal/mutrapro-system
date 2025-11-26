@@ -212,13 +212,13 @@ public class TaskAssignmentService {
         }
 
         LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(request.getContractId(), request.getMilestoneId());
+        LocalDateTime slaWindowStart = calculateSlaWindowStartInternal(request.getContractId(), request.getMilestoneId());
         List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistIdIn(specialistIds);
 
         Map<String, List<TaskAssignment>> assignmentsBySpecialist = assignments.stream()
             .collect(Collectors.groupingBy(TaskAssignment::getSpecialistId));
 
         Map<String, SpecialistTaskStats> result = new HashMap<>();
-        LocalDateTime now = LocalDateTime.now();
 
         assignmentsBySpecialist.forEach((specialistId, tasks) -> {
             int totalOpenTasks = (int) tasks.stream()
@@ -226,14 +226,32 @@ public class TaskAssignmentService {
                 .count();
 
             int tasksInSlaWindow = 0;
-            if (slaWindowEnd != null) {
+            if (slaWindowStart != null && slaWindowEnd != null) {
                 tasksInSlaWindow = (int) tasks.stream()
                     .filter(task -> isOpenStatus(task.getStatus()))
-                    .map(this::resolveTaskDeadline)
+                    .map(task -> {
+                        LocalDateTime deadline = resolveTaskDeadline(task);
+                        // Debug log
+                        if (deadline == null) {
+                            log.debug("Task {} has null deadline. MilestoneId={}, ContractId={}, Status={}",
+                                task.getAssignmentId(), task.getMilestoneId(), task.getContractId(), task.getStatus());
+                        } else {
+                            boolean inWindow = !deadline.isBefore(slaWindowStart) && !deadline.isAfter(slaWindowEnd);
+                            log.debug("Task {} deadline={}, window=[{}, {}], inWindow={}",
+                                task.getAssignmentId(), deadline, slaWindowStart, slaWindowEnd, inWindow);
+                        }
+                        return deadline;
+                    })
                     .filter(deadline -> deadline != null
-                        && !deadline.isBefore(now)
-                        && !deadline.isAfter(slaWindowEnd))
+                        && !deadline.isBefore(slaWindowStart)  // >= milestone start
+                        && !deadline.isAfter(slaWindowEnd))     // <= milestone deadline
                     .count();
+                
+                log.debug("Specialist {}: totalOpenTasks={}, tasksInSlaWindow={}, window=[{}, {}]",
+                    specialistId, totalOpenTasks, tasksInSlaWindow, slaWindowStart, slaWindowEnd);
+            } else {
+                log.debug("Specialist {}: slaWindowStart={}, slaWindowEnd={} (null, cannot calculate tasksInSlaWindow)",
+                    specialistId, slaWindowStart, slaWindowEnd);
             }
 
             result.put(specialistId, SpecialistTaskStats.builder()
@@ -253,7 +271,10 @@ public class TaskAssignmentService {
     }
 
     private boolean isOpenStatus(AssignmentStatus status) {
-        return status == AssignmentStatus.assigned || status == AssignmentStatus.in_progress;
+        return status == AssignmentStatus.assigned
+            || status == AssignmentStatus.accepted_waiting
+            || status == AssignmentStatus.ready_to_start
+            || status == AssignmentStatus.in_progress;
     }
 
     private LocalDateTime resolveTaskDeadline(TaskAssignment assignment) {
@@ -265,29 +286,262 @@ public class TaskAssignmentService {
             .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
             .orElse(null);
 
-        return resolveMilestoneDeadline(milestone);
+        if (milestone == null) {
+            return null;
+        }
+
+        // Fetch contract để lấy workStartAt nếu milestone chưa Start Work
+        Contract contract = contractRepository.findById(assignment.getContractId()).orElse(null);
+
+        // Dùng resolveMilestoneDeadlineWithFallback để có logic fallback (ước tính deadline)
+        return resolveMilestoneDeadlineWithFallback(milestone, contract, assignment.getContractId());
     }
 
-    private LocalDateTime calculateSlaWindowEndInternal(String contractId, String milestoneId) {
+    /**
+     * Helper: Fetch milestone và contract từ DB
+     */
+    private ContractMilestoneAndContract fetchMilestoneAndContract(String contractId, String milestoneId) {
         if (contractId == null || contractId.isBlank() || milestoneId == null || milestoneId.isBlank()) {
             return null;
         }
 
-        return contractMilestoneRepository
+        ContractMilestone milestone = contractMilestoneRepository
             .findByMilestoneIdAndContractId(milestoneId, contractId)
-            .map(this::resolveMilestoneDeadlineWithFallback)
             .orElse(null);
+        
+        if (milestone == null) {
+            return null;
+        }
+
+        Contract contract = contractRepository.findById(contractId).orElse(null);
+        return new ContractMilestoneAndContract(milestone, contract, contractId);
     }
 
-    private LocalDateTime resolveMilestoneDeadlineWithFallback(ContractMilestone milestone) {
+    private LocalDateTime calculateSlaWindowStartInternal(String contractId, String milestoneId) {
+        ContractMilestoneAndContract data = fetchMilestoneAndContract(contractId, milestoneId);
+        return data != null ? resolveMilestoneStartWithFallback(data.milestone, data.contract, data.contractId) : null;
+    }
+
+    private LocalDateTime calculateSlaWindowEndInternal(String contractId, String milestoneId) {
+        ContractMilestoneAndContract data = fetchMilestoneAndContract(contractId, milestoneId);
+        return data != null ? resolveMilestoneDeadlineWithFallback(data.milestone, data.contract, data.contractId) : null;
+    }
+
+    /**
+     * Helper class để trả về milestone và contract cùng lúc
+     */
+    private static class ContractMilestoneAndContract {
+        final ContractMilestone milestone;
+        final Contract contract;
+        final String contractId;
+
+        ContractMilestoneAndContract(ContractMilestone milestone, Contract contract, String contractId) {
+            this.milestone = milestone;
+            this.contract = contract;
+            this.contractId = contractId;
+        }
+    }
+
+    private LocalDateTime resolveMilestoneStartWithFallback(
+            ContractMilestone milestone, Contract contract, String contractId) {
+        // Ưu tiên dùng actualStartAt nếu có
+        if (milestone != null && milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt();
+        }
+        
+        // Tính plannedStartAt (có fallback ước tính nếu contract chưa Start Work)
+        LocalDateTime plannedStartAt = calculatePlannedStartAtWithFallback(milestone, contract, contractId);
+        return plannedStartAt;
+    }
+
+    private LocalDateTime resolveMilestoneDeadlineWithFallback(
+            ContractMilestone milestone, Contract contract, String contractId) {
         LocalDateTime deadline = resolveMilestoneDeadline(milestone);
         if (deadline != null) {
             return deadline;
         }
+        
+        // Fallback: Tính deadline dựa trên plannedStartAt của milestone
         Integer slaDays = milestone != null ? milestone.getMilestoneSlaDays() : null;
-        if (slaDays != null && slaDays > 0) {
-            return LocalDateTime.now().plusDays(slaDays);
+        if (slaDays == null || slaDays <= 0) {
+            return null;
         }
+        
+        LocalDateTime plannedStartAt = calculatePlannedStartAtWithFallback(milestone, contract, contractId);
+        return plannedStartAt != null ? plannedStartAt.plusDays(slaDays) : null;
+    }
+
+    /**
+     * Tính plannedStartAt với fallback: nếu contract đã Start Work thì dùng planned, nếu chưa thì ước tính
+     */
+    private LocalDateTime calculatePlannedStartAtWithFallback(
+            ContractMilestone milestone, Contract contract, String contractId) {
+        // Nếu contract đã Start Work, tính plannedStartAt của milestone này
+        if (contract != null && contract.getWorkStartAt() != null) {
+            LocalDateTime plannedStartAt = calculatePlannedStartAtForMilestone(milestone, contract, contractId);
+            if (plannedStartAt != null) {
+                return plannedStartAt;
+            }
+        }
+        
+        // Nếu contract chưa Start Work, ước tính start dựa trên giả định "nếu Start Work hôm nay"
+        return calculateEstimatedPlannedStartAtForMilestone(milestone, contractId);
+    }
+
+    /**
+     * Tính plannedStartAt của milestone dựa trên milestone trước đó (giống logic trong calculatePlannedDatesForAllMilestones)
+     */
+    private LocalDateTime calculatePlannedStartAtForMilestone(
+            ContractMilestone milestone, Contract contract, String contractId) {
+        if (milestone == null || contract == null || contractId == null) {
+            return null;
+        }
+        
+        // Nếu milestone đã có plannedStartAt, dùng luôn
+        if (milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt();
+        }
+        
+        // Nếu milestone là milestone đầu tiên (orderIndex = 1), dùng workStartAt
+        if (milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+            return contract.getWorkStartAt()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
+        }
+        
+        // Nếu không phải milestone đầu tiên, tìm milestone trước đó
+        List<ContractMilestone> allMilestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(contractId);
+        
+        if (allMilestones.isEmpty()) {
+            return null;
+        }
+        
+        // Tìm milestone trước đó (orderIndex - 1)
+        Integer currentOrderIndex = milestone.getOrderIndex();
+        if (currentOrderIndex == null || currentOrderIndex <= 1) {
+            // Nếu không có orderIndex hoặc là milestone đầu tiên, dùng workStartAt
+            return contract.getWorkStartAt()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
+        }
+        
+        ContractMilestone previousMilestone = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == currentOrderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        
+        if (previousMilestone == null) {
+            // Không tìm thấy milestone trước đó, dùng workStartAt
+            return contract.getWorkStartAt()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
+        }
+        
+        // Tính plannedStartAt của milestone hiện tại = plannedDueDate của milestone trước đó
+        LocalDateTime previousPlannedDueDate = resolveMilestoneDeadline(previousMilestone);
+        if (previousPlannedDueDate != null) {
+            return previousPlannedDueDate;
+        }
+        
+        // Nếu milestone trước đó cũng chưa có deadline, tính lại từ đầu
+        // Tính plannedStartAt của milestone trước đó trước
+        LocalDateTime previousPlannedStartAt = calculatePlannedStartAtForMilestone(
+            previousMilestone, contract, contractId);
+        if (previousPlannedStartAt != null && previousMilestone.getMilestoneSlaDays() != null) {
+            return previousPlannedStartAt.plusDays(previousMilestone.getMilestoneSlaDays());
+        }
+        
+        // Fallback: dùng workStartAt
+        return contract.getWorkStartAt()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDateTime();
+    }
+
+    /**
+     * Tính plannedStartAt ước tính của milestone khi contract chưa Start Work
+     * (dựa trên giả định "nếu Start Work hôm nay")
+     * Điều này giúp manager đánh giá workload khi đang assign task (trước khi Start Work)
+     */
+    private LocalDateTime calculateEstimatedPlannedStartAtForMilestone(
+            ContractMilestone milestone, String contractId) {
+        if (milestone == null || contractId == null) {
+            return null;
+        }
+        
+        // Nếu milestone là milestone đầu tiên (orderIndex = 1), dùng now
+        if (milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+            return LocalDateTime.now();
+        }
+        
+        // Nếu không phải milestone đầu tiên, tính dựa trên milestone trước đó
+        List<ContractMilestone> allMilestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(contractId);
+        
+        if (allMilestones.isEmpty()) {
+            return null;
+        }
+        
+        // Tìm milestone trước đó (orderIndex - 1)
+        Integer currentOrderIndex = milestone.getOrderIndex();
+        if (currentOrderIndex == null || currentOrderIndex <= 1) {
+            // Nếu không có orderIndex hoặc là milestone đầu tiên, dùng now
+            return LocalDateTime.now();
+        }
+        
+        ContractMilestone previousMilestone = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == currentOrderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        
+        if (previousMilestone == null) {
+            // Không tìm thấy milestone trước đó, dùng now
+            return LocalDateTime.now();
+        }
+        
+        // Tính plannedStartAt ước tính của milestone hiện tại = deadline ước tính của milestone trước đó
+        LocalDateTime previousEstimatedDeadline = calculateEstimatedDeadlineForMilestone(previousMilestone, contractId);
+        if (previousEstimatedDeadline != null) {
+            return previousEstimatedDeadline;
+        }
+        
+        // Nếu milestone trước đó cũng chưa có deadline, tính lại từ đầu
+        LocalDateTime previousEstimatedStartAt = calculateEstimatedPlannedStartAtForMilestone(
+            previousMilestone, contractId);
+        if (previousEstimatedStartAt != null && previousMilestone.getMilestoneSlaDays() != null) {
+            return previousEstimatedStartAt.plusDays(previousMilestone.getMilestoneSlaDays());
+        }
+        
+        // Fallback: dùng now
+        return LocalDateTime.now();
+    }
+
+    /**
+     * Tính deadline ước tính của milestone khi contract chưa Start Work
+     */
+    private LocalDateTime calculateEstimatedDeadlineForMilestone(
+            ContractMilestone milestone, String contractId) {
+        if (milestone == null) {
+            return null;
+        }
+        
+        // Thử dùng resolveMilestoneDeadline trước (nếu có actual/planned dates)
+        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        if (deadline != null) {
+            return deadline;
+        }
+        
+        // Nếu chưa có, tính ước tính
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+        
+        LocalDateTime estimatedStartAt = calculateEstimatedPlannedStartAtForMilestone(milestone, contractId);
+        if (estimatedStartAt != null) {
+            return estimatedStartAt.plusDays(slaDays);
+        }
+        
         return null;
     }
 
@@ -728,7 +982,9 @@ public class TaskAssignmentService {
         verifyManagerPermission(contract);
         
         // Verify contract is active (only active contracts can have task assignments)
-        if (contract.getStatus() != ContractStatus.active) {
+        // Cho phép tạo task khi contract đang active hoặc active_pending_assignment
+        if (contract.getStatus() != ContractStatus.active
+            && contract.getStatus() != ContractStatus.active_pending_assignment) {
             throw InvalidContractStatusException.cannotUpdate(
                 contractId, 
                 contract.getStatus(),
@@ -763,8 +1019,8 @@ public class TaskAssignmentService {
         boolean hasActiveTask = taskAssignmentRepository
             .findByContractIdAndMilestoneId(contractId, request.getMilestoneId())
             .stream()
-            .anyMatch(task -> task.getStatus() == AssignmentStatus.assigned
-                || task.getStatus() == AssignmentStatus.in_progress);
+            .anyMatch(task -> task.getStatus() != AssignmentStatus.cancelled
+                && isOpenStatus(task.getStatus()));
         if (hasActiveTask) {
             throw TaskAssignmentAlreadyActiveException.forMilestone(request.getMilestoneId());
         }
@@ -1073,15 +1329,72 @@ public class TaskAssignmentService {
                 "Task assignment cannot be accepted. Current status: " + assignment.getStatus());
         }
         
-        assignment.setStatus(AssignmentStatus.in_progress);
+        assignment.setSpecialistRespondedAt(Instant.now());
+        assignment.setSpecialistResponseReason(null);
+
+        ContractMilestone milestone = contractMilestoneRepository.findByMilestoneIdAndContractId(
+            assignment.getMilestoneId(), assignment.getContractId()
+        ).orElseThrow(() -> ContractMilestoneNotFoundException.byId(
+            assignment.getMilestoneId(), assignment.getContractId()));
+
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+            assignment.setStatus(AssignmentStatus.accepted_waiting);
+            log.info("Task assignment accepted (waiting for milestone): assignmentId={}", assignmentId);
+        } else if (milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
+            assignment.setStatus(AssignmentStatus.ready_to_start);
+            log.info("Task assignment accepted and READY_TO_START: assignmentId={}", assignmentId);
+        } else if (milestone.getWorkStatus() == MilestoneWorkStatus.IN_PROGRESS) {
+            assignment.setStatus(AssignmentStatus.in_progress);
+            log.info("Task assignment accepted and immediately IN_PROGRESS: assignmentId={}", assignmentId);
+        } else {
+            throw InvalidMilestoneWorkStatusException.cannotCreateTask(
+                milestone.getMilestoneId(), milestone.getWorkStatus());
+        }
+        
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
-        log.info("Task assignment accepted successfully: assignmentId={}", assignmentId);
+
+        if (saved.getStatus() == AssignmentStatus.in_progress) {
+            milestoneProgressService.evaluateActualStart(
+                assignment.getContractId(),
+                assignment.getMilestoneId()
+            );
+        }
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Specialist chính thức bắt đầu làm việc (READY_TO_START → IN_PROGRESS)
+     */
+    @Transactional
+    public TaskAssignmentResponse startTaskAssignment(String assignmentId) {
+        log.info("Specialist starting task assignment: assignmentId={}", assignmentId);
+
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only start tasks assigned to you");
+        }
+
+        if (assignment.getStatus() != AssignmentStatus.ready_to_start) {
+            throw new RuntimeException(
+                "Task assignment cannot be started. Current status: " + assignment.getStatus());
+        }
+
+        assignment.setStatus(AssignmentStatus.in_progress);
+        assignment.setSpecialistRespondedAt(Instant.now());
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Task assignment moved to IN_PROGRESS: assignmentId={}", assignmentId);
 
         milestoneProgressService.evaluateActualStart(
             assignment.getContractId(),
             assignment.getMilestoneId()
         );
-        
+
         return taskAssignmentMapper.toResponse(saved);
     }
 
@@ -1102,8 +1415,10 @@ public class TaskAssignmentService {
                 "You can only cancel tasks assigned to you");
         }
         
-        // Only allow cancel if status is 'assigned'
-        if (assignment.getStatus() != AssignmentStatus.assigned) {
+        // Only allow cancel if task chưa bắt đầu thực tế
+        if (assignment.getStatus() != AssignmentStatus.assigned
+            && assignment.getStatus() != AssignmentStatus.accepted_waiting
+            && assignment.getStatus() != AssignmentStatus.ready_to_start) {
             throw new RuntimeException(
                 "Task assignment cannot be cancelled. Current status: " + assignment.getStatus());
         }
@@ -1333,6 +1648,23 @@ public class TaskAssignmentService {
         return taskAssignmentMapper.toResponse(saved);
     }
 
+    @Transactional
+    public void activateAssignmentsForMilestone(String contractId, String milestoneId) {
+        List<TaskAssignment> assignments = taskAssignmentRepository
+            .findByContractIdAndMilestoneId(contractId, milestoneId);
+
+        List<TaskAssignment> toUpdate = assignments.stream()
+            .filter(task -> task.getStatus() == AssignmentStatus.accepted_waiting)
+            .peek(task -> task.setStatus(AssignmentStatus.ready_to_start))
+            .toList();
+
+        if (!toUpdate.isEmpty()) {
+            taskAssignmentRepository.saveAll(toUpdate);
+            log.info("Activated {} assignments for milestone ready_to_start: contractId={}, milestoneId={}",
+                toUpdate.size(), contractId, milestoneId);
+        }
+    }
+
     /**
      * Lấy specialistId của user hiện tại từ specialist-service
      */
@@ -1371,4 +1703,5 @@ public class TaskAssignmentService {
         throw UserNotAuthenticatedException.create();
     }
 }
+
 

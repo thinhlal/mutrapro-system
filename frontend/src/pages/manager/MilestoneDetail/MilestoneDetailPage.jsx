@@ -297,7 +297,12 @@ const MilestoneDetailPage = () => {
   const hasActiveTask = useMemo(() => {
     return milestoneTasks.some(task => {
       const status = task.status?.toLowerCase();
-      return status === 'assigned' || status === 'in_progress';
+      return (
+        status === 'assigned' ||
+        status === 'accepted_waiting' ||
+        status === 'ready_to_start' ||
+        status === 'in_progress'
+      );
     });
   }, [milestoneTasks]);
 

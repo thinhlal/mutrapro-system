@@ -85,6 +85,7 @@ const statusColor = {
   sent: 'geekblue',
   approved: 'green',
   signed: 'orange',
+  active_pending_assignment: 'gold',
   active: 'green',
   rejected_by_customer: 'red',
   need_revision: 'orange',
@@ -98,6 +99,7 @@ const statusText = {
   sent: 'Đã gửi',
   approved: 'Đã duyệt',
   signed: 'Đã ký - Chờ thanh toán deposit',
+  active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
   active: 'Đã ký - Đã thanh toán deposit',
   rejected_by_customer: 'Bị từ chối',
   need_revision: 'Cần chỉnh sửa',
@@ -330,7 +332,9 @@ export default function ContractsList() {
             {r.expectedStartDate ? (
               dayjs(r.expectedStartDate).format('YYYY-MM-DD')
             ) : (
-              <span style={{ fontStyle: 'italic', color: '#999' }}>Khi ký</span>
+              <span style={{ fontStyle: 'italic', color: '#999' }}>
+                Chưa lên lịch (sau khi Start Work)
+              </span>
             )}
           </div>
           <div>

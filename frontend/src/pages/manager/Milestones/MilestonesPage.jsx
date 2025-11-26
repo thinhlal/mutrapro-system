@@ -30,6 +30,8 @@ const STATUS_OPTIONS = [
   { label: 'Tất cả', value: 'all' },
   { label: 'Chưa gán', value: 'unassigned' },
   { label: 'Đã gán', value: 'assigned' },
+  { label: 'Đã nhận - Chờ', value: 'accepted_waiting' },
+  { label: 'Ready to Start', value: 'ready_to_start' },
   { label: 'Đang làm', value: 'in_progress' },
   { label: 'Hoàn thành', value: 'completed' },
 ];
@@ -44,6 +46,8 @@ const TASK_TYPE_OPTIONS = [
 const STATUS_COLORS = {
   unassigned: 'orange',
   assigned: 'blue',
+  accepted_waiting: 'gold',
+  ready_to_start: 'purple',
   in_progress: 'processing',
   completed: 'green',
   cancelled: 'default',
@@ -258,8 +262,27 @@ const MilestonesPage = () => {
       dataIndex: 'taskType',
       key: 'taskType',
       width: 140,
-      render: type =>
-        type ? <Tag color="cyan">{type}</Tag> : <Tag color="default">N/A</Tag>,
+      render: (type, record) => {
+        // Ưu tiên taskType từ assignment; nếu chưa có task thì fallback contractType
+        const rawType = type || record.contractType;
+        if (!rawType) {
+          return <Tag color="default">N/A</Tag>;
+        }
+        const lower = String(rawType).toLowerCase();
+        const label =
+          lower === 'transcription'
+            ? 'Transcription'
+            : lower === 'arrangement'
+              ? 'Arrangement'
+              : lower === 'arrangement_with_recording'
+                ? 'Arrangement + Recording'
+                : lower === 'recording'
+                  ? 'Recording'
+                  : lower === 'bundle'
+                    ? 'Bundle (T+A+R)'
+                    : rawType;
+        return <Tag color="cyan">{label}</Tag>;
+      },
     },
     {
       title: 'Task Status',
@@ -273,13 +296,17 @@ const MilestonesPage = () => {
             ? 'Chưa gán'
             : normalized === 'assigned'
               ? 'Đã gán'
-              : normalized === 'in_progress'
-                ? 'Đang làm'
-                : normalized === 'completed'
-                  ? 'Hoàn thành'
-                  : normalized === 'cancelled'
-                    ? 'Đã hủy'
-                    : normalized;
+              : normalized === 'accepted_waiting'
+                ? 'Đã nhận - Chờ'
+                : normalized === 'ready_to_start'
+                  ? 'Ready to Start'
+                  : normalized === 'in_progress'
+                    ? 'Đang làm'
+                    : normalized === 'completed'
+                      ? 'Hoàn thành'
+                      : normalized === 'cancelled'
+                        ? 'Đã hủy'
+                        : normalized;
         return (
           <Space direction="vertical" size={2}>
             <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>
@@ -316,7 +343,11 @@ const MilestonesPage = () => {
       width: 200,
       render: (_, record) => {
         const status = record.assignmentStatus?.toLowerCase();
-        const hasActiveTask = status === 'assigned' || status === 'in_progress';
+        const hasActiveTask =
+          status === 'assigned' ||
+          status === 'accepted_waiting' ||
+          status === 'ready_to_start' ||
+          status === 'in_progress';
 
         return (
           <Space size="small">
