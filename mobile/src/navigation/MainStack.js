@@ -8,6 +8,8 @@ import MyRequestsScreen from '../screens/Requests/MyRequestsScreen';
 import RequestDetailScreen from '../screens/Requests/RequestDetailScreen';
 import ContractDetailScreen from '../screens/Contracts/ContractDetailScreen';
 import WalletScreen from '../screens/Wallet/WalletScreen';
+import PaymentDepositScreen from '../screens/Payments/PaymentDepositScreen';
+import PaymentMilestoneScreen from '../screens/Payments/PaymentMilestoneScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -74,6 +76,24 @@ const MainStack = () => {
         component={ContractDetailScreen}
         options={{
           title: 'Contract Detail',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="PaymentDeposit"
+        component={PaymentDepositScreen}
+        options={{
+          title: 'Pay Deposit',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="PaymentMilestone"
+        component={PaymentMilestoneScreen}
+        options={{
+          title: 'Pay Milestone',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
           headerShown: false,
         }}

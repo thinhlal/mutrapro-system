@@ -549,6 +549,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    marginTop: SPACING.lg,
   },
   headerTitle: {
     fontSize: FONT_SIZES.xxl,
@@ -581,7 +582,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   balanceHeader: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     marginBottom: SPACING.sm,
   },
@@ -593,6 +594,7 @@ const styles = StyleSheet.create({
   },
   balanceAmount: {
     fontSize: FONT_SIZES.xxxl + 4,
+    textAlign: "center",
     fontWeight: "700",
     color: COLORS.white,
     marginVertical: SPACING.md,

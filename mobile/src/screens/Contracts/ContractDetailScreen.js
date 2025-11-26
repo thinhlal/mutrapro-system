@@ -1009,6 +1009,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    marginTop: SPACING.lg,
   },
   headerBackButton: {
     padding: SPACING.xs,
@@ -1117,16 +1118,15 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "flex-start",
     marginBottom: SPACING.md,
   },
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   statusBadge: {
     paddingHorizontal: SPACING.sm,

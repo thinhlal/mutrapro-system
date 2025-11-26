@@ -51,6 +51,70 @@ export const topupWallet = async (walletId, data) => {
 };
 
 /**
+ * Pay deposit installment
+ * POST /wallets/{walletId}/debit/deposit
+ * 
+ * @param {string} walletId - ID của wallet
+ * @param {Object} depositData - Thông tin thanh toán DEPOSIT
+ * @param {number} depositData.amount - Số tiền thanh toán
+ * @param {string} depositData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} depositData.contractId - ID hợp đồng (bắt buộc)
+ * @param {string} depositData.installmentId - ID installment DEPOSIT (bắt buộc)
+ * @returns {Promise} ApiResponse with transaction data
+ */
+export const payDeposit = async (walletId, depositData) => {
+  try {
+    console.log('💳 [Pay Deposit] Calling API:', API_ENDPOINTS.WALLET.PAY_DEPOSIT(walletId));
+    console.log('💳 [Pay Deposit] Data:', depositData);
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.PAY_DEPOSIT(walletId),
+      depositData
+    );
+    console.log('✅ [Pay Deposit] Success:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Pay Deposit Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi thanh toán DEPOSIT',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+
+/**
+ * Pay milestone installment
+ * POST /wallets/{walletId}/debit/milestone
+ * 
+ * @param {string} walletId - ID của wallet
+ * @param {Object} milestoneData - Thông tin thanh toán Milestone
+ * @param {number} milestoneData.amount - Số tiền thanh toán
+ * @param {string} milestoneData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} milestoneData.contractId - ID hợp đồng (bắt buộc)
+ * @param {string} milestoneData.milestoneId - ID milestone (bắt buộc)
+ * @param {string} milestoneData.installmentId - ID installment (bắt buộc)
+ * @param {number} milestoneData.orderIndex - Thứ tự milestone (1, 2, 3...) (optional)
+ * @returns {Promise} ApiResponse with transaction data
+ */
+export const payMilestone = async (walletId, milestoneData) => {
+  try {
+    console.log('💳 [Pay Milestone] Calling API:', API_ENDPOINTS.WALLET.PAY_MILESTONE(walletId));
+    console.log('💳 [Pay Milestone] Data:', milestoneData);
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.PAY_MILESTONE(walletId),
+      milestoneData
+    );
+    console.log('✅ [Pay Milestone] Success:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Pay Milestone Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi thanh toán Milestone',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+
+/**
  * Get wallet transactions with filters
  * GET /wallets/me/transactions?txType=&fromDate=&toDate=&page=&size=&sort=
  * 
