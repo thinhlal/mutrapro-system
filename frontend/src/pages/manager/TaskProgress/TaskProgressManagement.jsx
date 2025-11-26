@@ -464,11 +464,15 @@ export default function TaskProgressManagement() {
     );
   };
 
-  // Handle view task details - navigate to detail page
+  // Handle view task details - navigate to milestone detail page
   const handleViewTaskDetails = record => {
-    navigate(
-      `/manager/milestone-assignments/${record.contractId}/detail/${record.assignmentId}`
-    );
+    if (record.milestoneId) {
+      navigate(
+        `/manager/milestone-assignments/${record.contractId}/milestone/${record.milestoneId}`
+      );
+    } else {
+      message.warning('Không tìm thấy milestone ID');
+    }
   };
 
   // Handle view issue details

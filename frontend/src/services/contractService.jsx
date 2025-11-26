@@ -316,3 +316,22 @@ export const uploadContractPdf = async (contractId, pdfBlob, fileName) => {
     throw error.response?.data || { message: 'Lỗi khi upload PDF contract' };
   }
 };
+
+/**
+ * Lấy chi tiết milestone theo contractId và milestoneId
+ * GET /contracts/{contractId}/milestones/{milestoneId}
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} milestoneId - ID của milestone
+ * @returns {Promise} ApiResponse với chi tiết milestone
+ */
+export const getMilestoneById = async (contractId, milestoneId) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.GET_MILESTONE_BY_ID(contractId, milestoneId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy chi tiết milestone' };
+  }
+};

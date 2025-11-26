@@ -131,6 +131,9 @@ export const API_ENDPOINTS = {
     // POST /api/v1/projects/contracts/{contractId}/upload-pdf
     UPLOAD_PDF: contractId =>
       `${PROJECT_PATH}/contracts/${contractId}/upload-pdf`,
+    // GET /api/v1/projects/contracts/{contractId}/milestones/{milestoneId}
+    GET_MILESTONE_BY_ID: (contractId, milestoneId) =>
+      `${PROJECT_PATH}/contracts/${contractId}/milestones/${milestoneId}`,
   },
 
   // === Task Assignment Management ===

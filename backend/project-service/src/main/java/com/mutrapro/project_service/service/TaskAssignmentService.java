@@ -490,6 +490,7 @@ public class TaskAssignmentService {
                     : (isUnassigned ? "unassigned" : null))
                 .specialistId(assignment != null ? assignment.getSpecialistId() : null)
                 .assignedDate(assignment != null ? assignment.getAssignedDate() : null)
+                .hasIssue(assignment != null ? assignment.getHasIssue() : null)
                 .canAssign(isUnassigned)
                 .build();
 

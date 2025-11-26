@@ -17,11 +17,12 @@ import {
   ReloadOutlined,
   UserAddOutlined,
   EyeOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getMilestoneAssignmentSlots } from '../../../services/taskAssignmentService';
-import styles from './MilestoneAssignmentsPage.module.css';
+import styles from './MilestonesPage.module.css';
 
 const { Title, Text } = Typography;
 
@@ -48,14 +49,14 @@ const STATUS_COLORS = {
   cancelled: 'default',
 };
 
-const MilestoneAssignmentsPage = () => {
+const MilestonesPage = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
     taskType: 'all',
-    onlyUnassigned: true,
+    onlyUnassigned: false,
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -93,7 +94,21 @@ const MilestoneAssignmentsPage = () => {
         const response = await getMilestoneAssignmentSlots(params);
         if (response?.status === 'success' && response.data) {
           const pageData = response.data;
-          setSlots(pageData.content || []);
+          // Sort: milestone chưa có task (unassigned) lên trên
+          const sortedSlots = (pageData.content || []).sort((a, b) => {
+            const aStatus = a.assignmentStatus?.toLowerCase() || 'unassigned';
+            const bStatus = b.assignmentStatus?.toLowerCase() || 'unassigned';
+            
+            // Ưu tiên unassigned lên đầu
+            if (aStatus === 'unassigned' && bStatus !== 'unassigned') return -1;
+            if (aStatus !== 'unassigned' && bStatus === 'unassigned') return 1;
+            
+            // Nếu cùng trạng thái, sort theo milestone order index
+            const aOrder = a.milestoneOrderIndex ?? 999;
+            const bOrder = b.milestoneOrderIndex ?? 999;
+            return aOrder - bOrder;
+          });
+          setSlots(sortedSlots);
           const metadata = response.metadata || {};
           setSummary({
             total: pageData.totalElements ?? 0,
@@ -163,19 +178,9 @@ const MilestoneAssignmentsPage = () => {
     );
   };
 
-const handleChangeAssignee = slot => {
-  if (!slot.assignmentId) {
-    handleAssign(slot);
-    return;
-  }
-  navigate(
-    `/manager/milestone-assignments/${slot.contractId}/edit/${slot.assignmentId}`
-  );
-};
-
-  const handleViewProgress = slot => {
+  const handleViewDetail = slot => {
     navigate(
-      `/manager/task-progress?contractId=${slot.contractId}&milestoneId=${slot.milestoneId}`
+      `/manager/milestone-assignments/${slot.contractId}/milestone/${slot.milestoneId}`
     );
   };
 
@@ -264,7 +269,7 @@ const handleChangeAssignee = slot => {
       dataIndex: 'assignmentStatus',
       key: 'assignmentStatus',
       width: 150,
-      render: status => {
+      render: (status, record) => {
         const normalized = (status || 'unassigned').toLowerCase();
         const label =
           normalized === 'unassigned'
@@ -278,7 +283,16 @@ const handleChangeAssignee = slot => {
             : normalized === 'cancelled'
             ? 'Đã hủy'
             : normalized;
-        return <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>
+            {record.hasIssue && (
+              <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+                Issue
+              </Tag>
+            )}
+          </Space>
+        );
       },
     },
     {
@@ -305,44 +319,26 @@ const handleChangeAssignee = slot => {
       width: 200,
       render: (_, record) => {
         const status = record.assignmentStatus?.toLowerCase();
-        const isUnassigned =
-          !record.assignmentId ||
-          !status ||
-          status === 'unassigned' ||
-          status === 'cancelled';
+        const hasActiveTask = status === 'assigned' || status === 'in_progress';
+        
         return (
           <Space size="small">
-            <Button
-              type="primary"
-              size="small"
-              icon={<UserAddOutlined />}
-              disabled={!isUnassigned}
-              onClick={() => {
-                if (!isUnassigned) return;
-                handleAssign(record);
-              }}
-            >
-              Assign
-            </Button>
-            {record.assignmentId ? (
+            {!hasActiveTask && (
               <Button
+                type="primary"
                 size="small"
-                icon={<EyeOutlined />}
-                onClick={() =>
-                  navigate(
-                    `/manager/milestone-assignments/${record.contractId}/detail/${record.assignmentId}`
-                  )
-                }
-                title="Xem chi tiết"
-              />
-            ) : (
-              <Button
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={() => handleViewProgress(record)}
-                title="Xem tiến độ"
-              />
+                icon={<UserAddOutlined />}
+                onClick={() => handleAssign(record)}
+              >
+                Assign Task
+              </Button>
             )}
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
+              title="Xem chi tiết milestone"
+            />
           </Space>
         );
       },
@@ -354,10 +350,10 @@ const handleChangeAssignee = slot => {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-            Assign Tasks to Milestones
+            Quản lý Milestones
           </Title>
           <Text type="secondary">
-            Danh sách milestone slots cần gán specialist.
+            Danh sách milestones và tasks. Click "Xem chi tiết" để quản lý tasks của milestone.
           </Text>
         </div>
         <Button
@@ -442,5 +438,5 @@ const handleChangeAssignee = slot => {
   );
 };
 
-export default MilestoneAssignmentsPage;
+export default MilestonesPage;
 

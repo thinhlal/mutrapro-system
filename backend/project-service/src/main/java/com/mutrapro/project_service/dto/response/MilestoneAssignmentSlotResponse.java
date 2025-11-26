@@ -41,6 +41,8 @@ public class MilestoneAssignmentSlotResponse {
     String specialistName;
     Instant assignedDate;
 
+    Boolean hasIssue;
+
     boolean canAssign;
 }
 

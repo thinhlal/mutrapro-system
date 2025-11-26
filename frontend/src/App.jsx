@@ -92,10 +92,10 @@ import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
 import ManagerContractDetailPage from './pages/manager/ContractDetail/ManagerContractDetailPage';
 import ContractsManagement from './pages/manager/ContractsList/ContractsManagement';
-import MilestoneAssignmentsPage from './pages/manager/MilestoneAssignments/MilestoneAssignmentsPage';
+import MilestonesPage from './pages/manager/Milestones/MilestonesPage';
 import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
-import MilestoneAssignmentDetailPage from './pages/manager/MilestoneAssignmentDetail/MilestoneAssignmentDetailPage';
+import MilestoneDetailPage from './pages/manager/MilestoneDetail/MilestoneDetailPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -370,7 +370,7 @@ function App() {
             />
             <Route
               path="milestone-assignments"
-              element={<MilestoneAssignmentsPage />}
+              element={<MilestonesPage />}
             />
             <Route
               path="task-progress"
@@ -385,8 +385,8 @@ function App() {
               element={<TaskAssignmentWorkspace />}
             />
             <Route
-              path="milestone-assignments/:contractId/detail/:assignmentId"
-              element={<MilestoneAssignmentDetailPage />}
+              path="milestone-assignments/:contractId/milestone/:milestoneId"
+              element={<MilestoneDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
           </Route>
