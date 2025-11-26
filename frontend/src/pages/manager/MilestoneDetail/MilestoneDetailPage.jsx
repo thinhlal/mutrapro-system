@@ -22,10 +22,11 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
 import {
-  getTaskAssignmentsByMilestone,
-} from '../../../services/taskAssignmentService';
-import { getContractById, getMilestoneById } from '../../../services/contractService';
+  getContractById,
+  getMilestoneById,
+} from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
@@ -118,13 +119,14 @@ const formatFileSize = bytes => {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
 const MilestoneDetailPage = () => {
   const { contractId, milestoneId } = useParams();
   const navigate = useNavigate();
-  const { instruments: instrumentsData, fetchInstruments } = useInstrumentStore();
+  const { instruments: instrumentsData, fetchInstruments } =
+    useInstrumentStore();
   const [loading, setLoading] = useState(true);
   const [milestone, setMilestone] = useState(null);
   const [contract, setContract] = useState(null);
@@ -135,7 +137,8 @@ const MilestoneDetailPage = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
   const [selectedTaskFiles, setSelectedTaskFiles] = useState([]);
-  const [selectedTaskFilesLoading, setSelectedTaskFilesLoading] = useState(false);
+  const [selectedTaskFilesLoading, setSelectedTaskFilesLoading] =
+    useState(false);
 
   useEffect(() => {
     fetchInstruments();
@@ -245,7 +248,10 @@ const MilestoneDetailPage = () => {
       const response = await axiosInstance.get(
         `/api/v1/projects/files/by-assignment/${record.assignmentId}`
       );
-      if (response?.data?.status === 'success' && Array.isArray(response.data?.data)) {
+      if (
+        response?.data?.status === 'success' &&
+        Array.isArray(response.data?.data)
+      ) {
         setSelectedTaskFiles(response.data.data);
       } else {
         setSelectedTaskFiles([]);
@@ -283,9 +289,7 @@ const MilestoneDetailPage = () => {
     if (!milestone) return 'Milestone';
     return (
       milestone.name ||
-      (milestone.orderIndex
-        ? `Milestone ${milestone.orderIndex}`
-        : 'Milestone')
+      (milestone.orderIndex ? `Milestone ${milestone.orderIndex}` : 'Milestone')
     );
   }, [milestone]);
 
@@ -374,7 +378,9 @@ const MilestoneDetailPage = () => {
                 size="small"
                 icon={<EyeOutlined />}
                 onClick={() =>
-                  navigate(`/manager/service-requests/${request.requestId}/contracts`)
+                  navigate(
+                    `/manager/service-requests/${request.requestId}/contracts`
+                  )
                 }
               >
                 View full request
@@ -386,7 +392,10 @@ const MilestoneDetailPage = () => {
                 <Text type="secondary" style={{ fontSize: '12px' }}>
                   Request code:{' '}
                 </Text>
-                <Text strong style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                <Text
+                  strong
+                  style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                >
                   {request.requestId}
                 </Text>
               </div>
@@ -395,7 +404,11 @@ const MilestoneDetailPage = () => {
                   Service type:{' '}
                 </Text>
                 <Tag color="blue" style={{ margin: 0 }}>
-                  {(request.serviceType || request.requestType || 'N/A').toUpperCase()}
+                  {(
+                    request.serviceType ||
+                    request.requestType ||
+                    'N/A'
+                  ).toUpperCase()}
                 </Tag>
               </div>
               {request.durationMinutes && (
@@ -403,7 +416,9 @@ const MilestoneDetailPage = () => {
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     Audio duration:{' '}
                   </Text>
-                  <Text strong>{formatDurationMMSS(request.durationMinutes)}</Text>
+                  <Text strong>
+                    {formatDurationMMSS(request.durationMinutes)}
+                  </Text>
                 </div>
               )}
               {request.instrumentIds &&
@@ -499,7 +514,8 @@ const MilestoneDetailPage = () => {
                     Start: {formatDateTime(getPlannedStartDayjs(milestone))}
                   </Text>
                   <Text type="secondary">
-                    Deadline: {formatDateTime(getPlannedDeadlineDayjs(milestone))}
+                    Deadline:{' '}
+                    {formatDateTime(getPlannedDeadlineDayjs(milestone))}
                   </Text>
                 </Space>
               </Descriptions.Item>
@@ -509,7 +525,8 @@ const MilestoneDetailPage = () => {
                     Start: {formatDateTime(getActualStartDayjs(milestone))}
                   </Text>
                   <Text>
-                    Deadline: {formatDateTime(getActualDeadlineDayjs(milestone))}
+                    Deadline:{' '}
+                    {formatDateTime(getActualDeadlineDayjs(milestone))}
                   </Text>
                 </Space>
               </Descriptions.Item>
@@ -520,7 +537,8 @@ const MilestoneDetailPage = () => {
         <Card
           title="Danh sách task của milestone này"
           extra={
-            !hasActiveTask && milestoneTasks.length > 0 && (
+            !hasActiveTask &&
+            milestoneTasks.length > 0 && (
               <Button
                 type="primary"
                 icon={<UserAddOutlined />}
@@ -540,7 +558,9 @@ const MilestoneDetailPage = () => {
             <Empty
               description={
                 <Space direction="vertical" size="middle">
-                  <Text type="secondary">Chưa có task nào cho milestone này</Text>
+                  <Text type="secondary">
+                    Chưa có task nào cho milestone này
+                  </Text>
                   <Button
                     type="primary"
                     icon={<UserAddOutlined />}
@@ -585,11 +605,20 @@ const MilestoneDetailPage = () => {
                   width: 140,
                   render: (status, record) => (
                     <Space direction="vertical" size={2}>
-                      <Tag color={STATUS_COLORS[status?.toLowerCase()] || 'default'}>
-                        {STATUS_LABELS[status?.toLowerCase()] || status || 'N/A'}
+                      <Tag
+                        color={
+                          STATUS_COLORS[status?.toLowerCase()] || 'default'
+                        }
+                      >
+                        {STATUS_LABELS[status?.toLowerCase()] ||
+                          status ||
+                          'N/A'}
                       </Tag>
                       {record.hasIssue && (
-                        <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+                        <Tag
+                          color="orange"
+                          icon={<ExclamationCircleOutlined />}
+                        >
                           Issue
                         </Tag>
                       )}
@@ -603,7 +632,9 @@ const MilestoneDetailPage = () => {
                   render: (_, record) => (
                     <Space direction="vertical" size={0}>
                       <Text strong>
-                        {record.specialistName || record.specialistId || 'Chưa gán'}
+                        {record.specialistName ||
+                          record.specialistId ||
+                          'Chưa gán'}
                       </Text>
                       {record.specialistEmail && (
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -632,7 +663,10 @@ const MilestoneDetailPage = () => {
                   width: 180,
                   render: (_, record) => (
                     <Space size="small">
-                      <Button size="small" onClick={() => openTaskDetailModal(record)}>
+                      <Button
+                        size="small"
+                        onClick={() => openTaskDetailModal(record)}
+                      >
                         Xem
                       </Button>
                       {record.hasIssue && (
@@ -681,7 +715,12 @@ const MilestoneDetailPage = () => {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Status">
-                <Tag color={STATUS_COLORS[selectedTask.status?.toLowerCase()] || 'default'}>
+                <Tag
+                  color={
+                    STATUS_COLORS[selectedTask.status?.toLowerCase()] ||
+                    'default'
+                  }
+                >
                   {STATUS_LABELS[selectedTask.status?.toLowerCase()] ||
                     selectedTask.status ||
                     'N/A'}
@@ -719,15 +758,23 @@ const MilestoneDetailPage = () => {
                     dataSource={selectedTaskFiles}
                     renderItem={file => (
                       <List.Item>
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                        <Space
+                          style={{
+                            width: '100%',
+                            justifyContent: 'space-between',
+                          }}
+                        >
                           <Space wrap>
                             <Tag
                               color={
-                                FILE_STATUS_COLORS[file.fileStatus?.toLowerCase()] ||
-                                'default'
+                                FILE_STATUS_COLORS[
+                                  file.fileStatus?.toLowerCase()
+                                ] || 'default'
                               }
                             >
-                              {FILE_STATUS_LABELS[file.fileStatus?.toLowerCase()] ||
+                              {FILE_STATUS_LABELS[
+                                file.fileStatus?.toLowerCase()
+                              ] ||
                                 file.fileStatus ||
                                 'N/A'}
                             </Tag>
@@ -739,7 +786,9 @@ const MilestoneDetailPage = () => {
                           <Space>
                             {file.uploadDate && (
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                {dayjs(file.uploadDate).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )}
                               </Text>
                             )}
                           </Space>

@@ -243,7 +243,8 @@ export const API_ENDPOINTS = {
     GET_MESSAGES: roomId => `${CHAT_PATH}/messages/room/${roomId}`,
     GET_RECENT_MESSAGES: (roomId, sinceTimestamp) =>
       `${CHAT_PATH}/messages/room/${roomId}/recent?sinceTimestamp=${sinceTimestamp}`,
-    GET_UNREAD_COUNT: roomId => `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
+    GET_UNREAD_COUNT: roomId =>
+      `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
     MARK_AS_READ: roomId => `${CHAT_PATH}/messages/room/${roomId}/mark-read`,
 
     // WebSocket (for real-time messaging)

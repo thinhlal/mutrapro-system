@@ -205,16 +205,16 @@ export default function TaskAssignmentWorkspace() {
     }
   };
 
-              const fetchSpecialists = useCallback(
-                async (specializationFilter, requiredInstrumentNames = []) => {
-                  try {
-                    setSpecialistsLoading(true);
-                    const response = await getAllSpecialists({
-                      specialization: specializationFilter,
-                      skillNames: requiredInstrumentNames,
-                      milestoneId: selectedMilestoneId, // Truyền milestoneId để tính tasksInSlaWindow
-                      contractId: contractId, // Truyền contractId để tính tasksInSlaWindow
-                    });
+  const fetchSpecialists = useCallback(
+    async (specializationFilter, requiredInstrumentNames = []) => {
+      try {
+        setSpecialistsLoading(true);
+        const response = await getAllSpecialists({
+          specialization: specializationFilter,
+          skillNames: requiredInstrumentNames,
+          milestoneId: selectedMilestoneId, // Truyền milestoneId để tính tasksInSlaWindow
+          contractId: contractId, // Truyền contractId để tính tasksInSlaWindow
+        });
         if (response?.status === 'success' && response?.data) {
           const activeSpecialists = response.data.filter(
             s => s.status?.toLowerCase() === 'active'
@@ -316,8 +316,7 @@ export default function TaskAssignmentWorkspace() {
     };
 
     const selectedHasActive =
-      selectedMilestoneId &&
-      getActiveCount(selectedMilestoneId) > 0;
+      selectedMilestoneId && getActiveCount(selectedMilestoneId) > 0;
 
     if (!selectedMilestoneId || selectedHasActive) {
       const candidate = findSelectableMilestone() || contract.milestones[0];
@@ -477,14 +476,14 @@ export default function TaskAssignmentWorkspace() {
       message.warning('Vui lòng chọn task type');
       return;
     }
-    
+
     // Validate milestone work status
     if (selectedMilestone) {
       const workStatus = selectedMilestone.workStatus?.toUpperCase();
       if (workStatus !== 'PLANNED' && workStatus !== 'IN_PROGRESS') {
         message.error(
           `Không thể tạo task: Milestone phải ở trạng thái PLANNED hoặc IN_PROGRESS. ` +
-          `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
+            `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
         );
         return;
       }
@@ -544,7 +543,7 @@ export default function TaskAssignmentWorkspace() {
           type="primary"
           icon={<ArrowLeftOutlined />}
           style={{ marginTop: 16 }}
-            onClick={() => navigate('/manager/milestone-assignments')}
+          onClick={() => navigate('/manager/milestone-assignments')}
         >
           Quay lại danh sách
         </Button>
@@ -632,30 +631,34 @@ export default function TaskAssignmentWorkspace() {
                       {requestData.contactName} · {requestData.contactEmail}
                     </Text>
                   </div>
-                  
+
                   {/* Contract Files */}
                   {(() => {
                     const files = (requestData.files || []).filter(
                       f => f.fileSource?.toLowerCase() === 'contract_pdf'
                     );
-                    return files.length > 0 && (
-                      <div>
-                        <Text strong>Contract Files:</Text>
-                        <FileList files={files} maxNameLength={32} />
-                      </div>
+                    return (
+                      files.length > 0 && (
+                        <div>
+                          <Text strong>Contract Files:</Text>
+                          <FileList files={files} maxNameLength={32} />
+                        </div>
+                      )
                     );
                   })()}
-                  
+
                   {/* Music Files */}
                   {(() => {
                     const files = (requestData.files || []).filter(
                       f => f.fileSource?.toLowerCase() === 'customer_upload'
                     );
-                    return files.length > 0 && (
-                      <div>
-                        <Text strong>Music Files (Customer Upload):</Text>
-                        <FileList files={files} maxNameLength={32} />
-                      </div>
+                    return (
+                      files.length > 0 && (
+                        <div>
+                          <Text strong>Music Files (Customer Upload):</Text>
+                          <FileList files={files} maxNameLength={32} />
+                        </div>
+                      )
                     );
                   })()}
                 </Space>
@@ -681,17 +684,19 @@ export default function TaskAssignmentWorkspace() {
                   const stats =
                     milestoneStats[item.milestoneId] || defaultStats;
                   const isSelected = item.milestoneId === selectedMilestoneId;
-                  const workStatus = item.workStatus?.toUpperCase() || 'PLANNED';
+                  const workStatus =
+                    item.workStatus?.toUpperCase() || 'PLANNED';
                   const isCompleted = workStatus === 'COMPLETED';
                   const isCancelled = workStatus === 'CANCELLED';
                   // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
-                const canSelect = workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
-                const activeTaskCount =
-                  (stats.assigned || 0) + (stats.inProgress || 0);
-                const hasActiveTask = activeTaskCount > 0;
-                const isDisabled =
-                  !canSelect || isCompleted || isCancelled || hasActiveTask;
-                  
+                  const canSelect =
+                    workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
+                  const activeTaskCount =
+                    (stats.assigned || 0) + (stats.inProgress || 0);
+                  const hasActiveTask = activeTaskCount > 0;
+                  const isDisabled =
+                    !canSelect || isCompleted || isCancelled || hasActiveTask;
+
                   const getWorkStatusColor = () => {
                     switch (workStatus) {
                       case 'PLANNED':
@@ -716,7 +721,9 @@ export default function TaskAssignmentWorkspace() {
                       onClick={() => {
                         if (!isDisabled) {
                           // Cho phép bỏ chọn nếu đã chọn rồi
-                          const nextSelectedId = isSelected ? null : item.milestoneId;
+                          const nextSelectedId = isSelected
+                            ? null
+                            : item.milestoneId;
                           setSelectedMilestoneId(nextSelectedId);
                           if (nextSelectedId !== selectedMilestoneId) {
                             setSelectedSpecialist(null);
@@ -726,10 +733,10 @@ export default function TaskAssignmentWorkspace() {
                           const reason = isCompleted
                             ? 'Milestone đã hoàn thành'
                             : isCancelled
-                            ? 'Milestone đã bị hủy'
-                            : hasActiveTask
-                            ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
-                            : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED hoặc IN_PROGRESS';
+                              ? 'Milestone đã bị hủy'
+                              : hasActiveTask
+                                ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
+                                : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED hoặc IN_PROGRESS';
                           message.warning(reason);
                         }
                       }}
@@ -737,11 +744,13 @@ export default function TaskAssignmentWorkspace() {
                       <div>
                         <div className={styles.milestoneHeader}>
                           <Text strong>
-                            {item.orderIndex && `Milestone ${item.orderIndex}: `}
+                            {item.orderIndex &&
+                              `Milestone ${item.orderIndex}: `}
                             {item.name}
                           </Text>
                           <Tag color={getWorkStatusColor()}>
-                            {MILESTONE_WORK_STATUS_LABELS[workStatus] || workStatus}
+                            {MILESTONE_WORK_STATUS_LABELS[workStatus] ||
+                              workStatus}
                           </Tag>
                         </div>
                         {hasActiveTask && (

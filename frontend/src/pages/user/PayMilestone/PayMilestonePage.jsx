@@ -66,17 +66,20 @@ const PayMilestonePage = () => {
 
         // Validation: Contract phải ở trạng thái signed hoặc active để thanh toán
         const contractStatus = contractData.status?.toLowerCase();
-        const isCanceled = contractStatus === 'canceled_by_customer' || contractStatus === 'canceled_by_manager';
+        const isCanceled =
+          contractStatus === 'canceled_by_customer' ||
+          contractStatus === 'canceled_by_manager';
         const isExpired = contractStatus === 'expired';
-        const isValidStatus = contractStatus === 'signed' || contractStatus === 'active';
+        const isValidStatus =
+          contractStatus === 'signed' || contractStatus === 'active';
 
         if (isCanceled || isExpired || !isValidStatus) {
           message.error(
-            isCanceled 
-              ? 'Contract has been canceled. Payment is not allowed.' 
-              : isExpired 
-              ? 'Contract has expired. Payment is not allowed.'
-              : 'Contract is not in a valid status for payment.'
+            isCanceled
+              ? 'Contract has been canceled. Payment is not allowed.'
+              : isExpired
+                ? 'Contract has expired. Payment is not allowed.'
+                : 'Contract is not in a valid status for payment.'
           );
           navigate(`/contracts/${contractId}`);
           return;

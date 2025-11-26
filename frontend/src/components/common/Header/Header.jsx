@@ -124,7 +124,11 @@ function Header() {
               {navLink('/', 'home', 'Home')}
               {navLink('/introduction', 'audio', 'Introduciton')}
               {navLink('/request-service', 'request', 'Request Service')}
-              {navLink('/ai-transcription', 'ai-transcription', 'AI Transcription')}
+              {navLink(
+                '/ai-transcription',
+                'ai-transcription',
+                'AI Transcription'
+              )}
             </Nav>
 
             {/* Auth Section */}

@@ -71,80 +71,67 @@ const MilestonesPage = () => {
   });
   const navigate = useNavigate();
 
-  const fetchSlots = useCallback(
-    async (currentFilters, currentPagination) => {
-      setLoading(true);
-      try {
-        const params = {
-          page: (currentPagination.page || 1) - 1,
-          size: currentPagination.pageSize || 10,
-        };
-        if (currentFilters.status !== 'all') {
-          params.status = currentFilters.status;
-        }
-        if (currentFilters.taskType !== 'all') {
-          params.taskType = currentFilters.taskType;
-        }
-        if (currentFilters.onlyUnassigned) {
-          params.onlyUnassigned = true;
-        }
-        if (currentFilters.search && currentFilters.search.trim()) {
-          params.keyword = currentFilters.search.trim();
-        }
-        const response = await getMilestoneAssignmentSlots(params);
-        if (response?.status === 'success' && response.data) {
-          const pageData = response.data;
-          // Sort: milestone chưa có task (unassigned) lên trên
-          const sortedSlots = (pageData.content || []).sort((a, b) => {
-            const aStatus = a.assignmentStatus?.toLowerCase() || 'unassigned';
-            const bStatus = b.assignmentStatus?.toLowerCase() || 'unassigned';
-            
-            // Ưu tiên unassigned lên đầu
-            if (aStatus === 'unassigned' && bStatus !== 'unassigned') return -1;
-            if (aStatus !== 'unassigned' && bStatus === 'unassigned') return 1;
-            
-            // Nếu cùng trạng thái, sort theo milestone order index
-            const aOrder = a.milestoneOrderIndex ?? 999;
-            const bOrder = b.milestoneOrderIndex ?? 999;
-            return aOrder - bOrder;
-          });
-          setSlots(sortedSlots);
-          const metadata = response.metadata || {};
-          setSummary({
+  const fetchSlots = useCallback(async (currentFilters, currentPagination) => {
+    setLoading(true);
+    try {
+      const params = {
+        page: (currentPagination.page || 1) - 1,
+        size: currentPagination.pageSize || 10,
+      };
+      if (currentFilters.status !== 'all') {
+        params.status = currentFilters.status;
+      }
+      if (currentFilters.taskType !== 'all') {
+        params.taskType = currentFilters.taskType;
+      }
+      if (currentFilters.onlyUnassigned) {
+        params.onlyUnassigned = true;
+      }
+      if (currentFilters.search && currentFilters.search.trim()) {
+        params.keyword = currentFilters.search.trim();
+      }
+      const response = await getMilestoneAssignmentSlots(params);
+      if (response?.status === 'success' && response.data) {
+        const pageData = response.data;
+        // Sort: milestone chưa có task (unassigned) lên trên
+        const sortedSlots = (pageData.content || []).sort((a, b) => {
+          const aStatus = a.assignmentStatus?.toLowerCase() || 'unassigned';
+          const bStatus = b.assignmentStatus?.toLowerCase() || 'unassigned';
+
+          // Ưu tiên unassigned lên đầu
+          if (aStatus === 'unassigned' && bStatus !== 'unassigned') return -1;
+          if (aStatus !== 'unassigned' && bStatus === 'unassigned') return 1;
+
+          // Nếu cùng trạng thái, sort theo milestone order index
+          const aOrder = a.milestoneOrderIndex ?? 999;
+          const bOrder = b.milestoneOrderIndex ?? 999;
+          return aOrder - bOrder;
+        });
+        setSlots(sortedSlots);
+        const metadata = response.metadata || {};
+        setSummary({
+          total: pageData.totalElements ?? 0,
+          unassigned: metadata.totalUnassigned ?? 0,
+          inProgress: metadata.totalInProgress ?? 0,
+          completed: metadata.totalCompleted ?? 0,
+        });
+        setPagination(prev => {
+          const next = {
+            ...prev,
+            page: (pageData.pageNumber ?? 0) + 1,
+            pageSize: pageData.pageSize ?? prev.pageSize,
             total: pageData.totalElements ?? 0,
-            unassigned: metadata.totalUnassigned ?? 0,
-            inProgress: metadata.totalInProgress ?? 0,
-            completed: metadata.totalCompleted ?? 0,
-          });
-          setPagination(prev => {
-            const next = {
-              ...prev,
-              page: (pageData.pageNumber ?? 0) + 1,
-              pageSize: pageData.pageSize ?? prev.pageSize,
-              total: pageData.totalElements ?? 0,
-            };
-            if (
-              prev.page === next.page &&
-              prev.pageSize === next.pageSize &&
-              prev.total === next.total
-            ) {
-              return prev;
-            }
-            return next;
-          });
-        } else {
-          setSlots([]);
-          setSummary({
-            total: 0,
-            unassigned: 0,
-            inProgress: 0,
-            completed: 0,
-          });
-          setPagination(prev => ({ ...prev, total: 0 }));
-        }
-      } catch (error) {
-        console.error('Error fetching milestone slots:', error);
-        message.error(error?.message || 'Không thể tải danh sách milestone');
+          };
+          if (
+            prev.page === next.page &&
+            prev.pageSize === next.pageSize &&
+            prev.total === next.total
+          ) {
+            return prev;
+          }
+          return next;
+        });
+      } else {
         setSlots([]);
         setSummary({
           total: 0,
@@ -153,12 +140,22 @@ const MilestonesPage = () => {
           completed: 0,
         });
         setPagination(prev => ({ ...prev, total: 0 }));
-      } finally {
-        setLoading(false);
       }
-    },
-    []
-  );
+    } catch (error) {
+      console.error('Error fetching milestone slots:', error);
+      message.error(error?.message || 'Không thể tải danh sách milestone');
+      setSlots([]);
+      setSummary({
+        total: 0,
+        unassigned: 0,
+        inProgress: 0,
+        completed: 0,
+      });
+      setPagination(prev => ({ ...prev, total: 0 }));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchSlots(filters, pagination);
@@ -275,14 +272,14 @@ const MilestonesPage = () => {
           normalized === 'unassigned'
             ? 'Chưa gán'
             : normalized === 'assigned'
-            ? 'Đã gán'
-            : normalized === 'in_progress'
-            ? 'Đang làm'
-            : normalized === 'completed'
-            ? 'Hoàn thành'
-            : normalized === 'cancelled'
-            ? 'Đã hủy'
-            : normalized;
+              ? 'Đã gán'
+              : normalized === 'in_progress'
+                ? 'Đang làm'
+                : normalized === 'completed'
+                  ? 'Hoàn thành'
+                  : normalized === 'cancelled'
+                    ? 'Đã hủy'
+                    : normalized;
         return (
           <Space direction="vertical" size={2}>
             <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>
@@ -320,7 +317,7 @@ const MilestonesPage = () => {
       render: (_, record) => {
         const status = record.assignmentStatus?.toLowerCase();
         const hasActiveTask = status === 'assigned' || status === 'in_progress';
-        
+
         return (
           <Space size="small">
             {!hasActiveTask && (
@@ -353,7 +350,8 @@ const MilestonesPage = () => {
             Quản lý Milestones
           </Title>
           <Text type="secondary">
-            Danh sách milestones và tasks. Click "Xem chi tiết" để quản lý tasks của milestone.
+            Danh sách milestones và tasks. Click "Xem chi tiết" để quản lý tasks
+            của milestone.
           </Text>
         </div>
         <Button
@@ -402,7 +400,7 @@ const MilestonesPage = () => {
         </Row>
       </Card>
 
-  <Card>
+      <Card>
         <div className={styles.summaryBar}>
           <Space wrap size="large">
             <Text>
@@ -439,4 +437,3 @@ const MilestonesPage = () => {
 };
 
 export default MilestonesPage;
-

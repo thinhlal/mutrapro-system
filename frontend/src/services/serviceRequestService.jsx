@@ -87,7 +87,7 @@ export const createServiceRequest = async requestData => {
 /**
  * Lấy tất cả service requests với filter
  * GET /requests?status=&managerUserId=&requestType=&page=&size=&sort=
- * 
+ *
  * Lưu ý: Mặc định chỉ lấy những request chưa assign (managerUserId IS NULL)
  * Để lấy request đã assign, truyền managerUserId vào filter
  *
@@ -106,7 +106,8 @@ export const getAllServiceRequests = async (filters = {}) => {
     const params = new URLSearchParams();
 
     if (filters.status) params.append('status', filters.status);
-    if (filters.managerUserId) params.append('managerUserId', filters.managerUserId);
+    if (filters.managerUserId)
+      params.append('managerUserId', filters.managerUserId);
     if (filters.requestType) params.append('requestType', filters.requestType);
     if (filters.page !== undefined) params.append('page', filters.page);
     if (filters.size !== undefined) params.append('size', filters.size);

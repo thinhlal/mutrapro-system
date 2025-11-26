@@ -1,17 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Button, Card, Space, Typography, Progress } from "antd";
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button, Card, Space, Typography, Progress } from 'antd';
 import {
   LoadingOutlined,
   DownloadOutlined,
   ArrowLeftOutlined,
-} from "@ant-design/icons";
-import Lottie from "lottie-react";
-import Embed from "flat-embed";
-import { useKlangTranscriptionStore } from "../../stores/useKlangTranscriptionStore.js";
-import Header from "../../components/common/Header/Header.jsx";
-import aiAnimation from "../../assets/animations/AI animation.json";
-import styles from "./TranscriptionProcessPage.module.css";
+} from '@ant-design/icons';
+import Lottie from 'lottie-react';
+import Embed from 'flat-embed';
+import { useKlangTranscriptionStore } from '../../stores/useKlangTranscriptionStore.js';
+import Header from '../../components/common/Header/Header.jsx';
+import aiAnimation from '../../assets/animations/AI animation.json';
+import styles from './TranscriptionProcessPage.module.css';
 
 const { Title, Text } = Typography;
 
@@ -19,7 +19,7 @@ const TranscriptionProcessPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const flatHostRef = useRef(null);
-  
+
   const [flatEmbed, setFlatEmbed] = useState(null);
   const [flatReady, setFlatReady] = useState(false);
   const [flatLoading, setFlatLoading] = useState(false);
@@ -27,33 +27,28 @@ const TranscriptionProcessPage = () => {
   const [midiLoaded, setMidiLoaded] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const {
-    jobId,
-    status,
-    error,
-    midiBlob,
-    downloadResult,
-  } = useKlangTranscriptionStore();
+  const { jobId, status, error, midiBlob, downloadResult } =
+    useKlangTranscriptionStore();
 
   const file = location.state?.file;
 
   // Steps for animation
   const steps = [
-    { label: "Uploading audio file...", duration: 2000 },
-    { label: "AI analyzing audio...", duration: 3000 },
-    { label: "Detecting notes...", duration: 3000 },
-    { label: "Creating sheet music...", duration: 2000 },
+    { label: 'Uploading audio file...', duration: 2000 },
+    { label: 'AI analyzing audio...', duration: 3000 },
+    { label: 'Detecting notes...', duration: 3000 },
+    { label: 'Creating sheet music...', duration: 2000 },
   ];
 
   // Simulate step progression based on status
   useEffect(() => {
-    if (status === "CREATING" && currentStep < 1) {
+    if (status === 'CREATING' && currentStep < 1) {
       setCurrentStep(1);
-    } else if (status === "IN_QUEUE" && currentStep < 2) {
+    } else if (status === 'IN_QUEUE' && currentStep < 2) {
       setCurrentStep(2);
-    } else if (status === "IN_PROGRESS" && currentStep < 3) {
+    } else if (status === 'IN_PROGRESS' && currentStep < 3) {
       setCurrentStep(3);
-    } else if (status === "COMPLETED" && currentStep < 4) {
+    } else if (status === 'COMPLETED' && currentStep < 4) {
       setCurrentStep(4);
     }
   }, [status, currentStep]);
@@ -63,11 +58,11 @@ const TranscriptionProcessPage = () => {
     if (!flatHostRef.current || !showFlatViewer) return;
 
     const instance = new Embed(flatHostRef.current, {
-      height: "600px",
+      height: '600px',
       embedParams: {
         appId: import.meta.env.VITE_FLAT_APP_ID,
-        mode: "edit",
-        controlsPosition: "top",
+        mode: 'edit',
+        controlsPosition: 'top',
         branding: false,
       },
     });
@@ -78,7 +73,7 @@ const TranscriptionProcessPage = () => {
         setFlatEmbed(instance);
         setFlatReady(true);
       })
-      .catch((e) => console.error("Flat Embed init failed:", e));
+      .catch(e => console.error('Flat Embed init failed:', e));
 
     return () => {
       // Cleanup if needed
@@ -94,10 +89,10 @@ const TranscriptionProcessPage = () => {
       try {
         const arrayBuffer = await midiBlob.arrayBuffer();
         await flatEmbed.loadMIDI(arrayBuffer);
-        console.log("MIDI loaded into Flat successfully");
+        console.log('MIDI loaded into Flat successfully');
         setMidiLoaded(true);
       } catch (err) {
-        console.error("Failed to load MIDI into Flat:", err);
+        console.error('Failed to load MIDI into Flat:', err);
       } finally {
         setFlatLoading(false);
       }
@@ -111,13 +106,13 @@ const TranscriptionProcessPage = () => {
   };
 
   const handleBackToUpload = () => {
-    navigate("/ai-transcription");
+    navigate('/ai-transcription');
   };
 
   const isProcessing =
-    status === "CREATING" || status === "IN_QUEUE" || status === "IN_PROGRESS";
-  const isCompleted = status === "COMPLETED";
-  const isFailed = status === "FAILED";
+    status === 'CREATING' || status === 'IN_QUEUE' || status === 'IN_PROGRESS';
+  const isCompleted = status === 'COMPLETED';
+  const isFailed = status === 'FAILED';
 
   const progressPercent = (currentStep / steps.length) * 100;
 
@@ -157,16 +152,20 @@ const TranscriptionProcessPage = () => {
                 />
               </div>
 
-              <Title level={2} className={styles.processingTitle} key={currentStep}>
-                {steps[currentStep]?.label || "Processing"}
+              <Title
+                level={2}
+                className={styles.processingTitle}
+                key={currentStep}
+              >
+                {steps[currentStep]?.label || 'Processing'}
               </Title>
 
               <div className={styles.progressSection}>
                 <Progress
                   percent={progressPercent}
                   strokeColor={{
-                    "0%": "#6366f1",
-                    "100%": "#8b5cf6",
+                    '0%': '#6366f1',
+                    '100%': '#8b5cf6',
                   }}
                   showInfo={false}
                   className={styles.progressBar}
@@ -179,8 +178,8 @@ const TranscriptionProcessPage = () => {
                   <div
                     key={index}
                     className={`${styles.stepItem} ${
-                      index < currentStep ? styles.stepCompleted : ""
-                    } ${index === currentStep ? styles.stepActive : ""}`}
+                      index < currentStep ? styles.stepCompleted : ''
+                    } ${index === currentStep ? styles.stepActive : ''}`}
                   >
                     <Text className={styles.stepLabel}>{step.label}</Text>
                   </div>
@@ -196,7 +195,8 @@ const TranscriptionProcessPage = () => {
                 Transcription Complete!
               </Title>
               <Text className={styles.completedText}>
-                AI has finished analyzing your audio file and created your sheet music
+                AI has finished analyzing your audio file and created your sheet
+                music
               </Text>
 
               <Space className={styles.actionButtons} size="large">
@@ -207,12 +207,12 @@ const TranscriptionProcessPage = () => {
                   disabled={showFlatViewer}
                   className={styles.viewButton}
                 >
-                  {showFlatViewer ? " Sheet Music Opened" : " View Sheet Music"}
+                  {showFlatViewer ? ' Sheet Music Opened' : ' View Sheet Music'}
                 </Button>
                 <Button
                   size="large"
                   icon={<DownloadOutlined />}
-                  onClick={() => downloadResult("midi")}
+                  onClick={() => downloadResult('midi')}
                   className={styles.downloadButton}
                 >
                   Download MIDI
@@ -235,7 +235,7 @@ const TranscriptionProcessPage = () => {
                 An Error Occurred
               </Title>
               <Text className={styles.errorText}>
-                {error || "Unable to process audio file. Please try again."}
+                {error || 'Unable to process audio file. Please try again.'}
               </Text>
               <Button
                 type="primary"
@@ -258,17 +258,19 @@ const TranscriptionProcessPage = () => {
               <div className={styles.flatContainer}>
                 {(flatLoading || !flatReady) && (
                   <div className={styles.flatLoading}>
-                    <LoadingOutlined style={{ fontSize: 32, marginRight: 12 }} />
+                    <LoadingOutlined
+                      style={{ fontSize: 32, marginRight: 12 }}
+                    />
                     {!flatReady
-                      ? "Initializing editor..."
-                      : "Loading sheet music..."}
+                      ? 'Initializing editor...'
+                      : 'Loading sheet music...'}
                   </div>
                 )}
                 <div
                   ref={flatHostRef}
                   className={styles.flatEmbed}
                   style={{
-                    display: flatLoading || !flatReady ? "none" : "block",
+                    display: flatLoading || !flatReady ? 'none' : 'block',
                   }}
                 />
               </div>
@@ -281,4 +283,3 @@ const TranscriptionProcessPage = () => {
 };
 
 export default TranscriptionProcessPage;
-

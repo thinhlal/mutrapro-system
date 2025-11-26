@@ -1,7 +1,7 @@
-import React from "react";
-import { Typography } from "antd";
-import styles from "./IntroSection.module.css";
-import demoVideo from "../../../assets/videos/function_p2n_bt601-1.webm";
+import React from 'react';
+import { Typography } from 'antd';
+import styles from './IntroSection.module.css';
+import demoVideo from '../../../assets/videos/function_p2n_bt601-1.webm';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -14,10 +14,10 @@ const IntroSection = () => {
         </Title>
 
         <Paragraph className={styles.subtitle}>
-          Ideal for turning YouTube videos into sheet music, detecting notes, and
-          creating lead sheets or music scores in no time. Our AI-powered music
-          transcription apps let you generate professional music notation in
-          just a few steps:
+          Ideal for turning YouTube videos into sheet music, detecting notes,
+          and creating lead sheets or music scores in no time. Our AI-powered
+          music transcription apps let you generate professional music notation
+          in just a few steps:
         </Paragraph>
 
         {/* Video Demo */}
@@ -51,7 +51,7 @@ const IntroSection = () => {
             <div className={styles.stepNumber}>2.</div>
             <div>
               <Text strong className={styles.stepTitle}>
-                 AI Identifies Notes
+                AI Identifies Notes
               </Text>
               <Paragraph className={styles.stepText}>
                 Klangio AI analyzes and performs note detection automatically

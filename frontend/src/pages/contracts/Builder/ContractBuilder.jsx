@@ -80,11 +80,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
         />
       }
     >
-      <Space
-        direction="vertical"
-        style={{ width: '100%' }}
-        size="small"
-      >
+      <Space direction="vertical" style={{ width: '100%' }} size="small">
         <Form.Item
           {...restField}
           name={[field.name, 'orderIndex']}
@@ -92,11 +88,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
           initialValue={index + 1}
           rules={[{ required: true }]}
         >
-          <InputNumber
-            min={1}
-            style={{ width: '100%' }}
-            disabled
-          />
+          <InputNumber min={1} style={{ width: '100%' }} disabled />
         </Form.Item>
 
         <Form.Item
@@ -712,12 +704,18 @@ const ContractBuilder = () => {
             ),
 
             // Milestones - use from form values or contract
-            milestones: (currentFormValues.milestones || contract.milestones || []).map((m, index) => ({
+            milestones: (
+              currentFormValues.milestones ||
+              contract.milestones ||
+              []
+            ).map((m, index) => ({
               name: m.name || `Milestone ${index + 1}`,
               description: m.description || '',
               orderIndex: m.orderIndex || index + 1,
               hasPayment: m.hasPayment || false,
-              paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
+              paymentPercent: m.hasPayment
+                ? Number(m.paymentPercent || 0)
+                : null,
               milestoneSlaDays: m.milestoneSlaDays
                 ? Number(m.milestoneSlaDays)
                 : null,
@@ -942,9 +940,7 @@ const ContractBuilder = () => {
       orderIndex: m.orderIndex || index + 1,
       hasPayment: m.hasPayment || false,
       paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
-      milestoneSlaDays: m.milestoneSlaDays
-        ? Number(m.milestoneSlaDays)
-        : null,
+      milestoneSlaDays: m.milestoneSlaDays ? Number(m.milestoneSlaDays) : null,
     })),
 
     // preview-only - lấy từ state partyInfo
@@ -1023,11 +1019,16 @@ const ContractBuilder = () => {
             ]);
             return;
           }
-          if (m.hasPayment && (!m.paymentPercent || Number(m.paymentPercent) <= 0)) {
+          if (
+            m.hasPayment &&
+            (!m.paymentPercent || Number(m.paymentPercent) <= 0)
+          ) {
             form.setFields([
               {
                 name: ['milestones', i, 'paymentPercent'],
-                errors: ['Payment percent is required when hasPayment is enabled'],
+                errors: [
+                  'Payment percent is required when hasPayment is enabled',
+                ],
               },
             ]);
             return;
@@ -1098,9 +1099,10 @@ const ContractBuilder = () => {
             description: (m.description || '').trim(),
             orderIndex: m.orderIndex || index + 1,
             hasPayment: m.hasPayment || false,
-            paymentPercent: m.hasPayment && m.paymentPercent
-              ? Number(m.paymentPercent)
-              : null,
+            paymentPercent:
+              m.hasPayment && m.paymentPercent
+                ? Number(m.paymentPercent)
+                : null,
             milestoneSlaDays: m.milestoneSlaDays
               ? Number(m.milestoneSlaDays)
               : null,
@@ -1146,10 +1148,10 @@ const ContractBuilder = () => {
         `Error ${isEditMode ? 'updating' : 'creating'} contract:`,
         error
       );
-      
+
       // Extract error message from different error formats
       let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} contract`;
-      
+
       if (error?.message) {
         errorMessage = error.message;
       } else if (error?.response?.data?.message) {
@@ -1158,9 +1160,10 @@ const ContractBuilder = () => {
         errorMessage = error;
       } else if (error?.response?.data) {
         // Handle case where error.response.data is the error object
-        errorMessage = error.response.data.message || JSON.stringify(error.response.data);
+        errorMessage =
+          error.response.data.message || JSON.stringify(error.response.data);
       }
-      
+
       notification.error({
         message: 'Error',
         description: errorMessage,
@@ -1584,9 +1587,7 @@ const ContractBuilder = () => {
 
                   {!isEditMode && (
                     <>
-                      <Divider className={styles.fullRow}>
-                        Milestones
-                      </Divider>
+                      <Divider className={styles.fullRow}>Milestones</Divider>
 
                       <Form.Item
                         className={styles.fullRow}
@@ -1603,9 +1604,14 @@ const ContractBuilder = () => {
                         rules={[
                           {
                             validator: (_, value) => {
-                              if (!isEditMode && (!value || value.length === 0)) {
+                              if (
+                                !isEditMode &&
+                                (!value || value.length === 0)
+                              ) {
                                 return Promise.reject(
-                                  new Error('At least one milestone is required')
+                                  new Error(
+                                    'At least one milestone is required'
+                                  )
                                 );
                               }
                               return Promise.resolve();
@@ -1713,7 +1719,10 @@ const ContractBuilder = () => {
                                   <CheckCircleOutlined
                                     style={{ marginRight: 4, color: '#ff4d4f' }}
                                   />
-                                  Payment: {total.toFixed(2)}% (Deposit: {depositPercent}% + Milestones: {totalPaymentPercent.toFixed(2)}%) - Must equal 100%
+                                  Payment: {total.toFixed(2)}% (Deposit:{' '}
+                                  {depositPercent}% + Milestones:{' '}
+                                  {totalPaymentPercent.toFixed(2)}%) - Must
+                                  equal 100%
                                 </div>
                               );
                             } else {
@@ -1747,9 +1756,13 @@ const ContractBuilder = () => {
                                     }}
                                   >
                                     <CheckCircleOutlined
-                                      style={{ marginRight: 4, color: '#52c41a' }}
+                                      style={{
+                                        marginRight: 4,
+                                        color: '#52c41a',
+                                      }}
                                     />
-                                    SLA: {totalMilestoneSlaDays} days = Contract SLA ✓
+                                    SLA: {totalMilestoneSlaDays} days = Contract
+                                    SLA ✓
                                   </div>
                                 );
                               } else {
@@ -1763,9 +1776,13 @@ const ContractBuilder = () => {
                                     }}
                                   >
                                     <CloseCircleOutlined
-                                      style={{ marginRight: 4, color: '#ff4d4f' }}
+                                      style={{
+                                        marginRight: 4,
+                                        color: '#ff4d4f',
+                                      }}
                                     />
-                                    SLA: {totalMilestoneSlaDays} days ≠ Contract SLA: {contractSlaDays} days
+                                    SLA: {totalMilestoneSlaDays} days ≠ Contract
+                                    SLA: {contractSlaDays} days
                                   </div>
                                 );
                               }
@@ -2248,7 +2265,8 @@ const ContractBuilder = () => {
                   {data?.sla_days > 0 && (
                     <>
                       {' '}
-                      | <strong>Due:</strong> After {data.sla_days} days if payment is on time
+                      | <strong>Due:</strong> After {data.sla_days} days if
+                      payment is on time
                     </>
                   )}
                 </p>

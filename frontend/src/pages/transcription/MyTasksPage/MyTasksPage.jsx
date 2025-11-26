@@ -108,7 +108,9 @@ function getActualDeadline(milestone) {
   const actualStart = getActualStartDate(milestone);
   if (actualStart && milestone.milestoneSlaDays) {
     const dueDate = new Date(actualStart);
-    dueDate.setDate(dueDate.getDate() + Number(milestone.milestoneSlaDays || 0));
+    dueDate.setDate(
+      dueDate.getDate() + Number(milestone.milestoneSlaDays || 0)
+    );
     return dueDate;
   }
   if (milestone.actualEndAt) {
@@ -337,9 +339,14 @@ const MyTasksPage = ({ onOpenTask }) => {
             record.status?.toLowerCase() === 'completed' ||
             record.status?.toLowerCase() === 'cancelled';
           const isOverdue =
-            !isCompleted && actualDeadline && actualDeadline.getTime() < now.getTime();
+            !isCompleted &&
+            actualDeadline &&
+            actualDeadline.getTime() < now.getTime();
           const daysDiff = actualDeadline
-            ? Math.floor((actualDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            ? Math.floor(
+                (actualDeadline.getTime() - now.getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
             : null;
           const isNearDeadline =
             !isOverdue && daysDiff !== null && daysDiff <= 3 && daysDiff >= 0;
@@ -359,7 +366,9 @@ const MyTasksPage = ({ onOpenTask }) => {
                 Planned
               </Text>
               {plannedDeadline ? (
-                <Text type="secondary">Deadline: {formatDateTime(plannedDeadline)}</Text>
+                <Text type="secondary">
+                  Deadline: {formatDateTime(plannedDeadline)}
+                </Text>
               ) : (
                 <Text type="secondary">-</Text>
               )}

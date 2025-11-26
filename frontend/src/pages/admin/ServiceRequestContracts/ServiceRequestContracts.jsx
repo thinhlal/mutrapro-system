@@ -241,9 +241,12 @@ export default function ServiceRequestContracts() {
             {(() => {
               // Get due date from last milestone's plannedDueDate (calculated by backend)
               if (record?.milestones && record.milestones.length > 0) {
-                const lastMilestone = record.milestones[record.milestones.length - 1];
+                const lastMilestone =
+                  record.milestones[record.milestones.length - 1];
                 if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format('DD/MM/YYYY');
+                  return dayjs(lastMilestone.plannedDueDate).format(
+                    'DD/MM/YYYY'
+                  );
                 }
               }
               // No plannedDueDate yet (not calculated)
@@ -431,9 +434,7 @@ export default function ServiceRequestContracts() {
       </Card>
 
       {/* Chat Popup */}
-      {requestId && (
-        <ChatPopup requestId={requestId} roomType="REQUEST_CHAT" />
-      )}
+      {requestId && <ChatPopup requestId={requestId} roomType="REQUEST_CHAT" />}
     </div>
   );
 }

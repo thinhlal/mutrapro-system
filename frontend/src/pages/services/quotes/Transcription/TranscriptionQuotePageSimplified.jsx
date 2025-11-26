@@ -338,7 +338,7 @@ export default function TranscriptionQuotePageSimplified() {
                               title: 'Instrument Name',
                               dataIndex: 'instrumentName',
                               key: 'instrumentName',
-                              render: (text) => (
+                              render: text => (
                                 <Space>
                                   <Text strong>{text}</Text>
                                 </Space>

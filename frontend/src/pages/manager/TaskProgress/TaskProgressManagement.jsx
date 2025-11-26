@@ -197,7 +197,7 @@ export default function TaskProgressManagement() {
       cancelled: 0,
       hasIssue: 0,
     };
-    
+
     tasks.forEach(task => {
       stats.total += 1;
       const status = task.status?.toLowerCase();
@@ -207,7 +207,7 @@ export default function TaskProgressManagement() {
       else stats.assigned += 1;
       if (task.hasIssue) stats.hasIssue += 1;
     });
-    
+
     return stats;
   };
 
@@ -220,18 +220,25 @@ export default function TaskProgressManagement() {
   }, []);
 
   // Fetch stats for a contract (lazy loading)
-  const fetchContractTaskStats = useCallback(async contractId => {
-    if (contractTaskStats[contractId]) return; // Already fetched
-    
-    try {
-      const response = await getTaskAssignmentsByContract(contractId);
-      const tasks = response?.status === 'success' && response?.data ? response.data : [];
-      updateContractStats(contractId, tasks);
-    } catch (error) {
-      console.error(`Error fetching task stats for contract ${contractId}:`, error);
-      updateContractStats(contractId, []); // Set default stats on error
-    }
-  }, [contractTaskStats, updateContractStats]);
+  const fetchContractTaskStats = useCallback(
+    async contractId => {
+      if (contractTaskStats[contractId]) return; // Already fetched
+
+      try {
+        const response = await getTaskAssignmentsByContract(contractId);
+        const tasks =
+          response?.status === 'success' && response?.data ? response.data : [];
+        updateContractStats(contractId, tasks);
+      } catch (error) {
+        console.error(
+          `Error fetching task stats for contract ${contractId}:`,
+          error
+        );
+        updateContractStats(contractId, []); // Set default stats on error
+      }
+    },
+    [contractTaskStats, updateContractStats]
+  );
 
   const fetchTaskAssignments = async contractId => {
     try {
@@ -240,10 +247,10 @@ export default function TaskProgressManagement() {
       if (response?.status === 'success' && response?.data) {
         const assignments = response.data || [];
         setTaskAssignments(assignments);
-        
+
         // Update contract stats
         updateContractStats(contractId, assignments);
-        
+
         // Fetch files for all assignments to calculate progress
         const filesMap = {};
         await Promise.all(
@@ -253,20 +260,27 @@ export default function TaskProgressManagement() {
               filesMap[assignment.assignmentId] = [];
               return;
             }
-            
+
             try {
               const filesResponse = await axiosInstance.get(
                 `/api/v1/projects/files/by-assignment/${assignment.assignmentId}`
               );
-              if (filesResponse?.data?.status === 'success' && filesResponse?.data?.data) {
-                filesMap[assignment.assignmentId] = filesResponse.data.data || [];
+              if (
+                filesResponse?.data?.status === 'success' &&
+                filesResponse?.data?.data
+              ) {
+                filesMap[assignment.assignmentId] =
+                  filesResponse.data.data || [];
               } else {
                 filesMap[assignment.assignmentId] = [];
               }
             } catch (error) {
               // Log error but don't break the flow - just set empty array
               if (error?.response?.status !== 500) {
-                console.error(`Error fetching files for assignment ${assignment.assignmentId}:`, error);
+                console.error(
+                  `Error fetching files for assignment ${assignment.assignmentId}:`,
+                  error
+                );
               }
               filesMap[assignment.assignmentId] = [];
             }
@@ -325,113 +339,124 @@ export default function TaskProgressManagement() {
     if (record.status === 'assigned') return 0;
     if (record.status === 'cancelled') return 0;
     if (record.status === 'completed') return 100;
-    
+
     // in_progress: tính dựa trên files
     if (record.status === 'in_progress') {
       const files = taskFilesMap[record.assignmentId] || [];
-      
+
       if (files.length === 0) {
         // Chưa có file nào
         return 25;
       }
-      
+
       // Kiểm tra file status cao nhất
       const hasDelivered = files.some(f => f.deliveredToCustomer);
-      const hasApproved = files.some(f => f.fileStatus?.toLowerCase() === 'approved');
-      const hasPendingReview = files.some(f => f.fileStatus?.toLowerCase() === 'pending_review');
-      const hasUploaded = files.some(f => f.fileStatus?.toLowerCase() === 'uploaded');
-      
+      const hasApproved = files.some(
+        f => f.fileStatus?.toLowerCase() === 'approved'
+      );
+      const hasPendingReview = files.some(
+        f => f.fileStatus?.toLowerCase() === 'pending_review'
+      );
+      const hasUploaded = files.some(
+        f => f.fileStatus?.toLowerCase() === 'uploaded'
+      );
+
       if (hasDelivered) return 100;
       if (hasApproved) return 75;
       if (hasPendingReview) return 50;
       if (hasUploaded) return 50;
-      
+
       // Có file nhưng không rõ status
       return 50;
     }
-    
+
     return 0;
   };
 
   // Get contract badge/indicator
-  const getContractBadge = useCallback((contractId) => {
-    const stats = contractTaskStats[contractId];
-    if (!stats) {
-      // Chưa có stats - ưu tiên thấp nhưng không phải cuối cùng
+  const getContractBadge = useCallback(
+    contractId => {
+      const stats = contractTaskStats[contractId];
+      if (!stats) {
+        // Chưa có stats - ưu tiên thấp nhưng không phải cuối cùng
+        return { label: null, color: null, priority: 50 };
+      }
+
+      const activeTasks = stats.total - stats.cancelled;
+
+      // Ưu tiên hiển thị issue nếu có (cần theo dõi)
+      if (stats.hasIssue > 0 && activeTasks > 0) {
+        return {
+          label: `⚠️ ${stats.hasIssue} issue`,
+          color: 'orange',
+          priority: 0,
+        };
+      }
+
+      // Hiển thị thông tin task active - ưu tiên cao
+      if (stats.inProgress > 0) {
+        return {
+          label: `🔄 ${stats.inProgress} đang làm`,
+          color: 'blue',
+          priority: 1, // Đổi từ 2 xuống 1 để ưu tiên hơn "chưa có task"
+        };
+      }
+
+      if (stats.total === 0) {
+        return { label: 'Chưa có task', color: 'default', priority: 2 };
+      }
+
+      if (stats.assigned > 0) {
+        return {
+          label: `📋 ${stats.assigned} đã gán`,
+          color: 'cyan',
+          priority: 3,
+        };
+      }
+
+      if (stats.completed === activeTasks && activeTasks > 0) {
+        return {
+          label: `✅ ${stats.completed} hoàn thành`,
+          color: 'green',
+          priority: 4, // Hoàn thành ưu tiên thấp nhất
+        };
+      }
+
       return { label: null, color: null, priority: 50 };
-    }
-
-    const activeTasks = stats.total - stats.cancelled;
-
-    // Ưu tiên hiển thị issue nếu có (cần theo dõi)
-    if (stats.hasIssue > 0 && activeTasks > 0) {
-      return {
-        label: `⚠️ ${stats.hasIssue} issue`,
-        color: 'orange',
-        priority: 0,
-      };
-    }
-
-    // Hiển thị thông tin task active - ưu tiên cao
-    if (stats.inProgress > 0) {
-      return { 
-        label: `🔄 ${stats.inProgress} đang làm`, 
-        color: 'blue', 
-        priority: 1  // Đổi từ 2 xuống 1 để ưu tiên hơn "chưa có task"
-      };
-    }
-    
-    if (stats.total === 0) {
-      return { label: 'Chưa có task', color: 'default', priority: 2 };
-    }
-    
-    if (stats.assigned > 0) {
-      return { 
-        label: `📋 ${stats.assigned} đã gán`, 
-        color: 'cyan', 
-        priority: 3 
-      };
-    }
-    
-    if (stats.completed === activeTasks && activeTasks > 0) {
-      return { 
-        label: `✅ ${stats.completed} hoàn thành`, 
-        color: 'green', 
-        priority: 4  // Hoàn thành ưu tiên thấp nhất
-      };
-    }
-
-    return { label: null, color: null, priority: 50 };
-  }, [contractTaskStats]);
+    },
+    [contractTaskStats]
+  );
 
   // Filter contracts by search
   const filteredContracts = useMemo(() => {
     const keyword = contractSearch.toLowerCase();
-    return contracts.filter(contract => {
-      if (!keyword) return true;
-      const number = contract.contractNumber?.toLowerCase() || '';
-      const name = contract.nameSnapshot?.toLowerCase() || '';
-      const type = contract.contractType?.toLowerCase() || '';
-      return (
-        number.includes(keyword) ||
-        name.includes(keyword) ||
-        type.includes(keyword)
-      );
-    }).sort((a, b) => {
-      // Sort by priority: contracts with issues first, then in progress, then others
-      const badgeA = getContractBadge(a.contractId);
-      const badgeB = getContractBadge(b.contractId);
-      const priorityA = badgeA?.priority ?? 99;
-      const priorityB = badgeB?.priority ?? 99;
-      
-      // Sort by priority (lower number = higher priority)
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-      
-      // If same priority, sort by contract number
-      return (a.contractNumber || '').localeCompare(b.contractNumber || '');
-    });
+    return contracts
+      .filter(contract => {
+        if (!keyword) return true;
+        const number = contract.contractNumber?.toLowerCase() || '';
+        const name = contract.nameSnapshot?.toLowerCase() || '';
+        const type = contract.contractType?.toLowerCase() || '';
+        return (
+          number.includes(keyword) ||
+          name.includes(keyword) ||
+          type.includes(keyword)
+        );
+      })
+      .sort((a, b) => {
+        // Sort by priority: contracts with issues first, then in progress, then others
+        const badgeA = getContractBadge(a.contractId);
+        const badgeB = getContractBadge(b.contractId);
+        const priorityA = badgeA?.priority ?? 99;
+        const priorityB = badgeB?.priority ?? 99;
+
+        // Sort by priority (lower number = higher priority)
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+
+        // If same priority, sort by contract number
+        return (a.contractNumber || '').localeCompare(b.contractNumber || '');
+      });
   }, [contracts, contractSearch, getContractBadge]);
 
   // Lazy load stats for displayed contracts
@@ -455,11 +480,11 @@ export default function TaskProgressManagement() {
       <Space direction="vertical" size={0}>
         <Text strong>{name}</Text>
         {email && (
-          <Text type="secondary" style={{ fontSize: 12 }}>{email}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {email}
+          </Text>
         )}
-        {specialization && (
-          <Tag size="small">{specialization}</Tag>
-        )}
+        {specialization && <Tag size="small">{specialization}</Tag>}
       </Space>
     );
   };
@@ -524,9 +549,9 @@ export default function TaskProgressManagement() {
         setSelectedIssueTask(null);
 
         // Navigate đến workspace với data pre-filled từ task cũ
-      navigate(
-        `/manager/milestone-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
-      );
+        navigate(
+          `/manager/milestone-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
+        );
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
@@ -552,7 +577,7 @@ export default function TaskProgressManagement() {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   // Sort task assignments: ưu tiên theo status, issue, và deadline
@@ -561,7 +586,7 @@ export default function TaskProgressManagement() {
       // 1. Ưu tiên tasks có issue (cần theo dõi)
       if (a.hasIssue && !b.hasIssue) return -1;
       if (!a.hasIssue && b.hasIssue) return 1;
-      
+
       // 2. Ưu tiên theo status: in_progress > assigned > completed > cancelled
       const statusPriority = {
         in_progress: 0,
@@ -574,23 +599,27 @@ export default function TaskProgressManagement() {
       if (priorityA !== priorityB) {
         return priorityA - priorityB;
       }
-      
+
       // 3. Nếu cùng status, sort theo deadline (sắp đến hạn lên trước)
-      const dueDateA = getActualDeadlineDayjs(a.milestone) || getPlannedDeadlineDayjs(a.milestone);
-      const dueDateB = getActualDeadlineDayjs(b.milestone) || getPlannedDeadlineDayjs(b.milestone);
+      const dueDateA =
+        getActualDeadlineDayjs(a.milestone) ||
+        getPlannedDeadlineDayjs(a.milestone);
+      const dueDateB =
+        getActualDeadlineDayjs(b.milestone) ||
+        getPlannedDeadlineDayjs(b.milestone);
       if (dueDateA && dueDateB) {
         return dayjs(dueDateA).valueOf() - dayjs(dueDateB).valueOf();
       }
       if (dueDateA && !dueDateB) return -1;
       if (!dueDateA && dueDateB) return 1;
-      
+
       // 4. Nếu không có deadline, sort theo assignedDate (mới nhất lên trước)
       const dateA = a.assignedDate || '';
       const dateB = b.assignedDate || '';
       if (dateA && dateB) {
         return new Date(dateB) - new Date(dateA);
       }
-      
+
       return 0;
     });
   }, [taskAssignments]);
@@ -618,7 +647,10 @@ export default function TaskProgressManagement() {
       key: 'milestoneId',
       width: 140,
       render: milestoneId => (
-        <Text type="secondary" ellipsis={{ tooltip: getMilestoneName(milestoneId) }}>
+        <Text
+          type="secondary"
+          ellipsis={{ tooltip: getMilestoneName(milestoneId) }}
+        >
           {getMilestoneName(milestoneId)}
         </Text>
       ),
@@ -634,7 +666,11 @@ export default function TaskProgressManagement() {
             {STATUS_LABELS[status] || status?.toUpperCase()}
           </Tag>
           {record.hasIssue && (
-            <Tag color="orange" icon={<ExclamationCircleOutlined />} size="small">
+            <Tag
+              color="orange"
+              icon={<ExclamationCircleOutlined />}
+              size="small"
+            >
               Issue
             </Tag>
           )}
@@ -677,8 +713,12 @@ export default function TaskProgressManagement() {
         }
         const now = dayjs();
         const isOverdue =
-          actualDeadline && actualDeadline.isBefore(now) && record.status !== 'completed';
-        const diffDays = actualDeadline ? actualDeadline.diff(now, 'day') : null;
+          actualDeadline &&
+          actualDeadline.isBefore(now) &&
+          record.status !== 'completed';
+        const diffDays = actualDeadline
+          ? actualDeadline.diff(now, 'day')
+          : null;
         const isNearDeadline =
           diffDays !== null && diffDays <= 3 && diffDays >= 0 && !isOverdue;
         return (
@@ -692,20 +732,36 @@ export default function TaskProgressManagement() {
                   </Text>
                 )}
                 <Text
-                  type={isOverdue ? 'danger' : isNearDeadline ? 'warning' : undefined}
+                  type={
+                    isOverdue
+                      ? 'danger'
+                      : isNearDeadline
+                        ? 'warning'
+                        : undefined
+                  }
                   strong={isOverdue || isNearDeadline}
                   style={{ fontSize: 12 }}
                 >
                   Deadline: {actualDeadline.format('HH:mm DD/MM')}
                 </Text>
-                {isOverdue && <Tag color="red" size="small">Quá hạn</Tag>}
-                {isNearDeadline && <Tag color="orange" size="small">Sắp hạn</Tag>}
+                {isOverdue && (
+                  <Tag color="red" size="small">
+                    Quá hạn
+                  </Tag>
+                )}
+                {isNearDeadline && (
+                  <Tag color="orange" size="small">
+                    Sắp hạn
+                  </Tag>
+                )}
               </Space>
             ) : (
               <Text type="secondary">Chưa bắt đầu</Text>
             )}
             <Divider style={{ margin: '4px 0' }} dashed />
-            <Text strong type="secondary">Planned timeline</Text>
+            <Text strong type="secondary">
+              Planned timeline
+            </Text>
             {plannedDeadline ? (
               <Space direction="vertical" size={0}>
                 {plannedStart && (
@@ -742,22 +798,36 @@ export default function TaskProgressManagement() {
             <Text strong>Actual completion</Text>
             {completedDate ? (
               <Space direction="vertical" size={0}>
-                <Text style={{ fontSize: 12 }}>{completedDate.format('HH:mm DD/MM/YYYY')}</Text>
-                {actualDeadline && (() => {
-                  const isOnTime =
-                    completedDate.isBefore(actualDeadline) || completedDate.isSame(actualDeadline);
-                  if (isOnTime) {
-                    return <Tag color="green" size="small">Đúng hạn</Tag>;
-                  }
-                  const daysLate = completedDate.diff(actualDeadline, 'day');
-                  return <Tag color="red" size="small">Trễ {daysLate}d</Tag>;
-                })()}
+                <Text style={{ fontSize: 12 }}>
+                  {completedDate.format('HH:mm DD/MM/YYYY')}
+                </Text>
+                {actualDeadline &&
+                  (() => {
+                    const isOnTime =
+                      completedDate.isBefore(actualDeadline) ||
+                      completedDate.isSame(actualDeadline);
+                    if (isOnTime) {
+                      return (
+                        <Tag color="green" size="small">
+                          Đúng hạn
+                        </Tag>
+                      );
+                    }
+                    const daysLate = completedDate.diff(actualDeadline, 'day');
+                    return (
+                      <Tag color="red" size="small">
+                        Trễ {daysLate}d
+                      </Tag>
+                    );
+                  })()}
               </Space>
             ) : (
               <Text type="secondary">Chưa hoàn thành</Text>
             )}
             <Divider style={{ margin: '4px 0' }} dashed />
-            <Text strong type="secondary">Planned deadline</Text>
+            <Text strong type="secondary">
+              Planned deadline
+            </Text>
             {plannedDeadline ? (
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {plannedDeadline.format('HH:mm DD/MM/YYYY')}
@@ -783,7 +853,7 @@ export default function TaskProgressManagement() {
                 danger
                 size="small"
                 icon={<ExclamationCircleOutlined />}
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   handleViewIssueDetails(record);
                 }}
@@ -827,7 +897,7 @@ export default function TaskProgressManagement() {
       <Row gutter={[16, 16]} className={styles.layoutGrid}>
         {!contractsCollapsed && (
           <Col xs={24} lg={6}>
-            <Card 
+            <Card
               title="Contracts"
               extra={
                 <Button
@@ -838,93 +908,108 @@ export default function TaskProgressManagement() {
                 />
               }
             >
-            <Input.Search
-              placeholder="Tìm contract..."
-              allowClear
-              value={contractSearch}
-              onChange={e => setContractSearch(e.target.value)}
-              onSearch={value => setContractSearch(value)}
-            />
-            <div className={styles.contractList}>
-              {contractsLoading ? (
-                <div className={styles.contractListLoading}>
-                  <Spin size="large" tip="Đang tải contracts..." />
-                </div>
-              ) : filteredContracts.length > 0 ? (
-                <List
-                  rowKey="contractId"
-                  dataSource={filteredContracts}
-                  renderItem={item => {
-                    const isActive = item.contractId === selectedContractId;
-                    return (
-                      <List.Item
-                        className={`${styles.contractItem} ${
-                          isActive ? styles.contractItemActive : ''
-                        }`}
-                        onClick={() => setSelectedContractId(item.contractId)}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <div>
-                            <Text strong>{item.contractNumber}</Text>
-                            <span className={styles.contractMeta}>
-                              {item.nameSnapshot || 'N/A'}
-                            </span>
+              <Input.Search
+                placeholder="Tìm contract..."
+                allowClear
+                value={contractSearch}
+                onChange={e => setContractSearch(e.target.value)}
+                onSearch={value => setContractSearch(value)}
+              />
+              <div className={styles.contractList}>
+                {contractsLoading ? (
+                  <div className={styles.contractListLoading}>
+                    <Spin size="large" tip="Đang tải contracts..." />
+                  </div>
+                ) : filteredContracts.length > 0 ? (
+                  <List
+                    rowKey="contractId"
+                    dataSource={filteredContracts}
+                    renderItem={item => {
+                      const isActive = item.contractId === selectedContractId;
+                      return (
+                        <List.Item
+                          className={`${styles.contractItem} ${
+                            isActive ? styles.contractItemActive : ''
+                          }`}
+                          onClick={() => setSelectedContractId(item.contractId)}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div>
+                              <Text strong>{item.contractNumber}</Text>
+                              <span className={styles.contractMeta}>
+                                {item.nameSnapshot || 'N/A'}
+                              </span>
+                            </div>
+                            {(() => {
+                              const badge = getContractBadge(item.contractId);
+                              const stats = contractTaskStats[item.contractId];
+                              return (
+                                <div style={{ marginTop: 4 }}>
+                                  {badge && (
+                                    <Tag
+                                      color={badge.color}
+                                      style={{ marginRight: 4 }}
+                                    >
+                                      {badge.label}
+                                    </Tag>
+                                  )}
+                                  {stats && stats.total > 0 && (
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: 11 }}
+                                    >
+                                      Tổng: {stats.total} tasks
+                                    </Text>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
-                          {(() => {
-                            const badge = getContractBadge(item.contractId);
-                            const stats = contractTaskStats[item.contractId];
-                            return (
-                              <div style={{ marginTop: 4 }}>
-                                {badge && (
-                                  <Tag color={badge.color} style={{ marginRight: 4 }}>
-                                    {badge.label}
-                                  </Tag>
-                                )}
-                                {stats && stats.total > 0 && (
-                                  <Text type="secondary" style={{ fontSize: 11 }}>
-                                    Tổng: {stats.total} tasks
-                                  </Text>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                        <div>
-                          <Tag>{item.contractType}</Tag>
-                          <Tag color="green" className={styles.contractStatus}>
-                            {item.status}
-                          </Tag>
-                        </div>
-                      </List.Item>
-                    );
-                  }}
-                />
-              ) : (
-                <Empty
-                  description="Không có contract nào"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
-            </div>
-          </Card>
+                          <div>
+                            <Tag>{item.contractType}</Tag>
+                            <Tag
+                              color="green"
+                              className={styles.contractStatus}
+                            >
+                              {item.status}
+                            </Tag>
+                          </div>
+                        </List.Item>
+                      );
+                    }}
+                  />
+                ) : (
+                  <Empty
+                    description="Không có contract nào"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
+              </div>
+            </Card>
           </Col>
         )}
         <Col xs={24} lg={contractsCollapsed ? 24 : 18}>
           <Card
-            title={contractsCollapsed && (
-              <Space>
-                <Button
-                  type="text"
-                  icon={<MenuUnfoldOutlined />}
-                  onClick={() => setContractsCollapsed(false)}
-                  size="small"
-                />
-                <span>Danh sách Tasks</span>
-              </Space>
-            )}
+            title={
+              contractsCollapsed && (
+                <Space>
+                  <Button
+                    type="text"
+                    icon={<MenuUnfoldOutlined />}
+                    onClick={() => setContractsCollapsed(false)}
+                    size="small"
+                  />
+                  <span>Danh sách Tasks</span>
+                </Space>
+              )
+            }
           >
             {selectedContract ? (
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="large"
+                style={{ width: '100%' }}
+              >
                 <div className={styles.contractInfo}>
                   <div>
                     <Text strong>Contract Number: </Text>
@@ -975,11 +1060,14 @@ export default function TaskProgressManagement() {
           setTaskFiles([]);
         }}
         footer={[
-          <Button key="close" onClick={() => {
-            setTaskDetailModalVisible(false);
-            setSelectedTask(null);
-            setTaskFiles([]);
-          }}>
+          <Button
+            key="close"
+            onClick={() => {
+              setTaskDetailModalVisible(false);
+              setSelectedTask(null);
+              setTaskFiles([]);
+            }}
+          >
             Đóng
           </Button>,
         ]}
@@ -991,7 +1079,8 @@ export default function TaskProgressManagement() {
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Task Type">
                 <Tag color="cyan">
-                  {TASK_TYPE_LABELS[selectedTask.taskType] || selectedTask.taskType}
+                  {TASK_TYPE_LABELS[selectedTask.taskType] ||
+                    selectedTask.taskType}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Status">
@@ -1002,7 +1091,9 @@ export default function TaskProgressManagement() {
               <Descriptions.Item label="Specialist">
                 <Space direction="vertical" size={0}>
                   <Text strong>
-                    {selectedTask.specialistName || selectedTask.specialistId || 'N/A'}
+                    {selectedTask.specialistName ||
+                      selectedTask.specialistId ||
+                      'N/A'}
                   </Text>
                   {selectedTask.specialistEmail && (
                     <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1025,31 +1116,42 @@ export default function TaskProgressManagement() {
                     <Text strong>Actual</Text>
                     <Space direction="vertical" size={0}>
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        Start: {getActualStartDayjs(selectedTask.milestone)
-                          ? getActualStartDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                        Start:{' '}
+                        {getActualStartDayjs(selectedTask.milestone)
+                          ? getActualStartDayjs(selectedTask.milestone).format(
+                              'HH:mm DD/MM/YYYY'
+                            )
                           : 'Chưa có'}
                       </Text>
                       <Text>
                         Deadline:{' '}
                         {getActualDeadlineDayjs(selectedTask.milestone)
-                          ? getActualDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          ? getActualDeadlineDayjs(
+                              selectedTask.milestone
+                            ).format('HH:mm DD/MM/YYYY')
                           : '-'}
                       </Text>
                     </Space>
                   </div>
                   <div>
-                    <Text strong type="secondary">Planned</Text>
+                    <Text strong type="secondary">
+                      Planned
+                    </Text>
                     <Space direction="vertical" size={0}>
                       <Text type="secondary" style={{ fontSize: 11 }}>
                         Start:{' '}
                         {getPlannedStartDayjs(selectedTask.milestone)
-                          ? getPlannedStartDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          ? getPlannedStartDayjs(selectedTask.milestone).format(
+                              'HH:mm DD/MM/YYYY'
+                            )
                           : '-'}
                       </Text>
                       <Text type="secondary">
                         Deadline:{' '}
                         {getPlannedDeadlineDayjs(selectedTask.milestone)
-                          ? getPlannedDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')
+                          ? getPlannedDeadlineDayjs(
+                              selectedTask.milestone
+                            ).format('HH:mm DD/MM/YYYY')
                           : '-'}
                       </Text>
                     </Space>
@@ -1062,17 +1164,23 @@ export default function TaskProgressManagement() {
                     <Text strong>Actual</Text>
                     {getTaskCompletionDate(selectedTask) ? (
                       <Text>
-                        {dayjs(getTaskCompletionDate(selectedTask)).format('HH:mm DD/MM/YYYY')}
+                        {dayjs(getTaskCompletionDate(selectedTask)).format(
+                          'HH:mm DD/MM/YYYY'
+                        )}
                       </Text>
                     ) : (
                       <Text type="secondary">Chưa có</Text>
                     )}
                   </div>
                   <div>
-                    <Text strong type="secondary">Planned deadline</Text>
+                    <Text strong type="secondary">
+                      Planned deadline
+                    </Text>
                     {getPlannedDeadlineDayjs(selectedTask.milestone) ? (
                       <Text type="secondary">
-                        {getPlannedDeadlineDayjs(selectedTask.milestone).format('HH:mm DD/MM/YYYY')}
+                        {getPlannedDeadlineDayjs(selectedTask.milestone).format(
+                          'HH:mm DD/MM/YYYY'
+                        )}
                       </Text>
                     ) : (
                       <Text type="secondary">-</Text>
@@ -1087,25 +1195,34 @@ export default function TaskProgressManagement() {
               <Timeline
                 items={(() => {
                   const timelineItems = [];
-                  
+
                   // 1. Task được gán
                   timelineItems.push({
                     color: selectedTask.assignedDate ? 'green' : 'gray',
-                    dot: selectedTask.assignedDate ? <CheckCircleOutlined /> : <ClockCircleOutlined />,
+                    dot: selectedTask.assignedDate ? (
+                      <CheckCircleOutlined />
+                    ) : (
+                      <ClockCircleOutlined />
+                    ),
                     children: (
                       <Space direction="vertical" size={0}>
                         <Text strong>Task được gán</Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {selectedTask.assignedDate
-                            ? dayjs(selectedTask.assignedDate).format('HH:mm DD/MM/YYYY')
+                            ? dayjs(selectedTask.assignedDate).format(
+                                'HH:mm DD/MM/YYYY'
+                              )
                             : 'Chưa có'}
                         </Text>
                       </Space>
                     ),
                   });
-                  
+
                   // 2. Specialist accept task (bắt đầu làm)
-                  if (selectedTask.status === 'in_progress' || selectedTask.status === 'completed') {
+                  if (
+                    selectedTask.status === 'in_progress' ||
+                    selectedTask.status === 'completed'
+                  ) {
                     timelineItems.push({
                       color: 'blue',
                       dot: <PlayCircleOutlined />,
@@ -1114,32 +1231,41 @@ export default function TaskProgressManagement() {
                           <Text strong>Specialist bắt đầu làm</Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.specialistRespondedAt
-                              ? dayjs(selectedTask.specialistRespondedAt).format('HH:mm DD/MM/YYYY')
+                              ? dayjs(
+                                  selectedTask.specialistRespondedAt
+                                ).format('HH:mm DD/MM/YYYY')
                               : 'Đã bắt đầu'}
                           </Text>
                         </Space>
                       ),
                     });
                   }
-                  
+
                   // 3. File được upload (nếu có)
                   if (taskFiles.length > 0) {
                     const uploadedFiles = taskFiles.filter(f => f.uploadDate);
                     if (uploadedFiles.length > 0) {
-                      const latestUpload = uploadedFiles.sort((a, b) => 
-                        new Date(b.uploadDate) - new Date(a.uploadDate)
+                      const latestUpload = uploadedFiles.sort(
+                        (a, b) =>
+                          new Date(b.uploadDate) - new Date(a.uploadDate)
                       )[0];
                       timelineItems.push({
-                        color: latestUpload.fileStatus?.toLowerCase() === 'rejected' ? 'red' : 'blue',
+                        color:
+                          latestUpload.fileStatus?.toLowerCase() === 'rejected'
+                            ? 'red'
+                            : 'blue',
                         dot: <FileOutlined />,
                         children: (
                           <Space direction="vertical" size={0}>
                             <Text strong>
                               File được upload
-                              {uploadedFiles.length > 1 && ` (${uploadedFiles.length} files)`}
+                              {uploadedFiles.length > 1 &&
+                                ` (${uploadedFiles.length} files)`}
                             </Text>
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              {dayjs(latestUpload.uploadDate).format('HH:mm DD/MM/YYYY')}
+                              {dayjs(latestUpload.uploadDate).format(
+                                'HH:mm DD/MM/YYYY'
+                              )}
                             </Text>
                             {latestUpload.fileName && (
                               <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1151,14 +1277,16 @@ export default function TaskProgressManagement() {
                       });
                     }
                   }
-                  
+
                   // 4. File được approve (nếu có)
-                  const approvedFiles = taskFiles.filter(f => 
-                    f.fileStatus?.toLowerCase() === 'approved'
+                  const approvedFiles = taskFiles.filter(
+                    f => f.fileStatus?.toLowerCase() === 'approved'
                   );
                   if (approvedFiles.length > 0) {
-                    const latestApproved = approvedFiles.sort((a, b) => 
-                      new Date(b.reviewedAt || b.uploadDate) - new Date(a.reviewedAt || a.uploadDate)
+                    const latestApproved = approvedFiles.sort(
+                      (a, b) =>
+                        new Date(b.reviewedAt || b.uploadDate) -
+                        new Date(a.reviewedAt || a.uploadDate)
                     )[0];
                     timelineItems.push({
                       color: 'green',
@@ -1167,14 +1295,19 @@ export default function TaskProgressManagement() {
                         <Space direction="vertical" size={0}>
                           <Text strong>
                             File được duyệt
-                            {approvedFiles.length > 1 && ` (${approvedFiles.length} files)`}
+                            {approvedFiles.length > 1 &&
+                              ` (${approvedFiles.length} files)`}
                           </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {latestApproved.reviewedAt
-                              ? dayjs(latestApproved.reviewedAt).format('HH:mm DD/MM/YYYY')
+                              ? dayjs(latestApproved.reviewedAt).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )
                               : latestApproved.uploadDate
-                              ? dayjs(latestApproved.uploadDate).format('HH:mm DD/MM/YYYY')
-                              : 'N/A'}
+                                ? dayjs(latestApproved.uploadDate).format(
+                                    'HH:mm DD/MM/YYYY'
+                                  )
+                                : 'N/A'}
                           </Text>
                           {latestApproved.fileName && (
                             <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1185,12 +1318,16 @@ export default function TaskProgressManagement() {
                       ),
                     });
                   }
-                  
+
                   // 5. File được deliver (nếu có)
-                  const deliveredFiles = taskFiles.filter(f => f.deliveredToCustomer);
+                  const deliveredFiles = taskFiles.filter(
+                    f => f.deliveredToCustomer
+                  );
                   if (deliveredFiles.length > 0) {
-                    const latestDelivered = deliveredFiles.sort((a, b) => 
-                      new Date(b.deliveredAt || b.uploadDate) - new Date(a.deliveredAt || a.uploadDate)
+                    const latestDelivered = deliveredFiles.sort(
+                      (a, b) =>
+                        new Date(b.deliveredAt || b.uploadDate) -
+                        new Date(a.deliveredAt || a.uploadDate)
                     )[0];
                     timelineItems.push({
                       color: 'green',
@@ -1199,14 +1336,19 @@ export default function TaskProgressManagement() {
                         <Space direction="vertical" size={0}>
                           <Text strong>
                             File được giao khách
-                            {deliveredFiles.length > 1 && ` (${deliveredFiles.length} files)`}
+                            {deliveredFiles.length > 1 &&
+                              ` (${deliveredFiles.length} files)`}
                           </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {latestDelivered.deliveredAt
-                              ? dayjs(latestDelivered.deliveredAt).format('HH:mm DD/MM/YYYY')
+                              ? dayjs(latestDelivered.deliveredAt).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )
                               : latestDelivered.uploadDate
-                              ? dayjs(latestDelivered.uploadDate).format('HH:mm DD/MM/YYYY')
-                              : 'N/A'}
+                                ? dayjs(latestDelivered.uploadDate).format(
+                                    'HH:mm DD/MM/YYYY'
+                                  )
+                                : 'N/A'}
                           </Text>
                           {latestDelivered.fileName && (
                             <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1217,7 +1359,7 @@ export default function TaskProgressManagement() {
                       ),
                     });
                   }
-                  
+
                   // 6. Task hoàn thành
                   if (selectedTask.status === 'completed') {
                     timelineItems.push({
@@ -1228,7 +1370,9 @@ export default function TaskProgressManagement() {
                           <Text strong>Task hoàn thành</Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
-                              ? dayjs(selectedTask.completedDate).format('HH:mm DD/MM/YYYY')
+                              ? dayjs(selectedTask.completedDate).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )
                               : 'Đã hoàn thành'}
                           </Text>
                         </Space>
@@ -1240,17 +1384,21 @@ export default function TaskProgressManagement() {
                       dot: <ExclamationCircleOutlined />,
                       children: (
                         <Space direction="vertical" size={0}>
-                          <Text strong type="danger">Task đã hủy</Text>
+                          <Text strong type="danger">
+                            Task đã hủy
+                          </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
-                              ? dayjs(selectedTask.completedDate).format('HH:mm DD/MM/YYYY')
+                              ? dayjs(selectedTask.completedDate).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )
                               : 'Đã hủy'}
                           </Text>
                         </Space>
                       ),
                     });
                   }
-                  
+
                   return timelineItems;
                 })()}
               />
@@ -1264,15 +1412,30 @@ export default function TaskProgressManagement() {
                     dataSource={taskFiles}
                     renderItem={file => (
                       <List.Item>
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                        <Space
+                          style={{
+                            width: '100%',
+                            justifyContent: 'space-between',
+                          }}
+                        >
                           <Space>
                             <FileOutlined />
                             <Text strong>{file.fileName}</Text>
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               ({formatFileSize(file.fileSize)})
                             </Text>
-                            <Tag color={FILE_STATUS_COLORS[file.fileStatus?.toLowerCase()] || 'default'}>
-                              {FILE_STATUS_LABELS[file.fileStatus?.toLowerCase()] || file.fileStatus || 'N/A'}
+                            <Tag
+                              color={
+                                FILE_STATUS_COLORS[
+                                  file.fileStatus?.toLowerCase()
+                                ] || 'default'
+                              }
+                            >
+                              {FILE_STATUS_LABELS[
+                                file.fileStatus?.toLowerCase()
+                              ] ||
+                                file.fileStatus ||
+                                'N/A'}
                             </Tag>
                             {file.deliveredToCustomer && (
                               <Tag color="green">Đã giao khách</Tag>
@@ -1281,7 +1444,9 @@ export default function TaskProgressManagement() {
                           <Space>
                             {file.uploadDate && (
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                {dayjs(file.uploadDate).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )}
                               </Text>
                             )}
                           </Space>
@@ -1290,16 +1455,19 @@ export default function TaskProgressManagement() {
                     )}
                   />
                 ) : (
-                  <Empty description="Chưa có file nào được upload" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  <Empty
+                    description="Chưa có file nào được upload"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
                 )}
               </Spin>
             </Card>
 
             {/* Issue Section */}
             {selectedTask.hasIssue && (
-              <Card 
-                title="Issue" 
-                size="small" 
+              <Card
+                title="Issue"
+                size="small"
                 style={{ borderColor: '#ff4d4f' }}
                 extra={
                   <Button
@@ -1314,7 +1482,11 @@ export default function TaskProgressManagement() {
                   </Button>
                 }
               >
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
                   <Tag color="orange" icon={<ExclamationCircleOutlined />}>
                     Có issue
                   </Tag>
@@ -1323,7 +1495,10 @@ export default function TaskProgressManagement() {
                   )}
                   {selectedTask.issueReportedAt && (
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Báo lúc: {dayjs(selectedTask.issueReportedAt).format('HH:mm DD/MM/YYYY')}
+                      Báo lúc:{' '}
+                      {dayjs(selectedTask.issueReportedAt).format(
+                        'HH:mm DD/MM/YYYY'
+                      )}
                     </Text>
                   )}
                 </Space>
@@ -1372,10 +1547,12 @@ export default function TaskProgressManagement() {
                 selectedIssueTask.taskType}
             </p>
             <p>
-              <strong>Specialist:</strong> {formatSpecialistText(selectedIssueTask)}
+              <strong>Specialist:</strong>{' '}
+              {formatSpecialistText(selectedIssueTask)}
             </p>
             <p>
-              <strong>Milestone:</strong> {getMilestoneName(selectedIssueTask.milestoneId)}
+              <strong>Milestone:</strong>{' '}
+              {getMilestoneName(selectedIssueTask.milestoneId)}
             </p>
             <p>
               <strong>Status:</strong>{' '}
@@ -1385,14 +1562,18 @@ export default function TaskProgressManagement() {
             <p>
               <strong>Assigned Date:</strong>{' '}
               {selectedIssueTask.assignedDate
-                ? dayjs(selectedIssueTask.assignedDate).format('YYYY-MM-DD HH:mm')
+                ? dayjs(selectedIssueTask.assignedDate).format(
+                    'YYYY-MM-DD HH:mm'
+                  )
                 : 'N/A'}
             </p>
 
             {selectedIssueTask.issueReportedAt && (
               <p>
                 <strong>Thời gian báo issue:</strong>{' '}
-                {dayjs(selectedIssueTask.issueReportedAt).format('YYYY-MM-DD HH:mm')}
+                {dayjs(selectedIssueTask.issueReportedAt).format(
+                  'YYYY-MM-DD HH:mm'
+                )}
               </p>
             )}
 

@@ -55,7 +55,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
         if (response?.status === 'success' && response?.data) {
           setRoom(response.data);
           setRoomUnavailable(false);
-          
+
           // Load unread count if room exists
           if (response.data.roomId) {
             await loadUnreadCount(response.data.roomId);
@@ -87,10 +87,13 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
   }, [requestId, roomType]);
 
   // Load unread count
-  const loadUnreadCount = async (roomId) => {
+  const loadUnreadCount = async roomId => {
     try {
       const response = await chatService.getUnreadCount(roomId);
-      if (response?.status === 'success' && typeof response?.data === 'number') {
+      if (
+        response?.status === 'success' &&
+        typeof response?.data === 'number'
+      ) {
         setUnreadCount(response.data);
       }
     } catch (error) {
@@ -112,7 +115,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
           console.error('Failed to mark messages as read:', error);
         }
       };
-      
+
       markRead();
     }
   }, [isOpen, isMinimized, room?.roomId]);
@@ -123,7 +126,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-      
+
       // Reset unread count when viewing messages
       if (isOpen && !isMinimized) {
         setUnreadCount(0);
@@ -134,13 +137,13 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
   // Poll unread count when chat is closed or minimized
   useEffect(() => {
     if (!room?.roomId) return;
-    
+
     // Only poll if chat is closed or minimized
     if (!isOpen || isMinimized) {
       const interval = setInterval(() => {
         loadUnreadCount(room.roomId);
       }, 5000); // Poll every 5 seconds
-      
+
       return () => clearInterval(interval);
     }
   }, [room?.roomId, isOpen, isMinimized]);
@@ -156,7 +159,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
     }
   };
 
-  const handleSendMessage = async (content) => {
+  const handleSendMessage = async content => {
     if (!room?.roomId || !content.trim()) return;
     try {
       await sendMessage(content);
@@ -199,7 +202,10 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
       {/* Chat Button (always visible when closed) */}
       {!isOpen && (
         <div className={styles.chatButtonContainer}>
-          <Badge count={displayUnreadCount > 0 ? displayUnreadCount : 0} className={styles.unreadBadge}>
+          <Badge
+            count={displayUnreadCount > 0 ? displayUnreadCount : 0}
+            className={styles.unreadBadge}
+          >
             <Button
               type="primary"
               shape="circle"
@@ -327,7 +333,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
                   </div>
                 ) : (
                   <div className={styles.messagesList}>
-                    {messages.map((message) => (
+                    {messages.map(message => (
                       <MessageBubble
                         key={message.messageId}
                         message={message}
@@ -356,4 +362,3 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
 };
 
 export default ChatPopup;
-

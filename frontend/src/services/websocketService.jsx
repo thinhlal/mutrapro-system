@@ -16,7 +16,7 @@ class WebSocketService {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 3000;
 
-    this.currentToken = null;    // token hiện tại
+    this.currentToken = null; // token hiện tại
     this.shouldReconnect = false; // có cho phép reconnect không
   }
 
@@ -27,8 +27,8 @@ class WebSocketService {
   connect(token) {
     return new Promise((resolve, reject) => {
       try {
-        this.currentToken = token;      // lưu token mới
-        this.shouldReconnect = true;    // cho phép reconnect
+        this.currentToken = token; // lưu token mới
+        this.shouldReconnect = true; // cho phép reconnect
 
         // Nếu đang có connection cũ → disconnect sạch rồi connect lại
         if (this.client && this.connected) {
@@ -147,11 +147,7 @@ class WebSocketService {
    * @param {function} callback - Callback function for incoming messages
    */
   subscribeToRoom(roomId, callback) {
-    if (
-      !this.client ||
-      !this.client.active ||
-      !this.client.connected
-    ) {
+    if (!this.client || !this.client.active || !this.client.connected) {
       console.error('❌ WebSocket not connected');
       return null;
     }
@@ -251,10 +247,10 @@ class WebSocketService {
   disconnect(options = {}) {
     const { preserveToken = false } = options;
 
-    this.shouldReconnect = false;  // tắt auto reconnect
+    this.shouldReconnect = false; // tắt auto reconnect
 
     if (!preserveToken) {
-      this.currentToken = null;    // chỉ xoá token khi logout
+      this.currentToken = null; // chỉ xoá token khi logout
     }
 
     if (this.client) {

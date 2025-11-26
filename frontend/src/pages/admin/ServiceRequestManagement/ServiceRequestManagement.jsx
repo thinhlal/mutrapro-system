@@ -241,8 +241,16 @@ export default function ServiceRequestManagement() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Refresh danh sách khi tab được focus lại
-        fetchAllRequests(allPagination.current - 1, allPagination.pageSize, allSort);
-        fetchMyRequests(myPagination.current - 1, myPagination.pageSize, mySort);
+        fetchAllRequests(
+          allPagination.current - 1,
+          allPagination.pageSize,
+          allSort
+        );
+        fetchMyRequests(
+          myPagination.current - 1,
+          myPagination.pageSize,
+          mySort
+        );
       }
     };
 
@@ -440,8 +448,16 @@ export default function ServiceRequestManagement() {
           <Button
             icon={<ReloadOutlined />}
             onClick={() => {
-              fetchAllRequests(allPagination.current - 1, allPagination.pageSize, allSort);
-              fetchMyRequests(myPagination.current - 1, myPagination.pageSize, mySort);
+              fetchAllRequests(
+                allPagination.current - 1,
+                allPagination.pageSize,
+                allSort
+              );
+              fetchMyRequests(
+                myPagination.current - 1,
+                myPagination.pageSize,
+                mySort
+              );
             }}
           >
             Refresh
@@ -463,7 +479,14 @@ export default function ServiceRequestManagement() {
             }
             key="all"
           >
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <span style={{ fontWeight: 500 }}>Sort by:</span>
               <Select
                 value={allSort}
@@ -506,7 +529,14 @@ export default function ServiceRequestManagement() {
             }
             key="my"
           >
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
               <span style={{ fontWeight: 500 }}>Sort by:</span>
               <Select
                 value={mySort}

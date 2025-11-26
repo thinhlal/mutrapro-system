@@ -1,9 +1,6 @@
 import { useState, useRef } from 'react';
 import { Input, Button, Upload } from 'antd';
-import {
-  SendOutlined,
-  PaperClipOutlined,
-} from '@ant-design/icons';
+import { SendOutlined, PaperClipOutlined } from '@ant-design/icons';
 import styles from './MessageInput.module.css';
 
 const { TextArea } = Input;
@@ -60,7 +57,7 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
           onChange={e => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Nhập tin nhắn..."
-          autoSize={{ minRows: 1}}
+          autoSize={{ minRows: 1 }}
           disabled={disabled || sending}
           className={styles.textarea}
         />

@@ -201,7 +201,8 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                   <Tag>{file.type || 'unknown'}</Tag>
                   <span>{toSize(file.size)}</span>
                   <span>
-                    • Detected Duration: {formatDurationMMSS(detectedDurationMinutes)}
+                    • Detected Duration:{' '}
+                    {formatDurationMMSS(detectedDurationMinutes)}
                   </span>
                 </Space>
                 <Button
@@ -228,8 +229,6 @@ export default function TranscriptionUploader({ serviceType, formData }) {
                     />
                   </div>
                 )}
-
-              
             </Space>
           </div>
         )}

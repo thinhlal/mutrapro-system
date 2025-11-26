@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     const handleAutoLogout = async () => {
       // Disconnect WebSocket trước khi auto logout
       websocketService.disconnect();
-      
+
       // Delay để hiển thị loading animation
       await new Promise(resolve => setTimeout(resolve, 500));
       removeItem('user');
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Disconnect WebSocket trước khi logout
       websocketService.disconnect();
-      
+
       await authService.logout(getItem('accessToken'));
     } catch (_) {
       // bỏ qua lỗi logout để đảm bảo client state được dọn sạch

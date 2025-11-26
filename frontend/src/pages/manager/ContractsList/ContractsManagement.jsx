@@ -326,14 +326,14 @@ export default function ContractsManagement() {
               if (r?.milestones && r.milestones.length > 0) {
                 const lastMilestone = r.milestones[r.milestones.length - 1];
                 if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
+                  return dayjs(lastMilestone.plannedDueDate).format(
+                    'YYYY-MM-DD'
+                  );
                 }
               }
               // No plannedDueDate yet (not calculated)
               return (
-                <span style={{ fontStyle: 'italic', color: '#999' }}>
-                  N/A
-                </span>
+                <span style={{ fontStyle: 'italic', color: '#999' }}>N/A</span>
               );
             })()}{' '}
             <span className={styles.sub}>({r.slaDays || 0}d)</span>

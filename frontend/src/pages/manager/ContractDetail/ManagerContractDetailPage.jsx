@@ -490,7 +490,7 @@ const ManagerContractDetailPage = () => {
         {/* Pricing */}
         <View style={pdfStyles.section}>
           <PdfText style={pdfStyles.sectionTitle}>Pricing & Payment</PdfText>
-          
+
           {/* Price Breakdown Table */}
           {(pricingBreakdown?.transcriptionDetails ||
             pricingBreakdown?.instruments?.length > 0) && (
@@ -509,7 +509,13 @@ const ManagerContractDetailPage = () => {
                   backgroundColor: '#e8e8e8',
                 }}
               >
-                <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
+                <View
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    borderRight: '1px solid #000',
+                  }}
+                >
                   <PdfText style={{ fontWeight: 'bold' }}>Item</PdfText>
                 </View>
                 <View
@@ -534,11 +540,12 @@ const ManagerContractDetailPage = () => {
                       flexDirection: 'row',
                       borderBottom:
                         idx <
-                        pricingBreakdown.transcriptionDetails.breakdown.length - 1
+                        pricingBreakdown.transcriptionDetails.breakdown.length -
+                          1
                           ? '1px solid #000'
                           : pricingBreakdown?.instruments?.length > 0
-                          ? '1px solid #000'
-                          : 'none',
+                            ? '1px solid #000'
+                            : 'none',
                     }}
                   >
                     <View
@@ -724,111 +731,123 @@ const ManagerContractDetailPage = () => {
                 backgroundColor: '#fff',
               }}
             >
-            {/* Table Header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                borderBottom: '1px solid #000',
-                backgroundColor: '#e8e8e8',
-              }}
-            >
-              <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
-                <PdfText style={{ fontWeight: 'bold' }}>Milestone</PdfText>
-              </View>
-              <View style={{ flex: 1, padding: 10, borderRight: '1px solid #000' }}>
-                <PdfText style={{ fontWeight: 'bold' }}>Description</PdfText>
-              </View>
+              {/* Table Header */}
               <View
                 style={{
-                  width: 100,
-                  padding: 10,
-                  borderRight: '1px solid #000',
-                  alignItems: 'center',
+                  flexDirection: 'row',
+                  borderBottom: '1px solid #000',
+                  backgroundColor: '#e8e8e8',
                 }}
               >
-                <PdfText style={{ fontWeight: 'bold' }}>Payment %</PdfText>
+                <View
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    borderRight: '1px solid #000',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>Milestone</PdfText>
+                </View>
+                <View
+                  style={{
+                    flex: 1,
+                    padding: 10,
+                    borderRight: '1px solid #000',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>Description</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 100,
+                    padding: 10,
+                    borderRight: '1px solid #000',
+                    alignItems: 'center',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>Payment %</PdfText>
+                </View>
+                <View
+                  style={{
+                    width: 80,
+                    padding: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <PdfText style={{ fontWeight: 'bold' }}>SLA Days</PdfText>
+                </View>
               </View>
-              <View
-                style={{
-                  width: 80,
-                  padding: 10,
-                  alignItems: 'center',
-                }}
-              >
-                <PdfText style={{ fontWeight: 'bold' }}>SLA Days</PdfText>
-              </View>
-            </View>
 
-            {/* Milestone Rows */}
-            {contract.milestones
-              .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
-              .map((milestone, index) => {
-                // Find installment for this milestone
-                const installment = contract?.installments?.find(
-                  inst => inst.milestoneId === milestone.milestoneId
-                );
-                const paymentPercent =
-                  installment?.percent || milestone.paymentPercent;
-                const slaDays =
-                  milestone.milestoneSlaDays || milestone.slaDays;
+              {/* Milestone Rows */}
+              {contract.milestones
+                .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                .map((milestone, index) => {
+                  // Find installment for this milestone
+                  const installment = contract?.installments?.find(
+                    inst => inst.milestoneId === milestone.milestoneId
+                  );
+                  const paymentPercent =
+                    installment?.percent || milestone.paymentPercent;
+                  const slaDays =
+                    milestone.milestoneSlaDays || milestone.slaDays;
 
-                return (
-                  <View
-                    key={milestone.milestoneId || index}
-                    style={{
-                      flexDirection: 'row',
-                      borderBottom:
-                        index < contract.milestones.length - 1
-                          ? '1px solid #000'
-                          : 'none',
-                    }}
-                  >
+                  return (
                     <View
+                      key={milestone.milestoneId || index}
                       style={{
-                        flex: 1,
-                        padding: 10,
-                        borderRight: '1px solid #000',
+                        flexDirection: 'row',
+                        borderBottom:
+                          index < contract.milestones.length - 1
+                            ? '1px solid #000'
+                            : 'none',
                       }}
                     >
-                      <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
-                        {milestone.name || `Milestone ${index + 1}`}
-                      </PdfText>
+                      <View
+                        style={{
+                          flex: 1,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                        }}
+                      >
+                        <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
+                          {milestone.name || `Milestone ${index + 1}`}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {milestone.description || '-'}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          width: 100,
+                          padding: 10,
+                          borderRight: '1px solid #000',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {paymentPercent ? `${paymentPercent}%` : 'N/A'}
+                        </PdfText>
+                      </View>
+                      <View
+                        style={{
+                          width: 80,
+                          padding: 10,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <PdfText style={{ fontSize: 10 }}>
+                          {slaDays ? `${slaDays} days` : '-'}
+                        </PdfText>
+                      </View>
                     </View>
-                    <View
-                      style={{
-                        flex: 1,
-                        padding: 10,
-                        borderRight: '1px solid #000',
-                      }}
-                    >
-                      <PdfText style={{ fontSize: 10 }}>
-                        {milestone.description || '-'}
-                      </PdfText>
-                    </View>
-                    <View
-                      style={{
-                        width: 100,
-                        padding: 10,
-                        borderRight: '1px solid #000',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <PdfText style={{ fontSize: 10 }}>
-                        {paymentPercent ? `${paymentPercent}%` : 'N/A'}
-                      </PdfText>
-                    </View>
-                    <View
-                      style={{
-                        width: 80,
-                        padding: 10,
-                        alignItems: 'center',
-                      }}
-                    >
-                      <PdfText style={{ fontSize: 10 }}>
-                        {slaDays ? `${slaDays} days` : '-'}
-                      </PdfText>
-                    </View>
-                  </View>
                   );
                 })}
             </View>
@@ -870,9 +889,12 @@ const ManagerContractDetailPage = () => {
             {(() => {
               // Get due date from last milestone's plannedDueDate (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
-                const lastMilestone = contract.milestones[contract.milestones.length - 1];
+                const lastMilestone =
+                  contract.milestones[contract.milestones.length - 1];
                 if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD');
+                  return dayjs(lastMilestone.plannedDueDate).format(
+                    'YYYY-MM-DD'
+                  );
                 }
               }
               // No plannedDueDate yet (not calculated)
@@ -1311,7 +1333,8 @@ const ManagerContractDetailPage = () => {
             {(() => {
               // Get due date from last milestone's plannedDueDate (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
-                const lastMilestone = contract.milestones[contract.milestones.length - 1];
+                const lastMilestone =
+                  contract.milestones[contract.milestones.length - 1];
                 if (lastMilestone?.plannedDueDate) {
                   return (
                     <Descriptions.Item label="Due Date">
@@ -1994,12 +2017,18 @@ const ManagerContractDetailPage = () => {
                         backgroundColor: '#e8e8e8',
                       }}
                     >
-                      Deposit ({(() => {
+                      Deposit (
+                      {(() => {
                         const depositInstallment = contract?.installments?.find(
                           inst => inst.type === 'DEPOSIT'
                         );
-                        return depositInstallment?.percent || contract?.depositPercent || 0;
-                      })()}%)
+                        return (
+                          depositInstallment?.percent ||
+                          contract?.depositPercent ||
+                          0
+                        );
+                      })()}
+                      %)
                     </td>
                     <td
                       style={{
@@ -2014,11 +2043,16 @@ const ManagerContractDetailPage = () => {
                         const depositInstallment = contract?.installments?.find(
                           inst => inst.type === 'DEPOSIT'
                         );
-                        const depositPercent = depositInstallment?.percent || contract?.depositPercent || 0;
+                        const depositPercent =
+                          depositInstallment?.percent ||
+                          contract?.depositPercent ||
+                          0;
                         const totalPrice = contract?.totalPrice || 0;
-                        const depositAmount = depositInstallment?.amount && depositInstallment.amount > 0
-                          ? depositInstallment.amount
-                          : (totalPrice * depositPercent) / 100;
+                        const depositAmount =
+                          depositInstallment?.amount &&
+                          depositInstallment.amount > 0
+                            ? depositInstallment.amount
+                            : (totalPrice * depositPercent) / 100;
                         return depositAmount?.toLocaleString();
                       })()}{' '}
                       {contract.currency || 'VND'}
@@ -2102,7 +2136,9 @@ const ManagerContractDetailPage = () => {
                     </thead>
                     <tbody>
                       {contract.milestones
-                        .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+                        .sort(
+                          (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)
+                        )
                         .map((milestone, index) => (
                           <tr key={milestone.milestoneId || index}>
                             <td
@@ -2133,16 +2169,27 @@ const ManagerContractDetailPage = () => {
                             >
                               {(() => {
                                 // Find installment for this milestone
-                                const installment = contract?.installments?.find(
-                                  inst => inst.milestoneId === milestone.milestoneId
+                                const installment =
+                                  contract?.installments?.find(
+                                    inst =>
+                                      inst.milestoneId === milestone.milestoneId
+                                  );
+                                return (
+                                  installment?.percent ||
+                                  milestone.paymentPercent ||
+                                  'N/A'
                                 );
-                                return installment?.percent || milestone.paymentPercent || 'N/A';
                               })()}
                               {(() => {
-                                const installment = contract?.installments?.find(
-                                  inst => inst.milestoneId === milestone.milestoneId
-                                );
-                                return (installment?.percent || milestone.paymentPercent) ? '%' : '';
+                                const installment =
+                                  contract?.installments?.find(
+                                    inst =>
+                                      inst.milestoneId === milestone.milestoneId
+                                  );
+                                return installment?.percent ||
+                                  milestone.paymentPercent
+                                  ? '%'
+                                  : '';
                               })()}
                             </td>
                             <td
@@ -2152,7 +2199,10 @@ const ManagerContractDetailPage = () => {
                                 textAlign: 'center',
                               }}
                             >
-                              {milestone.milestoneSlaDays || milestone.slaDays || '-'} days
+                              {milestone.milestoneSlaDays ||
+                                milestone.slaDays ||
+                                '-'}{' '}
+                              days
                             </td>
                           </tr>
                         ))}
@@ -2168,7 +2218,8 @@ const ManagerContractDetailPage = () => {
                 {contract.slaDays > 0 && (
                   <>
                     {' '}
-                    | <strong>Due:</strong> After {contract.slaDays} days if payment is on time
+                    | <strong>Due:</strong> After {contract.slaDays} days if
+                    payment is on time
                   </>
                 )}
               </p>

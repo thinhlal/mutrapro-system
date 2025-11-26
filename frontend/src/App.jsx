@@ -368,14 +368,8 @@ function App() {
               path="contracts/:contractId"
               element={<ManagerContractDetailPage />}
             />
-            <Route
-              path="milestone-assignments"
-              element={<MilestonesPage />}
-            />
-            <Route
-              path="task-progress"
-              element={<TaskProgressManagement />}
-            />
+            <Route path="milestone-assignments" element={<MilestonesPage />} />
+            <Route path="task-progress" element={<TaskProgressManagement />} />
             <Route
               path="milestone-assignments/:contractId/new"
               element={<TaskAssignmentWorkspace />}

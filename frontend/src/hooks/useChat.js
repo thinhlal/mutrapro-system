@@ -146,7 +146,9 @@ export const useChat = roomId => {
           console.log('useChat - WebSocket not connected, connecting...');
           await websocketService.connect(token);
         } else {
-          console.log('useChat - WebSocket already connected, skipping connect');
+          console.log(
+            'useChat - WebSocket already connected, skipping connect'
+          );
         }
 
         // Subscribe to room

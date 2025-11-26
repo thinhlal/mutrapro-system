@@ -102,11 +102,7 @@ class NotificationWebSocketService {
    * Subscribe to user notifications
    */
   subscribeToNotifications(callback) {
-    if (
-      !this.client ||
-      !this.client.active ||
-      !this.client.connected
-    ) {
+    if (!this.client || !this.client.active || !this.client.connected) {
       console.error('❌ Notification WebSocket not connected (STOMP)');
       return null;
     }

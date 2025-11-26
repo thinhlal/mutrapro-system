@@ -344,7 +344,9 @@ const RequestDetailPage = () => {
 
             {request.durationMinutes && (
               <Descriptions.Item label="Duration">
-                <Tag color="green">{formatDurationMMSS(request.durationMinutes)}</Tag>
+                <Tag color="green">
+                  {formatDurationMMSS(request.durationMinutes)}
+                </Tag>
               </Descriptions.Item>
             )}
 

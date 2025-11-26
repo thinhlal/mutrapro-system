@@ -1,22 +1,13 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Card,
-  Upload,
-  Button,
-  Select,
-  Typography,
-} from "antd";
-import {
-  UploadOutlined,
-  PlayCircleOutlined,
-} from "@ant-design/icons";
-import { KLANG_MODELS } from "../../config/klangConfig.js";
-import { useKlangTranscriptionStore } from "../../stores/useKlangTranscriptionStore.js";
-import Header from "../../components/common/Header/Header.jsx";
-import IntroSection from "./components/IntroSection.jsx";
-import styles from "./KlangTranscriptionPanel.module.css";
-import BackToTop from "../../components/common/BackToTop/BackToTop.jsx";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Upload, Button, Select, Typography } from 'antd';
+import { UploadOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { KLANG_MODELS } from '../../config/klangConfig.js';
+import { useKlangTranscriptionStore } from '../../stores/useKlangTranscriptionStore.js';
+import Header from '../../components/common/Header/Header.jsx';
+import IntroSection from './components/IntroSection.jsx';
+import styles from './KlangTranscriptionPanel.module.css';
+import BackToTop from '../../components/common/BackToTop/BackToTop.jsx';
 
 const { Text } = Typography;
 
@@ -25,14 +16,10 @@ const KlangTranscriptionPanel = () => {
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    model,
-    setModel,
-    createTranscription,
-    reset,
-  } = useKlangTranscriptionStore();
+  const { model, setModel, createTranscription, reset } =
+    useKlangTranscriptionStore();
 
-  const handleBeforeUpload = (file) => {
+  const handleBeforeUpload = file => {
     setFile(file);
     reset();
     return false; // Don't upload to server, keep in state
@@ -40,20 +27,20 @@ const KlangTranscriptionPanel = () => {
 
   const handleTranscribe = async () => {
     if (!file) {
-      alert("Please select an audio file first!");
+      alert('Please select an audio file first!');
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // Start transcription
       await createTranscription(file);
-      
+
       // Navigate to process page
-      navigate("/ai-transcription/process", { state: { file } });
+      navigate('/ai-transcription/process', { state: { file } });
     } catch (error) {
-      console.error("Transcription error:", error);
+      console.error('Transcription error:', error);
       setIsSubmitting(false);
     }
   };
@@ -83,7 +70,8 @@ const KlangTranscriptionPanel = () => {
               />
               <div className={styles.stepDescription}>
                 <Text type="secondary">
-                  AI will automatically detect and analyze the instrument from your audio file
+                  AI will automatically detect and analyze the instrument from
+                  your audio file
                 </Text>
               </div>
             </div>
@@ -139,7 +127,7 @@ const KlangTranscriptionPanel = () => {
                 size="large"
                 block
               >
-                {isSubmitting ? "Processing..." : "Transcribe Now"}
+                {isSubmitting ? 'Processing...' : 'Transcribe Now'}
               </Button>
               {isSubmitting && (
                 <div className={styles.submittingHint}>

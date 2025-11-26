@@ -21,11 +21,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/klang-api": {
-        target: "https://api.klang.io",
+      '/klang-api': {
+        target: 'https://api.klang.io',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/klang-api/, ""),
+        rewrite: path => path.replace(/^\/klang-api/, ''),
       },
     },
   },
