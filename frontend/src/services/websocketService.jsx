@@ -84,6 +84,7 @@ class WebSocketService {
           console.log('✅ WebSocket Connected');
           this.connected = true;
           this.reconnectAttempts = 0;
+          this.resubscribeAllRooms();
           resolve();
         },
 
@@ -146,16 +147,26 @@ class WebSocketService {
    * @param {function} callback - Callback function for incoming messages
    */
   subscribeToRoom(roomId, callback) {
-    if (!this.client || !this.connected) {
+    if (
+      !this.client ||
+      !this.client.active ||
+      !this.client.connected
+    ) {
       console.error('❌ WebSocket not connected');
       return null;
     }
 
     const destination = `/topic/chat/${roomId}`;
 
-    // Unsubscribe if already subscribed
-    if (this.subscriptions.has(roomId)) {
-      this.unsubscribeFromRoom(roomId);
+    // If a subscription exists (e.g., reconnect), just unsubscribe STOMP but keep callback
+    const existingSubscription = this.subscriptions.get(roomId);
+    if (existingSubscription) {
+      try {
+        existingSubscription.unsubscribe();
+      } catch (_) {
+        // ignore
+      }
+      this.subscriptions.delete(roomId);
     }
 
     try {
@@ -191,6 +202,21 @@ class WebSocketService {
       this.messageCallbacks.delete(roomId);
       console.log(`✅ Unsubscribed from room: ${roomId}`);
     }
+  }
+
+  resubscribeAllRooms() {
+    if (
+      !this.client ||
+      !this.client.active ||
+      !this.client.connected ||
+      this.messageCallbacks.size === 0
+    ) {
+      return;
+    }
+
+    this.messageCallbacks.forEach((callback, roomId) => {
+      this.subscribeToRoom(roomId, callback);
+    });
   }
 
   /**

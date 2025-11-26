@@ -114,17 +114,24 @@ export const useNotifications = () => {
 
     const setupWebSocket = async () => {
       try {
-        // Connect to WebSocket
         if (!notificationWebSocketService.isConnected()) {
           await notificationWebSocketService.connect(token);
         }
 
-        // Subscribe to notifications
-        notificationWebSocketService.subscribeToNotifications(
-          handleNewNotification
-        );
-        setConnected(true);
+        if (!notificationWebSocketService.isConnected()) {
+          throw new Error('Notification WebSocket chưa sẵn sàng');
+        }
 
+        const subscription =
+          notificationWebSocketService.subscribeToNotifications(
+            handleNewNotification
+          );
+
+        if (!subscription) {
+          throw new Error('Failed to subscribe to notification channel');
+        }
+
+        setConnected(true);
         console.log('✅ Notification WebSocket setup complete');
         isInitialized.current = true;
       } catch (error) {
@@ -137,7 +144,10 @@ export const useNotifications = () => {
 
     // Cleanup
     return () => {
+      isInitialized.current = false;
+      setConnected(false);
       notificationWebSocketService.unsubscribeFromNotifications();
+      notificationWebSocketService.disconnect();
     };
   }, [handleNewNotification]);
 

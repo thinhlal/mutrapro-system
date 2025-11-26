@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Badge, Spin, Alert } from 'antd';
+import { Button, Badge, Spin } from 'antd';
 import {
   MessageOutlined,
   CloseOutlined,
@@ -22,6 +22,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [room, setRoom] = useState(null);
+  const [roomUnavailable, setRoomUnavailable] = useState(false);
   const [loadingRoom, setLoadingRoom] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -45,6 +46,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
 
       try {
         setLoadingRoom(true);
+        setRoomUnavailable(false);
         const response = await chatService.getChatRoomByContext(
           roomType,
           requestId
@@ -52,16 +54,21 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
 
         if (response?.status === 'success' && response?.data) {
           setRoom(response.data);
+          setRoomUnavailable(false);
           
           // Load unread count if room exists
           if (response.data.roomId) {
             await loadUnreadCount(response.data.roomId);
           }
         } else {
+          setRoom(null);
+          setRoomUnavailable(true);
           console.warn('Chat room not found for request:', requestId);
         }
       } catch (error) {
         console.error('Failed to load chat room:', error);
+        setRoom(null);
+        setRoomUnavailable(true);
         // Chat room might not exist yet, that's OK
       } finally {
         setLoadingRoom(false);
@@ -182,6 +189,10 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
   const displayUnreadCount = isOpen && !isMinimized ? 0 : unreadCount;
 
   if (!requestId) return null;
+
+  if (!loadingRoom && roomUnavailable && !room) {
+    return null;
+  }
 
   return (
     <>

@@ -3,6 +3,7 @@ package com.mutrapro.chat_service.controller;
 import com.mutrapro.chat_service.dto.request.AddParticipantRequest;
 import com.mutrapro.chat_service.dto.request.CreateChatRoomRequest;
 import com.mutrapro.chat_service.dto.response.ChatRoomResponse;
+import com.mutrapro.chat_service.exception.ChatRoomNotFoundException;
 import com.mutrapro.chat_service.service.ChatRoomService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,12 +59,21 @@ public class ChatRoomController {
             @RequestParam String roomType,
             @RequestParam String contextId) {
         log.info("Getting chat room by context: type={}, contextId={}", roomType, contextId);
-        ChatRoomResponse response = chatRoomService.getChatRoomByContext(roomType, contextId);
-        return ApiResponse.<ChatRoomResponse>builder()
-                .message("Chat room retrieved successfully")
-                .data(response)
-                .statusCode(200)
-                .build();
+        try {
+            ChatRoomResponse response = chatRoomService.getChatRoomByContext(roomType, contextId);
+            return ApiResponse.<ChatRoomResponse>builder()
+                    .message("Chat room retrieved successfully")
+                    .data(response)
+                    .statusCode(200)
+                    .build();
+        } catch (ChatRoomNotFoundException ex) {
+            log.info("Chat room not found for context type={}, id={}, return empty result", roomType, contextId);
+            return ApiResponse.<ChatRoomResponse>builder()
+                    .message("Chat room chưa được tạo")
+                    .data(null)
+                    .statusCode(200)
+                    .build();
+        }
     }
 
     @GetMapping
