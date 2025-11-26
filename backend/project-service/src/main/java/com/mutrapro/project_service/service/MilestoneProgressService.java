@@ -82,7 +82,8 @@ public class MilestoneProgressService {
         }
 
         milestone.setActualStartAt(LocalDateTime.now());
-        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED
+            || milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
             milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
         }
         contractMilestoneRepository.save(milestone);

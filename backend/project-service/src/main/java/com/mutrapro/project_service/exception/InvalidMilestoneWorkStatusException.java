@@ -25,7 +25,7 @@ public class InvalidMilestoneWorkStatusException extends BusinessException {
 
     public static InvalidMilestoneWorkStatusException cannotCreateTask(String milestoneId, MilestoneWorkStatus currentStatus) {
         return new InvalidMilestoneWorkStatusException(
-            String.format("Cannot create task assignment: Milestone work status must be PLANNED or IN_PROGRESS. " +
+            String.format("Cannot create task assignment: Milestone work status must be PLANNED, READY_TO_START hoặc IN_PROGRESS. " +
                 "Current milestone work status: %s (milestoneId: %s)", 
                 currentStatus, milestoneId),
             milestoneId,

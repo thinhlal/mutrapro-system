@@ -748,9 +748,10 @@ public class TaskAssignmentService {
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(request.getMilestoneId(), contractId));
         
         // Verify milestone work status allows task assignment creation
-        // Only PLANNED and IN_PROGRESS milestones can have tasks assigned
+        // Chỉ cho phép tạo task khi milestone ở PLANNED/READY_TO_START/IN_PROGRESS
         MilestoneWorkStatus workStatus = milestone.getWorkStatus();
         if (workStatus != MilestoneWorkStatus.PLANNED 
+            && workStatus != MilestoneWorkStatus.READY_TO_START
             && workStatus != MilestoneWorkStatus.IN_PROGRESS) {
             throw InvalidMilestoneWorkStatusException.cannotCreateTask(
                 request.getMilestoneId(), 

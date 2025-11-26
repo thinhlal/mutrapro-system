@@ -37,6 +37,49 @@ const RequestContractList = ({
     useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
 
+  const getDepositAmount = contract => {
+    if (!contract) return 0;
+    const normalizedDeposit =
+      contract.depositAmount !== undefined && contract.depositAmount !== null
+        ? Number(contract.depositAmount)
+        : null;
+    if (!Number.isNaN(normalizedDeposit) && normalizedDeposit !== null) {
+      return normalizedDeposit;
+    }
+
+    const depositInstallment = contract.installments?.find(
+      inst => inst.type === 'DEPOSIT'
+    );
+    if (
+      depositInstallment &&
+      depositInstallment.amount !== undefined &&
+      depositInstallment.amount !== null
+    ) {
+      const normalizedInstallmentAmount = Number(depositInstallment.amount);
+      if (!Number.isNaN(normalizedInstallmentAmount)) {
+        return normalizedInstallmentAmount;
+      }
+    }
+
+    if (
+      contract.totalPrice !== undefined &&
+      contract.totalPrice !== null &&
+      contract.depositPercent !== undefined &&
+      contract.depositPercent !== null
+    ) {
+      const totalPriceNumber = Number(contract.totalPrice);
+      const depositPercentNumber = Number(contract.depositPercent);
+      if (
+        !Number.isNaN(totalPriceNumber) &&
+        !Number.isNaN(depositPercentNumber)
+      ) {
+        return (totalPriceNumber * depositPercentNumber) / 100;
+      }
+    }
+
+    return 0;
+  };
+
   const getContractStatusColor = status => {
     const statusLower = status?.toLowerCase() || '';
     const colorMap = {
@@ -260,7 +303,7 @@ const RequestContractList = ({
                 {contract.currency || 'VND'}
               </Descriptions.Item>
               <Descriptions.Item label="Đặt cọc">
-                {contract.depositAmount?.toLocaleString() || 0}{' '}
+                {getDepositAmount(contract).toLocaleString()}{' '}
                 {contract.currency || 'VND'}({contract.depositPercent || 0}%)
               </Descriptions.Item>
               <Descriptions.Item label="SLA">
