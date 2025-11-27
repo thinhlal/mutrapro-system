@@ -9,6 +9,7 @@ import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.project_service.exception.FileNotFoundException;
 import com.mutrapro.project_service.exception.FileUploadException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.repository.ContractRepository;
@@ -304,6 +305,64 @@ public class FileService {
                 )
             );
         }
+    }
+
+    /**
+     * Download file by fileId
+     * @param fileId ID của file
+     * @return byte array của file content
+     */
+    public byte[] downloadFile(String fileId) {
+        log.info("Downloading file with id: {}", fileId);
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        if (file.getFilePath() == null || file.getFilePath().isEmpty()) {
+            throw new FileUploadException(
+                String.format("File path not found for file id: %s", fileId)
+            );
+        }
+        
+        try {
+            // Extract S3 key from URL or use filePath directly
+            return s3Service.downloadFileFromUrl(file.getFilePath());
+        } catch (Exception e) {
+            log.error("Error downloading file from S3: {}", e.getMessage(), e);
+            throw FileUploadException.failed(
+                file.getFileName(),
+                "Failed to download file from S3: " + e.getMessage(),
+                e
+            );
+        }
+    }
+
+    /**
+     * Get file info by fileId
+     * @param fileId ID của file
+     * @return FileInfoResponse
+     */
+    public FileInfoResponse getFileInfo(String fileId) {
+        log.info("Getting file info with id: {}", fileId);
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        return FileInfoResponse.builder()
+                .fileId(file.getFileId())
+                .fileName(file.getFileName())
+                .filePath(file.getFilePath())
+                .fileSize(file.getFileSize())
+                .mimeType(file.getMimeType())
+                .contentType(file.getContentType() != null ? file.getContentType().name() : null)
+                .fileSource(file.getFileSource())
+                .description(file.getDescription())
+                .uploadDate(file.getUploadDate())
+                .fileStatus(file.getFileStatus() != null ? file.getFileStatus().name() : null)
+                .deliveredToCustomer(file.getDeliveredToCustomer())
+                .deliveredAt(file.getDeliveredAt())
+                .reviewedAt(file.getReviewedAt())
+                .build();
     }
 }
 

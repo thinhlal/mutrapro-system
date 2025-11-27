@@ -164,6 +164,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
         "Task assignment not found",
         Retryable.NON_TRANSIENT),
     
+    FILE_NOT_FOUND("CONTRACT_7034", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7034",
+        "File not found",
+        Retryable.NON_TRANSIENT),
+    
     INVALID_FILE_TYPE_FOR_TASK("CONTRACT_7033", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7033",
         "File type is not allowed for this task type",

@@ -10,8 +10,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -78,6 +82,54 @@ public class FileController {
                 .data(response)
                 .statusCode(HttpStatus.OK.value())
                 .build();
+    }
+
+    @GetMapping("/download/{fileId}")
+    @Operation(summary = "Download file by fileId")
+    public ResponseEntity<Resource> downloadFile(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId) {
+        log.info("Downloading file with id: {}", fileId);
+        
+        // Get file info để lấy tên file
+        FileInfoResponse fileInfo = fileService.getFileInfo(fileId);
+        
+        // Download file content từ S3
+        byte[] fileContent = fileService.downloadFile(fileId);
+        
+        // Tạo Resource từ byte array
+        ByteArrayResource resource = new ByteArrayResource(fileContent);
+        
+        // Set headers cho download
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, 
+                String.format("attachment; filename=\"%s\"", fileInfo.getFileName()));
+        
+        // Dùng mimeType thay vì contentType (enum) vì mimeType là MIME type hợp lệ
+        String mimeType = fileInfo.getMimeType();
+        if (mimeType == null || mimeType.isEmpty()) {
+            // Fallback: dựa vào file extension để đoán MIME type
+            String fileName = fileInfo.getFileName().toLowerCase();
+            if (fileName.endsWith(".xml") || fileName.endsWith(".musicxml")) {
+                mimeType = "application/xml";
+            } else if (fileName.endsWith(".mid") || fileName.endsWith(".midi")) {
+                mimeType = "audio/midi";
+            } else if (fileName.endsWith(".pdf")) {
+                mimeType = "application/pdf";
+            } else if (fileName.endsWith(".mp3")) {
+                mimeType = "audio/mpeg";
+            } else if (fileName.endsWith(".wav")) {
+                mimeType = "audio/wav";
+            } else {
+                mimeType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+            }
+        }
+        headers.add(HttpHeaders.CONTENT_TYPE, mimeType);
+        
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(fileContent.length)
+                .body(resource);
     }
 }
 

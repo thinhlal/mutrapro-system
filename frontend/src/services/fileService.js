@@ -70,3 +70,48 @@ export const getFilesByRequestId = async (requestId) => {
   }
 };
 
+/**
+ * Download file by fileId
+ * @param {string} fileId - ID của file
+ * @param {string} fileName - Tên file để download (optional)
+ * @returns {Promise} Download file
+ */
+export const downloadFile = async (fileId, fileName = null) => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.FILES.DOWNLOAD(fileId), {
+      responseType: 'blob', // Quan trọng: phải set responseType là 'blob' để nhận file binary
+    });
+    
+    // Tạo blob URL và trigger download
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Lấy tên file từ Content-Disposition header hoặc dùng fileName parameter
+    const contentDisposition = response.headers['content-disposition'];
+    let downloadFileName = fileName;
+    
+    if (!downloadFileName && contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (fileNameMatch && fileNameMatch[1]) {
+        downloadFileName = fileNameMatch[1].replace(/['"]/g, '');
+      }
+    }
+    
+    link.download = downloadFileName || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi download file',
+      }
+    );
+  }
+};
+

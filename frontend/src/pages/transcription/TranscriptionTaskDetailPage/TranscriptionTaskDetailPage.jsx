@@ -27,6 +27,7 @@ import {
   UploadOutlined,
   EditOutlined,
   InboxOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -40,6 +41,7 @@ import {
 import {
   uploadTaskFile,
   getFilesByAssignmentId,
+  downloadFile,
 } from '../../../services/fileService';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
@@ -274,12 +276,16 @@ const TranscriptionTaskDetailPage = () => {
         });
         
         const mappedFiles = sortedFiles.map((file, index) => ({
-          id: file.fileId,
+          fileId: file.fileId, // Use fileId for download
+          id: file.fileId, // Keep id for backward compatibility
           version: index + 1, // Version based on upload order
           fileName: file.fileName,
-          uploadedAt: file.uploadDate,
-          status: file.fileStatus || 'uploaded',
-          note: file.description || '', // Note từ specialist khi upload
+          uploadDate: file.uploadDate, // Keep original field name
+          uploadedAt: file.uploadDate, // Also map to uploadedAt for table
+          fileStatus: file.fileStatus || 'uploaded', // Keep original field name
+          status: file.fileStatus || 'uploaded', // Also map to status for table
+          description: file.description || '', // Keep original field name
+          note: file.description || '', // Also map to note for table
           filePath: file.filePath,
           fileSize: file.fileSize,
           mimeType: file.mimeType,
@@ -426,6 +432,21 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [task, issueForm, loadData]);
 
+  const handleDownloadFile = useCallback(async (file) => {
+    if (!file.fileId) {
+      message.error('File ID not available');
+      return;
+    }
+    
+    try {
+      await downloadFile(file.fileId, file.fileName);
+      message.success('File downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      message.error(error?.message || 'Failed to download file');
+    }
+  }, []);
+
   const handleOpenUploadModal = useCallback(() => {
     setUploadModalVisible(true);
     setSelectedFile(null); // Reset selected file khi mở modal
@@ -497,19 +518,34 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [task, uploadForm, loadTaskFiles]);
 
+  // Calculate version based on upload date (newer = higher version)
   const latestVersion = useMemo(() => {
     if (files.length === 0) return 0;
-    return Math.max(...files.map(f => f.version));
+    // Sort by uploadDate descending and assign version numbers
+    const sortedFiles = [...files].sort((a, b) => {
+      const dateA = new Date(a.uploadDate || 0);
+      const dateB = new Date(b.uploadDate || 0);
+      return dateB - dateA;
+    });
+    return sortedFiles.length; // Latest version = total files count
   }, [files]);
 
   const fileColumns = useMemo(
     () => [
       {
         title: 'Version',
-        dataIndex: 'version',
         key: 'version',
         width: 90,
-        render: v => `v${v}`,
+        render: (_, record, index) => {
+          // Calculate version based on upload date order
+          const sortedFiles = [...files].sort((a, b) => {
+            const dateA = new Date(a.uploadDate || 0);
+            const dateB = new Date(b.uploadDate || 0);
+            return dateB - dateA;
+          });
+          const version = sortedFiles.findIndex(f => f.fileId === record.fileId) + 1;
+          return `v${version}`;
+        },
       },
       {
         title: 'File name',
@@ -526,22 +562,22 @@ const TranscriptionTaskDetailPage = () => {
       },
       {
         title: 'Uploaded at',
-        dataIndex: 'uploadedAt',
-        key: 'uploadedAt',
+        dataIndex: 'uploadDate',
+        key: 'uploadDate',
         width: 180,
         render: iso => formatDateTime(iso),
       },
       {
         title: 'Status',
-        dataIndex: 'status',
-        key: 'status',
+        dataIndex: 'fileStatus',
+        key: 'fileStatus',
         width: 160,
         render: s => getFileStatusTag(s),
       },
       {
         title: 'Note',
-        dataIndex: 'note',
-        key: 'note',
+        dataIndex: 'description',
+        key: 'description',
         ellipsis: true,
         render: (text) =>
           text && text.length > 0 ? (
@@ -560,11 +596,33 @@ const TranscriptionTaskDetailPage = () => {
         title: 'Latest',
         key: 'latest',
         width: 100,
-        render: (_, record) =>
-          record.version === latestVersion ? <Tag>Latest</Tag> : null,
+        render: (_, record) => {
+          // Check if this is the latest file (most recent uploadDate)
+          const sortedFiles = [...files].sort((a, b) => {
+            const dateA = new Date(a.uploadDate || 0);
+            const dateB = new Date(b.uploadDate || 0);
+            return dateB - dateA;
+          });
+          return sortedFiles[0]?.fileId === record.fileId ? <Tag>Latest</Tag> : null;
+        },
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: 120,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownloadFile(record)}
+            size="small"
+          >
+            Download
+          </Button>
+        ),
       },
     ],
-    [latestVersion]
+    [latestVersion, handleDownloadFile]
   );
 
   if (loading) {
@@ -1056,8 +1114,12 @@ const TranscriptionTaskDetailPage = () => {
       >
         {files.length > 0 ? (
           <Table
-            rowKey="id"
-            dataSource={files.sort((a, b) => a.version - b.version)}
+            rowKey="fileId"
+            dataSource={files.sort((a, b) => {
+              const dateA = new Date(a.uploadDate || 0);
+              const dateB = new Date(b.uploadDate || 0);
+              return dateB - dateA; // Sort by newest first
+            })}
             columns={fileColumns}
             pagination={false}
           />

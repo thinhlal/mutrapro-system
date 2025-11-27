@@ -83,7 +83,7 @@ export const API_ENDPOINTS = {
   FILES: {
     MY_FILES: `${PROJECT_PATH}/files/my-files`,
     UPLOAD: `${PROJECT_PATH}/file/upload`,
-    DOWNLOAD: fileId => `${PROJECT_PATH}/file/download/${fileId}`,
+    DOWNLOAD: fileId => `${PROJECT_PATH}/files/download/${fileId}`,
     GET_URL: fileId => `${PROJECT_PATH}/file/url/${fileId}`,
     GET_BY_REQUEST_ID: requestId =>
       `${PROJECT_PATH}/files/by-request/${requestId}`,
