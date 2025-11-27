@@ -111,6 +111,10 @@ const InstrumentSelectionModal = ({
                             alt={instrument.instrumentName}
                             src={instrument.image}
                             className={styles.instrumentImage}
+                            onError={(e) => {
+                              // Hide image on error
+                              e.target.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className={styles.noImage}>

@@ -81,14 +81,13 @@ public class FileUploadService {
         String userId = getCurrentUserId();
         
         try {
-            // Upload to S3 (private file, not public)
-            String s3Url = s3Service.uploadFile(
+            // Upload to S3 and get file key only (not URL for security)
+            String fileKey = s3Service.uploadFileAndReturnKey(
                     file.getInputStream(),
                     file.getOriginalFilename(),
                     file.getContentType(),
                     file.getSize(),
-                    folderPrefix,
-                    false  // isPublic = false for customer uploads
+                    folderPrefix
             );
             
             // file_id sẽ được project-service generate khi tạo file record
@@ -96,7 +95,7 @@ public class FileUploadService {
             FileUploadedEvent fileEvent = FileUploadedEvent.builder()
                     .eventId(eventId)  // Dùng làm idempotency key
                     .fileName(file.getOriginalFilename())
-                    .filePath(s3Url)
+                    .fileKeyS3(fileKey)
                     .fileSize(file.getSize())
                     .mimeType(file.getContentType())
                     .fileSource("customer_upload")  // file_source_type enum
@@ -121,8 +120,8 @@ public class FileUploadService {
                     .build();
             
             outboxEventRepository.save(outboxEvent);
-            log.info("File uploaded to S3 and event saved to outbox: contentType={}, s3Url={}, outboxId={}", 
-                    contentType, s3Url, outboxEvent.getOutboxId());
+            log.info("File uploaded to S3 and event saved to outbox: contentType={}, fileKey={}, outboxId={}", 
+                    contentType, fileKey, outboxEvent.getOutboxId());
         } catch (IOException e) {
             log.error("Error reading file: {}", e.getMessage(), e);
             throw FileReadException.create(e.getMessage(), e);

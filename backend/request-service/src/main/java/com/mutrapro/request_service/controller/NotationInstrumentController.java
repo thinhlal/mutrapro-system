@@ -101,7 +101,7 @@ public class NotationInstrumentController {
                 .message("Image uploaded successfully")
                 .data(ImageUploadResponse.builder()
                         .instrumentId(instrumentId)
-                        .imageUrl(imageUrl)
+                        .imageUrl(imageUrl)  // Public S3 URL
                         .build())
                 .build();
     }

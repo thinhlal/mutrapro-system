@@ -47,8 +47,8 @@ public class File extends BaseEntity<String> {
     @Column(name = "file_name", nullable = false, length = 255)
     String fileName;
 
-    @Column(name = "file_path", nullable = false, length = 500)
-    String filePath;  // S3 URL
+    @Column(name = "file_key_s3", nullable = false, length = 500)
+    String fileKeyS3;  // S3 object key (e.g., "task-outputs/123/file-uuid.pdf"), not URL
 
     @Column(name = "file_size", nullable = false)
     Long fileSize;

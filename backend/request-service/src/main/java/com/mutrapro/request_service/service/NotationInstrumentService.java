@@ -94,11 +94,11 @@ public class NotationInstrumentService {
                         .usage(e.getUsage())
                         .basePrice(e.getBasePrice())
                         .isActive(e.isActive())
-                        .image(e.getImage())
+                        .image(e.getImage())  // Note: image is now S3 file key, not URL
                         .build())
                         .collect(Collectors.toList());
     }
-
+    
     /**
      * Lấy danh sách instruments theo list IDs
      * @param instrumentIds danh sách IDs
@@ -141,20 +141,19 @@ public class NotationInstrumentService {
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
         
-        // Upload image if provided
+        // Upload image if provided (public access)
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             validateImageFile(request.getImage());
             try {
-                // Upload with public-read ACL so images can be accessed directly
-                String s3Url = s3Service.uploadFile(
+                // Upload to S3 with public access and get public URL
+                String imageUrl = s3Service.uploadPublicFileAndReturnUrl(
                         request.getImage().getInputStream(),
                         request.getImage().getOriginalFilename(),
                         request.getImage().getContentType(),
                         request.getImage().getSize(),
-                        "instruments",
-                        true  // isPublic = true for instrument images
+                        "instruments"
                 );
-                instrument.setImage(s3Url);
+                instrument.setImage(imageUrl);
             } catch (IOException e) {
                 log.error("Error reading image file: {}", e.getMessage(), e);
                 throw new RuntimeException("Error reading image file: " + e.getMessage(), e);
@@ -184,23 +183,22 @@ public class NotationInstrumentService {
         validateImageFile(imageFile);
         
         try {
-            // Upload to S3 with public-read ACL so images can be accessed directly
-            String s3Url = s3Service.uploadFile(
+            // Upload to S3 with public access and get public URL
+            String imageUrl = s3Service.uploadPublicFileAndReturnUrl(
                     imageFile.getInputStream(),
                     imageFile.getOriginalFilename(),
                     imageFile.getContentType(),
                     imageFile.getSize(),
-                    "instruments",  // folder prefix
-                    true  // isPublic = true for instrument images
+                    "instruments"  // folder prefix
             );
             
             // Update instrument image URL
-            instrument.setImage(s3Url);
+            instrument.setImage(imageUrl);
             notationInstrumentRepository.save(instrument);
             
             log.info("Image uploaded and updated for instrument: instrumentId={}, imageUrl={}", 
-                    instrumentId, s3Url);
-            return s3Url;
+                    instrumentId, imageUrl);
+            return imageUrl;
         } catch (IOException e) {
             log.error("Error reading image file: {}", e.getMessage(), e);
             throw new RuntimeException("Error reading image file: " + e.getMessage(), e);
@@ -241,21 +239,20 @@ public class NotationInstrumentService {
             instrument.setActive(request.getIsActive());
         }
         
-        // Update image if provided
+        // Update image if provided (public access)
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             validateImageFile(request.getImage());
             try {
-                // Upload new image with public-read ACL
-                String s3Url = s3Service.uploadFile(
+                // Upload new image with public access and get public URL
+                String imageUrl = s3Service.uploadPublicFileAndReturnUrl(
                         request.getImage().getInputStream(),
                         request.getImage().getOriginalFilename(),
                         request.getImage().getContentType(),
                         request.getImage().getSize(),
-                        "instruments",
-                        true  // isPublic = true for instrument images
+                        "instruments"
                 );
-                instrument.setImage(s3Url);
-                log.info("Image updated for instrument: instrumentId={}, newImageUrl={}", instrumentId, s3Url);
+                instrument.setImage(imageUrl);
+                log.info("Image updated for instrument: instrumentId={}, imageUrl={}", instrumentId, imageUrl);
             } catch (IOException e) {
                 log.error("Error reading image file during update: {}", e.getMessage(), e);
                 throw new RuntimeException("Error reading image file: " + e.getMessage(), e);

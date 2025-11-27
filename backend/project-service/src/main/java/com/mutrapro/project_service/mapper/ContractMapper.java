@@ -26,8 +26,7 @@ public interface ContractMapper {
     @Mapping(target = "freeRevisionsIncluded", ignore = true)
     Contract toEntity(CreateContractRequest request);
     
-    @Mapping(target = "bSignatureS3Url", source = "BSignatureS3Url")
-    @Mapping(target = "bSignedAt", source = "BSignedAt")
+    @Mapping(target = "customerSignedAt", source = "customerSignedAt")
     ContractResponse toResponse(Contract contract);
 }
 

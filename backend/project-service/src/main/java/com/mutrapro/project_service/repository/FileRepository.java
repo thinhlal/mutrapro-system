@@ -18,6 +18,6 @@ public interface FileRepository extends JpaRepository<File, String> {
 
     List<File> findByCreatedBy(String createdBy);
 
-    Optional<File> findByFilePath(String filePath);  // For idempotency check
+    Optional<File> findByFileKeyS3(String fileKeyS3);  // For idempotency check
 }
 

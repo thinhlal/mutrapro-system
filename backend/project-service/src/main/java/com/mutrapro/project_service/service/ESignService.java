@@ -209,17 +209,17 @@ public class ESignService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> ContractNotFoundException.byId(contractId));
 
-        // Upload signature to S3
-        String signatureS3Url = uploadSignatureToS3(
+        // Upload signature to S3 and get file key
+        String signatureS3Key = uploadSignatureToS3(
                 signSession.getSignatureTempBase64(),
                 contractId,
                 currentUserId
         );
 
         // Update contract with signature
-        contract.setBSignatureS3Url(signatureS3Url);
+        contract.setCustomerSignatureS3Key(signatureS3Key);
         Instant now = Instant.now();
-        contract.setBSignedAt(now);
+        contract.setCustomerSignedAt(now);
         contract.setSignedAt(now);
         contract.setStatus(ContractStatus.signed);
 
@@ -247,7 +247,7 @@ public class ESignService {
         signSession.setUpdatedAt(Instant.now());
         signSessionRepository.save(signSession);
 
-        log.info("Contract signed successfully: {}, signature URL: {}", contractId, signatureS3Url);
+        log.info("Contract signed successfully: {}, signature key: {}", contractId, signatureS3Key);
 
         // Cập nhật request status thành "contract_signed"
         try {
@@ -330,18 +330,17 @@ public class ESignService {
             // Decode base64 to bytes
             byte[] signatureBytes = Base64.getDecoder().decode(base64Data);
 
-            // Upload to S3
+            // Upload to S3 and return file key only (not URL for security)
             String fileName = String.format("signature-%s-%s.png", contractId, userId);
-            String s3Url = s3Service.uploadFile(
+            String fileKey = s3Service.uploadFileAndReturnKey(
                     new ByteArrayInputStream(signatureBytes),
                     fileName,
                     "image/png",
                     signatureBytes.length,
-                    "contracts/signatures",
-                    false  // Private file
+                    "contracts/signatures"
             );
 
-            return s3Url;
+            return fileKey;
         } catch (Exception e) {
             log.error("Failed to upload signature to S3: {}", e.getMessage(), e);
             throw SignatureException.uploadFailed(e.getMessage());

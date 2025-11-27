@@ -135,10 +135,10 @@ public class Contract extends BaseEntity<String> {
     String cancellationReason;  // Lý do hủy/từ chối từ khách hàng
     
     // E-Signature fields
-    @Column(name = "b_signature_s3_url", columnDefinition = "text")
-    String bSignatureS3Url;  // Customer signature image URL from S3
+    @Column(name = "customer_signature_s3_key", columnDefinition = "text")
+    String customerSignatureS3Key;  // Customer signature image S3 object key (e.g., "contracts/signatures/signature-123.png"), not URL
     
-    @Column(name = "b_signed_at")
-    Instant bSignedAt;  // When customer actually signed (different from signedAt which is when approved)
+    @Column(name = "customer_signed_at")
+    Instant customerSignedAt;  // When customer actually signed (different from signedAt which is when approved)
 }
 

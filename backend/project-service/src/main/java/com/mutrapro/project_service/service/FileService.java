@@ -53,7 +53,7 @@ public class FileService {
         // Convert event to File entity
         File file = File.builder()
                 .fileName(event.getFileName())
-                .filePath(event.getFilePath())
+                .fileKeyS3(event.getFileKeyS3())
                 .fileSize(event.getFileSize())
                 .mimeType(event.getMimeType())
                 .fileSource(FileSourceType.valueOf(event.getFileSource()))
@@ -183,8 +183,8 @@ public class FileService {
         }
         
         try {
-            // Upload to S3
-            String s3Url = s3Service.uploadFile(
+            // Upload to S3 and get file key only (not URL for security)
+            String fileKey = s3Service.uploadFileAndReturnKey(
                     file.getInputStream(),
                     file.getOriginalFilename(),
                     file.getContentType(),
@@ -200,10 +200,10 @@ public class FileService {
                 contentType = ContentType.notation;  // default
             }
             
-            // Save file metadata
+            // Save file metadata (store file key, not URL)
             File fileEntity = File.builder()
                     .fileName(file.getOriginalFilename())
-                    .filePath(s3Url)
+                    .fileKeyS3(fileKey)  // Store S3 object key
                     .fileSize(file.getSize())
                     .mimeType(file.getContentType())
                     .fileSource(FileSourceType.specialist_output)
@@ -347,15 +347,15 @@ public class FileService {
         File file = fileRepository.findById(fileId)
                 .orElseThrow(() -> FileNotFoundException.byId(fileId));
         
-        if (file.getFilePath() == null || file.getFilePath().isEmpty()) {
+        if (file.getFileKeyS3() == null || file.getFileKeyS3().isEmpty()) {
             throw new FileUploadException(
-                String.format("File path not found for file id: %s", fileId)
+                String.format("File key not found for file id: %s", fileId)
             );
         }
         
         try {
-            // Extract S3 key from URL or use filePath directly
-            return s3Service.downloadFileFromUrl(file.getFilePath());
+            // Use fileKeyS3 directly (S3 object key)
+            return s3Service.downloadFile(file.getFileKeyS3());
         } catch (Exception e) {
             log.error("Error downloading file from S3: {}", e.getMessage(), e);
             throw FileUploadException.failed(

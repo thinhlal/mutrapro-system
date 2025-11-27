@@ -226,7 +226,7 @@ const ContractDetailPage = () => {
   // Fetch signature image securely from backend when contract is signed
   useEffect(() => {
     const fetchSignature = async () => {
-      if (!contract?.contractId || !contract?.bSignedAt) {
+      if (!contract?.contractId || !contract?.customerSignedAt) {
         setPartyBSignatureUrl(null);
         return;
       }
@@ -245,7 +245,7 @@ const ContractDetailPage = () => {
     };
 
     fetchSignature();
-  }, [contract?.contractId, contract?.bSignedAt]);
+  }, [contract?.contractId, contract?.customerSignedAt]);
 
   const loadContract = async () => {
     try {
@@ -438,7 +438,7 @@ const ContractDetailPage = () => {
       (contractStatus === 'signed' ||
         contractStatus === 'active' ||
         contractStatus === 'active_pending_assignment') &&
-      contractData?.bSignatureS3Url
+      contractData?.customerSignedAt
     ) {
       try {
         const signatureResponse = await getSignatureImage(contractId);
@@ -517,7 +517,7 @@ const ContractDetailPage = () => {
           try {
             message.loading('Generating and uploading PDF...', 0);
 
-            // Fetch fresh contract data to ensure we have bSignatureS3Url
+            // Fetch fresh contract data to ensure we have up-to-date contract information
             const freshContractResponse = await getContractById(contractId);
             const freshContractData =
               freshContractResponse?.status === 'success'
@@ -1466,8 +1466,8 @@ const ContractDetailPage = () => {
                   </PdfText>
                   <PdfText style={pdfStyles.text}>
                     Signed on:{' '}
-                    {contract?.bSignedAt
-                      ? formatDate(contract.bSignedAt)
+                    {contract?.customerSignedAt
+                      ? formatDate(contract.customerSignedAt)
                       : contract?.signedAt
                         ? formatDate(contract.signedAt)
                         : 'Pending'}
@@ -1481,8 +1481,8 @@ const ContractDetailPage = () => {
                   </PdfText>
                   <PdfText style={pdfStyles.text}>
                     Signed on:{' '}
-                    {contract?.bSignedAt
-                      ? formatDate(contract.bSignedAt)
+                    {contract?.customerSignedAt
+                      ? formatDate(contract.customerSignedAt)
                       : contract?.signedAt
                         ? formatDate(contract.signedAt)
                         : 'Pending'}
@@ -1644,11 +1644,11 @@ const ContractDetailPage = () => {
   const isExpired = currentStatus === 'expired';
 
   // Contract is signed or active - milestones can be paid (but not if canceled or expired)
-  // Also check if contract has been signed (has bSignatureS3Url) to show signature
+  // Also check if contract has been signed to show signature
   const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
   
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.bSignatureS3Url || contract?.bSignedAt || isSigned || isActive;
+  const hasSigned = contract?.customerSignedAt || isSigned || isActive;
 
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
@@ -2917,8 +2917,8 @@ const ContractDetailPage = () => {
                         style={{ marginTop: '4px' }}
                       >
                         Signed on:{' '}
-                        {contract.bSignedAt
-                          ? formatDate(contract.bSignedAt)
+                        {contract.customerSignedAt
+                          ? formatDate(contract.customerSignedAt)
                           : contract.signedAt
                             ? formatDate(contract.signedAt)
                             : 'Pending'}

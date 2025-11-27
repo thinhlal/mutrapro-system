@@ -125,7 +125,7 @@ const ManagerContractDetailPage = () => {
   // Fetch signature image securely from backend when contract is signed
   useEffect(() => {
     const fetchSignature = async () => {
-      if (!contract?.contractId || !contract?.bSignedAt) {
+      if (!contract?.contractId || !contract?.customerSignedAt) {
         setPartyBSignatureUrl(null);
         return;
       }
@@ -144,7 +144,7 @@ const ManagerContractDetailPage = () => {
     };
 
     fetchSignature();
-  }, [contract?.contractId, contract?.bSignedAt]);
+  }, [contract?.contractId, contract?.customerSignedAt]);
 
   const loadContract = async () => {
     try {
@@ -312,7 +312,7 @@ const ManagerContractDetailPage = () => {
       (contractStatus === 'signed' ||
         contractStatus === 'active' ||
         contractStatus === 'active_pending_assignment') &&
-      contractData?.bSignatureS3Url
+      contractData?.customerSignedAt
     ) {
       try {
         const signatureResponse = await getSignatureImage(contractId);
@@ -1139,8 +1139,8 @@ const ManagerContractDetailPage = () => {
                   </PdfText>
                   <PdfText style={pdfStyles.text}>
                     Signed on:{' '}
-                    {contract?.bSignedAt
-                      ? formatDate(contract.bSignedAt)
+                    {contract?.customerSignedAt
+                      ? formatDate(contract.customerSignedAt)
                       : contract?.signedAt
                         ? formatDate(contract.signedAt)
                         : 'Pending'}
@@ -1154,8 +1154,8 @@ const ManagerContractDetailPage = () => {
                   </PdfText>
                   <PdfText style={pdfStyles.text}>
                     Signed on:{' '}
-                    {contract?.bSignedAt
-                      ? formatDate(contract.bSignedAt)
+                    {contract?.customerSignedAt
+                      ? formatDate(contract.customerSignedAt)
                       : contract?.signedAt
                         ? formatDate(contract.signedAt)
                         : 'Pending'}
@@ -1324,7 +1324,7 @@ const ManagerContractDetailPage = () => {
   const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
   
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.bSignatureS3Url || contract?.bSignedAt || isSigned || isActive;
+  const hasSigned = contract?.customerSignedAt || isSigned || isActive;
 
   const canViewReason = isCanceled || isNeedRevision;
 
@@ -1543,9 +1543,9 @@ const ManagerContractDetailPage = () => {
                 {dayjs(contract.customerReviewedAt).format('YYYY-MM-DD HH:mm')}
               </Descriptions.Item>
             )}
-            {contract.bSignedAt && (
+            {contract.customerSignedAt && (
               <Descriptions.Item label="Customer Signed At">
-                {dayjs(contract.bSignedAt).format('YYYY-MM-DD HH:mm')}
+                {dayjs(contract.customerSignedAt).format('YYYY-MM-DD HH:mm')}
               </Descriptions.Item>
             )}
             <Descriptions.Item label="Free Revisions">
@@ -2507,8 +2507,8 @@ const ManagerContractDetailPage = () => {
                         style={{ marginTop: '4px' }}
                       >
                         Signed on:{' '}
-                        {contract.bSignedAt
-                          ? formatDate(contract.bSignedAt)
+                        {contract.customerSignedAt
+                          ? formatDate(contract.customerSignedAt)
                           : contract.signedAt
                             ? formatDate(contract.signedAt)
                             : 'Pending'}

@@ -15,7 +15,7 @@ public class NotationInstrumentResponse {
     NotationInstrumentUsage usage;
     Long basePrice;
     boolean isActive;
-    String image;  // URL hoặc path đến hình ảnh của nhạc cụ
+    String image;  // Public S3 URL (e.g., "https://bucket.s3.amazonaws.com/instruments/file-uuid.png")
 }
 
 

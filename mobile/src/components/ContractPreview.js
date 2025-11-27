@@ -410,7 +410,7 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown }) => {
                 <Text style={styles.signatureDate}>
                   Signed:{" "}
                   {formatDate(
-                    contract?.bSignedAt || contract?.signedAt || "Pending"
+                    contract?.customerSignedAt || contract?.signedAt || "Pending"
                   )}
                 </Text>
               </>

@@ -1872,13 +1872,13 @@ public class ContractService {
         // Kiểm tra quyền truy cập signature
         checkSignatureAccess(contract);
         
-        if (contract.getBSignatureS3Url() == null || contract.getBSignatureS3Url().isEmpty()) {
+        if (contract.getCustomerSignatureS3Key() == null || contract.getCustomerSignatureS3Key().isEmpty()) {
             throw SignatureImageNotFoundException.forContract(contractId);
         }
         
         try {
-            // Download image from S3
-            byte[] imageBytes = s3Service.downloadFileFromUrl(contract.getBSignatureS3Url());
+            // Download image from S3 using file key
+            byte[] imageBytes = s3Service.downloadFile(contract.getCustomerSignatureS3Key());
             
             // Convert to base64 data URL
             String base64Image = Base64.getEncoder().encodeToString(imageBytes);
@@ -2057,20 +2057,19 @@ public class ContractService {
         String currentUserId = getCurrentUserId();
 
         try {
-            // Upload PDF to S3
-            String s3Url = s3Service.uploadFile(
+            // Upload PDF to S3 and get file key only (not URL for security)
+            String fileKey = s3Service.uploadFileAndReturnKey(
                     pdfInputStream,
                     fileName,
                     "application/pdf",
                     fileSize,
-                    "contracts/pdfs",
-                    false  // Private file
+                    "contracts/pdfs"
             );
 
-            // Create File record
+            // Create File record (store file key, not URL)
             File pdfFile = File.builder()
                     .fileName(fileName)
-                    .filePath(s3Url)
+                    .fileKeyS3(fileKey)  // Store S3 object key
                     .fileSize(fileSize)
                     .mimeType("application/pdf")
                     .fileSource(FileSourceType.contract_pdf)  // Or create new type for contract_pdf
@@ -2090,8 +2089,8 @@ public class ContractService {
             contract.setFileId(savedFile.getFileId());
             contractRepository.save(contract);
 
-            log.info("Contract PDF uploaded successfully: contractId={}, fileId={}, s3Url={}", 
-                    contractId, savedFile.getFileId(), s3Url);
+            log.info("Contract PDF uploaded successfully: contractId={}, fileId={}, fileKey={}", 
+                    contractId, savedFile.getFileId(), fileKey);
 
             return savedFile.getFileId();
         } catch (Exception e) {

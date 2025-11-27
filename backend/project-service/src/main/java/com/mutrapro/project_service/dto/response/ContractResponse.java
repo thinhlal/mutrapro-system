@@ -87,11 +87,7 @@ public class ContractResponse {
     String emailSnapshot;
     
     // E-Signature fields
-    @JsonProperty("bSignatureS3Url")
-    String bSignatureS3Url;  // Customer signature S3 URL
-    
-    @JsonProperty("bSignedAt")
-    Instant bSignedAt;  // When customer actually signed
+    Instant customerSignedAt;  // When customer actually signed
     
     LocalDateTime updatedAt;
     

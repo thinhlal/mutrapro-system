@@ -29,7 +29,12 @@ export default function InstrumentFormModal({
   useEffect(() => {
     if (visible) {
       if (editMode && initialData) {
-        setImagePreview(initialData.image);
+        // Instrument image is already a public URL
+        if (initialData.image) {
+          setImagePreview(initialData.image);
+        } else {
+          setImagePreview(null);
+        }
         setImageFile(null);
       } else {
         setImagePreview(null);

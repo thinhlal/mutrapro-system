@@ -40,7 +40,7 @@ public class NotationInstrument extends BaseEntity<String> {
     boolean isActive = true;
 
     @Column(name = "image", length = 500)
-    String image;  // URL hoặc path đến hình ảnh của nhạc cụ
+    String image;  // Public S3 URL (e.g., "https://bucket.s3.amazonaws.com/instruments/file-uuid.png")
 
     @OneToMany(mappedBy = "notationInstrument", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

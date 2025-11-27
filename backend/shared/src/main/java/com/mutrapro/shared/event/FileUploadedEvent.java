@@ -24,8 +24,8 @@ public class FileUploadedEvent implements Serializable {
     // file_name varchar(255) [not null]
     String fileName;
     
-    // file_path varchar(500) [not null] - S3 URL
-    String filePath;
+    // file_key_s3 varchar(500) [not null] - S3 object key (e.g., "task-outputs/123/file-uuid.pdf"), not URL
+    String fileKeyS3;
     
     // file_size bigint [not null]
     Long fileSize;

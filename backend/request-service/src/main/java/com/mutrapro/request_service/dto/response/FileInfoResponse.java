@@ -18,7 +18,6 @@ import static lombok.AccessLevel.PRIVATE;
 public class FileInfoResponse {
     String fileId;
     String fileName;
-    String filePath;
     Long fileSize;
     String mimeType;
     String contentType;
