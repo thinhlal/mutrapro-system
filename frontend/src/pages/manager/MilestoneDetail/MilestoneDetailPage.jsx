@@ -582,9 +582,7 @@ const MilestoneDetailPage = () => {
                       <div>
                         <Text strong>Actual</Text>
                         <Space direction="vertical" size={0}>
-                          <Text>
-                            Start: {formatDateTime(actualStart)}
-                          </Text>
+                          <Text>Start: {formatDateTime(actualStart)}</Text>
                           <Text>
                             Deadline: {formatDateTime(actualDeadline)}
                           </Text>

@@ -245,9 +245,7 @@ const MyRequestsContent = () => {
             Contract approved - awaiting signature
           </Option>
           <Option value="contract_signed">Contract signed</Option>
-          <Option value="awaiting_assignment">
-            Awaiting assignment
-          </Option>
+          <Option value="awaiting_assignment">Awaiting assignment</Option>
           <Option value="in_progress">In progress</Option>
           <Option value="completed">Completed</Option>
           <Option value="cancelled">Cancelled</Option>

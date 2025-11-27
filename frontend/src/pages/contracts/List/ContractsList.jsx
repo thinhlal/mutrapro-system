@@ -84,13 +84,17 @@ const fmtMoney = (n, cur) =>
 // Helper function để tính deposit amount
 const getDepositAmount = contract => {
   if (!contract) return 0;
-  
+
   // 1. Check depositAmount field trước
   const normalizedDeposit =
     contract.depositAmount !== undefined && contract.depositAmount !== null
       ? Number(contract.depositAmount)
       : null;
-  if (!Number.isNaN(normalizedDeposit) && normalizedDeposit !== null && normalizedDeposit > 0) {
+  if (
+    !Number.isNaN(normalizedDeposit) &&
+    normalizedDeposit !== null &&
+    normalizedDeposit > 0
+  ) {
     return normalizedDeposit;
   }
 
@@ -104,7 +108,10 @@ const getDepositAmount = contract => {
     depositInstallment.amount !== null
   ) {
     const normalizedInstallmentAmount = Number(depositInstallment.amount);
-    if (!Number.isNaN(normalizedInstallmentAmount) && normalizedInstallmentAmount > 0) {
+    if (
+      !Number.isNaN(normalizedInstallmentAmount) &&
+      normalizedInstallmentAmount > 0
+    ) {
       return normalizedInstallmentAmount;
     }
   }

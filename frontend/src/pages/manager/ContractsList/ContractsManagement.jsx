@@ -86,13 +86,17 @@ const fmtMoney = (n, cur) =>
 // Helper function để tính deposit amount
 const getDepositAmount = contract => {
   if (!contract) return 0;
-  
+
   // 1. Check depositAmount field trước
   const normalizedDeposit =
     contract.depositAmount !== undefined && contract.depositAmount !== null
       ? Number(contract.depositAmount)
       : null;
-  if (!Number.isNaN(normalizedDeposit) && normalizedDeposit !== null && normalizedDeposit > 0) {
+  if (
+    !Number.isNaN(normalizedDeposit) &&
+    normalizedDeposit !== null &&
+    normalizedDeposit > 0
+  ) {
     return normalizedDeposit;
   }
 
@@ -106,7 +110,10 @@ const getDepositAmount = contract => {
     depositInstallment.amount !== null
   ) {
     const normalizedInstallmentAmount = Number(depositInstallment.amount);
-    if (!Number.isNaN(normalizedInstallmentAmount) && normalizedInstallmentAmount > 0) {
+    if (
+      !Number.isNaN(normalizedInstallmentAmount) &&
+      normalizedInstallmentAmount > 0
+    ) {
       return normalizedInstallmentAmount;
     }
   }
@@ -418,8 +425,7 @@ export default function ContractsManagement() {
         const isCanceledByCustomer = statusLower === 'canceled_by_customer';
         const isCanceledByManager = statusLower === 'canceled_by_manager';
         const isCanceled = isCanceledByCustomer || isCanceledByManager;
-        const isPendingAssignment =
-          statusLower === 'active_pending_assignment';
+        const isPendingAssignment = statusLower === 'active_pending_assignment';
         const canManagerCancel = isDraft || isSent; // Manager can cancel DRAFT or recall SENT
         const canSend = isDraft; // Manager can send DRAFT contract
         const canRevise = isNeedRevision; // Manager can view reason and create new contract
@@ -1023,7 +1029,9 @@ export default function ContractsManagement() {
           });
         }}
         okText={
-          startWorkContext.hasBlockingMissing ? 'Không thể Start Work' : 'Start Work'
+          startWorkContext.hasBlockingMissing
+            ? 'Không thể Start Work'
+            : 'Start Work'
         }
         okButtonProps={{
           disabled: startWorkContext.hasBlockingMissing,

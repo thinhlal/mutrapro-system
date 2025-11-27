@@ -324,10 +324,19 @@ export default function ServiceRequestManagement() {
       key: 'status',
       width: 200,
       render: status => {
-        const statusText = STATUS_LABELS[status] || status?.toUpperCase() || 'UNKNOWN';
+        const statusText =
+          STATUS_LABELS[status] || status?.toUpperCase() || 'UNKNOWN';
         return (
           <Tooltip title={statusText}>
-            <Tag color={STATUS_COLORS[status] || 'default'} style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Tag
+              color={STATUS_COLORS[status] || 'default'}
+              style={{
+                maxWidth: '180px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {statusText}
             </Tag>
           </Tooltip>

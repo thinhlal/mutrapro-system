@@ -108,7 +108,7 @@ function getPlannedDeadline(milestone) {
   if (milestone?.plannedDueDate) {
     return new Date(milestone.plannedDueDate);
   }
-  
+
   // Fallback: plannedStartAt + milestoneSlaDays
   const plannedStart = getPlannedStartDate(milestone);
   const slaDays = milestone?.milestoneSlaDays;
@@ -117,7 +117,7 @@ function getPlannedDeadline(milestone) {
     dueDate.setDate(dueDate.getDate() + Number(slaDays));
     return dueDate;
   }
-  
+
   return null;
 }
 
@@ -144,7 +144,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
   if (!milestone) return null;
   const slaDays = milestone.milestoneSlaDays;
   if (slaDays == null || slaDays <= 0) return null;
-  
+
   // Ưu tiên: dùng plannedStartAt nếu có
   const plannedStart = getPlannedStartDate(milestone);
   if (plannedStart) {
@@ -152,13 +152,13 @@ function getFallbackDeadline(milestone, allTasks = []) {
     dueDate.setDate(dueDate.getDate() + Number(slaDays));
     return dueDate;
   }
-  
+
   // Cache key: milestoneId
   const cacheKey = milestone.milestoneId;
   if (fallbackDeadlineCache.has(cacheKey)) {
     return fallbackDeadlineCache.get(cacheKey);
   }
-  
+
   // Nếu milestone orderIndex = 1, tính từ now
   const orderIndex = milestone.orderIndex;
   if (orderIndex == null || orderIndex === 1) {
@@ -168,7 +168,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
     fallbackDeadlineCache.set(cacheKey, dueDate);
     return dueDate;
   }
-  
+
   // Nếu milestone orderIndex > 1, tính từ deadline của milestone trước đó
   const contractId =
     milestone.contractId ||
@@ -181,7 +181,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
         t.contractId === contractId &&
         t.milestone?.orderIndex === orderIndex - 1
     );
-    
+
     if (previousTask?.milestone) {
       const previousMilestone = previousTask.milestone;
       // Tính deadline của milestone trước đó (actual > planned > fallback đệ quy)
@@ -191,8 +191,11 @@ function getFallbackDeadline(milestone, allTasks = []) {
         previousMilestone,
         allTasks
       );
-      const previousDeadline = previousActualDeadline || previousPlannedDeadline || previousFallbackDeadline;
-      
+      const previousDeadline =
+        previousActualDeadline ||
+        previousPlannedDeadline ||
+        previousFallbackDeadline;
+
       if (previousDeadline) {
         // Start date của milestone hiện tại = deadline của milestone trước đó
         const dueDate = new Date(previousDeadline);
@@ -202,7 +205,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
       }
     }
   }
-  
+
   // Fallback cuối cùng: tính từ now (nếu không tìm thấy milestone trước đó)
   const now = new Date();
   const dueDate = new Date(now);
@@ -452,15 +455,17 @@ const MyTasksPage = ({ onOpenTask }) => {
           );
           const actualStart = getActualStartDate(record?.milestone);
           const plannedStart = getPlannedStartDate(record?.milestone);
-          
+
           // Dùng deadline để hiển thị (ưu tiên actual > planned > fallback)
-          const displayDeadline = actualDeadline || plannedDeadline || fallbackDeadline;
-          const isFallback = !actualDeadline && !plannedDeadline && fallbackDeadline;
-          
+          const displayDeadline =
+            actualDeadline || plannedDeadline || fallbackDeadline;
+          const isFallback =
+            !actualDeadline && !plannedDeadline && fallbackDeadline;
+
           if (!displayDeadline) {
             return <Text type="secondary">Chưa có</Text>;
           }
-          
+
           const status = record.status?.toLowerCase();
           const now = new Date();
           const isCompleted =
@@ -478,10 +483,11 @@ const MyTasksPage = ({ onOpenTask }) => {
             : null;
           const isNearDeadline =
             !isOverdue && daysDiff !== null && daysDiff <= 3 && daysDiff >= 0;
-          
+
           // Chỉ hiển thị actual deadline khi đã có start work (có actualStartAt)
-          const showActual = actualDeadline && actualStart && status !== 'assigned';
-          
+          const showActual =
+            actualDeadline && actualStart && status !== 'assigned';
+
           return (
             <Space direction="vertical" size={0}>
               {showActual && (
@@ -600,7 +606,13 @@ const MyTasksPage = ({ onOpenTask }) => {
         },
       },
     ],
-    [handleOpenTask, handleAccept, handleCancel, handleStartTask, startingAssignmentId]
+    [
+      handleOpenTask,
+      handleAccept,
+      handleCancel,
+      handleStartTask,
+      startingAssignmentId,
+    ]
   );
 
   const tableLocale = useMemo(

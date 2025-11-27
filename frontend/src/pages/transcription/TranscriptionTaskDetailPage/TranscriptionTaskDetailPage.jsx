@@ -161,14 +161,13 @@ function getFallbackDeadline(milestone, allTasks = []) {
 
   const contractId =
     milestone.contractId ||
-    allTasks.find(
-      t => t.milestone?.milestoneId === milestone.milestoneId
-    )?.contractId;
+    allTasks.find(t => t.milestone?.milestoneId === milestone.milestoneId)
+      ?.contractId;
   if (contractId && allTasks.length > 0) {
     const previousTask = allTasks.find(
       t =>
         t.contractId === contractId &&
-        t.milestone?.orderIndex === orderIndex - 1,
+        t.milestone?.orderIndex === orderIndex - 1
     );
     if (previousTask?.milestone) {
       const previousMilestone = previousTask.milestone;
@@ -176,7 +175,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
       const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
       const previousFallbackDeadline = getFallbackDeadline(
         previousMilestone,
-        allTasks,
+        allTasks
       );
       const previousDeadline =
         previousActualDeadline ||
@@ -228,7 +227,7 @@ const TranscriptionTaskDetailPage = () => {
       const resp = await getMyTaskAssignments();
       if (resp?.status === 'success' && Array.isArray(resp.data)) {
         const sameContractTasks = resp.data.filter(
-          assignment => assignment.contractId === contractId,
+          assignment => assignment.contractId === contractId
         );
         setContractTasks(sameContractTasks);
       } else {
@@ -263,7 +262,7 @@ const TranscriptionTaskDetailPage = () => {
 
   const loadTaskFiles = useCallback(async () => {
     if (!task?.assignmentId) return;
-    
+
     try {
       const response = await getFilesByAssignmentId(task.assignmentId);
       if (response?.status === 'success' && Array.isArray(response?.data)) {
@@ -274,7 +273,7 @@ const TranscriptionTaskDetailPage = () => {
           const dateB = b.uploadDate ? new Date(b.uploadDate).getTime() : 0;
           return dateA - dateB; // Oldest first
         });
-        
+
         const mappedFiles = sortedFiles.map((file, index) => ({
           fileId: file.fileId, // Use fileId for download
           id: file.fileId, // Keep id for backward compatibility
@@ -431,7 +430,7 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, [task, issueForm, loadData]);
 
-  const handleDownloadFile = useCallback(async (file) => {
+  const handleDownloadFile = useCallback(async file => {
     // downloadFileHelper đã có error handling và success message built-in
     await downloadFileHelper(file.fileId, file.fileName);
   }, []);
@@ -461,33 +460,33 @@ const TranscriptionTaskDetailPage = () => {
       message.error('Assignment ID not found');
       return;
     }
-  
+
     if (uploading) {
       console.log('Already uploading, ignoring');
       return;
     }
-  
+
     try {
       setUploading(true);
       console.log('Starting upload process...', selectedFile);
-  
+
       const values = await uploadForm.validateFields();
-  
+
       if (!selectedFile) {
         message.error('Please select a file');
         setUploading(false);
         return;
       }
-  
+
       const file = selectedFile;
-  
+
       const response = await uploadTaskFile(
         task.assignmentId,
         file,
         values.note || '',
         'notation'
       );
-  
+
       if (response?.status === 'success') {
         message.success('File uploaded successfully');
         uploadForm.resetFields();
@@ -555,7 +554,7 @@ const TranscriptionTaskDetailPage = () => {
         dataIndex: 'description',
         key: 'description',
         ellipsis: true,
-        render: (text) =>
+        render: text =>
           text && text.length > 0 ? (
             text.length > 50 ? (
               <Tooltip title={text}>
@@ -579,7 +578,9 @@ const TranscriptionTaskDetailPage = () => {
             const dateB = new Date(b.uploadDate || 0);
             return dateB - dateA;
           });
-          return sortedFiles[0]?.fileId === record.fileId ? <Tag>Latest</Tag> : null;
+          return sortedFiles[0]?.fileId === record.fileId ? (
+            <Tag>Latest</Tag>
+          ) : null;
         },
       },
       {
@@ -925,7 +926,8 @@ const TranscriptionTaskDetailPage = () => {
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
                 const hasSubmitButton = status !== 'cancelled';
-                const hasIssueButton = status === 'in_progress' && !task.hasIssue;
+                const hasIssueButton =
+                  status === 'in_progress' && !task.hasIssue;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
                 const hasAnyAction =
                   hasIssueAlert ||
@@ -1137,7 +1139,7 @@ const TranscriptionTaskDetailPage = () => {
           <Form.Item
             name="file"
             valuePropName="fileList"
-            getValueFromEvent={(e) => {
+            getValueFromEvent={e => {
               if (Array.isArray(e)) {
                 return e;
               }
@@ -1149,21 +1151,35 @@ const TranscriptionTaskDetailPage = () => {
                 validator: (_, value) => {
                   // value là fileList từ Upload component
                   const fileList = value || [];
-                  
+
                   if (fileList.length === 0 || !selectedFile) {
                     return Promise.reject(new Error('Please select a file'));
                   }
-                  
+
                   const fileName = selectedFile.name?.toLowerCase() || '';
                   const taskType = task?.taskType?.toLowerCase();
-                  
+
                   // Define allowed extensions for each task type
-                  const notationExts = ['.musicxml', '.xml', '.mid', '.midi', '.pdf'];
-                  const audioExts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma'];
-                  
+                  const notationExts = [
+                    '.musicxml',
+                    '.xml',
+                    '.mid',
+                    '.midi',
+                    '.pdf',
+                  ];
+                  const audioExts = [
+                    '.mp3',
+                    '.wav',
+                    '.flac',
+                    '.aac',
+                    '.ogg',
+                    '.m4a',
+                    '.wma',
+                  ];
+
                   let allowedExts = [];
                   let allowedTypes = '';
-                  
+
                   if (taskType === 'transcription') {
                     allowedExts = notationExts;
                     allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
@@ -1176,9 +1192,11 @@ const TranscriptionTaskDetailPage = () => {
                   } else {
                     return Promise.resolve(); // Unknown task type, let backend validate
                   }
-                  
-                  const hasValidExt = allowedExts.some(ext => fileName.endsWith(ext));
-                  
+
+                  const hasValidExt = allowedExts.some(ext =>
+                    fileName.endsWith(ext)
+                  );
+
                   if (!hasValidExt) {
                     return Promise.reject(
                       new Error(
@@ -1186,7 +1204,7 @@ const TranscriptionTaskDetailPage = () => {
                       )
                     );
                   }
-                  
+
                   return Promise.resolve();
                 },
               },
@@ -1199,14 +1217,15 @@ const TranscriptionTaskDetailPage = () => {
                 task?.taskType?.toLowerCase() === 'transcription'
                   ? '.musicxml,.xml,.mid,.midi,.pdf'
                   : task?.taskType?.toLowerCase() === 'recording'
-                  ? '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
-                  : '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
+                    ? '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
+                    : '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
               }
               onChange={info => {
                 // Khi user chọn file, lưu vào state để hiển thị
-                const file = info.fileList.length > 0 
-                  ? (info.fileList[0].originFileObj || info.fileList[0])
-                  : null;
+                const file =
+                  info.fileList.length > 0
+                    ? info.fileList[0].originFileObj || info.fileList[0]
+                    : null;
                 setSelectedFile(file);
               }}
               onRemove={() => {
@@ -1226,13 +1245,17 @@ const TranscriptionTaskDetailPage = () => {
                     {task?.taskType?.toLowerCase() === 'transcription'
                       ? 'Only notation files allowed: MusicXML, XML, MIDI, PDF'
                       : task?.taskType?.toLowerCase() === 'recording'
-                      ? 'Only audio files allowed: MP3, WAV, FLAC, etc.'
-                      : 'Support: Notation (MusicXML, MIDI, PDF) or Audio files'}
+                        ? 'Only audio files allowed: MP3, WAV, FLAC, etc.'
+                        : 'Support: Notation (MusicXML, MIDI, PDF) or Audio files'}
                   </p>
                 </>
               ) : (
                 <div style={{ padding: '20px 0' }}>
-                  <Space direction="vertical" size="small" style={{ width: '100%', textAlign: 'center' }}>
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%', textAlign: 'center' }}
+                  >
                     <Text strong style={{ fontSize: '16px' }}>
                       {selectedFile.name}
                     </Text>

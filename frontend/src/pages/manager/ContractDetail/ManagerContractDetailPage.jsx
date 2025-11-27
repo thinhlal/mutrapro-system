@@ -212,9 +212,7 @@ const ManagerContractDetailPage = () => {
         };
       });
 
-      const missingMilestones = milestoneSummaries.filter(
-        m => m.active === 0
-      );
+      const missingMilestones = milestoneSummaries.filter(m => m.active === 0);
       const hasBlockingMissing = missingMilestones.length > 0;
 
       // Lưu context và mở modal riêng thay vì dùng Modal.confirm
@@ -498,9 +496,10 @@ const ManagerContractDetailPage = () => {
         {/* Company Seal - Only show when signed or active */}
         {(() => {
           const contractStatus = contract?.status?.toLowerCase();
-          const isSignedOrActive = contractStatus === 'signed' || 
-                                   contractStatus === 'active' || 
-                                   contractStatus === 'active_pending_assignment';
+          const isSignedOrActive =
+            contractStatus === 'signed' ||
+            contractStatus === 'active' ||
+            contractStatus === 'active_pending_assignment';
           return isSignedOrActive;
         })() && (
           <View style={pdfStyles.seal}>
@@ -546,9 +545,10 @@ const ManagerContractDetailPage = () => {
         {/* Watermark - Only show if not signed or active */}
         {(() => {
           const contractStatus = contract?.status?.toLowerCase();
-          const isSignedOrActive = contractStatus === 'signed' || 
-                                   contractStatus === 'active' || 
-                                   contractStatus === 'active_pending_assignment';
+          const isSignedOrActive =
+            contractStatus === 'signed' ||
+            contractStatus === 'active' ||
+            contractStatus === 'active_pending_assignment';
           return !isSignedOrActive ? (
             <View style={pdfStyles.watermark}>
               <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
@@ -1071,9 +1071,10 @@ const ManagerContractDetailPage = () => {
             </PdfText>
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return isSignedOrActive && partyASignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1107,9 +1108,10 @@ const ManagerContractDetailPage = () => {
             })()}
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return !isSignedOrActive ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
@@ -1125,9 +1127,10 @@ const ManagerContractDetailPage = () => {
             </PdfText>
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return isSignedOrActive && partyBSignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1313,7 +1316,8 @@ const ManagerContractDetailPage = () => {
   const isDraft = currentStatus === 'draft';
   const isSigned = currentStatus === 'signed';
   const isPendingAssignment = currentStatus === 'active_pending_assignment';
-  const isActive = currentStatus === 'active' || currentStatus === 'active_pending_assignment';
+  const isActive =
+    currentStatus === 'active' || currentStatus === 'active_pending_assignment';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
@@ -1322,7 +1326,7 @@ const ManagerContractDetailPage = () => {
 
   // Contract is signed or active - milestones can be paid (but not if canceled or expired)
   const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
-  
+
   // Show signature if contract has been signed (regardless of current status for display purposes)
   const hasSigned = contract?.customerSignedAt || isSigned || isActive;
 
@@ -2554,7 +2558,9 @@ const ManagerContractDetailPage = () => {
           });
         }}
         okText={
-          startWorkContext.hasBlockingMissing ? 'Không thể Start Work' : 'Start Work'
+          startWorkContext.hasBlockingMissing
+            ? 'Không thể Start Work'
+            : 'Start Work'
         }
         okButtonProps={{
           disabled: startWorkContext.hasBlockingMissing,
@@ -2616,8 +2622,8 @@ const ManagerContractDetailPage = () => {
               </ul>
               {startWorkContext.hasBlockingMissing ? (
                 <p style={{ marginTop: 8 }}>
-                  Có milestone chưa có task active, nên chưa thể Start Work.
-                  Vui lòng vào Milestones / Task Progress để gán task trước.
+                  Có milestone chưa có task active, nên chưa thể Start Work. Vui
+                  lòng vào Milestones / Task Progress để gán task trước.
                 </p>
               ) : (
                 <p style={{ marginTop: 8 }}>
@@ -2626,8 +2632,8 @@ const ManagerContractDetailPage = () => {
                 </p>
               )}
               <p style={{ marginTop: 8 }}>
-                Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
-                đầu work, không phải ngày ký hợp đồng.
+                Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt đầu
+                work, không phải ngày ký hợp đồng.
               </p>
             </>
           )}

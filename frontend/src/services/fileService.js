@@ -9,7 +9,12 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {string} contentType - Loại nội dung: notation, audio, documentation, etc. (optional, default: notation)
  * @returns {Promise} Response từ API
  */
-export const uploadTaskFile = async (assignmentId, file, description = '', contentType = 'notation') => {
+export const uploadTaskFile = async (
+  assignmentId,
+  file,
+  description = '',
+  contentType = 'notation'
+) => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -19,11 +24,15 @@ export const uploadTaskFile = async (assignmentId, file, description = '', conte
     }
     formData.append('contentType', contentType);
 
-    const response = await axiosInstance.post(API_ENDPOINTS.FILES.UPLOAD_TASK_FILE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.FILES.UPLOAD_TASK_FILE,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -39,9 +48,11 @@ export const uploadTaskFile = async (assignmentId, file, description = '', conte
  * @param {string} assignmentId - ID của task assignment
  * @returns {Promise} Response từ API
  */
-export const getFilesByAssignmentId = async (assignmentId) => {
+export const getFilesByAssignmentId = async assignmentId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.FILES.GET_BY_ASSIGNMENT_ID(assignmentId));
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.FILES.GET_BY_ASSIGNMENT_ID(assignmentId)
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -57,9 +68,11 @@ export const getFilesByAssignmentId = async (assignmentId) => {
  * @param {string} requestId - ID của service request
  * @returns {Promise} Response từ API
  */
-export const getFilesByRequestId = async (requestId) => {
+export const getFilesByRequestId = async requestId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.FILES.GET_BY_REQUEST_ID(requestId));
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.FILES.GET_BY_REQUEST_ID(requestId)
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -76,25 +89,31 @@ export const getFilesByRequestId = async (requestId) => {
  * @param {string} fileId - ID của file
  * @returns {Promise<{blob: Blob, fileName: string, mimeType: string}>}
  */
-export const fetchFileForPreview = async (fileId) => {
+export const fetchFileForPreview = async fileId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.FILES.DOWNLOAD(fileId), {
-      responseType: 'blob',
-    });
-    
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.FILES.DOWNLOAD(fileId),
+      {
+        responseType: 'blob',
+      }
+    );
+
     // Extract filename từ Content-Disposition header
     const contentDisposition = response.headers['content-disposition'];
     let fileName = 'preview';
     if (contentDisposition) {
-      const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      const fileNameMatch = contentDisposition.match(
+        /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+      );
       if (fileNameMatch && fileNameMatch[1]) {
         fileName = fileNameMatch[1].replace(/['"]/g, '');
       }
     }
-    
+
     // Extract mimeType từ Content-Type header
-    const mimeType = response.headers['content-type'] || 'application/octet-stream';
-    
+    const mimeType =
+      response.headers['content-type'] || 'application/octet-stream';
+
     return {
       blob: response.data,
       fileName,
@@ -114,9 +133,11 @@ export const fetchFileForPreview = async (fileId) => {
  * @param {string} fileId - ID của file
  * @returns {Promise} Response từ API
  */
-export const approveFile = async (fileId) => {
+export const approveFile = async fileId => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.FILES.APPROVE(fileId));
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.FILES.APPROVE(fileId)
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -154,9 +175,11 @@ export const rejectFile = async (fileId, reason) => {
  * @param {string} fileId - ID của file
  * @returns {Promise} Response từ API
  */
-export const deliverFileToCustomer = async (fileId) => {
+export const deliverFileToCustomer = async fileId => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.FILES.DELIVER(fileId));
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.FILES.DELIVER(fileId)
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -166,4 +189,3 @@ export const deliverFileToCustomer = async (fileId) => {
     );
   }
 };
-

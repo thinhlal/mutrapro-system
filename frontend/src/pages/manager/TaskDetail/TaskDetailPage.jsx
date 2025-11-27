@@ -137,10 +137,7 @@ const TaskDetailPage = () => {
     try {
       setLoading(true);
       // Load task và contract trước
-      await Promise.all([
-        loadTask(),
-        loadContract(),
-      ]);
+      await Promise.all([loadTask(), loadContract()]);
       // Sau khi task đã load, mới load request và files
       // (sẽ được trigger bởi useEffect khi task thay đổi)
     } catch (error) {
@@ -178,9 +175,9 @@ const TaskDetailPage = () => {
     }
   };
 
-  const loadRequestById = async (requestId) => {
+  const loadRequestById = async requestId => {
     if (!requestId) return;
-    
+
     try {
       setRequestLoading(true);
       console.log('Loading request with ID:', requestId);
@@ -188,20 +185,23 @@ const TaskDetailPage = () => {
       if (response?.status === 'success' && response?.data) {
         let requestData = response.data;
         console.log('Request loaded:', requestData);
-        
+
         // Nếu request.files empty hoặc không có, thử gọi trực tiếp API
         if (!requestData.files || requestData.files.length === 0) {
           try {
             const filesResponse = await getFilesByRequestId(requestId);
             if (filesResponse?.status === 'success' && filesResponse?.data) {
               requestData.files = filesResponse.data;
-              console.log('Loaded files directly from API:', filesResponse.data.length);
+              console.log(
+                'Loaded files directly from API:',
+                filesResponse.data.length
+              );
             }
           } catch (fileError) {
             console.error('Error loading files directly:', fileError);
           }
         }
-        
+
         setRequest(requestData);
       } else {
         console.warn('Request response not successful:', response);
@@ -215,11 +215,8 @@ const TaskDetailPage = () => {
 
   const loadRequest = async () => {
     // Thử lấy requestId từ nhiều nguồn
-    const requestId = 
-      task?.request?.requestId || 
-      contract?.requestId || 
-      null;
-    
+    const requestId = task?.request?.requestId || contract?.requestId || null;
+
     if (requestId) {
       await loadRequestById(requestId);
     } else {
@@ -230,22 +227,24 @@ const TaskDetailPage = () => {
   const loadFiles = async () => {
     try {
       setFilesLoading(true);
-      
+
       // Load delivery files từ assignment
       let deliveryFilesList = [];
       try {
         const deliveryResponse = await getFilesByAssignmentId(assignmentId);
         if (deliveryResponse?.status === 'success' && deliveryResponse?.data) {
-          deliveryFilesList = [...(deliveryResponse.data || [])].sort((a, b) => {
-            const dateA = a.uploadDate ? new Date(a.uploadDate) : 0;
-            const dateB = b.uploadDate ? new Date(b.uploadDate) : 0;
-            return dateA - dateB; // Cũ nhất trước để tính version
-          });
+          deliveryFilesList = [...(deliveryResponse.data || [])].sort(
+            (a, b) => {
+              const dateA = a.uploadDate ? new Date(a.uploadDate) : 0;
+              const dateB = b.uploadDate ? new Date(b.uploadDate) : 0;
+              return dateA - dateB; // Cũ nhất trước để tính version
+            }
+          );
         }
       } catch (error) {
         console.error('Error loading delivery files:', error);
       }
-      
+
       setDeliveryFiles(deliveryFilesList);
     } catch (error) {
       console.error('Error loading files:', error);
@@ -256,7 +255,7 @@ const TaskDetailPage = () => {
     }
   };
 
-  const handleApproveFile = async (fileId) => {
+  const handleApproveFile = async fileId => {
     try {
       setActionLoading(true);
       const response = await approveFile(fileId);
@@ -279,7 +278,10 @@ const TaskDetailPage = () => {
     }
     try {
       setActionLoading(true);
-      const response = await rejectFile(selectedFileForRevision.fileId, revisionReason);
+      const response = await rejectFile(
+        selectedFileForRevision.fileId,
+        revisionReason
+      );
       if (response?.status === 'success') {
         message.success('Đã yêu cầu chỉnh sửa file');
         setRevisionModalVisible(false);
@@ -289,13 +291,15 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error requesting revision:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi yêu cầu chỉnh sửa file');
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi yêu cầu chỉnh sửa file'
+      );
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleDeliverFile = async (fileId) => {
+  const handleDeliverFile = async fileId => {
     try {
       setActionLoading(true);
       const response = await deliverFileToCustomer(fileId);
@@ -305,7 +309,9 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error delivering file:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi gửi file cho khách hàng');
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi gửi file cho khách hàng'
+      );
     } finally {
       setActionLoading(false);
     }
@@ -317,7 +323,7 @@ const TaskDetailPage = () => {
       const response = await axiosInstance.get(url, {
         responseType: 'blob',
       });
-      
+
       const blob = new Blob([response.data]);
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -327,7 +333,7 @@ const TaskDetailPage = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-      
+
       message.success('Đã tải file thành công');
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -335,20 +341,27 @@ const TaskDetailPage = () => {
     }
   };
 
-  const handlePreviewFile = async (file) => {
+  const handlePreviewFile = async file => {
     try {
       setPreviewLoading(true);
       setPreviewFile(file);
       setPreviewModalVisible(true);
-      
-      const { blob, fileName, mimeType } = await fetchFileForPreview(file.fileId);
-      
+
+      const { blob, fileName, mimeType } = await fetchFileForPreview(
+        file.fileId
+      );
+
       // Tạo blob với đúng MIME type
-      const finalMimeType = mimeType || file.mimeType || 'application/octet-stream';
+      const finalMimeType =
+        mimeType || file.mimeType || 'application/octet-stream';
       const blobWithType = new Blob([blob], { type: finalMimeType });
       const url = window.URL.createObjectURL(blobWithType);
-      
-      setPreviewFile(prev => ({ ...prev, previewUrl: url, mimeType: finalMimeType }));
+
+      setPreviewFile(prev => ({
+        ...prev,
+        previewUrl: url,
+        mimeType: finalMimeType,
+      }));
     } catch (error) {
       console.error('Error previewing file:', error);
       message.error('Lỗi khi xem file');
@@ -359,7 +372,7 @@ const TaskDetailPage = () => {
     }
   };
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = bytes => {
     if (!bytes) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -367,7 +380,7 @@ const TaskDetailPage = () => {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const getContentTypeLabel = (contentType) => {
+  const getContentTypeLabel = contentType => {
     const labels = {
       audio: 'Audio',
       notation: 'Notation',
@@ -389,7 +402,7 @@ const TaskDetailPage = () => {
       const dateB = b.uploadDate ? new Date(b.uploadDate) : 0;
       return dateA - dateB;
     });
-    
+
     const index = sortedFiles.findIndex(f => f.fileId === file.fileId);
     return index >= 0 ? index + 1 : null;
   };
@@ -399,30 +412,31 @@ const TaskDetailPage = () => {
     // 1. Có status approved hoặc delivered
     // 2. Là file mới nhất (uploadDate lớn nhất) trong tất cả delivery files
     if (allFiles.length === 0) return false;
-    
+
     const latestFile = allFiles.reduce((latest, current) => {
       const latestDate = latest.uploadDate ? new Date(latest.uploadDate) : 0;
       const currentDate = current.uploadDate ? new Date(current.uploadDate) : 0;
       return currentDate > latestDate ? current : latest;
     });
-    
+
     const isLatest = latestFile.fileId === file.fileId;
-    const isApproved = file.fileStatus === 'approved' || file.fileStatus === 'delivered';
-    
+    const isApproved =
+      file.fileStatus === 'approved' || file.fileStatus === 'delivered';
+
     return isLatest && isApproved;
   };
 
-  const canApprove = (file) => {
+  const canApprove = file => {
     const status = file.fileStatus?.toLowerCase();
     return status === 'uploaded' || status === 'pending_review';
   };
 
-  const canReject = (file) => {
+  const canReject = file => {
     const status = file.fileStatus?.toLowerCase();
     return status === 'uploaded' || status === 'pending_review';
   };
 
-  const canDeliver = (file) => {
+  const canDeliver = file => {
     const status = file.fileStatus?.toLowerCase();
     return status === 'approved' && !file.deliveredToCustomer;
   };
@@ -453,7 +467,9 @@ const TaskDetailPage = () => {
           </Button>
           <Space size="small" wrap className={styles.headerMeta}>
             {contract?.contractNumber && <Tag>{contract.contractNumber}</Tag>}
-            <Tag color="cyan">{TASK_TYPE_LABELS[task.taskType] || task.taskType}</Tag>
+            <Tag color="cyan">
+              {TASK_TYPE_LABELS[task.taskType] || task.taskType}
+            </Tag>
             <Tag color={STATUS_COLORS[task.status] || 'default'}>
               {STATUS_LABELS[task.status] || task.status}
             </Tag>
@@ -488,28 +504,33 @@ const TaskDetailPage = () => {
       <div className={styles.sectionStack}>
         {/* Request Info */}
         {(request || task?.request || contract?.requestId) && (
-          <Card 
+          <Card
             title="Thông tin Request"
-            extra={
-              requestLoading && <Spin size="small" />
-            }
+            extra={requestLoading && <Spin size="small" />}
           >
             <Spin spinning={requestLoading}>
               <Descriptions bordered column={2} size="small">
                 <Descriptions.Item label="Request ID" span={1}>
                   <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                    {request?.requestId || task?.request?.requestId || contract?.requestId || 'N/A'}
+                    {request?.requestId ||
+                      task?.request?.requestId ||
+                      contract?.requestId ||
+                      'N/A'}
                   </span>
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Service Type" span={1}>
                   <Tag color="orange">
-                    {request?.requestType 
-                      ? request.requestType === 'transcription' ? 'Transcription'
-                        : request.requestType === 'arrangement' ? 'Arrangement'
-                        : request.requestType === 'arrangement_with_recording' ? 'Arrangement with Recording'
-                        : request.requestType === 'recording' ? 'Recording'
-                        : request.requestType
+                    {request?.requestType
+                      ? request.requestType === 'transcription'
+                        ? 'Transcription'
+                        : request.requestType === 'arrangement'
+                          ? 'Arrangement'
+                          : request.requestType === 'arrangement_with_recording'
+                            ? 'Arrangement with Recording'
+                            : request.requestType === 'recording'
+                              ? 'Recording'
+                              : request.requestType
                       : task?.request?.serviceType || 'N/A'}
                   </Tag>
                 </Descriptions.Item>
@@ -522,15 +543,23 @@ const TaskDetailPage = () => {
 
                 {(request?.description || task?.request?.description) && (
                   <Descriptions.Item label="Description" span={2}>
-                    <Paragraph style={{ margin: 0 }}>{request?.description || task?.request?.description}</Paragraph>
+                    <Paragraph style={{ margin: 0 }}>
+                      {request?.description || task?.request?.description}
+                    </Paragraph>
                   </Descriptions.Item>
                 )}
 
                 {((request?.instruments && request.instruments.length > 0) ||
-                  (task?.request?.instruments && Array.isArray(task.request.instruments) && task.request.instruments.length > 0)) && (
+                  (task?.request?.instruments &&
+                    Array.isArray(task.request.instruments) &&
+                    task.request.instruments.length > 0)) && (
                   <Descriptions.Item label="Instruments" span={2}>
                     <Space wrap>
-                      {(request?.instruments || task?.request?.instruments || []).map((inst, idx) => (
+                      {(
+                        request?.instruments ||
+                        task?.request?.instruments ||
+                        []
+                      ).map((inst, idx) => (
                         <Tag key={idx} color="purple">
                           {inst.instrumentName || inst.name || inst}
                         </Tag>
@@ -539,13 +568,18 @@ const TaskDetailPage = () => {
                   </Descriptions.Item>
                 )}
 
-                {request?.files && request.files.filter(file => file.fileSource === 'customer_upload').length > 0 && (
-                  <Descriptions.Item label="Uploaded Files" span={2}>
-                    <FileList 
-                      files={request.files.filter(file => file.fileSource === 'customer_upload')}
-                    />
-                  </Descriptions.Item>
-                )}
+                {request?.files &&
+                  request.files.filter(
+                    file => file.fileSource === 'customer_upload'
+                  ).length > 0 && (
+                    <Descriptions.Item label="Uploaded Files" span={2}>
+                      <FileList
+                        files={request.files.filter(
+                          file => file.fileSource === 'customer_upload'
+                        )}
+                      />
+                    </Descriptions.Item>
+                  )}
               </Descriptions>
             </Spin>
           </Card>
@@ -564,7 +598,11 @@ const TaskDetailPage = () => {
                 {STATUS_LABELS[task.status] || task.status}
               </Tag>
               {task.hasIssue && (
-                <Tag color="orange" icon={<ExclamationCircleOutlined />} style={{ marginLeft: 8 }}>
+                <Tag
+                  color="orange"
+                  icon={<ExclamationCircleOutlined />}
+                  style={{ marginLeft: 8 }}
+                >
                   Issue
                 </Tag>
               )}
@@ -633,11 +671,11 @@ const TaskDetailPage = () => {
             {deliveryFiles.length > 0 ? (
               <List
                 dataSource={deliveryFiles}
-                renderItem={(file) => {
+                renderItem={file => {
                   const status = file.fileStatus?.toLowerCase();
                   const version = getFileVersion(file, deliveryFiles);
                   const isFinal = isFinalVersion(file, deliveryFiles);
-                  
+
                   return (
                     <List.Item
                       actions={[
@@ -653,7 +691,9 @@ const TaskDetailPage = () => {
                           key="download"
                           size="small"
                           icon={<DownloadOutlined />}
-                          onClick={() => handleDownloadFile(file.fileId, file.fileName)}
+                          onClick={() =>
+                            handleDownloadFile(file.fileId, file.fileName)
+                          }
                         >
                           Download
                         </Button>,
@@ -716,7 +756,9 @@ const TaskDetailPage = () => {
                         title={
                           <Space>
                             <Text strong>{file.fileName}</Text>
-                            <Tag color={FILE_STATUS_COLORS[status] || 'default'}>
+                            <Tag
+                              color={FILE_STATUS_COLORS[status] || 'default'}
+                            >
                               {FILE_STATUS_LABELS[status] || status}
                             </Tag>
                             {version && (
@@ -735,21 +777,31 @@ const TaskDetailPage = () => {
                         description={
                           <Space direction="vertical" size={0}>
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              Loại: {getContentTypeLabel(file.contentType)} • Dung lượng: {formatFileSize(file.fileSize)}
+                              Loại: {getContentTypeLabel(file.contentType)} •
+                              Dung lượng: {formatFileSize(file.fileSize)}
                             </Text>
                             {file.uploadDate && (
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                Upload: {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                Upload:{' '}
+                                {dayjs(file.uploadDate).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )}
                               </Text>
                             )}
                             {file.reviewedAt && (
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                Reviewed: {dayjs(file.reviewedAt).format('HH:mm DD/MM/YYYY')}
+                                Reviewed:{' '}
+                                {dayjs(file.reviewedAt).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )}
                               </Text>
                             )}
                             {file.deliveredAt && (
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                Delivered: {dayjs(file.deliveredAt).format('HH:mm DD/MM/YYYY')}
+                                Delivered:{' '}
+                                {dayjs(file.deliveredAt).format(
+                                  'HH:mm DD/MM/YYYY'
+                                )}
                               </Text>
                             )}
                             {file.rejectionReason && (
@@ -762,7 +814,10 @@ const TaskDetailPage = () => {
                               />
                             )}
                             {file.description && (
-                              <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: 12, fontStyle: 'italic' }}
+                              >
                                 Note: {file.description}
                               </Text>
                             )}
@@ -806,7 +861,7 @@ const TaskDetailPage = () => {
               <TextArea
                 rows={4}
                 value={revisionReason}
-                onChange={(e) => setRevisionReason(e.target.value)}
+                onChange={e => setRevisionReason(e.target.value)}
                 placeholder="Nhập lý do yêu cầu chỉnh sửa file (ví dụ: cần điều chỉnh tempo, thêm instrument, sửa notation...)..."
               />
             </div>
@@ -838,8 +893,8 @@ const TaskDetailPage = () => {
           >
             Tải file
           </Button>,
-          <Button 
-            key="close" 
+          <Button
+            key="close"
             onClick={() => {
               // Cleanup blob URL
               if (previewFile?.previewUrl) {
@@ -871,23 +926,27 @@ const TaskDetailPage = () => {
                   title={previewFile.fileName}
                 />
               ) : previewFile.mimeType?.startsWith('audio/') ? (
-                <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-                  <audio 
-                    controls 
-                    style={{ width: '100%' }}
-                    preload="metadata"
-                  >
-                    <source src={previewFile.previewUrl} type={previewFile.mimeType} />
+                <div
+                  style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}
+                >
+                  <audio controls style={{ width: '100%' }} preload="metadata">
+                    <source
+                      src={previewFile.previewUrl}
+                      type={previewFile.mimeType}
+                    />
                     Trình duyệt không hỗ trợ audio player
                   </audio>
                 </div>
               ) : previewFile.mimeType?.startsWith('video/') ? (
-                <video 
-                  controls 
+                <video
+                  controls
                   style={{ width: '100%', maxHeight: '600px' }}
                   preload="metadata"
                 >
-                  <source src={previewFile.previewUrl} type={previewFile.mimeType} />
+                  <source
+                    src={previewFile.previewUrl}
+                    type={previewFile.mimeType}
+                  />
                   Trình duyệt không hỗ trợ video player
                 </video>
               ) : (
@@ -906,4 +965,3 @@ const TaskDetailPage = () => {
 };
 
 export default TaskDetailPage;
-

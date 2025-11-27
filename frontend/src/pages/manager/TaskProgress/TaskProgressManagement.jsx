@@ -34,9 +34,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import {
-  getContractById,
-} from '../../../services/contractService';
+import { getContractById } from '../../../services/contractService';
 import {
   getAllTaskAssignments,
   resolveIssue,
@@ -207,94 +205,106 @@ export default function TaskProgressManagement() {
   const [cancellingTask, setCancellingTask] = useState(false);
   const navigate = useNavigate();
 
-  const fetchAllTaskAssignments = useCallback(async (currentFilters, currentPagination) => {
-    setLoading(true);
-    try {
-      const params = {
-        page: (currentPagination.page || 1) - 1,
-        size: currentPagination.pageSize || 10,
-      };
-      if (currentFilters.status !== 'all') {
-        params.status = currentFilters.status;
-      }
-      if (currentFilters.taskType !== 'all') {
-        params.taskType = currentFilters.taskType;
-      }
-      if (currentFilters.search && currentFilters.search.trim()) {
-        params.keyword = currentFilters.search.trim();
-      }
-      const response = await getAllTaskAssignments(params);
-      if (response?.status === 'success' && response.data) {
-        const pageData = response.data;
-        setTaskAssignments(pageData.content || []);
-        
-        // Fetch contract info for each task (lazy loading)
-        const contractIds = [...new Set((pageData.content || []).map(t => t.contractId).filter(Boolean))];
-        contractIds.forEach(contractId => {
-          if (!contractsMap[contractId]) {
-            getContractById(contractId)
-              .then(res => {
-                if (res?.status === 'success' && res?.data) {
-                  setContractsMap(prev => ({ ...prev, [contractId]: res.data }));
-                }
-              })
-              .catch(err => console.error(`Error fetching contract ${contractId}:`, err));
-          }
-        });
+  const fetchAllTaskAssignments = useCallback(
+    async (currentFilters, currentPagination) => {
+      setLoading(true);
+      try {
+        const params = {
+          page: (currentPagination.page || 1) - 1,
+          size: currentPagination.pageSize || 10,
+        };
+        if (currentFilters.status !== 'all') {
+          params.status = currentFilters.status;
+        }
+        if (currentFilters.taskType !== 'all') {
+          params.taskType = currentFilters.taskType;
+        }
+        if (currentFilters.search && currentFilters.search.trim()) {
+          params.keyword = currentFilters.search.trim();
+        }
+        const response = await getAllTaskAssignments(params);
+        if (response?.status === 'success' && response.data) {
+          const pageData = response.data;
+          setTaskAssignments(pageData.content || []);
 
-        // Fetch files for all assignments to calculate progress
-        const filesMap = {};
-        await Promise.all(
-          (pageData.content || []).map(async assignment => {
-            if (!assignment.assignmentId) {
-              filesMap[assignment.assignmentId] = [];
-              return;
+          // Fetch contract info for each task (lazy loading)
+          const contractIds = [
+            ...new Set(
+              (pageData.content || []).map(t => t.contractId).filter(Boolean)
+            ),
+          ];
+          contractIds.forEach(contractId => {
+            if (!contractsMap[contractId]) {
+              getContractById(contractId)
+                .then(res => {
+                  if (res?.status === 'success' && res?.data) {
+                    setContractsMap(prev => ({
+                      ...prev,
+                      [contractId]: res.data,
+                    }));
+                  }
+                })
+                .catch(err =>
+                  console.error(`Error fetching contract ${contractId}:`, err)
+                );
             }
-            try {
-              const filesResponse = await axiosInstance.get(
-                `/api/v1/projects/files/by-assignment/${assignment.assignmentId}`
-              );
-              if (
-                filesResponse?.data?.status === 'success' &&
-                filesResponse?.data?.data
-              ) {
-                filesMap[assignment.assignmentId] =
-                  filesResponse.data.data || [];
-              } else {
+          });
+
+          // Fetch files for all assignments to calculate progress
+          const filesMap = {};
+          await Promise.all(
+            (pageData.content || []).map(async assignment => {
+              if (!assignment.assignmentId) {
+                filesMap[assignment.assignmentId] = [];
+                return;
+              }
+              try {
+                const filesResponse = await axiosInstance.get(
+                  `/api/v1/projects/files/by-assignment/${assignment.assignmentId}`
+                );
+                if (
+                  filesResponse?.data?.status === 'success' &&
+                  filesResponse?.data?.data
+                ) {
+                  filesMap[assignment.assignmentId] =
+                    filesResponse.data.data || [];
+                } else {
+                  filesMap[assignment.assignmentId] = [];
+                }
+              } catch (error) {
+                if (error?.response?.status !== 500) {
+                  console.error(
+                    `Error fetching files for assignment ${assignment.assignmentId}:`,
+                    error
+                  );
+                }
                 filesMap[assignment.assignmentId] = [];
               }
-            } catch (error) {
-              if (error?.response?.status !== 500) {
-                console.error(
-                  `Error fetching files for assignment ${assignment.assignmentId}:`,
-                  error
-                );
-              }
-              filesMap[assignment.assignmentId] = [];
-            }
-          })
-        );
-        setTaskFilesMap(filesMap);
+            })
+          );
+          setTaskFilesMap(filesMap);
 
-        setPagination(prev => ({
-          ...prev,
-          page: (pageData.pageNumber ?? 0) + 1,
-          pageSize: pageData.pageSize ?? prev.pageSize,
-          total: pageData.totalElements ?? 0,
-        }));
-      } else {
+          setPagination(prev => ({
+            ...prev,
+            page: (pageData.pageNumber ?? 0) + 1,
+            pageSize: pageData.pageSize ?? prev.pageSize,
+            total: pageData.totalElements ?? 0,
+          }));
+        } else {
+          setTaskAssignments([]);
+          setPagination(prev => ({ ...prev, total: 0 }));
+        }
+      } catch (error) {
+        console.error('Error fetching task assignments:', error);
+        message.error(error?.message || 'Không thể tải danh sách tasks');
         setTaskAssignments([]);
         setPagination(prev => ({ ...prev, total: 0 }));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching task assignments:', error);
-      message.error(error?.message || 'Không thể tải danh sách tasks');
-      setTaskAssignments([]);
-      setPagination(prev => ({ ...prev, total: 0 }));
-    } finally {
-      setLoading(false);
-    }
-  }, [contractsMap]);
+    },
+    [contractsMap]
+  );
 
   useEffect(() => {
     fetchAllTaskAssignments(filters, pagination);
@@ -413,8 +423,6 @@ export default function TaskProgressManagement() {
     return 0;
   };
 
-
-
   // Render specialist cell
   const renderSpecialistCell = record => {
     const name = record.specialistName || record.specialistId || 'N/A';
@@ -437,9 +445,7 @@ export default function TaskProgressManagement() {
   // Handle view task details - navigate to task detail page
   const handleViewTaskDetails = record => {
     if (record.assignmentId && record.contractId) {
-      navigate(
-        `/manager/tasks/${record.contractId}/${record.assignmentId}`
-      );
+      navigate(`/manager/tasks/${record.contractId}/${record.assignmentId}`);
     } else {
       message.warning('Không tìm thấy assignment ID hoặc contract ID');
     }
@@ -525,7 +531,6 @@ export default function TaskProgressManagement() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
-
   // Table columns - tối ưu width để tránh scroll ngang
   const columns = [
     {
@@ -568,10 +573,7 @@ export default function TaskProgressManagement() {
       key: 'milestoneId',
       width: 140,
       render: (_, record) => (
-        <Text
-          type="secondary"
-          ellipsis={{ tooltip: getMilestoneName(record) }}
-        >
+        <Text type="secondary" ellipsis={{ tooltip: getMilestoneName(record) }}>
           {getMilestoneName(record)}
         </Text>
       ),
@@ -634,7 +636,7 @@ export default function TaskProgressManagement() {
         );
         const actualStart = getActualStartDayjs(record.milestone);
         const plannedStart = getPlannedStartDayjs(record.milestone);
-        
+
         // Nếu không có data gì thì hiển thị -
         if (!actualDeadline && !plannedDeadline && !estimatedDeadline) {
           return <Text type="secondary">-</Text>;
@@ -837,7 +839,8 @@ export default function TaskProgressManagement() {
             Quản lý Task
           </Title>
           <Text type="secondary">
-            Danh sách tất cả tasks. Click "Xem chi tiết" để xem thông tin chi tiết task.
+            Danh sách tất cả tasks. Click "Xem chi tiết" để xem thông tin chi
+            tiết task.
           </Text>
         </div>
         <Button
@@ -963,10 +966,18 @@ export default function TaskProgressManagement() {
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Deadline">
                 {(() => {
-                  const actualStart = getActualStartDayjs(selectedTask.milestone);
-                  const actualDeadline = getActualDeadlineDayjs(selectedTask.milestone);
-                  const plannedStart = getPlannedStartDayjs(selectedTask.milestone);
-                  const plannedDeadline = getPlannedDeadlineDayjs(selectedTask.milestone);
+                  const actualStart = getActualStartDayjs(
+                    selectedTask.milestone
+                  );
+                  const actualDeadline = getActualDeadlineDayjs(
+                    selectedTask.milestone
+                  );
+                  const plannedStart = getPlannedStartDayjs(
+                    selectedTask.milestone
+                  );
+                  const plannedDeadline = getPlannedDeadlineDayjs(
+                    selectedTask.milestone
+                  );
                   const contract = getContractInfo(selectedTask.contractId);
                   const estimatedDeadline = getEstimatedDeadlineDayjs(
                     selectedTask.milestone,
@@ -1423,8 +1434,7 @@ export default function TaskProgressManagement() {
               {formatSpecialistText(selectedIssueTask)}
             </p>
             <p>
-              <strong>Milestone:</strong>{' '}
-              {getMilestoneName(selectedIssueTask)}
+              <strong>Milestone:</strong> {getMilestoneName(selectedIssueTask)}
             </p>
             <p>
               <strong>Status:</strong>{' '}

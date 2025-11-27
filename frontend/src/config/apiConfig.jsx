@@ -118,7 +118,8 @@ export const API_ENDPOINTS = {
     // POST /api/v1/projects/contracts/{contractId}/approve
     APPROVE: contractId => `${PROJECT_PATH}/contracts/${contractId}/approve`,
     // POST /api/v1/projects/contracts/{contractId}/start-work
-    START_WORK: contractId => `${PROJECT_PATH}/contracts/${contractId}/start-work`,
+    START_WORK: contractId =>
+      `${PROJECT_PATH}/contracts/${contractId}/start-work`,
     // POST /api/v1/projects/contracts/{contractId}/sign
     SIGN: contractId => `${PROJECT_PATH}/contracts/${contractId}/sign`,
     // POST /api/v1/projects/contracts/{contractId}/request-change

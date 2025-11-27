@@ -608,7 +608,7 @@ const ContractDetailPage = () => {
   };
 
   // Handle cancel contract
-  const handleCancel = async (reason) => {
+  const handleCancel = async reason => {
     try {
       setCancelLoading(true);
       const response = await cancelContract(contractId, reason);
@@ -627,7 +627,7 @@ const ContractDetailPage = () => {
   };
 
   // Handle revision request
-  const handleRevision = async (reason) => {
+  const handleRevision = async reason => {
     try {
       setRevisionLoading(true);
       const response = await requestChangeContract(contractId, reason);
@@ -821,9 +821,10 @@ const ContractDetailPage = () => {
         {/* Company Seal - Only show when signed or active */}
         {(() => {
           const contractStatus = contract?.status?.toLowerCase();
-          const isSignedOrActive = contractStatus === 'signed' || 
-                                   contractStatus === 'active' || 
-                                   contractStatus === 'active_pending_assignment';
+          const isSignedOrActive =
+            contractStatus === 'signed' ||
+            contractStatus === 'active' ||
+            contractStatus === 'active_pending_assignment';
           return isSignedOrActive;
         })() && (
           <View style={pdfStyles.seal}>
@@ -871,9 +872,10 @@ const ContractDetailPage = () => {
         {/* Watermark - Only show if not signed or active */}
         {(() => {
           const contractStatus = contract?.status?.toLowerCase();
-          const isSignedOrActive = contractStatus === 'signed' || 
-                                   contractStatus === 'active' || 
-                                   contractStatus === 'active_pending_assignment';
+          const isSignedOrActive =
+            contractStatus === 'signed' ||
+            contractStatus === 'active' ||
+            contractStatus === 'active_pending_assignment';
           return !isSignedOrActive ? (
             <View style={pdfStyles.watermark}>
               <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
@@ -1398,9 +1400,10 @@ const ContractDetailPage = () => {
             </PdfText>
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return isSignedOrActive && partyASignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1434,9 +1437,10 @@ const ContractDetailPage = () => {
             })()}
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return !isSignedOrActive ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
@@ -1452,9 +1456,10 @@ const ContractDetailPage = () => {
             </PdfText>
             {(() => {
               const contractStatus = contract?.status?.toLowerCase();
-              const isSignedOrActive = contractStatus === 'signed' || 
-                                       contractStatus === 'active' || 
-                                       contractStatus === 'active_pending_assignment';
+              const isSignedOrActive =
+                contractStatus === 'signed' ||
+                contractStatus === 'active' ||
+                contractStatus === 'active_pending_assignment';
               return isSignedOrActive && partyBSignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1636,7 +1641,8 @@ const ContractDetailPage = () => {
   const isSent = currentStatus === 'sent';
   const isApproved = currentStatus === 'approved';
   const isSigned = currentStatus === 'signed';
-  const isActive = currentStatus === 'active' || currentStatus === 'active_pending_assignment';
+  const isActive =
+    currentStatus === 'active' || currentStatus === 'active_pending_assignment';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
@@ -1646,7 +1652,7 @@ const ContractDetailPage = () => {
   // Contract is signed or active - milestones can be paid (but not if canceled or expired)
   // Also check if contract has been signed to show signature
   const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
-  
+
   // Show signature if contract has been signed (regardless of current status for display purposes)
   const hasSigned = contract?.customerSignedAt || isSigned || isActive;
 

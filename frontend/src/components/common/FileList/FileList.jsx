@@ -59,7 +59,7 @@ const FileList = ({
     return <FileTextOutlined />;
   };
 
-  const handleViewFile = async (file) => {
+  const handleViewFile = async file => {
     try {
       const fileId = file.fileId || file.id;
       if (!fileId) {
@@ -73,22 +73,26 @@ const FileList = ({
         { responseType: 'blob' }
       );
 
-      const mimeType = response.headers['content-type'] || file.mimeType || 'application/octet-stream';
+      const mimeType =
+        response.headers['content-type'] ||
+        file.mimeType ||
+        'application/octet-stream';
       const blob = new Blob([response.data], { type: mimeType });
       const url = window.URL.createObjectURL(blob);
-      
+
       // Kiểm tra loại file
-      const isAudioOrVideo = mimeType.startsWith('audio/') || mimeType.startsWith('video/');
-      
+      const isAudioOrVideo =
+        mimeType.startsWith('audio/') || mimeType.startsWith('video/');
+
       if (isAudioOrVideo) {
         // Audio/Video: Mở trong modal
         setPreviewLoading(true);
         setPreviewFile(file);
         setPreviewModalVisible(true);
-        setPreviewFile(prev => ({ 
-          ...prev, 
-          previewUrl: url, 
-          mimeType: mimeType 
+        setPreviewFile(prev => ({
+          ...prev,
+          previewUrl: url,
+          mimeType: mimeType,
         }));
         setPreviewLoading(false);
       } else {
@@ -199,7 +203,8 @@ const FileList = ({
             onClick={() => {
               if (previewFile) {
                 const fileId = previewFile.fileId || previewFile.id;
-                const fileName = previewFile.fileName || previewFile.name || 'file';
+                const fileName =
+                  previewFile.fileName || previewFile.name || 'file';
                 downloadFileHelper(fileId, fileName);
               }
             }}
@@ -217,25 +222,33 @@ const FileList = ({
           {previewFile?.previewUrl && (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               {previewFile.mimeType?.startsWith('audio/') ? (
-                <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-                  <audio 
-                    controls 
+                <div
+                  style={{ width: '100%', maxWidth: '600px', margin: '0 auto' }}
+                >
+                  <audio
+                    controls
                     style={{ width: '100%' }}
                     preload="metadata"
                     autoPlay
                   >
-                    <source src={previewFile.previewUrl} type={previewFile.mimeType} />
+                    <source
+                      src={previewFile.previewUrl}
+                      type={previewFile.mimeType}
+                    />
                     Trình duyệt không hỗ trợ audio player
                   </audio>
                 </div>
               ) : previewFile.mimeType?.startsWith('video/') ? (
-                <video 
-                  controls 
+                <video
+                  controls
                   style={{ width: '100%', maxHeight: '500px' }}
                   preload="metadata"
                   autoPlay
                 >
-                  <source src={previewFile.previewUrl} type={previewFile.mimeType} />
+                  <source
+                    src={previewFile.previewUrl}
+                    type={previewFile.mimeType}
+                  />
                   Trình duyệt không hỗ trợ video player
                 </video>
               ) : (

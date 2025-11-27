@@ -678,10 +678,7 @@ export default function TaskAssignmentWorkspace() {
                       files.length > 0 && (
                         <div>
                           <Text strong>Contract Files:</Text>
-                          <FileList 
-                            files={files} 
-                            maxNameLength={32}
-                          />
+                          <FileList files={files} maxNameLength={32} />
                         </div>
                       )
                     );
@@ -696,10 +693,7 @@ export default function TaskAssignmentWorkspace() {
                       files.length > 0 && (
                         <div>
                           <Text strong>Music Files (Customer Upload):</Text>
-                          <FileList 
-                            files={files} 
-                            maxNameLength={32}
-                          />
+                          <FileList files={files} maxNameLength={32} />
                         </div>
                       )
                     );
