@@ -487,8 +487,8 @@ public class ESignService {
             if (userId != null && !userId.isEmpty()) {
                 return userId;
             }
-            log.warn("userId claim not found in JWT, falling back to subject");
-            return jwt.getSubject();
+            log.error("userId claim not found in JWT - this should not happen!");
+            throw UnauthorizedException.create("User not authenticated");
         }
         throw UnauthorizedException.create("User not authenticated");
     }

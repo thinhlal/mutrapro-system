@@ -172,6 +172,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     INVALID_FILE_TYPE_FOR_TASK("CONTRACT_7033", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7033",
         "File type is not allowed for this task type",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_ACCESS_DENIED("CONTRACT_7035", 403,
+        "https://docs.mutrapro.com/errors/CONTRACT_7035",
+        "Access to file is denied",
         Retryable.NON_TRANSIENT);
 
     private final String code;

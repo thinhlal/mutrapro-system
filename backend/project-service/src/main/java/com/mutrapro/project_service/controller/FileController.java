@@ -2,6 +2,7 @@ package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.service.FileService;
+import com.mutrapro.project_service.service.FileAccessService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,12 +34,21 @@ public class FileController {
     FileService fileService;
 
     @GetMapping("/by-request/{requestId}")
-    @Operation(summary = "Lấy danh sách files theo requestId")
+    @Operation(summary = "Lấy danh sách files theo requestId (requires authentication)")
     public ApiResponse<List<FileInfoResponse>> getFilesByRequestId(
             @Parameter(description = "ID của service request")
-            @PathVariable String requestId) {
+            @PathVariable String requestId,
+            Authentication authentication) {
         log.info("Getting files by requestId: {}", requestId);
-        List<FileInfoResponse> fileResponses = fileService.getFilesByRequestId(requestId);
+        
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        List<FileInfoResponse> fileResponses = fileService.getFilesByRequestId(
+            requestId,
+            userContext.getUserId(),
+            userContext.getRoles()
+        );
 
         return ApiResponse.<List<FileInfoResponse>>builder()
                 .message("Files retrieved successfully")
@@ -48,12 +58,21 @@ public class FileController {
     }
 
     @GetMapping("/by-assignment/{assignmentId}")
-    @Operation(summary = "Lấy danh sách files theo assignmentId (files do specialist upload)")
+    @Operation(summary = "Lấy danh sách files theo assignmentId (requires authentication)")
     public ApiResponse<List<FileInfoResponse>> getFilesByAssignmentId(
             @Parameter(description = "ID của task assignment")
-            @PathVariable String assignmentId) {
+            @PathVariable String assignmentId,
+            Authentication authentication) {
         log.info("Getting files by assignmentId: {}", assignmentId);
-        List<FileInfoResponse> fileResponses = fileService.getFilesByAssignmentId(assignmentId);
+        
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        List<FileInfoResponse> fileResponses = fileService.getFilesByAssignmentId(
+            assignmentId,
+            userContext.getUserId(),
+            userContext.getRoles()
+        );
 
         return ApiResponse.<List<FileInfoResponse>>builder()
                 .message("Files retrieved successfully")
@@ -85,17 +104,29 @@ public class FileController {
     }
 
     @GetMapping("/download/{fileId}")
-    @Operation(summary = "Download file by fileId")
+    @Operation(summary = "Download file by fileId (requires authentication)")
     public ResponseEntity<Resource> downloadFile(
             @Parameter(description = "ID của file")
-            @PathVariable String fileId) {
+            @PathVariable String fileId,
+            Authentication authentication) {
         log.info("Downloading file with id: {}", fileId);
         
-        // Get file info để lấy tên file
-        FileInfoResponse fileInfo = fileService.getFileInfo(fileId);
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
         
-        // Download file content từ S3
-        byte[] fileContent = fileService.downloadFile(fileId);
+        // Get file info để lấy tên file (với security check)
+        FileInfoResponse fileInfo = fileService.getFileInfo(
+            fileId, 
+            userContext.getUserId(), 
+            userContext.getRoles()
+        );
+        
+        // Download file content từ S3 (với security check)
+        byte[] fileContent = fileService.downloadFile(
+            fileId, 
+            userContext.getUserId(), 
+            userContext.getRoles()
+        );
         
         // Tạo Resource từ byte array
         ByteArrayResource resource = new ByteArrayResource(fileContent);
@@ -130,6 +161,31 @@ public class FileController {
                 .headers(headers)
                 .contentLength(fileContent.length)
                 .body(resource);
+    }
+    
+    @GetMapping("/{fileId}")
+    @Operation(summary = "Get file info by fileId (requires authentication)")
+    public ApiResponse<FileInfoResponse> getFileInfo(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            Authentication authentication) {
+        log.info("Getting file info with id: {}", fileId);
+        
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        // Get file info với security check
+        FileInfoResponse fileInfo = fileService.getFileInfo(
+            fileId, 
+            userContext.getUserId(), 
+            userContext.getRoles()
+        );
+        
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File info retrieved successfully")
+                .data(fileInfo)
+                .statusCode(HttpStatus.OK.value())
+                .build();
     }
 }
 

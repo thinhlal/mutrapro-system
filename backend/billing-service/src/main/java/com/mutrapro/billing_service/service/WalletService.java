@@ -566,11 +566,8 @@ public class WalletService {
             if (userId != null && !userId.isEmpty()) {
                 return userId;
             }
-            log.warn("userId claim not found in JWT, falling back to subject");
-            String subject = jwt.getSubject();
-            if (subject != null && !subject.isEmpty()) {
-                return subject;
-            }
+            log.error("userId claim not found in JWT - this should not happen!");
+            throw UserNotAuthenticatedException.create();
         }
         throw UserNotAuthenticatedException.create();
     }

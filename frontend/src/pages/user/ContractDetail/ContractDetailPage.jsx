@@ -113,6 +113,7 @@ const ContractDetailPage = () => {
   const [approveLoading, setApproveLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [revisionLoading, setRevisionLoading] = useState(false);
+  const [partyBSignatureUrl, setPartyBSignatureUrl] = useState(null); // Secure signature image URL from backend
 
   // Modals
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -221,6 +222,30 @@ const ContractDetailPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.paymentSuccess, contractId]);
+
+  // Fetch signature image securely from backend when contract is signed
+  useEffect(() => {
+    const fetchSignature = async () => {
+      if (!contract?.contractId || !contract?.bSignedAt) {
+        setPartyBSignatureUrl(null);
+        return;
+      }
+
+      try {
+        const signatureResponse = await getSignatureImage(contract.contractId);
+        if (signatureResponse?.data) {
+          // signatureResponse.data is base64 data URL from backend
+          setPartyBSignatureUrl(signatureResponse.data);
+        }
+      } catch (error) {
+        console.error('Error loading signature image:', error);
+        setPartyBSignatureUrl(null);
+        // Don't show error message - just don't display signature
+      }
+    };
+
+    fetchSignature();
+  }, [contract?.contractId, contract?.bSignedAt]);
 
   const loadContract = async () => {
     try {
@@ -2853,13 +2878,13 @@ const ContractDetailPage = () => {
                   <div className={styles.sigLabel}>Party B Representative</div>
                   {hasSigned ? (
                     <>
-                      {contract.bSignatureS3Url ? (
+                      {partyBSignatureUrl ? (
                         <div
                           className={styles.signature}
                           style={{ marginTop: '12px' }}
                         >
                           <img
-                            src={contract.bSignatureS3Url}
+                            src={partyBSignatureUrl}
                             alt="Party B Signature"
                             style={{
                               height: '50px',

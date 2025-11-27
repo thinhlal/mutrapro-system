@@ -41,8 +41,8 @@ import {
 import {
   uploadTaskFile,
   getFilesByAssignmentId,
-  downloadFile,
 } from '../../../services/fileService';
+import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -286,7 +286,6 @@ const TranscriptionTaskDetailPage = () => {
           status: file.fileStatus || 'uploaded', // Also map to status for table
           description: file.description || '', // Keep original field name
           note: file.description || '', // Also map to note for table
-          filePath: file.filePath,
           fileSize: file.fileSize,
           mimeType: file.mimeType,
         }));
@@ -433,18 +432,8 @@ const TranscriptionTaskDetailPage = () => {
   }, [task, issueForm, loadData]);
 
   const handleDownloadFile = useCallback(async (file) => {
-    if (!file.fileId) {
-      message.error('File ID not available');
-      return;
-    }
-    
-    try {
-      await downloadFile(file.fileId, file.fileName);
-      message.success('File downloaded successfully');
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      message.error(error?.message || 'Failed to download file');
-    }
+    // downloadFileHelper đã có error handling và success message built-in
+    await downloadFileHelper(file.fileId, file.fileName);
   }, []);
 
   const handleOpenUploadModal = useCallback(() => {

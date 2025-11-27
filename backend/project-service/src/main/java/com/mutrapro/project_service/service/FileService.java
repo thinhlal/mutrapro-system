@@ -43,6 +43,7 @@ public class FileService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     S3Service s3Service;
+    FileAccessService fileAccessService;
 
     @Transactional
     public File createFileFromEvent(FileUploadedEvent event) {
@@ -74,17 +75,29 @@ public class FileService {
         return saved;
     }
 
-    public List<FileInfoResponse> getFilesByRequestId(String requestId) {
+    public List<FileInfoResponse> getFilesByRequestId(String requestId, String userId, List<String> userRoles) {
         List<File> files = fileRepository.findByRequestId(requestId);
-            return files.stream()
+        
+        // Filter files dựa trên quyền của user
+        return files.stream()
+                .filter(f -> {
+                    try {
+                        // Check quyền truy cập cho từng file
+                        fileAccessService.checkFileAccess(f.getFileId(), userId, userRoles);
+                        return true;
+                    } catch (Exception e) {
+                        // Nếu không có quyền, skip file này
+                        log.debug("User {} không có quyền xem file {}: {}", userId, f.getFileId(), e.getMessage());
+                        return false;
+                    }
+                })
                 .map(f -> FileInfoResponse.builder()
                         .fileId(f.getFileId())
                         .fileName(f.getFileName())
-                        .filePath(f.getFilePath())
                         .fileSize(f.getFileSize())
                         .mimeType(f.getMimeType())
                         .contentType(f.getContentType() != null ? f.getContentType().name() : null)
-                        .fileSource(f.getFileSource())  // Thêm fileSource vào response
+                        .fileSource(f.getFileSource())
                         .description(f.getDescription())
                         .uploadDate(f.getUploadDate())
                         .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
@@ -95,7 +108,7 @@ public class FileService {
                 .collect(Collectors.toList());
     }
 
-    public List<FileInfoResponse> getFilesByAssignmentId(String assignmentId) {
+    public List<FileInfoResponse> getFilesByAssignmentId(String assignmentId, String userId, List<String> userRoles) {
         if (assignmentId == null || assignmentId.trim().isEmpty()) {
             log.warn("AssignmentId is null or empty");
             return List.of();
@@ -103,11 +116,23 @@ public class FileService {
         
         try {
             List<File> files = fileRepository.findByAssignmentId(assignmentId);
+            
+            // Filter files dựa trên quyền của user
             return files.stream()
+                    .filter(f -> {
+                        try {
+                            // Check quyền truy cập cho từng file
+                            fileAccessService.checkFileAccess(f.getFileId(), userId, userRoles);
+                            return true;
+                        } catch (Exception e) {
+                            // Nếu không có quyền, skip file này
+                            log.debug("User {} không có quyền xem file {}: {}", userId, f.getFileId(), e.getMessage());
+                            return false;
+                        }
+                    })
                     .map(f -> FileInfoResponse.builder()
                             .fileId(f.getFileId())
                             .fileName(f.getFileName())
-                            .filePath(f.getFilePath())
                             .fileSize(f.getFileSize())
                             .mimeType(f.getMimeType())
                             .contentType(f.getContentType() != null ? f.getContentType().name() : null)
@@ -199,7 +224,6 @@ public class FileService {
             return FileInfoResponse.builder()
                     .fileId(saved.getFileId())
                     .fileName(saved.getFileName())
-                    .filePath(saved.getFilePath())
                     .fileSize(saved.getFileSize())
                     .mimeType(saved.getMimeType())
                     .contentType(saved.getContentType() != null ? saved.getContentType().name() : null)
@@ -310,10 +334,15 @@ public class FileService {
     /**
      * Download file by fileId
      * @param fileId ID của file
+     * @param userId ID của user đang request
+     * @param userRoles Danh sách roles của user
      * @return byte array của file content
      */
-    public byte[] downloadFile(String fileId) {
-        log.info("Downloading file with id: {}", fileId);
+    public byte[] downloadFile(String fileId, String userId, List<String> userRoles) {
+        log.info("User {} downloading file with id: {}", userId, fileId);
+        
+        // Kiểm tra quyền truy cập
+        fileAccessService.checkFileAccess(fileId, userId, userRoles);
         
         File file = fileRepository.findById(fileId)
                 .orElseThrow(() -> FileNotFoundException.byId(fileId));
@@ -340,10 +369,17 @@ public class FileService {
     /**
      * Get file info by fileId
      * @param fileId ID của file
+     * @param userId ID của user đang request (optional, nếu null thì không check quyền)
+     * @param userRoles Danh sách roles của user (optional)
      * @return FileInfoResponse
      */
-    public FileInfoResponse getFileInfo(String fileId) {
-        log.info("Getting file info with id: {}", fileId);
+    public FileInfoResponse getFileInfo(String fileId, String userId, List<String> userRoles) {
+        log.info("User {} getting file info with id: {}", userId, fileId);
+        
+        // Kiểm tra quyền truy cập nếu có userId
+        if (userId != null && userRoles != null) {
+            fileAccessService.checkFileAccess(fileId, userId, userRoles);
+        }
         
         File file = fileRepository.findById(fileId)
                 .orElseThrow(() -> FileNotFoundException.byId(fileId));
@@ -351,7 +387,6 @@ public class FileService {
         return FileInfoResponse.builder()
                 .fileId(file.getFileId())
                 .fileName(file.getFileName())
-                .filePath(file.getFilePath())
                 .fileSize(file.getFileSize())
                 .mimeType(file.getMimeType())
                 .contentType(file.getContentType() != null ? file.getContentType().name() : null)

@@ -71,45 +71,39 @@ export const getFilesByRequestId = async (requestId) => {
 };
 
 /**
- * Download file by fileId
+ * Fetch file for preview (return blob, không tự động download)
+ * Use case: Preview PDF, audio, video trong new tab
  * @param {string} fileId - ID của file
- * @param {string} fileName - Tên file để download (optional)
- * @returns {Promise} Download file
+ * @returns {Promise<{blob: Blob, fileName: string, mimeType: string}>}
  */
-export const downloadFile = async (fileId, fileName = null) => {
+export const fetchFileForPreview = async (fileId) => {
   try {
     const response = await axiosInstance.get(API_ENDPOINTS.FILES.DOWNLOAD(fileId), {
-      responseType: 'blob', // Quan trọng: phải set responseType là 'blob' để nhận file binary
+      responseType: 'blob',
     });
     
-    // Tạo blob URL và trigger download
-    const blob = new Blob([response.data]);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Lấy tên file từ Content-Disposition header hoặc dùng fileName parameter
+    // Extract filename từ Content-Disposition header
     const contentDisposition = response.headers['content-disposition'];
-    let downloadFileName = fileName;
-    
-    if (!downloadFileName && contentDisposition) {
+    let fileName = 'preview';
+    if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
       if (fileNameMatch && fileNameMatch[1]) {
-        downloadFileName = fileNameMatch[1].replace(/['"]/g, '');
+        fileName = fileNameMatch[1].replace(/['"]/g, '');
       }
     }
     
-    link.download = downloadFileName || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    // Extract mimeType từ Content-Type header
+    const mimeType = response.headers['content-type'] || 'application/octet-stream';
     
-    return { success: true };
+    return {
+      blob: response.data,
+      fileName,
+      mimeType,
+    };
   } catch (error) {
     throw (
       error.response?.data || {
-        message: 'Lỗi khi download file',
+        message: 'Lỗi khi tải file để preview',
       }
     );
   }

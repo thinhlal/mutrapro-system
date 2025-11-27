@@ -160,14 +160,12 @@ public class FileUploadService {
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            // Get userId from claim (preferred) or fallback to subject (email) for backward compatibility
             String userId = jwt.getClaimAsString("userId");
             if (userId != null && !userId.isEmpty()) {
                 return userId;
             }
-            // Fallback: if userId claim is not present, use subject (should not happen with new tokens)
-            log.warn("userId claim not found in JWT, falling back to subject. Token may be outdated.");
-            return jwt.getSubject();
+            log.error("userId claim not found in JWT - this should not happen!");
+            throw UserNotAuthenticatedException.create();
         }
         throw UserNotAuthenticatedException.create();
     }

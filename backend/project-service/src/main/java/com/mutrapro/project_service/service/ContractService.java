@@ -436,11 +436,15 @@ public class ContractService {
     
     /**
      * Lấy contract theo ID
+     * Kiểm tra quyền truy cập: MANAGER chỉ xem được contracts họ quản lý, CUSTOMER chỉ xem được contracts của họ
      */
     @Transactional(readOnly = true)
     public ContractResponse getContractById(String contractId) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra quyền truy cập
+        checkContractAccess(contract);
         
         ContractResponse response = contractMapper.toResponse(contract);
         
@@ -449,9 +453,17 @@ public class ContractService {
 
     /**
      * Lấy milestone theo milestoneId và contractId
+     * Kiểm tra quyền truy cập: MANAGER chỉ xem được milestones của contracts họ quản lý
      */
     @Transactional(readOnly = true)
     public ContractMilestoneResponse getMilestoneById(String contractId, String milestoneId) {
+        // Load contract để check authorization
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra quyền truy cập
+        checkContractAccess(contract);
+        
         ContractMilestone milestone = contractMilestoneRepository
             .findByMilestoneIdAndContractId(milestoneId, contractId)
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
@@ -582,8 +594,9 @@ public class ContractService {
     
     /**
      * Lấy danh sách contracts theo requestId
-     * - Nếu user là CUSTOMER: chỉ trả về contracts đã được gửi cho customer (sentToCustomerAt != null)
-     * - Nếu user là MANAGER/ADMIN: trả về tất cả contracts
+     * - CUSTOMER: chỉ trả về contracts đã được gửi cho customer VÀ là contracts của họ
+     * - MANAGER: chỉ trả về contracts mà họ quản lý (managerUserId == currentUserId)
+     * - SYSTEM_ADMIN: trả về tất cả contracts (không filter)
      */
     @Transactional(readOnly = true)
     public List<ContractResponse> getContractsByRequestId(String requestId) {
@@ -591,23 +604,32 @@ public class ContractService {
         
         // Lấy role của user hiện tại
         List<String> userRoles = getCurrentUserRoles();
-        boolean isCustomer = userRoles.stream()
-            .anyMatch(role -> role.equalsIgnoreCase("CUSTOMER"));
-        boolean isManagerOrAdmin = userRoles.stream()
-            .anyMatch(role -> role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("ADMIN"));
+        String currentUserId = getCurrentUserId();
+        boolean isCustomer = hasRole(userRoles, "CUSTOMER");
+        boolean isManager = hasRole(userRoles, "MANAGER");
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
         
-        // Nếu là customer: chỉ hiển thị contracts đã được gửi cho customer
-        // Ẩn tất cả contracts chưa được gửi (sentToCustomerAt == null)
-        // Bao gồm: DRAFT, CANCELED_BY_MANAGER (chưa sent), và bất kỳ status nào chưa sent
-        if (isCustomer && !isManagerOrAdmin) {
+        // Filter theo role
+        if (isCustomer && !isSystemAdmin) {
+            // Customer: chỉ hiển thị contracts đã được gửi cho customer VÀ là contracts của họ
             contracts = contracts.stream()
                 .filter(contract -> {
                     // Chỉ hiển thị nếu contract đã được gửi cho customer
-                    // sentToCustomerAt != null
-                    return contract.getSentToCustomerAt() != null;
+                    return contract.getSentToCustomerAt() != null 
+                        && contract.getUserId() != null 
+                        && contract.getUserId().equals(currentUserId);
+                })
+                .collect(Collectors.toList());
+        } else if (isManager && !isSystemAdmin) {
+            // Manager: chỉ hiển thị contracts mà họ quản lý
+            contracts = contracts.stream()
+                .filter(contract -> {
+                    return contract.getManagerUserId() != null 
+                        && contract.getManagerUserId().equals(currentUserId);
                 })
                 .collect(Collectors.toList());
         }
+        // SYSTEM_ADMIN: xem tất cả contracts (không filter)
         
         return contracts.stream()
             .map(contractMapper::toResponse)
@@ -641,6 +663,7 @@ public class ContractService {
     /**
      * Lấy thông tin contract cho nhiều requestIds
      * hasContract = true nếu có ít nhất 1 contract active
+     * Filter theo role: MANAGER chỉ thấy contracts họ quản lý, CUSTOMER chỉ thấy contracts của họ
      * @param requestIds Danh sách request IDs
      * @return Map với key là requestId, value là RequestContractInfo
      */
@@ -654,6 +677,28 @@ public class ContractService {
         
         // 1 query duy nhất: Lấy contracts active hoặc latest cho tất cả requestIds
         List<Contract> contracts = contractRepository.findActiveOrLatestContractsByRequestIds(requestIds);
+        
+        // Filter theo role
+        List<String> userRoles = getCurrentUserRoles();
+        String currentUserId = getCurrentUserId();
+        boolean isManager = hasRole(userRoles, "MANAGER");
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        boolean isCustomer = hasRole(userRoles, "CUSTOMER");
+        
+        if (isManager && !isSystemAdmin) {
+            // Manager: chỉ contracts họ quản lý
+            contracts = contracts.stream()
+                .filter(contract -> contract.getManagerUserId() != null 
+                    && contract.getManagerUserId().equals(currentUserId))
+                .collect(Collectors.toList());
+        } else if (isCustomer && !isSystemAdmin) {
+            // Customer: chỉ contracts của họ
+            contracts = contracts.stream()
+                .filter(contract -> contract.getUserId() != null 
+                    && contract.getUserId().equals(currentUserId))
+                .collect(Collectors.toList());
+        }
+        // SYSTEM_ADMIN: xem tất cả (không filter)
         
         // Group by requestId (mỗi requestId chỉ lấy contract đầu tiên - đã sort)
         Map<String, Contract> contractMap = new HashMap<>();
@@ -1742,8 +1787,8 @@ public class ContractService {
             if (userId != null && !userId.isEmpty()) {
                 return userId;
             }
-            log.warn("userId claim not found in JWT, falling back to subject");
-            return jwt.getSubject();
+            log.error("userId claim not found in JWT - this should not happen!");
+            throw UserNotAuthenticatedException.create();
         }
         throw UserNotAuthenticatedException.create();
     }
@@ -1790,18 +1835,22 @@ public class ContractService {
     
     /**
      * Lấy danh sách roles của user hiện tại từ JWT
+     * Identity-service set: .claim("scope", usersAuth.getRole())
+     * Role là enum: CUSTOMER, MANAGER, SYSTEM_ADMIN, TRANSCRIPTION, ARRANGEMENT, RECORDING_ARTIST
+     * Mỗi user chỉ có 1 role duy nhất
      */
     @SuppressWarnings("unchecked")
     private List<String> getCurrentUserRoles() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            Object rolesObject = jwt.getClaim("scope");
-            if (rolesObject instanceof String rolesString) {
-                return List.of(rolesString.split(" "));
-            } else if (rolesObject instanceof List) {
-                return (List<String>) rolesObject;
+            Object scopeObject = jwt.getClaim("scope");
+            if (scopeObject instanceof String scopeString) {
+                // Single role: "CUSTOMER", "MANAGER", etc.
+                return List.of(scopeString);
+            } else if (scopeObject instanceof List) {
+                return (List<String>) scopeObject;
             }
-            log.warn("roles/scope claim not found in JWT");
+            log.warn("scope claim not found in JWT");
             return List.of();
         }
         throw UserNotAuthenticatedException.create();
@@ -1813,9 +1862,15 @@ public class ContractService {
      * @return Base64 data URL của signature image
      * @throws SignatureImageNotFoundException nếu signature image không tồn tại
      * @throws SignatureRetrieveException nếu có lỗi khi download từ S3
+     * @throws UnauthorizedException nếu user không có quyền truy cập contract signature
      */
     public String getSignatureImageBase64(String contractId) {
-        ContractResponse contract = getContractById(contractId);
+        // Lấy contract entity để check authorization
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Kiểm tra quyền truy cập signature
+        checkSignatureAccess(contract);
         
         if (contract.getBSignatureS3Url() == null || contract.getBSignatureS3Url().isEmpty()) {
             throw SignatureImageNotFoundException.forContract(contractId);
@@ -1832,6 +1887,150 @@ public class ContractService {
             log.error("Error downloading signature image from S3 for contract {}: {}", contractId, e.getMessage(), e);
             throw SignatureRetrieveException.failed(contractId, e.getMessage(), e);
         }
+    }
+    
+    /**
+     * Kiểm tra quyền truy cập contract
+     * - SYSTEM_ADMIN: full access
+     * - MANAGER: chỉ contracts họ quản lý
+     * - CUSTOMER: chỉ contracts của họ
+     * - SPECIALIST: không được xem contracts
+     * @param contract Contract entity
+     * @throws UnauthorizedException nếu user không có quyền
+     */
+    private void checkContractAccess(Contract contract) {
+        String currentUserId = getCurrentUserId();
+        List<String> userRoles = getCurrentUserRoles();
+        
+        // SYSTEM_ADMIN có full quyền
+        if (hasRole(userRoles, "SYSTEM_ADMIN")) {
+            log.debug("User {} (SYSTEM_ADMIN) granted access to contract {}", 
+                currentUserId, contract.getContractId());
+            return;
+        }
+        
+        // MANAGER: chỉ contracts họ quản lý
+        if (hasRole(userRoles, "MANAGER")) {
+            if (contract.getManagerUserId() != null && contract.getManagerUserId().equals(currentUserId)) {
+                log.debug("Manager {} granted access to contract {}", 
+                    currentUserId, contract.getContractId());
+                return;
+            } else {
+                log.warn("Manager {} tried to access contract {} (not managed by them)", 
+                    currentUserId, contract.getContractId());
+                throw UnauthorizedException.create(
+                    "You can only access contracts that you manage");
+            }
+        }
+        
+        // CUSTOMER: chỉ contracts của họ
+        if (hasRole(userRoles, "CUSTOMER")) {
+            if (contract.getUserId() != null && contract.getUserId().equals(currentUserId)) {
+                log.debug("Customer {} granted access to contract {}", 
+                    currentUserId, contract.getContractId());
+                return;
+            } else {
+                log.warn("Customer {} tried to access contract {} (not their contract)", 
+                    currentUserId, contract.getContractId());
+                throw UnauthorizedException.create(
+                    "You can only access your own contracts");
+            }
+        }
+        
+        // SPECIALIST: không được xem contracts
+        if (isSpecialist(userRoles)) {
+            log.warn("Specialist {} tried to access contract {}", 
+                currentUserId, contract.getContractId());
+            throw UnauthorizedException.create(
+                "Specialists cannot access contracts");
+        }
+        
+        // Nếu không có role phù hợp, từ chối truy cập
+        log.warn("User {} with roles {} tried to access contract {} (unauthorized)", 
+            currentUserId, userRoles, contract.getContractId());
+        throw UnauthorizedException.create(
+            "You do not have permission to access this contract");
+    }
+    
+    /**
+     * Kiểm tra quyền truy cập signature của contract
+     * - SYSTEM_ADMIN: full access
+     * - MANAGER: chỉ contracts họ quản lý
+     * - CUSTOMER: chỉ contracts của họ
+     * - SPECIALIST: không được xem signature
+     * @param contract Contract entity
+     * @throws UnauthorizedException nếu user không có quyền
+     */
+    private void checkSignatureAccess(Contract contract) {
+        String currentUserId = getCurrentUserId();
+        List<String> userRoles = getCurrentUserRoles();
+        
+        // SYSTEM_ADMIN có full quyền
+        if (hasRole(userRoles, "SYSTEM_ADMIN")) {
+            log.debug("User {} (SYSTEM_ADMIN) granted access to signature of contract {}", 
+                currentUserId, contract.getContractId());
+            return;
+        }
+        
+        // MANAGER: chỉ contracts họ quản lý
+        if (hasRole(userRoles, "MANAGER")) {
+            if (contract.getManagerUserId() != null && contract.getManagerUserId().equals(currentUserId)) {
+                log.debug("Manager {} granted access to signature of contract {}", 
+                    currentUserId, contract.getContractId());
+                return;
+            } else {
+                log.warn("Manager {} tried to access signature of contract {} (not managed by them)", 
+                    currentUserId, contract.getContractId());
+                throw UnauthorizedException.create(
+                    "You can only access signatures of contracts that you manage");
+            }
+        }
+        
+        // CUSTOMER: chỉ contracts của họ
+        if (hasRole(userRoles, "CUSTOMER")) {
+            if (contract.getUserId() != null && contract.getUserId().equals(currentUserId)) {
+                log.debug("Customer {} granted access to signature of contract {}", 
+                    currentUserId, contract.getContractId());
+                return;
+            } else {
+                log.warn("Customer {} tried to access signature of contract {} (not their contract)", 
+                    currentUserId, contract.getContractId());
+                throw UnauthorizedException.create(
+                    "You can only access signatures of your own contracts");
+            }
+        }
+        
+        // SPECIALIST: không được xem signature
+        if (isSpecialist(userRoles)) {
+            log.warn("Specialist {} tried to access signature of contract {}", 
+                currentUserId, contract.getContractId());
+            throw UnauthorizedException.create(
+                "Specialists cannot access contract signatures");
+        }
+        
+        // Nếu không có role phù hợp, từ chối truy cập
+        log.warn("User {} with roles {} tried to access signature of contract {} (unauthorized)", 
+            currentUserId, userRoles, contract.getContractId());
+        throw UnauthorizedException.create(
+            "You do not have permission to access this contract signature");
+    }
+    
+    /**
+     * Kiểm tra xem user có role hay không (case-insensitive)
+     */
+    private boolean hasRole(List<String> userRoles, String role) {
+        return userRoles.stream()
+                .anyMatch(r -> r.equalsIgnoreCase(role));
+    }
+    
+    /**
+     * Kiểm tra xem user có phải là specialist không
+     * Specialist roles: TRANSCRIPTION, ARRANGEMENT, RECORDING_ARTIST
+     */
+    private boolean isSpecialist(List<String> userRoles) {
+        return hasRole(userRoles, "TRANSCRIPTION")
+            || hasRole(userRoles, "ARRANGEMENT")
+            || hasRole(userRoles, "RECORDING_ARTIST");
     }
 
     /**

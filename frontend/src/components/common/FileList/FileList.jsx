@@ -6,15 +6,15 @@ import {
 } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import styles from './FileList.module.css';
+import { previewFile, downloadFileHelper } from '../../../utils/filePreviewHelper';
 
 const { Text } = Typography;
 
 /**
  * Component hiển thị danh sách files đã upload với layout đẹp hơn
  * @param {Array} files - Danh sách files cần hiển thị
- * @param {string} files[].fileId - ID của file
+ * @param {string} files[].fileId - ID của file (required for download)
  * @param {string} files[].fileName - Tên file
- * @param {string} files[].filePath - Đường dẫn file (URL)
  * @param {number} files[].fileSize - Kích thước file (bytes)
  * @param {string} files[].mimeType - MIME type của file
  * @param {boolean} showEmpty - Có hiển thị khi không có files không (default: false)
@@ -54,34 +54,25 @@ const FileList = ({
     return <FileTextOutlined />;
   };
 
-  const handleViewFile = (filePath, url) => {
-    const link = filePath || url;
-    if (link) {
-      window.open(link, '_blank');
-    }
+  const handleViewFile = async (fileId, mimeType = null) => {
+    if (!fileId) return;
+    // Preview file qua backend API với auth check
+    await previewFile(fileId, mimeType);
   };
 
-  const handleDownloadFile = (e, filePath, url, fileName, name) => {
+  const handleDownloadFile = async (e, fileId, fileName) => {
     e.stopPropagation();
-    const link = filePath || url;
-    const file = fileName || name;
-    if (link) {
-      // Tạo anchor element để download
-      const a = document.createElement('a');
-      a.href = link;
-      a.download = file || 'download';
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    if (!fileId) return;
+    
+    // Download file qua backend API với auth check
+    await downloadFileHelper(fileId, fileName);
   };
 
   return (
     <div className={styles.fileListContainer}>
       {files.map(file => {
+        const fileId = file.fileId || file.id;
         const fileName = file.fileName || file.name || 'Unnamed file';
-        const filePath = file.filePath || file.url;
         const fileSize = file.fileSize || file.size;
         const mimeType = file.mimeType;
         // Truncate file name nếu quá dài, nhưng đảm bảo không tràn layout
@@ -92,20 +83,20 @@ const FileList = ({
             : fileName;
 
         return (
-          <div key={file.fileId || file.id} className={styles.fileItem}>
+          <div key={fileId} className={styles.fileItem}>
             <div className={styles.fileIcon}>{getFileIcon(mimeType)}</div>
             <div className={styles.fileInfo}>
               <div className={styles.fileNameRow}>
                 <Text strong className={styles.fileName} title={fileName}>
                   {displayName}
                 </Text>
-                {filePath && (
+                {fileId && (
                   <Space className={styles.fileActions}>
                     <Button
                       type="text"
                       size="small"
                       icon={<EyeOutlined />}
-                      onClick={() => handleViewFile(filePath)}
+                      onClick={() => handleViewFile(fileId, mimeType)}
                       className={styles.actionButton}
                       title="View file"
                     />
@@ -113,15 +104,7 @@ const FileList = ({
                       type="text"
                       size="small"
                       icon={<DownloadOutlined />}
-                      onClick={e =>
-                        handleDownloadFile(
-                          e,
-                          filePath,
-                          null,
-                          fileName,
-                          file.name
-                        )
-                      }
+                      onClick={e => handleDownloadFile(e, fileId, fileName)}
                       className={styles.actionButton}
                       title="Download file"
                     />
@@ -160,8 +143,6 @@ FileList.propTypes = {
       id: PropTypes.string,
       fileName: PropTypes.string,
       name: PropTypes.string,
-      filePath: PropTypes.string,
-      url: PropTypes.string,
       fileSize: PropTypes.number,
       size: PropTypes.number,
       mimeType: PropTypes.string,
