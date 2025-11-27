@@ -24,6 +24,7 @@ public class FileInfoResponse {
     String mimeType;
     String contentType;
     FileSourceType fileSource;  // Thêm field để phân biệt loại file
+    String description;  // Note/description từ specialist khi upload
     Instant uploadDate;
     String fileStatus;  // uploaded, pending_review, approved, rejected, delivered
     Boolean deliveredToCustomer;

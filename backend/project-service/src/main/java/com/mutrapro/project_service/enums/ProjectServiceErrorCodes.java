@@ -146,7 +146,28 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     CONTRACT_PDF_UPLOAD_ERROR("CONTRACT_7029", 500,
         "https://docs.mutrapro.com/errors/CONTRACT_7029",
         "Failed to upload contract PDF",
-        Retryable.TRANSIENT);
+        Retryable.TRANSIENT),
+    
+    // File Upload Errors (7030-7039)
+    FILE_UPLOAD_ERROR("CONTRACT_7030", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7030",
+        "Failed to upload file",
+        Retryable.TRANSIENT),
+    
+    FILE_EMPTY("CONTRACT_7031", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7031",
+        "File is empty",
+        Retryable.NON_TRANSIENT),
+    
+    TASK_ASSIGNMENT_NOT_FOUND("CONTRACT_7032", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7032",
+        "Task assignment not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_FILE_TYPE_FOR_TASK("CONTRACT_7033", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7033",
+        "File type is not allowed for this task type",
+        Retryable.NON_TRANSIENT);
 
     private final String code;
     private final int httpStatus;

@@ -11,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,6 +54,28 @@ public class FileController {
         return ApiResponse.<List<FileInfoResponse>>builder()
                 .message("Files retrieved successfully")
                 .data(fileResponses)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload file output cho task assignment (specialist)")
+    public ApiResponse<FileInfoResponse> uploadTaskFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("assignmentId") String assignmentId,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "contentType", required = false, defaultValue = "notation") String contentType,
+            Authentication authentication) {
+        log.info("Uploading file for assignmentId: {}, fileName: {}, size: {}", 
+                assignmentId, file.getOriginalFilename(), file.getSize());
+        
+        String userId = authentication != null ? authentication.getName() : null;
+        FileInfoResponse response = fileService.uploadTaskFile(
+                file, assignmentId, description, contentType, userId);
+
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File uploaded successfully")
+                .data(response)
                 .statusCode(HttpStatus.OK.value())
                 .build();
     }

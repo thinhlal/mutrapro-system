@@ -18,6 +18,7 @@ import {
   Input,
   Empty,
   Alert,
+  Upload,
 } from 'antd';
 import {
   LeftOutlined,
@@ -25,6 +26,7 @@ import {
   ExclamationCircleOutlined,
   UploadOutlined,
   EditOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -35,118 +37,13 @@ import {
   reportIssue,
   startTaskAssignment,
 } from '../../../services/taskAssignmentService';
+import {
+  uploadTaskFile,
+  getFilesByAssignmentId,
+} from '../../../services/fileService';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
-
-// ---------------- Mock Data & Fake APIs ----------------
-// Uploaded notation files by taskId
-// status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
-const mockFilesByTaskId = {
-  1: [
-    {
-      id: 'file-1',
-      version: 1,
-      fileName: 'Chopin_Nocturne_RH_v1.musicxml',
-      uploadedAt: '2025-11-15T10:30:00Z',
-      status: 'PENDING_REVIEW',
-      note: 'First draft',
-    },
-  ],
-  2: [
-    {
-      id: 'file-2',
-      version: 1,
-      fileName: 'Jazz_Trio_Live_v1.musicxml',
-      uploadedAt: '2025-11-14T09:00:00Z',
-      status: 'REJECTED',
-      note: 'Customer requested more swing feel',
-    },
-    {
-      id: 'file-3',
-      version: 2,
-      fileName: 'Jazz_Trio_Live_v2.musicxml',
-      uploadedAt: '2025-11-15T15:45:00Z',
-      status: 'PENDING_REVIEW',
-      note: 'Adjusted rhythm in bar 12–16',
-    },
-  ],
-};
-
-// Task detail model
-// status: 'ASSIGNED' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVISION_REQUESTED' | 'COMPLETED'
-// priority: 'LOW' | 'MEDIUM' | 'HIGH'
-const mockTasks = [
-  {
-    id: '1',
-    taskCode: 'TX-2025-0001',
-    title: 'Chopin Nocturne Op.9 No.2 - Right Hand Melody',
-    serviceType: 'TRANSCRIPTION',
-    instruments: ['Piano'],
-    durationSeconds: 184,
-    audioUrl: 'https://example.com/audio/chopin-nocturne.mp3',
-    dueAt: '2025-11-17T23:30:00Z',
-    status: 'ASSIGNED',
-    revisionCount: 0,
-    maxFreeRevisions: 2,
-    priority: 'HIGH',
-    lastUpdatedAt: '2025-11-15T08:00:00Z',
-    customerName: 'Nguyen Minh',
-    specialNotes:
-      'Focus only on right-hand melody. No dynamics needed for now.',
-    tempo: 120,
-    timeSignature: '4/4',
-  },
-  {
-    id: '2',
-    taskCode: 'TX-2025-0002',
-    title: 'Jazz Trio Live - Full Transcription',
-    serviceType: 'TRANSCRIPTION',
-    instruments: ['Piano', 'Double Bass', 'Drums'],
-    durationSeconds: 512,
-    audioUrl: 'https://example.com/audio/jazz-trio.mp3',
-    dueAt: '2025-11-16T23:30:00Z',
-    status: 'REVISION_REQUESTED',
-    revisionCount: 1,
-    maxFreeRevisions: 3,
-    priority: 'MEDIUM',
-    lastUpdatedAt: '2025-11-15T12:45:00Z',
-    customerName: 'Tran Hoang',
-    specialNotes:
-      'Customer wants detailed drum notation including ghost notes.',
-    tempo: 140,
-    timeSignature: '4/4',
-    revisionRequest: {
-      revisionNumber: 2,
-      requestedBy: 'Customer',
-      requestedAt: '2025-11-15T11:00:00Z',
-      message:
-        'Bars 24–28: please correct bass line; some notes are missing. Also add chord symbols for the piano part.',
-    },
-  },
-];
-
-function fetchTaskDetail(taskId) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const task = mockTasks.find(t => t.id === taskId);
-      if (!task) {
-        reject(new Error('Task not found'));
-      } else {
-        resolve(task);
-      }
-    }, 500);
-  });
-}
-
-function fetchTaskFiles(taskId) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(mockFilesByTaskId[taskId] || []);
-    }, 400);
-  });
-}
 
 // ---------------- Helpers ----------------
 function formatDuration(seconds) {
@@ -310,6 +207,8 @@ const TranscriptionTaskDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null); // File đang được chọn trong form
   const [uploadForm] = Form.useForm();
   const [acceptingTask, setAcceptingTask] = useState(false);
   const [startingTask, setStartingTask] = useState(false);
@@ -360,6 +259,39 @@ const TranscriptionTaskDetailPage = () => {
     };
   }, [task, contractTasks]);
 
+  const loadTaskFiles = useCallback(async () => {
+    if (!task?.assignmentId) return;
+    
+    try {
+      const response = await getFilesByAssignmentId(task.assignmentId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Map API response to UI format
+        // Sort by uploadDate để version đúng thứ tự
+        const sortedFiles = [...response.data].sort((a, b) => {
+          const dateA = a.uploadDate ? new Date(a.uploadDate).getTime() : 0;
+          const dateB = b.uploadDate ? new Date(b.uploadDate).getTime() : 0;
+          return dateA - dateB; // Oldest first
+        });
+        
+        const mappedFiles = sortedFiles.map((file, index) => ({
+          id: file.fileId,
+          version: index + 1, // Version based on upload order
+          fileName: file.fileName,
+          uploadedAt: file.uploadDate,
+          status: file.fileStatus || 'uploaded',
+          note: file.description || '', // Note từ specialist khi upload
+          filePath: file.filePath,
+          fileSize: file.fileSize,
+          mimeType: file.mimeType,
+        }));
+        setFiles(mappedFiles);
+      }
+    } catch (error) {
+      console.error('Error loading files:', error);
+      // Don't show error - files might not exist yet
+    }
+  }, [task?.assignmentId]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -376,8 +308,6 @@ const TranscriptionTaskDetailPage = () => {
           setRequest(taskData.request);
         }
 
-        // Files sẽ được load sau khi có request info
-        setFiles([]);
         fallbackDeadlineCache.clear();
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
@@ -397,9 +327,18 @@ const TranscriptionTaskDetailPage = () => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (task?.assignmentId) {
+      loadTaskFiles();
+    }
+  }, [task?.assignmentId, loadTaskFiles]);
+
   const handleReload = useCallback(() => {
     loadData();
-  }, [loadData]);
+    if (task?.assignmentId) {
+      loadTaskFiles();
+    }
+  }, [loadData, task?.assignmentId, loadTaskFiles]);
 
   const handleSubmitForReview = useCallback(() => {
     if (
@@ -489,43 +428,74 @@ const TranscriptionTaskDetailPage = () => {
 
   const handleOpenUploadModal = useCallback(() => {
     setUploadModalVisible(true);
-  }, []);
-
-  const handleUploadCancel = useCallback(() => {
+    setSelectedFile(null); // Reset selected file khi mở modal
     uploadForm.resetFields();
-    setUploadModalVisible(false);
   }, [uploadForm]);
 
+  const handleUploadCancel = useCallback(() => {
+    if (uploading) return; // Prevent closing while uploading
+    uploadForm.resetFields();
+    setSelectedFile(null);
+    setUploadModalVisible(false);
+    setUploading(false);
+  }, [uploadForm, uploading]);
+
   const handleUploadOk = useCallback(async () => {
-    try {
-      const values = await uploadForm.validateFields();
-      const currentMaxVersion =
-        files.length > 0 ? Math.max(...files.map(f => f.version)) : 0;
-      const version = currentMaxVersion + 1;
-      const newFile = {
-        id: 'file-' + Date.now(),
-        version,
-        fileName: values.fileName,
-        uploadedAt: new Date().toISOString(),
-        status: 'PENDING_REVIEW',
-        note: values.note || '',
-      };
-      setFiles(prev => [...prev, newFile]);
-      // Auto mark in progress if starting from ASSIGNED
-      setTask(prev => {
-        if (!prev) return prev;
-        if (prev.status === 'ASSIGNED') {
-          return { ...prev, status: 'IN_PROGRESS' };
-        }
-        return prev;
-      });
-      message.success('Uploaded new version');
-      uploadForm.resetFields();
-      setUploadModalVisible(false);
-    } catch (e) {
-      // validation failed: do nothing
+    if (!task?.assignmentId) {
+      message.error('Assignment ID not found');
+      return;
     }
-  }, [files, uploadForm]);
+
+    if (uploading) {
+      console.log('Already uploading, ignoring');
+      return; // Prevent multiple clicks
+    }
+
+    try {
+      setUploading(true);
+      console.log('Starting upload process...');
+      
+      // Validate form fields
+      const values = await uploadForm.validateFields();
+      
+      // Get file from selectedFile state
+      if (!selectedFile) {
+        message.error('Please select a file');
+        setUploading(false);
+        return;
+      }
+      
+      const file = selectedFile;
+      
+      const response = await uploadTaskFile(
+        task.assignmentId,
+        file,
+        values.note || '',
+        'notation' // default content type
+      );
+
+      if (response?.status === 'success') {
+        message.success('File uploaded successfully');
+        uploadForm.resetFields();
+        setSelectedFile(null);
+        setUploadModalVisible(false);
+        
+        // Reload task files
+        await loadTaskFiles();
+      } else {
+        message.error(response?.message || 'Failed to upload file');
+      }
+    } catch (error) {
+      if (error?.errorFields) {
+        // Validation error - do nothing
+        return;
+      }
+      console.error('Error uploading file:', error);
+      message.error(error?.message || 'Failed to upload file');
+    } finally {
+      setUploading(false);
+    }
+  }, [task, uploadForm, loadTaskFiles]);
 
   const latestVersion = useMemo(() => {
     if (files.length === 0) return 0;
@@ -573,6 +543,18 @@ const TranscriptionTaskDetailPage = () => {
         dataIndex: 'note',
         key: 'note',
         ellipsis: true,
+        render: (text) =>
+          text && text.length > 0 ? (
+            text.length > 50 ? (
+              <Tooltip title={text}>
+                <span>{text.slice(0, 50)}...</span>
+              </Tooltip>
+            ) : (
+              <span>{text}</span>
+            )
+          ) : (
+            <Text type="secondary">—</Text>
+          ),
       },
       {
         title: 'Latest',
@@ -1104,24 +1086,126 @@ const TranscriptionTaskDetailPage = () => {
       {/* Upload Modal */}
       <Modal
         open={uploadModalVisible}
-        title="Upload new version"
+        title="Upload Task Output"
         okText="Upload"
-        onOk={handleUploadOk}
+        onOk={() => {
+          handleUploadOk();
+        }}
         onCancel={handleUploadCancel}
-        destroyOnClose
+        confirmLoading={uploading}
+        destroyOnHidden
       >
         <Form layout="vertical" form={uploadForm}>
           <Form.Item
-            label="File name"
-            name="fileName"
-            rules={[{ required: true, message: 'Please input file name' }]}
+            name="file"
+            rules={[
+              { required: true, message: 'Please select a file' },
+              {
+                validator: () => {
+                  // Validate file từ selectedFile state
+                  if (!selectedFile) {
+                    return Promise.reject(new Error('Please select a file'));
+                  }
+                  
+                  const fileName = selectedFile.name?.toLowerCase() || '';
+                  const taskType = task?.taskType?.toLowerCase();
+                  
+                  // Define allowed extensions for each task type
+                  const notationExts = ['.musicxml', '.xml', '.mid', '.midi', '.pdf'];
+                  const audioExts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma'];
+                  
+                  let allowedExts = [];
+                  let allowedTypes = '';
+                  
+                  if (taskType === 'transcription') {
+                    allowedExts = notationExts;
+                    allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
+                  } else if (taskType === 'arrangement') {
+                    allowedExts = [...notationExts, ...audioExts];
+                    allowedTypes = 'notation or audio files';
+                  } else if (taskType === 'recording') {
+                    allowedExts = audioExts;
+                    allowedTypes = 'audio files (MP3, WAV, FLAC, etc.)';
+                  } else {
+                    return Promise.resolve(); // Unknown task type, let backend validate
+                  }
+                  
+                  const hasValidExt = allowedExts.some(ext => fileName.endsWith(ext));
+                  
+                  if (!hasValidExt) {
+                    return Promise.reject(
+                      new Error(
+                        `File type not allowed for ${taskType} task. Only ${allowedTypes} are allowed.`
+                      )
+                    );
+                  }
+                  
+                  return Promise.resolve();
+                },
+              },
+            ]}
           >
-            <Input placeholder="e.g., My_Piece_v3.musicxml" />
+            <Upload.Dragger
+              maxCount={1}
+              beforeUpload={() => false} // Prevent auto upload
+              accept={
+                task?.taskType?.toLowerCase() === 'transcription'
+                  ? '.musicxml,.xml,.mid,.midi,.pdf'
+                  : task?.taskType?.toLowerCase() === 'recording'
+                  ? '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
+                  : '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
+              }
+              onChange={info => {
+                // Khi user chọn file, lưu vào state để hiển thị
+                const file = info.fileList.length > 0 
+                  ? (info.fileList[0].originFileObj || info.fileList[0])
+                  : null;
+                setSelectedFile(file);
+              }}
+              onRemove={() => {
+                setSelectedFile(null);
+                return true;
+              }}
+            >
+              {!selectedFile ? (
+                <>
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">
+                    Click or drag file to upload
+                  </p>
+                  <p className="ant-upload-hint">
+                    {task?.taskType?.toLowerCase() === 'transcription'
+                      ? 'Only notation files allowed: MusicXML, XML, MIDI, PDF'
+                      : task?.taskType?.toLowerCase() === 'recording'
+                      ? 'Only audio files allowed: MP3, WAV, FLAC, etc.'
+                      : 'Support: Notation (MusicXML, MIDI, PDF) or Audio files'}
+                  </p>
+                </>
+              ) : (
+                <div style={{ padding: '20px 0' }}>
+                  <Space direction="vertical" size="small" style={{ width: '100%', textAlign: 'center' }}>
+                    <Text strong style={{ fontSize: '16px' }}>
+                      {selectedFile.name}
+                    </Text>
+                    <Text type="secondary">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      Click to change file
+                    </Text>
+                  </Space>
+                </div>
+              )}
+            </Upload.Dragger>
           </Form.Item>
-          <Form.Item label="Note" name="note">
-            <TextArea
+          <Form.Item label="Note (optional)" name="note">
+            <Input.TextArea
               rows={3}
-              placeholder="Optional notes about this version"
+              placeholder="Optional notes about this upload"
+              maxLength={500}
+              showCount
             />
           </Form.Item>
         </Form>

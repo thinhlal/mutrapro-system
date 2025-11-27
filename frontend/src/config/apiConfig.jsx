@@ -87,6 +87,10 @@ export const API_ENDPOINTS = {
     GET_URL: fileId => `${PROJECT_PATH}/file/url/${fileId}`,
     GET_BY_REQUEST_ID: requestId =>
       `${PROJECT_PATH}/files/by-request/${requestId}`,
+    // Task file upload endpoints
+    UPLOAD_TASK_FILE: `${PROJECT_PATH}/files/upload`,
+    GET_BY_ASSIGNMENT_ID: assignmentId =>
+      `${PROJECT_PATH}/files/by-assignment/${assignmentId}`,
   },
 
   CONTRACTS: {
