@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,16 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
-import { Button, ImageSlider, DiscoverServices } from '../../components';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../contexts/AuthContext";
+import { Button, ImageSlider, DiscoverServices } from "../../components";
 import {
   COLORS,
   FONT_SIZES,
   SPACING,
   BORDER_RADIUS,
-} from '../../config/constants';
+} from "../../config/constants";
 
 const HomeScreen = ({ navigation }) => {
   const { logout, loading } = useAuth();
@@ -34,7 +34,7 @@ const HomeScreen = ({ navigation }) => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -52,18 +52,6 @@ const HomeScreen = ({ navigation }) => {
       {/* Discover Our Services */}
       <DiscoverServices />
 
-      {/* Recent Activity */}
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
-      <View style={styles.activityCard}>
-        <View style={styles.emptyState}>
-          <Ionicons name="time-outline" size={48} color={COLORS.gray[400]} />
-          <Text style={styles.emptyStateText}>No recent activity</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Your recent activities will appear here
-          </Text>
-        </View>
-      </View>
-
       {/* Quick Actions */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickActions}>
@@ -73,7 +61,12 @@ const HomeScreen = ({ navigation }) => {
             // TODO: Navigate to create request
           }}
         >
-          <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '20' }]}>
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: COLORS.primary + "20" },
+            ]}
+          >
             <Ionicons name="musical-notes" size={28} color={COLORS.primary} />
           </View>
           <Text style={styles.actionText}>New Request</Text>
@@ -85,7 +78,9 @@ const HomeScreen = ({ navigation }) => {
             // TODO: Navigate to my requests
           }}
         >
-          <View style={[styles.actionIcon, { backgroundColor: COLORS.info + '20' }]}>
+          <View
+            style={[styles.actionIcon, { backgroundColor: COLORS.info + "20" }]}
+          >
             <Ionicons name="list" size={28} color={COLORS.info} />
           </View>
           <Text style={styles.actionText}>My Requests</Text>
@@ -97,7 +92,12 @@ const HomeScreen = ({ navigation }) => {
             // TODO: Navigate to contracts
           }}
         >
-          <View style={[styles.actionIcon, { backgroundColor: COLORS.success + '20' }]}>
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: COLORS.success + "20" },
+            ]}
+          >
             <Ionicons name="document-text" size={28} color={COLORS.success} />
           </View>
           <Text style={styles.actionText}>Contracts</Text>
@@ -109,7 +109,12 @@ const HomeScreen = ({ navigation }) => {
             // TODO: Navigate to wallet
           }}
         >
-          <View style={[styles.actionIcon, { backgroundColor: COLORS.warning + '20' }]}>
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: COLORS.warning + "20" },
+            ]}
+          >
             <Ionicons name="wallet" size={28} color={COLORS.warning} />
           </View>
           <Text style={styles.actionText}>Wallet</Text>
@@ -117,13 +122,13 @@ const HomeScreen = ({ navigation }) => {
       </View>
 
       {/* Logout Button */}
-      <Button
+      {/* <Button
         title="Logout"
         onPress={handleLogout}
         variant="outline"
         loading={loading}
         style={styles.logoutButton}
-      />
+      /> */}
     </ScrollView>
   );
 };
@@ -140,34 +145,34 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
     marginBottom: SPACING.xs,
     marginTop: SPACING.xl,
   },
   quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -SPACING.xs,
     marginBottom: SPACING.md,
   },
   actionCard: {
-    width: '50%',
+    width: "50%",
     padding: SPACING.xs,
   },
   actionIcon: {
-    width: '100%',
+    width: "100%",
     aspectRatio: 1,
     borderRadius: BORDER_RADIUS.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: SPACING.sm,
   },
   actionText: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   activityCard: {
     backgroundColor: COLORS.white,
@@ -176,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -187,12 +192,12 @@ const styles = StyleSheet.create({
     }),
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: SPACING.lg,
   },
   emptyStateText: {
     fontSize: FONT_SIZES.base,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.gray[600],
     marginTop: SPACING.md,
   },
@@ -200,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginTop: SPACING.xs,
-    textAlign: 'center',
+    textAlign: "center",
   },
   logoutButton: {
     marginBottom: SPACING.lg,
@@ -208,4 +213,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-

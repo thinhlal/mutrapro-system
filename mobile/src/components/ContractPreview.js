@@ -37,6 +37,10 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown }) => {
       sent: { color: COLORS.info, text: "SENT TO CUSTOMER" },
       approved: { color: COLORS.info, text: "APPROVED" },
       signed: { color: COLORS.warning, text: "SIGNED" },
+      active_pending_assignment: {
+        color: COLORS.warning,
+        text: "DEPOSIT PAID - PENDING ASSIGNMENT",
+      },
       active: { color: COLORS.success, text: "ACTIVE" },
       rejected_by_customer: { color: COLORS.error, text: "REJECTED" },
       need_revision: { color: COLORS.warning, text: "NEEDS REVISION" },
@@ -48,7 +52,9 @@ const ContractPreview = ({ contract, requestDetails, pricingBreakdown }) => {
   };
 
   const statusConfig = getStatusConfig(contract?.status);
-  const isSigned = ["signed", "active"].includes(contract?.status?.toLowerCase());
+  const isSigned = ["signed", "active", "active_pending_assignment"].includes(
+    contract?.status?.toLowerCase()
+  );
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
