@@ -15,7 +15,7 @@ import PropTypes from 'prop-types';
 
 const { Option } = Select;
 
-export default function InstrumentFormModal({
+function InstrumentFormModal({
   visible,
   onCancel,
   onSubmit,
@@ -182,3 +182,5 @@ InstrumentFormModal.propTypes = {
   initialData: PropTypes.object,
   form: PropTypes.object.isRequired,
 };
+
+export default InstrumentFormModal;
