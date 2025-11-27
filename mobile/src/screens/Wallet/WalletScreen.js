@@ -300,7 +300,9 @@ const WalletScreen = ({ navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Wallet</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={onRefresh}>
           <Ionicons name="refresh" size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -341,33 +343,39 @@ const WalletScreen = ({ navigation }) => {
         {/* Statistics */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="arrow-down-circle" size={24} color={COLORS.success} />
+            <View style={styles.statContent}>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Total Deposit</Text>
+                <Text style={[styles.statValue, { color: COLORS.success }]}>
+                  {formatCurrency(stats.totalTopup, wallet?.currency)}
+                </Text>
+              </View>
+              <Ionicons name="arrow-down-circle" size={32} color={COLORS.success} />
             </View>
-            <Text style={styles.statLabel}>Total Deposit</Text>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>
-              {formatCurrency(stats.totalTopup, wallet?.currency)}
-            </Text>
           </View>
 
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="arrow-up-circle" size={24} color={COLORS.error} />
+            <View style={styles.statContent}>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Total Payment</Text>
+                <Text style={[styles.statValue, { color: COLORS.error }]}>
+                  {formatCurrency(stats.totalPayment, wallet?.currency)}
+                </Text>
+              </View>
+              <Ionicons name="arrow-up-circle" size={32} color={COLORS.error} />
             </View>
-            <Text style={styles.statLabel}>Total Payment</Text>
-            <Text style={[styles.statValue, { color: COLORS.error }]}>
-              {formatCurrency(stats.totalPayment, wallet?.currency)}
-            </Text>
           </View>
 
           <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="refresh-circle" size={24} color={COLORS.info} />
+            <View style={styles.statContent}>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Total Refund</Text>
+                <Text style={[styles.statValue, { color: COLORS.info }]}>
+                  {formatCurrency(stats.totalRefund, wallet?.currency)}
+                </Text>
+              </View>
+              <Ionicons name="refresh-circle" size={32} color={COLORS.info} />
             </View>
-            <Text style={styles.statLabel}>Total Refund</Text>
-            <Text style={[styles.statValue, { color: COLORS.info }]}>
-              {formatCurrency(stats.totalRefund, wallet?.currency)}
-            </Text>
           </View>
         </View>
 
@@ -551,11 +559,6 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     marginTop: SPACING.lg,
   },
-  headerTitle: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -573,7 +576,7 @@ const styles = StyleSheet.create({
   balanceCard: {
     backgroundColor: COLORS.primary,
     margin: SPACING.lg,
-    padding: SPACING.xl,
+    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.xl,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -617,36 +620,36 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   statsContainer: {
-    flexDirection: "row",
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
     gap: SPACING.sm,
   },
   statCard: {
-    flex: 1,
     backgroundColor: COLORS.white,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
-    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  statIconContainer: {
-    marginBottom: SPACING.xs,
+  statContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  statTextContainer: {
+    flex: 1,
   },
   statLabel: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs / 2,
-    textAlign: "center",
   },
   statValue: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
-    textAlign: "center",
   },
   transactionsHeader: {
     flexDirection: "row",

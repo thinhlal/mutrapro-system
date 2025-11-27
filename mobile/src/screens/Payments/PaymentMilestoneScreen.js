@@ -50,7 +50,10 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
           contractStatus === "canceled_by_customer" ||
           contractStatus === "canceled_by_manager";
         const isExpired = contractStatus === "expired";
-        const isValidStatus = contractStatus === "signed" || contractStatus === "active";
+        const isValidStatus =
+          contractStatus === "signed" ||
+          contractStatus === "active" ||
+          contractStatus === "active_pending_assignment";
 
         if (isCanceled || isExpired || !isValidStatus) {
           Alert.alert(

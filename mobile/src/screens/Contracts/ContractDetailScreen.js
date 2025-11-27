@@ -356,12 +356,16 @@ const ContractDetailScreen = ({ navigation, route }) => {
       draft: { color: COLORS.textSecondary, text: "Draft" },
       sent: { color: COLORS.info, text: "Sent to Customer" },
       approved: { color: COLORS.info, text: "Approved - Waiting for Signature" },
-      signed: { color: COLORS.warning, text: "Signed - Pending Deposit" },
+      signed: { color: COLORS.warning, text: "Signed - Pending Deposit Payment" },
+      active_pending_assignment: {
+        color: COLORS.warning,
+        text: "Deposit Paid - Pending Assignment",
+      },
       active: { color: COLORS.success, text: "Active - Deposit Paid" },
-      rejected_by_customer: { color: COLORS.error, text: "Rejected" },
+      rejected_by_customer: { color: COLORS.error, text: "Rejected by Customer" },
       need_revision: { color: COLORS.warning, text: "Needs Revision" },
-      canceled_by_customer: { color: COLORS.error, text: "Cancelled by You" },
-      canceled_by_manager: { color: COLORS.error, text: "Cancelled by Manager" },
+      canceled_by_customer: { color: COLORS.error, text: "Canceled by Customer" },
+      canceled_by_manager: { color: COLORS.error, text: "Canceled by Manager" },
       expired: { color: COLORS.textSecondary, text: "Expired" },
     };
     return configs[status] || { color: COLORS.textSecondary, text: status };
@@ -409,7 +413,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
   const isSent = currentStatus === "sent";
   const isApproved = currentStatus === "approved";
   const isSigned = currentStatus === "signed";
-  const isActive = currentStatus === "active";
+  const isActive = currentStatus === "active" || currentStatus === "active_pending_assignment";
   const isCanceled = currentStatus?.includes("canceled");
   const isNeedRevision = currentStatus === "need_revision";
   const isExpired = currentStatus === "expired";

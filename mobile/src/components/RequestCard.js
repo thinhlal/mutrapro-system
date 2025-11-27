@@ -21,7 +21,7 @@ const RequestCard = ({ request, onPress }) => {
       contract_approved: {
         color: COLORS.info,
         icon: "checkmark-circle-outline",
-        text: "Contract approved",
+        text: "Đã duyệt hợp đồng - Chờ ký",
         bgColor: COLORS.info + "15",
       },
       contract_signed: {
@@ -29,6 +29,12 @@ const RequestCard = ({ request, onPress }) => {
         icon: "document-text",
         text: "Contract signed",
         bgColor: COLORS.primary + "15",
+      },
+      awaiting_assignment: {
+        color: COLORS.warning,
+        icon: "time-outline",
+        text: "Awaiting assignment",
+        bgColor: COLORS.warning + "15",
       },
       in_progress: {
         color: COLORS.primary,
