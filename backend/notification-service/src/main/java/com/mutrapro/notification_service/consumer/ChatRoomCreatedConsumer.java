@@ -32,7 +32,7 @@ public class ChatRoomCreatedConsumer extends BaseIdempotentConsumer<ChatRoomCrea
     }
 
     @KafkaListener(
-        topics = "${app.event-topics.mappings.chat.room-created:chat-events}",
+        topics = "${app.event-topics.mappings.chat.room.created:chat-events}",
         groupId = "${spring.kafka.consumer.group-id:notification-service}",
         properties = {
             "spring.json.value.default.type=com.mutrapro.shared.event.ChatRoomCreatedEvent"

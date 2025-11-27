@@ -18,7 +18,7 @@ app:
   event-topics:
     mappings:
       request.assigned: request-events
-      chat.room-created: chat-events
+      chat.room.created: chat-events
 
 # Springdoc OpenAPI
 springdoc:

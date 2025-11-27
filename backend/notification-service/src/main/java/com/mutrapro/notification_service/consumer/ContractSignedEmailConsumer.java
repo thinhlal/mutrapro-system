@@ -29,7 +29,7 @@ public class ContractSignedEmailConsumer extends BaseIdempotentConsumer<Contract
     }
 
     @KafkaListener(
-            topics = "${app.event-topics.mappings.contract.signed-email:contract-signed-email}",
+            topics = "${app.event-topics.mappings.contract.signed.email:contract-signed-email}",
             groupId = "${spring.kafka.consumer.group-id:notification-service}",
             properties = {
                     "spring.json.value.default.type=com.mutrapro.shared.event.ContractSignedEmailEvent"

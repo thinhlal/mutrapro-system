@@ -150,7 +150,7 @@ public class ChatRoomService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                     .aggregateType("ChatRoom")
                     .aggregateId(room.getRoomId())
-                    .eventType("chat.room-created")
+                    .eventType("chat.room.created")
                     .eventPayload(eventPayload)
                     .build();
             

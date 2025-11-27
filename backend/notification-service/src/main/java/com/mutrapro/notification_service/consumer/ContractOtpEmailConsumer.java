@@ -29,7 +29,7 @@ public class ContractOtpEmailConsumer extends BaseIdempotentConsumer<ContractOtp
     }
 
     @KafkaListener(
-            topics = "${app.event-topics.mappings.contract.otp-email:contract-otp-email}",
+            topics = "${app.event-topics.mappings.contract.otp.email:contract-otp-email}",
             groupId = "${spring.kafka.consumer.group-id:notification-service}",
             properties = {
                     "spring.json.value.default.type=com.mutrapro.shared.event.ContractOtpEmailEvent"

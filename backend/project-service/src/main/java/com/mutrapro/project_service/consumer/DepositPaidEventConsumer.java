@@ -34,7 +34,7 @@ public class DepositPaidEventConsumer extends BaseIdempotentConsumer<DepositPaid
     }
 
     @KafkaListener(
-        topics = "${app.event-topics.mappings.billing.deposit-paid:billing-deposit-paid}",
+        topics = "${app.event-topics.mappings.billing.deposit.paid:billing-deposit-paid}",
         groupId = "${spring.kafka.consumer.group-id:project-service}",
         properties = {
             "spring.json.value.default.type=com.mutrapro.shared.event.DepositPaidEvent"

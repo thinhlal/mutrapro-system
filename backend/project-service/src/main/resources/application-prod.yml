@@ -41,11 +41,12 @@ app:
   event-topics:
     mappings:
       file.uploaded: ${KAFKA_TOPIC_FILE_UPLOADED:file-uploaded}
-      contract.otp-email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
-      contract.signed-email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
-      billing.deposit-paid: ${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:billing-deposit-paid}
-      billing.milestone-paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
+      contract.otp.email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
+      contract.signed.email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
+      billing.deposit.paid: ${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:billing-deposit-paid}
+      billing.milestone.paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
+      task.file.uploaded: ${KAFKA_TOPIC_TASK_FILE_UPLOADED:task-file-uploaded}
 
 # Request Service Configuration
 request:

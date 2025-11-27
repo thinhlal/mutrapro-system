@@ -403,7 +403,7 @@ public class ESignService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                     .aggregateId(aggregateId)
                     .aggregateType("Contract")
-                    .eventType("contract.otp-email")
+                    .eventType("contract.otp.email")
                     .eventPayload(payload)
                     .build();
 
@@ -462,7 +462,7 @@ public class ESignService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                     .aggregateId(aggregateId)
                     .aggregateType("Contract")
-                    .eventType("contract.signed-email")
+                    .eventType("contract.signed.email")
                     .eventPayload(payload)
                     .build();
 

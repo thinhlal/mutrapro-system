@@ -19,6 +19,7 @@ public enum NotificationType {
     ALL_MILESTONES_PAID,        // Tất cả milestones đã được thanh toán
     TASK_ASSIGNMENT_ASSIGNED,   // Specialist được giao task mới
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist cancel
+    TASK_FILE_UPLOADED,         // Specialist đã upload file output cho task
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }
 

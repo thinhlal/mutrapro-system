@@ -268,7 +268,7 @@ public class WalletService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                 .aggregateId(aggregateId)
                 .aggregateType("Contract")
-                .eventType("billing.deposit-paid")
+                .eventType("billing.deposit.paid")
                 .eventPayload(payload)
                 .build();
             
@@ -382,7 +382,7 @@ public class WalletService {
             OutboxEvent outboxEvent = OutboxEvent.builder()
                 .aggregateId(aggregateId)
                 .aggregateType("ContractMilestone")
-                .eventType("billing.milestone-paid")
+                .eventType("billing.milestone.paid")
                 .eventPayload(payload)
                 .build();
             

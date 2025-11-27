@@ -54,9 +54,11 @@ app:
     mappings:
       email.verification: email-verification
       password.reset: password-reset
-      contract.otp-email: contract-otp-email
-      contract.signed-email: contract-signed-email
+      contract.otp.email: contract-otp-email
+      contract.signed.email: contract-signed-email
       task.assignment.assigned: task-assignment-assigned
+      task.file.uploaded: task-file-uploaded
+      chat.room.created: chat-events
 
 logging:
   level:

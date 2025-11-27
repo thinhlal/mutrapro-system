@@ -34,7 +34,7 @@ public class MilestonePaidEventConsumer extends BaseIdempotentConsumer<Milestone
     }
 
     @KafkaListener(
-        topics = "${app.event-topics.mappings.billing.milestone-paid:billing-milestone-paid}",
+        topics = "${app.event-topics.mappings.billing.milestone.paid:billing-milestone-paid}",
         groupId = "${spring.kafka.consumer.group-id:project-service}",
         properties = {
             "spring.json.value.default.type=com.mutrapro.shared.event.MilestonePaidEvent"

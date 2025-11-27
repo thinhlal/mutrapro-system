@@ -8,6 +8,7 @@ import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.exception.NotificationNotFoundException;
 import com.mutrapro.shared.event.ChatRoomCreatedEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
+import com.mutrapro.shared.event.TaskFileUploadedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -123,6 +124,51 @@ public class NotificationService {
 
         log.info("Task assignment notification created: assignmentId={}, userId={}",
             event.getAssignmentId(), event.getSpecialistUserId());
+    }
+
+    /**
+     * Tạo notification cho manager khi specialist upload file (Kafka event).
+     */
+    @Transactional
+    public void createTaskFileUploadedNotification(TaskFileUploadedEvent event) {
+        if (event.getManagerUserId() == null || event.getManagerUserId().isBlank()) {
+            log.warn("Cannot create file upload notification, managerUserId missing: fileId={}, assignmentId={}", 
+                    event.getFileId(), event.getAssignmentId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+            ? event.getContractNumber()
+            : event.getContractId();
+
+        String defaultContent = String.format(
+            "Specialist đã upload file \"%s\" cho task %s của contract #%s. Vui lòng review file.",
+            event.getFileName(),
+            event.getTaskType(),
+            contractLabel
+        );
+
+        String title = event.getTitle() != null ? event.getTitle() : "Specialist đã upload file output";
+        String content = event.getContent() != null ? event.getContent() : defaultContent;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/manager/contracts/" + event.getContractId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+            .userId(event.getManagerUserId())
+            .type(NotificationType.TASK_FILE_UPLOADED)
+            .title(title)
+            .content(content)
+            .referenceId(event.getAssignmentId())
+            .referenceType(referenceType)
+            .actionUrl(actionUrl)
+            .isRead(false)
+            .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getManagerUserId(), saved);
+
+        log.info("Task file uploaded notification created: fileId={}, assignmentId={}, managerUserId={}",
+            event.getFileId(), event.getAssignmentId(), event.getManagerUserId());
     }
 
     
