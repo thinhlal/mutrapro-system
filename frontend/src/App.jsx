@@ -96,6 +96,7 @@ import MilestonesPage from './pages/manager/Milestones/MilestonesPage';
 import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressManagement';
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 import MilestoneDetailPage from './pages/manager/MilestoneDetail/MilestoneDetailPage';
+import TaskDetailPage from './pages/manager/TaskDetail/TaskDetailPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -381,6 +382,10 @@ function App() {
             <Route
               path="milestone-assignments/:contractId/milestone/:milestoneId"
               element={<MilestoneDetailPage />}
+            />
+            <Route
+              path="tasks/:contractId/:assignmentId"
+              element={<TaskDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
           </Route>

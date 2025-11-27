@@ -46,6 +46,25 @@ public class TaskAssignmentController {
                 .build();
     }
 
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
+    @Operation(summary = "Lấy danh sách tất cả task assignments với pagination và filters")
+    public ApiResponse<PageResponse<TaskAssignmentResponse>> getAllTaskAssignments(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String taskType,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PageResponse<TaskAssignmentResponse> result = taskAssignmentService
+            .getAllTaskAssignments(status, taskType, keyword, page, size);
+        return ApiResponse.<PageResponse<TaskAssignmentResponse>>builder()
+                .message("Task assignments retrieved successfully")
+                .data(result)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
     @GetMapping("/slots")
     @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
     @Operation(summary = "Lấy danh sách milestone slots phục vụ gán task")

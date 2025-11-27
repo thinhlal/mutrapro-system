@@ -13,6 +13,9 @@ import com.mutrapro.shared.dto.PageResponse;
 import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotsResult;
 import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.OutboxEvent;
@@ -822,6 +825,92 @@ public class TaskAssignmentService {
             .totalUnassigned(totalUnassigned)
             .totalInProgress(totalInProgress)
             .totalCompleted(totalCompleted)
+            .build();
+    }
+
+    /**
+     * Lấy danh sách tất cả task assignments với pagination và filters (cho manager)
+     * Sử dụng JPA query với filters và pagination ở database level
+     */
+    public PageResponse<TaskAssignmentResponse> getAllTaskAssignments(
+            String status,
+            String taskType,
+            String keyword,
+            int page,
+            int size) {
+
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+
+        String managerUserId = getCurrentUserId();
+        List<Contract> contracts = contractRepository.findByManagerUserId(managerUserId);
+
+        if (contracts.isEmpty()) {
+            return PageResponse.<TaskAssignmentResponse>builder()
+                .content(List.of())
+                .pageNumber(safePage)
+                .pageSize(safeSize)
+                .totalElements(0)
+                .totalPages(0)
+                .first(true)
+                .last(true)
+                .hasNext(false)
+                .hasPrevious(false)
+                .build();
+        }
+
+        List<String> contractIds = contracts.stream()
+            .map(Contract::getContractId)
+            .collect(Collectors.toList());
+
+        // Parse filters
+        AssignmentStatus statusEnum = null;
+        if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
+            try {
+                statusEnum = AssignmentStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status filter: {}", status);
+            }
+        }
+
+        TaskType taskTypeEnum = null;
+        if (taskType != null && !taskType.isBlank() && !"all".equalsIgnoreCase(taskType)) {
+            try {
+                taskTypeEnum = TaskType.valueOf(taskType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid taskType filter: {}", taskType);
+            }
+        }
+
+        // Prepare keyword for search (null or empty means no filter)
+        String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+
+        // Use JPA query with pagination
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        Page<TaskAssignment> pageResult = 
+            taskAssignmentRepository.findAllByManagerWithFilters(
+                contractIds, 
+                statusEnum, 
+                taskTypeEnum, 
+                searchKeyword, 
+                pageable
+            );
+
+        // Enrich task assignments
+        List<TaskAssignmentResponse> enrichedAssignments = pageResult.getContent().stream()
+            .map(this::enrichTaskAssignment)
+            .collect(Collectors.toList());
+
+        return PageResponse.<TaskAssignmentResponse>builder()
+            .content(enrichedAssignments)
+            .pageNumber(pageResult.getNumber())
+            .pageSize(pageResult.getSize())
+            .totalElements((int) pageResult.getTotalElements())
+            .totalPages(pageResult.getTotalPages())
+            .first(pageResult.isFirst())
+            .last(pageResult.isLast())
+            .hasNext(pageResult.hasNext())
+            .hasPrevious(pageResult.hasPrevious())
             .build();
     }
 

@@ -21,6 +21,7 @@ import {
   Divider,
   Alert,
   Popconfirm,
+  Select,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -30,17 +31,14 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   PlayCircleOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
-  getAllContracts,
   getContractById,
 } from '../../../services/contractService';
 import {
-  getTaskAssignmentsByContract,
+  getAllTaskAssignments,
   resolveIssue,
   cancelTaskByManager,
 } from '../../../services/taskAssignmentService';
@@ -168,156 +166,90 @@ const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
 const getTaskCompletionDate = task =>
   task?.completedDate || task?.milestone?.actualEndAt || null;
 
+const STATUS_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Đã gán', value: 'assigned' },
+  { label: 'Đã nhận - Chờ', value: 'accepted_waiting' },
+  { label: 'Ready to Start', value: 'ready_to_start' },
+  { label: 'Đang làm', value: 'in_progress' },
+  { label: 'Hoàn thành', value: 'completed' },
+  { label: 'Đã hủy', value: 'cancelled' },
+];
+
+const TASK_TYPE_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Transcription', value: 'TRANSCRIPTION' },
+  { label: 'Arrangement', value: 'ARRANGEMENT' },
+  { label: 'Recording', value: 'RECORDING' },
+];
+
 export default function TaskProgressManagement() {
-  const [contracts, setContracts] = useState([]);
-  const [selectedContractId, setSelectedContractId] = useState(null);
-  const [selectedContract, setSelectedContract] = useState(null);
   const [taskAssignments, setTaskAssignments] = useState([]);
-  const [contractsLoading, setContractsLoading] = useState(false);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
-  const [contractSearch, setContractSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    search: '',
+    status: 'all',
+    taskType: 'all',
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
   const [taskFiles, setTaskFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [taskFilesMap, setTaskFilesMap] = useState({}); // Map assignmentId -> files[]
-  const [contractTaskStats, setContractTaskStats] = useState({}); // Map contractId -> stats
-  const [contractsCollapsed, setContractsCollapsed] = useState(false); // Collapse contracts sidebar
+  const [contractsMap, setContractsMap] = useState({}); // Map contractId -> contract
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [selectedIssueTask, setSelectedIssueTask] = useState(null);
   const [cancellingTask, setCancellingTask] = useState(false);
   const navigate = useNavigate();
 
-  const fetchContracts = useCallback(async () => {
+  const fetchAllTaskAssignments = useCallback(async (currentFilters, currentPagination) => {
+    setLoading(true);
     try {
-      setContractsLoading(true);
-      setContracts([]);
-      const response = await getAllContracts();
-      if (response?.status === 'success' && response?.data) {
-        const activeContracts = response.data.filter(
-          c => {
-            const status = c.status?.toLowerCase();
-            return status === 'active' || status === 'active_pending_assignment';
+      const params = {
+        page: (currentPagination.page || 1) - 1,
+        size: currentPagination.pageSize || 10,
+      };
+      if (currentFilters.status !== 'all') {
+        params.status = currentFilters.status;
+      }
+      if (currentFilters.taskType !== 'all') {
+        params.taskType = currentFilters.taskType;
+      }
+      if (currentFilters.search && currentFilters.search.trim()) {
+        params.keyword = currentFilters.search.trim();
+      }
+      const response = await getAllTaskAssignments(params);
+      if (response?.status === 'success' && response.data) {
+        const pageData = response.data;
+        setTaskAssignments(pageData.content || []);
+        
+        // Fetch contract info for each task (lazy loading)
+        const contractIds = [...new Set((pageData.content || []).map(t => t.contractId).filter(Boolean))];
+        contractIds.forEach(contractId => {
+          if (!contractsMap[contractId]) {
+            getContractById(contractId)
+              .then(res => {
+                if (res?.status === 'success' && res?.data) {
+                  setContractsMap(prev => ({ ...prev, [contractId]: res.data }));
+                }
+              })
+              .catch(err => console.error(`Error fetching contract ${contractId}:`, err));
           }
-        );
-        setContracts(activeContracts);
-      }
-    } catch (error) {
-      console.error('Error fetching contracts:', error);
-      message.error('Lỗi khi tải danh sách contracts');
-      setContracts([]);
-    } finally {
-      setContractsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchContracts();
-  }, [fetchContracts]);
-
-  // Auto select first contract when data available
-  useEffect(() => {
-    if (!selectedContractId && contracts.length > 0) {
-      setSelectedContractId(contracts[0].contractId);
-    }
-  }, [contracts, selectedContractId]);
-
-  // Fetch task assignments when contract is selected
-  useEffect(() => {
-    if (selectedContractId) {
-      fetchTaskAssignments(selectedContractId);
-      fetchContractDetail(selectedContractId);
-    } else {
-      setTaskAssignments([]);
-      setSelectedContract(null);
-    }
-  }, [selectedContractId]);
-
-  const fetchContractDetail = async contractId => {
-    try {
-      const response = await getContractById(contractId);
-      if (response?.status === 'success' && response?.data) {
-        setSelectedContract(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching contract detail:', error);
-    }
-  };
-
-  // Compute task stats for a contract
-  const computeTaskStats = tasks => {
-    const stats = {
-      total: 0,
-      assigned: 0,
-      inProgress: 0,
-      completed: 0,
-      cancelled: 0,
-      hasIssue: 0,
-    };
-
-    tasks.forEach(task => {
-      stats.total += 1;
-      const status = task.status?.toLowerCase();
-      if (status === 'in_progress') stats.inProgress += 1;
-      else if (status === 'completed') stats.completed += 1;
-      else if (status === 'cancelled') stats.cancelled += 1;
-      else stats.assigned += 1;
-      if (task.hasIssue) stats.hasIssue += 1;
-    });
-
-    return stats;
-  };
-
-  // Update contract stats
-  const updateContractStats = useCallback((contractId, tasks) => {
-    setContractTaskStats(prev => ({
-      ...prev,
-      [contractId]: computeTaskStats(tasks),
-    }));
-  }, []);
-
-  // Fetch stats for a contract (lazy loading)
-  const fetchContractTaskStats = useCallback(
-    async contractId => {
-      if (contractTaskStats[contractId]) return; // Already fetched
-
-      try {
-        const response = await getTaskAssignmentsByContract(contractId);
-        const tasks =
-          response?.status === 'success' && response?.data ? response.data : [];
-        updateContractStats(contractId, tasks);
-      } catch (error) {
-        console.error(
-          `Error fetching task stats for contract ${contractId}:`,
-          error
-        );
-        updateContractStats(contractId, []); // Set default stats on error
-      }
-    },
-    [contractTaskStats, updateContractStats]
-  );
-
-  const fetchTaskAssignments = async contractId => {
-    try {
-      setAssignmentsLoading(true);
-      const response = await getTaskAssignmentsByContract(contractId);
-      if (response?.status === 'success' && response?.data) {
-        const assignments = response.data || [];
-        setTaskAssignments(assignments);
-
-        // Update contract stats
-        updateContractStats(contractId, assignments);
+        });
 
         // Fetch files for all assignments to calculate progress
         const filesMap = {};
         await Promise.all(
-          assignments.map(async assignment => {
-            // Skip if assignmentId is missing or invalid
+          (pageData.content || []).map(async assignment => {
             if (!assignment.assignmentId) {
               filesMap[assignment.assignmentId] = [];
               return;
             }
-
             try {
               const filesResponse = await axiosInstance.get(
                 `/api/v1/projects/files/by-assignment/${assignment.assignmentId}`
@@ -332,7 +264,6 @@ export default function TaskProgressManagement() {
                 filesMap[assignment.assignmentId] = [];
               }
             } catch (error) {
-              // Log error but don't break the flow - just set empty array
               if (error?.response?.status !== 500) {
                 console.error(
                   `Error fetching files for assignment ${assignment.assignmentId}:`,
@@ -344,15 +275,59 @@ export default function TaskProgressManagement() {
           })
         );
         setTaskFilesMap(filesMap);
+
+        setPagination(prev => ({
+          ...prev,
+          page: (pageData.pageNumber ?? 0) + 1,
+          pageSize: pageData.pageSize ?? prev.pageSize,
+          total: pageData.totalElements ?? 0,
+        }));
+      } else {
+        setTaskAssignments([]);
+        setPagination(prev => ({ ...prev, total: 0 }));
       }
     } catch (error) {
       console.error('Error fetching task assignments:', error);
-      message.error('Lỗi khi tải danh sách task assignments');
+      message.error(error?.message || 'Không thể tải danh sách tasks');
       setTaskAssignments([]);
-      setTaskFilesMap({});
+      setPagination(prev => ({ ...prev, total: 0 }));
     } finally {
-      setAssignmentsLoading(false);
+      setLoading(false);
     }
+  }, [contractsMap]);
+
+  useEffect(() => {
+    fetchAllTaskAssignments(filters, pagination);
+  }, [
+    filters.status,
+    filters.taskType,
+    filters.search,
+    pagination.page,
+    pagination.pageSize,
+    fetchAllTaskAssignments,
+  ]);
+
+  const handleStatusChange = value => {
+    setFilters(prev => ({ ...prev, status: value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleTaskTypeChange = value => {
+    setFilters(prev => ({ ...prev, taskType: value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleSearchChange = e => {
+    setFilters(prev => ({ ...prev, search: e.target.value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleTableChange = newPagination => {
+    setPagination(prev => ({
+      ...prev,
+      page: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
   };
 
   // Fetch files for a task assignment
@@ -375,13 +350,15 @@ export default function TaskProgressManagement() {
     }
   };
 
-  // Get milestone name by ID
-  const getMilestoneName = milestoneId => {
-    if (!selectedContract?.milestones || !milestoneId) return 'N/A';
-    const milestone = selectedContract.milestones.find(
-      m => m.milestoneId === milestoneId
-    );
-    return milestone ? milestone.name : milestoneId;
+  // Get milestone name
+  const getMilestoneName = record => {
+    if (record?.milestone?.name) return record.milestone.name;
+    return record?.milestoneId || 'N/A';
+  };
+
+  // Get contract info
+  const getContractInfo = contractId => {
+    return contractsMap[contractId] || null;
   };
 
   // Calculate progress percentage
@@ -436,102 +413,7 @@ export default function TaskProgressManagement() {
     return 0;
   };
 
-  // Get contract badge/indicator
-  const getContractBadge = useCallback(
-    contractId => {
-      const stats = contractTaskStats[contractId];
-      if (!stats) {
-        // Chưa có stats - ưu tiên thấp nhưng không phải cuối cùng
-        return { label: null, color: null, priority: 50 };
-      }
 
-      const activeTasks = stats.total - stats.cancelled;
-
-      // Ưu tiên hiển thị issue nếu có (cần theo dõi)
-      if (stats.hasIssue > 0 && activeTasks > 0) {
-        return {
-          label: `⚠️ ${stats.hasIssue} issue`,
-          color: 'orange',
-          priority: 0,
-        };
-      }
-
-      // Hiển thị thông tin task active - ưu tiên cao
-      if (stats.inProgress > 0) {
-        return {
-          label: `🔄 ${stats.inProgress} đang làm`,
-          color: 'blue',
-          priority: 1, // Đổi từ 2 xuống 1 để ưu tiên hơn "chưa có task"
-        };
-      }
-
-      if (stats.total === 0) {
-        return { label: 'Chưa có task', color: 'default', priority: 2 };
-      }
-
-      if (stats.assigned > 0) {
-        return {
-          label: `📋 ${stats.assigned} đã gán`,
-          color: 'cyan',
-          priority: 3,
-        };
-      }
-
-      if (stats.completed === activeTasks && activeTasks > 0) {
-        return {
-          label: `✅ ${stats.completed} hoàn thành`,
-          color: 'green',
-          priority: 4, // Hoàn thành ưu tiên thấp nhất
-        };
-      }
-
-      return { label: null, color: null, priority: 50 };
-    },
-    [contractTaskStats]
-  );
-
-  // Filter contracts by search
-  const filteredContracts = useMemo(() => {
-    const keyword = contractSearch.toLowerCase();
-    return contracts
-      .filter(contract => {
-        if (!keyword) return true;
-        const number = contract.contractNumber?.toLowerCase() || '';
-        const name = contract.nameSnapshot?.toLowerCase() || '';
-        const type = contract.contractType?.toLowerCase() || '';
-        return (
-          number.includes(keyword) ||
-          name.includes(keyword) ||
-          type.includes(keyword)
-        );
-      })
-      .sort((a, b) => {
-        // Sort by priority: contracts with issues first, then in progress, then others
-        const badgeA = getContractBadge(a.contractId);
-        const badgeB = getContractBadge(b.contractId);
-        const priorityA = badgeA?.priority ?? 99;
-        const priorityB = badgeB?.priority ?? 99;
-
-        // Sort by priority (lower number = higher priority)
-        if (priorityA !== priorityB) {
-          return priorityA - priorityB;
-        }
-
-        // If same priority, sort by contract number
-        return (a.contractNumber || '').localeCompare(b.contractNumber || '');
-      });
-  }, [contracts, contractSearch, getContractBadge]);
-
-  // Lazy load stats for displayed contracts
-  useEffect(() => {
-    if (filteredContracts.length === 0) return;
-    // Fetch stats for first 20 contracts (to avoid too many API calls)
-    filteredContracts.slice(0, 20).forEach(contract => {
-      if (!contractTaskStats[contract.contractId]) {
-        fetchContractTaskStats(contract.contractId);
-      }
-    });
-  }, [filteredContracts, contractTaskStats, fetchContractTaskStats]);
 
   // Render specialist cell
   const renderSpecialistCell = record => {
@@ -552,14 +434,14 @@ export default function TaskProgressManagement() {
     );
   };
 
-  // Handle view task details - navigate to milestone detail page
+  // Handle view task details - navigate to task detail page
   const handleViewTaskDetails = record => {
-    if (record.milestoneId) {
+    if (record.assignmentId && record.contractId) {
       navigate(
-        `/manager/milestone-assignments/${record.contractId}/milestone/${record.milestoneId}`
+        `/manager/tasks/${record.contractId}/${record.assignmentId}`
       );
     } else {
-      message.warning('Không tìm thấy milestone ID');
+      message.warning('Không tìm thấy assignment ID hoặc contract ID');
     }
   };
 
@@ -576,17 +458,17 @@ export default function TaskProgressManagement() {
 
   // Handle resolve issue (cho specialist tiếp tục)
   const handleResolveIssue = async () => {
-    if (!selectedIssueTask || !selectedContractId) return;
+    if (!selectedIssueTask || !selectedIssueTask.contractId) return;
     try {
       const response = await resolveIssue(
-        selectedContractId,
+        selectedIssueTask.contractId,
         selectedIssueTask.assignmentId
       );
       if (response?.status === 'success') {
         message.success('Đã cho phép specialist tiếp tục task');
         setIssueModalVisible(false);
         setSelectedIssueTask(null);
-        await fetchTaskAssignments(selectedContractId);
+        await fetchAllTaskAssignments(filters, pagination);
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
@@ -596,11 +478,11 @@ export default function TaskProgressManagement() {
 
   // Handle cancel task by manager and create new
   const handleCancelAndCreateNew = async () => {
-    if (!selectedIssueTask || !selectedContractId) return;
+    if (!selectedIssueTask || !selectedIssueTask.contractId) return;
     try {
       setCancellingTask(true);
       const response = await cancelTaskByManager(
-        selectedContractId,
+        selectedIssueTask.contractId,
         selectedIssueTask.assignmentId
       );
       if (response?.status === 'success') {
@@ -613,7 +495,7 @@ export default function TaskProgressManagement() {
 
         // Navigate đến workspace với data pre-filled từ task cũ
         navigate(
-          `/manager/milestone-assignments/${selectedContractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
+          `/manager/milestone-assignments/${taskToCreate.contractId}/new?milestoneId=${taskToCreate.milestoneId}&taskType=${taskToCreate.taskType}&excludeSpecialistId=${taskToCreate.specialistId}`
         );
       }
     } catch (error) {
@@ -643,58 +525,34 @@ export default function TaskProgressManagement() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
-  // Sort task assignments: ưu tiên theo status, issue, và deadline
-  const sortedTaskAssignments = useMemo(() => {
-    return [...taskAssignments].sort((a, b) => {
-      // 1. Ưu tiên tasks có issue (cần theo dõi)
-      if (a.hasIssue && !b.hasIssue) return -1;
-      if (!a.hasIssue && b.hasIssue) return 1;
-
-      // 2. Ưu tiên theo status: in_progress > assigned > completed > cancelled
-      const statusPriority = {
-        in_progress: 0,
-        assigned: 1,
-        completed: 2,
-        cancelled: 3,
-      };
-      const priorityA = statusPriority[a.status?.toLowerCase()] ?? 99;
-      const priorityB = statusPriority[b.status?.toLowerCase()] ?? 99;
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-
-      // 3. Nếu cùng status, sort theo deadline (sắp đến hạn lên trước)
-      const dueDateA =
-        getActualDeadlineDayjs(a.milestone) ||
-        getPlannedDeadlineDayjs(a.milestone);
-      const dueDateB =
-        getActualDeadlineDayjs(b.milestone) ||
-        getPlannedDeadlineDayjs(b.milestone);
-      if (dueDateA && dueDateB) {
-        return dayjs(dueDateA).valueOf() - dayjs(dueDateB).valueOf();
-      }
-      if (dueDateA && !dueDateB) return -1;
-      if (!dueDateA && dueDateB) return 1;
-
-      // 4. Nếu không có deadline, sort theo assignedDate (mới nhất lên trước)
-      const dateA = a.assignedDate || '';
-      const dateB = b.assignedDate || '';
-      if (dateA && dateB) {
-        return new Date(dateB) - new Date(dateA);
-      }
-
-      return 0;
-    });
-  }, [taskAssignments]);
 
   // Table columns - tối ưu width để tránh scroll ngang
   const columns = [
+    {
+      title: 'Contract',
+      dataIndex: 'contractId',
+      key: 'contractId',
+      width: 180,
+      fixed: 'left',
+      render: (contractId, record) => {
+        const contract = getContractInfo(contractId);
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{contract?.contractNumber || contractId}</Text>
+            {contract?.nameSnapshot && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {contract.nameSnapshot}
+              </Text>
+            )}
+          </Space>
+        );
+      },
+    },
     {
       title: 'Task Type',
       dataIndex: 'taskType',
       key: 'taskType',
       width: 100,
-      fixed: 'left',
       render: type => <Tag color="cyan">{TASK_TYPE_LABELS[type] || type}</Tag>,
     },
     {
@@ -709,12 +567,12 @@ export default function TaskProgressManagement() {
       dataIndex: 'milestoneId',
       key: 'milestoneId',
       width: 140,
-      render: milestoneId => (
+      render: (_, record) => (
         <Text
           type="secondary"
-          ellipsis={{ tooltip: getMilestoneName(milestoneId) }}
+          ellipsis={{ tooltip: getMilestoneName(record) }}
         >
-          {getMilestoneName(milestoneId)}
+          {getMilestoneName(record)}
         </Text>
       ),
     },
@@ -769,15 +627,19 @@ export default function TaskProgressManagement() {
       render: (_, record) => {
         const actualDeadline = getActualDeadlineDayjs(record.milestone);
         const plannedDeadline = getPlannedDeadlineDayjs(record.milestone);
+        const contract = getContractInfo(record.contractId);
         const estimatedDeadline = getEstimatedDeadlineDayjs(
           record.milestone,
-          selectedContract?.milestones || []
+          contract?.milestones || []
         );
         const actualStart = getActualStartDayjs(record.milestone);
         const plannedStart = getPlannedStartDayjs(record.milestone);
+        
+        // Nếu không có data gì thì hiển thị -
         if (!actualDeadline && !plannedDeadline && !estimatedDeadline) {
           return <Text type="secondary">-</Text>;
         }
+
         const now = dayjs();
         const isOverdue =
           actualDeadline &&
@@ -788,72 +650,84 @@ export default function TaskProgressManagement() {
           : null;
         const isNearDeadline =
           diffDays !== null && diffDays <= 3 && diffDays >= 0 && !isOverdue;
+
+        // Nếu có actual hoặc planned thì chỉ hiển thị actual và planned (không hiển thị estimated)
+        const hasActualOrPlanned = actualDeadline || plannedDeadline;
+
         return (
           <Space direction="vertical" size={0}>
-            <Text strong>Actual timeline</Text>
-            {actualDeadline ? (
-              <Space direction="vertical" size={0}>
-                {actualStart && (
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    Start: {actualStart.format('HH:mm DD/MM')}
-                  </Text>
-                )}
-                <Text
-                  type={
-                    isOverdue
-                      ? 'danger'
-                      : isNearDeadline
-                        ? 'warning'
-                        : undefined
-                  }
-                  strong={isOverdue || isNearDeadline}
-                  style={{ fontSize: 12 }}
-                >
-                  Deadline: {actualDeadline.format('HH:mm DD/MM')}
-                </Text>
-                {isOverdue && (
-                  <Tag color="red" size="small">
-                    Quá hạn
-                  </Tag>
-                )}
-                {isNearDeadline && (
-                  <Tag color="orange" size="small">
-                    Sắp hạn
-                  </Tag>
-                )}
-              </Space>
-            ) : (
-              <Text type="secondary">Chưa bắt đầu</Text>
-            )}
-            <Divider style={{ margin: '4px 0' }} dashed />
-            <Text strong type="secondary">
-              Planned timeline
-            </Text>
-            {plannedDeadline ? (
-              <Space direction="vertical" size={0}>
-                {plannedStart && (
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    Start: {plannedStart.format('HH:mm DD/MM')}
-                  </Text>
-                )}
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Deadline: {plannedDeadline.format('HH:mm DD/MM')}
-                </Text>
-              </Space>
-            ) : (
-              <Text type="secondary">-</Text>
-            )}
-            {!actualDeadline && !plannedDeadline && estimatedDeadline && (
+            {/* Hiển thị Actual nếu có */}
+            {actualDeadline && (
               <>
-                <Divider style={{ margin: '4px 0' }} dashed />
+                <Text strong>Actual</Text>
+                <Space direction="vertical" size={0}>
+                  {actualStart && (
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      Start: {actualStart.format('HH:mm DD/MM')}
+                    </Text>
+                  )}
+                  <Text
+                    type={
+                      isOverdue
+                        ? 'danger'
+                        : isNearDeadline
+                          ? 'warning'
+                          : undefined
+                    }
+                    strong={isOverdue || isNearDeadline}
+                    style={{ fontSize: 12 }}
+                  >
+                    Deadline: {actualDeadline.format('HH:mm DD/MM')}
+                  </Text>
+                  {isOverdue && (
+                    <Tag color="red" size="small">
+                      Quá hạn
+                    </Tag>
+                  )}
+                  {isNearDeadline && (
+                    <Tag color="orange" size="small">
+                      Sắp hạn
+                    </Tag>
+                  )}
+                </Space>
+              </>
+            )}
+
+            {/* Divider giữa actual và planned nếu có cả 2 */}
+            {actualDeadline && plannedDeadline && (
+              <Divider style={{ margin: '4px 0' }} dashed />
+            )}
+
+            {/* Hiển thị Planned nếu có */}
+            {plannedDeadline && (
+              <>
+                <Text strong type="secondary">
+                  Planned
+                </Text>
+                <Space direction="vertical" size={0}>
+                  {plannedStart && (
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      Start: {plannedStart.format('HH:mm DD/MM')}
+                    </Text>
+                  )}
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Deadline: {plannedDeadline.format('HH:mm DD/MM')}
+                  </Text>
+                </Space>
+              </>
+            )}
+
+            {/* Chỉ hiển thị Estimated khi không có actual và planned */}
+            {!hasActualOrPlanned && estimatedDeadline && (
+              <>
                 <Text strong type="warning">
-                  Estimated timeline
+                  Estimated
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   Deadline: {estimatedDeadline.format('HH:mm DD/MM')}
                 </Text>
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  (Ước tính khi chưa có planned/actual)
+                  (Ước tính)
                 </Text>
               </>
             )}
@@ -958,178 +832,74 @@ export default function TaskProgressManagement() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Title level={3}>Quản lý Tiến độ Task</Title>
-        <Space>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              fetchContracts();
-              if (selectedContractId) {
-                fetchContractDetail(selectedContractId);
-                fetchTaskAssignments(selectedContractId);
-              }
-            }}
-          >
-            Làm mới
-          </Button>
-        </Space>
+        <div>
+          <Title level={3} style={{ marginBottom: 0 }}>
+            Quản lý Task
+          </Title>
+          <Text type="secondary">
+            Danh sách tất cả tasks. Click "Xem chi tiết" để xem thông tin chi tiết task.
+          </Text>
+        </div>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={() => fetchAllTaskAssignments(filters, pagination)}
+          loading={loading}
+        >
+          Làm mới
+        </Button>
       </div>
 
-      <Row gutter={[16, 16]} className={styles.layoutGrid}>
-        {!contractsCollapsed && (
-          <Col xs={24} lg={6}>
-            <Card
-              title="Contracts"
-              extra={
-                <Button
-                  type="text"
-                  icon={<MenuFoldOutlined />}
-                  onClick={() => setContractsCollapsed(true)}
-                  size="small"
-                />
-              }
-            >
-              <Input.Search
-                placeholder="Tìm contract..."
-                allowClear
-                value={contractSearch}
-                onChange={e => setContractSearch(e.target.value)}
-                onSearch={value => setContractSearch(value)}
-              />
-              <div className={styles.contractList}>
-                {contractsLoading ? (
-                  <div className={styles.contractListLoading}>
-                    <Spin size="large" tip="Đang tải contracts..." />
-                  </div>
-                ) : filteredContracts.length > 0 ? (
-                  <List
-                    rowKey="contractId"
-                    dataSource={filteredContracts}
-                    renderItem={item => {
-                      const isActive = item.contractId === selectedContractId;
-                      return (
-                        <List.Item
-                          className={`${styles.contractItem} ${
-                            isActive ? styles.contractItemActive : ''
-                          }`}
-                          onClick={() => setSelectedContractId(item.contractId)}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div>
-                              <Text strong>{item.contractNumber}</Text>
-                              <span className={styles.contractMeta}>
-                                {item.nameSnapshot || 'N/A'}
-                              </span>
-                            </div>
-                            {(() => {
-                              const badge = getContractBadge(item.contractId);
-                              const stats = contractTaskStats[item.contractId];
-                              return (
-                                <div style={{ marginTop: 4 }}>
-                                  {badge && (
-                                    <Tag
-                                      color={badge.color}
-                                      style={{ marginRight: 4 }}
-                                    >
-                                      {badge.label}
-                                    </Tag>
-                                  )}
-                                  {stats && stats.total > 0 && (
-                                    <Text
-                                      type="secondary"
-                                      style={{ fontSize: 11 }}
-                                    >
-                                      Tổng: {stats.total} tasks
-                                    </Text>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                          <div>
-                            <Tag>{item.contractType}</Tag>
-                            <Tag
-                              color="green"
-                              className={styles.contractStatus}
-                            >
-                              {item.status}
-                            </Tag>
-                          </div>
-                        </List.Item>
-                      );
-                    }}
-                  />
-                ) : (
-                  <Empty
-                    description="Không có contract nào"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
-                )}
-              </div>
-            </Card>
+      <Card className={styles.filterCard}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <Input
+              placeholder="Tìm contract / milestone / specialist"
+              value={filters.search}
+              onChange={handleSearchChange}
+              allowClear
+            />
           </Col>
-        )}
-        <Col xs={24} lg={contractsCollapsed ? 24 : 18}>
-          <Card
-            title={
-              contractsCollapsed && (
-                <Space>
-                  <Button
-                    type="text"
-                    icon={<MenuUnfoldOutlined />}
-                    onClick={() => setContractsCollapsed(false)}
-                    size="small"
-                  />
-                  <span>Danh sách Tasks</span>
-                </Space>
-              )
-            }
-          >
-            {selectedContract ? (
-              <Space
-                direction="vertical"
-                size="large"
-                style={{ width: '100%' }}
-              >
-                <div className={styles.contractInfo}>
-                  <div>
-                    <Text strong>Contract Number: </Text>
-                    <Text>{selectedContract.contractNumber}</Text>
-                  </div>
-                  <div>
-                    <Text strong>Customer: </Text>
-                    <Text>{selectedContract.nameSnapshot || 'N/A'}</Text>
-                  </div>
-                  <div>
-                    <Text strong>Contract Type: </Text>
-                    <Tag>{selectedContract.contractType}</Tag>
-                  </div>
-                </div>
+          <Col xs={24} md={6}>
+            <Select
+              value={filters.status}
+              options={STATUS_OPTIONS}
+              onChange={handleStatusChange}
+              style={{ width: '100%' }}
+            />
+          </Col>
+          <Col xs={24} md={6}>
+            <Select
+              value={filters.taskType}
+              options={TASK_TYPE_OPTIONS}
+              onChange={handleTaskTypeChange}
+              style={{ width: '100%' }}
+            />
+          </Col>
+        </Row>
+      </Card>
 
-                <div>
-                  <Title level={4}>Danh sách Tasks</Title>
-                  <Spin spinning={assignmentsLoading}>
-                    {taskAssignments.length > 0 ? (
-                      <Table
-                        columns={columns}
-                        dataSource={sortedTaskAssignments}
-                        rowKey="assignmentId"
-                        pagination={{ pageSize: 10 }}
-                        scroll={{ x: 'max-content' }}
-                        size="small"
-                      />
-                    ) : (
-                      <Empty description="Chưa có task assignment nào" />
-                    )}
-                  </Spin>
-                </div>
-              </Space>
-            ) : (
-              <Empty description="Vui lòng chọn contract để xem tasks" />
-            )}
-          </Card>
-        </Col>
-      </Row>
+      <Card>
+        <Spin spinning={loading}>
+          {taskAssignments.length > 0 ? (
+            <Table
+              columns={columns}
+              dataSource={taskAssignments}
+              rowKey="assignmentId"
+              pagination={{
+                current: pagination.page,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+              }}
+              onChange={handleTableChange}
+              scroll={{ x: 'max-content' }}
+              size="small"
+            />
+          ) : (
+            <Empty description="Chưa có task assignment nào" />
+          )}
+        </Spin>
+      </Card>
 
       {/* Task Progress Detail Modal */}
       <Modal
@@ -1184,7 +954,7 @@ export default function TaskProgressManagement() {
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Milestone">
-                {getMilestoneName(selectedTask.milestoneId)}
+                {getMilestoneName(selectedTask)}
               </Descriptions.Item>
               <Descriptions.Item label="Assigned Date">
                 {selectedTask.assignedDate
@@ -1197,9 +967,10 @@ export default function TaskProgressManagement() {
                   const actualDeadline = getActualDeadlineDayjs(selectedTask.milestone);
                   const plannedStart = getPlannedStartDayjs(selectedTask.milestone);
                   const plannedDeadline = getPlannedDeadlineDayjs(selectedTask.milestone);
+                  const contract = getContractInfo(selectedTask.contractId);
                   const estimatedDeadline = getEstimatedDeadlineDayjs(
                     selectedTask.milestone,
-                    selectedContract?.milestones || []
+                    contract?.milestones || []
                   );
                   return (
                     <Space direction="vertical" size="small">
@@ -1653,7 +1424,7 @@ export default function TaskProgressManagement() {
             </p>
             <p>
               <strong>Milestone:</strong>{' '}
-              {getMilestoneName(selectedIssueTask.milestoneId)}
+              {getMilestoneName(selectedIssueTask)}
             </p>
             <p>
               <strong>Status:</strong>{' '}

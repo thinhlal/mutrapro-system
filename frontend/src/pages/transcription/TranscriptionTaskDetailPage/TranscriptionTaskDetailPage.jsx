@@ -436,11 +436,17 @@ const TranscriptionTaskDetailPage = () => {
     await downloadFileHelper(file.fileId, file.fileName);
   }, []);
 
+  // Reset form khi modal mở
+  useEffect(() => {
+    if (uploadModalVisible) {
+      uploadForm.resetFields();
+    }
+  }, [uploadModalVisible, uploadForm]);
+
   const handleOpenUploadModal = useCallback(() => {
+    setSelectedFile(null);
     setUploadModalVisible(true);
-    setSelectedFile(null); // Reset selected file khi mở modal
-    uploadForm.resetFields();
-  }, [uploadForm]);
+  }, []);
 
   const handleUploadCancel = useCallback(() => {
     if (uploading) return; // Prevent closing while uploading
@@ -450,73 +456,60 @@ const TranscriptionTaskDetailPage = () => {
     setUploading(false);
   }, [uploadForm, uploading]);
 
-  const handleUploadOk = useCallback(async () => {
+  const handleUploadOk = async () => {
     if (!task?.assignmentId) {
       message.error('Assignment ID not found');
       return;
     }
-
+  
     if (uploading) {
       console.log('Already uploading, ignoring');
-      return; // Prevent multiple clicks
+      return;
     }
-
+  
     try {
       setUploading(true);
-      console.log('Starting upload process...');
-      
-      // Validate form fields
+      console.log('Starting upload process...', selectedFile);
+  
       const values = await uploadForm.validateFields();
-      
-      // Get file from selectedFile state
+  
       if (!selectedFile) {
         message.error('Please select a file');
         setUploading(false);
         return;
       }
-      
+  
       const file = selectedFile;
-      
+  
       const response = await uploadTaskFile(
         task.assignmentId,
         file,
         values.note || '',
-        'notation' // default content type
+        'notation'
       );
-
+  
       if (response?.status === 'success') {
         message.success('File uploaded successfully');
         uploadForm.resetFields();
         setSelectedFile(null);
         setUploadModalVisible(false);
-        
-        // Reload task files
         await loadTaskFiles();
       } else {
         message.error(response?.message || 'Failed to upload file');
       }
     } catch (error) {
-      if (error?.errorFields) {
-        // Validation error - do nothing
-        return;
-      }
+      if (error?.errorFields) return;
       console.error('Error uploading file:', error);
       message.error(error?.message || 'Failed to upload file');
     } finally {
       setUploading(false);
     }
-  }, [task, uploadForm, loadTaskFiles]);
+  };
 
-  // Calculate version based on upload date (newer = higher version)
+  // Latest version = highest version number from files
   const latestVersion = useMemo(() => {
     if (files.length === 0) return 0;
-    // Sort by uploadDate descending and assign version numbers
-    const sortedFiles = [...files].sort((a, b) => {
-      const dateA = new Date(a.uploadDate || 0);
-      const dateB = new Date(b.uploadDate || 0);
-      return dateB - dateA;
-    });
-    return sortedFiles.length; // Latest version = total files count
+    return Math.max(...files.map(f => f.version || 0));
   }, [files]);
 
   const fileColumns = useMemo(
@@ -525,15 +518,9 @@ const TranscriptionTaskDetailPage = () => {
         title: 'Version',
         key: 'version',
         width: 90,
-        render: (_, record, index) => {
-          // Calculate version based on upload date order
-          const sortedFiles = [...files].sort((a, b) => {
-            const dateA = new Date(a.uploadDate || 0);
-            const dateB = new Date(b.uploadDate || 0);
-            return dateB - dateA;
-          });
-          const version = sortedFiles.findIndex(f => f.fileId === record.fileId) + 1;
-          return `v${version}`;
+        render: (_, record) => {
+          // Version đã được tính sẵn khi load files (oldest = v1, newest = vN)
+          return `v${record.version}`;
         },
       },
       {
@@ -1149,12 +1136,21 @@ const TranscriptionTaskDetailPage = () => {
         <Form layout="vertical" form={uploadForm}>
           <Form.Item
             name="file"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) {
+                return e;
+              }
+              return e?.fileList;
+            }}
             rules={[
               { required: true, message: 'Please select a file' },
               {
-                validator: () => {
-                  // Validate file từ selectedFile state
-                  if (!selectedFile) {
+                validator: (_, value) => {
+                  // value là fileList từ Upload component
+                  const fileList = value || [];
+                  
+                  if (fileList.length === 0 || !selectedFile) {
                     return Promise.reject(new Error('Please select a file'));
                   }
                   

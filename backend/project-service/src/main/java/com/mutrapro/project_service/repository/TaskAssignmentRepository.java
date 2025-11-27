@@ -3,7 +3,11 @@ package com.mutrapro.project_service.repository;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.TaskType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -44,5 +48,40 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     boolean existsByMilestoneIdAndStatusIn(String milestoneId, Collection<AssignmentStatus> statuses);
 
     List<TaskAssignment> findByMilestoneIdIn(Collection<String> milestoneIds);
+
+    /**
+     * Find all task assignments for manager with filters and pagination
+     * Filters: contractIds (manager's contracts), status, taskType, keyword
+     * Keyword search: contractId, milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
+     * Sort: hasIssue DESC, status priority, assignedDate DESC
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "WHERE ta.contractId IN :contractIds " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:keyword IS NULL OR :keyword = '' OR " +
+           "     LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistUserIdSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END, " +
+           "ta.assignedDate DESC")
+    Page<TaskAssignment> findAllByManagerWithFilters(
+            @Param("contractIds") List<String> contractIds,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }
 

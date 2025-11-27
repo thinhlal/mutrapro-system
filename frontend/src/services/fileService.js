@@ -109,3 +109,61 @@ export const fetchFileForPreview = async (fileId) => {
   }
 };
 
+/**
+ * Manager approve file
+ * @param {string} fileId - ID của file
+ * @returns {Promise} Response từ API
+ */
+export const approveFile = async (fileId) => {
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.FILES.APPROVE(fileId));
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi duyệt file',
+      }
+    );
+  }
+};
+
+/**
+ * Manager reject file
+ * @param {string} fileId - ID của file
+ * @param {string} reason - Lý do từ chối
+ * @returns {Promise} Response từ API
+ */
+export const rejectFile = async (fileId, reason) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.FILES.REJECT(fileId),
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi từ chối file',
+      }
+    );
+  }
+};
+
+/**
+ * Manager deliver file to customer
+ * @param {string} fileId - ID của file
+ * @returns {Promise} Response từ API
+ */
+export const deliverFileToCustomer = async (fileId) => {
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.FILES.DELIVER(fileId));
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi gửi file cho khách hàng',
+      }
+    );
+  }
+};
+

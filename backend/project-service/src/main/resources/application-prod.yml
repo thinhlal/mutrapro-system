@@ -4,6 +4,10 @@ server:
     context-path: ${SERVER_CONTEXT_PATH:}
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}

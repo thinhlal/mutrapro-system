@@ -90,6 +90,11 @@ export const API_ENDPOINTS = {
     UPLOAD_TASK_FILE: `${PROJECT_PATH}/files/upload`,
     GET_BY_ASSIGNMENT_ID: assignmentId =>
       `${PROJECT_PATH}/files/by-assignment/${assignmentId}`,
+    // Manager file management endpoints
+    APPROVE: fileId => `${PROJECT_PATH}/files/${fileId}/approve`,
+    REJECT: fileId => `${PROJECT_PATH}/files/${fileId}/reject`,
+    DELIVER: fileId => `${PROJECT_PATH}/files/${fileId}/deliver`,
+    GET_FILE_INFO: fileId => `${PROJECT_PATH}/files/${fileId}`,
   },
 
   CONTRACTS: {

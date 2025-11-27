@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -183,6 +184,79 @@ public class FileController {
         
         return ApiResponse.<FileInfoResponse>builder()
                 .message("File info retrieved successfully")
+                .data(fileInfo)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/{fileId}/approve")
+    @Operation(summary = "Manager approve file (requires MANAGER role)")
+    public ApiResponse<FileInfoResponse> approveFile(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            Authentication authentication) {
+        log.info("Approving file: {}", fileId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        FileInfoResponse fileInfo = fileService.approveFile(
+            fileId,
+            userContext.getUserId(),
+            userContext.getRoles()
+        );
+        
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File approved successfully")
+                .data(fileInfo)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/{fileId}/reject")
+    @Operation(summary = "Manager reject file (requires MANAGER role)")
+    public ApiResponse<FileInfoResponse> rejectFile(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            @Parameter(description = "Lý do từ chối")
+            @RequestBody(required = false) Map<String, String> requestBody,
+            Authentication authentication) {
+        String reason = requestBody != null ? requestBody.get("reason") : null;
+        log.info("Rejecting file: {}, reason: {}", fileId, reason);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        FileInfoResponse fileInfo = fileService.rejectFile(
+            fileId,
+            userContext.getUserId(),
+            userContext.getRoles(),
+            reason
+        );
+        
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File rejected successfully")
+                .data(fileInfo)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/{fileId}/deliver")
+    @Operation(summary = "Manager deliver file to customer (requires MANAGER role)")
+    public ApiResponse<FileInfoResponse> deliverFileToCustomer(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            Authentication authentication) {
+        log.info("Delivering file to customer: {}", fileId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        FileInfoResponse fileInfo = fileService.deliverFileToCustomer(
+            fileId,
+            userContext.getUserId(),
+            userContext.getRoles()
+        );
+        
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File delivered to customer successfully")
                 .data(fileInfo)
                 .statusCode(HttpStatus.OK.value())
                 .build();

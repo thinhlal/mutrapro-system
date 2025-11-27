@@ -153,6 +153,26 @@ export const getTaskAssignmentById = async (contractId, assignmentId) => {
 };
 
 /**
+ * Lấy danh sách tất cả task assignments với pagination và filters
+ * GET /task-assignments/all
+ */
+export const getAllTaskAssignments = async params => {
+  try {
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.TASK_ASSIGNMENTS.BASE}/all`,
+      { params }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách task assignments',
+      }
+    );
+  }
+};
+
+/**
  * Lấy danh sách milestone assignment slots cho manager gán task
  * GET /task-assignments/slots
  */

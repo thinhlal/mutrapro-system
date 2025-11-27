@@ -1,0 +1,33 @@
+.container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.backRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.headerMeta {
+  flex: 1;
+}
+
+.headerInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sectionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+

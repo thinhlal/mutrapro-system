@@ -463,5 +463,144 @@ public class FileService {
                 .reviewedAt(file.getReviewedAt())
                 .build();
     }
+
+    /**
+     * Manager approve file
+     * @param fileId ID của file
+     * @param userId ID của manager
+     * @param userRoles Danh sách roles của user
+     * @return FileInfoResponse
+     */
+    @Transactional
+    public FileInfoResponse approveFile(String fileId, String userId, List<String> userRoles) {
+        log.info("Manager {} approving file: {}", userId, fileId);
+        
+        // Kiểm tra quyền truy cập
+        fileAccessService.checkFileAccess(fileId, userId, userRoles);
+        
+        // Verify user is MANAGER
+        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.UNAUTHORIZED,
+                "Only managers can approve files"
+            );
+        }
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        // Chỉ approve file có status uploaded hoặc pending_review
+        if (file.getFileStatus() != FileStatus.uploaded && 
+            file.getFileStatus() != FileStatus.pending_review) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
+                String.format("Cannot approve file with status: %s. File must be uploaded or pending_review.", 
+                        file.getFileStatus())
+            );
+        }
+        
+        file.setFileStatus(FileStatus.approved);
+        file.setReviewedBy(userId);
+        file.setReviewedAt(Instant.now());
+        file.setRejectionReason(null); // Clear rejection reason if any
+        
+        File saved = fileRepository.save(file);
+        log.info("File approved: fileId={}, reviewedBy={}", saved.getFileId(), userId);
+        
+        return getFileInfo(saved.getFileId(), userId, userRoles);
+    }
+
+    /**
+     * Manager reject file
+     * @param fileId ID của file
+     * @param userId ID của manager
+     * @param userRoles Danh sách roles của user
+     * @param rejectionReason Lý do từ chối
+     * @return FileInfoResponse
+     */
+    @Transactional
+    public FileInfoResponse rejectFile(String fileId, String userId, List<String> userRoles, String rejectionReason) {
+        log.info("Manager {} rejecting file: {}, reason: {}", userId, fileId, rejectionReason);
+        
+        // Kiểm tra quyền truy cập
+        fileAccessService.checkFileAccess(fileId, userId, userRoles);
+        
+        // Verify user is MANAGER
+        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.UNAUTHORIZED,
+                "Only managers can reject files"
+            );
+        }
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        // Chỉ reject file có status uploaded hoặc pending_review
+        if (file.getFileStatus() != FileStatus.uploaded && 
+            file.getFileStatus() != FileStatus.pending_review) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
+                String.format("Cannot reject file with status: %s. File must be uploaded or pending_review.", 
+                        file.getFileStatus())
+            );
+        }
+        
+        file.setFileStatus(FileStatus.rejected);
+        file.setReviewedBy(userId);
+        file.setReviewedAt(Instant.now());
+        file.setRejectionReason(rejectionReason);
+        
+        File saved = fileRepository.save(file);
+        log.info("File rejected: fileId={}, reviewedBy={}, reason={}", 
+                saved.getFileId(), userId, rejectionReason);
+        
+        return getFileInfo(saved.getFileId(), userId, userRoles);
+    }
+
+    /**
+     * Manager deliver file to customer
+     * @param fileId ID của file
+     * @param userId ID của manager
+     * @param userRoles Danh sách roles của user
+     * @return FileInfoResponse
+     */
+    @Transactional
+    public FileInfoResponse deliverFileToCustomer(String fileId, String userId, List<String> userRoles) {
+        log.info("Manager {} delivering file to customer: {}", userId, fileId);
+        
+        // Kiểm tra quyền truy cập
+        fileAccessService.checkFileAccess(fileId, userId, userRoles);
+        
+        // Verify user is MANAGER
+        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.UNAUTHORIZED,
+                "Only managers can deliver files to customers"
+            );
+        }
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        // Chỉ deliver file đã approved
+        if (file.getFileStatus() != FileStatus.approved) {
+            throw new BusinessException(
+                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
+                String.format("Cannot deliver file with status: %s. File must be approved first.", 
+                        file.getFileStatus())
+            );
+        }
+        
+        file.setDeliveredToCustomer(true);
+        file.setDeliveredAt(Instant.now());
+        file.setDeliveredBy(userId);
+        
+        File saved = fileRepository.save(file);
+        log.info("File delivered to customer: fileId={}, deliveredBy={}", 
+                saved.getFileId(), userId);
+        
+        return getFileInfo(saved.getFileId(), userId, userRoles);
+    }
 }
 
