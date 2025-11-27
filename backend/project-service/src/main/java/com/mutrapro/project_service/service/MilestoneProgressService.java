@@ -52,7 +52,8 @@ public class MilestoneProgressService {
         }
 
         ContractStatus contractStatus = contract.getStatus();
-        if (contractStatus != ContractStatus.active) {
+        if (contractStatus != ContractStatus.active && 
+            contractStatus != ContractStatus.active_pending_assignment) {
             return; // Chỉ xét khi contract đã active (deposit paid)
         }
 

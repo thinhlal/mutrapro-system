@@ -62,8 +62,18 @@ export default function RequestServiceForm({
       lastServiceTypeRef.current = serviceType;
     }
 
+    if (!form) return;
+
+    // Reset form khi initialFormData là null (user quay lại từ home)
+    if (!initialFormData && hasInitializedRef.current) {
+      form.resetFields();
+      setSelectedInstruments([]);
+      hasInitializedRef.current = false;
+      return;
+    }
+
     // Restore khi có initialFormData và chưa initialize
-    if (initialFormData && form && !hasInitializedRef.current) {
+    if (initialFormData && !hasInitializedRef.current) {
       const formValues = {
         title: initialFormData.title || '',
         description: initialFormData.description || '',

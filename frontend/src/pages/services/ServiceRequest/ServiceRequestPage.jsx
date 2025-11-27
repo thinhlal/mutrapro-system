@@ -40,6 +40,11 @@ export default function ServiceRequestPage() {
     if (serviceTypeFromNav) {
       setSelectedType(serviceTypeFromNav);
       sessionStorage.setItem(STORAGE_KEY_TYPE, serviceTypeFromNav);
+    } else {
+      // Nếu không có serviceTypeFromNav (vào từ home), clear form data
+      // để tránh hiển thị data cũ
+      setFormData(null);
+      sessionStorage.removeItem(STORAGE_KEY);
     }
   }, [serviceTypeFromNav]);
 

@@ -30,7 +30,7 @@ const STATUS_LABELS = {
   contract_sent: 'Contract sent',
   contract_approved: 'Contract approved',
   contract_signed: 'Contract signed',
-  awaiting_assignment: 'Deposit paid - awaiting assignment',
+  awaiting_assignment: 'Awaiting assignment',
   in_progress: 'In progress',
   completed: 'Completed',
   cancelled: 'Cancelled',

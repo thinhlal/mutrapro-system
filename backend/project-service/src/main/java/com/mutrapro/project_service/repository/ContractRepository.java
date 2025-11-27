@@ -49,7 +49,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active) " +
+           "com.mutrapro.project_service.enums.ContractStatus.active, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment) " +
            "  OR (c.createdAt = (" +
            "    SELECT MAX(c2.createdAt) FROM Contract c2 " +
            "    WHERE c2.requestId = c.requestId " +
@@ -62,7 +63,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active)" +
+           "com.mutrapro.project_service.enums.ContractStatus.active, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment)" +
            "  ))" +
            ") " +
            "ORDER BY c.requestId, " +
@@ -70,7 +72,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.sent, " +
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active) THEN 0 ELSE 1 END, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment) THEN 0 ELSE 1 END, " +
            "c.createdAt DESC")
     List<Contract> findActiveOrLatestContractsByRequestIds(@Param("requestIds") List<String> requestIds);
     
@@ -82,6 +85,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "AND c.expiresAt <= :now " +
            "AND c.status != com.mutrapro.project_service.enums.ContractStatus.expired " +
            "AND c.status != com.mutrapro.project_service.enums.ContractStatus.signed " +
+           "AND c.status != com.mutrapro.project_service.enums.ContractStatus.active " +
+           "AND c.status != com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment " +
            "AND c.signedAt IS NULL")
     List<Contract> findExpiredContracts(@Param("now") Instant now);
     

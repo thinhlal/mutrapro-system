@@ -170,7 +170,7 @@ const MyRequestsContent = () => {
       awaiting_assignment: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
-        text: 'Deposit paid - awaiting assignment',
+        text: 'Awaiting assignment',
         description:
           'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
       },
@@ -246,7 +246,7 @@ const MyRequestsContent = () => {
           </Option>
           <Option value="contract_signed">Contract signed</Option>
           <Option value="awaiting_assignment">
-            Deposit paid - awaiting assignment
+            Awaiting assignment
           </Option>
           <Option value="in_progress">In progress</Option>
           <Option value="completed">Completed</Option>

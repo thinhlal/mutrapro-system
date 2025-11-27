@@ -145,7 +145,10 @@ export default function TaskProgressManagement() {
       const response = await getAllContracts();
       if (response?.status === 'success' && response?.data) {
         const activeContracts = response.data.filter(
-          c => c.status?.toLowerCase() === 'active'
+          c => {
+            const status = c.status?.toLowerCase();
+            return status === 'active' || status === 'active_pending_assignment';
+          }
         );
         setContracts(activeContracts);
       }

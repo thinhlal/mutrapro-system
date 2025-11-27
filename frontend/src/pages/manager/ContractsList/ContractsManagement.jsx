@@ -51,6 +51,7 @@ const CONTRACT_STATUS = [
   { label: 'Approved', value: 'approved' },
   { label: 'Signed - Pending Deposit', value: 'signed' },
   { label: 'Active - Deposit Paid', value: 'active' },
+  { label: 'Active - Pending Assignment', value: 'active_pending_assignment' },
   { label: 'Rejected by Customer', value: 'rejected_by_customer' },
   { label: 'Need Revision', value: 'need_revision' },
   { label: 'Canceled by Customer', value: 'canceled_by_customer' },
@@ -81,6 +82,56 @@ const fmtMoney = (n, cur) =>
   typeof n === 'number'
     ? (cur === 'USD' ? '$' : '') + n.toLocaleString()
     : (n ?? '');
+
+// Helper function để tính deposit amount
+const getDepositAmount = contract => {
+  if (!contract) return 0;
+  
+  // 1. Check depositAmount field trước
+  const normalizedDeposit =
+    contract.depositAmount !== undefined && contract.depositAmount !== null
+      ? Number(contract.depositAmount)
+      : null;
+  if (!Number.isNaN(normalizedDeposit) && normalizedDeposit !== null && normalizedDeposit > 0) {
+    return normalizedDeposit;
+  }
+
+  // 2. Check từ installments với type DEPOSIT
+  const depositInstallment = contract.installments?.find(
+    inst => inst.type === 'DEPOSIT'
+  );
+  if (
+    depositInstallment &&
+    depositInstallment.amount !== undefined &&
+    depositInstallment.amount !== null
+  ) {
+    const normalizedInstallmentAmount = Number(depositInstallment.amount);
+    if (!Number.isNaN(normalizedInstallmentAmount) && normalizedInstallmentAmount > 0) {
+      return normalizedInstallmentAmount;
+    }
+  }
+
+  // 3. Tính từ totalPrice * depositPercent / 100
+  if (
+    contract.totalPrice !== undefined &&
+    contract.totalPrice !== null &&
+    contract.depositPercent !== undefined &&
+    contract.depositPercent !== null
+  ) {
+    const totalPriceNumber = Number(contract.totalPrice);
+    const depositPercentNumber = Number(contract.depositPercent);
+    if (
+      !Number.isNaN(totalPriceNumber) &&
+      !Number.isNaN(depositPercentNumber) &&
+      totalPriceNumber > 0 &&
+      depositPercentNumber > 0
+    ) {
+      return (totalPriceNumber * depositPercentNumber) / 100;
+    }
+  }
+
+  return 0;
+};
 
 const statusColor = {
   draft: 'default',
@@ -310,7 +361,7 @@ export default function ContractsManagement() {
           </div>
           <div className={styles.sub}>
             Deposit {Number(r.depositPercent || 0)}% ={' '}
-            {fmtMoney(Number(r.depositAmount || 0), r.currency)}
+            {fmtMoney(getDepositAmount(r), r.currency)}
           </div>
         </div>
       ),

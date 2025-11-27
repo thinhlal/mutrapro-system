@@ -71,7 +71,9 @@ const PayMilestonePage = () => {
           contractStatus === 'canceled_by_manager';
         const isExpired = contractStatus === 'expired';
         const isValidStatus =
-          contractStatus === 'signed' || contractStatus === 'active';
+          contractStatus === 'signed' || 
+          contractStatus === 'active' || 
+          contractStatus === 'active_pending_assignment';
 
         if (isCanceled || isExpired || !isValidStatus) {
           message.error(

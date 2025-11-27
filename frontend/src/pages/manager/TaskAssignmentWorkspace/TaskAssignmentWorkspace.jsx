@@ -79,17 +79,23 @@ const TASK_TYPE_TO_SPECIALIST = {
 // Milestone work status colors
 const MILESTONE_WORK_STATUS_COLORS = {
   PLANNED: 'default',
+  READY_TO_START: 'cyan',
   IN_PROGRESS: 'processing',
+  WAITING_CUSTOMER: 'warning',
   READY_FOR_PAYMENT: 'warning',
   COMPLETED: 'success',
+  CANCELLED: 'error',
 };
 
 // Milestone work status labels
 const MILESTONE_WORK_STATUS_LABELS = {
   PLANNED: 'Đã lên kế hoạch',
+  READY_TO_START: 'Sẵn sàng bắt đầu',
   IN_PROGRESS: 'Đang thực hiện',
+  WAITING_CUSTOMER: 'Chờ khách hàng',
   READY_FOR_PAYMENT: 'Sẵn sàng thanh toán',
   COMPLETED: 'Hoàn thành',
+  CANCELLED: 'Đã hủy',
 };
 
 const INSTRUMENT_USAGE_LABELS = {
@@ -732,8 +738,12 @@ export default function TaskAssignmentWorkspace() {
                     switch (workStatus) {
                       case 'PLANNED':
                         return 'default';
+                      case 'READY_TO_START':
+                        return 'cyan';
                       case 'IN_PROGRESS':
                         return 'processing';
+                      case 'WAITING_CUSTOMER':
+                        return 'warning';
                       case 'READY_FOR_PAYMENT':
                         return 'warning';
                       case 'COMPLETED':

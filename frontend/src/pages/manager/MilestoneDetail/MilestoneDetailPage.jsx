@@ -43,6 +43,8 @@ const TASK_TYPE_LABELS = {
 
 const STATUS_COLORS = {
   assigned: 'blue',
+  accepted_waiting: 'gold',
+  ready_to_start: 'purple',
   in_progress: 'processing',
   completed: 'success',
   cancelled: 'error',
@@ -50,6 +52,8 @@ const STATUS_COLORS = {
 
 const STATUS_LABELS = {
   assigned: 'Đã gán',
+  accepted_waiting: 'Đã nhận - Chờ',
+  ready_to_start: 'Sẵn sàng làm',
   in_progress: 'Đang thực hiện',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',

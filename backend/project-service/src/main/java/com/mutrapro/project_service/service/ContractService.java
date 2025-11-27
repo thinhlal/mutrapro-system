@@ -162,7 +162,8 @@ public class ContractService {
                         || status == ContractStatus.sent 
                         || status == ContractStatus.approved 
                         || status == ContractStatus.signed
-                        || status == ContractStatus.active;
+                        || status == ContractStatus.active
+                        || status == ContractStatus.active_pending_assignment;
                 });
             
             if (hasActiveContract) {
@@ -670,6 +671,7 @@ public class ContractService {
                 || contract.getStatus() == ContractStatus.approved 
                 || contract.getStatus() == ContractStatus.signed
                 || contract.getStatus() == ContractStatus.active
+                || contract.getStatus() == ContractStatus.active_pending_assignment
             );
             
             Contract displayContract = contract;
@@ -875,7 +877,8 @@ public class ContractService {
         if (contract.getStatus() != ContractStatus.sent) {
             if (contract.getStatus() == ContractStatus.approved || 
                 contract.getStatus() == ContractStatus.signed ||
-                contract.getStatus() == ContractStatus.active) {
+                contract.getStatus() == ContractStatus.active ||
+                contract.getStatus() == ContractStatus.active_pending_assignment) {
                 throw InvalidContractStatusException.cannotCancel(
                     contractId, contract.getStatus(),
                     "Contract đã được approve, đã ký hoặc đã active. Không thể hủy trực tiếp. Vui lòng liên hệ support để yêu cầu hủy hợp đồng.");
@@ -967,7 +970,8 @@ public class ContractService {
         // Cho phép hủy khi DRAFT hoặc SENT
         if (contract.getStatus() == ContractStatus.approved || 
             contract.getStatus() == ContractStatus.signed ||
-            contract.getStatus() == ContractStatus.active) {
+            contract.getStatus() == ContractStatus.active ||
+            contract.getStatus() == ContractStatus.active_pending_assignment) {
             throw InvalidContractStatusException.cannotCancel(
                 contractId, contract.getStatus(),
                 "Contract đã được approve, đã ký hoặc đã active. Không thể hủy. Vui lòng liên hệ support để xử lý.");
@@ -1207,7 +1211,9 @@ public class ContractService {
         
         // Validation: Contract phải ở trạng thái signed hoặc active để cho phép thanh toán
         ContractStatus contractStatus = contract.getStatus();
-        if (contractStatus != ContractStatus.signed && contractStatus != ContractStatus.active) {
+        if (contractStatus != ContractStatus.signed 
+                && contractStatus != ContractStatus.active 
+                && contractStatus != ContractStatus.active_pending_assignment) {
             log.warn("❌ Cannot pay milestone: contract must be signed or active. " +
                 "contractId={}, milestoneId={}, orderIndex={}, currentContractStatus={}", 
                 contractId, milestoneId, orderIndex, contractStatus);
@@ -1303,7 +1309,8 @@ public class ContractService {
         boolean allInstallmentsPaid = allInstallments.stream()
             .allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
         
-        if (allInstallmentsPaid && contract.getStatus() == ContractStatus.active) {
+        if (allInstallmentsPaid && (contract.getStatus() == ContractStatus.active 
+                || contract.getStatus() == ContractStatus.active_pending_assignment)) {
             // Tất cả installments đã được thanh toán → contract completed
         contractRepository.save(contract);
             log.info("All installments paid for contract: contractId={}, allInstallmentsCount={}", 
@@ -1843,7 +1850,8 @@ public class ContractService {
 
         // Cho phép upload PDF cho contract đã signed hoặc active
         if (contract.getStatus() != ContractStatus.signed && 
-            contract.getStatus() != ContractStatus.active) {
+            contract.getStatus() != ContractStatus.active &&
+            contract.getStatus() != ContractStatus.active_pending_assignment) {
             throw InvalidContractStatusException.cannotUploadPdf(contractId, contract.getStatus());
         }
 

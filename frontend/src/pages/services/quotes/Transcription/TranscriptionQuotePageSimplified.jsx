@@ -147,7 +147,9 @@ export default function TranscriptionQuotePageSimplified() {
       // 3. Gọi API – nếu lỗi, createServiceRequest sẽ throw
       await createServiceRequest(requestData);
 
-      // 4. Thành công → show toast + điều hướng
+      // 4. Thành công → clear sessionStorage + show toast + điều hướng
+      sessionStorage.removeItem('serviceRequestFormData');
+      sessionStorage.removeItem('serviceRequestType');
       toast.success('Service request created successfully!');
       navigate('/');
     } catch (error) {

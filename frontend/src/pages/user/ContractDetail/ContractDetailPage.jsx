@@ -225,6 +225,7 @@ const ContractDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         const contractData = response.data;
+        console.log('Contract data:', contractData);
         setContract(contractData);
 
         // Debug: Log milestones
@@ -403,9 +404,11 @@ const ContractDetailPage = () => {
 
     // Fetch Party B signature image via backend proxy
     let partyBSignatureBase64 = null;
+    const contractStatus = contractData?.status?.toLowerCase();
     if (
-      (contractData?.status === 'signed' ||
-        contractData?.status === 'active') &&
+      (contractStatus === 'signed' ||
+        contractStatus === 'active' ||
+        contractStatus === 'active_pending_assignment') &&
       contractData?.bSignatureS3Url
     ) {
       try {
@@ -761,7 +764,13 @@ const ContractDetailPage = () => {
     <Document>
       <Page size="A4" style={pdfStyles.page}>
         {/* Company Seal - Only show when signed or active */}
-        {(contract?.status === 'signed' || contract?.status === 'active') && (
+        {(() => {
+          const contractStatus = contract?.status?.toLowerCase();
+          const isSignedOrActive = contractStatus === 'signed' || 
+                                   contractStatus === 'active' || 
+                                   contractStatus === 'active_pending_assignment';
+          return isSignedOrActive;
+        })() && (
           <View style={pdfStyles.seal}>
             <Svg
               width="130"
@@ -804,12 +813,18 @@ const ContractDetailPage = () => {
           </View>
         )}
 
-        {/* Watermark - Only show if not signed */}
-        {contract?.status !== 'signed' && (
-          <View style={pdfStyles.watermark}>
-            <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
-          </View>
-        )}
+        {/* Watermark - Only show if not signed or active */}
+        {(() => {
+          const contractStatus = contract?.status?.toLowerCase();
+          const isSignedOrActive = contractStatus === 'signed' || 
+                                   contractStatus === 'active' || 
+                                   contractStatus === 'active_pending_assignment';
+          return !isSignedOrActive ? (
+            <View style={pdfStyles.watermark}>
+              <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
+            </View>
+          ) : null;
+        })()}
 
         {/* Header */}
         <View style={pdfStyles.header}>
@@ -1326,8 +1341,12 @@ const ContractDetailPage = () => {
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party A Representative
             </PdfText>
-            {(contract?.status === 'signed' || contract?.status === 'active') &&
-              partyASignatureBase64 && (
+            {(() => {
+              const contractStatus = contract?.status?.toLowerCase();
+              const isSignedOrActive = contractStatus === 'signed' || 
+                                       contractStatus === 'active' || 
+                                       contractStatus === 'active_pending_assignment';
+              return isSignedOrActive && partyASignatureBase64 ? (
                 <>
                   <PdfImage
                     src={partyASignatureBase64}
@@ -1343,9 +1362,7 @@ const ContractDetailPage = () => {
                       : formatDate(contract?.sentAt)}
                   </PdfText>
                 </>
-              )}
-            {(contract?.status === 'signed' || contract?.status === 'active') &&
-              !partyASignatureBase64 && (
+              ) : isSignedOrActive && !partyASignatureBase64 ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
                   <PdfText style={pdfStyles.text}>
@@ -1358,21 +1375,32 @@ const ContractDetailPage = () => {
                       : formatDate(contract?.sentAt)}
                   </PdfText>
                 </>
-              )}
-            {contract?.status !== 'signed' && contract?.status !== 'active' && (
-              <>
-                <View style={pdfStyles.signatureLine} />
-                <PdfText style={pdfStyles.text}>Name, Title</PdfText>
-              </>
-            )}
+              ) : null;
+            })()}
+            {(() => {
+              const contractStatus = contract?.status?.toLowerCase();
+              const isSignedOrActive = contractStatus === 'signed' || 
+                                       contractStatus === 'active' || 
+                                       contractStatus === 'active_pending_assignment';
+              return !isSignedOrActive ? (
+                <>
+                  <View style={pdfStyles.signatureLine} />
+                  <PdfText style={pdfStyles.text}>Name, Title</PdfText>
+                </>
+              ) : null;
+            })()}
           </View>
 
           <View style={pdfStyles.signatureBox}>
             <PdfText style={{ fontWeight: 'bold', marginBottom: 5 }}>
               Party B Representative
             </PdfText>
-            {(contract?.status === 'signed' || contract?.status === 'active') &&
-              partyBSignatureBase64 && (
+            {(() => {
+              const contractStatus = contract?.status?.toLowerCase();
+              const isSignedOrActive = contractStatus === 'signed' || 
+                                       contractStatus === 'active' || 
+                                       contractStatus === 'active_pending_assignment';
+              return isSignedOrActive && partyBSignatureBase64 ? (
                 <>
                   <PdfImage
                     src={partyBSignatureBase64}
@@ -1390,9 +1418,7 @@ const ContractDetailPage = () => {
                         : 'Pending'}
                   </PdfText>
                 </>
-              )}
-            {(contract?.status === 'signed' || contract?.status === 'active') &&
-              !partyBSignatureBase64 && (
+              ) : isSignedOrActive && !partyBSignatureBase64 ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
                   <PdfText style={pdfStyles.text}>
@@ -1407,13 +1433,13 @@ const ContractDetailPage = () => {
                         : 'Pending'}
                   </PdfText>
                 </>
-              )}
-            {contract?.status !== 'signed' && contract?.status !== 'active' && (
-              <>
-                <View style={pdfStyles.signatureLine} />
-                <PdfText style={pdfStyles.text}>Name, Title</PdfText>
-              </>
-            )}
+              ) : (
+                <>
+                  <View style={pdfStyles.signatureLine} />
+                  <PdfText style={pdfStyles.text}>Name, Title</PdfText>
+                </>
+              );
+            })()}
           </View>
         </View>
       </Page>
@@ -1555,7 +1581,7 @@ const ContractDetailPage = () => {
   const isSent = currentStatus === 'sent';
   const isApproved = currentStatus === 'approved';
   const isSigned = currentStatus === 'signed';
-  const isActive = currentStatus === 'active';
+  const isActive = currentStatus === 'active' || currentStatus === 'active_pending_assignment';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
@@ -1563,7 +1589,11 @@ const ContractDetailPage = () => {
   const isExpired = currentStatus === 'expired';
 
   // Contract is signed or active - milestones can be paid (but not if canceled or expired)
+  // Also check if contract has been signed (has bSignatureS3Url) to show signature
   const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
+  
+  // Show signature if contract has been signed (regardless of current status for display purposes)
+  const hasSigned = contract?.bSignatureS3Url || contract?.bSignedAt || isSigned || isActive;
 
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
@@ -1949,14 +1979,20 @@ const ContractDetailPage = () => {
 
                     const getWorkStatusColor = () => {
                       switch (workStatus) {
-                        case 'COMPLETED':
-                          return 'success';
+                        case 'PLANNED':
+                          return 'default';
+                        case 'READY_TO_START':
+                          return 'cyan';
                         case 'IN_PROGRESS':
                           return 'processing';
                         case 'WAITING_CUSTOMER':
                           return 'warning';
                         case 'READY_FOR_PAYMENT':
                           return 'cyan';
+                        case 'COMPLETED':
+                          return 'success';
+                        case 'CANCELLED':
+                          return 'error';
                         default:
                           return 'default';
                       }
@@ -2784,7 +2820,7 @@ const ContractDetailPage = () => {
                 </div>
                 <div>
                   <div className={styles.sigLabel}>Party B Representative</div>
-                  {canPayMilestones ? (
+                  {hasSigned ? (
                     <>
                       {contract.bSignatureS3Url ? (
                         <div

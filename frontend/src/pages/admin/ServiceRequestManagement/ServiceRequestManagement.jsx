@@ -11,6 +11,7 @@ import {
   Typography,
   Badge,
   Select,
+  Tooltip,
 } from 'antd';
 import {
   EyeOutlined,
@@ -60,7 +61,7 @@ const STATUS_LABELS = {
   contract_sent: 'Contract sent',
   contract_approved: 'Contract approved',
   contract_signed: 'Contract signed',
-  awaiting_assignment: 'Deposit paid - awaiting assignment',
+  awaiting_assignment: 'Awaiting assignment',
   in_progress: 'In progress',
   completed: 'Completed',
   cancelled: 'Cancelled',
@@ -321,12 +322,17 @@ export default function ServiceRequestManagement() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
-      render: status => (
-        <Tag color={STATUS_COLORS[status] || 'default'}>
-          {STATUS_LABELS[status] || status?.toUpperCase() || 'UNKNOWN'}
-        </Tag>
-      ),
+      width: 200,
+      render: status => {
+        const statusText = STATUS_LABELS[status] || status?.toUpperCase() || 'UNKNOWN';
+        return (
+          <Tooltip title={statusText}>
+            <Tag color={STATUS_COLORS[status] || 'default'} style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {statusText}
+            </Tag>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Contact',

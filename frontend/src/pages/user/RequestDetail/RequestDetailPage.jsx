@@ -143,7 +143,7 @@ const RequestDetailPage = () => {
       awaiting_assignment: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
-        text: 'Deposit paid - awaiting assignment',
+        text: 'Awaiting assignment',
         description:
           'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
       },
