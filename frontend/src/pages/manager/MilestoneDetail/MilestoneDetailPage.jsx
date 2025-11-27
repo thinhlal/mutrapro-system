@@ -97,19 +97,69 @@ const getActualStartDayjs = milestone =>
 const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
-const getPlannedDeadlineDayjs = milestone =>
-  milestone?.plannedDueDate ? dayjs(milestone.plannedDueDate) : null;
-
-const getActualDeadlineDayjs = milestone => {
+const getPlannedDeadlineDayjs = milestone => {
   if (!milestone) return null;
-  if (milestone.actualEndAt) {
-    return dayjs(milestone.actualEndAt);
+  if (milestone.plannedDueDate) {
+    return dayjs(milestone.plannedDueDate);
   }
-  const actualStart = getActualStartDayjs(milestone);
-  if (actualStart && milestone.milestoneSlaDays) {
-    return actualStart.add(milestone.milestoneSlaDays, 'day');
+  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
+    return dayjs(milestone.plannedStartAt).add(
+      Number(milestone.milestoneSlaDays || 0),
+      'day'
+    );
   }
   return null;
+};
+
+const getActualDeadlineDayjs = milestone => {
+  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
+    return null;
+  }
+  return dayjs(milestone.actualStartAt).add(
+    Number(milestone.milestoneSlaDays || 0),
+    'day'
+  );
+};
+
+const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
+  if (!milestone) return null;
+  const slaDays = Number(milestone.milestoneSlaDays || 0);
+  if (!slaDays) return null;
+
+  const plannedStart = getPlannedStartDayjs(milestone);
+  if (plannedStart) {
+    return plannedStart.add(slaDays, 'day');
+  }
+
+  const orderIndex = milestone.orderIndex;
+  if (!orderIndex || orderIndex <= 1) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  const previousMilestone =
+    contractMilestones.find(
+      item =>
+        item &&
+        item.orderIndex === orderIndex - 1 &&
+        (item.contractId
+          ? item.contractId === (milestone.contractId || item.contractId)
+          : true)
+    ) || null;
+
+  if (!previousMilestone) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  const previousDeadline =
+    getActualDeadlineDayjs(previousMilestone) ||
+    getPlannedDeadlineDayjs(previousMilestone) ||
+    getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
+
+  if (!previousDeadline) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  return previousDeadline.add(slaDays, 'day');
 };
 
 const getTaskCompletionDate = task =>
@@ -517,27 +567,63 @@ const MilestoneDetailPage = () => {
                   ? `${milestone.milestoneSlaDays} ngày`
                   : '—'}
               </Descriptions.Item>
-              <Descriptions.Item label="Planned timeline">
-                <Space direction="vertical" size={0}>
-                  <Text type="secondary">
-                    Start: {formatDateTime(getPlannedStartDayjs(milestone))}
-                  </Text>
-                  <Text type="secondary">
-                    Deadline:{' '}
-                    {formatDateTime(getPlannedDeadlineDayjs(milestone))}
-                  </Text>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Actual timeline">
-                <Space direction="vertical" size={0}>
-                  <Text>
-                    Start: {formatDateTime(getActualStartDayjs(milestone))}
-                  </Text>
-                  <Text>
-                    Deadline:{' '}
-                    {formatDateTime(getActualDeadlineDayjs(milestone))}
-                  </Text>
-                </Space>
+              <Descriptions.Item label="Milestone Deadline" span={2}>
+                {(() => {
+                  const actualStart = getActualStartDayjs(milestone);
+                  const actualDeadline = getActualDeadlineDayjs(milestone);
+                  const plannedStart = getPlannedStartDayjs(milestone);
+                  const plannedDeadline = getPlannedDeadlineDayjs(milestone);
+                  const estimatedDeadline = getEstimatedDeadlineDayjs(
+                    milestone,
+                    contract?.milestones || []
+                  );
+                  return (
+                    <Space direction="vertical" size="small">
+                      <div>
+                        <Text strong>Actual</Text>
+                        <Space direction="vertical" size={0}>
+                          <Text>
+                            Start: {formatDateTime(actualStart)}
+                          </Text>
+                          <Text>
+                            Deadline: {formatDateTime(actualDeadline)}
+                          </Text>
+                        </Space>
+                      </div>
+                      <div>
+                        <Text strong type="secondary">
+                          Planned
+                        </Text>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary">
+                            Start: {formatDateTime(plannedStart)}
+                          </Text>
+                          <Text type="secondary">
+                            Deadline: {formatDateTime(plannedDeadline)}
+                          </Text>
+                        </Space>
+                      </div>
+                      {!actualDeadline &&
+                        !plannedDeadline &&
+                        estimatedDeadline && (
+                          <div>
+                            <Text strong type="warning">
+                              Estimated
+                            </Text>
+                            <Space direction="vertical" size={0}>
+                              <Text type="secondary">
+                                Deadline:{' '}
+                                {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                (Ước tính khi chưa có planned/actual)
+                              </Text>
+                            </Space>
+                          </div>
+                        )}
+                    </Space>
+                  );
+                })()}
               </Descriptions.Item>
             </Descriptions>
           </Card>

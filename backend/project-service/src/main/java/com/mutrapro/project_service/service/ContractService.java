@@ -557,7 +557,7 @@ public class ContractService {
                             contract.getContractNumber()))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
-                    .actionUrl("/user/requests/" + contract.getRequestId())
+                    .actionUrl("/contracts/" + contractId)
                     .build();
             
             notificationServiceFeignClient.createNotification(notifRequest);
@@ -747,7 +747,7 @@ public class ContractService {
                             contract.getContractNumber()))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
-                    .actionUrl("/manager/contracts-list")
+                    .actionUrl("/manager/contracts")
                     .build();
             
             notificationServiceFeignClient.createNotification(notifRequest);
@@ -829,7 +829,7 @@ public class ContractService {
                             contract.getContractNumber(), request.getReason()))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
-                    .actionUrl("/manager/contracts-list")
+                    .actionUrl("/manager/contracts")
                     .build();
             
             notificationServiceFeignClient.createNotification(notifRequest);
@@ -922,7 +922,7 @@ public class ContractService {
                             contract.getContractNumber(), request.getReason()))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
-                    .actionUrl("/manager/contracts-list")
+                    .actionUrl("/manager/contracts")
                     .build();
             
             notificationServiceFeignClient.createNotification(notifRequest);
@@ -1017,7 +1017,7 @@ public class ContractService {
                                 contract.getContractNumber(), request.getReason()))
                         .referenceId(contractId)
                         .referenceType("CONTRACT")
-                        .actionUrl("/user/requests/" + contract.getRequestId())
+                        .actionUrl("/contracts/" + contractId)
                         .build();
                 
                 notificationServiceFeignClient.createNotification(notifRequest);

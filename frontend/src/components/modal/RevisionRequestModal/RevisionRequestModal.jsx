@@ -1,36 +1,23 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import PropTypes from 'prop-types';
-import { requestChangeContract } from '../../../services/contractService';
 
 const { TextArea } = Input;
 
-const RevisionRequestModal = ({ open, onCancel, onSuccess, contractId }) => {
+const RevisionRequestModal = ({ open, onCancel, onConfirm, loading }) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      setLoading(true);
-
-      const response = await requestChangeContract(contractId, values.reason);
-
-      if (response?.status === 'success') {
-        message.success('Revision request sent successfully');
-        form.resetFields();
-        onSuccess?.();
-        onCancel?.();
-      }
+      await onConfirm(values.reason);
+      form.resetFields();
     } catch (error) {
       if (error.errorFields) {
-        // Validation errors
+        // Validation errors - already handled by Form
         return;
       }
-      console.error('Error requesting revision:', error);
-      message.error(error?.message || 'Failed to request revision');
-    } finally {
-      setLoading(false);
+      message.error('Lỗi khi gửi yêu cầu chỉnh sửa contract');
     }
   };
 
@@ -81,8 +68,8 @@ const RevisionRequestModal = ({ open, onCancel, onSuccess, contractId }) => {
 RevisionRequestModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onCancel: PropTypes.func,
-  onSuccess: PropTypes.func,
-  contractId: PropTypes.string.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
 };
 
 export default RevisionRequestModal;

@@ -100,19 +100,69 @@ const getActualStartDayjs = milestone =>
 const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
-const getPlannedDeadlineDayjs = milestone =>
-  milestone?.plannedDueDate ? dayjs(milestone.plannedDueDate) : null;
-
-const getActualDeadlineDayjs = milestone => {
+const getPlannedDeadlineDayjs = milestone => {
   if (!milestone) return null;
-  const actualStart = getActualStartDayjs(milestone);
-  if (actualStart && milestone.milestoneSlaDays) {
-    return actualStart.add(milestone.milestoneSlaDays, 'day');
+  if (milestone.plannedDueDate) {
+    return dayjs(milestone.plannedDueDate);
   }
-  if (milestone.actualEndAt) {
-    return dayjs(milestone.actualEndAt);
+  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
+    return dayjs(milestone.plannedStartAt).add(
+      Number(milestone.milestoneSlaDays || 0),
+      'day'
+    );
   }
   return null;
+};
+
+const getActualDeadlineDayjs = milestone => {
+  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
+    return null;
+  }
+  return dayjs(milestone.actualStartAt).add(
+    Number(milestone.milestoneSlaDays || 0),
+    'day'
+  );
+};
+
+const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
+  if (!milestone) return null;
+  const slaDays = Number(milestone.milestoneSlaDays || 0);
+  if (!slaDays) return null;
+
+  const plannedStart = getPlannedStartDayjs(milestone);
+  if (plannedStart) {
+    return plannedStart.add(slaDays, 'day');
+  }
+
+  const orderIndex = milestone.orderIndex;
+  if (!orderIndex || orderIndex <= 1) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  const previousMilestone =
+    contractMilestones.find(
+      item =>
+        item &&
+        item.orderIndex === orderIndex - 1 &&
+        (item.contractId
+          ? item.contractId === (milestone.contractId || item.contractId)
+          : true)
+    ) || null;
+
+  if (!previousMilestone) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  const previousDeadline =
+    getActualDeadlineDayjs(previousMilestone) ||
+    getPlannedDeadlineDayjs(previousMilestone) ||
+    getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
+
+  if (!previousDeadline) {
+    return dayjs().add(slaDays, 'day');
+  }
+
+  return previousDeadline.add(slaDays, 'day');
 };
 
 const getTaskCompletionDate = task =>
@@ -719,9 +769,13 @@ export default function TaskProgressManagement() {
       render: (_, record) => {
         const actualDeadline = getActualDeadlineDayjs(record.milestone);
         const plannedDeadline = getPlannedDeadlineDayjs(record.milestone);
+        const estimatedDeadline = getEstimatedDeadlineDayjs(
+          record.milestone,
+          selectedContract?.milestones || []
+        );
         const actualStart = getActualStartDayjs(record.milestone);
         const plannedStart = getPlannedStartDayjs(record.milestone);
-        if (!actualDeadline && !plannedDeadline) {
+        if (!actualDeadline && !plannedDeadline && !estimatedDeadline) {
           return <Text type="secondary">-</Text>;
         }
         const now = dayjs();
@@ -788,6 +842,20 @@ export default function TaskProgressManagement() {
               </Space>
             ) : (
               <Text type="secondary">-</Text>
+            )}
+            {!actualDeadline && !plannedDeadline && estimatedDeadline && (
+              <>
+                <Divider style={{ margin: '4px 0' }} dashed />
+                <Text strong type="warning">
+                  Estimated timeline
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Deadline: {estimatedDeadline.format('HH:mm DD/MM')}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  (Ước tính khi chưa có planned/actual)
+                </Text>
+              </>
             )}
           </Space>
         );
@@ -1124,52 +1192,72 @@ export default function TaskProgressManagement() {
                   : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Deadline">
-                <Space direction="vertical" size="small">
-                  <div>
-                    <Text strong>Actual</Text>
-                    <Space direction="vertical" size={0}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        Start:{' '}
-                        {getActualStartDayjs(selectedTask.milestone)
-                          ? getActualStartDayjs(selectedTask.milestone).format(
-                              'HH:mm DD/MM/YYYY'
-                            )
-                          : 'Chưa có'}
-                      </Text>
-                      <Text>
-                        Deadline:{' '}
-                        {getActualDeadlineDayjs(selectedTask.milestone)
-                          ? getActualDeadlineDayjs(
-                              selectedTask.milestone
-                            ).format('HH:mm DD/MM/YYYY')
-                          : '-'}
-                      </Text>
+                {(() => {
+                  const actualStart = getActualStartDayjs(selectedTask.milestone);
+                  const actualDeadline = getActualDeadlineDayjs(selectedTask.milestone);
+                  const plannedStart = getPlannedStartDayjs(selectedTask.milestone);
+                  const plannedDeadline = getPlannedDeadlineDayjs(selectedTask.milestone);
+                  const estimatedDeadline = getEstimatedDeadlineDayjs(
+                    selectedTask.milestone,
+                    selectedContract?.milestones || []
+                  );
+                  return (
+                    <Space direction="vertical" size="small">
+                      <div>
+                        <Text strong>Actual</Text>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            Start:{' '}
+                            {actualStart
+                              ? actualStart.format('HH:mm DD/MM/YYYY')
+                              : 'Chưa có'}
+                          </Text>
+                          <Text>
+                            Deadline:{' '}
+                            {actualDeadline
+                              ? actualDeadline.format('HH:mm DD/MM/YYYY')
+                              : '-'}
+                          </Text>
+                        </Space>
+                      </div>
+                      <div>
+                        <Text strong type="secondary">
+                          Planned
+                        </Text>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            Start:{' '}
+                            {plannedStart
+                              ? plannedStart.format('HH:mm DD/MM/YYYY')
+                              : '-'}
+                          </Text>
+                          <Text type="secondary">
+                            Deadline:{' '}
+                            {plannedDeadline
+                              ? plannedDeadline.format('HH:mm DD/MM/YYYY')
+                              : '-'}
+                          </Text>
+                        </Space>
+                      </div>
+                      {!actualDeadline &&
+                        !plannedDeadline &&
+                        estimatedDeadline && (
+                          <div>
+                            <Text strong type="warning">
+                              Estimated
+                            </Text>
+                            <Text type="secondary">
+                              Deadline:{' '}
+                              {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              (Ước tính khi chưa có planned/actual)
+                            </Text>
+                          </div>
+                        )}
                     </Space>
-                  </div>
-                  <div>
-                    <Text strong type="secondary">
-                      Planned
-                    </Text>
-                    <Space direction="vertical" size={0}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        Start:{' '}
-                        {getPlannedStartDayjs(selectedTask.milestone)
-                          ? getPlannedStartDayjs(selectedTask.milestone).format(
-                              'HH:mm DD/MM/YYYY'
-                            )
-                          : '-'}
-                      </Text>
-                      <Text type="secondary">
-                        Deadline:{' '}
-                        {getPlannedDeadlineDayjs(selectedTask.milestone)
-                          ? getPlannedDeadlineDayjs(
-                              selectedTask.milestone
-                            ).format('HH:mm DD/MM/YYYY')
-                          : '-'}
-                      </Text>
-                    </Space>
-                  </div>
-                </Space>
+                  );
+                })()}
               </Descriptions.Item>
               <Descriptions.Item label="Completed Date">
                 <Space direction="vertical" size="small">

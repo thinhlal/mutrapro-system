@@ -269,7 +269,7 @@ public class ESignService {
                             contract.getContractNumber()))
                     .referenceId(contractId)
                     .referenceType("CONTRACT")
-                    .actionUrl("/manager/contracts-list")
+                    .actionUrl("/manager/contracts")
                     .build();
             
             notificationServiceFeignClient.createNotification(notifRequest);

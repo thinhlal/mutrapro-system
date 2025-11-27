@@ -45,6 +45,7 @@ const NotificationsPage = () => {
   const [page, setPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  const [markAllLoading, setMarkAllLoading] = useState(false);
 
   /**
    * Fetch notifications từ API
@@ -108,6 +109,7 @@ const NotificationsPage = () => {
    */
   const handleMarkAllAsRead = useCallback(async () => {
     try {
+      setMarkAllLoading(true);
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
@@ -115,6 +117,8 @@ const NotificationsPage = () => {
     } catch (error) {
       console.error('Failed to mark all as read:', error);
       message.error('Không thể đánh dấu tất cả');
+    } finally {
+      setMarkAllLoading(false);
     }
   }, []);
 
@@ -222,6 +226,7 @@ const NotificationsPage = () => {
                       type="link"
                       size="small"
                       onClick={handleMarkAllAsRead}
+                      loading={markAllLoading}
                     >
                       Mark all as read
                     </Button>

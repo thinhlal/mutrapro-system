@@ -89,6 +89,8 @@ public class TaskAssignmentResponse {
         String milestoneId;
         String name;
         String description;
+        String contractId;            // Hỗ trợ FE tính chuỗi milestone
+        Integer orderIndex;              // Thứ tự milestone (1, 2, 3...) để tính start date của milestone sau
         LocalDateTime plannedStartAt;
         LocalDateTime plannedDueDate;  // Deadline của milestone để tính tasksInSlaWindow
         LocalDateTime actualStartAt;   // Thời điểm milestone thực tế bắt đầu

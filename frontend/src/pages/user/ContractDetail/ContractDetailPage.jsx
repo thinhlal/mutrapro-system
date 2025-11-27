@@ -39,6 +39,8 @@ import dayjs from 'dayjs';
 import {
   getContractById,
   approveContract,
+  cancelContract,
+  requestChangeContract,
   initESign,
   verifyOTPAndSign,
   getSignatureImage,
@@ -108,7 +110,9 @@ const ContractDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState(null);
   const [error, setError] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [revisionLoading, setRevisionLoading] = useState(false);
 
   // Modals
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -329,7 +333,7 @@ const ContractDetailPage = () => {
   // Handle approve
   const handleApprove = async () => {
     try {
-      setActionLoading(true);
+      setApproveLoading(true);
       const response = await approveContract(contractId);
       if (response?.status === 'success') {
         message.success('Contract approved successfully!');
@@ -339,7 +343,7 @@ const ContractDetailPage = () => {
       console.error('Error approving contract:', error);
       message.error(error?.message || 'Failed to approve contract');
     } finally {
-      setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
@@ -578,16 +582,42 @@ const ContractDetailPage = () => {
     setOtpExpiresAt(null);
   };
 
-  // Handle cancel success
-  const handleCancelSuccess = () => {
-    message.success('Contract canceled successfully');
-    loadContract();
+  // Handle cancel contract
+  const handleCancel = async (reason) => {
+    try {
+      setCancelLoading(true);
+      const response = await cancelContract(contractId, reason);
+      if (response?.status === 'success') {
+        message.success('Contract canceled successfully');
+        setCancelModalOpen(false);
+        loadContract();
+      }
+    } catch (error) {
+      console.error('Error canceling contract:', error);
+      message.error(error?.message || 'Failed to cancel contract');
+      throw error; // Re-throw để modal không đóng
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
-  // Handle revision request success
-  const handleRevisionSuccess = () => {
-    message.success('Revision request sent successfully');
-    loadContract();
+  // Handle revision request
+  const handleRevision = async (reason) => {
+    try {
+      setRevisionLoading(true);
+      const response = await requestChangeContract(contractId, reason);
+      if (response?.status === 'success') {
+        message.success('Revision request sent successfully');
+        setRevisionModalOpen(false);
+        loadContract();
+      }
+    } catch (error) {
+      console.error('Error requesting revision:', error);
+      message.error(error?.message || 'Failed to request revision');
+      throw error; // Re-throw để modal không đóng
+    } finally {
+      setRevisionLoading(false);
+    }
   };
 
   // Register Vietnamese font once (Be Vietnam Pro - supports Vietnamese)
@@ -2179,7 +2209,8 @@ const ContractDetailPage = () => {
                   type="primary"
                   icon={<CheckOutlined />}
                   onClick={handleApprove}
-                  loading={actionLoading}
+                  loading={approveLoading}
+                  disabled={cancelLoading || revisionLoading}
                   block
                   size="large"
                 >
@@ -2188,7 +2219,7 @@ const ContractDetailPage = () => {
                 <Button
                   icon={<EditOutlined />}
                   onClick={() => setRevisionModalOpen(true)}
-                  loading={actionLoading}
+                  disabled={approveLoading || cancelLoading || revisionLoading}
                   block
                 >
                   Request Revision
@@ -2197,7 +2228,7 @@ const ContractDetailPage = () => {
                   danger
                   icon={<CloseOutlined />}
                   onClick={() => setCancelModalOpen(true)}
-                  loading={actionLoading}
+                  disabled={approveLoading || cancelLoading || revisionLoading}
                   block
                 >
                   Cancel Contract
@@ -2902,10 +2933,10 @@ const ContractDetailPage = () => {
       />
 
       <CancelContractModal
-        open={cancelModalOpen}
+        visible={cancelModalOpen}
         onCancel={() => setCancelModalOpen(false)}
-        onSuccess={handleCancelSuccess}
-        contractId={contractId}
+        onConfirm={handleCancel}
+        loading={cancelLoading}
         isManager={false}
         isDraft={false}
       />
@@ -2913,8 +2944,8 @@ const ContractDetailPage = () => {
       <RevisionRequestModal
         open={revisionModalOpen}
         onCancel={() => setRevisionModalOpen(false)}
-        onSuccess={handleRevisionSuccess}
-        contractId={contractId}
+        onConfirm={handleRevision}
+        loading={revisionLoading}
       />
 
       {canViewReason && (

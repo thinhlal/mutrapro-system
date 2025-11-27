@@ -28,6 +28,7 @@ const { Text, Title } = Typography;
 const NotificationBell = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [markAllLoading, setMarkAllLoading] = useState(false);
 
   const {
     unreadCount,
@@ -97,10 +98,16 @@ const NotificationBell = () => {
             type="text"
             size="small"
             icon={<CheckOutlined />}
-            onClick={e => {
+            onClick={async e => {
               e.stopPropagation();
-              markAllAsRead();
+              try {
+                setMarkAllLoading(true);
+                await markAllAsRead();
+              } finally {
+                setMarkAllLoading(false);
+              }
             }}
+            loading={markAllLoading}
             className={styles.markAllButton}
           >
             Mark all

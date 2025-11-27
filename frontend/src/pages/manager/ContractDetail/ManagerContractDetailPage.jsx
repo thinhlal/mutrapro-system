@@ -17,6 +17,7 @@ import {
   ArrowLeftOutlined,
   DownloadOutlined,
   EyeOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import {
   Document,
@@ -100,6 +101,11 @@ const ManagerContractDetailPage = () => {
 
   // Modals
   const [viewReasonModalOpen, setViewReasonModalOpen] = useState(false);
+  const [startWorkModalVisible, setStartWorkModalVisible] = useState(false);
+  const [startWorkContext, setStartWorkContext] = useState({
+    milestoneSummaries: [],
+    hasBlockingMissing: false,
+  });
 
   // Pricing breakdown information
   const [pricingBreakdown, setPricingBreakdown] = useState({
@@ -186,78 +192,12 @@ const ManagerContractDetailPage = () => {
       );
       const hasBlockingMissing = missingMilestones.length > 0;
 
-      Modal.confirm({
-        title: 'Start Work cho contract này?',
-        content: (
-          <div>
-            {milestoneSummaries.length === 0 ? (
-              <>
-                <p>
-                  Contract này hiện chưa có dữ liệu milestones hoặc task
-                  assignments, vì vậy chưa thể Start Work.
-                </p>
-                <p style={{ marginTop: 8 }}>
-                  Vui lòng kiểm tra lại trong Milestones / Task Progress và đảm
-                  bảo đã khởi tạo milestones và gán task trước khi Start Work.
-                </p>
-              </>
-            ) : (
-              <>
-                <p>
-                  Tình trạng task theo từng milestone (active = assigned /
-                  accepted_waiting / ready_to_start / in_progress):
-                </p>
-                <ul style={{ paddingLeft: 20 }}>
-                  {milestoneSummaries.map(m => (
-                    <li key={m.id || m.name}>
-                      <strong>{m.name}:</strong>{' '}
-                      {m.total === 0
-                        ? 'Chưa có task'
-                        : m.active > 0
-                          ? `${m.active}/${m.total} task active`
-                          : `${m.total} task (tất cả đã completed/cancelled)`}
-                    </li>
-                  ))}
-                </ul>
-                {hasBlockingMissing ? (
-                  <p style={{ marginTop: 8 }}>
-                    Có milestone chưa có task active, nên chưa thể Start Work.
-                    Vui lòng vào Milestones / Task Progress để gán task trước.
-                  </p>
-                ) : (
-                  <p style={{ marginTop: 8 }}>
-                    Tất cả milestones đã có ít nhất một task active. Bạn có chắc
-                    chắn muốn Start Work cho contract này không?
-                  </p>
-                )}
-                <p style={{ marginTop: 8 }}>
-                  Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
-                  đầu work, không phải ngày ký hợp đồng.
-                </p>
-              </>
-            )}
-          </div>
-        ),
-        okText: hasBlockingMissing ? 'Không thể Start Work' : 'Start Work',
-        okButtonProps: {
-          disabled: hasBlockingMissing,
-        },
-        cancelText: 'Đóng',
-        onOk: async () => {
-          if (hasBlockingMissing) return;
-          try {
-            setStartingWork(true);
-            await startContractWork(contractId);
-            message.success('Đã kích hoạt contract và bắt đầu tính SLA');
-            loadContract();
-          } catch (err) {
-            console.error('Failed to start contract work:', err);
-            message.error(err?.message || 'Không thể bắt đầu contract');
-          } finally {
-            setStartingWork(false);
-          }
-        },
+      // Lưu context và mở modal riêng thay vì dùng Modal.confirm
+      setStartWorkContext({
+        milestoneSummaries,
+        hasBlockingMissing,
       });
+      setStartWorkModalVisible(true);
     } catch (err) {
       console.error(
         'Failed to load task assignments before starting work:',
@@ -269,6 +209,8 @@ const ManagerContractDetailPage = () => {
           err?.message ||
           'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
       });
+    } finally {
+      // Reset loading state sau khi đã mở modal hoặc có lỗi
       setStartingWork(false);
     }
   };
@@ -2569,6 +2511,103 @@ const ManagerContractDetailPage = () => {
           isCanceled={isCanceled}
         />
       )}
+
+      {/* Start Work Modal */}
+      <Modal
+        title={
+          <Space>
+            <InfoCircleOutlined style={{ color: '#1890ff' }} />
+            <span>Start Work cho contract này?</span>
+          </Space>
+        }
+        open={startWorkModalVisible}
+        onCancel={() => {
+          setStartWorkModalVisible(false);
+          setStartWorkContext({
+            milestoneSummaries: [],
+            hasBlockingMissing: false,
+          });
+        }}
+        okText={
+          startWorkContext.hasBlockingMissing ? 'Không thể Start Work' : 'Start Work'
+        }
+        okButtonProps={{
+          disabled: startWorkContext.hasBlockingMissing,
+          loading: startingWork,
+        }}
+        cancelText="Đóng"
+        onOk={async () => {
+          if (startWorkContext.hasBlockingMissing) {
+            return;
+          }
+          try {
+            setStartingWork(true);
+            await startContractWork(contractId);
+            message.success('Đã kích hoạt contract và bắt đầu tính SLA');
+            setStartWorkModalVisible(false);
+            setStartWorkContext({
+              milestoneSummaries: [],
+              hasBlockingMissing: false,
+            });
+            loadContract();
+          } catch (err) {
+            console.error('Failed to start contract work:', err);
+            message.error(err?.message || 'Không thể bắt đầu contract');
+          } finally {
+            setStartingWork(false);
+          }
+        }}
+        width={700}
+      >
+        <div>
+          {startWorkContext.milestoneSummaries.length === 0 ? (
+            <>
+              <p>
+                Contract này hiện chưa có dữ liệu milestones hoặc task
+                assignments, vì vậy chưa thể Start Work.
+              </p>
+              <p style={{ marginTop: 8 }}>
+                Vui lòng kiểm tra lại trong Milestones / Task Progress và đảm
+                bảo đã khởi tạo milestones và gán task trước khi Start Work.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                Tình trạng task theo từng milestone (active = assigned /
+                accepted_waiting / ready_to_start / in_progress):
+              </p>
+              <ul style={{ paddingLeft: 20 }}>
+                {startWorkContext.milestoneSummaries.map(m => (
+                  <li key={m.id || m.name}>
+                    <strong>{m.name}:</strong>{' '}
+                    {m.total === 0
+                      ? 'Chưa có task'
+                      : m.active > 0
+                        ? `${m.active}/${m.total} task active`
+                        : `${m.total} task (tất cả đã completed/cancelled)`}
+                  </li>
+                ))}
+              </ul>
+              {startWorkContext.hasBlockingMissing ? (
+                <p style={{ marginTop: 8 }}>
+                  Có milestone chưa có task active, nên chưa thể Start Work.
+                  Vui lòng vào Milestones / Task Progress để gán task trước.
+                </p>
+              ) : (
+                <p style={{ marginTop: 8 }}>
+                  Tất cả milestones đã có ít nhất một task active. Bạn có chắc
+                  chắn muốn Start Work cho contract này không?
+                </p>
+              )}
+              <p style={{ marginTop: 8 }}>
+                Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt
+                đầu work, không phải ngày ký hợp đồng.
+              </p>
+            </>
+          )}
+        </div>
+      </Modal>
 
       {/* Chat Popup - Facebook Messenger style for request chat */}
       {contract?.requestId && (

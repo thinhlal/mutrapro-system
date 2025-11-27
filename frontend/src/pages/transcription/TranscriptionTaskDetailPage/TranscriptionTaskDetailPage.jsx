@@ -30,6 +30,7 @@ import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   getMyTaskAssignmentById,
+  getMyTaskAssignments,
   acceptTaskAssignment,
   reportIssue,
   startTaskAssignment,
@@ -203,25 +204,99 @@ function getTaskTypeLabel(taskType) {
 }
 
 function getActualDeadline(milestone) {
+  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) return null;
+  const start = new Date(milestone.actualStartAt);
+  if (!Number.isFinite(start.getTime())) return null;
+  const due = new Date(start);
+  due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
+  return due;
+}
+
+function getPlannedDeadline(milestone) {
   if (!milestone) return null;
-  if (milestone.actualStartAt && milestone.milestoneSlaDays) {
-    const start = new Date(milestone.actualStartAt);
+  if (milestone.plannedDueDate) {
+    const due = new Date(milestone.plannedDueDate);
+    if (Number.isFinite(due.getTime())) {
+      return due;
+    }
+  }
+  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
+    const start = new Date(milestone.plannedStartAt);
     if (!Number.isFinite(start.getTime())) return null;
     const due = new Date(start);
     due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
     return due;
   }
-  if (milestone.actualEndAt) {
-    const end = new Date(milestone.actualEndAt);
-    return Number.isFinite(end.getTime()) ? end : null;
-  }
   return null;
 }
 
-function getPlannedDeadline(milestone) {
-  if (!milestone?.plannedDueDate) return null;
-  const due = new Date(milestone.plannedDueDate);
-  return Number.isFinite(due.getTime()) ? due : null;
+const fallbackDeadlineCache = new Map();
+
+function getFallbackDeadline(milestone, allTasks = []) {
+  if (!milestone) return null;
+  const slaDays = milestone.milestoneSlaDays;
+  if (slaDays == null || slaDays <= 0) return null;
+
+  const plannedStart = milestone.plannedStartAt
+    ? new Date(milestone.plannedStartAt)
+    : null;
+  if (plannedStart && Number.isFinite(plannedStart.getTime())) {
+    const dueDate = new Date(plannedStart);
+    dueDate.setDate(dueDate.getDate() + Number(slaDays));
+    return dueDate;
+  }
+
+  const cacheKey = milestone.milestoneId;
+  if (fallbackDeadlineCache.has(cacheKey)) {
+    return fallbackDeadlineCache.get(cacheKey);
+  }
+
+  const orderIndex = milestone.orderIndex;
+  if (!orderIndex || orderIndex === 1) {
+    const now = new Date();
+    const due = new Date(now);
+    due.setDate(due.getDate() + Number(slaDays));
+    fallbackDeadlineCache.set(cacheKey, due);
+    return due;
+  }
+
+  const contractId =
+    milestone.contractId ||
+    allTasks.find(
+      t => t.milestone?.milestoneId === milestone.milestoneId
+    )?.contractId;
+  if (contractId && allTasks.length > 0) {
+    const previousTask = allTasks.find(
+      t =>
+        t.contractId === contractId &&
+        t.milestone?.orderIndex === orderIndex - 1,
+    );
+    if (previousTask?.milestone) {
+      const previousMilestone = previousTask.milestone;
+      const previousActualDeadline = getActualDeadline(previousMilestone);
+      const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
+      const previousFallbackDeadline = getFallbackDeadline(
+        previousMilestone,
+        allTasks,
+      );
+      const previousDeadline =
+        previousActualDeadline ||
+        previousPlannedDeadline ||
+        previousFallbackDeadline;
+      if (previousDeadline) {
+        const dueDate = new Date(previousDeadline);
+        dueDate.setDate(dueDate.getDate() + Number(slaDays));
+        fallbackDeadlineCache.set(cacheKey, dueDate);
+        return dueDate;
+      }
+    }
+  }
+
+  const now = new Date();
+  const due = new Date(now);
+  due.setDate(due.getDate() + Number(slaDays));
+  fallbackDeadlineCache.set(cacheKey, due);
+  return due;
 }
 
 // ---------------- Component ----------------
@@ -241,6 +316,49 @@ const TranscriptionTaskDetailPage = () => {
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
+  const [contractTasks, setContractTasks] = useState([]);
+
+  const loadContractTasks = useCallback(async contractId => {
+    if (!contractId) {
+      setContractTasks([]);
+      return;
+    }
+    try {
+      const resp = await getMyTaskAssignments();
+      if (resp?.status === 'success' && Array.isArray(resp.data)) {
+        const sameContractTasks = resp.data.filter(
+          assignment => assignment.contractId === contractId,
+        );
+        setContractTasks(sameContractTasks);
+      } else {
+        setContractTasks([]);
+      }
+    } catch (error) {
+      console.error('Failed to load contract tasks', error);
+      setContractTasks([]);
+    }
+  }, []);
+
+  const { actualDeadline, plannedDeadline, estimatedDeadline } = useMemo(() => {
+    if (!task?.milestone) {
+      return {
+        actualDeadline: null,
+        plannedDeadline: null,
+        estimatedDeadline: null,
+      };
+    }
+    const actual = getActualDeadline(task.milestone);
+    const planned = getPlannedDeadline(task.milestone);
+    const estimated =
+      !actual && !planned
+        ? getFallbackDeadline(task.milestone, contractTasks)
+        : null;
+    return {
+      actualDeadline: actual,
+      plannedDeadline: planned,
+      estimatedDeadline: estimated,
+    };
+  }, [task, contractTasks]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -260,6 +378,10 @@ const TranscriptionTaskDetailPage = () => {
 
         // Files sẽ được load sau khi có request info
         setFiles([]);
+        fallbackDeadlineCache.clear();
+        const contractId =
+          taskData.contractId || taskData?.milestone?.contractId;
+        await loadContractTasks(contractId);
       } else {
         setError('Task not found');
       }
@@ -269,7 +391,7 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, loadContractTasks]);
 
   useEffect(() => {
     loadData();
@@ -578,12 +700,12 @@ const TranscriptionTaskDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Deadline">
                 {task.milestone ? (
-                  <Space direction="vertical" size={2}>
+                  <Space direction="vertical" size={4}>
                     <div>
                       <Text strong>Actual</Text>
                       <div>
-                        {getActualDeadline(task.milestone)
-                          ? formatDateTime(getActualDeadline(task.milestone))
+                        {actualDeadline
+                          ? formatDateTime(actualDeadline)
                           : 'Chưa có'}
                       </div>
                     </div>
@@ -592,11 +714,24 @@ const TranscriptionTaskDetailPage = () => {
                         Planned
                       </Text>
                       <Text type="secondary">
-                        {getPlannedDeadline(task.milestone)
-                          ? formatDateTime(getPlannedDeadline(task.milestone))
+                        {plannedDeadline
+                          ? formatDateTime(plannedDeadline)
                           : 'Chưa có'}
                       </Text>
                     </div>
+                    {estimatedDeadline && (
+                      <div>
+                        <Text strong type="warning">
+                          Estimated
+                        </Text>
+                        <Text type="secondary">
+                          {formatDateTime(estimatedDeadline)}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          (Ước tính khi chưa Start Work)
+                        </Text>
+                      </div>
+                    )}
                   </Space>
                 ) : (
                   <Text type="secondary">—</Text>
