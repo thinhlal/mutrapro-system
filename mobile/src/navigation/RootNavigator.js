@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
 import LoadingScreen from '../components/LoadingScreen';
@@ -15,7 +16,9 @@ const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainStack /> : <AuthStack />}
+      <NotificationProvider>
+        {isAuthenticated ? <MainStack /> : <AuthStack />}
+      </NotificationProvider>
     </NavigationContainer>
   );
 };

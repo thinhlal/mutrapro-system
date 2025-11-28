@@ -31,10 +31,61 @@ export const getNotifications = async (params = {}) => {
       `${API_ENDPOINTS.NOTIFICATIONS.GET_ALL_NOTIFICATIONS}?${queryParams.toString()}`
     );
     
+    console.log('[Mobile Service] Notifications raw response:', JSON.stringify(response.data).substring(0, 300));
+    
+    // Handle multiple response formats:
+    // Format 1: { data: [...] } - array directly in data
+    // Format 2: { content: [...] } - paginated at root
+    // Format 3: { data: { content: [...] } } - paginated nested in data
+    // Format 4: [...] - direct array
+    let notifications = [];
+    let pagination = null;
+    
+    if (response.data) {
+      // Check if response.data is direct array
+      if (Array.isArray(response.data)) {
+        notifications = response.data;
+      }
+      // Check if response.data.data exists
+      else if (response.data.data) {
+        // Check if response.data.data is array
+        if (Array.isArray(response.data.data)) {
+          notifications = response.data.data;
+        }
+        // Check if response.data.data.content is array (nested paginated)
+        else if (Array.isArray(response.data.data.content)) {
+          notifications = response.data.data.content;
+          pagination = {
+            totalElements: response.data.data.totalElements || notifications.length,
+            totalPages: response.data.data.totalPages,
+            size: response.data.data.size,
+            number: response.data.data.number,
+          };
+        }
+      }
+      // Check if response.data.content is array (paginated at root)
+      else if (Array.isArray(response.data.content)) {
+        notifications = response.data.content;
+        pagination = {
+          totalElements: response.data.totalElements || notifications.length,
+          totalPages: response.data.totalPages,
+          size: response.data.size,
+          number: response.data.number,
+        };
+      }
+    }
+    
+    console.log('[Mobile Service] Parsed notifications count:', notifications.length);
+    if (notifications.length > 0) {
+      console.log('[Mobile Service] First notification:', JSON.stringify(notifications[0]).substring(0, 150));
+    }
+    
     return {
       status: 'success',
-      data: response.data.data || response.data,
-      pagination: response.data.pagination,
+      data: notifications,
+      pagination: pagination || response.data.pagination || {
+        totalElements: notifications.length,
+      },
     };
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -155,9 +206,29 @@ export const getUnreadNotificationCount = async () => {
       API_ENDPOINTS.NOTIFICATIONS.GET_UNREAD_COUNT
     );
     
+    // Handle both response formats:
+    // Format 1: { count: 5 }
+    // Format 2: { data: { count: 5 } }
+    let count = 0;
+    if (response.data) {
+      if (typeof response.data === 'number') {
+        // Direct number
+        count = response.data;
+      } else if (response.data.count !== undefined) {
+        // Format 1: { count: 5 }
+        count = response.data.count;
+      } else if (response.data.data && response.data.data.count !== undefined) {
+        // Format 2: { data: { count: 5 } }
+        count = response.data.data.count;
+      }
+    }
+    
+    console.log('[Mobile Service] Unread count raw response:', JSON.stringify(response.data).substring(0, 200));
+    console.log('[Mobile Service] Parsed count:', count);
+    
     return {
       status: 'success',
-      data: response.data.count || 0,
+      data: count,
     };
   } catch (error) {
     console.error('Error fetching unread notification count:', error);

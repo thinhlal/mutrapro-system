@@ -15,6 +15,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import * as notificationApi from "../../services/notificationService";
 
 const NotificationScreen = ({ navigation }) => {
+  // Get notification state - create separate instance for this screen
   const {
     notifications: realtimeNotifications,
     unreadCount: realtimeUnreadCount,
@@ -241,22 +242,43 @@ const NotificationScreen = ({ navigation }) => {
   // Format notification to match NotificationItem component
   const formatNotification = (notification) => {
     // Map notification type to icon and color
+    // Based on backend notification types
     const typeMap = {
+      // Service/Request related
       SERVICE_UPDATE: { icon: 'musical-notes', color: COLORS.primary },
-      PAYMENT: { icon: 'card', color: COLORS.success },
-      MESSAGE: { icon: 'chatbubble', color: COLORS.info },
       SERVICE_COMPLETE: { icon: 'checkmark-circle', color: COLORS.success },
-      REMINDER: { icon: 'time', color: COLORS.warning },
       REQUEST_ASSIGNED: { icon: 'person-add', color: COLORS.primary },
+      REQUEST_UPDATED: { icon: 'refresh', color: COLORS.info },
+      
+      // Payment related
+      PAYMENT: { icon: 'card', color: COLORS.success },
+      PAYMENT_SUCCESS: { icon: 'card', color: COLORS.success },
+      PAYMENT_FAILED: { icon: 'close-circle', color: COLORS.error },
+      
+      // Chat/Message related
+      MESSAGE: { icon: 'chatbubble', color: COLORS.info },
+      CHAT_ROOM_CREATED: { icon: 'chatbubbles', color: COLORS.info },
+      NEW_MESSAGE: { icon: 'mail', color: COLORS.info },
+      
+      // Contract related
+      CONTRACT_CREATED: { icon: 'document-text', color: COLORS.primary },
+      CONTRACT_SIGNED: { icon: 'checkmark-done', color: COLORS.success },
+      CONTRACT_UPDATED: { icon: 'create', color: COLORS.warning },
+      
+      // Other
+      REMINDER: { icon: 'time', color: COLORS.warning },
+      SYSTEM: { icon: 'information-circle', color: COLORS.info },
     };
 
-    const type = typeMap[notification.notificationType] || { icon: 'notifications', color: COLORS.primary };
+    const notifType = notification.notificationType || notification.type;
+    const type = typeMap[notifType] || { icon: 'notifications', color: COLORS.primary };
 
     return {
       ...notification,
       icon: type.icon,
       iconColor: type.color,
       message: notification.content || notification.message,
+      timestamp: notification.createdAt || notification.timestamp, // Add timestamp for NotificationItem
     };
   };
 
