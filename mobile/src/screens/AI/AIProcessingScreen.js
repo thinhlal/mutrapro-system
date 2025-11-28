@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { useKlangTranscriptionStore } from "../../stores/useKlangTranscriptionStore";
@@ -82,9 +82,9 @@ const AIProcessingScreen = ({ navigation, route }) => {
       const base64 = await blobToBase64(blob);
       const fileUri = `${FileSystem.cacheDirectory}${jobId}.mid`;
       
-      // Save to file system
+      // Save to file system using legacy API
       await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64',
       });
 
       console.log("[AI] MIDI saved to:", fileUri);

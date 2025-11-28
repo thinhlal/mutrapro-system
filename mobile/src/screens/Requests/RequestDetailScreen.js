@@ -22,6 +22,7 @@ import {
   cancelContract,
 } from "../../services/contractService";
 import { getNotationInstrumentsByIds } from "../../services/instrumentService";
+import { getChatRoomByContext } from "../../services/chatService";
 import ContractCard from "../../components/ContractCard";
 import FileItem from "../../components/FileItem";
 
@@ -34,6 +35,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [instruments, setInstruments] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [openingChat, setOpeningChat] = useState(false);
 
   // Modal states
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -167,6 +169,43 @@ const RequestDetailScreen = ({ navigation, route }) => {
       Alert.alert("Error", error.message || "Failed to cancel contract");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleOpenChat = async () => {
+    try {
+      setOpeningChat(true);
+      
+      // Fetch chat room by requestId
+      const response = await getChatRoomByContext("REQUEST_CHAT", requestId);
+      
+      if (response?.status === "success" && response?.data?.roomId) {
+        // Navigate to ChatRoom in Chat tab
+        // Need to navigate through MainTabs first since RequestDetail is in Drawer
+        navigation.navigate("MainTabs", {
+          screen: "Chat",
+          params: {
+            screen: "ChatRoom",
+            params: {
+              roomId: response.data.roomId,
+              room: response.data, // Pass full room data for better UX
+            },
+          },
+        });
+      } else {
+        Alert.alert(
+          "Chat Not Available",
+          "Chat room will be available after a manager is assigned to your request."
+        );
+      }
+    } catch (error) {
+      console.error("Error opening chat:", error);
+      Alert.alert(
+        "Chat Not Available",
+        "This chat room is not available yet. It will be created when a manager is assigned."
+      );
+    } finally {
+      setOpeningChat(false);
     }
   };
 
@@ -342,6 +381,25 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </Text>
             </View>
           </View>
+
+          {/* Open Chat Button - Only show if manager assigned */}
+          {request.managerUserId && (
+            <TouchableOpacity
+              style={styles.chatButton}
+              onPress={handleOpenChat}
+              disabled={openingChat}
+              activeOpacity={0.8}
+            >
+              {openingChat ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <>
+                  <Ionicons name="chatbubbles" size={18} color={COLORS.white} />
+                  <Text style={styles.chatButtonText}>Open Chat with Manager</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Request Info Card */}
@@ -793,6 +851,28 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     marginLeft: SPACING.xs / 2,
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.md,
+    gap: SPACING.xs,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chatButtonText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.white,
+    marginLeft: SPACING.xs,
   },
   card: {
     backgroundColor: COLORS.white,
