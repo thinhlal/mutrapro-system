@@ -8,6 +8,7 @@ import { COLORS, FONT_SIZES, SPACING } from "../config/constants";
 // Import hooks for real-time badge counts
 import { useUnreadMessagesCount } from "../hooks/useChat";
 import { useNotifications } from "../hooks/useNotifications";
+import { useNotificationContext } from "../contexts/NotificationContext";
 
 // Import screens
 import HomeScreen from "../screens/Main/HomeScreen";
@@ -174,7 +175,14 @@ const TabBarBadge = ({ count }) => {
 const BottomTabNavigator = ({ navigation }) => {
   // Real-time unread counts from hooks
   const unreadMessages = useUnreadMessagesCount();
-  const { unreadCount: unreadNotifications } = useNotifications();
+  
+  // Get banner ref from context
+  const { bannerRef } = useNotificationContext();
+  
+  // Get notification state - similar to frontend
+  const { unreadCount: unreadNotifications } = useNotifications(bannerRef);
+  
+  console.log('[BottomTab] Rendering with unread count:', unreadNotifications);
 
   return (
     <Tab.Navigator

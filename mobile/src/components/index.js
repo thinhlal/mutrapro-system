@@ -12,6 +12,8 @@ export { default as DiscoverServices } from './DiscoverServices';
 export { default as FileUploader } from './FileUploader';
 export { default as InstrumentPicker } from './InstrumentPicker';
 export { default as NotificationItem } from './NotificationItem';
+export { default as NotificationBanner } from './NotificationBanner';
+export { default as NotificationBannerManager } from './NotificationBannerManager';
 export { default as ChatMessage } from './ChatMessage';
 export { default as ChatInput } from './ChatInput';
 export { default as RequestCard } from './RequestCard';
