@@ -23,7 +23,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [room, setRoom] = useState(roomParam); // Initialize with roomParam if available
   const [loadingRoom, setLoadingRoom] = useState(!roomParam); // If no room, need to load
-  
+
   // IMPORTANT: Use roomIdParam directly if available to prevent re-subscription
   // when room state changes after fetching room data
   const roomId = roomIdParam || roomParam?.roomId;
@@ -42,11 +42,11 @@ const ChatRoomScreen = ({ route, navigation }) => {
   useEffect(() => {
     const getUserId = async () => {
       const userData = await getItem(STORAGE_KEYS.USER_DATA);
-      
+
       console.log('[Mobile] User data from storage:', userData);
       console.log('[Mobile] User data type:', typeof userData);
       console.log('[Mobile] User data keys:', userData ? Object.keys(userData) : 'null');
-      
+
       if (userData?.id) {
         console.log('[Mobile] ✅ Setting currentUserId:', userData.id);
         setCurrentUserId(userData.id);
@@ -88,16 +88,16 @@ const ChatRoomScreen = ({ route, navigation }) => {
   useEffect(() => {
     // Set header title - only update if room is available
     if (!room) return;
-    
+
     navigation.setOptions({
-      // headerLeft: () => (
-      //   <TouchableOpacity
-      //     style={styles.backButton}
-      //     onPress={() => navigation.goBack()}
-      //   >
-      //     <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-      //   </TouchableOpacity>
-      // ),
+      headerLeft: () => (
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+      ),
       headerTitle: () => (
         <TouchableOpacity style={styles.headerTitle}>
           <View style={styles.headerIconContainer}>
@@ -112,13 +112,17 @@ const ChatRoomScreen = ({ route, navigation }) => {
           </View>
         </TouchableOpacity>
       ),
-      headerRight: () => (
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="information-circle-outline" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
-      ),
+      // headerRight: () => (
+      //   <View style={styles.headerRight}>
+      //     <TouchableOpacity style={styles.headerButton}>
+      //       <Ionicons
+      //         name="information-circle-outline"
+      //         size={24}
+      //         color={COLORS.primary}
+      //       />
+      //     </TouchableOpacity>
+      //   </View>
+      // ),
     });
   }, [room, connected, navigation]);
 
@@ -128,7 +132,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       count: messages.length,
       messageIds: messages.map(m => m.messageId),
     });
-    
+
     if (messages.length > 0 && !loading) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
@@ -160,7 +164,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       currentUserId,
       isFromMe: item.senderId === currentUserId,
     });
-    
+
     const isFromMe = item.senderId === currentUserId;
     const prevMessage = index > 0 ? messages[index - 1] : null;
     const showAvatar =
@@ -236,11 +240,17 @@ const ChatRoomScreen = ({ route, navigation }) => {
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={64} color={COLORS.error} />
         <Text style={styles.errorText}>Chat room not found</Text>
-        <TouchableOpacity 
-          style={styles.backButton}
+        <TouchableOpacity
+          style={styles.errorBackWrapper}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={COLORS.primary}
+            style={styles.errorBackIcon}
+          />
+          <Text style={styles.errorBackText}>Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -293,21 +303,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
+  // Back button (headerLeft)
   backButton: {
     paddingLeft: SPACING.md,
     paddingRight: SPACING.sm,
     paddingVertical: SPACING.sm,
   },
+
   headerTitle: {
     flexDirection: "row",
     alignItems: "center",
   },
   headerIconContainer: {
-    position: 'relative',
+    position: "relative",
     marginRight: SPACING.sm,
   },
   connectedDot: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     width: 10,
@@ -335,10 +348,11 @@ const styles = StyleSheet.create({
   headerButton: {
     marginLeft: SPACING.md,
   },
+
   connectionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.warning,
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
@@ -346,27 +360,29 @@ const styles = StyleSheet.create({
   connectionBannerText: {
     color: COLORS.white,
     fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: SPACING.xs,
   },
+
   messagesList: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     flexGrow: 1,
   },
   loadMoreContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: SPACING.md,
   },
   loadMoreText: {
     color: COLORS.primary,
     fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontWeight: "600",
   },
+
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: SPACING.xxl,
   },
   loadingText: {
@@ -374,16 +390,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
   },
+
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: SPACING.xxl * 2,
   },
   emptyText: {
     marginTop: SPACING.md,
     fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   emptySubtext: {
@@ -391,37 +408,44 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
   },
+
   loadingScreenContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.background,
   },
+
+  // Error screen
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.background,
     paddingHorizontal: SPACING.xl,
   },
   errorText: {
     marginTop: SPACING.md,
     fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.error,
-    textAlign: 'center',
+    textAlign: "center",
   },
-  backButton: {
-    marginTop: SPACING.xl,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
+  errorBackWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
   },
-  backButtonText: {
-    color: COLORS.white,
+  errorBackIcon: {
+    marginRight: SPACING.xs,
+  },
+  errorBackText: {
     fontSize: FONT_SIZES.base,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontWeight: "600",
   },
 });
 

@@ -114,6 +114,15 @@ const NotificationScreen = ({ navigation }) => {
             });
           }
         }
+        // Contract navigation: /contracts/{contractId}
+        else if (url.startsWith('/contracts/') || url.startsWith('/contract/')) {
+          const contractId = url.split('/').pop();
+          if (contractId) {
+            navigation.navigate('ContractDetail', {
+              contractId: contractId,
+            });
+          }
+        }
         // Service navigation: /services/{serviceId}
         else if (url.startsWith('/services/') || url.startsWith('/service/')) {
           const serviceId = url.split('/').pop();
