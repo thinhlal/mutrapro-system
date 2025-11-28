@@ -90,6 +90,7 @@ export const API_ENDPOINTS = {
     UPLOAD_TASK_FILE: `${PROJECT_PATH}/files/upload`,
     GET_BY_ASSIGNMENT_ID: assignmentId =>
       `${PROJECT_PATH}/files/by-assignment/${assignmentId}`,
+    DELETE: fileId => `${PROJECT_PATH}/files/${fileId}`,
     // Manager file management endpoints
     APPROVE: fileId => `${PROJECT_PATH}/files/${fileId}/approve`,
     REJECT: fileId => `${PROJECT_PATH}/files/${fileId}/reject`,
@@ -167,6 +168,8 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/cancel`,
     REPORT_ISSUE: assignmentId =>
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/report-issue`,
+    SUBMIT_FOR_REVIEW: assignmentId =>
+      `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/submit-for-review`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===

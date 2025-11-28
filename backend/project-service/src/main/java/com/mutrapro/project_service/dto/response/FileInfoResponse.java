@@ -25,8 +25,9 @@ public class FileInfoResponse {
     FileSourceType fileSource;  // Thêm field để phân biệt loại file
     String description;  // Note/description từ specialist khi upload
     Instant uploadDate;
-    String fileStatus;  // uploaded, pending_review, approved, rejected, delivered
+    String fileStatus;  // uploaded, pending_review, approved, rejected, delivered, deleted
     Boolean deliveredToCustomer;
     Instant deliveredAt;
     Instant reviewedAt;
+    String rejectionReason;  // Lý do từ chối (khi fileStatus = rejected)
 }

@@ -305,6 +305,30 @@ export const reportIssue = async (assignmentId, reason) => {
 };
 
 /**
+ * Specialist submit task for review (chuyển files từ uploaded sang pending_review)
+ * POST /specialist/task-assignments/{assignmentId}/submit-for-review
+ *
+ * @param {string} assignmentId - ID của task assignment
+ * @param {string[]} fileIds - Danh sách file IDs được chọn để submit
+ * @returns {Promise} ApiResponse với task assignment
+ */
+export const submitTaskForReview = async (assignmentId, fileIds) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.SUBMIT_FOR_REVIEW(assignmentId),
+      { fileIds }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi submit task for review',
+      }
+    );
+  }
+};
+
+/**
  * Manager resolve issue (clear hasIssue flag - cho specialist tiếp tục)
  * POST /task-assignments/{assignmentId}/resolve-issue?contractId={contractId}
  *

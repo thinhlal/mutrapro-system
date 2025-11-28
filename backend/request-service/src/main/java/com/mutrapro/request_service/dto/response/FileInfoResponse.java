@@ -23,5 +23,10 @@ public class FileInfoResponse {
     String contentType;
     String fileSource;
     Instant uploadDate;
+    String fileStatus;
+    Boolean deliveredToCustomer;
+    Instant deliveredAt;
+    Instant reviewedAt;
+    String rejectionReason;  // Lý do từ chối (khi fileStatus = rejected)
 }
 

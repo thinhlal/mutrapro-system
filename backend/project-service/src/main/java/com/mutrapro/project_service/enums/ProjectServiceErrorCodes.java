@@ -177,7 +177,33 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     FILE_ACCESS_DENIED("CONTRACT_7035", 403,
         "https://docs.mutrapro.com/errors/CONTRACT_7035",
         "Access to file is denied",
-        Retryable.NON_TRANSIENT);
+        Retryable.NON_TRANSIENT),
+    
+    // Task Assignment Status Errors (7036-7040)
+    INVALID_TASK_ASSIGNMENT_STATUS("CONTRACT_7036", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7036",
+        "Invalid task assignment status for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    TASK_ASSIGNMENT_NOT_BELONG_TO_CONTRACT("CONTRACT_7037", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7037",
+        "Task assignment does not belong to the specified contract",
+        Retryable.NON_TRANSIENT),
+    
+    TASK_ASSIGNMENT_NO_ISSUE("CONTRACT_7038", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7038",
+        "Task assignment does not have an issue to resolve",
+        Retryable.NON_TRANSIENT),
+    
+    SPECIALIST_NOT_FOUND("CONTRACT_7039", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7039",
+        "Specialist not found",
+        Retryable.NON_TRANSIENT),
+    
+    FAILED_TO_FETCH_SPECIALIST("CONTRACT_7040", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7040",
+        "Failed to fetch specialist information",
+        Retryable.TRANSIENT);
 
     private final String code;
     private final int httpStatus;

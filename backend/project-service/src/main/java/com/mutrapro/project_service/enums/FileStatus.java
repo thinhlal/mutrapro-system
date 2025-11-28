@@ -6,6 +6,7 @@ public enum FileStatus {
     approved,           // Đã duyệt
     rejected,           // Bị từ chối
     delivered,          // Đã giao cho customer
-    revision_requested  // Yêu cầu chỉnh sửa
+    revision_requested, // Yêu cầu chỉnh sửa
+    deleted             // Đã xóa (soft delete)
 }
 

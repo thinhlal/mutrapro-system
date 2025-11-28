@@ -42,6 +42,11 @@ import com.mutrapro.project_service.exception.TaskAssignmentAlreadyCompletedExce
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
+import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
+import com.mutrapro.project_service.exception.TaskAssignmentNotBelongToContractException;
+import com.mutrapro.project_service.exception.TaskAssignmentNoIssueException;
+import com.mutrapro.project_service.exception.SpecialistNotFoundException;
+import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
@@ -85,6 +90,7 @@ public class TaskAssignmentService {
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     MilestoneProgressService milestoneProgressService;
+    FileService fileService;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -1125,12 +1131,14 @@ public class TaskAssignmentService {
             if (specialistResponse == null
                 || !"success".equalsIgnoreCase(specialistResponse.getStatus())
                 || specialistResponse.getData() == null) {
-                throw new RuntimeException("Specialist not found: " + request.getSpecialistId());
+                throw SpecialistNotFoundException.byId(request.getSpecialistId());
             }
             specialistData = specialistResponse.getData();
+        } catch (SpecialistNotFoundException ex) {
+            throw ex;
         } catch (Exception ex) {
             log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
-            throw new RuntimeException("Failed to fetch specialist info: " + ex.getMessage(), ex);
+            throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
         }
         
         // Create task assignment
@@ -1194,12 +1202,14 @@ public class TaskAssignmentService {
                 if (specialistResponse == null
                     || !"success".equalsIgnoreCase(specialistResponse.getStatus())
                     || specialistResponse.getData() == null) {
-                    throw new RuntimeException("Specialist not found: " + request.getSpecialistId());
+                    throw SpecialistNotFoundException.byId(request.getSpecialistId());
                 }
                 specialistData = specialistResponse.getData();
+            } catch (SpecialistNotFoundException ex) {
+                throw ex;
             } catch (Exception ex) {
                 log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
-                throw new RuntimeException("Failed to fetch specialist info: " + ex.getMessage(), ex);
+                throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
             }
             assignment.setSpecialistNameSnapshot(asString(specialistData.get("fullName")));
             assignment.setSpecialistEmailSnapshot(asString(specialistData.get("email")));
@@ -1418,8 +1428,7 @@ public class TaskAssignmentService {
         
         // Only allow accept if status is 'assigned'
         if (assignment.getStatus() != AssignmentStatus.assigned) {
-            throw new RuntimeException(
-                "Task assignment cannot be accepted. Current status: " + assignment.getStatus());
+            throw InvalidTaskAssignmentStatusException.cannotAccept(assignment.getAssignmentId(), assignment.getStatus());
         }
         
         assignment.setSpecialistRespondedAt(Instant.now());
@@ -1474,8 +1483,7 @@ public class TaskAssignmentService {
         }
 
         if (assignment.getStatus() != AssignmentStatus.ready_to_start) {
-            throw new RuntimeException(
-                "Task assignment cannot be started. Current status: " + assignment.getStatus());
+            throw InvalidTaskAssignmentStatusException.cannotStart(assignment.getAssignmentId(), assignment.getStatus());
         }
 
         assignment.setStatus(AssignmentStatus.in_progress);
@@ -1512,8 +1520,7 @@ public class TaskAssignmentService {
         if (assignment.getStatus() != AssignmentStatus.assigned
             && assignment.getStatus() != AssignmentStatus.accepted_waiting
             && assignment.getStatus() != AssignmentStatus.ready_to_start) {
-            throw new RuntimeException(
-                "Task assignment cannot be cancelled. Current status: " + assignment.getStatus());
+            throw InvalidTaskAssignmentStatusException.cannotCancel(assignment.getAssignmentId(), assignment.getStatus());
         }
         
         assignment.setStatus(AssignmentStatus.cancelled);
@@ -1577,8 +1584,7 @@ public class TaskAssignmentService {
         
         // Only allow report issue if status is 'in_progress'
         if (assignment.getStatus() != AssignmentStatus.in_progress) {
-            throw new RuntimeException(
-                "Task assignment cannot report issue. Current status: " + assignment.getStatus());
+            throw InvalidTaskAssignmentStatusException.cannotReportIssue(assignment.getAssignmentId(), assignment.getStatus());
         }
         
         // Set issue flag và thông tin
@@ -1640,12 +1646,12 @@ public class TaskAssignmentService {
         
         // Verify assignment belongs to contract
         if (!assignment.getContractId().equals(contractId)) {
-            throw new RuntimeException("Task assignment does not belong to this contract");
+            throw TaskAssignmentNotBelongToContractException.create(assignment.getAssignmentId(), contractId);
         }
         
         // Only allow resolve if task has issue
         if (!Boolean.TRUE.equals(assignment.getHasIssue())) {
-            throw new RuntimeException("Task assignment does not have an issue to resolve");
+            throw TaskAssignmentNoIssueException.create(assignment.getAssignmentId());
         }
         
         // Clear issue flag
@@ -1677,17 +1683,17 @@ public class TaskAssignmentService {
         
         // Verify assignment belongs to contract
         if (!assignment.getContractId().equals(contractId)) {
-            throw new RuntimeException("Task assignment does not belong to this contract");
+            throw TaskAssignmentNotBelongToContractException.create(assignment.getAssignmentId(), contractId);
         }
         
         // Don't allow cancel if already completed
         if (assignment.getStatus() == AssignmentStatus.completed) {
-            throw new RuntimeException("Cannot cancel task assignment that is already completed");
+            throw new TaskAssignmentAlreadyCompletedException(assignment.getAssignmentId());
         }
         
         // Don't allow cancel if already cancelled
         if (assignment.getStatus() == AssignmentStatus.cancelled) {
-            throw new RuntimeException("Task assignment is already cancelled");
+            throw InvalidTaskAssignmentStatusException.cannotCancel(assignment.getAssignmentId(), assignment.getStatus());
         }
         
         // Set status to cancelled
@@ -1737,6 +1743,44 @@ public class TaskAssignmentService {
             log.error("Failed to send cancellation notification to specialist: assignmentId={}, error={}", 
                 assignmentId, e.getMessage(), e);
         }
+        
+        return taskAssignmentMapper.toResponse(saved);
+    }
+
+    /**
+     * Specialist submit task for review (chuyển files từ uploaded sang pending_review)
+     * @param assignmentId ID của task assignment
+     * @param fileIds Danh sách file IDs được chọn để submit
+     */
+    @Transactional
+    public TaskAssignmentResponse submitTaskForReview(String assignmentId, List<String> fileIds) {
+        log.info("Specialist submitting task for review: assignmentId={}, fileIds={}", assignmentId, fileIds);
+        
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify task belongs to current specialist
+        String specialistId = getCurrentSpecialistId();
+        if (!assignment.getSpecialistId().equals(specialistId)) {
+            throw UnauthorizedException.create(
+                "You can only submit your own tasks for review");
+        }
+        
+        // Only allow submit if status is 'in_progress' or 'revision_requested'
+        if (assignment.getStatus() != AssignmentStatus.in_progress 
+                && assignment.getStatus() != AssignmentStatus.revision_requested) {
+            throw InvalidTaskAssignmentStatusException.cannotSubmitForReview(assignment.getAssignmentId(), assignment.getStatus());
+        }
+        
+        // Submit files for review (chuyển từ uploaded sang pending_review)
+        int filesSubmitted = fileService.submitFilesForReview(assignmentId, fileIds, specialistId);
+        log.info("Submitted {} files for review: assignmentId={}, specialistId={}", 
+                filesSubmitted, assignmentId, specialistId);
+        
+        // Update assignment status to READY_FOR_REVIEW
+        assignment.setStatus(AssignmentStatus.ready_for_review);
+        TaskAssignment saved = taskAssignmentRepository.save(assignment);
+        log.info("Assignment status updated to READY_FOR_REVIEW: assignmentId={}", assignmentId);
         
         return taskAssignmentMapper.toResponse(saved);
     }

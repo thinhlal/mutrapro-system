@@ -2,6 +2,7 @@ package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.CancelTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.ReportIssueRequest;
+import com.mutrapro.project_service.dto.request.SubmitForReviewRequest;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.service.TaskAssignmentService;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -98,6 +99,24 @@ public class SpecialistTaskAssignmentController {
         TaskAssignmentResponse assignment = taskAssignmentService.reportIssue(assignmentId, request.getReason());
         return ApiResponse.<TaskAssignmentResponse>builder()
                 .message("Issue reported successfully")
+                .data(assignment)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{assignmentId}/submit-for-review")
+    @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
+    @Operation(summary = "Specialist submit task for review (chuyển files từ uploaded sang pending_review)")
+    public ApiResponse<TaskAssignmentResponse> submitTaskForReview(
+            @PathVariable String assignmentId,
+            @Valid @RequestBody SubmitForReviewRequest request) {
+        log.info("POST /specialist/task-assignments/{}/submit-for-review - Submitting task for review with {} files", 
+                assignmentId, request.getFileIds() != null ? request.getFileIds().size() : 0);
+        TaskAssignmentResponse assignment = taskAssignmentService.submitTaskForReview(
+                assignmentId, request.getFileIds());
+        return ApiResponse.<TaskAssignmentResponse>builder()
+                .message("Task submitted for review successfully")
                 .data(assignment)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

@@ -19,6 +19,7 @@ import {
   Empty,
   Alert,
   Upload,
+  Checkbox,
 } from 'antd';
 import {
   LeftOutlined,
@@ -28,6 +29,7 @@ import {
   EditOutlined,
   InboxOutlined,
   DownloadOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -37,10 +39,12 @@ import {
   acceptTaskAssignment,
   reportIssue,
   startTaskAssignment,
+  submitTaskForReview,
 } from '../../../services/taskAssignmentService';
 import {
   uploadTaskFile,
   getFilesByAssignmentId,
+  softDeleteFile,
 } from '../../../services/fileService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './TranscriptionTaskDetailPage.module.css';
@@ -75,6 +79,8 @@ function getStatusTag(status) {
     accepted_waiting: { color: 'gold', text: 'Accepted - Waiting' },
     ready_to_start: { color: 'purple', text: 'Ready to Start' },
     in_progress: { color: 'geekblue', text: 'In Progress' },
+    ready_for_review: { color: 'orange', text: 'Ready for Review' },
+    revision_requested: { color: 'warning', text: 'Revision Requested' },
     completed: { color: 'green', text: 'Completed' },
     cancelled: { color: 'default', text: 'Cancelled' },
   };
@@ -217,6 +223,10 @@ const TranscriptionTaskDetailPage = () => {
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
   const [contractTasks, setContractTasks] = useState([]);
+  const [selectedFileIds, setSelectedFileIds] = useState(new Set()); // State local để chọn files submit
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletingFileId, setDeletingFileId] = useState(null);
+  const [deletingFile, setDeletingFile] = useState(false);
 
   const loadContractTasks = useCallback(async contractId => {
     if (!contractId) {
@@ -260,14 +270,16 @@ const TranscriptionTaskDetailPage = () => {
     };
   }, [task, contractTasks]);
 
-  const loadTaskFiles = useCallback(async () => {
-    if (!task?.assignmentId) return;
+  const loadTaskFiles = useCallback(async (assignmentId) => {
+    if (!assignmentId) return;
+    console.log('CALL getFilesByAssignmentId', assignmentId, new Date().toISOString());
 
     try {
-      const response = await getFilesByAssignmentId(task.assignmentId);
+      const response = await getFilesByAssignmentId(assignmentId);
       if (response?.status === 'success' && Array.isArray(response?.data)) {
         // Map API response to UI format
         // Sort by uploadDate để version đúng thứ tự
+        // Backend đã filter deleted files rồi, không cần filter ở đây nữa
         const sortedFiles = [...response.data].sort((a, b) => {
           const dateA = a.uploadDate ? new Date(a.uploadDate).getTime() : 0;
           const dateB = b.uploadDate ? new Date(b.uploadDate).getTime() : 0;
@@ -289,12 +301,23 @@ const TranscriptionTaskDetailPage = () => {
           mimeType: file.mimeType,
         }));
         setFiles(mappedFiles);
+
+        // Reset selectedFileIds khi load files mới (chỉ giữ những file vẫn còn trong list)
+        setSelectedFileIds(prev => {
+          const newSet = new Set();
+          mappedFiles.forEach(f => {
+            if (prev.has(f.fileId) && f.fileStatus === 'uploaded') {
+              newSet.add(f.fileId);
+            }
+          });
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Error loading files:', error);
       // Don't show error - files might not exist yet
     }
-  }, [task?.assignmentId]);
+  }, []); // No dependencies - assignmentId passed as parameter
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -315,7 +338,12 @@ const TranscriptionTaskDetailPage = () => {
         fallbackDeadlineCache.clear();
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
-        await loadContractTasks(contractId);
+        
+        // Load song song: tasks cùng contract + files của assignment hiện tại
+        await Promise.all([
+          loadContractTasks(contractId),
+          loadTaskFiles(taskData.assignmentId),
+        ]);
       } else {
         setError('Task not found');
       }
@@ -325,34 +353,50 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId, loadContractTasks]);
+  }, [taskId, loadContractTasks, loadTaskFiles]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (task?.assignmentId) {
-      loadTaskFiles();
-    }
-  }, [task?.assignmentId, loadTaskFiles]);
-
   const handleReload = useCallback(() => {
-    loadData();
-    if (task?.assignmentId) {
-      loadTaskFiles();
-    }
-  }, [loadData, task?.assignmentId, loadTaskFiles]);
+    loadData(); // loadData đã lo luôn cả files
+  }, [loadData]);
 
-  const handleSubmitForReview = useCallback(() => {
-    if (
-      !task ||
-      task.status?.toLowerCase() !== 'in_progress' ||
-      files.length === 0
-    )
+  const handleSubmitForReview = useCallback(async () => {
+    if (!task) return;
+
+    const status = task.status?.toLowerCase();
+    if (status !== 'in_progress' && status !== 'revision_requested') {
       return;
-    message.info('Chức năng submit for review sẽ được implement sau');
-  }, [task, files.length]);
+    }
+
+    // Lấy danh sách fileIds đã được chọn (chỉ lấy files có status = uploaded)
+    const uploadedFileIds = Array.from(selectedFileIds).filter(fileId => {
+      const file = files.find(f => f.fileId === fileId);
+      return file && file.fileStatus === 'uploaded';
+    });
+
+    if (uploadedFileIds.length === 0) {
+      message.warning('Không có file nào được chọn để submit. Vui lòng tick checkbox để chọn ít nhất 1 file.');
+      return;
+    }
+
+    try {
+      const response = await submitTaskForReview(task.assignmentId, uploadedFileIds);
+      if (response?.status === 'success') {
+        message.success(`Đã submit ${uploadedFileIds.length} file(s) for review thành công`);
+        setSelectedFileIds(new Set()); // Reset selection
+        await loadData(); // loadData đã tự reload files rồi
+      } else {
+        message.error(response?.message || 'Lỗi khi submit for review');
+      }
+    } catch (error) {
+      console.error('Error submitting for review:', error);
+      message.error(error?.message || 'Lỗi khi submit for review');
+    }
+  }, [task, selectedFileIds, files, loadData, loadTaskFiles]);
+
 
   const handleAcceptTask = useCallback(async () => {
     if (!task || task.status?.toLowerCase() !== 'assigned') return;
@@ -435,6 +479,58 @@ const TranscriptionTaskDetailPage = () => {
     await downloadFileHelper(file.fileId, file.fileName);
   }, []);
 
+  const handleToggleFileSelection = useCallback((fileId, checked) => {
+    setSelectedFileIds(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(fileId);
+      } else {
+        newSet.delete(fileId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleDeleteFile = useCallback((fileId) => {
+    console.log('CLICK DELETE BUTTON', fileId);
+    setDeletingFileId(fileId);
+    setDeleteModalVisible(true);
+  }, []);
+
+  const handleConfirmDeleteFile = useCallback(async () => {
+    if (!deletingFileId) return;
+
+    try {
+      setDeletingFile(true);
+      const response = await softDeleteFile(deletingFileId);
+
+      if (response?.status === 'success') {
+        message.success('File đã được xóa thành công');
+        await loadTaskFiles(task.assignmentId);
+        // Bỏ file khỏi list selected nếu đang selected
+        setSelectedFileIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(deletingFileId);
+          return newSet;
+        });
+        setDeleteModalVisible(false);
+        setDeletingFileId(null);
+      } else {
+        message.error(response?.message || 'Lỗi khi xóa file');
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      message.error(error?.message || 'Lỗi khi xóa file');
+    } finally {
+      setDeletingFile(false);
+    }
+  }, [deletingFileId, loadTaskFiles]);
+
+  const handleCancelDeleteFile = useCallback(() => {
+    setDeleteModalVisible(false);
+    setDeletingFileId(null);
+  }, []);
+
   // Reset form khi modal mở
   useEffect(() => {
     if (uploadModalVisible) {
@@ -492,7 +588,7 @@ const TranscriptionTaskDetailPage = () => {
         uploadForm.resetFields();
         setSelectedFile(null);
         setUploadModalVisible(false);
-        await loadTaskFiles();
+        await loadTaskFiles(task.assignmentId);
       } else {
         message.error(response?.message || 'Failed to upload file');
       }
@@ -547,7 +643,30 @@ const TranscriptionTaskDetailPage = () => {
         dataIndex: 'fileStatus',
         key: 'fileStatus',
         width: 160,
-        render: s => getFileStatusTag(s),
+        render: s => {
+          if (s === 'uploaded') {
+            return <Tag color="blue">Draft</Tag>;
+          }
+          return getFileStatusTag(s);
+        },
+      },
+      {
+        title: 'Select for submission',
+        key: 'selectForSubmission',
+        width: 180,
+        render: (_, record) => {
+          // Chỉ hiện checkbox cho file uploaded
+          if (record.fileStatus === 'uploaded') {
+            return (
+              <Checkbox
+                checked={selectedFileIds.has(record.fileId)}
+                onChange={e => handleToggleFileSelection(record.fileId, e.target.checked)}
+              >
+              </Checkbox>
+            );
+          }
+          return <Text type="secondary">—</Text>;
+        },
       },
       {
         title: 'Note',
@@ -586,20 +705,38 @@ const TranscriptionTaskDetailPage = () => {
       {
         title: 'Actions',
         key: 'actions',
-        width: 120,
-        render: (_, record) => (
-          <Button
-            type="link"
-            icon={<DownloadOutlined />}
-            onClick={() => handleDownloadFile(record)}
-            size="small"
-          >
-            Download
-          </Button>
-        ),
+        width: 200,
+        render: (_, record) => {
+          const canDelete = record.fileStatus === 'uploaded' &&
+            (task.status?.toLowerCase() === 'in_progress' || task.status?.toLowerCase() === 'revision_requested');
+
+          return (
+            <Space>
+              <Button
+                type="link"
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadFile(record)}
+                size="small"
+              >
+                Download
+              </Button>
+              {canDelete && (
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteFile(record.fileId)}
+                  size="small"
+                >
+                  Delete
+                </Button>
+              )}
+            </Space>
+          );
+        },
       },
     ],
-    [latestVersion, handleDownloadFile]
+    [latestVersion, handleDownloadFile, selectedFileIds, handleToggleFileSelection, files, task?.status, handleDeleteFile]
   );
 
   if (loading) {
@@ -925,9 +1062,17 @@ const TranscriptionTaskDetailPage = () => {
                 const hasAcceptButton = status === 'assigned';
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
-                const hasSubmitButton = status !== 'cancelled';
+                // Cho phép submit khi in_progress hoặc revision_requested
+                const hasSubmitButton = status === 'in_progress' || status === 'revision_requested';
                 const hasIssueButton =
                   status === 'in_progress' && !task.hasIssue;
+
+                // Check có ít nhất 1 file uploaded được chọn
+                const uploadedFileIds = Array.from(selectedFileIds).filter(fileId => {
+                  const file = files.find(f => f.fileId === fileId);
+                  return file && file.fileStatus === 'uploaded';
+                });
+                const hasFilesToSubmit = uploadedFileIds.length > 0;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
                 const hasAnyAction =
                   hasIssueAlert ||
@@ -1013,47 +1158,44 @@ const TranscriptionTaskDetailPage = () => {
                         hasStartButton ||
                         hasSubmitButton ||
                         hasIssueButton) && (
-                        <Space wrap>
-                          {hasAcceptButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleAcceptTask}
-                              loading={acceptingTask}
-                            >
-                              Accept Task
-                            </Button>
-                          )}
-                          {hasSubmitButton && (
-                            <Button
-                              onClick={handleSubmitForReview}
-                              disabled={
-                                task.status?.toLowerCase() !== 'in_progress' ||
-                                files.length === 0
-                              }
-                            >
-                              Submit for Review
-                            </Button>
-                          )}
-                          {hasStartButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleStartTask}
-                              loading={startingTask}
-                            >
-                              Start Task
-                            </Button>
-                          )}
-                          {hasIssueButton && (
-                            <Button
-                              danger
-                              icon={<ExclamationCircleOutlined />}
-                              onClick={handleOpenIssueModal}
-                            >
-                              Báo không kịp deadline
-                            </Button>
-                          )}
-                        </Space>
-                      )}
+                          <Space wrap>
+                            {hasAcceptButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleAcceptTask}
+                                loading={acceptingTask}
+                              >
+                                Accept Task
+                              </Button>
+                            )}
+                            {hasSubmitButton && (
+                              <Button
+                                onClick={handleSubmitForReview}
+                                disabled={!hasFilesToSubmit}
+                              >
+                                Submit for Review
+                              </Button>
+                            )}
+                            {hasStartButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleStartTask}
+                                loading={startingTask}
+                              >
+                                Start Task
+                              </Button>
+                            )}
+                            {hasIssueButton && (
+                              <Button
+                                danger
+                                icon={<ExclamationCircleOutlined />}
+                                onClick={handleOpenIssueModal}
+                              >
+                                Báo không kịp deadline
+                              </Button>
+                            )}
+                          </Space>
+                        )}
                     </Space>
                   </Card>
                 );
@@ -1316,6 +1458,22 @@ const TranscriptionTaskDetailPage = () => {
           style={{ marginTop: 16 }}
         />
       </Modal>
+      {/* Modal xác nhận xóa file */}
+      <Modal
+        open={deleteModalVisible}
+        title="Xác nhận xóa file"
+        onOk={handleConfirmDeleteFile}
+        onCancel={handleCancelDeleteFile}
+        okText="Xóa"
+        okType="danger"
+        cancelText="Hủy"
+        confirmLoading={deletingFile}
+      >
+        <Text>
+          Bạn có chắc chắn muốn xóa file này? File sẽ bị xóa và không thể submit.
+        </Text>
+      </Modal>
+
     </div>
   );
 };

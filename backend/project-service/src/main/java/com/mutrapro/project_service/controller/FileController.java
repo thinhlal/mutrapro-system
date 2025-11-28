@@ -261,5 +261,28 @@ public class FileController {
                 .statusCode(HttpStatus.OK.value())
                 .build();
     }
+
+    @DeleteMapping("/{fileId}")
+    @Operation(summary = "Specialist soft delete file (chỉ khi fileStatus = uploaded)")
+    public ApiResponse<FileInfoResponse> softDeleteFile(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            Authentication authentication) {
+        log.info("Soft deleting file: {}", fileId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        FileInfoResponse fileInfo = fileService.softDeleteFile(
+            fileId,
+            userContext.getUserId(),
+            userContext.getRoles()
+        );
+        
+        return ApiResponse.<FileInfoResponse>builder()
+                .message("File deleted successfully")
+                .data(fileInfo)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
 }
 

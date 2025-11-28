@@ -58,6 +58,8 @@ const STATUS_COLORS = {
   accepted_waiting: 'gold',
   ready_to_start: 'purple',
   in_progress: 'processing',
+  ready_for_review: 'orange',
+  revision_requested: 'warning',
   completed: 'success',
   cancelled: 'error',
 };
@@ -68,6 +70,8 @@ const STATUS_LABELS = {
   accepted_waiting: 'Đã nhận - Chờ',
   ready_to_start: 'Sẵn sàng làm',
   in_progress: 'Đang thực hiện',
+  ready_for_review: 'Chờ duyệt',
+  revision_requested: 'Yêu cầu chỉnh sửa',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };

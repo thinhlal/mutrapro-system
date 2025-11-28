@@ -49,6 +49,8 @@ function getStatusDisplay(status) {
     accepted_waiting: { text: 'Đã nhận - Chờ tới lượt', color: 'gold' },
     ready_to_start: { text: 'Ready to Start', color: 'purple' },
     in_progress: { text: 'In Progress', color: 'geekblue' },
+    ready_for_review: { text: 'Ready for Review', color: 'orange' },
+    revision_requested: { text: 'Revision Requested', color: 'warning' },
     completed: { text: 'Completed', color: 'green' },
     cancelled: { text: 'Cancelled', color: 'default' },
   };

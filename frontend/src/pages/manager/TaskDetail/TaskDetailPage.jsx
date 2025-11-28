@@ -39,7 +39,6 @@ import {
 } from '../../../services/taskAssignmentService';
 import {
   getFilesByAssignmentId,
-  getFilesByRequestId,
   approveFile,
   rejectFile,
   deliverFileToCustomer,
@@ -65,6 +64,8 @@ const STATUS_COLORS = {
   accepted_waiting: 'gold',
   ready_to_start: 'purple',
   in_progress: 'processing',
+  ready_for_review: 'orange',
+  revision_requested: 'warning',
   completed: 'success',
   cancelled: 'error',
 };
@@ -74,6 +75,8 @@ const STATUS_LABELS = {
   accepted_waiting: 'Đã nhận - Chờ',
   ready_to_start: 'Sẵn sàng làm',
   in_progress: 'Đang thực hiện',
+  ready_for_review: 'Chờ duyệt',
+  revision_requested: 'Yêu cầu chỉnh sửa',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };
@@ -112,6 +115,8 @@ const TaskDetailPage = () => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [rejectionReasonModalVisible, setRejectionReasonModalVisible] = useState(false);
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState(null);
 
   useEffect(() => {
     if (contractId && assignmentId) {
@@ -120,18 +125,12 @@ const TaskDetailPage = () => {
   }, [contractId, assignmentId]);
 
   useEffect(() => {
-    // Load request khi có task hoặc contract (có thể có requestId)
-    if (task || contract) {
-      loadRequest();
-    }
-  }, [task, contract]);
-
-  useEffect(() => {
-    // Load files khi request đã được load (để có request.files)
-    if (request || task) {
+    // Load assignment files khi task đã được load
+    // Request files đã có trong request.files (từ API getServiceRequestById)
+    if (task && assignmentId) {
       loadFiles();
     }
-  }, [request, task]);
+  }, [task, assignmentId]);
 
   const loadData = async () => {
     try {
@@ -165,10 +164,6 @@ const TaskDetailPage = () => {
       const response = await getContractById(contractId);
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
-        // Nếu contract có requestId, load request luôn
-        if (response.data.requestId) {
-          await loadRequestById(response.data.requestId);
-        }
       }
     } catch (error) {
       console.error('Error loading contract:', error);
@@ -177,30 +172,16 @@ const TaskDetailPage = () => {
 
   const loadRequestById = async requestId => {
     if (!requestId) return;
-
+    // Nếu đã có request cùng ID rồi thì khỏi gọi lại
+    if (request?.requestId === requestId) {
+      return;
+    }
     try {
       setRequestLoading(true);
       console.log('Loading request with ID:', requestId);
       const response = await getServiceRequestById(requestId);
       if (response?.status === 'success' && response?.data) {
         let requestData = response.data;
-        console.log('Request loaded:', requestData);
-
-        // Nếu request.files empty hoặc không có, thử gọi trực tiếp API
-        if (!requestData.files || requestData.files.length === 0) {
-          try {
-            const filesResponse = await getFilesByRequestId(requestId);
-            if (filesResponse?.status === 'success' && filesResponse?.data) {
-              requestData.files = filesResponse.data;
-              console.log(
-                'Loaded files directly from API:',
-                filesResponse.data.length
-              );
-            }
-          } catch (fileError) {
-            console.error('Error loading files directly:', fileError);
-          }
-        }
 
         setRequest(requestData);
       } else {
@@ -213,16 +194,14 @@ const TaskDetailPage = () => {
     }
   };
 
-  const loadRequest = async () => {
-    // Thử lấy requestId từ nhiều nguồn
-    const requestId = task?.request?.requestId || contract?.requestId || null;
+  useEffect(() => {
+    // Chỉ gọi khi THỰC SỰ có requestId
+    const requestId = task?.request?.requestId || contract?.requestId;
 
-    if (requestId) {
-      await loadRequestById(requestId);
-    } else {
-      console.warn('No requestId found in task.request or contract');
-    }
-  };
+    if (!requestId) return;
+
+    loadRequestById(requestId);
+  }, [task?.request?.requestId, contract?.requestId]);
 
   const loadFiles = async () => {
     try {
@@ -553,20 +532,20 @@ const TaskDetailPage = () => {
                   (task?.request?.instruments &&
                     Array.isArray(task.request.instruments) &&
                     task.request.instruments.length > 0)) && (
-                  <Descriptions.Item label="Instruments" span={2}>
-                    <Space wrap>
-                      {(
-                        request?.instruments ||
-                        task?.request?.instruments ||
-                        []
-                      ).map((inst, idx) => (
-                        <Tag key={idx} color="purple">
-                          {inst.instrumentName || inst.name || inst}
-                        </Tag>
-                      ))}
-                    </Space>
-                  </Descriptions.Item>
-                )}
+                    <Descriptions.Item label="Instruments" span={2}>
+                      <Space wrap>
+                        {(
+                          request?.instruments ||
+                          task?.request?.instruments ||
+                          []
+                        ).map((inst, idx) => (
+                          <Tag key={idx} color="purple">
+                            {inst.instrumentName || inst.name || inst}
+                          </Tag>
+                        ))}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
 
                 {request?.files &&
                   request.files.filter(
@@ -805,13 +784,19 @@ const TaskDetailPage = () => {
                               </Text>
                             )}
                             {file.rejectionReason && (
-                              <Alert
-                                message="Revision Request"
-                                description={file.rejectionReason}
-                                type="warning"
+                              <Button
+                                type="link"
+                                danger
                                 size="small"
-                                style={{ marginTop: 8 }}
-                              />
+                                icon={<ExclamationCircleOutlined />}
+                                onClick={() => {
+                                  setSelectedRejectionReason(file.rejectionReason);
+                                  setRejectionReasonModalVisible(true);
+                                }}
+                                style={{ marginTop: 4, padding: 0, height: 'auto' }}
+                              >
+                                Xem lý do từ chối
+                              </Button>
                             )}
                             {file.description && (
                               <Text
@@ -869,6 +854,42 @@ const TaskDetailPage = () => {
         )}
       </Modal>
 
+      {/* Rejection Reason Modal */}
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Lý do từ chối file</span>
+          </Space>
+        }
+        open={rejectionReasonModalVisible}
+        onCancel={() => {
+          setRejectionReasonModalVisible(false);
+          setSelectedRejectionReason(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setRejectionReasonModalVisible(false);
+            setSelectedRejectionReason(null);
+          }}>
+            Đóng
+          </Button>
+        ]}
+        width={600}
+      >
+        <Alert
+          message="File đã bị từ chối"
+          description={
+            <Paragraph style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+              {selectedRejectionReason}
+            </Paragraph>
+          }
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      </Modal>
+
       {/* Preview File Modal */}
       <Modal
         title={previewFile?.fileName || 'Preview File'}
@@ -908,7 +929,7 @@ const TaskDetailPage = () => {
           </Button>,
         ]}
         width={900}
-        destroyOnClose={true}
+        destroyOnHidden={true}
       >
         <Spin spinning={previewLoading}>
           {previewFile?.previewUrl && (

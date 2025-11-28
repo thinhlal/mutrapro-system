@@ -64,6 +64,26 @@ export const getFilesByAssignmentId = async assignmentId => {
 };
 
 /**
+ * Specialist soft delete file (chỉ khi fileStatus = uploaded)
+ * @param {string} fileId - ID của file
+ * @returns {Promise} Response từ API
+ */
+export const softDeleteFile = async fileId => {
+  try {
+    const response = await axiosInstance.delete(
+      API_ENDPOINTS.FILES.DELETE(fileId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi xóa file',
+      }
+    );
+  }
+};
+
+/**
  * Lấy danh sách files theo requestId
  * @param {string} requestId - ID của service request
  * @returns {Promise} Response từ API

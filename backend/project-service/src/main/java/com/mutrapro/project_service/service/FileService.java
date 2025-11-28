@@ -7,21 +7,26 @@ import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
-import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.exception.FileNotFoundException;
 import com.mutrapro.project_service.exception.FileUploadException;
+import com.mutrapro.project_service.exception.InvalidFileStatusException;
+import com.mutrapro.project_service.exception.InvalidFileTypeForTaskException;
+import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
+import com.mutrapro.project_service.exception.NoFilesSelectedException;
+import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
+import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.mutrapro.shared.event.FileUploadedEvent;
 import com.mutrapro.shared.event.TaskFileUploadedEvent;
-import com.mutrapro.shared.exception.BusinessException;
 import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -84,36 +89,67 @@ public class FileService {
     }
 
     public List<FileInfoResponse> getFilesByRequestId(String requestId, String userId, List<String> userRoles) {
-        List<File> files = fileRepository.findByRequestId(requestId);
+        if (requestId == null || requestId.trim().isEmpty()) {
+            log.warn("RequestId is null or empty");
+            return List.of();
+        }
         
-        // Filter files dựa trên quyền của user
-        return files.stream()
-                .filter(f -> {
-                    try {
-                        // Check quyền truy cập cho từng file
-                        fileAccessService.checkFileAccess(f.getFileId(), userId, userRoles);
-                        return true;
-                    } catch (Exception e) {
-                        // Nếu không có quyền, skip file này
-                        log.debug("User {} không có quyền xem file {}: {}", userId, f.getFileId(), e.getMessage());
-                        return false;
+        try {
+            // CRITICAL OPTIMIZATION: Verify contract ownership một lần cho MANAGER
+            // Thay vì check từng file (N queries), chỉ cần 1 query
+            boolean skipFileAccessCheck = false;
+            
+            // Check MANAGER ownership
+            if (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN")) {
+                List<Contract> contracts = contractRepository.findByRequestId(requestId);
+                if (!contracts.isEmpty()) {
+                    // Lấy contract đầu tiên (thường là contract active)
+                    Contract contract = contracts.get(0);
+                    if (userId.equals(contract.getManagerUserId())) {
+                        skipFileAccessCheck = true;
+                        log.debug("Request {} belongs to contract managed by manager {}, skipping per-file access check", 
+                                requestId, userId);
                     }
-                })
-                .map(f -> FileInfoResponse.builder()
-                        .fileId(f.getFileId())
-                        .fileName(f.getFileName())
-                        .fileSize(f.getFileSize())
-                        .mimeType(f.getMimeType())
-                        .contentType(f.getContentType() != null ? f.getContentType().name() : null)
-                        .fileSource(f.getFileSource())
-                        .description(f.getDescription())
-                        .uploadDate(f.getUploadDate())
-                        .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
-                        .deliveredToCustomer(f.getDeliveredToCustomer())
-                        .deliveredAt(f.getDeliveredAt())
-                        .reviewedAt(f.getReviewedAt())
-                        .build())
-                .collect(Collectors.toList());
+                }
+            }
+            
+            // Lấy files với filter ở database level (chỉ customer_upload và contract_pdf)
+            // (API này được dùng bởi request-service để hiển thị files cho customer)
+            List<File> files = fileRepository.findByRequestIdAndFileSourceIn(
+                    requestId, 
+                    List.of(FileSourceType.customer_upload, FileSourceType.contract_pdf)
+            );
+            
+            // Nếu đã verify ownership, skip file access check để tối ưu performance
+            if (skipFileAccessCheck) {
+                log.debug("Returning {} files (customer_upload + contract_pdf) for request {} without per-file access check", 
+                        files.size(), requestId);
+                return files.stream()
+                        .map(f -> FileInfoResponse.builder()
+                                .fileId(f.getFileId())
+                                .fileName(f.getFileName())
+                                .fileSize(f.getFileSize())
+                                .mimeType(f.getMimeType())
+                                .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                                .fileSource(f.getFileSource())
+                                .description(f.getDescription())
+                                .uploadDate(f.getUploadDate())
+                                .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
+                                .deliveredToCustomer(f.getDeliveredToCustomer())
+                                .deliveredAt(f.getDeliveredAt())
+                                .reviewedAt(f.getReviewedAt())
+                                .rejectionReason(f.getRejectionReason())
+                                .build())
+                        .collect(Collectors.toList());
+            }
+            
+            // Nếu không verify được ownership, return empty list (API này chỉ dành cho manager)
+            log.warn("Manager {} không có quyền truy cập files của request {}", userId, requestId);
+            return List.of();
+        } catch (Exception e) {
+            log.error("Error fetching files for requestId: {}", requestId, e);
+            throw e;
+        }
     }
 
     public List<FileInfoResponse> getFilesByAssignmentId(String assignmentId, String userId, List<String> userRoles) {
@@ -123,9 +159,71 @@ public class FileService {
         }
         
         try {
-            List<File> files = fileRepository.findByAssignmentId(assignmentId);
+            // CRITICAL OPTIMIZATION: Verify assignment/contract ownership một lần
+            // Thay vì check từng file (N queries), chỉ cần 1-2 queries
             
-            // Filter files dựa trên quyền của user
+            TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId).orElse(null);
+            if (assignment == null) {
+                log.warn("Assignment {} not found", assignmentId);
+                return List.of();
+            }
+            
+            boolean skipFileAccessCheck = false;
+            
+            // Check SPECIALIST ownership
+            boolean isSpecialist = userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("TRANSCRIPTION") || 
+                role.equalsIgnoreCase("ARRANGEMENT") || 
+                role.equalsIgnoreCase("RECORDING_ARTIST")
+            );
+            
+            if (isSpecialist) {
+                String specialistUserId = assignment.getSpecialistUserIdSnapshot() != null 
+                        ? assignment.getSpecialistUserIdSnapshot() 
+                        : assignment.getSpecialistId();
+                if (userId.equals(specialistUserId)) {
+                    skipFileAccessCheck = true;
+                    log.debug("Assignment {} belongs to specialist {}, skipping per-file access check", 
+                            assignmentId, userId);
+                }
+            }
+            
+            // Check MANAGER ownership - CRITICAL: verify contract ownership một lần
+            // Thay vì check từng file (mỗi file query contract) → chậm!
+            if (!skipFileAccessCheck && (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN"))) {
+                Contract contract = contractRepository.findById(assignment.getContractId()).orElse(null);
+                if (contract != null && userId.equals(contract.getManagerUserId())) {
+                    skipFileAccessCheck = true;
+                    log.debug("Assignment {} belongs to contract managed by manager {}, skipping per-file access check", 
+                            assignmentId, userId);
+                }
+            }
+            
+            // Lấy files, loại trừ deleted files
+            List<File> files = fileRepository.findByAssignmentIdAndFileStatusNot(assignmentId, FileStatus.deleted);
+            
+            // Nếu đã verify assignment ownership, skip file access check để tối ưu performance
+            if (skipFileAccessCheck) {
+                return files.stream()
+                        .map(f -> FileInfoResponse.builder()
+                                .fileId(f.getFileId())
+                                .fileName(f.getFileName())
+                                .fileSize(f.getFileSize())
+                                .mimeType(f.getMimeType())
+                                .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                                .fileSource(f.getFileSource())
+                                .description(f.getDescription())
+                                .uploadDate(f.getUploadDate())
+                                .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
+                                .deliveredToCustomer(f.getDeliveredToCustomer())
+                                .deliveredAt(f.getDeliveredAt())
+                                .reviewedAt(f.getReviewedAt())
+                                .rejectionReason(f.getRejectionReason())
+                                .build())
+                        .collect(Collectors.toList());
+            }
+            
+            // Nếu chưa verify được, fallback về check từng file (cho manager, customer, etc.)
             return files.stream()
                     .filter(f -> {
                         try {
@@ -151,6 +249,7 @@ public class FileService {
                             .deliveredToCustomer(f.getDeliveredToCustomer())
                             .deliveredAt(f.getDeliveredAt())
                             .reviewedAt(f.getReviewedAt())
+                            .rejectionReason(f.getRejectionReason())
                             .build())
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -172,10 +271,7 @@ public class FileService {
                 .orElseThrow(() -> new TaskAssignmentNotFoundException(assignmentId));
         
         if (file.isEmpty()) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.FILE_EMPTY,
-                "File is empty"
-            );
+            throw new FileUploadException("File is empty");
         }
         
         // Validate file type based on task type
@@ -222,7 +318,7 @@ public class FileService {
                     .createdBy(userId)
                     .assignmentId(assignmentId)
                     .requestId(requestId)
-                    .fileStatus(FileStatus.uploaded)  // Chờ manager review
+                    .fileStatus(FileStatus.uploaded)  // Chờ specialist submit for review
                     .deliveredToCustomer(false)
                     .build();
             
@@ -247,7 +343,7 @@ public class FileService {
                             .taskType(assignment.getTaskType() != null ? assignment.getTaskType().name() : null)
                             .managerUserId(contract.getManagerUserId())
                             .title("Specialist đã upload file output")
-                            .content(String.format("Specialist đã upload file \"%s\" cho task %s của contract #%s. Vui lòng review file.", 
+                            .content(String.format("Specialist đã upload file \"%s\" cho task %s của contract #%s. Vui lòng chờ specialist submit for review.", 
                                     saved.getFileName(),
                                     assignment.getTaskType(),
                                     contractLabel))
@@ -298,6 +394,7 @@ public class FileService {
                     .deliveredToCustomer(saved.getDeliveredToCustomer())
                     .deliveredAt(saved.getDeliveredAt())
                     .reviewedAt(saved.getReviewedAt())
+                    .rejectionReason(saved.getRejectionReason())
                     .build();
                     
         } catch (IOException e) {
@@ -317,10 +414,7 @@ public class FileService {
      */
     private void validateFileTypeForTask(TaskType taskType, String fileName, String mimeType) {
         if (taskType == null) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                "Task type is required for file validation"
-            );
+            throw InvalidFileTypeForTaskException.taskTypeRequired();
         }
 
         String lowerFileName = fileName != null ? fileName.toLowerCase(Locale.ROOT) : "";
@@ -378,19 +472,14 @@ public class FileService {
                 break;
                 
             default:
-                throw new BusinessException(
-                    ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                    String.format("Unknown task type: %s", taskType)
-                );
+                throw InvalidFileTypeForTaskException.unknownTaskType(taskType.name());
         }
 
         if (!isValid) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                String.format(
-                    "File type '%s' is not allowed for task type '%s'. Only %s are allowed.",
-                    fileName, taskType.name(), allowedTypes
-                )
+            throw InvalidFileTypeForTaskException.notAllowed(
+                fileName,
+                taskType.name(),
+                allowedTypes
             );
         }
     }
@@ -461,6 +550,7 @@ public class FileService {
                 .deliveredToCustomer(file.getDeliveredToCustomer())
                 .deliveredAt(file.getDeliveredAt())
                 .reviewedAt(file.getReviewedAt())
+                .rejectionReason(file.getRejectionReason())
                 .build();
     }
 
@@ -480,10 +570,7 @@ public class FileService {
         
         // Verify user is MANAGER
         if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.UNAUTHORIZED,
-                "Only managers can approve files"
-            );
+            throw UnauthorizedException.create("Only managers can approve files");
         }
         
         File file = fileRepository.findById(fileId)
@@ -492,11 +579,7 @@ public class FileService {
         // Chỉ approve file có status uploaded hoặc pending_review
         if (file.getFileStatus() != FileStatus.uploaded && 
             file.getFileStatus() != FileStatus.pending_review) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                String.format("Cannot approve file with status: %s. File must be uploaded or pending_review.", 
-                        file.getFileStatus())
-            );
+            throw InvalidFileStatusException.cannotApprove(fileId, file.getFileStatus());
         }
         
         file.setFileStatus(FileStatus.approved);
@@ -527,10 +610,7 @@ public class FileService {
         
         // Verify user is MANAGER
         if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.UNAUTHORIZED,
-                "Only managers can reject files"
-            );
+            throw UnauthorizedException.create("Only managers can reject files");
         }
         
         File file = fileRepository.findById(fileId)
@@ -539,11 +619,7 @@ public class FileService {
         // Chỉ reject file có status uploaded hoặc pending_review
         if (file.getFileStatus() != FileStatus.uploaded && 
             file.getFileStatus() != FileStatus.pending_review) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                String.format("Cannot reject file with status: %s. File must be uploaded or pending_review.", 
-                        file.getFileStatus())
-            );
+            throw InvalidFileStatusException.cannotReject(fileId, file.getFileStatus());
         }
         
         file.setFileStatus(FileStatus.rejected);
@@ -574,10 +650,7 @@ public class FileService {
         
         // Verify user is MANAGER
         if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.UNAUTHORIZED,
-                "Only managers can deliver files to customers"
-            );
+            throw UnauthorizedException.create("Only managers can deliver files to customers");
         }
         
         File file = fileRepository.findById(fileId)
@@ -585,11 +658,7 @@ public class FileService {
         
         // Chỉ deliver file đã approved
         if (file.getFileStatus() != FileStatus.approved) {
-            throw new BusinessException(
-                ProjectServiceErrorCodes.INVALID_FILE_TYPE_FOR_TASK,
-                String.format("Cannot deliver file with status: %s. File must be approved first.", 
-                        file.getFileStatus())
-            );
+            throw InvalidFileStatusException.cannotDeliver(fileId, file.getFileStatus());
         }
         
         file.setDeliveredToCustomer(true);
@@ -602,5 +671,135 @@ public class FileService {
         
         return getFileInfo(saved.getFileId(), userId, userRoles);
     }
+
+    /**
+     * Specialist submit files for review (chuyển từ uploaded sang pending_review)
+     * @param assignmentId ID của task assignment
+     * @param fileIds Danh sách file IDs được chọn để submit
+     * @param userId ID của specialist
+     * @return Số lượng files đã được submit
+     */
+    @Transactional
+    public int submitFilesForReview(String assignmentId, List<String> fileIds, String userId) {
+        log.info("Specialist {} submitting {} files for review: assignmentId={}, fileIds={}", 
+                userId, fileIds != null ? fileIds.size() : 0, assignmentId, fileIds);
+        
+        if (fileIds == null || fileIds.isEmpty()) {
+            throw NoFilesSelectedException.forSubmission();
+        }
+        
+        // Verify assignment exists and belongs to specialist
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify assignment belongs to current specialist
+        if (!assignment.getSpecialistId().equals(userId)) {
+            throw UnauthorizedException.create("You can only submit files for your own tasks");
+        }
+        
+        // Only allow submit if task is in_progress or revision_requested
+        if (assignment.getStatus() != AssignmentStatus.in_progress 
+                && assignment.getStatus() != AssignmentStatus.revision_requested) {
+            throw InvalidTaskAssignmentStatusException.cannotSubmitForReview(
+                assignment.getAssignmentId(), 
+                assignment.getStatus()
+            );
+        }
+        
+        // Lấy files theo fileIds
+        List<File> filesToSubmit = fileRepository.findByFileIdIn(fileIds);
+        
+        if (filesToSubmit.isEmpty()) {
+            throw NoFilesSelectedException.notFound();
+        }
+        
+        // Validate files
+        for (File file : filesToSubmit) {
+            // Validate: file phải thuộc assignmentId
+            if (!assignmentId.equals(file.getAssignmentId())) {
+                throw FileNotBelongToAssignmentException.create(file.getFileId(), assignmentId);
+            }
+            
+            // Validate: fileStatus phải là uploaded
+            if (file.getFileStatus() != FileStatus.uploaded) {
+                throw InvalidFileStatusException.cannotSubmit(file.getFileId(), file.getFileStatus());
+            }
+            
+            // Validate: không được deleted
+            if (file.getFileStatus() == FileStatus.deleted) {
+                throw InvalidFileStatusException.fileDeleted(file.getFileId());
+            }
+        }
+        
+        // Chuyển files từ uploaded sang pending_review
+        for (File file : filesToSubmit) {
+            file.setFileStatus(FileStatus.pending_review);
+            fileRepository.save(file);
+            log.info("File submitted for review: fileId={}, fileName={}, assignmentId={}", 
+                    file.getFileId(), file.getFileName(), assignmentId);
+        }
+        
+        log.info("Submitted {} files for review: assignmentId={}, specialistId={}", 
+                filesToSubmit.size(), assignmentId, userId);
+        
+        return filesToSubmit.size();
+    }
+
+    /**
+     * Specialist soft delete file (chỉ khi fileStatus = uploaded)
+     * @param fileId ID của file
+     * @param userId ID của specialist
+     * @param userRoles Danh sách roles của user
+     * @return FileInfoResponse
+     */
+    @Transactional
+    public FileInfoResponse softDeleteFile(String fileId, String userId, List<String> userRoles) {
+        log.info("Specialist {} soft deleting file: fileId={}", userId, fileId);
+        
+        File file = fileRepository.findById(fileId)
+                .orElseThrow(() -> FileNotFoundException.byId(fileId));
+        
+        // Verify file access first (using FileAccessService logic)
+        // This already checks if file belongs to specialist's assignment
+        fileAccessService.checkFileAccess(fileId, userId, userRoles);
+        
+        // Verify file belongs to assignment of current specialist
+        if (file.getAssignmentId() != null) {
+            TaskAssignment assignment = taskAssignmentRepository.findById(file.getAssignmentId())
+                    .orElseThrow(() -> TaskAssignmentNotFoundException.byId(file.getAssignmentId()));
+            
+            // Double check using specialistUserIdSnapshot (same as FileAccessService)
+            // This ensures consistency with access control logic
+            String specialistUserId = assignment.getSpecialistUserIdSnapshot() != null 
+                    ? assignment.getSpecialistUserIdSnapshot() 
+                    : assignment.getSpecialistId();
+            
+            if (!userId.equals(specialistUserId)) {
+                throw UnauthorizedException.create("You can only delete files from your own tasks");
+            }
+            
+            // Only allow delete if assignment is in_progress or revision_requested
+            if (assignment.getStatus() != AssignmentStatus.in_progress 
+                    && assignment.getStatus() != AssignmentStatus.revision_requested) {
+                throw InvalidTaskAssignmentStatusException.cannotDeleteFile(
+                    assignment.getAssignmentId(), 
+                    assignment.getStatus()
+                );
+            }
+        }
+        
+        // Only allow delete if fileStatus = uploaded
+        if (file.getFileStatus() != FileStatus.uploaded) {
+            throw InvalidFileStatusException.cannotDelete(file.getFileId(), file.getFileStatus());
+        }
+        
+        // Soft delete: set status = deleted
+        file.setFileStatus(FileStatus.deleted);
+        File saved = fileRepository.save(file);
+        log.info("File soft deleted: fileId={}, fileName={}", saved.getFileId(), saved.getFileName());
+        
+        return getFileInfo(saved.getFileId(), userId, userRoles);
+    }
+
 }
 
