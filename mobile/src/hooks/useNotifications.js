@@ -3,16 +3,41 @@ import Toast from 'react-native-toast-message';
 import notificationWebSocketService from '../services/notificationWebSocketService';
 import * as notificationApi from '../services/notificationService';
 import { getItem } from '../utils/storage';
+import notificationSoundService from '../services/notificationSoundService';
+
+// Shared state for notifications to avoid duplicate subscriptions
+let sharedUnreadCount = 0;
+let sharedNotifications = [];
+const listeners = new Set();
 
 /**
  * Custom hook for managing notifications (Mobile)
+ * @param {Object} bannerManager - Reference to NotificationBannerManager for showing banners
  */
-export const useNotifications = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState([]);
+export const useNotifications = (bannerManager = null) => {
+  const [unreadCount, setUnreadCount] = useState(sharedUnreadCount);
+  const [notifications, setNotifications] = useState(sharedNotifications);
   const [loading, setLoading] = useState(false);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(notificationWebSocketService.isConnected());
   const isInitialized = useRef(false);
+  const listenerIdRef = useRef(Math.random());
+
+  /**
+   * Update shared state and notify all listeners
+   */
+  const updateSharedState = useCallback((updates) => {
+    if (updates.unreadCount !== undefined) {
+      sharedUnreadCount = updates.unreadCount;
+    }
+    if (updates.notifications !== undefined) {
+      sharedNotifications = updates.notifications;
+    }
+    
+    // Notify all listeners
+    listeners.forEach((listener) => {
+      listener({ unreadCount: sharedUnreadCount, notifications: sharedNotifications });
+    });
+  }, []);
 
   /**
    * Fetch unread count
@@ -20,11 +45,14 @@ export const useNotifications = () => {
   const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await notificationApi.getUnreadNotificationCount();
-      setUnreadCount(response.data || 0);
+      console.log('[Mobile] Unread count response:', response);
+      const count = response.data || 0;
+      console.log('[Mobile] Setting unread count to:', count);
+      updateSharedState({ unreadCount: count });
     } catch (error) {
       console.error('[Mobile] Failed to fetch unread count:', error);
     }
-  }, []);
+  }, [updateSharedState]);
 
   /**
    * Fetch latest notifications
@@ -37,7 +65,8 @@ export const useNotifications = () => {
         page: 0,
         limit,
       });
-      setNotifications(response.data || []);
+      const notifs = response.data || [];
+      updateSharedState({ notifications: notifs });
     } catch (error) {
       console.error('[Mobile] Failed to fetch notifications:', error);
       Toast.show({
@@ -48,7 +77,7 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateSharedState]);
 
   /**
    * Mark notification as read
@@ -57,21 +86,20 @@ export const useNotifications = () => {
     try {
       await notificationApi.markNotificationAsRead(notificationId);
 
-      // Update local state
-      setNotifications((prev) =>
-        Array.isArray(prev) 
-          ? prev.map((n) =>
-              n.notificationId === notificationId ? { ...n, isRead: true } : n
-            )
-          : []
+      // Update shared state
+      const updatedNotifications = sharedNotifications.map((n) =>
+        n.notificationId === notificationId ? { ...n, isRead: true } : n
       );
-
-      // Decrease unread count
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      const newCount = Math.max(0, sharedUnreadCount - 1);
+      
+      updateSharedState({ 
+        notifications: updatedNotifications,
+        unreadCount: newCount
+      });
     } catch (error) {
       console.error('[Mobile] Failed to mark as read:', error);
     }
-  }, []);
+  }, [updateSharedState]);
 
   /**
    * Mark all as read
@@ -80,11 +108,12 @@ export const useNotifications = () => {
     try {
       await notificationApi.markAllNotificationsAsRead();
 
-      // Update local state
-      setNotifications((prev) => 
-        Array.isArray(prev) ? prev.map((n) => ({ ...n, isRead: true })) : []
-      );
-      setUnreadCount(0);
+      // Update shared state
+      const updatedNotifications = sharedNotifications.map((n) => ({ ...n, isRead: true }));
+      updateSharedState({ 
+        notifications: updatedNotifications,
+        unreadCount: 0
+      });
 
       Toast.show({
         type: 'success',
@@ -99,36 +128,77 @@ export const useNotifications = () => {
         text2: 'Could not mark all as read',
       });
     }
-  }, []);
+  }, [updateSharedState]);
 
   /**
    * Handle incoming real-time notification
    */
   const handleNewNotification = useCallback((notification) => {
-    console.log('📬 [Mobile] New notification received:', notification);
+    console.log('📬 [Mobile] ===== NEW NOTIFICATION RECEIVED =====');
+    console.log('[Mobile] Notification data:', JSON.stringify(notification));
 
-    // Add to list (keep only latest 10)
-    setNotifications((prev) => 
-      [notification, ...(Array.isArray(prev) ? prev : [])].slice(0, 10)
-    );
-
-    // Increase unread count
-    setUnreadCount((prev) => prev + 1);
-
-    // Show toast notification
-    Toast.show({
-      type: 'success',
-      text1: notification.title || 'New Notification',
-      text2: notification.content || notification.message,
-      visibilityTime: 4000,
+    // Update shared state - add to list and increase count
+    const updatedNotifications = [notification, ...sharedNotifications].slice(0, 10);
+    const newCount = sharedUnreadCount + 1;
+    console.log('[Mobile] Unread count increased:', sharedUnreadCount, '→', newCount);
+    console.log('[Mobile] Updated notifications list length:', updatedNotifications.length);
+    
+    updateSharedState({
+      notifications: updatedNotifications,
+      unreadCount: newCount
     });
+
+    // Play notification sound
+    console.log('[Mobile] Playing notification sound...');
+    notificationSoundService.playNotificationSound().catch((err) => {
+      console.error('[Mobile] Failed to play notification sound:', err);
+    });
+
+    // Show notification banner if bannerManager is available
+    if (bannerManager && bannerManager.current) {
+      console.log('[Mobile] ✅ Banner manager available - showing banner');
+      bannerManager.current.showNotification(notification);
+    } else {
+      console.log('[Mobile] ⚠️ Banner manager NOT available - using Toast fallback');
+      // Fallback to toast if no banner manager
+      Toast.show({
+        type: 'success',
+        text1: notification.title || 'New Notification',
+        text2: notification.content || notification.message,
+        visibilityTime: 4000,
+      });
+    }
+    console.log('[Mobile] ===== NOTIFICATION HANDLING COMPLETE =====');
+  }, [bannerManager, updateSharedState]);
+
+  /**
+   * Setup listener for shared state updates
+   */
+  useEffect(() => {
+    const listenerId = listenerIdRef.current;
+    const listener = (state) => {
+      setUnreadCount(state.unreadCount);
+      setNotifications(state.notifications);
+    };
+    
+    listeners.add(listener);
+    console.log('[Mobile] Added listener, total listeners:', listeners.size);
+    
+    return () => {
+      listeners.delete(listener);
+      console.log('[Mobile] Removed listener, remaining listeners:', listeners.size);
+    };
   }, []);
 
   /**
-   * Setup WebSocket connection
+   * Setup WebSocket connection and audio (only once globally)
    */
   useEffect(() => {
-    if (isInitialized.current) return;
+    // Only setup WebSocket from the first instance (with bannerManager)
+    if (!bannerManager || isInitialized.current) {
+      console.log('[Mobile] Skipping WebSocket setup - already initialized or no banner manager');
+      return;
+    }
 
     const token = getItem('accessToken');
     if (!token) {
@@ -138,12 +208,15 @@ export const useNotifications = () => {
 
     const setupWebSocket = async () => {
       try {
+        // Initialize notification sound service
+        await notificationSoundService.initialize();
+
         // Connect to WebSocket
         if (!notificationWebSocketService.isConnected()) {
           await notificationWebSocketService.connect(token);
         }
 
-        // Subscribe to notifications
+        // Subscribe to notifications (only once)
         notificationWebSocketService.subscribeToNotifications(
           handleNewNotification
         );
@@ -161,9 +234,13 @@ export const useNotifications = () => {
 
     // Cleanup
     return () => {
-      notificationWebSocketService.unsubscribeFromNotifications();
+      if (isInitialized.current) {
+        notificationWebSocketService.unsubscribeFromNotifications();
+        notificationSoundService.cleanup();
+        isInitialized.current = false;
+      }
     };
-  }, [handleNewNotification]);
+  }, [handleNewNotification, bannerManager]);
 
   /**
    * Fetch initial data
