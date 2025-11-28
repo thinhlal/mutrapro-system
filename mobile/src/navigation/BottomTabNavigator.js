@@ -19,6 +19,8 @@ import ChatListScreen from "../screens/Chat/ChatListScreen";
 import ChatRoomScreen from "../screens/Chat/ChatRoomScreen";
 import ServiceRequestScreen from "../screens/Services/ServiceRequestScreen";
 import ServiceQuoteScreen from "../screens/Services/ServiceQuoteScreen";
+import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
+import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -128,6 +130,37 @@ const ChatStack = () => {
   );
 };
 
+// AI Transcription Stack
+const AIStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerTitleAlign: "center",
+        headerStyle: {
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: "#E5E5E5",
+          backgroundColor: COLORS.white,
+        },
+        headerTintColor: COLORS.text,
+      }}
+    >
+      <Stack.Screen
+        name="AITranscription"
+        component={AITranscriptionScreen}
+        options={{ title: "AI Transcription" }}
+      />
+      <Stack.Screen
+        name="AIProcessing"
+        component={AIProcessingScreen}
+        options={{ title: "Processing" }}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Profile Stack
 const ProfileStack = () => {
   return (
@@ -218,6 +251,9 @@ const BottomTabNavigator = ({ navigation }) => {
             case "Home":
               iconName = focused ? "home" : "home-outline";
               break;
+            case "AI":
+              iconName = focused ? "sparkles" : "sparkles-outline";
+              break;
             case "Chat":
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
               break;
@@ -250,6 +286,13 @@ const BottomTabNavigator = ({ navigation }) => {
         children={(props) => <HomeStack {...props} navigation={navigation} />}
         options={{
           tabBarLabel: "Home",
+        }}
+      />
+      <Tab.Screen
+        name="AI"
+        component={AIStack}
+        options={{
+          tabBarLabel: "AI",
         }}
       />
       <Tab.Screen
