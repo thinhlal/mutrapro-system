@@ -603,7 +603,6 @@ const MyTasksPage = ({ onOpenTask }) => {
                 // type="outline"
                 size="small"
                 onClick={() => handleOpenTask(record)}
-              
                 width="150px"
               >
                 View / Work

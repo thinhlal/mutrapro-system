@@ -9,7 +9,9 @@ import axiosInstance from '../utils/axiosInstance';
  */
 export const getSubmission = async submissionId => {
   try {
-    const response = await axiosInstance.get(API_ENDPOINTS.SUBMISSIONS.GET(submissionId));
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SUBMISSIONS.GET(submissionId)
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -51,10 +53,13 @@ export const getSubmissionsByAssignmentId = async assignmentId => {
  */
 export const reviewSubmission = async (submissionId, action, reason = '') => {
   try {
-    const response = await axiosInstance.post(API_ENDPOINTS.SUBMISSIONS.REVIEW(submissionId), {
-      action,
-      reason,
-    });
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SUBMISSIONS.REVIEW(submissionId),
+      {
+        action,
+        reason,
+      }
+    );
     return response.data;
   } catch (error) {
     throw (
@@ -64,4 +69,3 @@ export const reviewSubmission = async (submissionId, action, reason = '') => {
     );
   }
 };
-

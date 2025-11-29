@@ -46,7 +46,10 @@ import {
   deliverFileToCustomer,
   fetchFileForPreview,
 } from '../../../services/fileService';
-import { getSubmissionsByAssignmentId, reviewSubmission } from '../../../services/fileSubmissionService';
+import {
+  getSubmissionsByAssignmentId,
+  reviewSubmission,
+} from '../../../services/fileSubmissionService';
 import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import FileList from '../../../components/common/FileList/FileList';
@@ -132,9 +135,11 @@ const TaskDetailPage = () => {
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [rejectionReasonModalVisible, setRejectionReasonModalVisible] = useState(false);
+  const [rejectionReasonModalVisible, setRejectionReasonModalVisible] =
+    useState(false);
   const [selectedRejectionReason, setSelectedRejectionReason] = useState(null);
-  const [selectedSubmissionForReject, setSelectedSubmissionForReject] = useState(null);
+  const [selectedSubmissionForReject, setSelectedSubmissionForReject] =
+    useState(null);
   const [submissionRejectReason, setSubmissionRejectReason] = useState('');
   const [expandedSubmissions, setExpandedSubmissions] = useState(new Set()); // Track which submissions are expanded
   const [showAllFiles, setShowAllFiles] = useState({}); // Track which submissions show all files
@@ -230,14 +235,20 @@ const TaskDetailPage = () => {
 
       // Load submissions từ assignmentId
       try {
-        const submissionsResponse = await getSubmissionsByAssignmentId(assignmentId);
-        if (submissionsResponse?.status === 'success' && Array.isArray(submissionsResponse?.data)) {
+        const submissionsResponse =
+          await getSubmissionsByAssignmentId(assignmentId);
+        if (
+          submissionsResponse?.status === 'success' &&
+          Array.isArray(submissionsResponse?.data)
+        ) {
           // Sort submissions theo version (mới nhất trước) - version lớn nhất = mới nhất
-          const sortedSubmissions = [...submissionsResponse.data].sort((a, b) => {
-            const versionA = a.version || 0;
-            const versionB = b.version || 0;
-            return versionB - versionA; // Mới nhất trước
-          });
+          const sortedSubmissions = [...submissionsResponse.data].sort(
+            (a, b) => {
+              const versionA = a.version || 0;
+              const versionB = b.version || 0;
+              return versionB - versionA; // Mới nhất trước
+            }
+          );
           setSubmissions(sortedSubmissions);
         } else {
           setSubmissions([]);
@@ -521,7 +532,7 @@ const TaskDetailPage = () => {
     return previousDeadline.add(slaDays, 'day');
   };
 
-  const calculateDaysRemaining = (deadlineDayjs) => {
+  const calculateDaysRemaining = deadlineDayjs => {
     if (!deadlineDayjs) return null;
     const now = dayjs();
     const diffDays = deadlineDayjs.diff(now, 'day');
@@ -700,20 +711,20 @@ const TaskDetailPage = () => {
                   (task?.request?.instruments &&
                     Array.isArray(task.request.instruments) &&
                     task.request.instruments.length > 0)) && (
-                    <Descriptions.Item label="Instruments" span={2}>
-                      <Space wrap>
-                        {(
-                          request?.instruments ||
-                          task?.request?.instruments ||
-                          []
-                        ).map((inst, idx) => (
-                          <Tag key={idx} color="purple">
-                            {inst.instrumentName || inst.name || inst}
-                          </Tag>
-                        ))}
-                      </Space>
-                    </Descriptions.Item>
-                  )}
+                  <Descriptions.Item label="Instruments" span={2}>
+                    <Space wrap>
+                      {(
+                        request?.instruments ||
+                        task?.request?.instruments ||
+                        []
+                      ).map((inst, idx) => (
+                        <Tag key={idx} color="purple">
+                          {inst.instrumentName || inst.name || inst}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
 
                 {request?.files &&
                   request.files.filter(
@@ -787,7 +798,10 @@ const TaskDetailPage = () => {
                 const actualDeadline = getActualDeadlineDayjs(task.milestone);
                 const plannedDeadline = getPlannedDeadlineDayjs(task.milestone);
                 const contractMilestones = contract?.milestones || [];
-                const estimatedDeadline = getEstimatedDeadlineDayjs(task.milestone, contractMilestones);
+                const estimatedDeadline = getEstimatedDeadlineDayjs(
+                  task.milestone,
+                  contractMilestones
+                );
 
                 // Chỉ hiển thị "-" nếu không có bất kỳ deadline nào
                 if (!actualDeadline && !plannedDeadline && !estimatedDeadline) {
@@ -795,26 +809,58 @@ const TaskDetailPage = () => {
                 }
 
                 // Tính days remaining/overdue cho từng deadline
-                const actualDaysDiff = actualDeadline ? calculateDaysRemaining(actualDeadline) : null;
-                const plannedDaysDiff = plannedDeadline ? calculateDaysRemaining(plannedDeadline) : null;
-                const estimatedDaysDiff = estimatedDeadline ? calculateDaysRemaining(estimatedDeadline) : null;
+                const actualDaysDiff = actualDeadline
+                  ? calculateDaysRemaining(actualDeadline)
+                  : null;
+                const plannedDaysDiff = plannedDeadline
+                  ? calculateDaysRemaining(plannedDeadline)
+                  : null;
+                const estimatedDaysDiff = estimatedDeadline
+                  ? calculateDaysRemaining(estimatedDeadline)
+                  : null;
 
                 // Dùng deadline nào để hiển thị cảnh báo (ưu tiên: actual > planned > estimated)
-                const deadlineToUse = actualDeadline || plannedDeadline || estimatedDeadline;
-                const daysDiff = actualDaysDiff !== null ? actualDaysDiff : (plannedDaysDiff !== null ? plannedDaysDiff : estimatedDaysDiff);
-                const isOverdue = daysDiff !== null && daysDiff < 0 && task.status !== 'completed';
-                const isNearDeadline = daysDiff !== null && daysDiff <= 3 && daysDiff >= 0 && !isOverdue;
+                const deadlineToUse =
+                  actualDeadline || plannedDeadline || estimatedDeadline;
+                const daysDiff =
+                  actualDaysDiff !== null
+                    ? actualDaysDiff
+                    : plannedDaysDiff !== null
+                      ? plannedDaysDiff
+                      : estimatedDaysDiff;
+                const isOverdue =
+                  daysDiff !== null &&
+                  daysDiff < 0 &&
+                  task.status !== 'completed';
+                const isNearDeadline =
+                  daysDiff !== null &&
+                  daysDiff <= 3 &&
+                  daysDiff >= 0 &&
+                  !isOverdue;
 
                 return (
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%' }}
+                  >
                     {/* Actual Deadline */}
                     {actualDeadline && (
                       <div>
                         <Space>
                           <Text strong>Actual Deadline:</Text>
                           <Text
-                            type={isOverdue && actualDaysDiff !== null ? 'danger' : (isNearDeadline && actualDaysDiff !== null ? 'warning' : undefined)}
-                            strong={(isOverdue || isNearDeadline) && actualDaysDiff !== null}
+                            type={
+                              isOverdue && actualDaysDiff !== null
+                                ? 'danger'
+                                : isNearDeadline && actualDaysDiff !== null
+                                  ? 'warning'
+                                  : undefined
+                            }
+                            strong={
+                              (isOverdue || isNearDeadline) &&
+                              actualDaysDiff !== null
+                            }
                           >
                             {actualDeadline.format('HH:mm DD/MM/YYYY')}
                           </Text>
@@ -845,7 +891,9 @@ const TaskDetailPage = () => {
                     {plannedDeadline && (
                       <div>
                         <Space>
-                          <Text strong type="secondary">Planned Deadline:</Text>
+                          <Text strong type="secondary">
+                            Planned Deadline:
+                          </Text>
                           <Text type="secondary">
                             {plannedDeadline.format('HH:mm DD/MM/YYYY')}
                           </Text>
@@ -873,38 +921,51 @@ const TaskDetailPage = () => {
                     )}
 
                     {/* Estimated Deadline - chỉ hiển thị khi không có actual và planned */}
-                    {!actualDeadline && !plannedDeadline && estimatedDeadline && (
-                      <div>
-                        <Space>
-                          <Text strong type="warning">Estimated Deadline:</Text>
-                          <Text type="warning">
-                            {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
+                    {!actualDeadline &&
+                      !plannedDeadline &&
+                      estimatedDeadline && (
+                        <div>
+                          <Space>
+                            <Text strong type="warning">
+                              Estimated Deadline:
+                            </Text>
+                            <Text type="warning">
+                              {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
+                            </Text>
+                            {estimatedDaysDiff !== null && (
+                              <>
+                                {estimatedDaysDiff < 0 && (
+                                  <Tag color="red">
+                                    Trễ {Math.abs(estimatedDaysDiff)} ngày (ước
+                                    tính)
+                                  </Tag>
+                                )}
+                                {estimatedDaysDiff >= 0 &&
+                                  estimatedDaysDiff <= 3 && (
+                                    <Tag color="orange">
+                                      Còn {estimatedDaysDiff} ngày (ước tính)
+                                    </Tag>
+                                  )}
+                                {estimatedDaysDiff > 3 && (
+                                  <Tag color="blue">
+                                    Còn {estimatedDaysDiff} ngày (ước tính)
+                                  </Tag>
+                                )}
+                              </>
+                            )}
+                          </Space>
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: 12,
+                              marginLeft: 0,
+                              display: 'block',
+                            }}
+                          >
+                            (Ước tính dựa trên milestone trước đó và SLA days)
                           </Text>
-                          {estimatedDaysDiff !== null && (
-                            <>
-                              {estimatedDaysDiff < 0 && (
-                                <Tag color="red">
-                                  Trễ {Math.abs(estimatedDaysDiff)} ngày (ước tính)
-                                </Tag>
-                              )}
-                              {estimatedDaysDiff >= 0 && estimatedDaysDiff <= 3 && (
-                                <Tag color="orange">
-                                  Còn {estimatedDaysDiff} ngày (ước tính)
-                                </Tag>
-                              )}
-                              {estimatedDaysDiff > 3 && (
-                                <Tag color="blue">
-                                  Còn {estimatedDaysDiff} ngày (ước tính)
-                                </Tag>
-                              )}
-                            </>
-                          )}
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: 12, marginLeft: 0, display: 'block' }}>
-                          (Ước tính dựa trên milestone trước đó và SLA days)
-                        </Text>
-                      </div>
-                    )}
+                        </div>
+                      )}
 
                     {/* Alert nếu đang trễ */}
                     {isOverdue && task.status !== 'completed' && (
@@ -916,15 +977,17 @@ const TaskDetailPage = () => {
                         style={{ marginTop: 8 }}
                       />
                     )}
-                    {isNearDeadline && task.status !== 'completed' && !isOverdue && (
-                      <Alert
-                        message="Task sắp đến hạn SLA"
-                        description={`Còn ${daysDiff} ngày nữa đến deadline. Nên ưu tiên review sớm.`}
-                        type="warning"
-                        showIcon
-                        style={{ marginTop: 8 }}
-                      />
-                    )}
+                    {isNearDeadline &&
+                      task.status !== 'completed' &&
+                      !isOverdue && (
+                        <Alert
+                          message="Task sắp đến hạn SLA"
+                          description={`Còn ${daysDiff} ngày nữa đến deadline. Nên ưu tiên review sớm.`}
+                          type="warning"
+                          showIcon
+                          style={{ marginTop: 8 }}
+                        />
+                      )}
                   </Space>
                 );
               })()}
@@ -954,10 +1017,19 @@ const TaskDetailPage = () => {
               <Space>
                 <Text strong>
                   Current review – Submission #{currentSubmission.version}
-                  {currentSubmission.status?.toLowerCase() === 'rejected' && ' (Revision Requested)'}
+                  {currentSubmission.status?.toLowerCase() === 'rejected' &&
+                    ' (Revision Requested)'}
                 </Text>
-                <Tag color={SUBMISSION_STATUS_COLORS[currentSubmission.status?.toLowerCase()] || 'default'}>
-                  {SUBMISSION_STATUS_LABELS[currentSubmission.status?.toLowerCase()] || currentSubmission.status}
+                <Tag
+                  color={
+                    SUBMISSION_STATUS_COLORS[
+                      currentSubmission.status?.toLowerCase()
+                    ] || 'default'
+                  }
+                >
+                  {SUBMISSION_STATUS_LABELS[
+                    currentSubmission.status?.toLowerCase()
+                  ] || currentSubmission.status}
                 </Tag>
               </Space>
             }
@@ -978,7 +1050,7 @@ const TaskDetailPage = () => {
                       size="small"
                       icon={<ExclamationCircleOutlined />}
                       onClick={() => {
-                        setSelectedSubmissionForReject(null);        // đảm bảo modal ở mode view
+                        setSelectedSubmissionForReject(null); // đảm bảo modal ở mode view
                         setSubmissionRejectReason('');
                         setSelectedRejectionReason(
                           currentSubmission.rejectionReason
@@ -992,15 +1064,20 @@ const TaskDetailPage = () => {
                 {currentSubmission.submittedAt && (
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     Submitted:{' '}
-                    {dayjs(currentSubmission.submittedAt).format('HH:mm DD/MM/YYYY')}
+                    {dayjs(currentSubmission.submittedAt).format(
+                      'HH:mm DD/MM/YYYY'
+                    )}
                   </Text>
                 )}
-                {currentSubmission.status?.toLowerCase() === 'pending_review' && (
+                {currentSubmission.status?.toLowerCase() ===
+                  'pending_review' && (
                   <>
                     <Popconfirm
                       title="Xác nhận duyệt submission?"
                       description="Tất cả files trong submission này sẽ được đánh dấu là đã duyệt"
-                      onConfirm={() => handleApproveSubmission(currentSubmission.submissionId)}
+                      onConfirm={() =>
+                        handleApproveSubmission(currentSubmission.submissionId)
+                      }
                       okText="Duyệt"
                       cancelText="Hủy"
                     >
@@ -1036,7 +1113,8 @@ const TaskDetailPage = () => {
                   dataSource={currentSubmission.files}
                   renderItem={file => {
                     const fileStatus = file.fileStatus?.toLowerCase();
-                    const submissionStatus = currentSubmission.status?.toLowerCase();
+                    const submissionStatus =
+                      currentSubmission.status?.toLowerCase();
                     // Chỉ hiển thị file status nếu submission là draft (chưa submit)
                     // Nếu submission đã có status (pending_review, approved, rejected) thì không hiển thị file status để tránh lặp
                     const showFileStatus = submissionStatus === 'draft';
@@ -1112,19 +1190,25 @@ const TaskDetailPage = () => {
                               {file.uploadDate && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   Upload:{' '}
-                                  {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                  {dayjs(file.uploadDate).format(
+                                    'HH:mm DD/MM/YYYY'
+                                  )}
                                 </Text>
                               )}
                               {file.reviewedAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   Reviewed:{' '}
-                                  {dayjs(file.reviewedAt).format('HH:mm DD/MM/YYYY')}
+                                  {dayjs(file.reviewedAt).format(
+                                    'HH:mm DD/MM/YYYY'
+                                  )}
                                 </Text>
                               )}
                               {file.deliveredAt && (
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                   Delivered:{' '}
-                                  {dayjs(file.deliveredAt).format('HH:mm DD/MM/YYYY')}
+                                  {dayjs(file.deliveredAt).format(
+                                    'HH:mm DD/MM/YYYY'
+                                  )}
                                 </Text>
                               )}
                               {file.description && (
@@ -1167,7 +1251,7 @@ const TaskDetailPage = () => {
             <Spin spinning={filesLoading}>
               <Collapse
                 activeKey={Array.from(expandedSubmissions)}
-                onChange={(keys) => {
+                onChange={keys => {
                   setExpandedSubmissions(new Set(keys));
                 }}
               >
@@ -1175,8 +1259,11 @@ const TaskDetailPage = () => {
                   const submissionStatus = submission.status?.toLowerCase();
                   const files = submission.files || [];
                   const MAX_FILES_PREVIEW = 3; // Số file hiển thị ban đầu
-                  const showAll = showAllFiles[submission.submissionId] || false;
-                  const displayedFiles = showAll ? files : files.slice(0, MAX_FILES_PREVIEW);
+                  const showAll =
+                    showAllFiles[submission.submissionId] || false;
+                  const displayedFiles = showAll
+                    ? files
+                    : files.slice(0, MAX_FILES_PREVIEW);
                   const hasMoreFiles = files.length > MAX_FILES_PREVIEW;
 
                   return (
@@ -1184,11 +1271,15 @@ const TaskDetailPage = () => {
                       key={submission.submissionId}
                       header={
                         <Space wrap>
-                          <Text strong>
-                            Submission #{submission.version}
-                          </Text>
-                          <Tag color={SUBMISSION_STATUS_COLORS[submissionStatus] || 'default'}>
-                            {SUBMISSION_STATUS_LABELS[submissionStatus] || submissionStatus}
+                          <Text strong>Submission #{submission.version}</Text>
+                          <Tag
+                            color={
+                              SUBMISSION_STATUS_COLORS[submissionStatus] ||
+                              'default'
+                            }
+                          >
+                            {SUBMISSION_STATUS_LABELS[submissionStatus] ||
+                              submissionStatus}
                           </Tag>
                           {submission.fileCount > 0 && (
                             <Tag>{submission.fileCount} file(s)</Tag>
@@ -1196,7 +1287,9 @@ const TaskDetailPage = () => {
                           {submission.submittedAt && (
                             <Text type="secondary" style={{ fontSize: 12 }}>
                               Submitted:{' '}
-                              {dayjs(submission.submittedAt).format('HH:mm DD/MM/YYYY')}
+                              {dayjs(submission.submittedAt).format(
+                                'HH:mm DD/MM/YYYY'
+                              )}
                             </Text>
                           )}
                           {/* 👉 Nút xem lý do cho submission bị reject */}
@@ -1206,7 +1299,7 @@ const TaskDetailPage = () => {
                                 size="small"
                                 type="link"
                                 icon={<ExclamationCircleOutlined />}
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.stopPropagation(); // tránh toggle collapse khi bấm nút
                                   setSelectedSubmissionForReject(null);
                                   setSubmissionRejectReason('');
@@ -1228,10 +1321,12 @@ const TaskDetailPage = () => {
                             dataSource={displayedFiles}
                             renderItem={file => {
                               const fileStatus = file.fileStatus?.toLowerCase();
-                              const submissionStatus = submission.status?.toLowerCase();
+                              const submissionStatus =
+                                submission.status?.toLowerCase();
                               // Chỉ hiển thị file status nếu submission là draft (chưa submit)
                               // Nếu submission đã có status (pending_review, approved, rejected) thì không hiển thị file status để tránh lặp
-                              const showFileStatus = submissionStatus === 'draft';
+                              const showFileStatus =
+                                submissionStatus === 'draft';
 
                               return (
                                 <List.Item
@@ -1249,7 +1344,10 @@ const TaskDetailPage = () => {
                                       size="small"
                                       icon={<DownloadOutlined />}
                                       onClick={() =>
-                                        handleDownloadFile(file.fileId, file.fileName)
+                                        handleDownloadFile(
+                                          file.fileId,
+                                          file.fileName
+                                        )
                                       }
                                     >
                                       Download
@@ -1259,7 +1357,9 @@ const TaskDetailPage = () => {
                                         key="deliver"
                                         title="Xác nhận gửi file cho khách hàng?"
                                         description="File này sẽ được gửi cho khách hàng"
-                                        onConfirm={() => handleDeliverFile(file.fileId)}
+                                        onConfirm={() =>
+                                          handleDeliverFile(file.fileId)
+                                        }
                                         okText="Gửi"
                                         cancelText="Hủy"
                                       >
@@ -1276,7 +1376,9 @@ const TaskDetailPage = () => {
                                   ].filter(Boolean)}
                                 >
                                   <List.Item.Meta
-                                    avatar={<FileOutlined style={{ fontSize: 24 }} />}
+                                    avatar={
+                                      <FileOutlined style={{ fontSize: 24 }} />
+                                    }
                                     title={
                                       <Space>
                                         <Text strong>{file.fileName}</Text>
@@ -1284,10 +1386,12 @@ const TaskDetailPage = () => {
                                         {showFileStatus && (
                                           <Tag
                                             color={
-                                              FILE_STATUS_COLORS[fileStatus] || 'default'
+                                              FILE_STATUS_COLORS[fileStatus] ||
+                                              'default'
                                             }
                                           >
-                                            {FILE_STATUS_LABELS[fileStatus] || fileStatus}
+                                            {FILE_STATUS_LABELS[fileStatus] ||
+                                              fileStatus}
                                           </Tag>
                                         )}
                                         {file.deliveredToCustomer && (
@@ -1297,32 +1401,57 @@ const TaskDetailPage = () => {
                                     }
                                     description={
                                       <Space direction="vertical" size={0}>
-                                        <Text type="secondary" style={{ fontSize: 12 }}>
-                                          Loại: {getContentTypeLabel(file.contentType)} •
-                                          Dung lượng: {formatFileSize(file.fileSize)}
+                                        <Text
+                                          type="secondary"
+                                          style={{ fontSize: 12 }}
+                                        >
+                                          Loại:{' '}
+                                          {getContentTypeLabel(
+                                            file.contentType
+                                          )}{' '}
+                                          • Dung lượng:{' '}
+                                          {formatFileSize(file.fileSize)}
                                         </Text>
                                         {file.uploadDate && (
-                                          <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <Text
+                                            type="secondary"
+                                            style={{ fontSize: 12 }}
+                                          >
                                             Upload:{' '}
-                                            {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                            {dayjs(file.uploadDate).format(
+                                              'HH:mm DD/MM/YYYY'
+                                            )}
                                           </Text>
                                         )}
                                         {file.reviewedAt && (
-                                          <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <Text
+                                            type="secondary"
+                                            style={{ fontSize: 12 }}
+                                          >
                                             Reviewed:{' '}
-                                            {dayjs(file.reviewedAt).format('HH:mm DD/MM/YYYY')}
+                                            {dayjs(file.reviewedAt).format(
+                                              'HH:mm DD/MM/YYYY'
+                                            )}
                                           </Text>
                                         )}
                                         {file.deliveredAt && (
-                                          <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <Text
+                                            type="secondary"
+                                            style={{ fontSize: 12 }}
+                                          >
                                             Delivered:{' '}
-                                            {dayjs(file.deliveredAt).format('HH:mm DD/MM/YYYY')}
+                                            {dayjs(file.deliveredAt).format(
+                                              'HH:mm DD/MM/YYYY'
+                                            )}
                                           </Text>
                                         )}
                                         {file.description && (
                                           <Text
                                             type="secondary"
-                                            style={{ fontSize: 12, fontStyle: 'italic' }}
+                                            style={{
+                                              fontSize: 12,
+                                              fontStyle: 'italic',
+                                            }}
                                           >
                                             Note: {file.description}
                                           </Text>
@@ -1442,36 +1571,36 @@ const TaskDetailPage = () => {
         footer={
           selectedSubmissionForReject
             ? [
-              <Button
-                key="cancel"
-                onClick={() => {
-                  setRejectionReasonModalVisible(false);
-                  setSelectedSubmissionForReject(null);
-                  setSubmissionRejectReason('');
-                }}
-              >
-                Hủy
-              </Button>,
-              <Button
-                key="reject"
-                danger
-                onClick={handleRejectSubmission}
-                loading={actionLoading}
-              >
-                Từ chối
-              </Button>,
-            ]
+                <Button
+                  key="cancel"
+                  onClick={() => {
+                    setRejectionReasonModalVisible(false);
+                    setSelectedSubmissionForReject(null);
+                    setSubmissionRejectReason('');
+                  }}
+                >
+                  Hủy
+                </Button>,
+                <Button
+                  key="reject"
+                  danger
+                  onClick={handleRejectSubmission}
+                  loading={actionLoading}
+                >
+                  Từ chối
+                </Button>,
+              ]
             : [
-              <Button
-                key="close"
-                onClick={() => {
-                  setRejectionReasonModalVisible(false);
-                  setSelectedRejectionReason(null);
-                }}
-              >
-                Đóng
-              </Button>,
-            ]
+                <Button
+                  key="close"
+                  onClick={() => {
+                    setRejectionReasonModalVisible(false);
+                    setSelectedRejectionReason(null);
+                  }}
+                >
+                  Đóng
+                </Button>,
+              ]
         }
         width={600}
       >
@@ -1499,7 +1628,11 @@ const TaskDetailPage = () => {
             message="File đã bị từ chối"
             description={
               <Paragraph
-                style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}
+                style={{
+                  marginTop: 12,
+                  marginBottom: 0,
+                  whiteSpace: 'pre-wrap',
+                }}
               >
                 {selectedRejectionReason}
               </Paragraph>

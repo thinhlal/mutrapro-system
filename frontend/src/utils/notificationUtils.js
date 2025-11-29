@@ -22,4 +22,3 @@ export const convertNotificationActionUrl = actionUrl => {
   // Return original actionUrl for other cases
   return actionUrl;
 };
-

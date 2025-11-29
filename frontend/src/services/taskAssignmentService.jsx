@@ -304,7 +304,6 @@ export const reportIssue = async (assignmentId, reason) => {
   }
 };
 
-
 /**
  * Manager resolve issue (clear hasIssue flag - cho specialist tiếp tục)
  * POST /task-assignments/{assignmentId}/resolve-issue?contractId={contractId}

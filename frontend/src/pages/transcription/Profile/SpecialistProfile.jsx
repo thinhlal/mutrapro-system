@@ -401,9 +401,7 @@ const SpecialistProfile = () => {
   return (
     <div className={styles.container}>
       <Card>
-        <Title level={2}>
-           My Specialist Profile
-        </Title>
+        <Title level={2}>My Specialist Profile</Title>
 
         <Tabs
           activeKey={activeTab}

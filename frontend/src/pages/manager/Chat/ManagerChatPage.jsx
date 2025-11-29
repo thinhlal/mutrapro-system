@@ -201,4 +201,3 @@ const ManagerChatPage = () => {
 };
 
 export default ManagerChatPage;
-

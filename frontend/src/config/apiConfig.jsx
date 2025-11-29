@@ -182,11 +182,14 @@ export const API_ENDPOINTS = {
     GET_BY_ASSIGNMENT: assignmentId =>
       `${PROJECT_PATH}/submissions/by-assignment/${assignmentId}`,
     // POST /submissions/{submissionId}/add-files
-    ADD_FILES: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/add-files`,
+    ADD_FILES: submissionId =>
+      `${PROJECT_PATH}/submissions/${submissionId}/add-files`,
     // POST /submissions/{submissionId}/submit
-    SUBMIT: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/submit`,
+    SUBMIT: submissionId =>
+      `${PROJECT_PATH}/submissions/${submissionId}/submit`,
     // POST /submissions/{submissionId}/review
-    REVIEW: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/review`,
+    REVIEW: submissionId =>
+      `${PROJECT_PATH}/submissions/${submissionId}/review`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===

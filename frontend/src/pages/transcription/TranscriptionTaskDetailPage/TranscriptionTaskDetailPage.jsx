@@ -46,9 +46,7 @@ import {
   getFilesByAssignmentId,
   softDeleteFile,
 } from '../../../services/fileService';
-import {
-  submitFilesForReview,
-} from '../../../services/taskAssignmentService';
+import { submitFilesForReview } from '../../../services/taskAssignmentService';
 import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './TranscriptionTaskDetailPage.module.css';
@@ -254,7 +252,6 @@ const TranscriptionTaskDetailPage = () => {
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
   const [rejectionReasonToView, setRejectionReasonToView] = useState('');
 
-
   const loadContractTasks = useCallback(async contractId => {
     if (!contractId) {
       setContractTasks([]);
@@ -297,9 +294,13 @@ const TranscriptionTaskDetailPage = () => {
     };
   }, [task, contractTasks]);
 
-  const loadTaskFiles = useCallback(async (assignmentId) => {
+  const loadTaskFiles = useCallback(async assignmentId => {
     if (!assignmentId) return;
-    console.log('CALL getFilesByAssignmentId', assignmentId, new Date().toISOString());
+    console.log(
+      'CALL getFilesByAssignmentId',
+      assignmentId,
+      new Date().toISOString()
+    );
 
     try {
       const response = await getFilesByAssignmentId(assignmentId);
@@ -348,7 +349,7 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, []); // No dependencies - assignmentId passed as parameter
 
-  const loadSubmissions = useCallback(async (assignmentId) => {
+  const loadSubmissions = useCallback(async assignmentId => {
     if (!assignmentId) return;
     try {
       setLoadingSubmissions(true);
@@ -432,16 +433,23 @@ const TranscriptionTaskDetailPage = () => {
     });
 
     if (uploadedFileIds.length === 0) {
-      message.warning('Không có file nào được chọn để submit. Vui lòng tick checkbox để chọn ít nhất 1 file.');
+      message.warning(
+        'Không có file nào được chọn để submit. Vui lòng tick checkbox để chọn ít nhất 1 file.'
+      );
       return;
     }
 
     try {
       // Backend tự động tạo submission, add files và submit
-      const response = await submitFilesForReview(task.assignmentId, uploadedFileIds);
+      const response = await submitFilesForReview(
+        task.assignmentId,
+        uploadedFileIds
+      );
 
       if (response?.status === 'success') {
-        message.success(`Đã submit ${uploadedFileIds.length} file(s) for review thành công`);
+        message.success(
+          `Đã submit ${uploadedFileIds.length} file(s) for review thành công`
+        );
         setSelectedFileIds(new Set()); // Reset selection
         // Reload cả files và submissions
         await Promise.all([
@@ -456,7 +464,6 @@ const TranscriptionTaskDetailPage = () => {
       message.error(error?.message || 'Lỗi khi submit for review');
     }
   }, [task, selectedFileIds, files, loadTaskFiles, loadSubmissions]);
-
 
   const handleAcceptTask = useCallback(async () => {
     if (!task || task.status?.toLowerCase() !== 'assigned') return;
@@ -551,7 +558,7 @@ const TranscriptionTaskDetailPage = () => {
     });
   }, []);
 
-  const handleDeleteFile = useCallback((fileId) => {
+  const handleDeleteFile = useCallback(fileId => {
     console.log('CLICK DELETE BUTTON', fileId);
     setDeletingFileId(fileId);
     setDeleteModalVisible(true);
@@ -737,7 +744,9 @@ const TranscriptionTaskDetailPage = () => {
         render: (_, record) => (
           <Checkbox
             checked={selectedFileIds.has(record.fileId)}
-            onChange={e => handleToggleFileSelection(record.fileId, e.target.checked)}
+            onChange={e =>
+              handleToggleFileSelection(record.fileId, e.target.checked)
+            }
           />
         ),
       },
@@ -757,21 +766,27 @@ const TranscriptionTaskDetailPage = () => {
             </Button>
             {(task.status?.toLowerCase() === 'in_progress' ||
               task.status?.toLowerCase() === 'revision_requested') && (
-                <Button
-                  type="link"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDeleteFile(record.fileId)}
-                  size="small"
-                >
-                  Delete
-                </Button>
-              )}
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteFile(record.fileId)}
+                size="small"
+              >
+                Delete
+              </Button>
+            )}
           </Space>
         ),
       },
     ],
-    [selectedFileIds, handleToggleFileSelection, handleDownloadFile, handleDeleteFile, task?.status]
+    [
+      selectedFileIds,
+      handleToggleFileSelection,
+      handleDownloadFile,
+      handleDeleteFile,
+      task?.status,
+    ]
   );
 
   // Columns cho Current Submission Files
@@ -788,7 +803,9 @@ const TranscriptionTaskDetailPage = () => {
             const dateB = new Date(b.uploadDate || 0);
             return dateA - dateB; // Oldest first
           });
-          const fileIndex = allFilesSorted.findIndex(f => f.fileId === record.fileId);
+          const fileIndex = allFilesSorted.findIndex(
+            f => f.fileId === record.fileId
+          );
           return fileIndex >= 0 ? `v${fileIndex + 1}` : '-';
         },
       },
@@ -919,9 +936,10 @@ const TranscriptionTaskDetailPage = () => {
             return (
               <Checkbox
                 checked={selectedFileIds.has(record.fileId)}
-                onChange={e => handleToggleFileSelection(record.fileId, e.target.checked)}
-              >
-              </Checkbox>
+                onChange={e =>
+                  handleToggleFileSelection(record.fileId, e.target.checked)
+                }
+              ></Checkbox>
             );
           }
           return <Text type="secondary">—</Text>;
@@ -966,8 +984,10 @@ const TranscriptionTaskDetailPage = () => {
         key: 'actions',
         width: 200,
         render: (_, record) => {
-          const canDelete = record.fileStatus === 'uploaded' &&
-            (task.status?.toLowerCase() === 'in_progress' || task.status?.toLowerCase() === 'revision_requested');
+          const canDelete =
+            record.fileStatus === 'uploaded' &&
+            (task.status?.toLowerCase() === 'in_progress' ||
+              task.status?.toLowerCase() === 'revision_requested');
 
           return (
             <Space>
@@ -995,7 +1015,15 @@ const TranscriptionTaskDetailPage = () => {
         },
       },
     ],
-    [latestVersion, handleDownloadFile, selectedFileIds, handleToggleFileSelection, files, task?.status, handleDeleteFile]
+    [
+      latestVersion,
+      handleDownloadFile,
+      selectedFileIds,
+      handleToggleFileSelection,
+      files,
+      task?.status,
+      handleDeleteFile,
+    ]
   );
 
   if (loading) {
@@ -1315,15 +1343,22 @@ const TranscriptionTaskDetailPage = () => {
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
                 // Cho phép submit khi in_progress hoặc revision_requested
-                const hasSubmitButton = status === 'in_progress' || status === 'revision_requested';
+                const hasSubmitButton =
+                  status === 'in_progress' || status === 'revision_requested';
                 const hasIssueButton =
                   status === 'in_progress' && !task.hasIssue;
 
                 // Check có ít nhất 1 draft file được chọn (fileStatus = 'uploaded' và không có submissionId)
-                const draftFileIds = Array.from(selectedFileIds).filter(fileId => {
-                  const file = files.find(f => f.fileId === fileId);
-                  return file && file.fileStatus === 'uploaded' && !file.submissionId;
-                });
+                const draftFileIds = Array.from(selectedFileIds).filter(
+                  fileId => {
+                    const file = files.find(f => f.fileId === fileId);
+                    return (
+                      file &&
+                      file.fileStatus === 'uploaded' &&
+                      !file.submissionId
+                    );
+                  }
+                );
                 const hasFilesToSubmit = draftFileIds.length > 0;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
                 const hasAnyAction =
@@ -1410,44 +1445,44 @@ const TranscriptionTaskDetailPage = () => {
                         hasStartButton ||
                         hasSubmitButton ||
                         hasIssueButton) && (
-                          <Space wrap>
-                            {hasAcceptButton && (
-                              <Button
-                                type="primary"
-                                onClick={handleAcceptTask}
-                                loading={acceptingTask}
-                              >
-                                Accept Task
-                              </Button>
-                            )}
-                            {hasSubmitButton && (
-                              <Button
-                                onClick={handleSubmitForReview}
-                                disabled={!hasFilesToSubmit}
-                              >
-                                Submit for Review
-                              </Button>
-                            )}
-                            {hasStartButton && (
-                              <Button
-                                type="primary"
-                                onClick={handleStartTask}
-                                loading={startingTask}
-                              >
-                                Start Task
-                              </Button>
-                            )}
-                            {hasIssueButton && (
-                              <Button
-                                danger
-                                icon={<ExclamationCircleOutlined />}
-                                onClick={handleOpenIssueModal}
-                              >
-                                Báo không kịp deadline
-                              </Button>
-                            )}
-                          </Space>
-                        )}
+                        <Space wrap>
+                          {hasAcceptButton && (
+                            <Button
+                              type="primary"
+                              onClick={handleAcceptTask}
+                              loading={acceptingTask}
+                            >
+                              Accept Task
+                            </Button>
+                          )}
+                          {hasSubmitButton && (
+                            <Button
+                              onClick={handleSubmitForReview}
+                              disabled={!hasFilesToSubmit}
+                            >
+                              Submit for Review
+                            </Button>
+                          )}
+                          {hasStartButton && (
+                            <Button
+                              type="primary"
+                              onClick={handleStartTask}
+                              loading={startingTask}
+                            >
+                              Start Task
+                            </Button>
+                          )}
+                          {hasIssueButton && (
+                            <Button
+                              danger
+                              icon={<ExclamationCircleOutlined />}
+                              onClick={handleOpenIssueModal}
+                            >
+                              Báo không kịp deadline
+                            </Button>
+                          )}
+                        </Space>
+                      )}
                     </Space>
                   </Card>
                 );
@@ -1512,8 +1547,16 @@ const TranscriptionTaskDetailPage = () => {
                   ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
                   : `Current review – Submission #${currentSubmission.version}`}
               </Text>
-              <Tag color={SUBMISSION_STATUS_COLORS[currentSubmission.status?.toLowerCase()] || 'default'}>
-                {SUBMISSION_STATUS_LABELS[currentSubmission.status?.toLowerCase()] || currentSubmission.status}
+              <Tag
+                color={
+                  SUBMISSION_STATUS_COLORS[
+                    currentSubmission.status?.toLowerCase()
+                  ] || 'default'
+                }
+              >
+                {SUBMISSION_STATUS_LABELS[
+                  currentSubmission.status?.toLowerCase()
+                ] || currentSubmission.status}
               </Tag>
             </Space>
           }
@@ -1560,28 +1603,37 @@ const TranscriptionTaskDetailPage = () => {
                   header={
                     <Space>
                       <Text strong>Submission #{submission.version}</Text>
-                      <Tag color={SUBMISSION_STATUS_COLORS[submissionStatus] || 'default'}>
-                        {SUBMISSION_STATUS_LABELS[submissionStatus] || submission.status}
+                      <Tag
+                        color={
+                          SUBMISSION_STATUS_COLORS[submissionStatus] ||
+                          'default'
+                        }
+                      >
+                        {SUBMISSION_STATUS_LABELS[submissionStatus] ||
+                          submission.status}
                       </Tag>
                       {submission.submittedAt && (
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           Submitted: {formatDateTime(submission.submittedAt)}
                         </Text>
                       )}
-                      {submissionStatus === 'rejected' && submission.rejectionReason && (
-                        <Button
-                          size="small"
-                          type="link"
-                          icon={<ExclamationCircleOutlined />}
-                          onClick={e => {
-                            e.stopPropagation(); // để không làm toggle panel khi bấm nút
-                            setRejectionReasonToView(submission.rejectionReason);
-                            setRejectionModalVisible(true);
-                          }}
-                        >
-                          View reason
-                        </Button>
-                      )}
+                      {submissionStatus === 'rejected' &&
+                        submission.rejectionReason && (
+                          <Button
+                            size="small"
+                            type="link"
+                            icon={<ExclamationCircleOutlined />}
+                            onClick={e => {
+                              e.stopPropagation(); // để không làm toggle panel khi bấm nút
+                              setRejectionReasonToView(
+                                submission.rejectionReason
+                              );
+                              setRejectionModalVisible(true);
+                            }}
+                          >
+                            View reason
+                          </Button>
+                        )}
                     </Space>
                   }
                 >
@@ -1821,7 +1873,8 @@ const TranscriptionTaskDetailPage = () => {
         confirmLoading={deletingFile}
       >
         <Text>
-          Bạn có chắc chắn muốn xóa file này? File sẽ bị xóa và không thể submit.
+          Bạn có chắc chắn muốn xóa file này? File sẽ bị xóa và không thể
+          submit.
         </Text>
       </Modal>
       {/* Modal xem lý do reject */}
@@ -1834,9 +1887,7 @@ const TranscriptionTaskDetailPage = () => {
         }
         open={rejectionModalVisible}
         footer={
-          <Button onClick={() => setRejectionModalVisible(false)}>
-            Close
-          </Button>
+          <Button onClick={() => setRejectionModalVisible(false)}>Close</Button>
         }
         onCancel={() => setRejectionModalVisible(false)}
         width={600}
@@ -1856,7 +1907,6 @@ const TranscriptionTaskDetailPage = () => {
           <Text type="secondary">No rejection reason available.</Text>
         )}
       </Modal>
-
     </div>
   );
 };

@@ -233,19 +233,20 @@ export default function TaskProgressManagement() {
           // Extract contracts và submissions từ response (files không cần, chỉ load khi mở detail modal)
           const contractsMap = {};
           const submissionsMap = {};
-          
+
           (pageData.content || []).forEach(assignment => {
             // Extract contracts
             if (assignment.contract && assignment.contractId) {
               contractsMap[assignment.contractId] = assignment.contract;
             }
-            
+
             // Extract submissions
             if (assignment.submissions && assignment.assignmentId) {
-              submissionsMap[assignment.assignmentId] = assignment.submissions || [];
+              submissionsMap[assignment.assignmentId] =
+                assignment.submissions || [];
             }
           });
-          
+
           setContractsMap(contractsMap);
           setTaskSubmissionsMap(submissionsMap);
 
@@ -351,7 +352,7 @@ export default function TaskProgressManagement() {
   // - revision_requested: có submission rejected/revision_requested → 40%
   const calculateProgress = record => {
     const status = record.status?.toLowerCase();
-    
+
     // Status ban đầu - chưa bắt đầu
     if (
       status === 'assigned' ||
@@ -360,12 +361,12 @@ export default function TaskProgressManagement() {
     ) {
       return 0;
     }
-    
+
     // Task đã hủy
     if (status === 'cancelled') {
       return 0;
     }
-    
+
     // Task hoàn thành
     if (status === 'completed') {
       return 100;
@@ -373,7 +374,7 @@ export default function TaskProgressManagement() {
 
     // Lấy submissions để tính progress
     const submissions = taskSubmissionsMap[record.assignmentId] || [];
-    
+
     // ready_for_review: có submission pending_review
     if (status === 'ready_for_review') {
       const hasPendingReview = submissions.some(
@@ -381,7 +382,7 @@ export default function TaskProgressManagement() {
       );
       return hasPendingReview ? 50 : 0;
     }
-    
+
     // revision_requested: có submission rejected hoặc revision_requested
     if (status === 'revision_requested') {
       const hasRejected = submissions.some(
