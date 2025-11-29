@@ -402,7 +402,7 @@ const SpecialistProfile = () => {
     <div className={styles.container}>
       <Card>
         <Title level={2}>
-          <UserOutlined /> My Specialist Profile
+           My Specialist Profile
         </Title>
 
         <Tabs
@@ -413,7 +413,7 @@ const SpecialistProfile = () => {
               key: 'general',
               label: (
                 <span>
-                  <InfoCircleOutlined />
+                  {/* <InfoCircleOutlined /> */}
                   General Info
                 </span>
               ),
@@ -565,7 +565,7 @@ const SpecialistProfile = () => {
               key: 'skills',
               label: (
                 <span>
-                  <StarOutlined />
+                  {/* <StarOutlined /> */}
                   Skills
                 </span>
               ),

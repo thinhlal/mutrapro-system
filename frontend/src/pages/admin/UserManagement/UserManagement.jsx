@@ -146,12 +146,14 @@ const UserManagement = () => {
   const columns = [
     {
       title: 'Full Name',
+      width: 200,
       dataIndex: 'fullName',
       key: 'fullName',
       sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
     },
     {
       title: 'Email',
+      width: 250,
       dataIndex: 'email',
       key: 'email',
       sorter: (a, b) => a.email.localeCompare(b.email),
@@ -159,6 +161,7 @@ const UserManagement = () => {
     {
       title: 'Role',
       dataIndex: 'role',
+      width: 140,
       key: 'role',
       render: role => (
         <Tag color={getRoleColor(role)}>{getRoleDisplayName(role)}</Tag>
@@ -175,6 +178,7 @@ const UserManagement = () => {
     },
     {
       title: 'Status',
+      width: 180,
       key: 'status',
       render: (_, record) => (
         <Space>
@@ -189,12 +193,14 @@ const UserManagement = () => {
     },
     {
       title: 'Phone',
+      width: 140,
       dataIndex: 'phone',
       key: 'phone',
     },
     {
       title: 'Auth Provider',
       dataIndex: 'authProvider',
+      width: 140,
       key: 'authProvider',
       render: provider => (
         <Tag color={provider === 'LOCAL' ? 'default' : 'blue'}>{provider}</Tag>
@@ -204,7 +210,7 @@ const UserManagement = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 280,
+      width: 250,
       render: (_, record) => (
         <Space>
           <Button

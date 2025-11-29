@@ -416,7 +416,7 @@ export default function ContractsManagement() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      width: 170,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
@@ -517,7 +517,9 @@ export default function ContractsManagement() {
                 icon={<EyeOutlined />}
                 onClick={() => navigate(`/manager/contracts/${r.contractId}`)}
                 block
-              />
+              >
+                View Details
+              </Button>
             </Tooltip>
             {canSend && (
               <Popconfirm

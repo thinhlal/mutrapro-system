@@ -59,20 +59,20 @@ const InstrumentSelectionModal = ({
           }}
         >
           <span>{title}</span>
-          <div style={{ fontSize: 18, fontWeight: 'normal' }}>
+          {/* <div style={{ fontSize: 18, fontWeight: 'normal' }}>
             {selectedCount > 0 && (
               <>
                 <Tag color="blue">{selectedCount} selected</Tag>
                 <Tag color="green">Total: ${totalPrice.toFixed(2)}</Tag>
               </>
             )}
-          </div>
+          </div> */}
         </div>
       }
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={1200}
+      width={1500}
       styles={{
         body: {
           maxHeight: '70vh',

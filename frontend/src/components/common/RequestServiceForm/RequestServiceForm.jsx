@@ -199,11 +199,18 @@ export default function RequestServiceForm({
           <Form.Item
             label="Description"
             name="description"
-            rules={[requiredMsg]}
+            rules={[
+              requiredMsg,
+              {
+                min: 10,
+                message: 'Description must be at least 10 characters long',
+              },
+            ]}
           >
             <TextArea
               rows={4}
               placeholder="Describe your request in detail..."
+              showCount
             />
           </Form.Item>
 

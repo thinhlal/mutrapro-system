@@ -406,7 +406,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Assignment ID',
         dataIndex: 'assignmentId',
         key: 'assignmentId',
-        width: 200,
+        width: 120,
         ellipsis: true,
         render: id => (
           <Tooltip title={id}>
@@ -418,11 +418,12 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Task Type',
         dataIndex: 'taskType',
         key: 'taskType',
-        width: 150,
+        width: 120,
         render: taskType => <Tag>{getTaskTypeLabel(taskType)}</Tag>,
       },
       {
         title: 'Notes',
+        width: 200,
         dataIndex: 'notes',
         key: 'notes',
         ellipsis: true,
@@ -439,7 +440,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Assigned Date',
         dataIndex: 'assignedDate',
         key: 'assignedDate',
-        width: 170,
+        width: 100,
         render: iso => formatDateTime(iso),
       },
       {
@@ -538,68 +539,72 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Actions',
         key: 'actions',
         fixed: 'right',
-        width: 200,
+        width: 150,
         render: (_, record) => {
           const status = record.status?.toLowerCase();
           const isTakingAction = startingAssignmentId === record.assignmentId;
 
           return (
-            <Space size="small">
-              {status === 'assigned' && (
-                <>
-                  <Popconfirm
-                    title="Bạn có chắc muốn accept task này?"
-                    onConfirm={() => handleAccept(record)}
-                    okText="Accept"
-                    cancelText="Hủy"
-                  >
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Space size="small">
+                {status === 'assigned' && (
+                  <>
+                    <Popconfirm
+                      title="Bạn có chắc muốn accept task này?"
+                      onConfirm={() => handleAccept(record)}
+                      okText="Accept"
+                      cancelText="Hủy"
+                    >
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<CheckOutlined />}
+                      >
+                        Accept
+                      </Button>
+                    </Popconfirm>
+                    <Button
+                      danger
+                      size="small"
+                      icon={<CloseOutlined />}
+                      onClick={() => handleCancel(record)}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                )}
+                {status === 'accepted_waiting' && (
+                  <Tag color="gold" style={{ marginRight: 0 }}>
+                    Đã nhận – Chờ tới lượt
+                  </Tag>
+                )}
+                {status === 'ready_to_start' && (
+                  <>
                     <Button
                       type="primary"
                       size="small"
-                      icon={<CheckOutlined />}
+                      loading={isTakingAction}
+                      onClick={() => handleStartTask(record)}
                     >
-                      Accept
+                      Start Work
                     </Button>
-                  </Popconfirm>
-                  <Button
-                    danger
-                    size="small"
-                    icon={<CloseOutlined />}
-                    onClick={() => handleCancel(record)}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              )}
-              {status === 'accepted_waiting' && (
-                <Tag color="gold" style={{ marginRight: 0 }}>
-                  Đã nhận – Chờ tới lượt
-                </Tag>
-              )}
-              {status === 'ready_to_start' && (
-                <>
-                  <Button
-                    type="primary"
-                    size="small"
-                    loading={isTakingAction}
-                    onClick={() => handleStartTask(record)}
-                  >
-                    Start Work
-                  </Button>
-                  <Button
-                    danger
-                    size="small"
-                    icon={<CloseOutlined />}
-                    onClick={() => handleCancel(record)}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              )}
+                    <Button
+                      danger
+                      size="small"
+                      icon={<CloseOutlined />}
+                      onClick={() => handleCancel(record)}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                )}
+              </Space>
               <Button
-                type="link"
+                // type="outline"
                 size="small"
                 onClick={() => handleOpenTask(record)}
+              
+                width="150px"
               >
                 View / Work
               </Button>
