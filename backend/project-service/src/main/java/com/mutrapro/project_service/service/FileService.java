@@ -318,6 +318,7 @@ public class FileService {
                     .createdBy(userId)
                     .assignmentId(assignmentId)
                     .requestId(requestId)
+                    .submissionId(null)  // Can be set later if file is added to submission
                     .fileStatus(FileStatus.uploaded)  // Chờ specialist submit for review
                     .deliveredToCustomer(false)
                     .build();
@@ -670,79 +671,6 @@ public class FileService {
                 saved.getFileId(), userId);
         
         return getFileInfo(saved.getFileId(), userId, userRoles);
-    }
-
-    /**
-     * Specialist submit files for review (chuyển từ uploaded sang pending_review)
-     * @param assignmentId ID của task assignment
-     * @param fileIds Danh sách file IDs được chọn để submit
-     * @param userId ID của specialist
-     * @return Số lượng files đã được submit
-     */
-    @Transactional
-    public int submitFilesForReview(String assignmentId, List<String> fileIds, String userId) {
-        log.info("Specialist {} submitting {} files for review: assignmentId={}, fileIds={}", 
-                userId, fileIds != null ? fileIds.size() : 0, assignmentId, fileIds);
-        
-        if (fileIds == null || fileIds.isEmpty()) {
-            throw NoFilesSelectedException.forSubmission();
-        }
-        
-        // Verify assignment exists and belongs to specialist
-        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
-        
-        // Verify assignment belongs to current specialist
-        if (!assignment.getSpecialistId().equals(userId)) {
-            throw UnauthorizedException.create("You can only submit files for your own tasks");
-        }
-        
-        // Only allow submit if task is in_progress or revision_requested
-        if (assignment.getStatus() != AssignmentStatus.in_progress 
-                && assignment.getStatus() != AssignmentStatus.revision_requested) {
-            throw InvalidTaskAssignmentStatusException.cannotSubmitForReview(
-                assignment.getAssignmentId(), 
-                assignment.getStatus()
-            );
-        }
-        
-        // Lấy files theo fileIds
-        List<File> filesToSubmit = fileRepository.findByFileIdIn(fileIds);
-        
-        if (filesToSubmit.isEmpty()) {
-            throw NoFilesSelectedException.notFound();
-        }
-        
-        // Validate files
-        for (File file : filesToSubmit) {
-            // Validate: file phải thuộc assignmentId
-            if (!assignmentId.equals(file.getAssignmentId())) {
-                throw FileNotBelongToAssignmentException.create(file.getFileId(), assignmentId);
-            }
-            
-            // Validate: fileStatus phải là uploaded
-            if (file.getFileStatus() != FileStatus.uploaded) {
-                throw InvalidFileStatusException.cannotSubmit(file.getFileId(), file.getFileStatus());
-            }
-            
-            // Validate: không được deleted
-            if (file.getFileStatus() == FileStatus.deleted) {
-                throw InvalidFileStatusException.fileDeleted(file.getFileId());
-            }
-        }
-        
-        // Chuyển files từ uploaded sang pending_review
-        for (File file : filesToSubmit) {
-            file.setFileStatus(FileStatus.pending_review);
-            fileRepository.save(file);
-            log.info("File submitted for review: fileId={}, fileName={}, assignmentId={}", 
-                    file.getFileId(), file.getFileName(), assignmentId);
-        }
-        
-        log.info("Submitted {} files for review: assignmentId={}, specialistId={}", 
-                filesToSubmit.size(), assignmentId, userId);
-        
-        return filesToSubmit.size();
     }
 
     /**

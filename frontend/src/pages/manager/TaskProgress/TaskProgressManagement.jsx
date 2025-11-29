@@ -34,7 +34,6 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getContractById } from '../../../services/contractService';
 import {
   getAllTaskAssignments,
   resolveIssue,
@@ -202,7 +201,7 @@ export default function TaskProgressManagement() {
   const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
   const [taskFiles, setTaskFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
-  const [taskFilesMap, setTaskFilesMap] = useState({}); // Map assignmentId -> files[]
+  const [taskSubmissionsMap, setTaskSubmissionsMap] = useState({}); // Map assignmentId -> submissions[]
   const [contractsMap, setContractsMap] = useState({}); // Map contractId -> contract
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [selectedIssueTask, setSelectedIssueTask] = useState(null);
@@ -231,62 +230,24 @@ export default function TaskProgressManagement() {
           const pageData = response.data;
           setTaskAssignments(pageData.content || []);
 
-          // Fetch contract info for each task (lazy loading)
-          const contractIds = [
-            ...new Set(
-              (pageData.content || []).map(t => t.contractId).filter(Boolean)
-            ),
-          ];
-          contractIds.forEach(contractId => {
-            if (!contractsMap[contractId]) {
-              getContractById(contractId)
-                .then(res => {
-                  if (res?.status === 'success' && res?.data) {
-                    setContractsMap(prev => ({
-                      ...prev,
-                      [contractId]: res.data,
-                    }));
-                  }
-                })
-                .catch(err =>
-                  console.error(`Error fetching contract ${contractId}:`, err)
-                );
+          // Extract contracts và submissions từ response (files không cần, chỉ load khi mở detail modal)
+          const contractsMap = {};
+          const submissionsMap = {};
+          
+          (pageData.content || []).forEach(assignment => {
+            // Extract contracts
+            if (assignment.contract && assignment.contractId) {
+              contractsMap[assignment.contractId] = assignment.contract;
+            }
+            
+            // Extract submissions
+            if (assignment.submissions && assignment.assignmentId) {
+              submissionsMap[assignment.assignmentId] = assignment.submissions || [];
             }
           });
-
-          // Fetch files for all assignments to calculate progress
-          const filesMap = {};
-          await Promise.all(
-            (pageData.content || []).map(async assignment => {
-              if (!assignment.assignmentId) {
-                filesMap[assignment.assignmentId] = [];
-                return;
-              }
-              try {
-                const filesResponse = await axiosInstance.get(
-                  `/api/v1/projects/files/by-assignment/${assignment.assignmentId}`
-                );
-                if (
-                  filesResponse?.data?.status === 'success' &&
-                  filesResponse?.data?.data
-                ) {
-                  filesMap[assignment.assignmentId] =
-                    filesResponse.data.data || [];
-                } else {
-                  filesMap[assignment.assignmentId] = [];
-                }
-              } catch (error) {
-                if (error?.response?.status !== 500) {
-                  console.error(
-                    `Error fetching files for assignment ${assignment.assignmentId}:`,
-                    error
-                  );
-                }
-                filesMap[assignment.assignmentId] = [];
-              }
-            })
-          );
-          setTaskFilesMap(filesMap);
+          
+          setContractsMap(contractsMap);
+          setTaskSubmissionsMap(submissionsMap);
 
           setPagination(prev => ({
             ...prev,
@@ -307,7 +268,7 @@ export default function TaskProgressManagement() {
         setLoading(false);
       }
     },
-    [contractsMap]
+    []
   );
 
   useEffect(() => {
@@ -376,52 +337,94 @@ export default function TaskProgressManagement() {
   };
 
   // Calculate progress percentage
-  // Logic: Kết hợp status và files (Cách 2)
-  // - assigned: 0% (chưa bắt đầu)
-  // - in_progress + chưa có file: 25%
-  // - in_progress + có file uploaded: 50%
-  // - in_progress + có file approved: 75%
-  // - completed: 100% (hoàn thành)
+  // Logic: Tính theo submission status thay vì file status
+  // - assigned, accepted_waiting, ready_to_start: 0% (chưa bắt đầu)
   // - cancelled: 0% (đã hủy)
+  // - completed: 100% (hoàn thành)
+  // - in_progress: tính theo submissions
+  //   - Chưa có submission: 25%
+  //   - Có submission approved: 75%
+  //   - Có submission pending_review: 50%
+  //   - Có submission rejected/revision_requested: 40%
+  //   - Có submission draft: 30%
+  // - ready_for_review: có submission pending_review → 50%
+  // - revision_requested: có submission rejected/revision_requested → 40%
   const calculateProgress = record => {
     const status = record.status?.toLowerCase();
+    
+    // Status ban đầu - chưa bắt đầu
     if (
       status === 'assigned' ||
       status === 'accepted_waiting' ||
       status === 'ready_to_start'
-    )
+    ) {
       return 0;
-    if (status === 'cancelled') return 0;
-    if (status === 'completed') return 100;
+    }
+    
+    // Task đã hủy
+    if (status === 'cancelled') {
+      return 0;
+    }
+    
+    // Task hoàn thành
+    if (status === 'completed') {
+      return 100;
+    }
 
-    // in_progress: tính dựa trên files
+    // Lấy submissions để tính progress
+    const submissions = taskSubmissionsMap[record.assignmentId] || [];
+    
+    // ready_for_review: có submission pending_review
+    if (status === 'ready_for_review') {
+      const hasPendingReview = submissions.some(
+        s => s.status?.toLowerCase() === 'pending_review'
+      );
+      return hasPendingReview ? 50 : 0;
+    }
+    
+    // revision_requested: có submission rejected hoặc revision_requested
+    if (status === 'revision_requested') {
+      const hasRejected = submissions.some(
+        s => s.status?.toLowerCase() === 'rejected'
+      );
+      const hasRevisionRequested = submissions.some(
+        s => s.status?.toLowerCase() === 'revision_requested'
+      );
+      return hasRejected || hasRevisionRequested ? 40 : 0;
+    }
+
+    // in_progress: tính dựa trên submissions
     if (status === 'in_progress') {
-      const files = taskFilesMap[record.assignmentId] || [];
-
-      if (files.length === 0) {
-        // Chưa có file nào
+      if (submissions.length === 0) {
+        // Chưa có submission nào
         return 25;
       }
 
-      // Kiểm tra file status cao nhất
-      const hasDelivered = files.some(f => f.deliveredToCustomer);
-      const hasApproved = files.some(
-        f => f.fileStatus?.toLowerCase() === 'approved'
+      // Kiểm tra submission status cao nhất (theo thứ tự ưu tiên)
+      const hasApproved = submissions.some(
+        s => s.status?.toLowerCase() === 'approved'
       );
-      const hasPendingReview = files.some(
-        f => f.fileStatus?.toLowerCase() === 'pending_review'
+      const hasPendingReview = submissions.some(
+        s => s.status?.toLowerCase() === 'pending_review'
       );
-      const hasUploaded = files.some(
-        f => f.fileStatus?.toLowerCase() === 'uploaded'
+      const hasRejected = submissions.some(
+        s => s.status?.toLowerCase() === 'rejected'
+      );
+      const hasRevisionRequested = submissions.some(
+        s => s.status?.toLowerCase() === 'revision_requested'
+      );
+      const hasDraft = submissions.some(
+        s => s.status?.toLowerCase() === 'draft'
       );
 
-      if (hasDelivered) return 100;
+      // Ưu tiên: approved > pending_review > rejected/revision_requested > draft
       if (hasApproved) return 75;
       if (hasPendingReview) return 50;
-      if (hasUploaded) return 50;
+      if (hasRejected || hasRevisionRequested) return 40;
+      if (hasDraft) return 30;
 
-      // Có file nhưng không rõ status
-      return 50;
+      // Có submission nhưng status không rõ
+      return 30;
     }
 
     return 0;

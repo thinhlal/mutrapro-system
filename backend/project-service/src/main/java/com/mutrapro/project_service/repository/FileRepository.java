@@ -4,6 +4,8 @@ import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,6 +21,16 @@ public interface FileRepository extends JpaRepository<File, String> {
 
     List<File> findByAssignmentId(String assignmentId);
 
+    // Find files by multiple assignmentIds (batch fetch)
+    List<File> findByAssignmentIdIn(List<String> assignmentIds);
+
+    /**
+     * Batch fetch files by multiple assignmentIds, excluding deleted files
+     * Custom query để tối ưu hơn và rõ ràng hơn về intent
+     */
+    @Query("SELECT f FROM File f WHERE f.assignmentId IN :assignmentIds AND f.fileStatus != com.mutrapro.project_service.enums.FileStatus.deleted")
+    List<File> findByAssignmentIdInExcludingDeleted(@Param("assignmentIds") List<String> assignmentIds);
+
     // Find files by assignmentId, excluding deleted files
     List<File> findByAssignmentIdAndFileStatusNot(String assignmentId, FileStatus fileStatus);
 
@@ -30,5 +42,8 @@ public interface FileRepository extends JpaRepository<File, String> {
 
     // Find files by IDs
     List<File> findByFileIdIn(List<String> fileIds);
+
+    // Find files by submission ID
+    List<File> findBySubmissionId(String submissionId);
 }
 

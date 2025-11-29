@@ -3,8 +3,12 @@ package com.mutrapro.project_service.controller;
 import com.mutrapro.project_service.dto.request.CancelTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.ReportIssueRequest;
 import com.mutrapro.project_service.dto.request.SubmitForReviewRequest;
+import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
+import com.mutrapro.project_service.service.FileAccessService;
+import com.mutrapro.project_service.service.FileSubmissionService;
 import com.mutrapro.project_service.service.TaskAssignmentService;
+import org.springframework.security.core.Authentication;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +32,7 @@ import java.util.List;
 public class SpecialistTaskAssignmentController {
 
     private final TaskAssignmentService taskAssignmentService;
+    private final FileSubmissionService fileSubmissionService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
@@ -107,17 +112,21 @@ public class SpecialistTaskAssignmentController {
 
     @PostMapping("/{assignmentId}/submit-for-review")
     @PreAuthorize("hasAnyRole('TRANSCRIPTION','ARRANGEMENT','RECORDING_ARTIST','SYSTEM_ADMIN')")
-    @Operation(summary = "Specialist submit task for review (chuyển files từ uploaded sang pending_review)")
-    public ApiResponse<TaskAssignmentResponse> submitTaskForReview(
+    @Operation(summary = "Specialist submit files for review - Backend tự động tạo submission package, add files và submit")
+    public ApiResponse<FileSubmissionResponse> submitForReview(
             @PathVariable String assignmentId,
-            @Valid @RequestBody SubmitForReviewRequest request) {
-        log.info("POST /specialist/task-assignments/{}/submit-for-review - Submitting task for review with {} files", 
+            @Valid @RequestBody SubmitForReviewRequest request,
+            Authentication authentication) {
+        log.info("POST /specialist/task-assignments/{}/submit-for-review - Submitting {} files for review", 
                 assignmentId, request.getFileIds() != null ? request.getFileIds().size() : 0);
-        TaskAssignmentResponse assignment = taskAssignmentService.submitTaskForReview(
-                assignmentId, request.getFileIds());
-        return ApiResponse.<TaskAssignmentResponse>builder()
-                .message("Task submitted for review successfully")
-                .data(assignment)
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        FileSubmissionResponse submission = fileSubmissionService.submitFilesForReview(
+                assignmentId, request.getFileIds(), userContext.getUserId());
+        
+        return ApiResponse.<FileSubmissionResponse>builder()
+                .message("Files submitted for review successfully")
+                .data(submission)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

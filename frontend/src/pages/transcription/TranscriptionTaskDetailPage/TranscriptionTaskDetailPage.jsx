@@ -20,6 +20,7 @@ import {
   Alert,
   Upload,
   Checkbox,
+  Collapse,
 } from 'antd';
 import {
   LeftOutlined,
@@ -39,13 +40,16 @@ import {
   acceptTaskAssignment,
   reportIssue,
   startTaskAssignment,
-  submitTaskForReview,
 } from '../../../services/taskAssignmentService';
 import {
   uploadTaskFile,
   getFilesByAssignmentId,
   softDeleteFile,
 } from '../../../services/fileService';
+import {
+  submitFilesForReview,
+} from '../../../services/taskAssignmentService';
+import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
@@ -89,14 +93,32 @@ function getStatusTag(status) {
 }
 
 function getFileStatusTag(status) {
+  if (!status) return <Tag color="default">Unknown</Tag>;
+  const statusUpper = status.toUpperCase();
   const map = {
+    UPLOADED: { color: 'blue', text: 'Draft' },
     PENDING_REVIEW: { color: 'blue', text: 'Pending Review' },
     APPROVED: { color: 'green', text: 'Approved' },
     REJECTED: { color: 'red', text: 'Rejected' },
+    REVISION_REQUESTED: { color: 'orange', text: 'Revision Requested' },
   };
-  const item = map[status] || { color: 'default', text: status };
+  const item = map[statusUpper] || { color: 'default', text: status };
   return <Tag color={item.color}>{item.text}</Tag>;
 }
+
+const SUBMISSION_STATUS_LABELS = {
+  draft: 'Draft',
+  pending_review: 'Pending Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
+
+const SUBMISSION_STATUS_COLORS = {
+  draft: 'default',
+  pending_review: 'processing',
+  approved: 'success',
+  rejected: 'error',
+};
 
 function getTaskTypeLabel(taskType) {
   if (!taskType) return 'N/A';
@@ -227,6 +249,8 @@ const TranscriptionTaskDetailPage = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState(null);
   const [deletingFile, setDeletingFile] = useState(false);
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const loadContractTasks = useCallback(async contractId => {
     if (!contractId) {
@@ -299,6 +323,8 @@ const TranscriptionTaskDetailPage = () => {
           note: file.description || '', // Also map to note for table
           fileSize: file.fileSize,
           mimeType: file.mimeType,
+          submissionId: file.submissionId || null, // Thêm submissionId để phân loại
+          rejectionReason: file.rejectionReason || null, // Thêm rejectionReason cho manager note
         }));
         setFiles(mappedFiles);
 
@@ -318,6 +344,30 @@ const TranscriptionTaskDetailPage = () => {
       // Don't show error - files might not exist yet
     }
   }, []); // No dependencies - assignmentId passed as parameter
+
+  const loadSubmissions = useCallback(async (assignmentId) => {
+    if (!assignmentId) return;
+    try {
+      setLoadingSubmissions(true);
+      const response = await getSubmissionsByAssignmentId(assignmentId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Sort submissions by version (mới nhất trước)
+        const sortedSubmissions = [...response.data].sort((a, b) => {
+          const versionA = a.version || 0;
+          const versionB = b.version || 0;
+          return versionB - versionA; // Mới nhất trước
+        });
+        setSubmissions(sortedSubmissions);
+      } else {
+        setSubmissions([]);
+      }
+    } catch (error) {
+      console.error('Error loading submissions:', error);
+      setSubmissions([]);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -339,10 +389,11 @@ const TranscriptionTaskDetailPage = () => {
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
         
-        // Load song song: tasks cùng contract + files của assignment hiện tại
+        // Load song song: tasks cùng contract + files + submissions của assignment hiện tại
         await Promise.all([
           loadContractTasks(contractId),
           loadTaskFiles(taskData.assignmentId),
+          loadSubmissions(taskData.assignmentId),
         ]);
       } else {
         setError('Task not found');
@@ -353,7 +404,7 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId, loadContractTasks, loadTaskFiles]);
+  }, [taskId, loadContractTasks, loadTaskFiles, loadSubmissions]);
 
   useEffect(() => {
     loadData();
@@ -371,10 +422,10 @@ const TranscriptionTaskDetailPage = () => {
       return;
     }
 
-    // Lấy danh sách fileIds đã được chọn (chỉ lấy files có status = uploaded)
+    // Lấy danh sách fileIds đã được chọn (chỉ lấy draft files: fileStatus = 'uploaded' và không có submissionId)
     const uploadedFileIds = Array.from(selectedFileIds).filter(fileId => {
       const file = files.find(f => f.fileId === fileId);
-      return file && file.fileStatus === 'uploaded';
+      return file && file.fileStatus === 'uploaded' && !file.submissionId;
     });
 
     if (uploadedFileIds.length === 0) {
@@ -383,11 +434,17 @@ const TranscriptionTaskDetailPage = () => {
     }
 
     try {
-      const response = await submitTaskForReview(task.assignmentId, uploadedFileIds);
+      // Backend tự động tạo submission, add files và submit
+      const response = await submitFilesForReview(task.assignmentId, uploadedFileIds);
+      
       if (response?.status === 'success') {
         message.success(`Đã submit ${uploadedFileIds.length} file(s) for review thành công`);
         setSelectedFileIds(new Set()); // Reset selection
-        await loadData(); // loadData đã tự reload files rồi
+        // Reload cả files và submissions
+        await Promise.all([
+          loadTaskFiles(task.assignmentId),
+          loadSubmissions(task.assignmentId),
+        ]);
       } else {
         message.error(response?.message || 'Lỗi khi submit for review');
       }
@@ -395,7 +452,7 @@ const TranscriptionTaskDetailPage = () => {
       console.error('Error submitting for review:', error);
       message.error(error?.message || 'Lỗi khi submit for review');
     }
-  }, [task, selectedFileIds, files, loadData, loadTaskFiles]);
+  }, [task, selectedFileIds, files, loadData]);
 
 
   const handleAcceptTask = useCallback(async () => {
@@ -506,7 +563,11 @@ const TranscriptionTaskDetailPage = () => {
 
       if (response?.status === 'success') {
         message.success('File đã được xóa thành công');
-        await loadTaskFiles(task.assignmentId);
+        // Reload cả files và submissions sau khi delete
+        await Promise.all([
+          loadTaskFiles(task.assignmentId),
+          loadSubmissions(task.assignmentId),
+        ]);
         // Bỏ file khỏi list selected nếu đang selected
         setSelectedFileIds(prev => {
           const newSet = new Set(prev);
@@ -588,7 +649,11 @@ const TranscriptionTaskDetailPage = () => {
         uploadForm.resetFields();
         setSelectedFile(null);
         setUploadModalVisible(false);
-        await loadTaskFiles(task.assignmentId);
+        // Reload cả files và submissions sau khi upload
+        await Promise.all([
+          loadTaskFiles(task.assignmentId),
+          loadSubmissions(task.assignmentId),
+        ]);
       } else {
         message.error(response?.message || 'Failed to upload file');
       }
@@ -606,6 +671,236 @@ const TranscriptionTaskDetailPage = () => {
     if (files.length === 0) return 0;
     return Math.max(...files.map(f => f.version || 0));
   }, [files]);
+
+  // Phân loại files và submissions
+  const draftFiles = useMemo(() => {
+    // Draft files: fileStatus = 'uploaded' và submissionId = null
+    return files.filter(
+      file => file.fileStatus === 'uploaded' && !file.submissionId
+    );
+  }, [files]);
+
+  const currentSubmission = useMemo(() => {
+    // Current submission: submission mới nhất (version lớn nhất)
+    if (submissions.length === 0) return null;
+    return submissions[0]; // Đã sort theo version desc
+  }, [submissions]);
+
+  const previousSubmissions = useMemo(() => {
+    // Previous submissions: các submission cũ hơn (bỏ submission đầu tiên)
+    if (submissions.length <= 1) return [];
+    return submissions.slice(1);
+  }, [submissions]);
+
+  // Columns cho Draft Files
+  const draftFileColumns = useMemo(
+    () => [
+      {
+        title: 'Version',
+        key: 'version',
+        width: 90,
+        render: (_, record) => `v${record.version}`,
+      },
+      {
+        title: 'File name',
+        dataIndex: 'fileName',
+        key: 'fileName',
+        render: text =>
+          text && text.length > 40 ? (
+            <Tooltip title={text}>
+              <span>{text.slice(0, 40)}...</span>
+            </Tooltip>
+          ) : (
+            <span>{text}</span>
+          ),
+      },
+      {
+        title: 'Uploaded at',
+        dataIndex: 'uploadDate',
+        key: 'uploadDate',
+        width: 180,
+        render: iso => formatDateTime(iso),
+      },
+      {
+        title: 'Status',
+        key: 'status',
+        width: 120,
+        render: () => <Tag color="blue">Draft</Tag>,
+      },
+      {
+        title: 'Chọn submit',
+        key: 'selectForSubmission',
+        width: 120,
+        render: (_, record) => (
+          <Checkbox
+            checked={selectedFileIds.has(record.fileId)}
+            onChange={e => handleToggleFileSelection(record.fileId, e.target.checked)}
+          />
+        ),
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: 150,
+        render: (_, record) => (
+          <Space>
+            <Button
+              type="link"
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownloadFile(record)}
+              size="small"
+            >
+              Download
+            </Button>
+            {(task.status?.toLowerCase() === 'in_progress' || 
+              task.status?.toLowerCase() === 'revision_requested') && (
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteFile(record.fileId)}
+                size="small"
+              >
+                Delete
+              </Button>
+            )}
+          </Space>
+        ),
+      },
+    ],
+    [selectedFileIds, handleToggleFileSelection, handleDownloadFile, handleDeleteFile, task?.status]
+  );
+
+  // Columns cho Current Submission Files
+  const currentSubmissionFileColumns = useMemo(
+    () => [
+      {
+        title: 'Version',
+        key: 'version',
+        width: 90,
+        render: (_, record) => {
+          // Tính version dựa trên thứ tự trong tất cả files (sort theo uploadDate)
+          const allFilesSorted = [...files].sort((a, b) => {
+            const dateA = new Date(a.uploadDate || 0);
+            const dateB = new Date(b.uploadDate || 0);
+            return dateA - dateB; // Oldest first
+          });
+          const fileIndex = allFilesSorted.findIndex(f => f.fileId === record.fileId);
+          return fileIndex >= 0 ? `v${fileIndex + 1}` : '-';
+        },
+      },
+      {
+        title: 'File name',
+        dataIndex: 'fileName',
+        key: 'fileName',
+        render: text =>
+          text && text.length > 40 ? (
+            <Tooltip title={text}>
+              <span>{text.slice(0, 40)}...</span>
+            </Tooltip>
+          ) : (
+            <span>{text}</span>
+          ),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'fileStatus',
+        key: 'fileStatus',
+        width: 160,
+        render: s => {
+          const status = s?.toUpperCase();
+          return getFileStatusTag(status);
+        },
+      },
+      {
+        title: 'Manager note (optional)',
+        key: 'note',
+        render: (_, record) => {
+          // Hiển thị rejectionReason nếu có
+          if (record.rejectionReason) {
+            return (
+              <Tooltip title={record.rejectionReason}>
+                <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                  {record.rejectionReason.length > 30
+                    ? `${record.rejectionReason.slice(0, 30)}...`
+                    : record.rejectionReason}
+                </Text>
+              </Tooltip>
+            );
+          }
+          return <Text type="secondary">—</Text>;
+        },
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: 100,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownloadFile(record)}
+            size="small"
+          >
+            Download
+          </Button>
+        ),
+      },
+    ],
+    [files, handleDownloadFile]
+  );
+
+  // Columns cho History Files
+  const historyFileColumns = useMemo(
+    () => [
+      {
+        title: 'File name',
+        dataIndex: 'fileName',
+        key: 'fileName',
+        render: text =>
+          text && text.length > 40 ? (
+            <Tooltip title={text}>
+              <span>{text.slice(0, 40)}...</span>
+            </Tooltip>
+          ) : (
+            <span>{text}</span>
+          ),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'fileStatus',
+        key: 'fileStatus',
+        width: 160,
+        render: s => {
+          const status = s?.toUpperCase();
+          return getFileStatusTag(status);
+        },
+      },
+      {
+        title: 'Submitted at',
+        dataIndex: 'uploadDate',
+        key: 'uploadDate',
+        width: 180,
+        render: iso => formatDateTime(iso),
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: 100,
+        render: (_, record) => (
+          <Button
+            type="link"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownloadFile(record)}
+            size="small"
+          >
+            Download
+          </Button>
+        ),
+      },
+    ],
+    [handleDownloadFile]
+  );
 
   const fileColumns = useMemo(
     () => [
@@ -1067,12 +1362,12 @@ const TranscriptionTaskDetailPage = () => {
                 const hasIssueButton =
                   status === 'in_progress' && !task.hasIssue;
 
-                // Check có ít nhất 1 file uploaded được chọn
-                const uploadedFileIds = Array.from(selectedFileIds).filter(fileId => {
+                // Check có ít nhất 1 draft file được chọn (fileStatus = 'uploaded' và không có submissionId)
+                const draftFileIds = Array.from(selectedFileIds).filter(fileId => {
                   const file = files.find(f => f.fileId === fileId);
-                  return file && file.fileStatus === 'uploaded';
+                  return file && file.fileStatus === 'uploaded' && !file.submissionId;
                 });
-                const hasFilesToSubmit = uploadedFileIds.length > 0;
+                const hasFilesToSubmit = draftFileIds.length > 0;
                 // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
                 const hasAnyAction =
                   hasIssueAlert ||
@@ -1214,12 +1509,10 @@ const TranscriptionTaskDetailPage = () => {
         )}
       </Card> */}
 
-      {/* Files & Versions */}
+      {/* Khối 1: Draft Files */}
       <Card
         className={styles.section}
-        title={
-          <div className={styles.filesHeader}>Notation Files & Versions</div>
-        }
+        title="Draft Files (chưa submit)"
         extra={
           task.status?.toLowerCase() !== 'cancelled' && (
             <Button
@@ -1232,24 +1525,105 @@ const TranscriptionTaskDetailPage = () => {
           )
         }
       >
-        {files.length > 0 ? (
+        {draftFiles.length > 0 ? (
           <Table
             rowKey="fileId"
-            dataSource={files.sort((a, b) => {
+            dataSource={draftFiles.sort((a, b) => {
               const dateA = new Date(a.uploadDate || 0);
               const dateB = new Date(b.uploadDate || 0);
               return dateB - dateA; // Sort by newest first
             })}
-            columns={fileColumns}
+            columns={draftFileColumns}
             pagination={false}
           />
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No notation files yet. Upload your first version to start."
+            description="Chưa có draft files. Upload file để bắt đầu."
           />
         )}
       </Card>
+
+      {/* Khối 2: Current Submission */}
+      {currentSubmission && (
+        <Card
+          className={styles.section}
+          title={
+            <Space>
+              <Text strong>
+                {currentSubmission.status?.toLowerCase() === 'rejected'
+                  ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
+                  : `Current review – Submission #${currentSubmission.version}`}
+              </Text>
+              <Tag color={SUBMISSION_STATUS_COLORS[currentSubmission.status?.toLowerCase()] || 'default'}>
+                {SUBMISSION_STATUS_LABELS[currentSubmission.status?.toLowerCase()] || currentSubmission.status}
+              </Tag>
+            </Space>
+          }
+        >
+          {currentSubmission.rejectionReason && (
+            <Alert
+              message="Manager đã yêu cầu chỉnh sửa"
+              description={currentSubmission.rejectionReason}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+          {currentSubmission.files && currentSubmission.files.length > 0 ? (
+            <Table
+              rowKey="fileId"
+              dataSource={currentSubmission.files}
+              columns={currentSubmissionFileColumns}
+              pagination={false}
+            />
+          ) : (
+            <Empty description="Không có files trong submission này" />
+          )}
+        </Card>
+      )}
+
+      {/* Khối 3: Previous Submissions (History) */}
+      {previousSubmissions.length > 0 && (
+        <Card className={styles.section} title="Previous submissions (History)">
+          <Collapse>
+            {previousSubmissions.map(submission => {
+              const submissionStatus = submission.status?.toLowerCase();
+              const files = submission.files || [];
+              
+              return (
+                <Collapse.Panel
+                  key={submission.submissionId}
+                  header={
+                    <Space>
+                      <Text strong>Submission #{submission.version}</Text>
+                      <Tag color={SUBMISSION_STATUS_COLORS[submissionStatus] || 'default'}>
+                        {SUBMISSION_STATUS_LABELS[submissionStatus] || submission.status}
+                      </Tag>
+                      {submission.submittedAt && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Submitted: {formatDateTime(submission.submittedAt)}
+                        </Text>
+                      )}
+                    </Space>
+                  }
+                >
+                  {files.length > 0 ? (
+                    <Table
+                      rowKey="fileId"
+                      dataSource={files}
+                      columns={historyFileColumns}
+                      pagination={false}
+                    />
+                  ) : (
+                    <Empty description="Không có files trong submission này" />
+                  )}
+                </Collapse.Panel>
+              );
+            })}
+          </Collapse>
+        </Card>
+      )}
 
       {/* Notation Editor link */}
       <Card className={styles.section} title="Open in Notation Editor">

@@ -172,6 +172,23 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/submit-for-review`,
   },
 
+  // === File Submissions Management ===
+  SUBMISSIONS: {
+    // POST /submissions
+    CREATE: `${PROJECT_PATH}/submissions`,
+    // GET /submissions/{submissionId}
+    GET: submissionId => `${PROJECT_PATH}/submissions/${submissionId}`,
+    // GET /submissions/by-assignment/{assignmentId}
+    GET_BY_ASSIGNMENT: assignmentId =>
+      `${PROJECT_PATH}/submissions/by-assignment/${assignmentId}`,
+    // POST /submissions/{submissionId}/add-files
+    ADD_FILES: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/add-files`,
+    // POST /submissions/{submissionId}/submit
+    SUBMIT: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/submit`,
+    // POST /submissions/{submissionId}/review
+    REVIEW: submissionId => `${PROJECT_PATH}/submissions/${submissionId}/review`,
+  },
+
   // === Billing Service (Quản lý Thanh toán) ===
   PAYMENT: {
     CREATE_ORDER: `${BILLING_PATH}/payments/orders`,

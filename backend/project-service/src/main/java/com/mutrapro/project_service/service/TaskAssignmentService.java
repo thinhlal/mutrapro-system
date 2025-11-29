@@ -9,6 +9,7 @@ import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.project_service.entity.FileSubmission;
 import com.mutrapro.shared.dto.PageResponse;
 import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotsResult;
 import com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotResponse;
@@ -49,6 +50,7 @@ import com.mutrapro.project_service.exception.SpecialistNotFoundException;
 import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +92,7 @@ public class TaskAssignmentService {
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     MilestoneProgressService milestoneProgressService;
-    FileService fileService;
+    com.mutrapro.project_service.repository.FileSubmissionRepository fileSubmissionRepository;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -906,6 +908,59 @@ public class TaskAssignmentService {
         List<TaskAssignmentResponse> enrichedAssignments = pageResult.getContent().stream()
             .map(this::enrichTaskAssignment)
             .collect(Collectors.toList());
+
+        // Batch fetch submissions và contracts (mặc định luôn include)
+        List<String> assignmentIds = enrichedAssignments.stream()
+            .map(TaskAssignmentResponse::getAssignmentId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        // Batch fetch submissions
+        Map<String, List<TaskAssignmentResponse.SubmissionInfo>> submissionsMap = new HashMap<>();
+        if (!assignmentIds.isEmpty()) {
+            List<FileSubmission> submissions = fileSubmissionRepository.findByAssignmentIdIn(assignmentIds);
+            submissionsMap = submissions.stream()
+                .collect(Collectors.groupingBy(
+                    FileSubmission::getAssignmentId,
+                    Collectors.mapping(s -> TaskAssignmentResponse.SubmissionInfo.builder()
+                        .submissionId(s.getSubmissionId())
+                        .status(s.getStatus() != null ? s.getStatus().name() : null)
+                        .version(s.getVersion())
+                        .build(),
+                        Collectors.toList())
+                ));
+        }
+
+        // Batch fetch contracts
+        List<String> contractIdsToFetch = enrichedAssignments.stream()
+            .map(TaskAssignmentResponse::getContractId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+
+        Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
+        if (!contractIdsToFetch.isEmpty()) {
+            List<Contract> contractsForAssignments = contractRepository.findAllById(contractIdsToFetch);
+            contractsMap = contractsForAssignments.stream()
+                .collect(Collectors.toMap(
+                    Contract::getContractId,
+                    c -> TaskAssignmentResponse.ContractInfo.builder()
+                        .contractId(c.getContractId())
+                        .contractNumber(c.getContractNumber())
+                        .nameSnapshot(c.getNameSnapshot())
+                        .build()
+                ));
+        }
+
+        // Attach submissions and contracts to responses (files không cần batch fetch, chỉ load khi mở detail modal)
+        for (TaskAssignmentResponse response : enrichedAssignments) {
+            if (response.getAssignmentId() != null) {
+                response.setSubmissions(submissionsMap.getOrDefault(response.getAssignmentId(), List.of()));
+            }
+            if (response.getContractId() != null) {
+                response.setContract(contractsMap.get(response.getContractId()));
+            }
+        }
 
         return PageResponse.<TaskAssignmentResponse>builder()
             .content(enrichedAssignments)
@@ -1743,44 +1798,6 @@ public class TaskAssignmentService {
             log.error("Failed to send cancellation notification to specialist: assignmentId={}, error={}", 
                 assignmentId, e.getMessage(), e);
         }
-        
-        return taskAssignmentMapper.toResponse(saved);
-    }
-
-    /**
-     * Specialist submit task for review (chuyển files từ uploaded sang pending_review)
-     * @param assignmentId ID của task assignment
-     * @param fileIds Danh sách file IDs được chọn để submit
-     */
-    @Transactional
-    public TaskAssignmentResponse submitTaskForReview(String assignmentId, List<String> fileIds) {
-        log.info("Specialist submitting task for review: assignmentId={}, fileIds={}", assignmentId, fileIds);
-        
-        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
-        
-        // Verify task belongs to current specialist
-        String specialistId = getCurrentSpecialistId();
-        if (!assignment.getSpecialistId().equals(specialistId)) {
-            throw UnauthorizedException.create(
-                "You can only submit your own tasks for review");
-        }
-        
-        // Only allow submit if status is 'in_progress' or 'revision_requested'
-        if (assignment.getStatus() != AssignmentStatus.in_progress 
-                && assignment.getStatus() != AssignmentStatus.revision_requested) {
-            throw InvalidTaskAssignmentStatusException.cannotSubmitForReview(assignment.getAssignmentId(), assignment.getStatus());
-        }
-        
-        // Submit files for review (chuyển từ uploaded sang pending_review)
-        int filesSubmitted = fileService.submitFilesForReview(assignmentId, fileIds, specialistId);
-        log.info("Submitted {} files for review: assignmentId={}, specialistId={}", 
-                filesSubmitted, assignmentId, specialistId);
-        
-        // Update assignment status to READY_FOR_REVIEW
-        assignment.setStatus(AssignmentStatus.ready_for_review);
-        TaskAssignment saved = taskAssignmentRepository.save(assignment);
-        log.info("Assignment status updated to READY_FOR_REVIEW: assignmentId={}", assignmentId);
         
         return taskAssignmentMapper.toResponse(saved);
     }

@@ -203,7 +203,33 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     FAILED_TO_FETCH_SPECIALIST("CONTRACT_7040", 500,
         "https://docs.mutrapro.com/errors/CONTRACT_7040",
         "Failed to fetch specialist information",
-        Retryable.TRANSIENT);
+        Retryable.TRANSIENT),
+    
+    // File Submission Errors (7041-7049)
+    FILE_SUBMISSION_NOT_FOUND("CONTRACT_7041", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7041",
+        "File submission not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_SUBMISSION_STATUS("CONTRACT_7042", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7042",
+        "Invalid submission status for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    SUBMISSION_EMPTY("CONTRACT_7043", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7043",
+        "Cannot submit submission without files",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_NOT_BELONG_TO_SUBMISSION("CONTRACT_7044", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7044",
+        "File does not belong to the specified submission",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_FILE_STATUS("CONTRACT_7045", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7045",
+        "Invalid file status for the requested action",
+        Retryable.NON_TRANSIENT);
 
     private final String code;
     private final int httpStatus;

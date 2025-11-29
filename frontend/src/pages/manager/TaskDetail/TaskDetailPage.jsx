@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card,
   Button,
@@ -17,9 +17,11 @@ import {
   Alert,
   Progress,
   Timeline,
+  Collapse,
 } from 'antd';
 import {
   ArrowLeftOutlined,
+  ReloadOutlined,
   EyeOutlined,
   DownloadOutlined,
   CheckCircleOutlined,
@@ -44,6 +46,7 @@ import {
   deliverFileToCustomer,
   fetchFileForPreview,
 } from '../../../services/fileService';
+import { getSubmissionsByAssignmentId, reviewSubmission } from '../../../services/fileSubmissionService';
 import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import FileList from '../../../components/common/FileList/FileList';
@@ -97,6 +100,20 @@ const FILE_STATUS_COLORS = {
   delivered: 'green',
 };
 
+const SUBMISSION_STATUS_LABELS = {
+  draft: 'Draft',
+  pending_review: 'Chờ duyệt',
+  approved: 'Đã duyệt',
+  rejected: 'Đã từ chối',
+};
+
+const SUBMISSION_STATUS_COLORS = {
+  draft: 'default',
+  pending_review: 'processing',
+  approved: 'success',
+  rejected: 'error',
+};
+
 const TaskDetailPage = () => {
   const { contractId, assignmentId } = useParams();
   const navigate = useNavigate();
@@ -106,7 +123,7 @@ const TaskDetailPage = () => {
   const [contract, setContract] = useState(null);
   const [request, setRequest] = useState(null);
   const [requestLoading, setRequestLoading] = useState(false);
-  const [deliveryFiles, setDeliveryFiles] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [selectedFileForRevision, setSelectedFileForRevision] = useState(null);
@@ -117,6 +134,8 @@ const TaskDetailPage = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [rejectionReasonModalVisible, setRejectionReasonModalVisible] = useState(false);
   const [selectedRejectionReason, setSelectedRejectionReason] = useState(null);
+  const [selectedSubmissionForReject, setSelectedSubmissionForReject] = useState(null);
+  const [submissionRejectReason, setSubmissionRejectReason] = useState('');
 
   useEffect(() => {
     if (contractId && assignmentId) {
@@ -207,28 +226,29 @@ const TaskDetailPage = () => {
     try {
       setFilesLoading(true);
 
-      // Load delivery files từ assignment
-      let deliveryFilesList = [];
+      // Load submissions từ assignmentId
       try {
-        const deliveryResponse = await getFilesByAssignmentId(assignmentId);
-        if (deliveryResponse?.status === 'success' && deliveryResponse?.data) {
-          deliveryFilesList = [...(deliveryResponse.data || [])].sort(
-            (a, b) => {
-              const dateA = a.uploadDate ? new Date(a.uploadDate) : 0;
-              const dateB = b.uploadDate ? new Date(b.uploadDate) : 0;
-              return dateA - dateB; // Cũ nhất trước để tính version
-            }
-          );
+        const submissionsResponse = await getSubmissionsByAssignmentId(assignmentId);
+        if (submissionsResponse?.status === 'success' && Array.isArray(submissionsResponse?.data)) {
+          // Sort submissions theo version (mới nhất trước) - version lớn nhất = mới nhất
+          const sortedSubmissions = [...submissionsResponse.data].sort((a, b) => {
+            const versionA = a.version || 0;
+            const versionB = b.version || 0;
+            return versionB - versionA; // Mới nhất trước
+          });
+          setSubmissions(sortedSubmissions);
+        } else {
+          setSubmissions([]);
         }
       } catch (error) {
-        console.error('Error loading delivery files:', error);
+        console.error('Error loading submissions:', error);
+        message.error('Lỗi khi tải danh sách submissions');
+        setSubmissions([]);
       }
-
-      setDeliveryFiles(deliveryFilesList);
     } catch (error) {
       console.error('Error loading files:', error);
       message.error('Lỗi khi tải danh sách files');
-      setDeliveryFiles([]);
+      setSubmissions([]);
     } finally {
       setFilesLoading(false);
     }
@@ -290,6 +310,53 @@ const TaskDetailPage = () => {
       console.error('Error delivering file:', error);
       message.error(
         error?.response?.data?.message || 'Lỗi khi gửi file cho khách hàng'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveSubmission = async submissionId => {
+    try {
+      setActionLoading(true);
+      const response = await reviewSubmission(submissionId, 'approve');
+      if (response?.status === 'success') {
+        message.success('Đã duyệt submission thành công');
+        await loadFiles();
+      }
+    } catch (error) {
+      console.error('Error approving submission:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi duyệt submission'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectSubmission = async () => {
+    if (!submissionRejectReason || submissionRejectReason.trim().length === 0) {
+      message.warning('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const response = await reviewSubmission(
+        selectedSubmissionForReject.submissionId,
+        'reject',
+        submissionRejectReason
+      );
+      if (response?.status === 'success') {
+        message.success('Đã từ chối submission');
+        setRejectionReasonModalVisible(false);
+        setSelectedSubmissionForReject(null);
+        setSubmissionRejectReason('');
+        await loadFiles();
+      }
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi từ chối submission'
       );
     } finally {
       setActionLoading(false);
@@ -419,6 +486,19 @@ const TaskDetailPage = () => {
     const status = file.fileStatus?.toLowerCase();
     return status === 'approved' && !file.deliveredToCustomer;
   };
+
+  // Phân loại submissions: Current Submission và Previous Submissions
+  const currentSubmission = useMemo(() => {
+    // Current submission: submission mới nhất (version lớn nhất)
+    if (submissions.length === 0) return null;
+    return submissions[0]; // Đã sort theo version desc
+  }, [submissions]);
+
+  const previousSubmissions = useMemo(() => {
+    // Previous submissions: các submission cũ hơn (bỏ submission đầu tiên)
+    if (submissions.length <= 1) return [];
+    return submissions.slice(1);
+  }, [submissions]);
 
   if (loading) {
     return (
@@ -632,192 +712,378 @@ const TaskDetailPage = () => {
           </Descriptions>
         </Card>
 
-        {/* Delivery Files Section */}
-        <Card
-          title="Delivery Files (từ Specialist)"
-          extra={
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={loadFiles}
-              loading={filesLoading}
-              size="small"
-            >
-              Làm mới
-            </Button>
-          }
-        >
-          <Spin spinning={filesLoading}>
-            {deliveryFiles.length > 0 ? (
-              <List
-                dataSource={deliveryFiles}
-                renderItem={file => {
-                  const status = file.fileStatus?.toLowerCase();
-                  const version = getFileVersion(file, deliveryFiles);
-                  const isFinal = isFinalVersion(file, deliveryFiles);
+        {/* Khối 1: Current Submission */}
+        {currentSubmission && (
+          <Card
+            title={
+              <Space>
+                <Text strong>
+                  Current review – Submission #{currentSubmission.version}
+                  {currentSubmission.status?.toLowerCase() === 'rejected' && ' (Revision Requested)'}
+                </Text>
+                <Tag color={SUBMISSION_STATUS_COLORS[currentSubmission.status?.toLowerCase()] || 'default'}>
+                  {SUBMISSION_STATUS_LABELS[currentSubmission.status?.toLowerCase()] || currentSubmission.status}
+                </Tag>
+              </Space>
+            }
+            extra={
+              <Space>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={loadFiles}
+                  loading={filesLoading}
+                  size="small"
+                >
+                  Làm mới
+                </Button>
+                {currentSubmission.submittedAt && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Submitted:{' '}
+                    {dayjs(currentSubmission.submittedAt).format('HH:mm DD/MM/YYYY')}
+                  </Text>
+                )}
+                {currentSubmission.status?.toLowerCase() === 'pending_review' && (
+                  <>
+                    <Popconfirm
+                      title="Xác nhận duyệt submission?"
+                      description="Tất cả files trong submission này sẽ được đánh dấu là đã duyệt"
+                      onConfirm={() => handleApproveSubmission(currentSubmission.submissionId)}
+                      okText="Duyệt"
+                      cancelText="Hủy"
+                    >
+                      <Button
+                        size="small"
+                        type="primary"
+                        icon={<CheckCircleOutlined />}
+                        loading={actionLoading}
+                      >
+                        Approve
+                      </Button>
+                    </Popconfirm>
+                    <Button
+                      size="small"
+                      danger
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => {
+                        setSelectedSubmissionForReject(currentSubmission);
+                        setSubmissionRejectReason('');
+                        setRejectionReasonModalVisible(true);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </Space>
+            }
+          >
+            <Spin spinning={filesLoading}>
+              {currentSubmission.rejectionReason && (
+                <Alert
+                  message="Lý do từ chối"
+                  description={currentSubmission.rejectionReason}
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+              {currentSubmission.files && currentSubmission.files.length > 0 ? (
+                <List
+                  dataSource={currentSubmission.files}
+                  renderItem={file => {
+                    const fileStatus = file.fileStatus?.toLowerCase();
+
+                    return (
+                      <List.Item
+                        actions={[
+                          <Button
+                            key="preview"
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handlePreviewFile(file)}
+                          >
+                            Preview
+                          </Button>,
+                          <Button
+                            key="download"
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            onClick={() =>
+                              handleDownloadFile(file.fileId, file.fileName)
+                            }
+                          >
+                            Download
+                          </Button>,
+                          canDeliver(file) && (
+                            <Popconfirm
+                              key="deliver"
+                              title="Xác nhận gửi file cho khách hàng?"
+                              description="File này sẽ được gửi cho khách hàng"
+                              onConfirm={() => handleDeliverFile(file.fileId)}
+                              okText="Gửi"
+                              cancelText="Hủy"
+                            >
+                              <Button
+                                size="small"
+                                type="primary"
+                                icon={<SendOutlined />}
+                                loading={actionLoading}
+                              >
+                                Deliver
+                              </Button>
+                            </Popconfirm>
+                          ),
+                        ].filter(Boolean)}
+                      >
+                        <List.Item.Meta
+                          avatar={<FileOutlined style={{ fontSize: 24 }} />}
+                          title={
+                            <Space>
+                              <Text strong>{file.fileName}</Text>
+                              <Tag
+                                color={
+                                  FILE_STATUS_COLORS[fileStatus] || 'default'
+                                }
+                              >
+                                {FILE_STATUS_LABELS[fileStatus] || fileStatus}
+                              </Tag>
+                              {file.deliveredToCustomer && (
+                                <Tag color="green">Delivered</Tag>
+                              )}
+                            </Space>
+                          }
+                          description={
+                            <Space direction="vertical" size={0}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Loại: {getContentTypeLabel(file.contentType)} •
+                                Dung lượng: {formatFileSize(file.fileSize)}
+                              </Text>
+                              {file.uploadDate && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Upload:{' '}
+                                  {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                </Text>
+                              )}
+                              {file.reviewedAt && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Reviewed:{' '}
+                                  {dayjs(file.reviewedAt).format('HH:mm DD/MM/YYYY')}
+                                </Text>
+                              )}
+                              {file.deliveredAt && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Delivered:{' '}
+                                  {dayjs(file.deliveredAt).format('HH:mm DD/MM/YYYY')}
+                                </Text>
+                              )}
+                              {file.description && (
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: 12, fontStyle: 'italic' }}
+                                >
+                                  Note: {file.description}
+                                </Text>
+                              )}
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    );
+                  }}
+                />
+              ) : (
+                <Empty description="Không có files trong submission này" />
+              )}
+            </Spin>
+          </Card>
+        )}
+
+        {/* Khối 2: Previous Submissions (History) */}
+        {previousSubmissions.length > 0 && (
+          <Card
+            title="Previous submissions (History)"
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadFiles}
+                loading={filesLoading}
+                size="small"
+              >
+                Làm mới
+              </Button>
+            }
+          >
+            <Spin spinning={filesLoading}>
+              <Collapse>
+                {previousSubmissions.map(submission => {
+                  const submissionStatus = submission.status?.toLowerCase();
+                  const files = submission.files || [];
 
                   return (
-                    <List.Item
-                      actions={[
-                        <Button
-                          key="preview"
-                          size="small"
-                          icon={<EyeOutlined />}
-                          onClick={() => handlePreviewFile(file)}
-                        >
-                          Preview
-                        </Button>,
-                        <Button
-                          key="download"
-                          size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() =>
-                            handleDownloadFile(file.fileId, file.fileName)
-                          }
-                        >
-                          Download
-                        </Button>,
-                        canApprove(file) && (
-                          <Popconfirm
-                            key="approve"
-                            title="Xác nhận duyệt file?"
-                            description="File này sẽ được đánh dấu là đã duyệt"
-                            onConfirm={() => handleApproveFile(file.fileId)}
-                            okText="Duyệt"
-                            cancelText="Hủy"
-                          >
-                            <Button
-                              size="small"
-                              type="primary"
-                              icon={<CheckCircleOutlined />}
-                              loading={actionLoading}
-                            >
-                              Approve
-                            </Button>
-                          </Popconfirm>
-                        ),
-                        canReject(file) && (
-                          <Button
-                            key="revision"
-                            size="small"
-                            danger
-                            icon={<CloseCircleOutlined />}
-                            onClick={() => {
-                              setSelectedFileForRevision(file);
-                              setRevisionModalVisible(true);
-                            }}
-                          >
-                            Request Revision
-                          </Button>
-                        ),
-                        canDeliver(file) && (
-                          <Popconfirm
-                            key="deliver"
-                            title="Xác nhận gửi file cho khách hàng?"
-                            description="File này sẽ được gửi cho khách hàng"
-                            onConfirm={() => handleDeliverFile(file.fileId)}
-                            okText="Gửi"
-                            cancelText="Hủy"
-                          >
-                            <Button
-                              size="small"
-                              type="primary"
-                              icon={<SendOutlined />}
-                              loading={actionLoading}
-                            >
-                              Deliver
-                            </Button>
-                          </Popconfirm>
-                        ),
-                      ].filter(Boolean)}
-                    >
-                      <List.Item.Meta
-                        avatar={<FileOutlined style={{ fontSize: 24 }} />}
-                        title={
-                          <Space>
-                            <Text strong>{file.fileName}</Text>
-                            <Tag
-                              color={FILE_STATUS_COLORS[status] || 'default'}
-                            >
-                              {FILE_STATUS_LABELS[status] || status}
-                            </Tag>
-                            {version && (
-                              <Tag color="blue">Version {version}</Tag>
-                            )}
-                            {isFinal && (
-                              <Tag color="green" icon={<CheckCircleOutlined />}>
-                                Final
-                              </Tag>
-                            )}
-                            {file.deliveredToCustomer && (
-                              <Tag color="green">Delivered</Tag>
-                            )}
-                          </Space>
-                        }
-                        description={
-                          <Space direction="vertical" size={0}>
+                    <Collapse.Panel
+                      key={submission.submissionId}
+                      header={
+                        <Space>
+                          <Text strong>
+                            Submission #{submission.version} –{' '}
+                            {SUBMISSION_STATUS_LABELS[submissionStatus] || submissionStatus}
+                          </Text>
+                          {submission.fileCount > 0 && (
+                            <Tag>{submission.fileCount} file(s)</Tag>
+                          )}
+                          {submission.submittedAt && (
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              Loại: {getContentTypeLabel(file.contentType)} •
-                              Dung lượng: {formatFileSize(file.fileSize)}
+                              Submitted:{' '}
+                              {dayjs(submission.submittedAt).format('HH:mm DD/MM/YYYY')}
                             </Text>
-                            {file.uploadDate && (
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                Upload:{' '}
-                                {dayjs(file.uploadDate).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )}
-                              </Text>
-                            )}
-                            {file.reviewedAt && (
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                Reviewed:{' '}
-                                {dayjs(file.reviewedAt).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )}
-                              </Text>
-                            )}
-                            {file.deliveredAt && (
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                Delivered:{' '}
-                                {dayjs(file.deliveredAt).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )}
-                              </Text>
-                            )}
-                            {file.rejectionReason && (
-                              <Button
-                                type="link"
-                                danger
-                                size="small"
-                                icon={<ExclamationCircleOutlined />}
-                                onClick={() => {
-                                  setSelectedRejectionReason(file.rejectionReason);
-                                  setRejectionReasonModalVisible(true);
-                                }}
-                                style={{ marginTop: 4, padding: 0, height: 'auto' }}
+                          )}
+                        </Space>
+                      }
+                    >
+                      {submission.rejectionReason && (
+                        <Alert
+                          message="Lý do từ chối"
+                          description={submission.rejectionReason}
+                          type="error"
+                          showIcon
+                          style={{ marginBottom: 16 }}
+                        />
+                      )}
+                      {files.length > 0 ? (
+                        <List
+                          dataSource={files}
+                          renderItem={file => {
+                            const fileStatus = file.fileStatus?.toLowerCase();
+
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Button
+                                    key="preview"
+                                    size="small"
+                                    icon={<EyeOutlined />}
+                                    onClick={() => handlePreviewFile(file)}
+                                  >
+                                    Preview
+                                  </Button>,
+                                  <Button
+                                    key="download"
+                                    size="small"
+                                    icon={<DownloadOutlined />}
+                                    onClick={() =>
+                                      handleDownloadFile(file.fileId, file.fileName)
+                                    }
+                                  >
+                                    Download
+                                  </Button>,
+                                  canDeliver(file) && (
+                                    <Popconfirm
+                                      key="deliver"
+                                      title="Xác nhận gửi file cho khách hàng?"
+                                      description="File này sẽ được gửi cho khách hàng"
+                                      onConfirm={() => handleDeliverFile(file.fileId)}
+                                      okText="Gửi"
+                                      cancelText="Hủy"
+                                    >
+                                      <Button
+                                        size="small"
+                                        type="primary"
+                                        icon={<SendOutlined />}
+                                        loading={actionLoading}
+                                      >
+                                        Deliver
+                                      </Button>
+                                    </Popconfirm>
+                                  ),
+                                ].filter(Boolean)}
                               >
-                                Xem lý do từ chối
-                              </Button>
-                            )}
-                            {file.description && (
-                              <Text
-                                type="secondary"
-                                style={{ fontSize: 12, fontStyle: 'italic' }}
-                              >
-                                Note: {file.description}
-                              </Text>
-                            )}
-                          </Space>
-                        }
-                      />
-                    </List.Item>
+                                <List.Item.Meta
+                                  avatar={<FileOutlined style={{ fontSize: 24 }} />}
+                                  title={
+                                    <Space>
+                                      <Text strong>{file.fileName}</Text>
+                                      <Tag
+                                        color={
+                                          FILE_STATUS_COLORS[fileStatus] || 'default'
+                                        }
+                                      >
+                                        {FILE_STATUS_LABELS[fileStatus] || fileStatus}
+                                      </Tag>
+                                      {file.deliveredToCustomer && (
+                                        <Tag color="green">Delivered</Tag>
+                                      )}
+                                    </Space>
+                                  }
+                                  description={
+                                    <Space direction="vertical" size={0}>
+                                      <Text type="secondary" style={{ fontSize: 12 }}>
+                                        Loại: {getContentTypeLabel(file.contentType)} •
+                                        Dung lượng: {formatFileSize(file.fileSize)}
+                                      </Text>
+                                      {file.uploadDate && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          Upload:{' '}
+                                          {dayjs(file.uploadDate).format('HH:mm DD/MM/YYYY')}
+                                        </Text>
+                                      )}
+                                      {file.reviewedAt && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          Reviewed:{' '}
+                                          {dayjs(file.reviewedAt).format('HH:mm DD/MM/YYYY')}
+                                        </Text>
+                                      )}
+                                      {file.deliveredAt && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          Delivered:{' '}
+                                          {dayjs(file.deliveredAt).format('HH:mm DD/MM/YYYY')}
+                                        </Text>
+                                      )}
+                                      {file.description && (
+                                        <Text
+                                          type="secondary"
+                                          style={{ fontSize: 12, fontStyle: 'italic' }}
+                                        >
+                                          Note: {file.description}
+                                        </Text>
+                                      )}
+                                    </Space>
+                                  }
+                                />
+                              </List.Item>
+                            );
+                          }}
+                        />
+                      ) : (
+                        <Empty description="Không có files trong submission này" />
+                      )}
+                    </Collapse.Panel>
                   );
-                }}
-              />
-            ) : (
-              <Empty description="Chưa có delivery files nào được upload" />
-            )}
-          </Spin>
-        </Card>
+                })}
+              </Collapse>
+            </Spin>
+          </Card>
+        )}
+
+        {/* Nếu không có submissions nào */}
+        {!currentSubmission && previousSubmissions.length === 0 && (
+          <Card
+            title="Submissions"
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadFiles}
+                loading={filesLoading}
+                size="small"
+              >
+                Làm mới
+              </Button>
+            }
+          >
+            <Spin spinning={filesLoading}>
+              <Empty description="Chưa có submissions nào" />
+            </Spin>
+          </Card>
+        )}
       </div>
 
       {/* Request Revision Modal */}
@@ -854,40 +1120,96 @@ const TaskDetailPage = () => {
         )}
       </Modal>
 
-      {/* Rejection Reason Modal */}
+      {/* Rejection Reason Modal - for viewing file rejection or rejecting submission */}
       <Modal
         title={
           <Space>
             <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Lý do từ chối file</span>
+            <span>
+              {selectedSubmissionForReject
+                ? 'Từ chối Submission'
+                : 'Lý do từ chối file'}
+            </span>
           </Space>
         }
         open={rejectionReasonModalVisible}
+        onOk={selectedSubmissionForReject ? handleRejectSubmission : undefined}
         onCancel={() => {
           setRejectionReasonModalVisible(false);
           setSelectedRejectionReason(null);
+          setSelectedSubmissionForReject(null);
+          setSubmissionRejectReason('');
         }}
-        footer={[
-          <Button key="close" onClick={() => {
-            setRejectionReasonModalVisible(false);
-            setSelectedRejectionReason(null);
-          }}>
-            Đóng
-          </Button>
-        ]}
+        footer={
+          selectedSubmissionForReject
+            ? [
+                <Button
+                  key="cancel"
+                  onClick={() => {
+                    setRejectionReasonModalVisible(false);
+                    setSelectedSubmissionForReject(null);
+                    setSubmissionRejectReason('');
+                  }}
+                >
+                  Hủy
+                </Button>,
+                <Button
+                  key="reject"
+                  danger
+                  onClick={handleRejectSubmission}
+                  loading={actionLoading}
+                >
+                  Từ chối
+                </Button>,
+              ]
+            : [
+                <Button
+                  key="close"
+                  onClick={() => {
+                    setRejectionReasonModalVisible(false);
+                    setSelectedRejectionReason(null);
+                  }}
+                >
+                  Đóng
+                </Button>,
+              ]
+        }
         width={600}
       >
-        <Alert
-          message="File đã bị từ chối"
-          description={
-            <Paragraph style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-              {selectedRejectionReason}
-            </Paragraph>
-          }
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+        {selectedSubmissionForReject ? (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <div>
+              <Text strong>Submission: </Text>
+              <Text>
+                {selectedSubmissionForReject.submissionName ||
+                  `Submission v${selectedSubmissionForReject.version}`}
+              </Text>
+            </div>
+            <div>
+              <Text strong>Lý do từ chối: </Text>
+              <TextArea
+                rows={4}
+                value={submissionRejectReason}
+                onChange={e => setSubmissionRejectReason(e.target.value)}
+                placeholder="Nhập lý do từ chối submission này..."
+              />
+            </div>
+          </Space>
+        ) : (
+          <Alert
+            message="File đã bị từ chối"
+            description={
+              <Paragraph
+                style={{ marginTop: 12, marginBottom: 0, whiteSpace: 'pre-wrap' }}
+              >
+                {selectedRejectionReason}
+              </Paragraph>
+            }
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
       </Modal>
 
       {/* Preview File Modal */}

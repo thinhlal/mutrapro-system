@@ -304,29 +304,6 @@ export const reportIssue = async (assignmentId, reason) => {
   }
 };
 
-/**
- * Specialist submit task for review (chuyển files từ uploaded sang pending_review)
- * POST /specialist/task-assignments/{assignmentId}/submit-for-review
- *
- * @param {string} assignmentId - ID của task assignment
- * @param {string[]} fileIds - Danh sách file IDs được chọn để submit
- * @returns {Promise} ApiResponse với task assignment
- */
-export const submitTaskForReview = async (assignmentId, fileIds) => {
-  try {
-    const response = await axiosInstance.post(
-      API_ENDPOINTS.TASK_ASSIGNMENTS.SUBMIT_FOR_REVIEW(assignmentId),
-      { fileIds }
-    );
-    return response.data;
-  } catch (error) {
-    throw (
-      error.response?.data || {
-        message: 'Lỗi khi submit task for review',
-      }
-    );
-  }
-};
 
 /**
  * Manager resolve issue (clear hasIssue flag - cho specialist tiếp tục)
@@ -375,8 +352,32 @@ export const cancelTaskByManager = async (contractId, assignmentId) => {
 };
 
 /**
+ * Specialist submit files for review - Backend tự động tạo submission package, add files và submit
+ * POST /specialist/task-assignments/{assignmentId}/submit-for-review
+ *
+ * @param {string} assignmentId - ID của task assignment
+ * @param {string[]} fileIds - Danh sách file IDs được chọn để submit
+ * @returns {Promise} ApiResponse với FileSubmissionResponse
+ */
+export const submitFilesForReview = async (assignmentId, fileIds) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.TASK_ASSIGNMENTS.SUBMIT_FOR_REVIEW(assignmentId),
+      { fileIds }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi submit files for review',
+      }
+    );
+  }
+};
+
+/**
  * Lấy chi tiết task assignment của specialist hiện tại
- * GET /specialist/task-assignments/{assignmentId}
+ * GET /specialist/task-assignments/{assignmentId}https://www.nimo.tv/lives
  *
  * @param {string} assignmentId - ID của task assignment
  * @returns {Promise} ApiResponse với chi tiết task assignment

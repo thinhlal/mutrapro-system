@@ -14,6 +14,7 @@ import java.time.Instant;
 @Table(name = "files", indexes = {
     @Index(name = "idx_files_request_id", columnList = "request_id"),
     @Index(name = "idx_files_assignment_id", columnList = "assignment_id"),
+    @Index(name = "idx_files_submission_id", columnList = "submission_id"),
     @Index(name = "idx_files_booking_id", columnList = "booking_id"),
     @Index(name = "idx_files_created_by", columnList = "created_by"),
     @Index(name = "idx_files_file_status", columnList = "file_status"),
@@ -39,6 +40,9 @@ public class File extends BaseEntity<String> {
 
     @Column(name = "assignment_id")
     String assignmentId;  // Reference to task_assignments
+
+    @Column(name = "submission_id")
+    String submissionId;  // Reference to file_submissions (optional - file có thể thuộc submission package)
 
     @Column(name = "booking_id")
     String bookingId;  // Soft reference to studio-service

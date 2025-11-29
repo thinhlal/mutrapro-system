@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -61,6 +62,34 @@ public class TaskAssignmentResponse {
 
     // Milestone info (nested) - name và description
     MilestoneInfo milestone;
+
+    // Optional: Submissions for this assignment (for calculating progress) - luôn được populate
+    List<SubmissionInfo> submissions;
+
+    // Optional: Contract info - luôn được populate
+    ContractInfo contract;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class SubmissionInfo {
+        String submissionId;
+        String status;  // draft, pending_review, approved, rejected, revision_requested
+        Integer version;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class ContractInfo {
+        String contractId;
+        String contractNumber;
+        String nameSnapshot;  // Customer name
+    }
 
     @Data
     @Builder
