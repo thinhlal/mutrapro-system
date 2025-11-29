@@ -172,7 +172,7 @@ const NotationInstruments = () => {
       title: 'Base Price',
       dataIndex: 'basePrice',
       key: 'basePrice',
-      width: 120,
+      width: 250,
       render: price => (
         <span style={{ fontWeight: 500, color: '#52c41a' }}>
           ${price ? Number(price).toFixed(2) : '0.00'}

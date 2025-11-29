@@ -54,7 +54,7 @@ const IntroSection = () => {
                 AI Identifies Notes
               </Text>
               <Paragraph className={styles.stepText}>
-                Klangio AI analyzes and performs note detection automatically
+                 AI analyzes and performs note detection automatically
                 for melody, chords, and rhythm.
               </Paragraph>
             </div>

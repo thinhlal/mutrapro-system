@@ -825,10 +825,12 @@ export default function TaskProgressManagement() {
           )}
           <Tooltip title="Xem chi tiết tiến độ">
             <Button
-              type="link"
+              // type="link"
               icon={<EyeOutlined />}
               onClick={() => handleViewTaskDetails(record)}
-            />
+            >
+              View Details
+            </Button>
           </Tooltip>
         </Space>
       ),

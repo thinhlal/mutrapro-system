@@ -1,6 +1,6 @@
 .container {
   padding: 24px;
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
 }
 
@@ -19,9 +19,9 @@
   flex: 1;
 }
 
-.profileForm {
+/* .profileForm {
   max-width: 600px;
-}
+} */
 
 .statsCard {
   margin-top: 24px;
