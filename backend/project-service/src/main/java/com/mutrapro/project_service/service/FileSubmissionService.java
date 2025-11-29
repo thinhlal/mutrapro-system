@@ -259,6 +259,14 @@ public class FileSubmissionService {
         });
         fileRepository.saveAll(files);
         
+        // Update task assignment status to delivery_pending
+        if (assignment.getStatus() != AssignmentStatus.delivery_pending && 
+            assignment.getStatus() != AssignmentStatus.completed) {
+            assignment.setStatus(AssignmentStatus.delivery_pending);
+            taskAssignmentRepository.save(assignment);
+            log.info("Task assignment marked as delivery_pending: assignmentId={}", assignment.getAssignmentId());
+        }
+        
         log.info("Approved submission: submissionId={}, fileCount={}", submissionId, files.size());
         
         return toResponse(saved);

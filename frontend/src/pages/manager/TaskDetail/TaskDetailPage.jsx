@@ -72,6 +72,7 @@ const STATUS_COLORS = {
   in_progress: 'processing',
   ready_for_review: 'orange',
   revision_requested: 'warning',
+  delivery_pending: 'cyan',
   completed: 'success',
   cancelled: 'error',
 };
@@ -83,6 +84,7 @@ const STATUS_LABELS = {
   in_progress: 'Đang thực hiện',
   ready_for_review: 'Chờ duyệt',
   revision_requested: 'Yêu cầu chỉnh sửa',
+  delivery_pending: 'Chờ giao hàng',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };
@@ -582,8 +584,17 @@ const TaskDetailPage = () => {
   };
 
   const canDeliver = file => {
-    const status = file.fileStatus?.toLowerCase();
-    return status === 'approved' && !file.deliveredToCustomer;
+    const fileStatus = file.fileStatus?.toLowerCase();
+    const taskStatus = task?.status?.toLowerCase();
+    // Chỉ cho deliver khi:
+    // 1. File status = approved
+    // 2. File chưa được delivered
+    // 3. Task status = delivery_pending (đã được approve submission)
+    return (
+      fileStatus === 'approved' &&
+      !file.deliveredToCustomer &&
+      taskStatus === 'delivery_pending'
+    );
   };
 
   // Phân loại submissions: Current Submission và Previous Submissions

@@ -765,7 +765,9 @@ const TranscriptionTaskDetailPage = () => {
               Download
             </Button>
             {(task.status?.toLowerCase() === 'in_progress' ||
-              task.status?.toLowerCase() === 'revision_requested') && (
+              task.status?.toLowerCase() === 'revision_requested') &&
+              task.status?.toLowerCase() !== 'ready_for_review' &&
+              task.status?.toLowerCase() !== 'completed' && (
               <Button
                 type="link"
                 danger
@@ -987,7 +989,9 @@ const TranscriptionTaskDetailPage = () => {
           const canDelete =
             record.fileStatus === 'uploaded' &&
             (task.status?.toLowerCase() === 'in_progress' ||
-              task.status?.toLowerCase() === 'revision_requested');
+              task.status?.toLowerCase() === 'revision_requested') &&
+            task.status?.toLowerCase() !== 'ready_for_review' &&
+            task.status?.toLowerCase() !== 'completed';
 
           return (
             <Space>
@@ -1342,9 +1346,12 @@ const TranscriptionTaskDetailPage = () => {
                 const hasAcceptButton = status === 'assigned';
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
-                // Cho phép submit khi in_progress hoặc revision_requested
+                // Cho phép submit khi in_progress hoặc revision_requested (không cho submit khi ready_for_review hoặc completed)
                 const hasSubmitButton =
-                  status === 'in_progress' || status === 'revision_requested';
+                  (status === 'in_progress' || status === 'revision_requested') &&
+                  status !== 'ready_for_review' &&
+                  status !== 'completed';
+                // Không cho report issue khi ready_for_review hoặc completed (chỉ cho khi đang in_progress)
                 const hasIssueButton =
                   status === 'in_progress' && !task.hasIssue;
 
@@ -1506,7 +1513,9 @@ const TranscriptionTaskDetailPage = () => {
         className={styles.section}
         title="Draft Files (chưa submit)"
         extra={
-          task.status?.toLowerCase() !== 'cancelled' && (
+          task.status?.toLowerCase() !== 'cancelled' &&
+          task.status?.toLowerCase() !== 'ready_for_review' &&
+          task.status?.toLowerCase() !== 'completed' && (
             <Button
               type="primary"
               icon={<UploadOutlined />}

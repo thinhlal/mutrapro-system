@@ -7,7 +7,8 @@ public enum AssignmentStatus {
     in_progress,           // Đang thực hiện
     ready_for_review,      // Đã submit, chờ manager review
     revision_requested,    // Manager yêu cầu chỉnh sửa
-    completed,             // Đã hoàn thành
+    delivery_pending,      // Đã được approve, chờ specialist deliver files
+    completed,             // Đã hoàn thành (tất cả files đã được delivered)
     cancelled              // Đã hủy
 }
 

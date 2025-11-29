@@ -667,6 +667,41 @@ public class FileService {
         file.setDeliveredBy(userId);
         
         File saved = fileRepository.save(file);
+        
+        // Nếu file thuộc submission, xử lý logic cho submission
+        if (saved.getSubmissionId() != null && !saved.getSubmissionId().isEmpty()) {
+            List<File> submissionFiles = fileRepository.findBySubmissionId(saved.getSubmissionId());
+            
+            // Set fileSource = task_deliverable cho tất cả files trong submission (chỉ set nếu chưa set)
+            boolean needUpdateFileSource = submissionFiles.stream()
+                    .anyMatch(f -> f.getFileSource() != FileSourceType.task_deliverable);
+            
+            if (needUpdateFileSource) {
+                submissionFiles.forEach(submissionFile -> {
+                    submissionFile.setFileSource(FileSourceType.task_deliverable);
+                });
+                fileRepository.saveAll(submissionFiles);
+                log.info("Updated fileSource to task_deliverable for {} files in submission: {}", 
+                        submissionFiles.size(), saved.getSubmissionId());
+            }
+            
+            // Kiểm tra nếu tất cả files trong submission đã được delivered
+            boolean allFilesDelivered = submissionFiles.stream()
+                    .allMatch(f -> Boolean.TRUE.equals(f.getDeliveredToCustomer()));
+            
+            if (allFilesDelivered && saved.getAssignmentId() != null) {
+                // Cập nhật task assignment status thành completed
+                TaskAssignment assignment = taskAssignmentRepository.findById(saved.getAssignmentId())
+                        .orElse(null);
+                if (assignment != null && assignment.getStatus() == AssignmentStatus.delivery_pending) {
+                    assignment.setStatus(AssignmentStatus.completed);
+                    assignment.setCompletedDate(Instant.now());
+                    taskAssignmentRepository.save(assignment);
+                    log.info("Task assignment marked as completed after all files delivered: assignmentId={}", 
+                            assignment.getAssignmentId());
+                }
+            }
+        }
         log.info("File delivered to customer: fileId={}, deliveredBy={}", 
                 saved.getFileId(), userId);
         
