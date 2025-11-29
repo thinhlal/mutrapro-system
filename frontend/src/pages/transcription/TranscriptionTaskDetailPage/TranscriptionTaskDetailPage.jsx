@@ -251,6 +251,9 @@ const TranscriptionTaskDetailPage = () => {
   const [deletingFile, setDeletingFile] = useState(false);
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
+  const [rejectionReasonToView, setRejectionReasonToView] = useState('');
+
 
   const loadContractTasks = useCallback(async contractId => {
     if (!contractId) {
@@ -388,7 +391,7 @@ const TranscriptionTaskDetailPage = () => {
         fallbackDeadlineCache.clear();
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
-        
+
         // Load song song: tasks cùng contract + files + submissions của assignment hiện tại
         await Promise.all([
           loadContractTasks(contractId),
@@ -436,7 +439,7 @@ const TranscriptionTaskDetailPage = () => {
     try {
       // Backend tự động tạo submission, add files và submit
       const response = await submitFilesForReview(task.assignmentId, uploadedFileIds);
-      
+
       if (response?.status === 'success') {
         message.success(`Đã submit ${uploadedFileIds.length} file(s) for review thành công`);
         setSelectedFileIds(new Set()); // Reset selection
@@ -452,7 +455,7 @@ const TranscriptionTaskDetailPage = () => {
       console.error('Error submitting for review:', error);
       message.error(error?.message || 'Lỗi khi submit for review');
     }
-  }, [task, selectedFileIds, files, loadData]);
+  }, [task, selectedFileIds, files, loadTaskFiles, loadSubmissions]);
 
 
   const handleAcceptTask = useCallback(async () => {
@@ -585,7 +588,7 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setDeletingFile(false);
     }
-  }, [deletingFileId, loadTaskFiles]);
+  }, [deletingFileId, loadTaskFiles, loadSubmissions, task?.assignmentId]);
 
   const handleCancelDeleteFile = useCallback(() => {
     setDeleteModalVisible(false);
@@ -752,18 +755,18 @@ const TranscriptionTaskDetailPage = () => {
             >
               Download
             </Button>
-            {(task.status?.toLowerCase() === 'in_progress' || 
+            {(task.status?.toLowerCase() === 'in_progress' ||
               task.status?.toLowerCase() === 'revision_requested') && (
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteFile(record.fileId)}
-                size="small"
-              >
-                Delete
-              </Button>
-            )}
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteFile(record.fileId)}
+                  size="small"
+                >
+                  Delete
+                </Button>
+              )}
           </Space>
         ),
       },
@@ -803,35 +806,6 @@ const TranscriptionTaskDetailPage = () => {
           ),
       },
       {
-        title: 'Status',
-        dataIndex: 'fileStatus',
-        key: 'fileStatus',
-        width: 160,
-        render: s => {
-          const status = s?.toUpperCase();
-          return getFileStatusTag(status);
-        },
-      },
-      {
-        title: 'Manager note (optional)',
-        key: 'note',
-        render: (_, record) => {
-          // Hiển thị rejectionReason nếu có
-          if (record.rejectionReason) {
-            return (
-              <Tooltip title={record.rejectionReason}>
-                <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                  {record.rejectionReason.length > 30
-                    ? `${record.rejectionReason.slice(0, 30)}...`
-                    : record.rejectionReason}
-                </Text>
-              </Tooltip>
-            );
-          }
-          return <Text type="secondary">—</Text>;
-        },
-      },
-      {
         title: 'Actions',
         key: 'actions',
         width: 100,
@@ -865,16 +839,6 @@ const TranscriptionTaskDetailPage = () => {
           ) : (
             <span>{text}</span>
           ),
-      },
-      {
-        title: 'Status',
-        dataIndex: 'fileStatus',
-        key: 'fileStatus',
-        width: 160,
-        render: s => {
-          const status = s?.toUpperCase();
-          return getFileStatusTag(status);
-        },
       },
       {
         title: 'Submitted at',
@@ -1188,13 +1152,6 @@ const TranscriptionTaskDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Used Revisions">
                 <Text strong>{task.usedRevisions || 0}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Notes" span={2}>
-                {task.notes ? (
-                  <Text>{task.notes}</Text>
-                ) : (
-                  <Text type="secondary">—</Text>
-                )}
               </Descriptions.Item>
               {task.specialistResponseReason && (
                 <Descriptions.Item label="Cancel Reason">
@@ -1560,16 +1517,22 @@ const TranscriptionTaskDetailPage = () => {
               </Tag>
             </Space>
           }
+          extra={
+            currentSubmission.status?.toLowerCase() === 'rejected' &&
+            currentSubmission.rejectionReason && (
+              <Button
+                size="small"
+                icon={<ExclamationCircleOutlined />}
+                onClick={() => {
+                  setRejectionReasonToView(currentSubmission.rejectionReason);
+                  setRejectionModalVisible(true);
+                }}
+              >
+                View reason
+              </Button>
+            )
+          }
         >
-          {currentSubmission.rejectionReason && (
-            <Alert
-              message="Manager đã yêu cầu chỉnh sửa"
-              description={currentSubmission.rejectionReason}
-              type="warning"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          )}
           {currentSubmission.files && currentSubmission.files.length > 0 ? (
             <Table
               rowKey="fileId"
@@ -1590,7 +1553,7 @@ const TranscriptionTaskDetailPage = () => {
             {previousSubmissions.map(submission => {
               const submissionStatus = submission.status?.toLowerCase();
               const files = submission.files || [];
-              
+
               return (
                 <Collapse.Panel
                   key={submission.submissionId}
@@ -1604,6 +1567,20 @@ const TranscriptionTaskDetailPage = () => {
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           Submitted: {formatDateTime(submission.submittedAt)}
                         </Text>
+                      )}
+                      {submissionStatus === 'rejected' && submission.rejectionReason && (
+                        <Button
+                          size="small"
+                          type="link"
+                          icon={<ExclamationCircleOutlined />}
+                          onClick={e => {
+                            e.stopPropagation(); // để không làm toggle panel khi bấm nút
+                            setRejectionReasonToView(submission.rejectionReason);
+                            setRejectionModalVisible(true);
+                          }}
+                        >
+                          View reason
+                        </Button>
                       )}
                     </Space>
                   }
@@ -1846,6 +1823,38 @@ const TranscriptionTaskDetailPage = () => {
         <Text>
           Bạn có chắc chắn muốn xóa file này? File sẽ bị xóa và không thể submit.
         </Text>
+      </Modal>
+      {/* Modal xem lý do reject */}
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#faad14' }} />
+            <span>Manager&apos;s rejection reason</span>
+          </Space>
+        }
+        open={rejectionModalVisible}
+        footer={
+          <Button onClick={() => setRejectionModalVisible(false)}>
+            Close
+          </Button>
+        }
+        onCancel={() => setRejectionModalVisible(false)}
+        width={600}
+      >
+        {rejectionReasonToView ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="Submission was rejected"
+            description={
+              <Text style={{ whiteSpace: 'pre-wrap' }}>
+                {rejectionReasonToView}
+              </Text>
+            }
+          />
+        ) : (
+          <Text type="secondary">No rejection reason available.</Text>
+        )}
       </Modal>
 
     </div>
