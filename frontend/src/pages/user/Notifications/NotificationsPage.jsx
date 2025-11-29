@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../../components/common/Header/Header';
 import Footer from '../../../components/common/Footer/Footer';
 import notificationService from '../../../services/notificationService';
+import { convertNotificationActionUrl } from '../../../utils/notificationUtils';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -131,9 +132,10 @@ const NotificationsPage = () => {
       await handleMarkAsRead(notification.notificationId);
     }
 
-    // Navigate to action URL
+    // Navigate to action URL (convert based on user role)
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      const convertedUrl = convertNotificationActionUrl(notification.actionUrl);
+      navigate(convertedUrl);
     }
   };
 
