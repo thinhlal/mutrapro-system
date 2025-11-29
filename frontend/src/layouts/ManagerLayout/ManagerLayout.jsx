@@ -10,6 +10,7 @@ import {
   FileTextOutlined,
   LogoutOutlined,
   UsergroupAddOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +46,11 @@ const menuItems = [
     icon: <UnorderedListOutlined />,
     label: <Link to="/manager/task-progress">Task Progress</Link>,
   },
+  {
+    key: '/manager/chat',
+    icon: <MessageOutlined />,
+    label: <Link to="/manager/chat">Chat</Link>,
+  },
 ];
 
 const ManagerLayout = () => {
@@ -56,6 +62,16 @@ const ManagerLayout = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Get selected key from pathname (support nested routes)
+  const getSelectedKey = () => {
+    const path = location.pathname;
+    // Match exact paths or paths that start with the menu key
+    if (path.startsWith('/manager/chat')) {
+      return '/manager/chat';
+    }
+    return path;
+  };
 
   const handleLogout = async () => {
     try {
@@ -96,7 +112,7 @@ const ManagerLayout = () => {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={[getSelectedKey()]}
           items={menuItems}
         />
       </Sider>

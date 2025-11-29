@@ -97,6 +97,7 @@ import TaskProgressManagement from './pages/manager/TaskProgress/TaskProgressMan
 import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/TaskAssignmentWorkspace';
 import MilestoneDetailPage from './pages/manager/MilestoneDetail/MilestoneDetailPage';
 import TaskDetailPage from './pages/manager/TaskDetail/TaskDetailPage';
+import ManagerChatPage from './pages/manager/Chat/ManagerChatPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -272,13 +273,11 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* --- CHAT ROUTES --- */}
+          {/* --- CHAT ROUTES (CUSTOMER ONLY) --- */}
           <Route
             path="/chat"
             element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
                 <ChatLayout />
               </ProtectedRoute>
             }
@@ -286,9 +285,7 @@ function App() {
           <Route
             path="/chat/:roomId"
             element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
                 <ChatLayout />
               </ProtectedRoute>
             }
@@ -388,6 +385,8 @@ function App() {
               element={<TaskDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
+            <Route path="chat" element={<ManagerChatPage />} />
+            <Route path="chat/:roomId" element={<ManagerChatPage />} />
           </Route>
 
           {/* --- ADMIN ROUTES (PROTECTED) --- */}

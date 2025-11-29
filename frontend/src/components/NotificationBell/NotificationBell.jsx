@@ -12,6 +12,7 @@ import {
 import { BellOutlined, CheckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
+import { convertNotificationActionUrl } from '../../utils/notificationUtils';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import styles from './NotificationBell.module.css';
@@ -49,9 +50,10 @@ const NotificationBell = () => {
       await markAsRead(notification.notificationId);
     }
 
-    // Navigate to action URL
+    // Navigate to action URL (convert based on user role)
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      const convertedUrl = convertNotificationActionUrl(notification.actionUrl);
+      navigate(convertedUrl);
     }
 
     setOpen(false);

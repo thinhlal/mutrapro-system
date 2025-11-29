@@ -4,7 +4,7 @@ import {
   MoreOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './ChatHeader.module.css';
 
 /**
@@ -13,9 +13,14 @@ import styles from './ChatHeader.module.css';
  */
 const ChatHeader = ({ room, connected = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleBack = () => {
-    navigate('/chat');
+    // Detect if we're in manager route or customer route
+    const backPath = location.pathname.startsWith('/manager/chat')
+      ? '/manager/chat'
+      : '/chat';
+    navigate(backPath);
   };
 
   // Get room type text
