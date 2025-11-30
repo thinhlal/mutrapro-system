@@ -5,9 +5,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://shuttle.proxy.rlwy.net:27656/railway
+    url: jdbc:postgresql://shuttle.proxy.rlwy.net:40496/railway
     username: postgres
-    password: dIdGTMYGKPlmGPvxOWHwwKGGDJbymqqj
+    password: meFZBxpBacIohuqmtATQArvzIooCCvFG
   jpa:
     hibernate:
       ddl-auto: update
