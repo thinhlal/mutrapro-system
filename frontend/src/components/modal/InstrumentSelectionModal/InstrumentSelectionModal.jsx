@@ -72,10 +72,10 @@ const InstrumentSelectionModal = ({
       open={visible}
       onCancel={onCancel}
       footer={null}
-      width={1500}
+      width={1600}
       styles={{
         body: {
-          maxHeight: '70vh',
+          maxHeight: '80vh',
           overflowY: 'auto',
           overflowX: 'hidden',
         },
