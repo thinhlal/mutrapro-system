@@ -53,13 +53,9 @@ import {
   calculatePricing,
 } from '../../../services/serviceRequestService';
 import {
-  getDeliveredSubmissionsByMilestone,
-} from '../../../services/fileSubmissionService';
-import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
-import FileList from '../../../components/common/FileList/FileList';
 import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
@@ -137,11 +133,6 @@ const ContractDetailPage = () => {
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
   const [maxOtpAttempts, setMaxOtpAttempts] = useState(3);
 
-  // Deliveries/Submissions state
-  const [submissionsModalVisible, setSubmissionsModalVisible] = useState(false);
-  const [selectedMilestone, setSelectedMilestone] = useState(null);
-  const [submissions, setSubmissions] = useState([]);
-  const [submissionsLoading, setSubmissionsLoading] = useState(false);
 
   // Pricing breakdown information
   const [pricingBreakdown, setPricingBreakdown] = useState({
@@ -638,35 +629,6 @@ const ContractDetailPage = () => {
     }
   };
 
-  // Handle view deliveries for milestone
-  const handleViewDeliveries = async milestone => {
-    try {
-      setSelectedMilestone(milestone);
-      setSubmissionsModalVisible(true);
-      setSubmissionsLoading(true);
-      setSubmissions([]);
-
-      const response = await getDeliveredSubmissionsByMilestone(
-        milestone.milestoneId,
-        contractId
-      );
-
-      if (response?.status === 'success' && Array.isArray(response.data)) {
-        setSubmissions(response.data);
-      } else {
-        setSubmissions([]);
-      }
-    } catch (error) {
-      console.error('Error loading deliveries:', error);
-      message.error(
-        error?.response?.data?.message ||
-          'Lỗi khi tải danh sách submissions đã gửi'
-      );
-      setSubmissions([]);
-    } finally {
-      setSubmissionsLoading(false);
-    }
-  };
 
   // Handle revision request
   const handleRevision = async reason => {
@@ -2295,7 +2257,18 @@ const ContractDetailPage = () => {
                               <Button
                                 icon={<EyeOutlined />}
                                 size="small"
-                                onClick={() => handleViewDeliveries(milestone)}
+                                onClick={() =>
+                                  navigate(
+                                    `/contracts/${contractId}/milestones/${milestone.milestoneId}/deliveries`,
+                                    {
+                                      state: {
+                                        milestoneName:
+                                          milestone.name ||
+                                          `Milestone ${milestone.orderIndex || index + 1}`,
+                                      },
+                                    }
+                                  )
+                                }
                               >
                                 View Deliveries
                               </Button>
@@ -3028,74 +3001,6 @@ const ContractDetailPage = () => {
         onConfirm={handleSignatureConfirm}
         loading={signatureLoading}
       />
-
-      {/* Deliveries/Submissions Modal */}
-      <Modal
-        title={
-          selectedMilestone
-            ? `Deliveries - ${selectedMilestone.name || 'Milestone'}`
-            : 'Deliveries'
-        }
-        open={submissionsModalVisible}
-        onCancel={() => {
-          setSubmissionsModalVisible(false);
-          setSelectedMilestone(null);
-          setSubmissions([]);
-        }}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => {
-              setSubmissionsModalVisible(false);
-              setSelectedMilestone(null);
-              setSubmissions([]);
-            }}
-          >
-            Close
-          </Button>,
-        ]}
-        width={800}
-      >
-        <Spin spinning={submissionsLoading}>
-          {submissions.length === 0 && !submissionsLoading ? (
-            <Empty description="Chưa có submissions nào được gửi cho milestone này" />
-          ) : (
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
-              {submissions.map(submission => (
-                <Card
-                  key={submission.submissionId}
-                  size="small"
-                  title={
-                    <Space>
-                      <Text strong>{submission.submissionName}</Text>
-                      <Tag color="green">Delivered</Tag>
-                    </Space>
-                  }
-                  extra={
-                    submission.deliveredAt && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Delivered:{' '}
-                        {dayjs(submission.deliveredAt).format(
-                          'DD/MM/YYYY HH:mm'
-                        )}
-                      </Text>
-                    )
-                  }
-                >
-                  {submission.files && submission.files.length > 0 ? (
-                    <FileList files={submission.files} />
-                  ) : (
-                    <Empty
-                      description="No files in this submission"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
-                  )}
-                </Card>
-              ))}
-            </Space>
-          )}
-        </Spin>
-      </Modal>
 
       <OTPVerificationModal
         visible={otpModalOpen}

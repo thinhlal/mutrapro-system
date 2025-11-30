@@ -1247,7 +1247,7 @@ const TaskDetailPage = () => {
                         <List.Item.Meta
                           avatar={<FileOutlined style={{ fontSize: 24 }} />}
                           title={
-                            <Text strong>{file.fileName}</Text>
+                              <Text strong>{file.fileName}</Text>
                           }
                           description={
                             <Space direction="vertical" size={0}>
@@ -1427,7 +1427,7 @@ const TaskDetailPage = () => {
                                       <FileOutlined style={{ fontSize: 24 }} />
                                     }
                                     title={
-                                      <Text strong>{file.fileName}</Text>
+                                        <Text strong>{file.fileName}</Text>
                                     }
                                     description={
                                       <Space direction="vertical" size={0}>

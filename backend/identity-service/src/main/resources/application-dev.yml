@@ -5,9 +5,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://trolley.proxy.rlwy.net:19324/railway?TimeZone=UTC
+    url: jdbc:postgresql://hopper.proxy.rlwy.net:48406/railway
     username: postgres
-    password: beywrjIGcwFtmwRKIlgUPUHayisTmIlx
+    password: bQcviWDzROOzrDMkWqjudyTPVugqydQd
   jpa:
     hibernate:
       ddl-auto: update

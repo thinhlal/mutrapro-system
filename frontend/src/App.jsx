@@ -103,6 +103,7 @@ import ManagerChatPage from './pages/manager/Chat/ManagerChatPage';
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
 import TranscriptionProcessPage from './pages/ai-transcription/TranscriptionProcessPage.jsx';
 import './App.css';
+import MilestoneDeliveriesPage from './pages/user/MilestoneDeliveries/MilestoneDeliveriesPage.jsx';
 
 function App() {
   return (
@@ -217,6 +218,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <PayMilestonePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:contractId/milestones/:milestoneId/deliveries"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                <MilestoneDeliveriesPage />
               </ProtectedRoute>
             }
           />

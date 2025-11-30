@@ -2,6 +2,10 @@ package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
+import com.mutrapro.project_service.dto.response.CustomerDeliveriesResponse;
+import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.project_service.client.RequestServiceFeignClient;
+import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
@@ -41,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -55,6 +60,7 @@ public class FileSubmissionService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     OutboxEventRepository outboxEventRepository;
+    RequestServiceFeignClient requestServiceFeignClient;
     ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
 
@@ -227,9 +233,11 @@ public class FileSubmissionService {
     }
 
     /**
-     * Lấy danh sách delivered submissions theo milestone (cho customer)
+     * Customer lấy danh sách delivered submissions theo milestone
+     * Chỉ dành cho customer, sử dụng JPA query riêng query trực tiếp từ milestone
+     * Trả về thông tin contract, milestone và submissions
      */
-    public List<FileSubmissionResponse> getDeliveredSubmissionsByMilestone(
+    public CustomerDeliveriesResponse getDeliveredSubmissionsByMilestoneForCustomer(
             String milestoneId, 
             String contractId, 
             String userId, 
@@ -250,8 +258,8 @@ public class FileSubmissionService {
             throw UnauthorizedException.create("You can only view submissions from contracts you manage");
         }
         
-        // Verify milestone belongs to contract
-        contractMilestoneRepository
+        // Verify milestone belongs to contract and get milestone
+        ContractMilestone milestone = contractMilestoneRepository
                 .findByMilestoneIdAndContractId(milestoneId, contractId)
                 .orElseThrow(() -> new IllegalArgumentException("Milestone not found in contract"));
         
@@ -263,9 +271,124 @@ public class FileSubmissionService {
                         SubmissionStatus.delivered
                 );
         
-        return deliveredSubmissions.stream()
+        // Build response với contract, milestone và submissions
+        CustomerDeliveriesResponse.ContractInfo contractInfo = CustomerDeliveriesResponse.ContractInfo.builder()
+                .contractId(contract.getContractId())
+                .contractNumber(contract.getContractNumber())
+                .contractType(contract.getContractType() != null ? contract.getContractType().toString() : null)
+                .build();
+        
+        CustomerDeliveriesResponse.MilestoneInfo milestoneInfo = CustomerDeliveriesResponse.MilestoneInfo.builder()
+                .milestoneId(milestone.getMilestoneId())
+                .name(milestone.getName())
+                .description(milestone.getDescription())
+                .workStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().toString() : null)
+                .plannedDueDate(milestone.getPlannedDueDate())
+                .actualStartAt(milestone.getActualStartAt())
+                .actualEndAt(milestone.getActualEndAt())
+                .build();
+        
+        List<FileSubmissionResponse> submissionResponses = deliveredSubmissions.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+        
+        // Load request info nếu có requestId
+        CustomerDeliveriesResponse.RequestInfo requestInfo = null;
+        if (contract.getRequestId() != null) {
+            try {
+                ApiResponse<ServiceRequestInfoResponse> requestResponse = 
+                    requestServiceFeignClient.getServiceRequestById(contract.getRequestId());
+                if (requestResponse != null && "success".equals(requestResponse.getStatus()) 
+                    && requestResponse.getData() != null) {
+                    ServiceRequestInfoResponse requestData = requestResponse.getData();
+                    
+                    log.debug("Request data from request-service - requestId: {}, files: {}", 
+                        requestData.getRequestId(), requestData.getFiles());
+                    
+                    // Convert durationMinutes sang seconds
+                    Integer durationSeconds = null;
+                    if (requestData.getDurationMinutes() != null) {
+                        try {
+                            double minutes = requestData.getDurationMinutes().doubleValue();
+                            durationSeconds = (int) Math.round(minutes * 60);
+                        } catch (Exception ex) {
+                            log.warn("Failed to convert durationMinutes to seconds: {}", ex.getMessage());
+                        }
+                    }
+                    
+                    // Extract tempo từ tempoPercentage
+                    Integer tempo = null;
+                    if (requestData.getTempoPercentage() != null) {
+                        try {
+                            tempo = requestData.getTempoPercentage().intValue();
+                        } catch (Exception ex) {
+                            log.warn("Failed to extract tempo: {}", ex.getMessage());
+                        }
+                    }
+                    
+                    // Extract timeSignature và specialNotes từ musicOptions
+                    String timeSignature = null;
+                    String specialNotes = null;
+                    if (requestData.getMusicOptions() != null) {
+                        try {
+                            Map<String, Object> musicOptions = requestData.getMusicOptions();
+                            if (musicOptions.get("timeSignature") != null) {
+                                timeSignature = musicOptions.get("timeSignature").toString();
+                            }
+                            if (musicOptions.get("specialNotes") != null) {
+                                specialNotes = musicOptions.get("specialNotes").toString();
+                            }
+                        } catch (Exception ex) {
+                            log.warn("Failed to extract musicOptions: {}", ex.getMessage());
+                        }
+                    }
+                    
+                    // Lấy files từ project-service database (customer_upload files)
+                    // Thay vì dùng files từ request-service response
+                    List<File> customerUploadedFiles = fileRepository.findByRequestIdAndFileSourceIn(
+                        contract.getRequestId(),
+                        List.of(FileSourceType.customer_upload)
+                    );
+                    
+                    // Convert File entities to List of Maps for response
+                    List<Map<String, Object>> filesList = customerUploadedFiles.stream()
+                        .map(file -> {
+                            Map<String, Object> fileMap = new java.util.HashMap<>();
+                            fileMap.put("fileId", file.getFileId());
+                            fileMap.put("fileName", file.getFileName());
+                            fileMap.put("fileSize", file.getFileSize());
+                            fileMap.put("mimeType", file.getMimeType());
+                            fileMap.put("url", null); // Không có URL trực tiếp, dùng fileId để preview/download
+                            return fileMap;
+                        })
+                        .collect(Collectors.toList());
+                    
+                    log.debug("Found {} customer uploaded files for requestId: {}", filesList.size(), contract.getRequestId());
+                    
+                    requestInfo = CustomerDeliveriesResponse.RequestInfo.builder()
+                        .requestId(requestData.getRequestId())
+                        .serviceType(requestData.getRequestType())
+                        .title(requestData.getTitle())
+                        .description(requestData.getDescription())
+                        .durationSeconds(durationSeconds)
+                        .tempo(tempo)
+                        .timeSignature(timeSignature)
+                        .specialNotes(specialNotes)
+                        .instruments(requestData.getInstruments())
+                        .files(filesList) // Sử dụng files từ project-service database
+                        .build();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch request info for requestId {}: {}", contract.getRequestId(), e.getMessage());
+            }
+        }
+        
+        return CustomerDeliveriesResponse.builder()
+                .contract(contractInfo)
+                .milestone(milestoneInfo)
+                .request(requestInfo)
+                .submissions(submissionResponses)
+                .build();
     }
 
 

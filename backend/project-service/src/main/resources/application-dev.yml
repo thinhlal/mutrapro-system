@@ -9,9 +9,9 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
   datasource:
-    url: jdbc:postgresql://switchback.proxy.rlwy.net:41563/railway
+    url: jdbc:postgresql://switchyard.proxy.rlwy.net:23349
     username: postgres
-    password: TIKgImAQFvBWpFSMLudpIeXVorOUImaa
+    password: WEMkCGvTPJngCDSicuOItQDUsKCQRUDA
   jpa:
     hibernate:
       ddl-auto: update

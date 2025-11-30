@@ -118,3 +118,34 @@ export const getDeliveredSubmissionsByMilestone = async (
     );
   }
 };
+
+/**
+ * Customer review submission (accept hoặc request revision)
+ * POST /submissions/{submissionId}/customer-review
+ * @param {string} submissionId - ID của submission
+ * @param {string} action - "accept" hoặc "request_revision"
+ * @param {string} reason - Lý do request revision (required nếu action = "request_revision")
+ * @returns {Promise} Response từ API
+ */
+export const customerReviewSubmission = async (
+  submissionId,
+  action,
+  reason = ''
+) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SUBMISSIONS.CUSTOMER_REVIEW(submissionId),
+      {
+        action,
+        reason,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi review submission',
+      }
+    );
+  }
+};

@@ -193,9 +193,12 @@ export const API_ENDPOINTS = {
     // POST /submissions/{submissionId}/deliver
     DELIVER: submissionId =>
       `${PROJECT_PATH}/submissions/${submissionId}/deliver`,
-    // GET /submissions/by-milestone/{milestoneId}?contractId={contractId}
+    // GET /submissions/by-milestone/{milestoneId}?contractId={contractId} (cho customer)
     GET_DELIVERED_BY_MILESTONE: (milestoneId, contractId) =>
       `${PROJECT_PATH}/submissions/by-milestone/${milestoneId}?contractId=${contractId}`,
+    // POST /submissions/{submissionId}/customer-review
+    CUSTOMER_REVIEW: submissionId =>
+      `${PROJECT_PATH}/submissions/${submissionId}/customer-review`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===
