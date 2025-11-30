@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.ReviewSubmissionRequest;
+import com.mutrapro.project_service.dto.request.CustomerReviewSubmissionRequest;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
 import com.mutrapro.project_service.service.FileSubmissionService;
 import com.mutrapro.project_service.service.FileAccessService;
@@ -70,6 +71,54 @@ public class FileSubmissionController {
                 .build();
     }
 
+    @GetMapping("/by-milestone/{milestoneId}")
+    @Operation(summary = "Lấy danh sách delivered submissions theo milestoneId (cho customer)")
+    public ApiResponse<List<FileSubmissionResponse>> getDeliveredSubmissionsByMilestone(
+            @Parameter(description = "ID của milestone")
+            @PathVariable String milestoneId,
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            Authentication authentication) {
+        log.info("Getting delivered submissions for milestoneId: {}, contractId: {}", milestoneId, contractId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        List<FileSubmissionResponse> responses = fileSubmissionService.getDeliveredSubmissionsByMilestone(
+                milestoneId,
+                contractId,
+                userContext.getUserId(),
+                userContext.getRoles());
+
+        return ApiResponse.<List<FileSubmissionResponse>>builder()
+                .message("Delivered submissions retrieved successfully")
+                .data(responses)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @GetMapping("/customer/by-milestone/{milestoneId}")
+    @Operation(summary = "Customer lấy danh sách delivered submissions theo milestoneId")
+    public ApiResponse<List<FileSubmissionResponse>> customerGetDeliveredSubmissionsByMilestone(
+            @Parameter(description = "ID của milestone")
+            @PathVariable String milestoneId,
+            @Parameter(description = "ID của contract")
+            @RequestParam String contractId,
+            Authentication authentication) {
+        log.info("Customer getting delivered submissions for milestoneId: {}, contractId: {}", milestoneId, contractId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        List<FileSubmissionResponse> responses = fileSubmissionService.getDeliveredSubmissionsByMilestone(
+                milestoneId,
+                contractId,
+                userContext.getUserId(),
+                userContext.getRoles());
+
+        return ApiResponse.<List<FileSubmissionResponse>>builder()
+                .message("Delivered submissions retrieved successfully")
+                .data(responses)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
     @PostMapping("/{submissionId}/review")
     @Operation(summary = "Manager review submission (approve/reject)")
     public ApiResponse<FileSubmissionResponse> reviewSubmission(
@@ -120,6 +169,30 @@ public class FileSubmissionController {
 
         return ApiResponse.<FileSubmissionResponse>builder()
                 .message("Submission delivered successfully")
+                .data(response)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @PostMapping("/{submissionId}/customer-review")
+    @Operation(summary = "Customer review submission (accept hoặc request revision)")
+    public ApiResponse<FileSubmissionResponse> customerReviewSubmission(
+            @Parameter(description = "ID của submission")
+            @PathVariable String submissionId,
+            @RequestBody CustomerReviewSubmissionRequest request,
+            Authentication authentication) {
+        log.info("Customer reviewing submission: {}, action: {}", submissionId, request.getAction());
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        FileSubmissionResponse response = fileSubmissionService.customerReviewSubmission(
+                submissionId,
+                request.getAction(),
+                request.getReason(),
+                userContext.getUserId(),
+                userContext.getRoles());
+
+        return ApiResponse.<FileSubmissionResponse>builder()
+                .message("Submission reviewed successfully")
                 .data(response)
                 .statusCode(HttpStatus.OK.value())
                 .build();

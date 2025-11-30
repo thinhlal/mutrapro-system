@@ -90,3 +90,31 @@ export const deliverSubmission = async submissionId => {
     );
   }
 };
+
+/**
+ * Lấy danh sách delivered submissions theo milestoneId (cho customer)
+ * GET /submissions/by-milestone/{milestoneId}?contractId={contractId}
+ * @param {string} milestoneId - ID của milestone
+ * @param {string} contractId - ID của contract
+ * @returns {Promise} Response từ API
+ */
+export const getDeliveredSubmissionsByMilestone = async (
+  milestoneId,
+  contractId
+) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SUBMISSIONS.GET_DELIVERED_BY_MILESTONE(
+        milestoneId,
+        contractId
+      )
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách delivered submissions',
+      }
+    );
+  }
+};

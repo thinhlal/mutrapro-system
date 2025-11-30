@@ -197,6 +197,7 @@ public class FileSubmissionService {
 
     /**
      * Lấy danh sách submissions theo assignmentId
+     * Chỉ dành cho specialist và manager
      */
     public List<FileSubmissionResponse> getSubmissionsByAssignmentId(String assignmentId, String userId, List<String> userRoles) {
         // Verify assignment access first
@@ -207,6 +208,7 @@ public class FileSubmissionService {
         String specialistUserId = assignment.getSpecialistUserIdSnapshot();
         boolean hasAccess = specialistUserId != null && specialistUserId.equals(userId);
         
+        // Check manager access
         if (!hasAccess && (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN"))) {
             Contract contract = contractRepository.findById(assignment.getContractId()).orElse(null);
             if (contract != null && contract.getManagerUserId().equals(userId)) {
@@ -220,6 +222,48 @@ public class FileSubmissionService {
         
         List<FileSubmission> submissions = fileSubmissionRepository.findByAssignmentId(assignmentId);
         return submissions.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy danh sách delivered submissions theo milestone (cho customer)
+     */
+    public List<FileSubmissionResponse> getDeliveredSubmissionsByMilestone(
+            String milestoneId, 
+            String contractId, 
+            String userId, 
+            List<String> userRoles) {
+        
+        // Verify contract access - customer phải là owner của contract
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Customer chỉ được xem submissions của contract của mình
+        if (userRoles.contains("CUSTOMER") && !contract.getUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only view submissions from your own contracts");
+        }
+        
+        // Manager có thể xem submissions của contract mình quản lý
+        if ((userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN")) 
+                && !contract.getManagerUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only view submissions from contracts you manage");
+        }
+        
+        // Verify milestone belongs to contract
+        contractMilestoneRepository
+                .findByMilestoneIdAndContractId(milestoneId, contractId)
+                .orElseThrow(() -> new IllegalArgumentException("Milestone not found in contract"));
+        
+        // Sử dụng JPA query riêng để query trực tiếp từ milestone
+        List<FileSubmission> deliveredSubmissions = fileSubmissionRepository
+                .findDeliveredSubmissionsByMilestoneAndContract(
+                        milestoneId,
+                        contractId,
+                        SubmissionStatus.delivered
+                );
+        
+        return deliveredSubmissions.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -344,6 +388,93 @@ public class FileSubmissionService {
         log.info("Rejected submission: submissionId={}, reason={}", submissionId, reason);
         
         return toResponse(saved);
+    }
+
+    /**
+     * Customer review submission (accept hoặc request revision)
+     */
+    @Transactional
+    public FileSubmissionResponse customerReviewSubmission(
+            String submissionId,
+            String action,  // "accept" or "request_revision"
+            String reason,  // Required if action = "request_revision"
+            String userId,
+            List<String> userRoles) {
+        
+        log.info("Customer {} reviewing submission: {}, action: {}", userId, submissionId, action);
+        
+        // Verify user is CUSTOMER
+        if (!userRoles.contains("CUSTOMER")) {
+            throw UnauthorizedException.create("Only customers can review submissions");
+        }
+        
+        FileSubmission submission = fileSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> FileSubmissionNotFoundException.byId(submissionId));
+        
+        // Verify submission is delivered
+        if (submission.getStatus() != SubmissionStatus.delivered) {
+            throw new InvalidSubmissionStatusException(
+                    "You can only review submissions that have been delivered. Current status: " + submission.getStatus(),
+                    submissionId,
+                    submission.getStatus());
+        }
+        
+        // Verify customer has access to assignment
+        TaskAssignment assignment = taskAssignmentRepository.findById(submission.getAssignmentId())
+                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(submission.getAssignmentId()));
+        
+        Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+        
+        if (!contract.getUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only review submissions from your own contracts");
+        }
+        
+        Instant now = Instant.now();
+        
+        if ("accept".equalsIgnoreCase(action)) {
+            // Customer accepts submission - giữ status = delivered
+            // Có thể thêm field customerReviewedAt nếu cần
+            log.info("Customer accepted submission: submissionId={}", submissionId);
+            // Không cần thay đổi status, chỉ log lại
+            
+        } else if ("request_revision".equalsIgnoreCase(action)) {
+            // Customer requests revision
+            if (reason == null || reason.trim().isEmpty()) {
+                throw new IllegalArgumentException("Reason is required when requesting revision");
+            }
+            
+            // Update submission status to revision_requested
+            submission.setStatus(SubmissionStatus.revision_requested);
+            submission.setRejectionReason(reason);
+            submission.setReviewedBy(userId);
+            submission.setReviewedAt(now);
+            fileSubmissionRepository.save(submission);
+            
+            // Update assignment status to revision_requested
+            assignment.setStatus(AssignmentStatus.revision_requested);
+            taskAssignmentRepository.save(assignment);
+            
+            // Update milestone work status back to IN_PROGRESS (nếu đang WAITING_CUSTOMER)
+            if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
+                ContractMilestone milestone = contractMilestoneRepository
+                        .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                        .orElse(null);
+                if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
+                    milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
+                    contractMilestoneRepository.save(milestone);
+                    log.info("Milestone work status updated to IN_PROGRESS after customer requested revision: milestoneId={}, contractId={}", 
+                            milestone.getMilestoneId(), assignment.getContractId());
+                }
+            }
+            
+            log.info("Customer requested revision for submission: submissionId={}, reason={}", submissionId, reason);
+            
+        } else {
+            throw new IllegalArgumentException("Invalid action: " + action + ". Must be 'accept' or 'request_revision'");
+        }
+        
+        return toResponse(submission);
     }
 
     /**

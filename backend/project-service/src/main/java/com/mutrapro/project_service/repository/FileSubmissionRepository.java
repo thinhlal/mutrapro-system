@@ -3,6 +3,8 @@ package com.mutrapro.project_service.repository;
 import com.mutrapro.project_service.entity.FileSubmission;
 import com.mutrapro.project_service.enums.SubmissionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,5 +30,20 @@ public interface FileSubmissionRepository extends JpaRepository<FileSubmission, 
 
     // Batch fetch submissions by multiple assignmentIds
     List<FileSubmission> findByAssignmentIdIn(List<String> assignmentIds);
+
+    /**
+     * Tìm delivered submissions theo milestoneId và contractId (cho customer)
+     * Query trực tiếp từ milestone, không qua assignment
+     */
+    @Query("SELECT fs FROM FileSubmission fs " +
+           "JOIN TaskAssignment ta ON fs.assignmentId = ta.assignmentId " +
+           "WHERE ta.milestoneId = :milestoneId " +
+           "AND ta.contractId = :contractId " +
+           "AND fs.status = :status " +
+           "ORDER BY fs.createdAt DESC")
+    List<FileSubmission> findDeliveredSubmissionsByMilestoneAndContract(
+            @Param("milestoneId") String milestoneId,
+            @Param("contractId") String contractId,
+            @Param("status") SubmissionStatus status);
 }
 

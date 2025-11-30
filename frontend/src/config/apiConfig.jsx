@@ -193,6 +193,9 @@ export const API_ENDPOINTS = {
     // POST /submissions/{submissionId}/deliver
     DELIVER: submissionId =>
       `${PROJECT_PATH}/submissions/${submissionId}/deliver`,
+    // GET /submissions/by-milestone/{milestoneId}?contractId={contractId}
+    GET_DELIVERED_BY_MILESTONE: (milestoneId, contractId) =>
+      `${PROJECT_PATH}/submissions/by-milestone/${milestoneId}?contractId=${contractId}`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===
