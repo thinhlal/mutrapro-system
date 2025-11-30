@@ -5,7 +5,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://maglev.proxy.rlwy.net:23806//railway
+    url: jdbc:postgresql://maglev.proxy.rlwy.net:23806/railway
     username: postgres
     password: JaqizuavAcBwpWNPCAdWohdbqAUJhgpY
   jpa:
