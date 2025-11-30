@@ -12,6 +12,7 @@ import {
   BellOutlined,
   FileTextOutlined,
   WalletOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
 
 function UserMenu() {
@@ -277,6 +278,18 @@ function UserMenu() {
               >
                 <WalletOutlined className={styles.dropdownIcon} />
                 <span>My Wallet</span>
+              </Link>
+            </li>
+
+            {/* Chat */}
+            <li>
+              <Link
+                to="/chat"
+                className={styles.dropdownItem}
+                onClick={handleMenuItemClick}
+              >
+                <MessageOutlined  className={styles.dropdownIcon} />
+                <span>Chat</span>
               </Link>
             </li>
           </ul>
