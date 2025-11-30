@@ -56,5 +56,14 @@ public class InvalidSubmissionStatusException extends BusinessException {
             currentStatus
         );
     }
+
+    public static InvalidSubmissionStatusException cannotDeliver(String submissionId, SubmissionStatus currentStatus) {
+        return new InvalidSubmissionStatusException(
+            String.format("Cannot deliver submission in status: %s. Submission must be approved.", 
+                    currentStatus),
+            submissionId,
+            currentStatus
+        );
+    }
 }
 

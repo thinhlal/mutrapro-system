@@ -1513,6 +1513,10 @@ const TranscriptionTaskDetailPage = () => {
         className={styles.section}
         title="Draft Files (chưa submit)"
         extra={
+          task.status?.toLowerCase() !== 'assigned' &&
+          task.status?.toLowerCase() !== 'accepted_waiting' &&
+          task.status?.toLowerCase() !== 'ready_to_start' &&
+          task.status?.toLowerCase() !== 'delivery_pending' &&
           task.status?.toLowerCase() !== 'cancelled' &&
           task.status?.toLowerCase() !== 'ready_for_review' &&
           task.status?.toLowerCase() !== 'completed' && (

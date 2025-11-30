@@ -55,6 +55,7 @@ app:
       billing.milestone.paid: billing-milestone-paid
       task.assignment.assigned: task-assignment-assigned
       task.file.uploaded: task-file-uploaded
+      submission.delivered: submission-delivered
 
 # Request Service Configuration
 request:

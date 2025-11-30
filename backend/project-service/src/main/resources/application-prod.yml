@@ -51,6 +51,7 @@ app:
       billing.milestone.paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
       task.file.uploaded: ${KAFKA_TOPIC_TASK_FILE_UPLOADED:task-file-uploaded}
+      submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
 
 # Request Service Configuration
 request:

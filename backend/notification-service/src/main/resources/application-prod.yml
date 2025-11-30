@@ -54,6 +54,7 @@ app:
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
       task.file.uploaded: ${KAFKA_TOPIC_TASK_FILE_UPLOADED:task-file-uploaded}
       chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
+      submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
 
 logging:
   level:

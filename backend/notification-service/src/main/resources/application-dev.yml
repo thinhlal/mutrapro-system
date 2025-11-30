@@ -59,6 +59,7 @@ app:
       task.assignment.assigned: task-assignment-assigned
       task.file.uploaded: task-file-uploaded
       chat.room.created: chat-events
+      submission.delivered: submission-delivered
 
 logging:
   level:

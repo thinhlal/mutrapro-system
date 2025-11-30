@@ -7,6 +7,7 @@ import com.mutrapro.notification_service.repository.NotificationRepository;
 import com.mutrapro.notification_service.dto.response.NotificationResponse;
 import com.mutrapro.notification_service.exception.NotificationNotFoundException;
 import com.mutrapro.shared.event.ChatRoomCreatedEvent;
+import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskFileUploadedEvent;
 import lombok.RequiredArgsConstructor;
@@ -169,6 +170,51 @@ public class NotificationService {
 
         log.info("Task file uploaded notification created: fileId={}, assignmentId={}, managerUserId={}",
             event.getFileId(), event.getAssignmentId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification cho customer khi submission được deliver (Kafka event).
+     */
+    @Transactional
+    public void createSubmissionDeliveredNotification(SubmissionDeliveredEvent event) {
+        if (event.getCustomerUserId() == null || event.getCustomerUserId().isBlank()) {
+            log.warn("Cannot create submission delivered notification, customerUserId missing: submissionId={}, assignmentId={}", 
+                    event.getSubmissionId(), event.getAssignmentId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+            ? event.getContractNumber()
+            : event.getContractId();
+
+        String defaultContent = String.format(
+            "Manager đã gửi submission \"%s\" cho milestone \"%s\" của contract #%s. Vui lòng xem xét và phản hồi.",
+            event.getSubmissionName(),
+            event.getMilestoneName(),
+            contractLabel
+        );
+
+        String title = event.getTitle() != null ? event.getTitle() : "Submission đã được gửi cho bạn";
+        String content = event.getContent() != null ? event.getContent() : defaultContent;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/contracts/" + event.getContractId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "SUBMISSION";
+
+        Notification notification = Notification.builder()
+            .userId(event.getCustomerUserId())
+            .type(NotificationType.SUBMISSION_DELIVERED)
+            .title(title)
+            .content(content)
+            .referenceId(event.getSubmissionId())
+            .referenceType(referenceType)
+            .actionUrl(actionUrl)
+            .isRead(false)
+            .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getCustomerUserId(), saved);
+
+        log.info("Submission delivered notification created: submissionId={}, assignmentId={}, milestoneId={}, customerUserId={}",
+            event.getSubmissionId(), event.getAssignmentId(), event.getMilestoneId(), event.getCustomerUserId());
     }
 
     

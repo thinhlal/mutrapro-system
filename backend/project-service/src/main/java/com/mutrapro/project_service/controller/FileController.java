@@ -239,29 +239,6 @@ public class FileController {
                 .build();
     }
 
-    @PostMapping("/{fileId}/deliver")
-    @Operation(summary = "Manager deliver file to customer (requires MANAGER role)")
-    public ApiResponse<FileInfoResponse> deliverFileToCustomer(
-            @Parameter(description = "ID của file")
-            @PathVariable String fileId,
-            Authentication authentication) {
-        log.info("Delivering file to customer: {}", fileId);
-        
-        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
-        
-        FileInfoResponse fileInfo = fileService.deliverFileToCustomer(
-            fileId,
-            userContext.getUserId(),
-            userContext.getRoles()
-        );
-        
-        return ApiResponse.<FileInfoResponse>builder()
-                .message("File delivered to customer successfully")
-                .data(fileInfo)
-                .statusCode(HttpStatus.OK.value())
-                .build();
-    }
-
     @DeleteMapping("/{fileId}")
     @Operation(summary = "Specialist soft delete file (chỉ khi fileStatus = uploaded)")
     public ApiResponse<FileInfoResponse> softDeleteFile(

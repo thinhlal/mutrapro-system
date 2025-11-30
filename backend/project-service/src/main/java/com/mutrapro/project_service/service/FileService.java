@@ -17,8 +17,6 @@ import com.mutrapro.project_service.exception.FileUploadException;
 import com.mutrapro.project_service.exception.InvalidFileStatusException;
 import com.mutrapro.project_service.exception.InvalidFileTypeForTaskException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
-import com.mutrapro.project_service.exception.NoFilesSelectedException;
-import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.repository.ContractRepository;
@@ -631,79 +629,6 @@ public class FileService {
         File saved = fileRepository.save(file);
         log.info("File rejected: fileId={}, reviewedBy={}, reason={}", 
                 saved.getFileId(), userId, rejectionReason);
-        
-        return getFileInfo(saved.getFileId(), userId, userRoles);
-    }
-
-    /**
-     * Manager deliver file to customer
-     * @param fileId ID của file
-     * @param userId ID của manager
-     * @param userRoles Danh sách roles của user
-     * @return FileInfoResponse
-     */
-    @Transactional
-    public FileInfoResponse deliverFileToCustomer(String fileId, String userId, List<String> userRoles) {
-        log.info("Manager {} delivering file to customer: {}", userId, fileId);
-        
-        // Kiểm tra quyền truy cập
-        fileAccessService.checkFileAccess(fileId, userId, userRoles);
-        
-        // Verify user is MANAGER
-        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
-            throw UnauthorizedException.create("Only managers can deliver files to customers");
-        }
-        
-        File file = fileRepository.findById(fileId)
-                .orElseThrow(() -> FileNotFoundException.byId(fileId));
-        
-        // Chỉ deliver file đã approved
-        if (file.getFileStatus() != FileStatus.approved) {
-            throw InvalidFileStatusException.cannotDeliver(fileId, file.getFileStatus());
-        }
-        
-        file.setDeliveredToCustomer(true);
-        file.setDeliveredAt(Instant.now());
-        file.setDeliveredBy(userId);
-        
-        File saved = fileRepository.save(file);
-        
-        // Nếu file thuộc submission, xử lý logic cho submission
-        if (saved.getSubmissionId() != null && !saved.getSubmissionId().isEmpty()) {
-            List<File> submissionFiles = fileRepository.findBySubmissionId(saved.getSubmissionId());
-            
-            // Set fileSource = task_deliverable cho tất cả files trong submission (chỉ set nếu chưa set)
-            boolean needUpdateFileSource = submissionFiles.stream()
-                    .anyMatch(f -> f.getFileSource() != FileSourceType.task_deliverable);
-            
-            if (needUpdateFileSource) {
-                submissionFiles.forEach(submissionFile -> {
-                    submissionFile.setFileSource(FileSourceType.task_deliverable);
-                });
-                fileRepository.saveAll(submissionFiles);
-                log.info("Updated fileSource to task_deliverable for {} files in submission: {}", 
-                        submissionFiles.size(), saved.getSubmissionId());
-            }
-            
-            // Kiểm tra nếu tất cả files trong submission đã được delivered
-            boolean allFilesDelivered = submissionFiles.stream()
-                    .allMatch(f -> Boolean.TRUE.equals(f.getDeliveredToCustomer()));
-            
-            if (allFilesDelivered && saved.getAssignmentId() != null) {
-                // Cập nhật task assignment status thành completed
-                TaskAssignment assignment = taskAssignmentRepository.findById(saved.getAssignmentId())
-                        .orElse(null);
-                if (assignment != null && assignment.getStatus() == AssignmentStatus.delivery_pending) {
-                    assignment.setStatus(AssignmentStatus.completed);
-                    assignment.setCompletedDate(Instant.now());
-                    taskAssignmentRepository.save(assignment);
-                    log.info("Task assignment marked as completed after all files delivered: assignmentId={}", 
-                            assignment.getAssignmentId());
-                }
-            }
-        }
-        log.info("File delivered to customer: fileId={}, deliveredBy={}", 
-                saved.getFileId(), userId);
         
         return getFileInfo(saved.getFileId(), userId, userRoles);
     }

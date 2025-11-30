@@ -69,3 +69,24 @@ export const reviewSubmission = async (submissionId, action, reason = '') => {
     );
   }
 };
+
+/**
+ * Manager deliver submission to customer (deliver tất cả files trong submission)
+ * POST /submissions/{submissionId}/deliver
+ * @param {string} submissionId - ID của submission
+ * @returns {Promise} Response từ API
+ */
+export const deliverSubmission = async submissionId => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SUBMISSIONS.DELIVER(submissionId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi gửi submission cho khách hàng',
+      }
+    );
+  }
+};

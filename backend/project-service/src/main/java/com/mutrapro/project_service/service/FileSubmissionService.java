@@ -3,12 +3,16 @@ package com.mutrapro.project_service.service;
 import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
 import com.mutrapro.project_service.entity.Contract;
+import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.FileSubmission;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
+import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
+import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SubmissionStatus;
+import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.FileSubmissionNotFoundException;
@@ -19,10 +23,15 @@ import com.mutrapro.project_service.exception.NoFilesSelectedException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.mapper.FileSubmissionMapper;
+import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
+import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +53,9 @@ public class FileSubmissionService {
     FileRepository fileRepository;
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
+    ContractMilestoneRepository contractMilestoneRepository;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
 
     /**
@@ -332,6 +344,167 @@ public class FileSubmissionService {
         log.info("Rejected submission: submissionId={}, reason={}", submissionId, reason);
         
         return toResponse(saved);
+    }
+
+    /**
+     * Manager deliver submission to customer (deliver tất cả files trong submission)
+     */
+    @Transactional
+    public FileSubmissionResponse deliverSubmission(
+            String submissionId,
+            String userId,
+            List<String> userRoles) {
+        
+        log.info("Manager {} delivering submission to customer: {}", userId, submissionId);
+        
+        // Verify user is MANAGER
+        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
+            throw UnauthorizedException.create("Only managers can deliver submissions");
+        }
+        
+        FileSubmission submission = fileSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> FileSubmissionNotFoundException.byId(submissionId));
+        
+        // Verify manager has access to assignment
+        TaskAssignment assignment = taskAssignmentRepository.findById(submission.getAssignmentId())
+                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(submission.getAssignmentId()));
+        
+        Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+        
+        if (!contract.getManagerUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only deliver submissions from your contracts");
+        }
+        
+        // Chỉ deliver submission đã approved
+        if (submission.getStatus() != SubmissionStatus.approved) {
+            throw InvalidSubmissionStatusException.cannotDeliver(submissionId, submission.getStatus());
+        }
+        
+        // Lấy tất cả files trong submission
+        List<File> submissionFiles = fileRepository.findBySubmissionId(submissionId);
+        
+        if (submissionFiles.isEmpty()) {
+            throw new IllegalStateException("Submission has no files to deliver");
+        }
+        
+        // Kiểm tra tất cả files phải đã approved
+        for (File file : submissionFiles) {
+            if (file.getFileStatus() != FileStatus.approved) {
+                throw InvalidFileStatusException.cannotDeliver(file.getFileId(), file.getFileStatus());
+            }
+        }
+        
+        // Deliver tất cả files trong submission
+        Instant now = Instant.now();
+        submissionFiles.forEach(file -> {
+            file.setDeliveredToCustomer(true);
+            file.setDeliveredAt(now);
+            file.setDeliveredBy(userId);
+            // Set fileSource = task_deliverable nếu chưa set
+            if (file.getFileSource() != FileSourceType.task_deliverable) {
+                file.setFileSource(FileSourceType.task_deliverable);
+            }
+        });
+        fileRepository.saveAll(submissionFiles);
+        log.info("Delivered {} files in submission: {}", submissionFiles.size(), submissionId);
+        
+        // Update submission status thành delivered
+        submission.setStatus(SubmissionStatus.delivered);
+        fileSubmissionRepository.save(submission);
+        log.info("Submission status updated to delivered: submissionId={}", submissionId);
+        
+        // Cập nhật task assignment status thành completed
+        if (assignment.getStatus() == AssignmentStatus.delivery_pending) {
+            assignment.setStatus(AssignmentStatus.completed);
+            assignment.setCompletedDate(now);
+            taskAssignmentRepository.save(assignment);
+            log.info("Task assignment marked as completed after submission delivered: assignmentId={}", 
+                    assignment.getAssignmentId());
+            
+            // Update milestone work status: IN_PROGRESS → WAITING_CUSTOMER
+            if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
+                ContractMilestone milestone = contractMilestoneRepository
+                        .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                        .orElse(null);
+                if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.IN_PROGRESS) {
+                    milestone.setWorkStatus(MilestoneWorkStatus.WAITING_CUSTOMER);
+                    contractMilestoneRepository.save(milestone);
+                    log.info("Milestone work status updated to WAITING_CUSTOMER: milestoneId={}, contractId={}", 
+                            milestone.getMilestoneId(), assignment.getContractId());
+                }
+            }
+            
+            // Gửi Kafka event về submission delivered cho customer
+            try {
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contract.getContractId();
+                
+                ContractMilestone milestone = contractMilestoneRepository
+                        .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                        .orElse(null);
+                String milestoneName = milestone != null && milestone.getName() != null
+                        ? milestone.getName()
+                        : "milestone";
+                
+                // Lấy danh sách file IDs và file names từ submission
+                List<String> fileIds = submissionFiles.stream()
+                        .map(File::getFileId)
+                        .collect(Collectors.toList());
+                List<String> fileNames = submissionFiles.stream()
+                        .map(File::getFileName)
+                        .collect(Collectors.toList());
+                
+                SubmissionDeliveredEvent event = SubmissionDeliveredEvent.builder()
+                        .eventId(java.util.UUID.randomUUID())
+                        .submissionId(submissionId)
+                        .submissionName(submission.getSubmissionName())
+                        .assignmentId(assignment.getAssignmentId())
+                        .milestoneId(assignment.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .contractId(assignment.getContractId())
+                        .contractNumber(contractLabel)
+                        .customerUserId(contract.getUserId())
+                        .fileIds(fileIds)
+                        .fileNames(fileNames)
+                        .title("Submission đã được gửi cho bạn")
+                        .content(String.format("Manager đã gửi submission \"%s\" cho milestone \"%s\" của contract #%s. Vui lòng xem xét và phản hồi.", 
+                                submission.getSubmissionName(),
+                                milestoneName,
+                                contractLabel))
+                        .referenceType("SUBMISSION")
+                        .actionUrl("/contracts/" + assignment.getContractId())
+                        .deliveredAt(now)
+                        .timestamp(now)
+                        .build();
+                
+                JsonNode payload = objectMapper.valueToTree(event);
+                java.util.UUID aggregateId;
+                try {
+                    aggregateId = java.util.UUID.fromString(submissionId);
+                } catch (IllegalArgumentException ex) {
+                    aggregateId = java.util.UUID.randomUUID();
+                }
+                
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                        .aggregateId(aggregateId)
+                        .aggregateType("Submission")
+                        .eventType("submission.delivered")
+                        .eventPayload(payload)
+                        .build();
+                
+                outboxEventRepository.save(outboxEvent);
+                log.info("Queued SubmissionDeliveredEvent in outbox: eventId={}, submissionId={}, assignmentId={}, customerUserId={}", 
+                        event.getEventId(), submissionId, assignment.getAssignmentId(), contract.getUserId());
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue SubmissionDeliveredEvent: submissionId={}, assignmentId={}, error={}", 
+                        submissionId, assignment.getAssignmentId(), e.getMessage(), e);
+            }
+        }
+        
+        return toResponse(submission);
     }
 
     /**

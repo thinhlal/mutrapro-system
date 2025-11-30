@@ -190,6 +190,9 @@ export const API_ENDPOINTS = {
     // POST /submissions/{submissionId}/review
     REVIEW: submissionId =>
       `${PROJECT_PATH}/submissions/${submissionId}/review`,
+    // POST /submissions/{submissionId}/deliver
+    DELIVER: submissionId =>
+      `${PROJECT_PATH}/submissions/${submissionId}/deliver`,
   },
 
   // === Billing Service (Quản lý Thanh toán) ===

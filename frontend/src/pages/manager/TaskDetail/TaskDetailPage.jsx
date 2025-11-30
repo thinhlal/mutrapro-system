@@ -40,15 +40,14 @@ import {
   cancelTaskByManager,
 } from '../../../services/taskAssignmentService';
 import {
-  getFilesByAssignmentId,
   approveFile,
   rejectFile,
-  deliverFileToCustomer,
   fetchFileForPreview,
 } from '../../../services/fileService';
 import {
   getSubmissionsByAssignmentId,
   reviewSubmission,
+  deliverSubmission,
 } from '../../../services/fileSubmissionService';
 import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
@@ -110,6 +109,7 @@ const SUBMISSION_STATUS_LABELS = {
   pending_review: 'Chờ duyệt',
   approved: 'Đã duyệt',
   rejected: 'Đã từ chối',
+  delivered: 'Đã gửi',
 };
 
 const SUBMISSION_STATUS_COLORS = {
@@ -117,6 +117,7 @@ const SUBMISSION_STATUS_COLORS = {
   pending_review: 'processing',
   approved: 'success',
   rejected: 'error',
+  delivered: 'green',
 };
 
 const TaskDetailPage = () => {
@@ -313,23 +314,25 @@ const TaskDetailPage = () => {
     }
   };
 
-  const handleDeliverFile = async fileId => {
+  const handleDeliverSubmission = async submissionId => {
     try {
       setActionLoading(true);
-      const response = await deliverFileToCustomer(fileId);
+      const response = await deliverSubmission(submissionId);
       if (response?.status === 'success') {
-        message.success('Đã gửi file cho khách hàng');
+        message.success('Đã gửi submission cho khách hàng');
         await loadFiles();
+        await loadTask();
       }
     } catch (error) {
-      console.error('Error delivering file:', error);
+      console.error('Error delivering submission:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi file cho khách hàng'
+        error?.response?.data?.message || 'Lỗi khi gửi submission cho khách hàng'
       );
     } finally {
       setActionLoading(false);
     }
   };
+
   const handleApproveSubmission = async submissionId => {
     try {
       setActionLoading(true);
@@ -374,6 +377,55 @@ const TaskDetailPage = () => {
       console.error('Error rejecting submission:', error);
       message.error(
         error?.response?.data?.message || 'Lỗi khi từ chối submission'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResolveIssue = async () => {
+    if (!contractId || !assignmentId) {
+      message.warning('Thiếu thông tin contract hoặc assignment');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const response = await resolveIssue(contractId, assignmentId);
+      if (response?.status === 'success') {
+        message.success('Đã cho phép specialist tiếp tục task');
+        await loadTask();
+      }
+    } catch (error) {
+      console.error('Error resolving issue:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi resolve issue'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelTaskByManager = async () => {
+    if (!contractId || !assignmentId) {
+      message.warning('Thiếu thông tin contract hoặc assignment');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      const response = await cancelTaskByManager(contractId, assignmentId);
+      if (response?.status === 'success') {
+        message.success(
+          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
+        );
+        // Navigate đến workspace với data pre-filled từ task cũ
+        navigate(
+          `/manager/milestone-assignments/${contractId}/new?milestoneId=${task.milestoneId}&taskType=${task.taskType}&excludeSpecialistId=${task.specialistId}`
+        );
+      }
+    } catch (error) {
+      console.error('Error cancelling task:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi hủy task'
       );
     } finally {
       setActionLoading(false);
@@ -583,19 +635,6 @@ const TaskDetailPage = () => {
     return status === 'uploaded' || status === 'pending_review';
   };
 
-  const canDeliver = file => {
-    const fileStatus = file.fileStatus?.toLowerCase();
-    const taskStatus = task?.status?.toLowerCase();
-    // Chỉ cho deliver khi:
-    // 1. File status = approved
-    // 2. File chưa được delivered
-    // 3. Task status = delivery_pending (đã được approve submission)
-    return (
-      fileStatus === 'approved' &&
-      !file.deliveredToCustomer &&
-      taskStatus === 'delivery_pending'
-    );
-  };
 
   // Phân loại submissions: Current Submission và Previous Submissions
   const currentSubmission = useMemo(() => {
@@ -755,7 +794,39 @@ const TaskDetailPage = () => {
         )}
 
         {/* Task Info */}
-        <Card title="Thông tin Task">
+        <Card 
+          title="Thông tin Task"
+          extra={
+            task.hasIssue && (
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={handleResolveIssue}
+                  loading={actionLoading}
+                >
+                  Resolve Issue
+                </Button>
+                <Popconfirm
+                  title="Xác nhận hủy task và tạo task mới?"
+                  description="Task hiện tại sẽ bị hủy và bạn sẽ được chuyển đến trang tạo task mới với thông tin tương tự (milestone, task type). Bạn chỉ cần chọn specialist mới."
+                  onConfirm={handleCancelTaskByManager}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button 
+                    danger 
+                    icon={<CloseCircleOutlined />}
+                    loading={actionLoading}
+                  >
+                    Cancel Task
+                  </Button>
+                </Popconfirm>
+              </Space>
+            )
+          }
+        >
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Task Type">
               <Tag color="cyan">
@@ -1115,6 +1186,26 @@ const TaskDetailPage = () => {
                     </Button>
                   </>
                 )}
+                {currentSubmission.status?.toLowerCase() === 'approved' && (
+                  <Popconfirm
+                    title="Xác nhận gửi submission cho khách hàng?"
+                    description="Tất cả files trong submission này sẽ được gửi cho khách hàng"
+                    onConfirm={() =>
+                      handleDeliverSubmission(currentSubmission.submissionId)
+                    }
+                    okText="Gửi"
+                    cancelText="Hủy"
+                  >
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<SendOutlined />}
+                      loading={actionLoading}
+                    >
+                      Deliver Submission
+                    </Button>
+                  </Popconfirm>
+                )}
               </Space>
             }
           >
@@ -1151,46 +1242,12 @@ const TaskDetailPage = () => {
                           >
                             Download
                           </Button>,
-                          canDeliver(file) && (
-                            <Popconfirm
-                              key="deliver"
-                              title="Xác nhận gửi file cho khách hàng?"
-                              description="File này sẽ được gửi cho khách hàng"
-                              onConfirm={() => handleDeliverFile(file.fileId)}
-                              okText="Gửi"
-                              cancelText="Hủy"
-                            >
-                              <Button
-                                size="small"
-                                type="primary"
-                                icon={<SendOutlined />}
-                                loading={actionLoading}
-                              >
-                                Deliver
-                              </Button>
-                            </Popconfirm>
-                          ),
                         ].filter(Boolean)}
                       >
                         <List.Item.Meta
                           avatar={<FileOutlined style={{ fontSize: 24 }} />}
                           title={
-                            <Space>
-                              <Text strong>{file.fileName}</Text>
-                              {/* Chỉ hiển thị file status tag nếu submission là draft */}
-                              {showFileStatus && (
-                                <Tag
-                                  color={
-                                    FILE_STATUS_COLORS[fileStatus] || 'default'
-                                  }
-                                >
-                                  {FILE_STATUS_LABELS[fileStatus] || fileStatus}
-                                </Tag>
-                              )}
-                              {file.deliveredToCustomer && (
-                                <Tag color="green">Delivered</Tag>
-                              )}
-                            </Space>
+                            <Text strong>{file.fileName}</Text>
                           }
                           description={
                             <Space direction="vertical" size={0}>
@@ -1363,27 +1420,6 @@ const TaskDetailPage = () => {
                                     >
                                       Download
                                     </Button>,
-                                    canDeliver(file) && (
-                                      <Popconfirm
-                                        key="deliver"
-                                        title="Xác nhận gửi file cho khách hàng?"
-                                        description="File này sẽ được gửi cho khách hàng"
-                                        onConfirm={() =>
-                                          handleDeliverFile(file.fileId)
-                                        }
-                                        okText="Gửi"
-                                        cancelText="Hủy"
-                                      >
-                                        <Button
-                                          size="small"
-                                          type="primary"
-                                          icon={<SendOutlined />}
-                                          loading={actionLoading}
-                                        >
-                                          Deliver
-                                        </Button>
-                                      </Popconfirm>
-                                    ),
                                   ].filter(Boolean)}
                                 >
                                   <List.Item.Meta
@@ -1391,24 +1427,7 @@ const TaskDetailPage = () => {
                                       <FileOutlined style={{ fontSize: 24 }} />
                                     }
                                     title={
-                                      <Space>
-                                        <Text strong>{file.fileName}</Text>
-                                        {/* Chỉ hiển thị file status tag nếu submission là draft */}
-                                        {showFileStatus && (
-                                          <Tag
-                                            color={
-                                              FILE_STATUS_COLORS[fileStatus] ||
-                                              'default'
-                                            }
-                                          >
-                                            {FILE_STATUS_LABELS[fileStatus] ||
-                                              fileStatus}
-                                          </Tag>
-                                        )}
-                                        {file.deliveredToCustomer && (
-                                          <Tag color="green">Delivered</Tag>
-                                        )}
-                                      </Space>
+                                      <Text strong>{file.fileName}</Text>
                                     }
                                     description={
                                       <Space direction="vertical" size={0}>

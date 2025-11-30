@@ -103,5 +103,26 @@ public class FileSubmissionController {
                 .statusCode(HttpStatus.OK.value())
                 .build();
     }
+
+    @PostMapping("/{submissionId}/deliver")
+    @Operation(summary = "Manager deliver submission to customer (deliver tất cả files trong submission)")
+    public ApiResponse<FileSubmissionResponse> deliverSubmission(
+            @Parameter(description = "ID của submission")
+            @PathVariable String submissionId,
+            Authentication authentication) {
+        log.info("Manager delivering submission: {}", submissionId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        FileSubmissionResponse response = fileSubmissionService.deliverSubmission(
+                submissionId,
+                userContext.getUserId(),
+                userContext.getRoles());
+
+        return ApiResponse.<FileSubmissionResponse>builder()
+                .message("Submission delivered successfully")
+                .data(response)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
 }
 
