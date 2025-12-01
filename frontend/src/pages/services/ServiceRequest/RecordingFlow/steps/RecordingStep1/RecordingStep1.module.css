@@ -1,0 +1,125 @@
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.description {
+  color: #666;
+  margin: 0;
+}
+
+.form {
+  margin-bottom: 32px;
+}
+
+.uploadSection {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.sectionDescription {
+  color: #666;
+  margin: 0 0 16px 0;
+}
+
+.dragger {
+  background: #fafafa;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+}
+
+.fileList {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.fileItem {
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fileSize {
+  color: #999;
+  font-size: 12px;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: #ff4d4f;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clearButton:hover {
+  color: #ff7875;
+}
+
+.actionRow {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.nextButton {
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.nextButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
+}
+
+.nextButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+}
+

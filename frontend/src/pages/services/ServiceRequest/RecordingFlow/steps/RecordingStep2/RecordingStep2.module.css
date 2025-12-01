@@ -1,0 +1,123 @@
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 8px 0 !important;
+  color: #333;
+}
+
+.description {
+  color: #666;
+  font-size: 16px;
+}
+
+.choiceSection {
+  margin-bottom: 32px;
+}
+
+.radioGroup {
+  width: 100%;
+}
+
+.radioContainer {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.radioButton {
+  flex: 1;
+  height: auto;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.radioContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon {
+  font-size: 32px;
+  color: #ec8a1c;
+}
+
+.radioTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.radioDescription {
+  font-size: 14px;
+  color: #666;
+}
+
+.selectionSection {
+  margin: 32px 0;
+  padding: 24px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.selectedInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selectButton {
+  width: 100%;
+  max-width: 300px;
+}
+
+.actionRow {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.continueButton {
+  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
+  border: none;
+  height: 48px;
+  padding: 0 32px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.continueButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d67a16 0%, #c66a06 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 20px;
+  }
+
+  .radioContainer {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .radioButton {
+    padding: 16px;
+    width: 100%;
+  }
+}
+

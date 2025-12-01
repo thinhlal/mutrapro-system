@@ -65,25 +65,41 @@ export default function RecordingUploader({ serviceType, formData }) {
       return;
     }
 
-    // Validate duration
-    if (adjustedDurationMinutes <= 0) {
-      message.warning('Please adjust the duration.');
+    // Validate booking date and time for recording
+    if (!formData.bookingDate || !formData.bookingStartTime || !formData.bookingEndTime) {
+      message.warning('Please select booking date and time.');
       return;
     }
 
     // Note: Recording service doesn't require instruments, files are optional
+    // Duration is calculated from booking time range
 
     // Navigate to quote page with state
     navigate('/services/quotes/recording', {
       state: {
         formData: {
           ...formData,
-          durationMinutes: adjustedDurationMinutes,
+          // Calculate duration from booking time range
+          durationMinutes: formData.bookingStartTime && formData.bookingEndTime
+            ? calculateDurationMinutes(formData.bookingStartTime, formData.bookingEndTime)
+            : adjustedDurationMinutes,
         },
         uploadedFiles: files,
         serviceType: serviceType || 'recording',
       },
     });
+  };
+
+  const calculateDurationMinutes = (startTime, endTime) => {
+    try {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      const startTotal = startHours * 60 + startMinutes;
+      const endTotal = endHours * 60 + endMinutes;
+      return endTotal - startTotal;
+    } catch {
+      return adjustedDurationMinutes;
+    }
   };
 
   return (
@@ -103,7 +119,7 @@ export default function RecordingUploader({ serviceType, formData }) {
             </h2>
             <p className={styles.desc}>
               You may upload lyrics / guide audio / notation to help the session
-              run smoothly.
+              run smoothly. Please ensure you have filled in the booking date and time in the form above.
             </p>
           </div>
         </div>
@@ -156,71 +172,53 @@ export default function RecordingUploader({ serviceType, formData }) {
           </div>
         )}
 
-        {/* Duration Adjustment - Always show for recording */}
-        <div className={styles.selectedBox} style={{ marginTop: 16 }}>
-          <div style={{ padding: '16px 0' }}>
-            <div style={{ marginBottom: 12 }}>
-              <ClockCircleOutlined style={{ marginRight: 8 }} />
-              <span style={{ fontWeight: 600 }}>
-                Session Duration (Minutes):
-              </span>
-              {detectedDurationMinutes > 0 && (
-                <Tag color="cyan" style={{ marginLeft: 8 }}>
-                  Detected: {formatDurationMMSS(detectedDurationMinutes)}
+        {/* Booking Information Display */}
+        {formData?.bookingDate && formData?.bookingStartTime && formData?.bookingEndTime && (
+          <div className={styles.selectedBox} style={{ marginTop: 16 }}>
+            <div style={{ padding: '16px 0' }}>
+              <div style={{ marginBottom: 12 }}>
+                <ClockCircleOutlined style={{ marginRight: 8 }} />
+                <span style={{ fontWeight: 600 }}>Booking Information:</span>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px', marginRight: 8 }}>
+                  Date: {formData.bookingDate}
                 </Tag>
+                <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
+                  Time: {formData.bookingStartTime} - {formData.bookingEndTime}
+                </Tag>
+              </div>
+              {formData.vocalistId && (
+                <div style={{ marginTop: 8 }}>
+                  <Tag color="purple" style={{ fontSize: 14, padding: '4px 12px' }}>
+                    Vocalist Selected
+                  </Tag>
+                </div>
               )}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Button
-                icon={<MinusOutlined />}
-                onClick={() =>
-                  handleDurationChange(
-                    Math.max(0.01, adjustedDurationMinutes - 0.01)
-                  )
-                }
-                disabled={adjustedDurationMinutes <= 0.01}
-              >
-                -0.01
-              </Button>
-
-              <InputNumber
-                min={0.01}
-                max={999}
-                step={0.01}
-                value={adjustedDurationMinutes}
-                onChange={handleDurationChange}
-                precision={2}
-                style={{ width: 120 }}
-                addonAfter="min"
-              />
-
-              <Button
-                icon={<PlusOutlined />}
-                onClick={() =>
-                  handleDurationChange(adjustedDurationMinutes + 0.01)
-                }
-              >
-                +0.01
-              </Button>
-
-              {detectedDurationMinutes > 0 && (
-                <Button
-                  type="link"
-                  onClick={() =>
-                    setAdjustedDurationMinutes(detectedDurationMinutes)
-                  }
-                >
-                  Reset to {detectedDurationMinutes} min
-                </Button>
+              {formData.instrumentalistIds && formData.instrumentalistIds.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+                    {formData.instrumentalistIds.length} Instrumentalist(s) Selected
+                  </Tag>
+                </div>
               )}
-            </div>
-
-            <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-              Hiện tại: {formatDurationMMSS(adjustedDurationMinutes)}
+              {formData.equipmentIds && formData.equipmentIds.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
+                    {formData.equipmentIds.length} Equipment(s) Selected
+                  </Tag>
+                </div>
+              )}
+              {formData.externalGuestCount > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <Tag color="orange" style={{ fontSize: 14, padding: '4px 12px' }}>
+                    External Guests: {formData.externalGuestCount}
+                  </Tag>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         <div className={styles.actionRow}>
           <Button
@@ -229,7 +227,12 @@ export default function RecordingUploader({ serviceType, formData }) {
             className={styles.ctaBtn}
             onClick={handleSubmit}
             loading={submitting}
-            disabled={!formData || adjustedDurationMinutes <= 0}
+            disabled={
+              !formData ||
+              !formData.bookingDate ||
+              !formData.bookingStartTime ||
+              !formData.bookingEndTime
+            }
           >
             Submit Request <ArrowRightOutlined />
           </Button>
