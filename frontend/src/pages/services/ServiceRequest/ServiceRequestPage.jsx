@@ -120,7 +120,7 @@ export default function ServiceRequestPage() {
         </div>
       </section>
 
-      <div className={styles.contentGrid}>
+      <div className={`${styles.contentGrid} ${selectedType === 'recording' ? styles.recordingLayout : ''}`}>
         <RequestServiceForm
           onFormComplete={handleFormComplete}
           serviceType={selectedType}
@@ -149,10 +149,7 @@ export default function ServiceRequestPage() {
               formData={formData}
             />
           )}
-          {selectedType === 'recording' && (
-            <RecordingUploader serviceType={selectedType} formData={formData} />
-          )}
-
+          {/* Recording service is now handled in RequestServiceForm */}
           {!selectedType && (
             <TranscriptionUploader
               serviceType={selectedType}

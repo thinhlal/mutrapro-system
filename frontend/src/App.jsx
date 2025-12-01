@@ -57,6 +57,11 @@ import TranscriptionQuotePage from './pages/services/quotes/Transcription/Transc
 import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePageSimplified';
 import RecordingQuotePage from './pages/services/quotes/Recording/RecordingQuotePage';
 import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage';
+// Recording Flow
+import RecordingFlowController from './pages/services/ServiceRequest/RecordingFlow/RecordingFlowController';
+import VocalistSelectionPage from './pages/services/ServiceRequest/RecordingFlow/pages/VocalistSelectionPage';
+import InstrumentalistSelectionPage from './pages/services/ServiceRequest/RecordingFlow/pages/InstrumentalistSelectionPage';
+import EquipmentSelectionPage from './pages/services/ServiceRequest/RecordingFlow/pages/EquipmentSelectionPage';
 
 // Work Pages
 import NotationEditor from './pages/work/NotationEditor/NotationEditor';
@@ -120,6 +125,47 @@ function App() {
           <Route path="/detail-service" element={<ServiceRequestPage />} />
           <Route path="/pros/singers/:gender" element={<SingersPage />} />
           <Route path="/pros/singer/:id" element={<SingerDetailPage />} />
+          {/* Recording Flow Routes */}
+          <Route
+            path="/recording-flow"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <RecordingFlowController />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recording-flow/vocalist-selection"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <VocalistSelectionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recording-flow/instrumentalist-selection"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <InstrumentalistSelectionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/recording-flow/equipment-selection"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <EquipmentSelectionPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* --- AUTH ROUTES --- */}
           <Route path="/login" element={<LoginPage />} />
