@@ -133,7 +133,6 @@ const ContractDetailPage = () => {
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
   const [maxOtpAttempts, setMaxOtpAttempts] = useState(3);
 
-
   // Pricing breakdown information
   const [pricingBreakdown, setPricingBreakdown] = useState({
     instruments: [], // Array of { instrumentId, instrumentName, basePrice }
@@ -628,7 +627,6 @@ const ContractDetailPage = () => {
       setCancelLoading(false);
     }
   };
-
 
   // Handle revision request
   const handleRevision = async reason => {
@@ -2173,11 +2171,12 @@ const ContractDetailPage = () => {
                             }}
                           >
                             <Space size="small">
-                              {targetInstallment && targetInstallment.status === 'DUE' && (
-                                <Tag color={getPaymentStatusColor()}>
-                                  Payment: {getPaymentStatusText()}
-                                </Tag>
-                              )}
+                              {targetInstallment &&
+                                targetInstallment.status === 'DUE' && (
+                                  <Tag color={getPaymentStatusColor()}>
+                                    Payment: {getPaymentStatusText()}
+                                  </Tag>
+                                )}
                               <Tag color={getWorkStatusColor()}>
                                 Status: {getWorkStatusText()}
                               </Tag>

@@ -645,7 +645,10 @@ const MilestoneDetailPage = () => {
                   ? formatDateTime(milestone.firstSubmissionAt)
                   : '—'}
                 {milestone.firstSubmissionAt && (
-                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                  >
                     (Lần giao đầu tiên - để check SLA)
                   </Text>
                 )}
@@ -655,7 +658,10 @@ const MilestoneDetailPage = () => {
                   ? formatDateTime(milestone.finalCompletedAt)
                   : '—'}
                 {milestone.finalCompletedAt && (
-                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                  >
                     (Customer đã chấp nhận)
                   </Text>
                 )}
@@ -665,7 +671,10 @@ const MilestoneDetailPage = () => {
                   ? formatDateTime(milestone.actualEndAt)
                   : '—'}
                 {milestone.actualEndAt && (
-                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                  >
                     (Milestone đã được thanh toán)
                   </Text>
                 )}

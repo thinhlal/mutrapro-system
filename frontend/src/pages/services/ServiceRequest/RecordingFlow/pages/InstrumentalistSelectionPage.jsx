@@ -2,7 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Button, Tabs, Typography, Space, Tag, Empty } from 'antd';
-import { ArrowLeftOutlined, CheckOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  CheckOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import styles from './InstrumentalistSelectionPage.module.css';
 
 const { Title, Text } = Typography;
@@ -18,19 +22,17 @@ const INSTRUMENTALISTS_BY_INSTRUMENT = {
     { id: 'g1', name: 'Mike Guitar', rating: 4.7, experience: '8 years' },
     { id: 'g2', name: 'Sarah Strings', rating: 4.9, experience: '12 years' },
   ],
-  drums: [
-    { id: 'd1', name: 'Tom Drums', rating: 4.8, experience: '10 years' },
-  ],
-  bass: [
-    { id: 'b1', name: 'Bob Bass', rating: 4.6, experience: '7 years' },
-  ],
+  drums: [{ id: 'd1', name: 'Tom Drums', rating: 4.8, experience: '10 years' }],
+  bass: [{ id: 'b1', name: 'Bob Bass', rating: 4.6, experience: '7 years' }],
 };
 
 export default function InstrumentalistSelectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { fromFlow, selectedInstrumentalists } = location.state || {};
-  const [selectedIds, setSelectedIds] = useState(selectedInstrumentalists || []);
+  const [selectedIds, setSelectedIds] = useState(
+    selectedInstrumentalists || []
+  );
 
   useEffect(() => {
     if (!fromFlow) {
@@ -38,7 +40,7 @@ export default function InstrumentalistSelectionPage() {
     }
   }, [fromFlow, navigate]);
 
-  const handleToggle = (id) => {
+  const handleToggle = id => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
@@ -59,7 +61,9 @@ export default function InstrumentalistSelectionPage() {
     } catch (error) {
       console.error('Error saving instrumentalist selection:', error);
     }
-    navigate('/recording-flow', { state: { step: 2, returnFromSelection: true } });
+    navigate('/recording-flow', {
+      state: { step: 2, returnFromSelection: true },
+    });
   };
 
   const handleBack = () => {
@@ -92,48 +96,59 @@ export default function InstrumentalistSelectionPage() {
 
       <Card className={styles.contentCard}>
         <Tabs defaultActiveKey="piano" size="large">
-          {Object.entries(INSTRUMENTALISTS_BY_INSTRUMENT).map(([instrument, list]) => (
-            <TabPane tab={instrument.charAt(0).toUpperCase() + instrument.slice(1)} key={instrument}>
-              <div className="row">
-                {list.length > 0 ? (
-                  list.map(instrumentalist => (
-                    <div
-                      key={instrumentalist.id}
-                      className="col-12 col-md-6 col-lg-4 mb-4"
-                      onClick={() => handleToggle(instrumentalist.id)}
-                    >
-                      <Card
-                        hoverable
-                        className={`${styles.instrumentalistCard} ${
-                          selectedIds.includes(instrumentalist.id) ? styles.selected : ''
-                        }`}
+          {Object.entries(INSTRUMENTALISTS_BY_INSTRUMENT).map(
+            ([instrument, list]) => (
+              <TabPane
+                tab={instrument.charAt(0).toUpperCase() + instrument.slice(1)}
+                key={instrument}
+              >
+                <div className="row">
+                  {list.length > 0 ? (
+                    list.map(instrumentalist => (
+                      <div
+                        key={instrumentalist.id}
+                        className="col-12 col-md-6 col-lg-4 mb-4"
+                        onClick={() => handleToggle(instrumentalist.id)}
                       >
-                        <div className={styles.cardContent}>
-                          <UserOutlined className={styles.avatar} />
-                          <div className={styles.info}>
-                            <Title level={5} className={styles.name}>
-                              {instrumentalist.name}
-                            </Title>
-                            <Text type="secondary">{instrumentalist.experience}</Text>
-                            <div className={styles.rating}>
-                              <Tag color="gold">⭐ {instrumentalist.rating}</Tag>
+                        <Card
+                          hoverable
+                          className={`${styles.instrumentalistCard} ${
+                            selectedIds.includes(instrumentalist.id)
+                              ? styles.selected
+                              : ''
+                          }`}
+                        >
+                          <div className={styles.cardContent}>
+                            <UserOutlined className={styles.avatar} />
+                            <div className={styles.info}>
+                              <Title level={5} className={styles.name}>
+                                {instrumentalist.name}
+                              </Title>
+                              <Text type="secondary">
+                                {instrumentalist.experience}
+                              </Text>
+                              <div className={styles.rating}>
+                                <Tag color="gold">
+                                  ⭐ {instrumentalist.rating}
+                                </Tag>
+                              </div>
                             </div>
+                            {selectedIds.includes(instrumentalist.id) && (
+                              <div className={styles.checkOverlay}>
+                                <CheckOutlined className={styles.checkIcon} />
+                              </div>
+                            )}
                           </div>
-                          {selectedIds.includes(instrumentalist.id) && (
-                            <div className={styles.checkOverlay}>
-                              <CheckOutlined className={styles.checkIcon} />
-                            </div>
-                          )}
-                        </div>
-                      </Card>
-                    </div>
-                  ))
-                ) : (
-                  <Empty description="No instrumentalists available" />
-                )}
-              </div>
-            </TabPane>
-          ))}
+                        </Card>
+                      </div>
+                    ))
+                  ) : (
+                    <Empty description="No instrumentalists available" />
+                  )}
+                </div>
+              </TabPane>
+            )
+          )}
         </Tabs>
       </Card>
 
@@ -158,4 +173,3 @@ export default function InstrumentalistSelectionPage() {
     </div>
   );
 }
-

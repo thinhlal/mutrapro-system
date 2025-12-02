@@ -171,13 +171,24 @@ export default function RequestServiceForm({
         id="request-service-form"
         className={styles.wrapper}
         aria-labelledby="request-title"
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+        }}
       >
-        <div className={styles.card} style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
+        <div
+          className={styles.card}
+          style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}
+        >
           <h2 id="request-title" className={styles.title}>
             Recording Service
           </h2>
-          <p className={styles.desc} style={{ marginBottom: '24px', color: '#666' }}>
+          <p
+            className={styles.desc}
+            style={{ marginBottom: '24px', color: '#666' }}
+          >
             Please use the new multi-step flow for recording bookings.
           </p>
           <Button

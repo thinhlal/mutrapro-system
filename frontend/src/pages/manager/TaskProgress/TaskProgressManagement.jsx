@@ -734,7 +734,8 @@ export default function TaskProgressManagement() {
                     Deadline: {actualDeadline.format('HH:mm DD/MM')}
                     {record.milestone?.milestoneSlaDays && (
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        {' '}(+{record.milestone.milestoneSlaDays} ngày SLA)
+                        {' '}
+                        (+{record.milestone.milestoneSlaDays} ngày SLA)
                       </Text>
                     )}
                   </Text>
@@ -1104,34 +1105,49 @@ export default function TaskProgressManagement() {
                 <>
                   <Descriptions.Item label="First Submission">
                     {selectedTask.milestone.firstSubmissionAt
-                      ? dayjs(selectedTask.milestone.firstSubmissionAt).format('HH:mm DD/MM/YYYY')
+                      ? dayjs(selectedTask.milestone.firstSubmissionAt).format(
+                          'HH:mm DD/MM/YYYY'
+                        )
                       : '—'}
                     {selectedTask.milestone.firstSubmissionAt && (
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                      >
                         (Lần giao đầu tiên - để check SLA)
                       </Text>
                     )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Work Completed">
                     {selectedTask.milestone.finalCompletedAt
-                      ? dayjs(selectedTask.milestone.finalCompletedAt).format('HH:mm DD/MM/YYYY')
+                      ? dayjs(selectedTask.milestone.finalCompletedAt).format(
+                          'HH:mm DD/MM/YYYY'
+                        )
                       : '—'}
                     {selectedTask.milestone.finalCompletedAt && (
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                      >
                         (Customer đã chấp nhận)
-                    </Text>
+                      </Text>
                     )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Payment Completed">
                     {selectedTask.milestone.actualEndAt
-                      ? dayjs(selectedTask.milestone.actualEndAt).format('HH:mm DD/MM/YYYY')
+                      ? dayjs(selectedTask.milestone.actualEndAt).format(
+                          'HH:mm DD/MM/YYYY'
+                        )
                       : '—'}
                     {selectedTask.milestone.actualEndAt && (
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                      >
                         (Milestone đã được thanh toán)
                       </Text>
                     )}
-              </Descriptions.Item>
+                  </Descriptions.Item>
                 </>
               )}
             </Descriptions>

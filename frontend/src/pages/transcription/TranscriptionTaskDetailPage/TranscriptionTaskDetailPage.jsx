@@ -88,7 +88,10 @@ function getStatusTag(status) {
     revision_requested: { color: 'warning', text: 'Revision Requested' },
     in_revision: { color: 'processing', text: 'In Revision' },
     delivery_pending: { color: 'cyan', text: 'Delivery Pending' },
-    waiting_customer_review: { color: 'purple', text: 'Waiting Customer Review' },
+    waiting_customer_review: {
+      color: 'purple',
+      text: 'Waiting Customer Review',
+    },
     completed: { color: 'green', text: 'Completed' },
     cancelled: { color: 'default', text: 'Cancelled' },
   };
@@ -439,7 +442,13 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId, loadContractTasks, loadTaskFiles, loadSubmissions, loadRevisionRequests]);
+  }, [
+    taskId,
+    loadContractTasks,
+    loadTaskFiles,
+    loadSubmissions,
+    loadRevisionRequests,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -453,7 +462,11 @@ const TranscriptionTaskDetailPage = () => {
     if (!task) return;
 
     const status = task.status?.toLowerCase();
-    if (status !== 'in_progress' && status !== 'revision_requested' && status !== 'in_revision') {
+    if (
+      status !== 'in_progress' &&
+      status !== 'revision_requested' &&
+      status !== 'in_revision'
+    ) {
       return;
     }
 
@@ -727,23 +740,30 @@ const TranscriptionTaskDetailPage = () => {
   }, [submissions]);
 
   // Helper function để match revision requests với submissions
-  const getRevisionRequestsForSubmission = useCallback((submissionId) => {
-    if (!submissionId || !revisionRequests.length) return [];
-    return revisionRequests.filter(
-      revision => 
-        revision.originalSubmissionId === submissionId || 
-        revision.revisedSubmissionId === submissionId
-    );
-  }, [revisionRequests]);
+  const getRevisionRequestsForSubmission = useCallback(
+    submissionId => {
+      if (!submissionId || !revisionRequests.length) return [];
+      return revisionRequests.filter(
+        revision =>
+          revision.originalSubmissionId === submissionId ||
+          revision.revisedSubmissionId === submissionId
+      );
+    },
+    [revisionRequests]
+  );
 
   // Helper function để lấy revision request tạo ra submission này (revised submission)
-  const getRevisionRequestForRevisedSubmission = useCallback((submissionId) => {
-    if (!submissionId || !revisionRequests.length) return null;
-    return revisionRequests.find(
-      revision => revision.revisedSubmissionId === submissionId
-    ) || null;
-  }, [revisionRequests]);
-
+  const getRevisionRequestForRevisedSubmission = useCallback(
+    submissionId => {
+      if (!submissionId || !revisionRequests.length) return null;
+      return (
+        revisionRequests.find(
+          revision => revision.revisedSubmissionId === submissionId
+        ) || null
+      );
+    },
+    [revisionRequests]
+  );
 
   // Columns cho Draft Files
   const draftFileColumns = useMemo(
@@ -812,16 +832,16 @@ const TranscriptionTaskDetailPage = () => {
               task.status?.toLowerCase() === 'in_revision') &&
               task.status?.toLowerCase() !== 'ready_for_review' &&
               task.status?.toLowerCase() !== 'completed' && (
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteFile(record.fileId)}
-                size="small"
-              >
-                Delete
-              </Button>
-            )}
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteFile(record.fileId)}
+                  size="small"
+                >
+                  Delete
+                </Button>
+              )}
           </Space>
         ),
       },
@@ -1191,7 +1211,7 @@ const TranscriptionTaskDetailPage = () => {
                     {task.milestone.firstSubmissionAt
                       ? formatDateTime(task.milestone.firstSubmissionAt)
                       : '—'}
-              </Descriptions.Item>
+                  </Descriptions.Item>
                   <Descriptions.Item label="Work Completed">
                     {task.milestone.finalCompletedAt
                       ? formatDateTime(task.milestone.finalCompletedAt)
@@ -1202,7 +1222,10 @@ const TranscriptionTaskDetailPage = () => {
                       ? formatDateTime(task.milestone.actualEndAt)
                       : '—'}
                     {task.milestone.actualEndAt && (
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
+                      >
                         (Milestone đã được thanh toán)
                       </Text>
                     )}
@@ -1420,7 +1443,9 @@ const TranscriptionTaskDetailPage = () => {
                 const awaitingAlert = status === 'accepted_waiting';
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
                 const hasSubmitButton =
-                  (status === 'in_progress' || status === 'revision_requested' || status === 'in_revision') &&
+                  (status === 'in_progress' ||
+                    status === 'revision_requested' ||
+                    status === 'in_revision') &&
                   status !== 'ready_for_review' &&
                   status !== 'completed';
                 // Không cho report issue khi ready_for_review hoặc completed (chỉ cho khi đang in_progress)
@@ -1538,7 +1563,7 @@ const TranscriptionTaskDetailPage = () => {
                             <Button
                               onClick={handleSubmitForReview}
                               disabled={!hasFilesToSubmit}
-                                loading={submittingForReview}
+                              loading={submittingForReview}
                             >
                               Submit for Review
                             </Button>
@@ -1573,112 +1598,118 @@ const TranscriptionTaskDetailPage = () => {
       </Card>
 
       {/* Khối 1: Draft Files */}
-      {
-        (task.status?.toLowerCase() === 'in_progress' || 
-         task.status?.toLowerCase() === 'revision_requested' ||
-         task.status?.toLowerCase() === 'in_revision') && (<Card
-        className={styles.section}
-        title="Draft Files (chưa submit)"
-        extra={
-          task.status?.toLowerCase() !== 'assigned' &&
-          task.status?.toLowerCase() !== 'accepted_waiting' &&
-          task.status?.toLowerCase() !== 'ready_to_start' &&
-          task.status?.toLowerCase() !== 'delivery_pending' &&
-            task.status?.toLowerCase() !== 'waiting_customer_review' &&
-          task.status?.toLowerCase() !== 'cancelled' &&
-          task.status?.toLowerCase() !== 'ready_for_review' &&
-          task.status?.toLowerCase() !== 'completed' && (
-            <Button
-              type="primary"
-              icon={<UploadOutlined />}
-              onClick={handleOpenUploadModal}
-            >
-              Upload new version
-            </Button>
-          )
-        }
-      >
-        {draftFiles.length > 0 ? (
-          <Table
-            rowKey="fileId"
-            dataSource={draftFiles.sort((a, b) => {
-              const dateA = new Date(a.uploadDate || 0);
-              const dateB = new Date(b.uploadDate || 0);
-              return dateB - dateA; // Sort by newest first
-            })}
-            columns={draftFileColumns}
-            pagination={false}
-          />
-        ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Chưa có draft files. Upload file để bắt đầu."
-          />
-        )}
-      </Card>
-        )
-      }
-
-      {/* Khối 2: Current Submission */}
-      {currentSubmission && (() => {
-        const revisedRevision = getRevisionRequestForRevisedSubmission(currentSubmission.submissionId);
-        return (
+      {(task.status?.toLowerCase() === 'in_progress' ||
+        task.status?.toLowerCase() === 'revision_requested' ||
+        task.status?.toLowerCase() === 'in_revision') && (
         <Card
           className={styles.section}
-          title={
-            <Space>
-              <Text strong>
-                {currentSubmission.status?.toLowerCase() === 'rejected'
-                  ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
-                  : revisedRevision
-                  ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
-                  : `Current review – Submission #${currentSubmission.version}`}
-              </Text>
-              {revisedRevision && (
-                <Tag color="purple">Revision Round #{revisedRevision.revisionRound}</Tag>
-              )}
-              <Tag
-                color={
-                  SUBMISSION_STATUS_COLORS[
-                    currentSubmission.status?.toLowerCase()
-                  ] || 'default'
-                }
-              >
-                {SUBMISSION_STATUS_LABELS[
-                  currentSubmission.status?.toLowerCase()
-                ] || currentSubmission.status}
-              </Tag>
-            </Space>
-          }
+          title="Draft Files (chưa submit)"
           extra={
-            currentSubmission.status?.toLowerCase() === 'rejected' &&
-            currentSubmission.rejectionReason && (
+            task.status?.toLowerCase() !== 'assigned' &&
+            task.status?.toLowerCase() !== 'accepted_waiting' &&
+            task.status?.toLowerCase() !== 'ready_to_start' &&
+            task.status?.toLowerCase() !== 'delivery_pending' &&
+            task.status?.toLowerCase() !== 'waiting_customer_review' &&
+            task.status?.toLowerCase() !== 'cancelled' &&
+            task.status?.toLowerCase() !== 'ready_for_review' &&
+            task.status?.toLowerCase() !== 'completed' && (
               <Button
-                size="small"
-                icon={<ExclamationCircleOutlined />}
-                onClick={() => {
-                  setRejectionReasonToView(currentSubmission.rejectionReason);
-                  setRejectionModalVisible(true);
-                }}
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={handleOpenUploadModal}
               >
-                View reason
+                Upload new version
               </Button>
             )
           }
         >
-          {currentSubmission.files && currentSubmission.files.length > 0 ? (
+          {draftFiles.length > 0 ? (
             <Table
               rowKey="fileId"
-              dataSource={currentSubmission.files}
-              columns={currentSubmissionFileColumns}
+              dataSource={draftFiles.sort((a, b) => {
+                const dateA = new Date(a.uploadDate || 0);
+                const dateB = new Date(b.uploadDate || 0);
+                return dateB - dateA; // Sort by newest first
+              })}
+              columns={draftFileColumns}
               pagination={false}
             />
           ) : (
-            <Empty description="Không có files trong submission này" />
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="Chưa có draft files. Upload file để bắt đầu."
+            />
           )}
         </Card>
-        );
-      })()}
+      )}
+
+      {/* Khối 2: Current Submission */}
+      {currentSubmission &&
+        (() => {
+          const revisedRevision = getRevisionRequestForRevisedSubmission(
+            currentSubmission.submissionId
+          );
+          return (
+            <Card
+              className={styles.section}
+              title={
+                <Space>
+                  <Text strong>
+                    {currentSubmission.status?.toLowerCase() === 'rejected'
+                      ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
+                      : revisedRevision
+                        ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
+                        : `Current review – Submission #${currentSubmission.version}`}
+                  </Text>
+                  {revisedRevision && (
+                    <Tag color="purple">
+                      Revision Round #{revisedRevision.revisionRound}
+                    </Tag>
+                  )}
+                  <Tag
+                    color={
+                      SUBMISSION_STATUS_COLORS[
+                        currentSubmission.status?.toLowerCase()
+                      ] || 'default'
+                    }
+                  >
+                    {SUBMISSION_STATUS_LABELS[
+                      currentSubmission.status?.toLowerCase()
+                    ] || currentSubmission.status}
+                  </Tag>
+                </Space>
+              }
+              extra={
+                currentSubmission.status?.toLowerCase() === 'rejected' &&
+                currentSubmission.rejectionReason && (
+                  <Button
+                    size="small"
+                    icon={<ExclamationCircleOutlined />}
+                    onClick={() => {
+                      setRejectionReasonToView(
+                        currentSubmission.rejectionReason
+                      );
+                      setRejectionModalVisible(true);
+                    }}
+                  >
+                    View reason
+                  </Button>
+                )
+              }
+            >
+              {currentSubmission.files && currentSubmission.files.length > 0 ? (
+                <Table
+                  rowKey="fileId"
+                  dataSource={currentSubmission.files}
+                  columns={currentSubmissionFileColumns}
+                  pagination={false}
+                />
+              ) : (
+                <Empty description="Không có files trong submission này" />
+              )}
+            </Card>
+          );
+        })()}
 
       {/* Revision Requests */}
       {revisionRequests.length > 0 && (
@@ -1744,10 +1775,22 @@ const TranscriptionTaskDetailPage = () => {
                           {revision.title}
                         </Text>
                         {revision.revisionDueAt && (
-                          <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
-                            Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                          <Tag
+                            color={
+                              dayjs(revision.revisionDueAt).isBefore(dayjs())
+                                ? 'red'
+                                : 'blue'
+                            }
+                          >
+                            Deadline:{' '}
+                            {dayjs(revision.revisionDueAt).format(
+                              'DD/MM/YYYY HH:mm'
+                            )}
                             {revision.revisionDeadlineDays && (
-                              <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: 11, marginLeft: 4 }}
+                              >
                                 (+{revision.revisionDeadlineDays} ngày SLA)
                               </Text>
                             )}
@@ -1771,11 +1814,20 @@ const TranscriptionTaskDetailPage = () => {
                       {revision.originalSubmissionId && (
                         <Descriptions.Item label="Original Submission">
                           <Text>
-                            Version {
-                              submissions.find(s => s.submissionId === revision.originalSubmissionId)?.version || 'N/A'
-                            }
+                            Version{' '}
+                            {submissions.find(
+                              s =>
+                                s.submissionId === revision.originalSubmissionId
+                            )?.version || 'N/A'}
                           </Text>
-                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: 11,
+                              display: 'block',
+                              marginTop: 4,
+                            }}
+                          >
                             (Submission bị request revision)
                           </Text>
                         </Descriptions.Item>
@@ -1783,11 +1835,20 @@ const TranscriptionTaskDetailPage = () => {
                       {revision.revisedSubmissionId && (
                         <Descriptions.Item label="Revised Submission">
                           <Text>
-                            Version {
-                              submissions.find(s => s.submissionId === revision.revisedSubmissionId)?.version || 'N/A'
-                            }
+                            Version{' '}
+                            {submissions.find(
+                              s =>
+                                s.submissionId === revision.revisedSubmissionId
+                            )?.version || 'N/A'}
                           </Text>
-                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: 11,
+                              display: 'block',
+                              marginTop: 4,
+                            }}
+                          >
                             (Submission sau khi chỉnh sửa)
                           </Text>
                         </Descriptions.Item>
@@ -1818,17 +1879,27 @@ const TranscriptionTaskDetailPage = () => {
                             <Text strong>
                               {formatDateTime(revision.revisionDueAt)}
                               {revision.revisionDeadlineDays && (
-                                <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: 11, marginLeft: 4 }}
+                                >
                                   (+{revision.revisionDeadlineDays} ngày SLA)
                                 </Text>
                               )}
                             </Text>
-                            {dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
-                              <Tag color="red">Quá hạn</Tag>
-                            )}
-                            {!dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                            {dayjs(revision.revisionDueAt).isBefore(
+                              dayjs()
+                            ) && <Tag color="red">Quá hạn</Tag>}
+                            {!dayjs(revision.revisionDueAt).isBefore(
+                              dayjs()
+                            ) && (
                               <Tag color="blue">
-                                Còn {dayjs(revision.revisionDueAt).diff(dayjs(), 'day')} ngày
+                                Còn{' '}
+                                {dayjs(revision.revisionDueAt).diff(
+                                  dayjs(),
+                                  'day'
+                                )}{' '}
+                                ngày
                               </Tag>
                             )}
                           </Space>
@@ -1865,7 +1936,9 @@ const TranscriptionTaskDetailPage = () => {
             {previousSubmissions.map(submission => {
               const submissionStatus = submission.status?.toLowerCase();
               const files = submission.files || [];
-              const revisedRevision = getRevisionRequestForRevisedSubmission(submission.submissionId);
+              const revisedRevision = getRevisionRequestForRevisedSubmission(
+                submission.submissionId
+              );
 
               return (
                 <Collapse.Panel
@@ -1874,10 +1947,13 @@ const TranscriptionTaskDetailPage = () => {
                     <Space>
                       <Text strong>
                         Submission #{submission.version}
-                        {revisedRevision && ` (Revision Round #${revisedRevision.revisionRound})`}
+                        {revisedRevision &&
+                          ` (Revision Round #${revisedRevision.revisionRound})`}
                       </Text>
                       {revisedRevision && (
-                        <Tag color="purple">Revision Round #{revisedRevision.revisionRound}</Tag>
+                        <Tag color="purple">
+                          Revision Round #{revisedRevision.revisionRound}
+                        </Tag>
                       )}
                       <Tag
                         color={

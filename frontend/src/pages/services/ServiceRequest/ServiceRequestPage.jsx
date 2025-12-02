@@ -120,7 +120,9 @@ export default function ServiceRequestPage() {
         </div>
       </section>
 
-      <div className={`${styles.contentGrid} ${selectedType === 'recording' ? styles.recordingLayout : ''}`}>
+      <div
+        className={`${styles.contentGrid} ${selectedType === 'recording' ? styles.recordingLayout : ''}`}
+      >
         <RequestServiceForm
           onFormComplete={handleFormComplete}
           serviceType={selectedType}

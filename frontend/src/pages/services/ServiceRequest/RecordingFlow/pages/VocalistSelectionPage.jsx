@@ -26,7 +26,7 @@ export default function VocalistSelectionPage() {
     }
   }, [fromFlow, navigate]);
 
-  const handleSelect = (singerId) => {
+  const handleSelect = singerId => {
     setSelectedId(singerId);
   };
 
@@ -34,7 +34,9 @@ export default function VocalistSelectionPage() {
     if (selectedId) {
       // Get callback data from sessionStorage
       try {
-        const callbackDataStr = sessionStorage.getItem('recordingFlowVocalistCallback');
+        const callbackDataStr = sessionStorage.getItem(
+          'recordingFlowVocalistCallback'
+        );
         if (callbackDataStr) {
           const callbackData = JSON.parse(callbackDataStr);
           // Save selected vocalist to flow data
@@ -134,4 +136,3 @@ export default function VocalistSelectionPage() {
     </div>
   );
 }
-

@@ -450,7 +450,10 @@ function App() {
               element={<TaskDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
-            <Route path="revision-requests" element={<RevisionRequestsManagement />} />
+            <Route
+              path="revision-requests"
+              element={<RevisionRequestsManagement />}
+            />
             <Route path="chat" element={<ManagerChatPage />} />
             <Route path="chat/:roomId" element={<ManagerChatPage />} />
           </Route>

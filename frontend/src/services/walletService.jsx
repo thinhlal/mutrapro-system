@@ -134,7 +134,9 @@ export const payRevisionFee = async (walletId, revisionFeeData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi thanh toán Revision Fee' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi thanh toán Revision Fee' }
+    );
   }
 };
 

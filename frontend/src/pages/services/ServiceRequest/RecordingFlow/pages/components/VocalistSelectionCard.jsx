@@ -6,16 +6,16 @@ import styles from './VocalistSelectionCard.module.css';
 
 const { Title, Text, Paragraph } = Typography;
 
-export default function VocalistSelectionCard({ 
-  singer, 
-  isSelected, 
+export default function VocalistSelectionCard({
+  singer,
+  isSelected,
   onSelect,
   onViewDetail,
-  selectedId 
+  selectedId,
 }) {
   const navigate = useNavigate();
 
-  const handleCardClick = (e) => {
+  const handleCardClick = e => {
     // Prevent navigation if clicking on buttons
     if (e.target.closest('button') || e.target.closest('a')) {
       return;
@@ -26,7 +26,7 @@ export default function VocalistSelectionCard({
     }
   };
 
-  const handleViewDetail = (e) => {
+  const handleViewDetail = e => {
     e.stopPropagation();
     e.preventDefault();
     if (onViewDetail) {
@@ -34,17 +34,21 @@ export default function VocalistSelectionCard({
     } else {
       // Default: navigate to detail page with flow context
       navigate(`/pros/singer/${singer.id}`, {
-        state: { 
-          singerData: singer, 
+        state: {
+          singerData: singer,
           fromFlow: true,
           returnTo: '/recording-flow/vocalist-selection',
-          returnState: { fromFlow: true, step: 1, selectedVocalist: selectedId || null }
+          returnState: {
+            fromFlow: true,
+            step: 1,
+            selectedVocalist: selectedId || null,
+          },
         },
       });
     }
   };
 
-  const handleSelect = (e) => {
+  const handleSelect = e => {
     e.stopPropagation();
     if (onSelect) {
       onSelect(singer.id);
@@ -132,4 +136,3 @@ export default function VocalistSelectionCard({
     </div>
   );
 }
-

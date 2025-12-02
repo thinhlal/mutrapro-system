@@ -45,7 +45,9 @@ export default function RecordingFlowController() {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       const storedData = stored ? JSON.parse(stored) : {};
       const stepFromUrl = location.state?.step;
-      return stepFromUrl !== undefined ? stepFromUrl : (storedData.currentStep || 0);
+      return stepFromUrl !== undefined
+        ? stepFromUrl
+        : storedData.currentStep || 0;
     } catch {
       return location.state?.step || 0;
     }
@@ -62,13 +64,13 @@ export default function RecordingFlowController() {
   // Restore step from URL - only when location.state changes (from navigation)
   useEffect(() => {
     const stepFromUrl = location.state?.step;
-    
+
     // Only update step if it's explicitly provided in URL state and different from current
     // This handles navigation from selection pages
     if (stepFromUrl !== undefined && stepFromUrl !== currentStep) {
       setCurrentStep(stepFromUrl);
     }
-    
+
     // Check if returning from selection page and update flow data
     if (location.state?.returnFromSelection) {
       try {
@@ -77,7 +79,10 @@ export default function RecordingFlowController() {
           const updated = JSON.parse(stored);
           setFlowData(updated);
           // Update step if it's in the stored data and different
-          if (updated.currentStep !== undefined && updated.currentStep !== currentStep) {
+          if (
+            updated.currentStep !== undefined &&
+            updated.currentStep !== currentStep
+          ) {
             setCurrentStep(updated.currentStep);
           }
         }
@@ -123,11 +128,11 @@ export default function RecordingFlowController() {
     }
   };
 
-  const handleStepComplete = (stepData) => {
+  const handleStepComplete = stepData => {
     // Update flow data first
     const updated = { ...flowData, ...stepData };
     setFlowData(updated);
-    
+
     // Then move to next step
     if (currentStep < STEPS.length - 1) {
       const nextStep = currentStep + 1;
@@ -143,7 +148,10 @@ export default function RecordingFlowController() {
       );
     } else {
       // If at last step, just update data
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...updated, currentStep }));
+      sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ ...updated, currentStep })
+      );
     }
   };
 
@@ -157,14 +165,14 @@ export default function RecordingFlowController() {
         return (
           <RecordingStep1
             data={flowData.step1}
-            onComplete={(data) => handleStepComplete({ step1: data })}
+            onComplete={data => handleStepComplete({ step1: data })}
           />
         );
       case 1:
         return (
           <RecordingStep2
             data={flowData.step2}
-            onComplete={(data) => handleStepComplete({ step2: data })}
+            onComplete={data => handleStepComplete({ step2: data })}
             onSkip={handleSkip}
           />
         );
@@ -172,7 +180,7 @@ export default function RecordingFlowController() {
         return (
           <RecordingStep3
             data={flowData.step3}
-            onComplete={(data) => handleStepComplete({ step3: data })}
+            onComplete={data => handleStepComplete({ step3: data })}
             onSkip={handleSkip}
           />
         );
@@ -180,7 +188,7 @@ export default function RecordingFlowController() {
         return (
           <RecordingStep4
             data={flowData.step4}
-            onComplete={(data) => handleStepComplete({ step4: data })}
+            onComplete={data => handleStepComplete({ step4: data })}
             onSkip={handleSkip}
           />
         );
@@ -188,7 +196,7 @@ export default function RecordingFlowController() {
         return (
           <RecordingStep5
             data={flowData.step5}
-            onComplete={(data) => {
+            onComplete={data => {
               // Final step - submit all data
               const finalData = {
                 ...flowData,
@@ -209,38 +217,35 @@ export default function RecordingFlowController() {
 
   return (
     <>
-    <Header />
-    <div className={styles.container}>
-      <div className={styles.stepsContainer}>
-        <Card>
-          <Steps
-            current={currentStep}
-            items={STEPS}
-            size="small"
-            responsive
-          />
-        </Card>
-      </div>
+      <Header />
+      <div className={styles.container}>
+        <div className={styles.stepsContainer}>
+          <Card>
+            <Steps
+              current={currentStep}
+              items={STEPS}
+              size="small"
+              responsive
+            />
+          </Card>
+        </div>
 
-      <div className={styles.contentContainer}>
-        {renderStepContent()}
-      </div>
+        <div className={styles.contentContainer}>{renderStepContent()}</div>
 
-      <div className={styles.navigationContainer}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={handlePrev}
-          disabled={currentStep === 0}
-          size="large"
-        >
-          Previous
-        </Button>
-        <div className={styles.stepIndicator}>
-          Step {currentStep + 1} of {STEPS.length}
+        <div className={styles.navigationContainer}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={handlePrev}
+            disabled={currentStep === 0}
+            size="large"
+          >
+            Previous
+          </Button>
+          <div className={styles.stepIndicator}>
+            Step {currentStep + 1} of {STEPS.length}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
-

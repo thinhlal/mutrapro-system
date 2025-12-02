@@ -12,7 +12,9 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
   const [wantsVocalist, setWantsVocalist] = useState(
     data?.wantsVocalist !== undefined ? data.wantsVocalist : null
   );
-  const [selectedVocalist, setSelectedVocalist] = useState(data?.vocalistId || null);
+  const [selectedVocalist, setSelectedVocalist] = useState(
+    data?.vocalistId || null
+  );
 
   // Check if returning from selection page - only run once on mount
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  const handleChoice = (value) => {
+  const handleChoice = value => {
     setWantsVocalist(value);
     // Don't call onComplete here - wait for Continue button
     // Reset selected vocalist if choosing "No"
@@ -48,8 +50,11 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
       selectedVocalist,
       wantsVocalist: true,
     };
-    sessionStorage.setItem('recordingFlowVocalistCallback', JSON.stringify(callbackData));
-    
+    sessionStorage.setItem(
+      'recordingFlowVocalistCallback',
+      JSON.stringify(callbackData)
+    );
+
     // Navigate to singers page with flow context
     navigate('/recording-flow/vocalist-selection', {
       state: {
@@ -93,14 +98,16 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
       <div className={styles.choiceSection}>
         <Radio.Group
           value={wantsVocalist}
-          onChange={(e) => handleChoice(e.target.value)}
+          onChange={e => handleChoice(e.target.value)}
           className={styles.radioGroup}
         >
           <div className={styles.radioContainer}>
             <Radio.Button value={true} className={styles.radioButton}>
               <div className={styles.radioContent}>
                 <div>
-                  <div className={styles.radioTitle}>Yes, I want to select a vocalist</div>
+                  <div className={styles.radioTitle}>
+                    Yes, I want to select a vocalist
+                  </div>
                   <div className={styles.radioDescription}>
                     Choose from our professional vocalists
                   </div>
@@ -111,7 +118,9 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
             <Radio.Button value={false} className={styles.radioButton}>
               <div className={styles.radioContent}>
                 <div>
-                  <div className={styles.radioTitle}>No, I'll sing myself or bring my own vocalist</div>
+                  <div className={styles.radioTitle}>
+                    No, I'll sing myself or bring my own vocalist
+                  </div>
                   <div className={styles.radioDescription}>
                     Skip vocalist selection
                   </div>
@@ -164,4 +173,3 @@ export default function RecordingStep2({ data, onComplete, onSkip }) {
     </Card>
   );
 }
-

@@ -2,17 +2,45 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Button, Typography, Space, Tag, Empty } from 'antd';
-import { ArrowLeftOutlined, CheckOutlined, ToolOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  CheckOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import styles from './EquipmentSelectionPage.module.css';
 
 const { Title, Text } = Typography;
 
 // Mock data - sẽ thay bằng API call thực tế
 const EQUIPMENT_LIST = [
-  { id: 'e1', name: 'Yamaha C3 Piano', brand: 'Yamaha', rentalFee: 500000, available: 2 },
-  { id: 'e2', name: 'Fender Stratocaster', brand: 'Fender', rentalFee: 300000, available: 3 },
-  { id: 'e3', name: 'Pearl Drum Kit', brand: 'Pearl', rentalFee: 400000, available: 1 },
-  { id: 'e4', name: 'Audio Interface', brand: 'Focusrite', rentalFee: 200000, available: 5 },
+  {
+    id: 'e1',
+    name: 'Yamaha C3 Piano',
+    brand: 'Yamaha',
+    rentalFee: 500000,
+    available: 2,
+  },
+  {
+    id: 'e2',
+    name: 'Fender Stratocaster',
+    brand: 'Fender',
+    rentalFee: 300000,
+    available: 3,
+  },
+  {
+    id: 'e3',
+    name: 'Pearl Drum Kit',
+    brand: 'Pearl',
+    rentalFee: 400000,
+    available: 1,
+  },
+  {
+    id: 'e4',
+    name: 'Audio Interface',
+    brand: 'Focusrite',
+    rentalFee: 200000,
+    available: 5,
+  },
 ];
 
 export default function EquipmentSelectionPage() {
@@ -27,7 +55,7 @@ export default function EquipmentSelectionPage() {
     }
   }, [fromFlow, navigate]);
 
-  const handleToggle = (id) => {
+  const handleToggle = id => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
@@ -48,16 +76,18 @@ export default function EquipmentSelectionPage() {
     } catch (error) {
       console.error('Error saving equipment selection:', error);
     }
-    navigate('/recording-flow', { state: { step: 3, returnFromSelection: true } });
+    navigate('/recording-flow', {
+      state: { step: 3, returnFromSelection: true },
+    });
   };
 
   const handleBack = () => {
     navigate('/recording-flow', { state: { step: 3 } });
   };
 
-  const totalFee = EQUIPMENT_LIST
-    .filter(eq => selectedIds.includes(eq.id))
-    .reduce((sum, eq) => sum + eq.rentalFee, 0);
+  const totalFee = EQUIPMENT_LIST.filter(eq =>
+    selectedIds.includes(eq.id)
+  ).reduce((sum, eq) => sum + eq.rentalFee, 0);
 
   if (!fromFlow) {
     return null;
@@ -131,7 +161,8 @@ export default function EquipmentSelectionPage() {
         <Card className={styles.actionCard}>
           <Space>
             <Text strong>
-              {selectedIds.length} selected • Total: {totalFee.toLocaleString('vi-VN')} VND
+              {selectedIds.length} selected • Total:{' '}
+              {totalFee.toLocaleString('vi-VN')} VND
             </Text>
             <Button size="large" onClick={handleBack}>
               Cancel
@@ -150,4 +181,3 @@ export default function EquipmentSelectionPage() {
     </div>
   );
 }
-

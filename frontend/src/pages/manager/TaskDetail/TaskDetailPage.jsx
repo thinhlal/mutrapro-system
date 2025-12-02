@@ -156,7 +156,8 @@ const TaskDetailPage = () => {
   const [showAllFiles, setShowAllFiles] = useState({}); // Track which submissions show all files
   const [revisionRequests, setRevisionRequests] = useState([]);
   const [loadingRevisionRequests, setLoadingRevisionRequests] = useState(false);
-  const [reviewRevisionModalVisible, setReviewRevisionModalVisible] = useState(false);
+  const [reviewRevisionModalVisible, setReviewRevisionModalVisible] =
+    useState(false);
   const [selectedRevisionRequest, setSelectedRevisionRequest] = useState(null);
   const [reviewRevisionAction, setReviewRevisionAction] = useState(''); // 'approve' or 'reject'
   const [reviewRevisionNote, setReviewRevisionNote] = useState('');
@@ -359,7 +360,8 @@ const TaskDetailPage = () => {
     } catch (error) {
       console.error('Error delivering submission:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi gửi submission cho khách hàng'
+        error?.response?.data?.message ||
+          'Lỗi khi gửi submission cho khách hàng'
       );
     } finally {
       setActionLoading(false);
@@ -418,7 +420,7 @@ const TaskDetailPage = () => {
 
   const handleReviewRevisionRequest = async () => {
     if (!selectedRevisionRequest) return;
-    
+
     if (reviewRevisionAction === 'reject' && !reviewRevisionNote.trim()) {
       message.warning('Vui lòng nhập lý do từ chối');
       return;
@@ -468,9 +470,7 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi resolve issue'
-      );
+      message.error(error?.response?.data?.message || 'Lỗi khi resolve issue');
     } finally {
       setActionLoading(false);
     }
@@ -495,9 +495,7 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(
-        error?.response?.data?.message || 'Lỗi khi hủy task'
-      );
+      message.error(error?.response?.data?.message || 'Lỗi khi hủy task');
     } finally {
       setActionLoading(false);
     }
@@ -707,7 +705,6 @@ const TaskDetailPage = () => {
     return status === 'uploaded' || status === 'pending_review';
   };
 
-
   // Phân loại submissions: Current Submission và Previous Submissions
   const currentSubmission = useMemo(() => {
     // Current submission: submission mới nhất (version lớn nhất)
@@ -866,7 +863,7 @@ const TaskDetailPage = () => {
         )}
 
         {/* Task Info */}
-        <Card 
+        <Card
           title="Thông tin Task"
           extra={
             task.hasIssue && (
@@ -887,8 +884,8 @@ const TaskDetailPage = () => {
                   cancelText="Hủy"
                   okButtonProps={{ danger: true }}
                 >
-                  <Button 
-                    danger 
+                  <Button
+                    danger
                     icon={<CloseCircleOutlined />}
                     loading={actionLoading}
                   >
@@ -946,17 +943,23 @@ const TaskDetailPage = () => {
               <>
                 <Descriptions.Item label="First Submission">
                   {task.milestone.firstSubmissionAt
-                    ? dayjs(task.milestone.firstSubmissionAt).format('HH:mm DD/MM/YYYY')
+                    ? dayjs(task.milestone.firstSubmissionAt).format(
+                        'HH:mm DD/MM/YYYY'
+                      )
                     : '—'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Work Completed">
                   {task.milestone.finalCompletedAt
-                    ? dayjs(task.milestone.finalCompletedAt).format('HH:mm DD/MM/YYYY')
-                : 'Chưa hoàn thành'}
-            </Descriptions.Item>
+                    ? dayjs(task.milestone.finalCompletedAt).format(
+                        'HH:mm DD/MM/YYYY'
+                      )
+                    : 'Chưa hoàn thành'}
+                </Descriptions.Item>
                 <Descriptions.Item label="Payment Completed">
                   {task.milestone.actualEndAt
-                    ? dayjs(task.milestone.actualEndAt).format('HH:mm DD/MM/YYYY')
+                    ? dayjs(task.milestone.actualEndAt).format(
+                        'HH:mm DD/MM/YYYY'
+                      )
                     : '—'}
                 </Descriptions.Item>
               </>
@@ -1250,10 +1253,22 @@ const TaskDetailPage = () => {
                             {revision.title}
                           </Text>
                           {revision.revisionDueAt && (
-                            <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
-                              Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                            <Tag
+                              color={
+                                dayjs(revision.revisionDueAt).isBefore(dayjs())
+                                  ? 'red'
+                                  : 'blue'
+                              }
+                            >
+                              Deadline:{' '}
+                              {dayjs(revision.revisionDueAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
                               {revision.revisionDeadlineDays && (
-                                <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: 11, marginLeft: 4 }}
+                                >
                                   (+{revision.revisionDeadlineDays} ngày SLA)
                                 </Text>
                               )}
@@ -1319,11 +1334,21 @@ const TaskDetailPage = () => {
                         {revision.originalSubmissionId && (
                           <Descriptions.Item label="Original Submission">
                             <Text>
-                              Version {
-                                submissions.find(s => s.submissionId === revision.originalSubmissionId)?.version || 'N/A'
-                              }
+                              Version{' '}
+                              {submissions.find(
+                                s =>
+                                  s.submissionId ===
+                                  revision.originalSubmissionId
+                              )?.version || 'N/A'}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 4,
+                              }}
+                            >
                               (Submission bị request revision)
                             </Text>
                           </Descriptions.Item>
@@ -1331,11 +1356,21 @@ const TaskDetailPage = () => {
                         {revision.revisedSubmissionId && (
                           <Descriptions.Item label="Revised Submission">
                             <Text>
-                              Version {
-                                submissions.find(s => s.submissionId === revision.revisedSubmissionId)?.version || 'N/A'
-                              }
+                              Version{' '}
+                              {submissions.find(
+                                s =>
+                                  s.submissionId ===
+                                  revision.revisedSubmissionId
+                              )?.version || 'N/A'}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 4,
+                              }}
+                            >
                               (Submission sau khi chỉnh sửa)
                             </Text>
                           </Descriptions.Item>
@@ -1358,19 +1393,31 @@ const TaskDetailPage = () => {
                           <Descriptions.Item label="Revision Deadline">
                             <Space>
                               <Text strong>
-                                {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                                {dayjs(revision.revisionDueAt).format(
+                                  'DD/MM/YYYY HH:mm'
+                                )}
                                 {revision.revisionDeadlineDays && (
-                                  <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 11, marginLeft: 4 }}
+                                  >
                                     (+{revision.revisionDeadlineDays} ngày SLA)
                                   </Text>
                                 )}
                               </Text>
-                              {dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
-                                <Tag color="red">Quá hạn</Tag>
-                              )}
-                              {!dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                              {dayjs(revision.revisionDueAt).isBefore(
+                                dayjs()
+                              ) && <Tag color="red">Quá hạn</Tag>}
+                              {!dayjs(revision.revisionDueAt).isBefore(
+                                dayjs()
+                              ) && (
                                 <Tag color="blue">
-                                  Còn {dayjs(revision.revisionDueAt).diff(dayjs(), 'day')} ngày
+                                  Còn{' '}
+                                  {dayjs(revision.revisionDueAt).diff(
+                                    dayjs(),
+                                    'day'
+                                  )}{' '}
+                                  ngày
                                 </Tag>
                               )}
                             </Space>
@@ -1558,9 +1605,7 @@ const TaskDetailPage = () => {
                       >
                         <List.Item.Meta
                           avatar={<FileOutlined style={{ fontSize: 24 }} />}
-                          title={
-                              <Text strong>{file.fileName}</Text>
-                          }
+                          title={<Text strong>{file.fileName}</Text>}
                           description={
                             <Space direction="vertical" size={0}>
                               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1738,9 +1783,7 @@ const TaskDetailPage = () => {
                                     avatar={
                                       <FileOutlined style={{ fontSize: 24 }} />
                                     }
-                                    title={
-                                        <Text strong>{file.fileName}</Text>
-                                    }
+                                    title={<Text strong>{file.fileName}</Text>}
                                     description={
                                       <Space direction="vertical" size={0}>
                                         <Text

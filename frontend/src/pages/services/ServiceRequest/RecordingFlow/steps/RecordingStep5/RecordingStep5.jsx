@@ -1,6 +1,16 @@
 // RecordingStep5.jsx - Booking Calendar với logic lịch trống/đã có người
 import { useState, useMemo } from 'react';
-import { Card, Calendar, TimePicker, Button, Space, Tag, Typography, Alert, message } from 'antd';
+import {
+  Card,
+  Calendar,
+  TimePicker,
+  Button,
+  Space,
+  Tag,
+  Typography,
+  Alert,
+  message,
+} from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import styles from './RecordingStep5.module.css';
@@ -14,9 +24,7 @@ const MOCK_BOOKINGS = {
     { start: '09:00', end: '12:00', status: 'booked' },
     { start: '14:00', end: '17:00', status: 'tentative' },
   ],
-  '2024-12-21': [
-    { start: '10:00', end: '13:00', status: 'booked' },
-  ],
+  '2024-12-21': [{ start: '10:00', end: '13:00', status: 'booked' }],
   '2024-12-22': [],
 };
 
@@ -26,7 +34,10 @@ export default function RecordingStep5({ data, onComplete }) {
   );
   const [selectedTimeRange, setSelectedTimeRange] = useState(
     data?.bookingStartTime && data?.bookingEndTime
-      ? [dayjs(data.bookingStartTime, 'HH:mm'), dayjs(data.bookingEndTime, 'HH:mm')]
+      ? [
+          dayjs(data.bookingStartTime, 'HH:mm'),
+          dayjs(data.bookingEndTime, 'HH:mm'),
+        ]
       : null
   );
 
@@ -40,14 +51,14 @@ export default function RecordingStep5({ data, onComplete }) {
   // Check if time slot is available
   const isTimeSlotAvailable = (start, end) => {
     if (!dateBookings.length) return true;
-    
+
     const slotStart = dayjs(start, 'HH:mm');
     const slotEnd = dayjs(end, 'HH:mm');
-    
+
     return !dateBookings.some(booking => {
       const bookingStart = dayjs(booking.start, 'HH:mm');
       const bookingEnd = dayjs(booking.end, 'HH:mm');
-      
+
       // Check for overlap
       return (
         (slotStart.isBefore(bookingEnd) && slotEnd.isAfter(bookingStart)) ||
@@ -59,32 +70,32 @@ export default function RecordingStep5({ data, onComplete }) {
   // Get available time slots for selected date
   const availableTimeSlots = useMemo(() => {
     if (!selectedDate) return [];
-    
+
     const slots = [];
     const startHour = 9; // 9 AM
     const endHour = 18; // 6 PM
     const slotDuration = 2; // 2 hours per slot
-    
+
     for (let hour = startHour; hour <= endHour - slotDuration; hour++) {
       const start = `${hour.toString().padStart(2, '0')}:00`;
       const end = `${(hour + slotDuration).toString().padStart(2, '0')}:00`;
-      
+
       if (isTimeSlotAvailable(start, end)) {
         slots.push({ start, end, available: true });
       } else {
         slots.push({ start, end, available: false });
       }
     }
-    
+
     return slots;
   }, [selectedDate, dateBookings]);
 
-  const handleDateSelect = (date) => {
+  const handleDateSelect = date => {
     setSelectedDate(date);
     setSelectedTimeRange(null); // Reset time when date changes
   };
 
-  const handleTimeRangeChange = (range) => {
+  const handleTimeRangeChange = range => {
     if (!range) {
       setSelectedTimeRange(null);
       return;
@@ -102,7 +113,9 @@ export default function RecordingStep5({ data, onComplete }) {
 
     // Check if selected time slot is available
     if (!isTimeSlotAvailable(startStr, endStr)) {
-      message.warning('This time slot is already booked. Please select another time.');
+      message.warning(
+        'This time slot is already booked. Please select another time.'
+      );
       return;
     }
 
@@ -137,7 +150,7 @@ export default function RecordingStep5({ data, onComplete }) {
   };
 
   // Custom date cell renderer
-  const dateCellRender = (date) => {
+  const dateCellRender = date => {
     const dateKey = date.format('YYYY-MM-DD');
     const bookings = MOCK_BOOKINGS[dateKey] || [];
     const isPast = date.isBefore(dayjs(), 'day');
@@ -149,15 +162,19 @@ export default function RecordingStep5({ data, onComplete }) {
 
     if (bookings.length > 0) {
       const bookedCount = bookings.filter(b => b.status === 'booked').length;
-      const tentativeCount = bookings.filter(b => b.status === 'tentative').length;
-      
+      const tentativeCount = bookings.filter(
+        b => b.status === 'tentative'
+      ).length;
+
       return (
         <div className={styles.dateInfo}>
           {bookedCount > 0 && (
             <div className={styles.bookedBadge}>{bookedCount} booked</div>
           )}
           {tentativeCount > 0 && (
-            <div className={styles.tentativeBadge}>{tentativeCount} tentative</div>
+            <div className={styles.tentativeBadge}>
+              {tentativeCount} tentative
+            </div>
           )}
         </div>
       );
@@ -182,7 +199,7 @@ export default function RecordingStep5({ data, onComplete }) {
           value={selectedDate}
           onSelect={handleDateSelect}
           dateCellRender={dateCellRender}
-          disabledDate={(date) => date.isBefore(dayjs(), 'day')}
+          disabledDate={date => date.isBefore(dayjs(), 'day')}
           className={styles.calendar}
         />
       </div>
@@ -240,7 +257,11 @@ export default function RecordingStep5({ data, onComplete }) {
                 {availableTimeSlots.map((slot, idx) => (
                   <Button
                     key={idx}
-                    type={selectedTimeRange?.[0]?.format('HH:mm') === slot.start ? 'primary' : 'default'}
+                    type={
+                      selectedTimeRange?.[0]?.format('HH:mm') === slot.start
+                        ? 'primary'
+                        : 'default'
+                    }
                     disabled={!slot.available}
                     onClick={() => {
                       if (slot.available) {
@@ -253,7 +274,11 @@ export default function RecordingStep5({ data, onComplete }) {
                     className={styles.slotButton}
                   >
                     {slot.start} - {slot.end}
-                    {!slot.available && <Tag color="red" style={{ marginLeft: 4 }}>Booked</Tag>}
+                    {!slot.available && (
+                      <Tag color="red" style={{ marginLeft: 4 }}>
+                        Booked
+                      </Tag>
+                    )}
                   </Button>
                 ))}
               </Space>
@@ -265,10 +290,13 @@ export default function RecordingStep5({ data, onComplete }) {
               <Space>
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />
                 <Text strong>
-                  Selected: {selectedTimeRange[0].format('HH:mm')} - {selectedTimeRange[1].format('HH:mm')}
+                  Selected: {selectedTimeRange[0].format('HH:mm')} -{' '}
+                  {selectedTimeRange[1].format('HH:mm')}
                 </Text>
                 <Tag color="green">
-                  Duration: {selectedTimeRange[1].diff(selectedTimeRange[0], 'hour')} hours
+                  Duration:{' '}
+                  {selectedTimeRange[1].diff(selectedTimeRange[0], 'hour')}{' '}
+                  hours
                 </Tag>
               </Space>
             </div>
@@ -291,4 +319,3 @@ export default function RecordingStep5({ data, onComplete }) {
     </Card>
   );
 }
-

@@ -7,7 +7,7 @@ import { API_ENDPOINTS } from '../config/apiConfig';
  * @param {string} assignmentId - ID của task assignment
  * @returns {Promise} Response từ API
  */
-export const getRevisionRequestsByAssignment = async (assignmentId) => {
+export const getRevisionRequestsByAssignment = async assignmentId => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.REVISION_REQUESTS.BY_ASSIGNMENT(assignmentId)
@@ -73,4 +73,3 @@ export const getMyRevisionRequests = async (status = null) => {
     );
   }
 };
-

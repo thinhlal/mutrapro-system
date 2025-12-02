@@ -83,7 +83,8 @@ const RevisionRequestsManagement = () => {
     } catch (error) {
       console.error('Error loading revision requests:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi tải danh sách revision requests'
+        error?.response?.data?.message ||
+          'Lỗi khi tải danh sách revision requests'
       );
       setRevisionRequests([]);
     } finally {
@@ -153,7 +154,11 @@ const RevisionRequestsManagement = () => {
       render: (title, record) => (
         <Space direction="vertical" size="small">
           <Text strong>{title || 'N/A'}</Text>
-          {record.isFreeRevision && <Tag color="blue" size="small">Miễn phí</Tag>}
+          {record.isFreeRevision && (
+            <Tag color="blue" size="small">
+              Miễn phí
+            </Tag>
+          )}
         </Space>
       ),
     },
@@ -194,7 +199,9 @@ const RevisionRequestsManagement = () => {
           type="link"
           size="small"
           onClick={() =>
-            navigate(`/manager/tasks/${record.contractId}/${record.taskAssignmentId}`)
+            navigate(
+              `/manager/tasks/${record.contractId}/${record.taskAssignmentId}`
+            )
           }
         >
           {record.taskAssignmentId?.substring(0, 8)}...
@@ -262,7 +269,13 @@ const RevisionRequestsManagement = () => {
     <div className={styles.container}>
       <Card>
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Title level={3} style={{ margin: 0 }}>
               Quản lý Revision Requests
             </Title>
@@ -274,11 +287,19 @@ const RevisionRequestsManagement = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
               >
-                <Option value="PENDING_MANAGER_REVIEW">Chờ Manager duyệt</Option>
+                <Option value="PENDING_MANAGER_REVIEW">
+                  Chờ Manager duyệt
+                </Option>
                 <Option value="IN_REVISION">Đang chỉnh sửa</Option>
-                <Option value="WAITING_MANAGER_REVIEW">Chờ Manager review</Option>
-                <Option value="APPROVED_PENDING_DELIVERY">Đã duyệt, chờ deliver</Option>
-                <Option value="WAITING_CUSTOMER_CONFIRM">Chờ Customer xác nhận</Option>
+                <Option value="WAITING_MANAGER_REVIEW">
+                  Chờ Manager review
+                </Option>
+                <Option value="APPROVED_PENDING_DELIVERY">
+                  Đã duyệt, chờ deliver
+                </Option>
+                <Option value="WAITING_CUSTOMER_CONFIRM">
+                  Chờ Customer xác nhận
+                </Option>
                 <Option value="COMPLETED">Hoàn thành</Option>
                 <Option value="REJECTED">Từ chối</Option>
                 <Option value="CANCELED">Đã hủy</Option>
@@ -301,7 +322,7 @@ const RevisionRequestsManagement = () => {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng: ${total} revision requests`,
+              showTotal: total => `Tổng: ${total} revision requests`,
             }}
             expandable={{
               expandedRowRender: record => (
@@ -313,9 +334,17 @@ const RevisionRequestsManagement = () => {
                     {record.originalSubmissionId && (
                       <Descriptions.Item label="Original Submission">
                         <Text>
-                          Submission ID: {record.originalSubmissionId.substring(0, 8)}...
+                          Submission ID:{' '}
+                          {record.originalSubmissionId.substring(0, 8)}...
                         </Text>
-                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            display: 'block',
+                            marginTop: 4,
+                          }}
+                        >
                           (Submission bị request revision)
                         </Text>
                       </Descriptions.Item>
@@ -323,9 +352,17 @@ const RevisionRequestsManagement = () => {
                     {record.revisedSubmissionId && (
                       <Descriptions.Item label="Revised Submission">
                         <Text>
-                          Submission ID: {record.revisedSubmissionId.substring(0, 8)}...
+                          Submission ID:{' '}
+                          {record.revisedSubmissionId.substring(0, 8)}...
                         </Text>
-                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            display: 'block',
+                            marginTop: 4,
+                          }}
+                        >
                           (Submission sau khi chỉnh sửa)
                         </Text>
                       </Descriptions.Item>
@@ -359,7 +396,10 @@ const RevisionRequestsManagement = () => {
                           <Text strong>
                             {formatDateTime(record.revisionDueAt)}
                             {record.revisionDeadlineDays && (
-                              <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: 11, marginLeft: 4 }}
+                              >
                                 (+{record.revisionDeadlineDays} ngày SLA)
                               </Text>
                             )}
@@ -369,7 +409,9 @@ const RevisionRequestsManagement = () => {
                           )}
                           {!dayjs(record.revisionDueAt).isBefore(dayjs()) && (
                             <Tag color="blue">
-                              Còn {dayjs(record.revisionDueAt).diff(dayjs(), 'day')} ngày
+                              Còn{' '}
+                              {dayjs(record.revisionDueAt).diff(dayjs(), 'day')}{' '}
+                              ngày
                             </Tag>
                           )}
                         </Space>
@@ -454,4 +496,3 @@ const RevisionRequestsManagement = () => {
 };
 
 export default RevisionRequestsManagement;
-

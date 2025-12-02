@@ -16,7 +16,7 @@ export default function RecordingStep4({ data, onComplete, onSkip }) {
     data?.equipmentIds || []
   );
 
-  const handleChoice = (value) => {
+  const handleChoice = value => {
     setWantsEquipment(value);
     // Don't call onComplete here - wait for Continue button
     // Reset selected equipment if choosing "No"
@@ -32,8 +32,11 @@ export default function RecordingStep4({ data, onComplete, onSkip }) {
       selectedEquipment,
       wantsEquipment: true,
     };
-    sessionStorage.setItem('recordingFlowEquipmentCallback', JSON.stringify(callbackData));
-    
+    sessionStorage.setItem(
+      'recordingFlowEquipmentCallback',
+      JSON.stringify(callbackData)
+    );
+
     // Navigate to equipment selection page
     navigate('/recording-flow/equipment-selection', {
       state: {
@@ -73,14 +76,16 @@ export default function RecordingStep4({ data, onComplete, onSkip }) {
       <div className={styles.choiceSection}>
         <Radio.Group
           value={wantsEquipment}
-          onChange={(e) => handleChoice(e.target.value)}
+          onChange={e => handleChoice(e.target.value)}
           className={styles.radioGroup}
         >
           <div className={styles.radioContainer}>
             <Radio.Button value={true} className={styles.radioButton}>
               <div className={styles.radioContent}>
                 <div>
-                  <div className={styles.radioTitle}>Yes, I want to rent equipment</div>
+                  <div className={styles.radioTitle}>
+                    Yes, I want to rent equipment
+                  </div>
                   <div className={styles.radioDescription}>
                     Choose from our available equipment
                   </div>
@@ -91,7 +96,9 @@ export default function RecordingStep4({ data, onComplete, onSkip }) {
             <Radio.Button value={false} className={styles.radioButton}>
               <div className={styles.radioContent}>
                 <div>
-                  <div className={styles.radioTitle}>No, I'll bring my own equipment</div>
+                  <div className={styles.radioTitle}>
+                    No, I'll bring my own equipment
+                  </div>
                   <div className={styles.radioDescription}>
                     Skip equipment selection
                   </div>
@@ -155,4 +162,3 @@ export default function RecordingStep4({ data, onComplete, onSkip }) {
     </Card>
   );
 }
-

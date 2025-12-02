@@ -52,10 +52,12 @@ const PayRevisionFeePage = () => {
   const description = location.state?.description;
   const revisionRound = location.state?.revisionRound;
   const feeAmount = location.state?.feeAmount;
-  
+
   // State for revision form (if not provided in state)
   const [revisionTitle, setRevisionTitle] = useState(title || '');
-  const [revisionDescription, setRevisionDescription] = useState(description || '');
+  const [revisionDescription, setRevisionDescription] = useState(
+    description || ''
+  );
 
   useEffect(() => {
     if (!contractId || !feeAmount || !submissionId || !taskAssignmentId) {
@@ -144,7 +146,7 @@ const PayRevisionFeePage = () => {
       // Validate title and description
       const finalTitle = revisionTitle.trim() || title;
       const finalDescription = revisionDescription.trim() || description;
-      
+
       if (!finalTitle) {
         message.warning('Vui lòng nhập tiêu đề yêu cầu chỉnh sửa');
         return;
@@ -160,7 +162,7 @@ const PayRevisionFeePage = () => {
         currency: contract?.currency || 'VND',
         contractId: contractId,
         milestoneId: milestoneId,
-        taskAssignmentId: taskAssignmentId,  // Required for creating revision request
+        taskAssignmentId: taskAssignmentId, // Required for creating revision request
         submissionId: submissionId,
         revisionRound: revisionRound,
         title: finalTitle,
@@ -168,15 +170,21 @@ const PayRevisionFeePage = () => {
       });
 
       if (response?.status === 'success') {
-        message.success('Revision fee payment successful! Revision request will be created automatically.');
+        message.success(
+          'Revision fee payment successful! Revision request will be created automatically.'
+        );
         // Redirect back to deliveries page
-        navigate(`/contracts/${contractId}/milestones/${milestoneId}/deliveries`, {
-          state: { paymentSuccess: true },
-        });
+        navigate(
+          `/contracts/${contractId}/milestones/${milestoneId}/deliveries`,
+          {
+            state: { paymentSuccess: true },
+          }
+        );
       }
     } catch (error) {
       console.error('Error paying revision fee:', error);
-      const errorMessage = error?.message || error?.data?.message || 'Failed to process payment';
+      const errorMessage =
+        error?.message || error?.data?.message || 'Failed to process payment';
       message.error(errorMessage);
     } finally {
       setPaying(false);
@@ -223,11 +231,7 @@ const PayRevisionFeePage = () => {
             message="Payment information not available"
             description="The revision fee information is not available."
             type="error"
-            action={
-              <Button onClick={() => navigate(-1)}>
-                Go Back
-              </Button>
-            }
+            action={<Button onClick={() => navigate(-1)}>Go Back</Button>}
           />
         </div>
       </div>
@@ -252,9 +256,7 @@ const PayRevisionFeePage = () => {
 
         <Card className={styles.paymentCard}>
           <Title level={3}>Pay Revision Fee</Title>
-          <Text type="secondary">
-            Complete payment for revision request
-          </Text>
+          <Text type="secondary">Complete payment for revision request</Text>
 
           <Divider />
 
@@ -329,10 +331,7 @@ const PayRevisionFeePage = () => {
                   <Text>
                     Current balance:{' '}
                     <Text strong>
-                      {formatCurrency(
-                        walletBalance,
-                        wallet.currency || 'VND'
-                      )}
+                      {formatCurrency(walletBalance, wallet.currency || 'VND')}
                     </Text>
                   </Text>
                   {!hasEnoughBalance && (
@@ -398,10 +397,7 @@ const PayRevisionFeePage = () => {
               type="warning"
               style={{ marginTop: 16 }}
               action={
-                <Button
-                  size="small"
-                  onClick={() => setTopupModalVisible(true)}
-                >
+                <Button size="small" onClick={() => setTopupModalVisible(true)}>
                   Top Up Now
                 </Button>
               }
@@ -454,4 +450,3 @@ const PayRevisionFeePage = () => {
 };
 
 export default PayRevisionFeePage;
-

@@ -66,7 +66,11 @@ export default function RecordingUploader({ serviceType, formData }) {
     }
 
     // Validate booking date and time for recording
-    if (!formData.bookingDate || !formData.bookingStartTime || !formData.bookingEndTime) {
+    if (
+      !formData.bookingDate ||
+      !formData.bookingStartTime ||
+      !formData.bookingEndTime
+    ) {
       message.warning('Please select booking date and time.');
       return;
     }
@@ -80,9 +84,13 @@ export default function RecordingUploader({ serviceType, formData }) {
         formData: {
           ...formData,
           // Calculate duration from booking time range
-          durationMinutes: formData.bookingStartTime && formData.bookingEndTime
-            ? calculateDurationMinutes(formData.bookingStartTime, formData.bookingEndTime)
-            : adjustedDurationMinutes,
+          durationMinutes:
+            formData.bookingStartTime && formData.bookingEndTime
+              ? calculateDurationMinutes(
+                  formData.bookingStartTime,
+                  formData.bookingEndTime
+                )
+              : adjustedDurationMinutes,
         },
         uploadedFiles: files,
         serviceType: serviceType || 'recording',
@@ -119,7 +127,8 @@ export default function RecordingUploader({ serviceType, formData }) {
             </h2>
             <p className={styles.desc}>
               You may upload lyrics / guide audio / notation to help the session
-              run smoothly. Please ensure you have filled in the booking date and time in the form above.
+              run smoothly. Please ensure you have filled in the booking date
+              and time in the form above.
             </p>
           </div>
         </div>
@@ -173,52 +182,79 @@ export default function RecordingUploader({ serviceType, formData }) {
         )}
 
         {/* Booking Information Display */}
-        {formData?.bookingDate && formData?.bookingStartTime && formData?.bookingEndTime && (
-          <div className={styles.selectedBox} style={{ marginTop: 16 }}>
-            <div style={{ padding: '16px 0' }}>
-              <div style={{ marginBottom: 12 }}>
-                <ClockCircleOutlined style={{ marginRight: 8 }} />
-                <span style={{ fontWeight: 600 }}>Booking Information:</span>
+        {formData?.bookingDate &&
+          formData?.bookingStartTime &&
+          formData?.bookingEndTime && (
+            <div className={styles.selectedBox} style={{ marginTop: 16 }}>
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ marginBottom: 12 }}>
+                  <ClockCircleOutlined style={{ marginRight: 8 }} />
+                  <span style={{ fontWeight: 600 }}>Booking Information:</span>
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <Tag
+                    color="blue"
+                    style={{
+                      fontSize: 14,
+                      padding: '4px 12px',
+                      marginRight: 8,
+                    }}
+                  >
+                    Date: {formData.bookingDate}
+                  </Tag>
+                  <Tag
+                    color="green"
+                    style={{ fontSize: 14, padding: '4px 12px' }}
+                  >
+                    Time: {formData.bookingStartTime} -{' '}
+                    {formData.bookingEndTime}
+                  </Tag>
+                </div>
+                {formData.vocalistId && (
+                  <div style={{ marginTop: 8 }}>
+                    <Tag
+                      color="purple"
+                      style={{ fontSize: 14, padding: '4px 12px' }}
+                    >
+                      Vocalist Selected
+                    </Tag>
+                  </div>
+                )}
+                {formData.instrumentalistIds &&
+                  formData.instrumentalistIds.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <Tag
+                        color="blue"
+                        style={{ fontSize: 14, padding: '4px 12px' }}
+                      >
+                        {formData.instrumentalistIds.length} Instrumentalist(s)
+                        Selected
+                      </Tag>
+                    </div>
+                  )}
+                {formData.equipmentIds && formData.equipmentIds.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <Tag
+                      color="green"
+                      style={{ fontSize: 14, padding: '4px 12px' }}
+                    >
+                      {formData.equipmentIds.length} Equipment(s) Selected
+                    </Tag>
+                  </div>
+                )}
+                {formData.externalGuestCount > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <Tag
+                      color="orange"
+                      style={{ fontSize: 14, padding: '4px 12px' }}
+                    >
+                      External Guests: {formData.externalGuestCount}
+                    </Tag>
+                  </div>
+                )}
               </div>
-              <div style={{ marginTop: 8 }}>
-                <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px', marginRight: 8 }}>
-                  Date: {formData.bookingDate}
-                </Tag>
-                <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
-                  Time: {formData.bookingStartTime} - {formData.bookingEndTime}
-                </Tag>
-              </div>
-              {formData.vocalistId && (
-                <div style={{ marginTop: 8 }}>
-                  <Tag color="purple" style={{ fontSize: 14, padding: '4px 12px' }}>
-                    Vocalist Selected
-                  </Tag>
-                </div>
-              )}
-              {formData.instrumentalistIds && formData.instrumentalistIds.length > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
-                    {formData.instrumentalistIds.length} Instrumentalist(s) Selected
-                  </Tag>
-                </div>
-              )}
-              {formData.equipmentIds && formData.equipmentIds.length > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <Tag color="green" style={{ fontSize: 14, padding: '4px 12px' }}>
-                    {formData.equipmentIds.length} Equipment(s) Selected
-                  </Tag>
-                </div>
-              )}
-              {formData.externalGuestCount > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <Tag color="orange" style={{ fontSize: 14, padding: '4px 12px' }}>
-                    External Guests: {formData.externalGuestCount}
-                  </Tag>
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
         <div className={styles.actionRow}>
           <Button

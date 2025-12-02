@@ -1,7 +1,11 @@
 // RecordingStep1.jsx - Form thông tin chính và upload audio
 import { useState, useCallback } from 'react';
 import { Form, Input, Card, Upload, message, Space } from 'antd';
-import { InboxOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  InboxOutlined,
+  FileTextOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import { useAuth } from '../../../../../../contexts/AuthContext';
 import styles from './RecordingStep1.module.css';
 
@@ -28,14 +32,16 @@ export default function RecordingStep1({ data, onComplete }) {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       if (files.length === 0) {
-        message.warning('Please upload at least one audio file or reference file.');
+        message.warning(
+          'Please upload at least one audio file or reference file.'
+        );
         return;
       }
 
       setSubmitting(true);
-      
+
       const stepData = {
         ...values,
         files,
@@ -53,9 +59,12 @@ export default function RecordingStep1({ data, onComplete }) {
   return (
     <Card className={styles.card}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Step 1: Basic Information & Audio Upload</h2>
+        <h2 className={styles.title}>
+          Step 1: Basic Information & Audio Upload
+        </h2>
         <p className={styles.description}>
-          Please fill in your information and upload audio files or reference materials.
+          Please fill in your information and upload audio files or reference
+          materials.
         </p>
       </div>
 
@@ -114,18 +123,15 @@ export default function RecordingStep1({ data, onComplete }) {
             { type: 'email', message: 'Invalid email' },
           ]}
         >
-          <Input
-            size="large"
-            placeholder="you@example.com"
-            readOnly
-            disabled
-          />
+          <Input size="large" placeholder="you@example.com" readOnly disabled />
         </Form.Item>
 
         <Form.Item
           label="Contact Phone"
           name="contactPhone"
-          rules={[{ required: true, message: 'Please enter your phone number' }]}
+          rules={[
+            { required: true, message: 'Please enter your phone number' },
+          ]}
         >
           <Input size="large" placeholder="+84 ..." />
         </Form.Item>
@@ -135,19 +141,17 @@ export default function RecordingStep1({ data, onComplete }) {
           name="externalGuestCount"
           tooltip="Number of external guests you will bring (free limit applies)"
         >
-          <Input
-            type="number"
-            size="large"
-            min={0}
-            placeholder="0"
-          />
+          <Input type="number" size="large" min={0} placeholder="0" />
         </Form.Item>
       </Form>
 
       <div className={styles.uploadSection}>
-        <h3 className={styles.sectionTitle}>Upload Audio Files or Reference Materials</h3>
+        <h3 className={styles.sectionTitle}>
+          Upload Audio Files or Reference Materials
+        </h3>
         <p className={styles.sectionDescription}>
-          Upload audio files, lyrics, notation, or other reference materials to help the session run smoothly.
+          Upload audio files, lyrics, notation, or other reference materials to
+          help the session run smoothly.
         </p>
 
         {files.length === 0 && (
@@ -211,4 +215,3 @@ export default function RecordingStep1({ data, onComplete }) {
     </Card>
   );
 }
-

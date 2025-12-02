@@ -53,7 +53,10 @@ function getStatusDisplay(status) {
     revision_requested: { text: 'Revision Requested', color: 'warning' },
     in_revision: { text: 'In Revision', color: 'processing' },
     delivery_pending: { text: 'Delivery Pending', color: 'cyan' },
-    waiting_customer_review: { text: 'Waiting Customer Review', color: 'purple' },
+    waiting_customer_review: {
+      text: 'Waiting Customer Review',
+      color: 'purple',
+    },
     completed: { text: 'Completed', color: 'green' },
     cancelled: { text: 'Cancelled', color: 'default' },
   };
@@ -512,7 +515,8 @@ const MyTasksPage = ({ onOpenTask }) => {
                     Deadline: {formatDateTime(actualDeadline)}
                     {record.milestone?.milestoneSlaDays && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {' '}(+{record.milestone.milestoneSlaDays} ngày SLA)
+                        {' '}
+                        (+{record.milestone.milestoneSlaDays} ngày SLA)
                       </Text>
                     )}
                   </Text>
@@ -697,7 +701,10 @@ const MyTasksPage = ({ onOpenTask }) => {
                 },
                 { label: 'In Progress', value: 'IN_PROGRESS' },
                 { label: 'In Revision', value: 'IN_REVISION' },
-                { label: 'Waiting Customer Review', value: 'WAITING_CUSTOMER_REVIEW' },
+                {
+                  label: 'Waiting Customer Review',
+                  value: 'WAITING_CUSTOMER_REVIEW',
+                },
                 { label: 'Revision Requested', value: 'REVISION_REQUESTED' },
                 { label: 'Completed', value: 'COMPLETED' },
                 { label: 'Cancelled', value: 'CANCELLED' },

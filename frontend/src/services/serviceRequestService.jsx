@@ -75,7 +75,10 @@ export const createServiceRequest = async requestData => {
       if (requestData.vocalistId) {
         formData.append('vocalistId', requestData.vocalistId);
       }
-      if (requestData.instrumentalistIds && requestData.instrumentalistIds.length > 0) {
+      if (
+        requestData.instrumentalistIds &&
+        requestData.instrumentalistIds.length > 0
+      ) {
         requestData.instrumentalistIds.forEach(id => {
           formData.append('instrumentalistIds', id);
         });

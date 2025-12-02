@@ -317,11 +317,11 @@ const MilestonesPage = () => {
                         ? 'Chờ khách hàng review'
                         : normalized === 'revision_requested'
                           ? 'Yêu cầu chỉnh sửa'
-                    : normalized === 'completed'
-                      ? 'Hoàn thành'
-                      : normalized === 'cancelled'
-                        ? 'Đã hủy'
-                        : normalized;
+                          : normalized === 'completed'
+                            ? 'Hoàn thành'
+                            : normalized === 'cancelled'
+                              ? 'Đã hủy'
+                              : normalized;
         return (
           <Space direction="vertical" size={2}>
             <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>
