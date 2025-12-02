@@ -50,8 +50,6 @@ public class TaskAssignmentResponse {
 
     Instant specialistRespondedAt;
 
-    Integer usedRevisions;
-
     // Issue reporting fields
     Boolean hasIssue;
     String issueReason;

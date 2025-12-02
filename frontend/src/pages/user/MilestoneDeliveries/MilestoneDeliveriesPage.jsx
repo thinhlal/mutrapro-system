@@ -31,7 +31,6 @@ import {
   getDeliveredSubmissionsByMilestone,
   customerReviewSubmission,
 } from '../../../services/fileSubmissionService';
-import FileList from '../../../components/common/FileList/FileList';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import styles from './MilestoneDeliveriesPage.module.css';
@@ -63,7 +62,9 @@ const MilestoneDeliveriesPage = () => {
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [reviewAction, setReviewAction] = useState(''); // 'accept' or 'request_revision'
-  const [revisionReason, setRevisionReason] = useState('');
+  const [revisionTitle, setRevisionTitle] = useState('');
+  const [revisionDescription, setRevisionDescription] = useState('');
+  const [revisionRequests, setRevisionRequests] = useState([]); // Track revision requests để check xem đã request chưa
 
   const milestoneName = milestoneInfo?.name || location.state?.milestoneName || 'Milestone';
 
@@ -86,13 +87,17 @@ const MilestoneDeliveriesPage = () => {
         console.log(data.request);
         setContractInfo(data.contract);
         setMilestoneInfo(data.milestone);
-        setRequestInfo(data.request);
+        setRequestInfo(data.request); // Request info đã được load từ backend
         setSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+        
+        // Revision requests đã được load từ backend trong response
+        setRevisionRequests(Array.isArray(data.revisionRequests) ? data.revisionRequests : []);
       } else {
         setContractInfo(null);
         setMilestoneInfo(null);
         setRequestInfo(null);
         setSubmissions([]);
+        setRevisionRequests([]);
       }
     } catch (error) {
       console.error('Error loading deliveries:', error);
@@ -104,6 +109,7 @@ const MilestoneDeliveriesPage = () => {
       setMilestoneInfo(null);
       setRequestInfo(null);
       setSubmissions([]);
+      setRevisionRequests([]);
     } finally {
       setLoading(false);
     }
@@ -144,16 +150,23 @@ const MilestoneDeliveriesPage = () => {
   const handleOpenReviewModal = (submission, action) => {
     setSelectedSubmission(submission);
     setReviewAction(action);
-    setRevisionReason('');
+    setRevisionTitle('');
+    setRevisionDescription('');
     setReviewModalVisible(true);
   };
 
   const handleReviewSubmission = async () => {
     if (!selectedSubmission) return;
 
-    if (reviewAction === 'request_revision' && !revisionReason.trim()) {
-      message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
-      return;
+    if (reviewAction === 'request_revision') {
+      if (!revisionTitle.trim()) {
+        message.warning('Vui lòng nhập tiêu đề yêu cầu chỉnh sửa');
+        return;
+      }
+      if (!revisionDescription.trim()) {
+        message.warning('Vui lòng nhập mô tả chi tiết yêu cầu chỉnh sửa');
+        return;
+      }
     }
 
     try {
@@ -161,10 +174,12 @@ const MilestoneDeliveriesPage = () => {
       const response = await customerReviewSubmission(
         selectedSubmission.submissionId,
         reviewAction,
-        reviewAction === 'request_revision' ? revisionReason : ''
+        reviewAction === 'request_revision' ? revisionTitle : '',
+        reviewAction === 'request_revision' ? revisionDescription : ''
       );
 
-      if (response?.data?.status === 'success') {
+      // Response từ service đã là ApiResponse object (response.data từ axios)
+      if (response?.status === 'success') {
         message.success(
           reviewAction === 'accept'
             ? 'Đã chấp nhận submission'
@@ -172,7 +187,8 @@ const MilestoneDeliveriesPage = () => {
         );
         setReviewModalVisible(false);
         setSelectedSubmission(null);
-        setRevisionReason('');
+        setRevisionTitle('');
+        setRevisionDescription('');
         await loadDeliveries();
         // Reload contract page if needed
         if (reviewAction === 'request_revision') {
@@ -181,11 +197,16 @@ const MilestoneDeliveriesPage = () => {
             navigate(`/contracts/${contractId}`);
           }, 1000);
         }
+      } else {
+        // Nếu status không phải success, hiển thị lỗi
+        message.error(
+          response?.message || 'Lỗi khi review submission'
+        );
       }
     } catch (error) {
       console.error('Error reviewing submission:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi review submission'
+        error?.response?.data?.message || error?.message || 'Lỗi khi review submission'
       );
     } finally {
       setActionLoading(false);
@@ -455,32 +476,73 @@ const MilestoneDeliveriesPage = () => {
                             )}
                           </Text>
                         )}
-                        {submission.status?.toLowerCase() === 'delivered' && (
-                          <Space>
-                            <Button
-                              type="primary"
-                              icon={<CheckCircleOutlined />}
-                              size="small"
-                              onClick={() =>
-                                handleOpenReviewModal(submission, 'accept')
+                        {submission.status?.toLowerCase() === 'delivered' && (() => {
+                          // Check xem submission này có đang trong quá trình revision không
+                          // Logic:
+                          // 1. Nếu submission là originalSubmissionId của revision request đang pending → ẩn nút (đã request revision)
+                          // 2. Nếu submission là revisedSubmissionId của revision request WAITING_CUSTOMER_CONFIRM → hiển thị nút (submission mới sau revision, cần review)
+                          // 3. Nếu submission không có trong revision request nào → hiển thị nút (submission bình thường)
+                          
+                          const submissionId = submission.submissionId;
+                          
+                          // Check xem có revision request nào đang pending cho submission này không
+                          const pendingRevisionForThisSubmission = revisionRequests.find(
+                            rr => {
+                              const status = rr.status?.toUpperCase();
+                              const isPending = (
+                                status === 'PENDING_MANAGER_REVIEW' ||
+                                status === 'IN_REVISION' ||
+                                status === 'WAITING_MANAGER_REVIEW' ||
+                                status === 'APPROVED_PENDING_DELIVERY'
+                              );
+                              
+                              // Nếu revision request đang pending và submission này là originalSubmissionId
+                              // → đã request revision cho submission này, ẩn nút
+                              if (isPending && rr.originalSubmissionId === submissionId) {
+                                return true;
                               }
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              icon={<CloseCircleOutlined />}
-                              size="small"
-                              onClick={() =>
-                                handleOpenReviewModal(
-                                  submission,
-                                  'request_revision'
-                                )
-                              }
-                            >
-                              Request Revision
-                            </Button>
-                          </Space>
-                        )}
+                              
+                              return false;
+                            }
+                          );
+                          
+                          // Nếu có revision request đang pending cho submission này → ẩn nút
+                          if (pendingRevisionForThisSubmission) {
+                            return (
+                              <Tag color="orange">
+                                Đã yêu cầu chỉnh sửa - Đang chờ xử lý
+                              </Tag>
+                            );
+                          }
+                          
+                          // Nếu không có revision request pending cho submission này → hiển thị nút
+                          return (
+                            <Space>
+                              <Button
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                size="small"
+                                onClick={() =>
+                                  handleOpenReviewModal(submission, 'accept')
+                                }
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                icon={<CloseCircleOutlined />}
+                                size="small"
+                                onClick={() =>
+                                  handleOpenReviewModal(
+                                    submission,
+                                    'request_revision'
+                                  )
+                                }
+                              >
+                                Request Revision
+                              </Button>
+                            </Space>
+                          );
+                        })()}
                       </Space>
                     }
                   >
@@ -553,7 +615,8 @@ const MilestoneDeliveriesPage = () => {
         onCancel={() => {
           setReviewModalVisible(false);
           setSelectedSubmission(null);
-          setRevisionReason('');
+          setRevisionTitle('');
+          setRevisionDescription('');
         }}
         footer={[
           <Button
@@ -561,7 +624,8 @@ const MilestoneDeliveriesPage = () => {
             onClick={() => {
               setReviewModalVisible(false);
               setSelectedSubmission(null);
-              setRevisionReason('');
+              setRevisionTitle('');
+              setRevisionDescription('');
             }}
           >
             Hủy
@@ -593,18 +657,31 @@ const MilestoneDeliveriesPage = () => {
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Alert
               message="Yêu cầu chỉnh sửa"
-              description="Vui lòng nhập lý do yêu cầu chỉnh sửa. Specialist sẽ nhận được thông báo và thực hiện chỉnh sửa theo yêu cầu của bạn."
+              description="Vui lòng nhập tiêu đề và mô tả chi tiết yêu cầu chỉnh sửa. Manager sẽ xem xét và gửi cho specialist thực hiện."
               type="warning"
               showIcon
             />
             <div>
-              <Text strong>Lý do yêu cầu chỉnh sửa:</Text>
-              <TextArea
-                rows={4}
-                value={revisionReason}
-                onChange={e => setRevisionReason(e.target.value)}
-                placeholder="Nhập lý do yêu cầu chỉnh sửa..."
+              <Text strong>Tiêu đề yêu cầu chỉnh sửa:</Text>
+              <Input
+                value={revisionTitle}
+                onChange={e => setRevisionTitle(e.target.value)}
+                placeholder="Nhập tiêu đề ngắn gọn (ví dụ: Cần chỉnh sửa tempo, Cần thêm phần intro...)"
                 style={{ marginTop: 8 }}
+                maxLength={255}
+                showCount
+              />
+            </div>
+            <div>
+              <Text strong>Mô tả chi tiết:</Text>
+              <TextArea
+                rows={6}
+                value={revisionDescription}
+                onChange={e => setRevisionDescription(e.target.value)}
+                placeholder="Nhập mô tả chi tiết yêu cầu chỉnh sửa..."
+                style={{ marginTop: 8 }}
+                maxLength={2000}
+                showCount
               />
             </div>
           </Space>

@@ -11,6 +11,7 @@ import {
   LogoutOutlined,
   UsergroupAddOutlined,
   MessageOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +46,11 @@ const menuItems = [
     key: '/manager/task-progress',
     icon: <UnorderedListOutlined />,
     label: <Link to="/manager/task-progress">Task Progress</Link>,
+  },
+  {
+    key: '/manager/revision-requests',
+    icon: <EditOutlined />,
+    label: <Link to="/manager/revision-requests">Revision Requests</Link>,
   },
   {
     key: '/manager/chat',

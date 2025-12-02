@@ -229,6 +229,22 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     INVALID_FILE_STATUS("CONTRACT_7045", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7045",
         "Invalid file status for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    // Revision Request Errors (7046-7049)
+    INVALID_REVISION_REQUEST_STATUS("CONTRACT_7046", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7046",
+        "Invalid revision request status",
+        Retryable.NON_TRANSIENT),
+    
+    VALIDATION_ERROR("CONTRACT_7047", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7047",
+        "Validation error",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_STATE("CONTRACT_7048", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7048",
+        "Invalid state",
         Retryable.NON_TRANSIENT);
 
     private final String code;

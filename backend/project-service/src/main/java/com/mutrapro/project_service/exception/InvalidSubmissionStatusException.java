@@ -65,5 +65,14 @@ public class InvalidSubmissionStatusException extends BusinessException {
             currentStatus
         );
     }
+
+    public static InvalidSubmissionStatusException cannotReview(String submissionId, SubmissionStatus currentStatus) {
+        return new InvalidSubmissionStatusException(
+            String.format("You can only review submissions that have been delivered. Current status: %s", 
+                    currentStatus),
+            submissionId,
+            currentStatus
+        );
+    }
 }
 

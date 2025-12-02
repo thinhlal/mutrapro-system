@@ -124,20 +124,23 @@ export const getDeliveredSubmissionsByMilestone = async (
  * POST /submissions/{submissionId}/customer-review
  * @param {string} submissionId - ID của submission
  * @param {string} action - "accept" hoặc "request_revision"
- * @param {string} reason - Lý do request revision (required nếu action = "request_revision")
+ * @param {string} title - Tiêu đề yêu cầu revision (required nếu action = "request_revision")
+ * @param {string} description - Mô tả chi tiết yêu cầu revision (required nếu action = "request_revision")
  * @returns {Promise} Response từ API
  */
 export const customerReviewSubmission = async (
   submissionId,
   action,
-  reason = ''
+  title = '',
+  description = ''
 ) => {
   try {
     const response = await axiosInstance.post(
       API_ENDPOINTS.SUBMISSIONS.CUSTOMER_REVIEW(submissionId),
       {
         action,
-        reason,
+        title,
+        description,
       }
     );
     return response.data;

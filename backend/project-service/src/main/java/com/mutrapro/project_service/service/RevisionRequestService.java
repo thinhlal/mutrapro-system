@@ -1,0 +1,893 @@
+package com.mutrapro.project_service.service;
+
+import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
+import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
+import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
+import com.mutrapro.project_service.entity.Contract;
+import com.mutrapro.project_service.entity.ContractMilestone;
+import com.mutrapro.project_service.entity.RevisionRequest;
+import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.project_service.enums.AssignmentStatus;
+import com.mutrapro.project_service.enums.MilestoneWorkStatus;
+import com.mutrapro.project_service.enums.RevisionRequestStatus;
+import com.mutrapro.project_service.exception.ContractNotFoundException;
+import com.mutrapro.project_service.exception.InvalidStateException;
+import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
+import com.mutrapro.project_service.exception.UnauthorizedException;
+import com.mutrapro.project_service.exception.ValidationException;
+import com.mutrapro.project_service.repository.ContractMilestoneRepository;
+import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.FileSubmissionRepository;
+import com.mutrapro.project_service.repository.RevisionRequestRepository;
+import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.project_service.client.NotificationServiceFeignClient;
+import com.mutrapro.shared.enums.NotificationType;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class RevisionRequestService {
+
+    RevisionRequestRepository revisionRequestRepository;
+    TaskAssignmentRepository taskAssignmentRepository;
+    ContractRepository contractRepository;
+    ContractMilestoneRepository contractMilestoneRepository;
+    FileSubmissionRepository fileSubmissionRepository;
+    NotificationServiceFeignClient notificationServiceFeignClient;
+    
+    /**
+     * Check xem có revision request với status cụ thể cho assignment không
+     */
+    public boolean hasActiveRevisionRequest(String assignmentId, RevisionRequestStatus status) {
+        List<RevisionRequest> revisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                assignmentId, status);
+        return !revisions.isEmpty();
+    }
+    
+    /**
+     * Update revision request khi manager approve submission
+     * Gọi từ FileSubmissionService.approveSubmission()
+     */
+    @Transactional
+    public void updateRevisionRequestOnApproval(RevisionRequest revisionRequest, String managerUserId) {
+        String revisionRequestId = revisionRequest.getRevisionRequestId();
+        String assignmentId = revisionRequest.getTaskAssignmentId();
+        
+        // Update status: WAITING_MANAGER_REVIEW → APPROVED_PENDING_DELIVERY
+        // (Manager đã approve nhưng chưa deliver)
+        revisionRequest.setStatus(RevisionRequestStatus.APPROVED_PENDING_DELIVERY);
+        revisionRequestRepository.save(revisionRequest);
+        
+        log.info("Updated revision request on approval: revisionRequestId={}, assignmentId={}, status=APPROVED_PENDING_DELIVERY", 
+                revisionRequestId, assignmentId);
+    }
+    
+    /**
+     * Update revision request khi manager deliver submission
+     * Gọi từ FileSubmissionService.deliverSubmission()
+     * Nhận RevisionRequest trực tiếp (đã tìm ở ngoài để tránh query lại)
+     */
+    @Transactional
+    public void updateRevisionRequestOnDelivery(RevisionRequest revisionRequest, String managerUserId) {
+        String revisionRequestId = revisionRequest.getRevisionRequestId();
+        String assignmentId = revisionRequest.getTaskAssignmentId();
+        
+        // Update status: APPROVED_PENDING_DELIVERY → WAITING_CUSTOMER_CONFIRM
+        // (đã deliver cho customer)
+        revisionRequest.setStatus(RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
+        revisionRequestRepository.save(revisionRequest);
+        
+        // Gửi notification cho customer
+        try {
+            Contract contract = contractRepository.findById(revisionRequest.getContractId())
+                    .orElse(null);
+            
+            if (contract != null && revisionRequest.getCustomerId() != null) {
+                ContractMilestone milestone = contractMilestoneRepository
+                        .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                        .orElse(null);
+                String milestoneName = milestone != null && milestone.getName() != null
+                        ? milestone.getName()
+                        : "milestone";
+                
+                CreateNotificationRequest customerNotif = CreateNotificationRequest.builder()
+                        .userId(revisionRequest.getCustomerId())
+                        .type(NotificationType.SUBMISSION_DELIVERED)
+                        .title("Revision đã được chỉnh sửa")
+                        .content(String.format("Manager đã gửi revision đã chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và xác nhận.", 
+                                milestoneName))
+                        .referenceId(revisionRequestId)
+                        .referenceType("REVISION_REQUEST")
+                        .actionUrl("/contracts/" + revisionRequest.getContractId() + "/milestones/" + revisionRequest.getMilestoneId() + "/deliveries")
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(customerNotif);
+                log.info("Sent revision delivered notification to customer: userId={}, revisionRequestId={}", 
+                        revisionRequest.getCustomerId(), revisionRequestId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to send notification to customer: revisionRequestId={}, error={}", 
+                    revisionRequestId, e.getMessage(), e);
+        }
+        
+        log.info("Updated revision request on delivery: revisionRequestId={}, assignmentId={}", 
+                revisionRequestId, assignmentId);
+    }
+    
+    /**
+     * Update revision request khi manager reject submission
+     * Gọi từ FileSubmissionService.rejectSubmission()
+     */
+    @Transactional
+    public void updateRevisionRequestOnRejection(String assignmentId, String rejectionReason) {
+        // Tìm revision request đang WAITING_MANAGER_REVIEW
+        List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                assignmentId, RevisionRequestStatus.WAITING_MANAGER_REVIEW);
+        
+        if (activeRevisions.isEmpty()) {
+            // Không có revision request đang chờ manager review, bỏ qua
+            return;
+        }
+        
+        // Lấy revision request đầu tiên (thường chỉ có 1)
+        RevisionRequest revisionRequest = activeRevisions.get(0);
+        String revisionRequestId = revisionRequest.getRevisionRequestId();
+        
+        // Update status: WAITING_MANAGER_REVIEW → IN_REVISION (quay lại cho specialist làm tiếp)
+        revisionRequest.setStatus(RevisionRequestStatus.IN_REVISION);
+        revisionRequest.setManagerNote(rejectionReason);
+        revisionRequestRepository.save(revisionRequest);
+        
+        // Update task assignment status to revision_requested
+        // (manager đã yêu cầu chỉnh sửa lại, phân biệt với in_revision - đang làm lần đầu)
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId).orElse(null);
+        if (assignment != null && assignment.getStatus() != AssignmentStatus.revision_requested) {
+            assignment.setStatus(AssignmentStatus.revision_requested);
+            taskAssignmentRepository.save(assignment);
+            log.info("Task assignment status updated to revision_requested after manager rejected revision submission: assignmentId={}", 
+                    assignment.getAssignmentId());
+        }
+        
+        // Gửi notification cho specialist
+        try {
+            if (assignment != null) {
+                String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+                if (specialistUserId != null && !specialistUserId.isBlank()) {
+                    ContractMilestone milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                            .orElse(null);
+                    String milestoneName = milestone != null && milestone.getName() != null
+                            ? milestone.getName()
+                            : "milestone";
+                    
+                    CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
+                            .userId(specialistUserId)
+                            .type(NotificationType.REVISION_REQUEST_APPROVED) // Reuse type này
+                            .title("Revision cần chỉnh sửa lại")
+                            .content(String.format("Manager đã từ chối revision cho milestone \"%s\". %s", 
+                                    milestoneName,
+                                    rejectionReason != null ? "Lý do: " + rejectionReason : "Vui lòng chỉnh sửa lại."))
+                            .referenceId(revisionRequestId)
+                            .referenceType("REVISION_REQUEST")
+                            .actionUrl("/transcription/my-tasks")
+                            .build();
+                    
+                    notificationServiceFeignClient.createNotification(specialistNotif);
+                    log.info("Sent revision rejection notification to specialist: userId={}, revisionRequestId={}", 
+                            specialistUserId, revisionRequestId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to send notification to specialist: revisionRequestId={}, error={}", 
+                    revisionRequestId, e.getMessage(), e);
+        }
+        
+        log.info("Updated revision request on rejection: revisionRequestId={}, assignmentId={}", 
+                revisionRequestId, assignmentId);
+    }
+
+    /**
+     * Internal method to create revision request (called from FileSubmissionService)
+     */
+    @Transactional
+    public RevisionRequestResponse createRevisionRequestInternal(
+            String submissionId,
+            String title,
+            String description,
+            String customerId,
+            String contractId,
+            String milestoneId,
+            String taskAssignmentId) {
+        
+        log.info("Creating revision request: submissionId={}, contractId={}, taskAssignmentId={}", 
+                submissionId, contractId, taskAssignmentId);
+        
+        // Calculate next revision round
+        Integer nextRound = revisionRequestRepository.findNextRevisionRound(taskAssignmentId);
+        
+        // Check if it's free revision
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        long completedRevisions = revisionRequestRepository.countByContractIdAndStatus(
+                contractId, RevisionRequestStatus.COMPLETED);
+        boolean isFreeRevision = completedRevisions < contract.getFreeRevisionsIncluded();
+        
+        Instant now = Instant.now();
+        
+        RevisionRequest revisionRequest = RevisionRequest.builder()
+                .contractId(contractId)
+                .milestoneId(milestoneId)
+                .taskAssignmentId(taskAssignmentId)
+                .originalSubmissionId(submissionId)  // Track submission ban đầu mà customer request revision
+                .customerId(customerId)
+                .managerId(contract.getManagerUserId())
+                .title(title)
+                .description(description)
+                .revisionRound(nextRound)
+                .isFreeRevision(isFreeRevision)
+                .status(RevisionRequestStatus.PENDING_MANAGER_REVIEW)
+                .requestedAt(now)
+                .build();
+        
+        RevisionRequest saved = revisionRequestRepository.save(revisionRequest);
+        
+        // Send notification to manager
+        try {
+            ContractMilestone milestone = contractMilestoneRepository
+                    .findByMilestoneIdAndContractId(milestoneId, contractId)
+                    .orElse(null);
+            String milestoneName = milestone != null && milestone.getName() != null
+                    ? milestone.getName()
+                    : "milestone";
+            
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : contractId;
+            
+            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                    .userId(contract.getManagerUserId())
+                    .type(NotificationType.CUSTOMER_REVISION_REQUESTED)
+                    .title("Customer yêu cầu chỉnh sửa")
+                    .content(String.format("Customer đã yêu cầu chỉnh sửa cho milestone \"%s\" của contract #%s. %s", 
+                            milestoneName,
+                            contractLabel,
+                            description))
+                    .referenceId(saved.getRevisionRequestId())
+                    .referenceType("REVISION_REQUEST")
+                    .actionUrl("/manager/contracts/" + contractId + "/tasks/" + taskAssignmentId)
+                    .build();
+            
+            notificationServiceFeignClient.createNotification(notifRequest);
+            log.info("Sent revision request notification to manager: userId={}, revisionRequestId={}", 
+                    contract.getManagerUserId(), saved.getRevisionRequestId());
+        } catch (Exception e) {
+            log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+                    saved.getRevisionRequestId(), e.getMessage(), e);
+        }
+        
+        log.info("Created revision request: revisionRequestId={}, revisionRound={}, isFreeRevision={}", 
+                saved.getRevisionRequestId(), nextRound, isFreeRevision);
+        
+        return toResponse(saved);
+    }
+
+    /**
+     * Manager approve/reject revision request
+     */
+    @Transactional
+    public RevisionRequestResponse reviewRevisionRequest(
+            String revisionRequestId,
+            ReviewRevisionRequest request,
+            String userId,
+            List<String> userRoles) {
+        
+        log.info("Manager {} reviewing revision request: {}, action: {}", userId, revisionRequestId, request.getAction());
+        
+        // Verify user is MANAGER
+        if (!userRoles.contains("MANAGER") && !userRoles.contains("SYSTEM_ADMIN")) {
+            throw UnauthorizedException.create("Only managers can review revision requests");
+        }
+        
+        RevisionRequest revisionRequest = revisionRequestRepository.findById(revisionRequestId)
+                .orElseThrow(() -> new RuntimeException("Revision request not found: " + revisionRequestId));
+        
+        // Verify status is PENDING_MANAGER_REVIEW
+        if (revisionRequest.getStatus() != RevisionRequestStatus.PENDING_MANAGER_REVIEW) {
+            throw new InvalidStateException("Revision request is not pending manager review. Current status: " + revisionRequest.getStatus());
+        }
+        
+        // Verify manager has access to contract
+        Contract contract = contractRepository.findById(revisionRequest.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(revisionRequest.getContractId()));
+        
+        if (!contract.getManagerUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only review revision requests from your contracts");
+        }
+        
+        Instant now = Instant.now();
+        
+        if ("approve".equalsIgnoreCase(request.getAction())) {
+            // Manager approves - send to specialist
+            revisionRequest.setStatus(RevisionRequestStatus.IN_REVISION);
+            revisionRequest.setManagerNote(request.getManagerNote());
+            revisionRequest.setManagerReviewedAt(now);
+            revisionRequest.setAssignedToSpecialistAt(now);
+            
+            // Get task assignment and update status
+            if (revisionRequest.getTaskAssignmentId() != null) {
+                TaskAssignment assignment = taskAssignmentRepository.findById(revisionRequest.getTaskAssignmentId())
+                        .orElseThrow(() -> TaskAssignmentNotFoundException.byId(revisionRequest.getTaskAssignmentId()));
+                
+                // Get specialistId from assignment
+                revisionRequest.setSpecialistId(assignment.getSpecialistId());
+                
+                // Update assignment status to in_revision (customer revision request approved)
+                // Clear completedDate khi revision lại (task chưa completed nữa)
+                assignment.setStatus(AssignmentStatus.in_revision);
+                assignment.setCompletedDate(null);
+                taskAssignmentRepository.save(assignment);
+                
+                // Update milestone work status back to IN_PROGRESS (nếu đang WAITING_CUSTOMER)
+                if (revisionRequest.getMilestoneId() != null) {
+                    ContractMilestone milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                            .orElse(null);
+                    if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
+                        milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
+                        contractMilestoneRepository.save(milestone);
+                        log.info("Milestone work status updated to IN_PROGRESS: milestoneId={}, contractId={}", 
+                                milestone.getMilestoneId(), revisionRequest.getContractId());
+                    }
+                }
+                
+                // Send notification to specialist
+                try {
+                    String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+                    if (specialistUserId != null && !specialistUserId.isBlank()) {
+                        ContractMilestone milestone = contractMilestoneRepository
+                                .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                                .orElse(null);
+                        String milestoneName = milestone != null && milestone.getName() != null
+                                ? milestone.getName()
+                                : "milestone";
+                        
+                        CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
+                                .userId(specialistUserId)
+                                .type(NotificationType.REVISION_REQUEST_APPROVED)
+                                .title("Yêu cầu chỉnh sửa")
+                                .content(String.format("Manager đã duyệt yêu cầu chỉnh sửa cho milestone \"%s\". %s", 
+                                        milestoneName,
+                                        revisionRequest.getDescription()))
+                                .referenceId(revisionRequestId)
+                                .referenceType("REVISION_REQUEST")
+                                .actionUrl("/transcription/my-tasks")
+                                .build();
+                        
+                        notificationServiceFeignClient.createNotification(specialistNotif);
+                        log.info("Sent revision request notification to specialist: userId={}, revisionRequestId={}", 
+                                specialistUserId, revisionRequestId);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to send notification to specialist: revisionRequestId={}, error={}", 
+                            revisionRequestId, e.getMessage(), e);
+                }
+            }
+            
+            log.info("Manager approved revision request: revisionRequestId={}", revisionRequestId);
+            
+        } else if ("reject".equalsIgnoreCase(request.getAction())) {
+            // Manager rejects
+            revisionRequest.setStatus(RevisionRequestStatus.REJECTED);
+            revisionRequest.setManagerNote(request.getManagerNote());
+            revisionRequest.setManagerReviewedAt(now);
+            
+            // Send notification to customer
+            try {
+                ContractMilestone milestone = contractMilestoneRepository
+                        .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                        .orElse(null);
+                String milestoneName = milestone != null && milestone.getName() != null
+                        ? milestone.getName()
+                        : "milestone";
+                
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contract.getContractId();
+                
+                CreateNotificationRequest customerNotif = CreateNotificationRequest.builder()
+                        .userId(revisionRequest.getCustomerId())
+                        .type(NotificationType.REVISION_REQUEST_REJECTED)
+                        .title("Yêu cầu chỉnh sửa không được chấp nhận")
+                        .content(String.format("Manager đã từ chối yêu cầu chỉnh sửa cho milestone \"%s\" của contract #%s. %s", 
+                                milestoneName,
+                                contractLabel,
+                                request.getManagerNote() != null ? "Lý do: " + request.getManagerNote() : ""))
+                        .referenceId(revisionRequestId)
+                        .referenceType("REVISION_REQUEST")
+                        .actionUrl("/contracts/" + revisionRequest.getContractId())
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(customerNotif);
+                log.info("Sent rejection notification to customer: userId={}, revisionRequestId={}", 
+                        revisionRequest.getCustomerId(), revisionRequestId);
+            } catch (Exception e) {
+                log.error("Failed to send notification to customer: revisionRequestId={}, error={}", 
+                        revisionRequestId, e.getMessage(), e);
+            }
+            
+            log.info("Manager rejected revision request: revisionRequestId={}", revisionRequestId);
+            
+        } else {
+            throw ValidationException.invalidAction(request.getAction(), "'approve' or 'reject'");
+        }
+        
+        revisionRequestRepository.save(revisionRequest);
+        return toResponse(revisionRequest);
+    }
+
+    /**
+     * Tự động update revision request khi specialist submit file for review
+     * (gọi từ FileSubmissionService khi submit files)
+     * Tìm revision request đang IN_REVISION và update status, track revised submission
+     */
+    @Transactional
+    public void autoUpdateRevisionRequestOnFileSubmit(String assignmentId, String submissionId, String specialistUserId) {
+        // Tìm revision request đang IN_REVISION cho assignment này
+        List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                assignmentId, RevisionRequestStatus.IN_REVISION);
+          
+        if (activeRevisions.isEmpty()) {
+            // Không có revision request nào đang IN_REVISION, không cần update
+            return;
+        }
+        
+        // Cảnh báo nếu có nhiều hơn 1 revision request IN_REVISION (theo logic chỉ nên có 1)
+        if (activeRevisions.size() > 1) {
+            log.warn("Found {} revision requests with IN_REVISION status for assignment {}. This should not happen. Processing the first one.", 
+                    activeRevisions.size(), assignmentId);
+        }
+        
+        // Lấy revision request đầu tiên (thường chỉ có 1)
+        RevisionRequest revisionRequest = activeRevisions.get(0);
+        String revisionRequestId = revisionRequest.getRevisionRequestId();
+        
+        try {
+            // Verify status is IN_REVISION
+            if (revisionRequest.getStatus() != RevisionRequestStatus.IN_REVISION) {
+                log.warn("Revision request {} is not in revision. Current status: {}, skipping update", 
+                        revisionRequestId, revisionRequest.getStatus());
+                return;
+            }
+            
+            // Verify specialist owns this revision request
+            if (revisionRequest.getTaskAssignmentId() != null) {
+                TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+                        .orElse(null);
+                if (assignment == null) {
+                    log.warn("Task assignment not found: {}, skipping auto-update for revision request {}", 
+                            assignmentId, revisionRequestId);
+                    return;
+                }
+                
+                String assignmentSpecialistUserId = assignment.getSpecialistUserIdSnapshot();
+                if (assignmentSpecialistUserId == null || !assignmentSpecialistUserId.equals(specialistUserId)) {
+                    log.warn("Specialist {} does not own revision request {}, skipping auto-update", 
+                            specialistUserId, revisionRequestId);
+                    return;
+                }
+            }
+            
+            Instant now = Instant.now();
+            
+            // Update revision request status - chờ manager review
+            // Track submission mới sau khi specialist làm lại
+            revisionRequest.setStatus(RevisionRequestStatus.WAITING_MANAGER_REVIEW);
+            revisionRequest.setRevisedSubmissionId(submissionId);  // Track submission mới
+            revisionRequest.setSpecialistSubmittedAt(now);
+            revisionRequestRepository.save(revisionRequest);
+            
+            // Update submission để track revision request (để query ngược lại)
+            fileSubmissionRepository.findById(submissionId).ifPresent(submission -> {
+                submission.setRevisionRequestId(revisionRequestId);
+                fileSubmissionRepository.save(submission);
+                log.info("Updated submission with revision request ID: submissionId={}, revisionRequestId={}", 
+                        submissionId, revisionRequestId);
+            });
+            
+            // Send notification to manager để review
+            try {
+                Contract contract = contractRepository.findById(revisionRequest.getContractId())
+                        .orElse(null);
+                
+                if (contract != null && contract.getManagerUserId() != null) {
+                    ContractMilestone milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                            .orElse(null);
+                    String milestoneName = milestone != null && milestone.getName() != null
+                            ? milestone.getName()
+                            : "milestone";
+                    
+                    CreateNotificationRequest managerNotif = CreateNotificationRequest.builder()
+                            .userId(contract.getManagerUserId())
+                            .type(NotificationType.SUBMISSION_DELIVERED)
+                            .title("Revision đã được chỉnh sửa - cần review")
+                            .content(String.format("Specialist đã hoàn thành chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và duyệt trước khi gửi cho customer.", 
+                                    milestoneName))
+                            .referenceId(revisionRequestId)
+                            .referenceType("REVISION_REQUEST")
+                            .actionUrl("/manager/contracts/" + revisionRequest.getContractId() + "/tasks/" + assignmentId)
+                            .build();
+                    
+                    notificationServiceFeignClient.createNotification(managerNotif);
+                    log.info("Sent revision submitted notification to manager: userId={}, revisionRequestId={}", 
+                            contract.getManagerUserId(), revisionRequestId);
+                }
+            } catch (Exception e) {
+                log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+                        revisionRequestId, e.getMessage(), e);
+            }
+            
+            log.info("Auto-updated revision request on file submit: revisionRequestId={}, assignmentId={}", 
+                    revisionRequestId, assignmentId);
+        } catch (Exception e) {
+            // Log error nhưng không throw để không fail transaction của file submission
+            log.warn("Failed to auto-update revision request on file submit: revisionRequestId={}, assignmentId={}, error={}", 
+                    revisionRequestId, assignmentId, e.getMessage());
+        }
+    }
+
+    /**
+     * Update revision request khi customer accept (gọi từ customerReviewSubmission)
+     */
+    @Transactional
+    public void updateRevisionRequestOnCustomerAccept(String assignmentId, String userId) {
+        List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                assignmentId, RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
+        
+        if (activeRevisions.isEmpty()) {
+            // Không có revision request đang chờ, đây là flow bình thường
+            return;
+        }
+        
+        if (activeRevisions.size() > 1) {
+            log.warn("Multiple WAITING_CUSTOMER_CONFIRM revision requests found for assignment: assignmentId={}, count={}", 
+                    assignmentId, activeRevisions.size());
+        }
+        
+        RevisionRequest revisionRequest = activeRevisions.getFirst();
+        
+        // Verify customer owns this revision request
+        if (!revisionRequest.getCustomerId().equals(userId)) {
+            throw UnauthorizedException.create("You can only accept your own revision requests");
+        }
+        
+        Instant now = Instant.now();
+        
+        // Customer accepts - mark as completed
+        revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
+        revisionRequest.setCustomerConfirmedAt(now);
+        revisionRequestRepository.save(revisionRequest);
+        
+        // Update task assignment status to completed
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        assignment.setStatus(AssignmentStatus.completed);
+        assignment.setCompletedDate(now);
+        taskAssignmentRepository.save(assignment);
+        
+        // Update milestone work status: WAITING_CUSTOMER → READY_FOR_PAYMENT
+        if (revisionRequest.getMilestoneId() != null && revisionRequest.getContractId() != null) {
+            ContractMilestone milestone = contractMilestoneRepository
+                    .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                    .orElse(null);
+            if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
+                milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
+                contractMilestoneRepository.save(milestone);
+                log.info("Milestone work status updated to READY_FOR_PAYMENT after customer accepted revision: milestoneId={}, contractId={}", 
+                        milestone.getMilestoneId(), revisionRequest.getContractId());
+            }
+        }
+        
+        log.info("Customer accepted revision: revisionRequestId={}, assignmentId={}", 
+                revisionRequest.getRevisionRequestId(), assignmentId);
+    }
+    
+    /**
+     * Update revision request khi customer reject và tạo revision request mới (gọi từ customerReviewSubmission)
+     */
+    @Transactional
+    public void updateRevisionRequestOnCustomerReject(
+            String assignmentId, 
+            String userId,
+            String title,
+            String description) {
+        
+        List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                assignmentId, RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
+        
+        if (activeRevisions.isEmpty()) {
+            // Không có revision request đang chờ, đây là flow bình thường (tạo revision request mới)
+            return;
+        }
+        
+        if (activeRevisions.size() > 1) {
+            log.warn("Multiple WAITING_CUSTOMER_CONFIRM revision requests found for assignment: assignmentId={}, count={}", 
+                    assignmentId, activeRevisions.size());
+        }
+        
+        RevisionRequest revisionRequest = activeRevisions.getFirst();
+        
+        // Verify customer owns this revision request
+        if (!revisionRequest.getCustomerId().equals(userId)) {
+            throw UnauthorizedException.create("You can only reject your own revision requests");
+        }
+        
+        Instant now = Instant.now();
+        
+        // Customer rejects - mark old one as completed (rejected)
+        revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
+        revisionRequest.setCustomerConfirmedAt(now);
+        revisionRequestRepository.save(revisionRequest);
+        
+        // Create new revision request for next round
+        Integer nextRound = revisionRequestRepository.findNextRevisionRound(assignmentId);
+        
+        // Get contract to get managerId
+        Contract contract = contractRepository.findById(revisionRequest.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(revisionRequest.getContractId()));
+        
+        RevisionRequest newRevisionRequest = RevisionRequest.builder()
+                .contractId(revisionRequest.getContractId())
+                .milestoneId(revisionRequest.getMilestoneId())
+                .taskAssignmentId(assignmentId)
+                .customerId(userId)
+                .managerId(contract.getManagerUserId())  // Set managerId ngay từ đầu
+                .title(title)
+                .description(description)
+                .revisionRound(nextRound)
+                .isFreeRevision(false) // Next round is not free
+                .status(RevisionRequestStatus.PENDING_MANAGER_REVIEW)
+                .requestedAt(now)
+                .build();
+        
+        RevisionRequest saved = revisionRequestRepository.save(newRevisionRequest);
+        
+        // Send notification to manager
+        try {
+            
+            if (contract != null && contract.getManagerUserId() != null) {
+                CreateNotificationRequest managerNotif = CreateNotificationRequest.builder()
+                        .userId(contract.getManagerUserId())
+                        .type(NotificationType.CUSTOMER_REVISION_REQUESTED)
+                        .title("Customer yêu cầu chỉnh sửa lại")
+                        .content(String.format("Customer đã từ chối revision và yêu cầu chỉnh sửa lại. Vui lòng xem xét.", 
+                                description != null ? "Lý do: " + description : ""))
+                        .referenceId(saved.getRevisionRequestId())
+                        .referenceType("REVISION_REQUEST")
+                        .actionUrl("/manager/contracts/" + revisionRequest.getContractId())
+                        .build();
+                
+                notificationServiceFeignClient.createNotification(managerNotif);
+                log.info("Sent new revision request notification to manager: userId={}, revisionRequestId={}", 
+                        contract.getManagerUserId(), saved.getRevisionRequestId());
+            }
+        } catch (Exception e) {
+            log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+                    saved.getRevisionRequestId(), e.getMessage(), e);
+        }
+        
+        log.info("Customer rejected revision, created new revision request: oldRevisionRequestId={}, newRevisionRequestId={}, assignmentId={}", 
+                revisionRequest.getRevisionRequestId(), saved.getRevisionRequestId(), assignmentId);
+    }
+
+    /**
+     * Get all revision requests by assignment ID (for manager and specialist)
+     */
+    public List<RevisionRequestResponse> getRevisionRequestsByAssignmentId(
+            String assignmentId,
+            String userId,
+            List<String> userRoles) {
+        log.info("Getting revision requests for assignment: {}, userId: {}", assignmentId, userId);
+        
+        // Verify assignment exists
+        TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        
+        // Verify user has permission
+        // Manager: must own the contract
+        // Specialist: must own the assignment
+        // Customer: must own the contract
+        Contract contract = contractRepository.findById(assignment.getContractId())
+                .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+        
+        if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("SYSTEM_ADMIN"))) {
+            if (!contract.getManagerUserId().equals(userId)) {
+                throw UnauthorizedException.create("You can only view revision requests from your contracts");
+            }
+        } else if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("TRANSCRIPTION") || 
+                role.equalsIgnoreCase("ARRANGEMENT") || 
+                role.equalsIgnoreCase("RECORDING_ARTIST"))) {
+            // Check specialistUserIdSnapshot (not specialistId) because userId is from user-service
+            String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+            if (specialistUserId == null || !specialistUserId.equals(userId)) {
+                throw UnauthorizedException.create("You can only view revision requests from your own assignments");
+            }
+        } else if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("CUSTOMER"))) {
+            // Customer can view revision requests for assignments in their contracts
+            if (!contract.getUserId().equals(userId)) {
+                throw UnauthorizedException.create("You can only view revision requests from your own contracts");
+            }
+        } else {
+            throw UnauthorizedException.create("You don't have permission to view revision requests");
+        }
+        
+        // Get all revision requests for this assignment
+        List<RevisionRequest> revisionRequests = revisionRequestRepository.findByTaskAssignmentId(assignmentId);
+        
+        return revisionRequests.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+    
+    /**
+     * Get all revision requests for a manager (with optional status filter)
+     */
+    public List<RevisionRequestResponse> getRevisionRequestsByManager(
+            String managerId,
+            RevisionRequestStatus status) {
+        log.info("Getting revision requests for manager: {}, status: {}", managerId, status);
+        
+        List<RevisionRequest> revisionRequests;
+        if (status != null) {
+            // Find by manager ID and status
+            revisionRequests = revisionRequestRepository.findByManagerId(managerId).stream()
+                    .filter(rr -> rr.getStatus() == status)
+                    .toList();
+        } else {
+            // Find all by manager ID
+            revisionRequests = revisionRequestRepository.findByManagerId(managerId);
+        }
+        
+        // Sort by requestedAt descending (newest first)
+        revisionRequests = revisionRequests.stream()
+                .sorted((a, b) -> {
+                    if (a.getRequestedAt() == null && b.getRequestedAt() == null) return 0;
+                    if (a.getRequestedAt() == null) return 1;
+                    if (b.getRequestedAt() == null) return -1;
+                    return b.getRequestedAt().compareTo(a.getRequestedAt());
+                })
+                .toList();
+        log.info("Revision requests:ssss {}", revisionRequests);
+        
+        return revisionRequests.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+    
+    /**
+     * Batch get revision requests by multiple assignment IDs (optimized for performance)
+     * This method assumes permission has already been verified at contract level
+     * 
+     * @param assignmentIds List of assignment IDs
+     * @param contractId Contract ID (for permission verification)
+     * @param userId User ID
+     * @param userRoles User roles
+     * @return List of revision request responses
+     */
+    public List<RevisionRequestResponse> getRevisionRequestsByAssignmentIds(
+            List<String> assignmentIds,
+            String contractId,
+            String userId,
+            List<String> userRoles) {
+        
+        if (assignmentIds == null || assignmentIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        
+        log.info("Batch getting revision requests for {} assignments, contractId: {}, userId: {}", 
+                assignmentIds.size(), contractId, userId);
+        
+        // Verify contract access (only need to check once for all assignments)
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Verify user has permission at contract level
+        if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("SYSTEM_ADMIN"))) {
+            if (!contract.getManagerUserId().equals(userId)) {
+                throw UnauthorizedException.create("You can only view revision requests from your contracts");
+            }
+        } else if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("CUSTOMER"))) {
+            if (!contract.getUserId().equals(userId)) {
+                throw UnauthorizedException.create("You can only view revision requests from your own contracts");
+            }
+        } else if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("TRANSCRIPTION") || 
+                role.equalsIgnoreCase("ARRANGEMENT") || 
+                role.equalsIgnoreCase("RECORDING_ARTIST"))) {
+            // Specialists: Permission check will be done after loading assignments
+            // We load all revision requests first, then filter by assignment ownership
+            // This avoids N+1 queries (checking each assignment individually)
+        } else {
+            throw UnauthorizedException.create("You don't have permission to view revision requests");
+        }
+        
+        // Batch query all revision requests in one go
+        List<RevisionRequest> revisionRequests = revisionRequestRepository.findByTaskAssignmentIdIn(assignmentIds);
+        
+        // For specialists, filter by assignment ownership
+        if (userRoles.stream().anyMatch(role -> 
+                role.equalsIgnoreCase("TRANSCRIPTION") || 
+                role.equalsIgnoreCase("ARRANGEMENT") || 
+                role.equalsIgnoreCase("RECORDING_ARTIST"))) {
+            // Get all assignments to check ownership
+            List<TaskAssignment> assignments = taskAssignmentRepository.findAllById(assignmentIds);
+            Set<String> ownedAssignmentIds = assignments.stream()
+                    .filter(a -> userId.equals(a.getSpecialistId()))
+                    .map(TaskAssignment::getAssignmentId)
+                    .collect(Collectors.toSet());
+            
+            // Filter revision requests to only include those from owned assignments
+            revisionRequests = revisionRequests.stream()
+                    .filter(rr -> ownedAssignmentIds.contains(rr.getTaskAssignmentId()))
+                    .collect(Collectors.toList());
+        }
+        
+        return revisionRequests.stream()
+                .map(this::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Convert entity to response DTO
+     */
+    private RevisionRequestResponse toResponse(RevisionRequest revisionRequest) {
+        return RevisionRequestResponse.builder()
+                .revisionRequestId(revisionRequest.getRevisionRequestId())
+                .contractId(revisionRequest.getContractId())
+                .milestoneId(revisionRequest.getMilestoneId())
+                .taskAssignmentId(revisionRequest.getTaskAssignmentId())
+                .originalSubmissionId(revisionRequest.getOriginalSubmissionId())
+                .revisedSubmissionId(revisionRequest.getRevisedSubmissionId())
+                .customerId(revisionRequest.getCustomerId())
+                .managerId(revisionRequest.getManagerId())
+                .specialistId(revisionRequest.getSpecialistId())
+                .title(revisionRequest.getTitle())
+                .description(revisionRequest.getDescription())
+                .managerNote(revisionRequest.getManagerNote())
+                .specialistNote(revisionRequest.getSpecialistNote())
+                .revisionRound(revisionRequest.getRevisionRound())
+                .isFreeRevision(revisionRequest.getIsFreeRevision())
+                .status(revisionRequest.getStatus() != null ? revisionRequest.getStatus().name() : null)
+                .requestedAt(revisionRequest.getRequestedAt())
+                .managerReviewedAt(revisionRequest.getManagerReviewedAt())
+                .assignedToSpecialistAt(revisionRequest.getAssignedToSpecialistAt())
+                .specialistSubmittedAt(revisionRequest.getSpecialistSubmittedAt())
+                .customerConfirmedAt(revisionRequest.getCustomerConfirmedAt())
+                .canceledAt(revisionRequest.getCanceledAt())
+                .createdAt(revisionRequest.getCreatedAt() != null ? revisionRequest.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
+                .updatedAt(revisionRequest.getUpdatedAt() != null ? revisionRequest.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
+                .createdBy(revisionRequest.getCreatedBy())
+                .updatedBy(revisionRequest.getUpdatedBy())
+                .build();
+    }
+}
+

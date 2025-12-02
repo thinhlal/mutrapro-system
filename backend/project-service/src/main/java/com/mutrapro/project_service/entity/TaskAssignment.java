@@ -79,11 +79,6 @@ public class TaskAssignment extends BaseEntity<String> {
     @Column(name = "specialist_responded_at")
     Instant specialistRespondedAt;
 
-    // Revision tracking (chỉ cho transcription và arrangement)
-    @Builder.Default
-    @Column(name = "used_revisions", nullable = false)
-    Integer usedRevisions = 0;  // Số lần revision đã sử dụng cho task này
-
     // Issue reporting (khi specialist báo không kịp deadline)
     @Builder.Default
     @Column(name = "has_issue", nullable = false)

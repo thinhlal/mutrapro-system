@@ -30,6 +30,9 @@ public class CustomerDeliveriesResponse {
     // List of delivered submissions
     List<FileSubmissionResponse> submissions;
     
+    // List of revision requests for assignments in this milestone
+    List<RevisionRequestResponse> revisionRequests;
+    
     @Data
     @Builder
     @NoArgsConstructor
@@ -39,6 +42,7 @@ public class CustomerDeliveriesResponse {
         String contractId;
         String contractNumber;
         String contractType;
+        String requestId;
     }
     
     @Data

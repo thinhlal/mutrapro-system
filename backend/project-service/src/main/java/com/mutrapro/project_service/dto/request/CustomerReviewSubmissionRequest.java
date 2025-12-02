@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CustomerReviewSubmissionRequest {
     private String action;  // "accept" or "request_revision"
-    private String reason;  // Required if action = "request_revision"
+    private String title;   // Required if action = "request_revision"
+    private String description;  // Required if action = "request_revision"
 }
 

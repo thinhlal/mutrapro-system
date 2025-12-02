@@ -49,6 +49,10 @@ import {
   reviewSubmission,
   deliverSubmission,
 } from '../../../services/fileSubmissionService';
+import {
+  getRevisionRequestsByAssignment,
+  reviewRevisionRequest,
+} from '../../../services/revisionRequestService';
 import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import FileList from '../../../components/common/FileList/FileList';
@@ -71,6 +75,7 @@ const STATUS_COLORS = {
   in_progress: 'processing',
   ready_for_review: 'orange',
   revision_requested: 'warning',
+  in_revision: 'processing',
   delivery_pending: 'cyan',
   completed: 'success',
   cancelled: 'error',
@@ -83,6 +88,7 @@ const STATUS_LABELS = {
   in_progress: 'Đang thực hiện',
   ready_for_review: 'Chờ duyệt',
   revision_requested: 'Yêu cầu chỉnh sửa',
+  in_revision: 'Đang chỉnh sửa',
   delivery_pending: 'Chờ giao hàng',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
@@ -146,6 +152,12 @@ const TaskDetailPage = () => {
   const [submissionRejectReason, setSubmissionRejectReason] = useState('');
   const [expandedSubmissions, setExpandedSubmissions] = useState(new Set()); // Track which submissions are expanded
   const [showAllFiles, setShowAllFiles] = useState({}); // Track which submissions show all files
+  const [revisionRequests, setRevisionRequests] = useState([]);
+  const [loadingRevisionRequests, setLoadingRevisionRequests] = useState(false);
+  const [reviewRevisionModalVisible, setReviewRevisionModalVisible] = useState(false);
+  const [selectedRevisionRequest, setSelectedRevisionRequest] = useState(null);
+  const [reviewRevisionAction, setReviewRevisionAction] = useState(''); // 'approve' or 'reject'
+  const [reviewRevisionNote, setReviewRevisionNote] = useState('');
 
   useEffect(() => {
     if (contractId && assignmentId) {
@@ -158,6 +170,7 @@ const TaskDetailPage = () => {
     // Request files đã có trong request.files (từ API getServiceRequestById)
     if (task && assignmentId) {
       loadFiles();
+      loadRevisionRequests();
     }
   }, [task, assignmentId]);
 
@@ -270,6 +283,24 @@ const TaskDetailPage = () => {
     }
   };
 
+  const loadRevisionRequests = async () => {
+    if (!assignmentId) return;
+    try {
+      setLoadingRevisionRequests(true);
+      const response = await getRevisionRequestsByAssignment(assignmentId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        setRevisionRequests(response.data);
+      } else {
+        setRevisionRequests([]);
+      }
+    } catch (error) {
+      console.error('Error loading revision requests:', error);
+      setRevisionRequests([]);
+    } finally {
+      setLoadingRevisionRequests(false);
+    }
+  };
+
   const handleApproveFile = async fileId => {
     try {
       setActionLoading(true);
@@ -377,6 +408,44 @@ const TaskDetailPage = () => {
       console.error('Error rejecting submission:', error);
       message.error(
         error?.response?.data?.message || 'Lỗi khi từ chối submission'
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReviewRevisionRequest = async () => {
+    if (!selectedRevisionRequest) return;
+    
+    if (reviewRevisionAction === 'reject' && !reviewRevisionNote.trim()) {
+      message.warning('Vui lòng nhập lý do từ chối');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const response = await reviewRevisionRequest(
+        selectedRevisionRequest.revisionRequestId,
+        reviewRevisionAction,
+        reviewRevisionNote
+      );
+      if (response?.status === 'success') {
+        message.success(
+          reviewRevisionAction === 'approve'
+            ? 'Đã duyệt revision request'
+            : 'Đã từ chối revision request'
+        );
+        setReviewRevisionModalVisible(false);
+        setSelectedRevisionRequest(null);
+        setReviewRevisionAction('');
+        setReviewRevisionNote('');
+        // Reload revision requests và task
+        await Promise.all([loadRevisionRequests(), loadTask()]);
+      }
+    } catch (error) {
+      console.error('Error reviewing revision request:', error);
+      message.error(
+        error?.response?.data?.message || 'Lỗi khi review revision request'
       );
     } finally {
       setActionLoading(false);
@@ -1092,6 +1161,167 @@ const TaskDetailPage = () => {
           </Descriptions>
         </Card>
 
+        {/* Revision Requests */}
+        {revisionRequests.length > 0 && (
+          <Card
+            title={
+              <Space>
+                <Text strong>Revision Requests</Text>
+                <Tag color="orange">{revisionRequests.length}</Tag>
+              </Space>
+            }
+            extra={
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadRevisionRequests}
+                loading={loadingRevisionRequests}
+                size="small"
+              >
+                Làm mới
+              </Button>
+            }
+          >
+            <Spin spinning={loadingRevisionRequests}>
+              <Collapse>
+                {revisionRequests.map(revision => {
+                  const status = revision.status?.toLowerCase();
+                  const statusColors = {
+                    pending_manager_review: 'orange',
+                    in_revision: 'processing',
+                    waiting_manager_review: 'blue',
+                    approved_pending_delivery: 'cyan',
+                    waiting_customer_confirm: 'purple',
+                    completed: 'success',
+                    rejected: 'error',
+                    canceled: 'default',
+                  };
+                  const statusLabels = {
+                    pending_manager_review: 'Chờ Manager duyệt',
+                    in_revision: 'Đang chỉnh sửa',
+                    waiting_manager_review: 'Chờ Manager review',
+                    approved_pending_delivery: 'Đã duyệt, chờ deliver',
+                    waiting_customer_confirm: 'Chờ Customer xác nhận',
+                    completed: 'Hoàn thành',
+                    rejected: 'Từ chối',
+                    canceled: 'Đã hủy',
+                  };
+
+                  return (
+                    <Collapse.Panel
+                      key={revision.revisionRequestId}
+                      header={
+                        <Space>
+                          <Text strong>
+                            Revision Round #{revision.revisionRound}
+                          </Text>
+                          <Tag color={statusColors[status] || 'default'}>
+                            {statusLabels[status] || status}
+                          </Tag>
+                          {revision.isFreeRevision && (
+                            <Tag color="green">Free Revision</Tag>
+                          )}
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {revision.title}
+                          </Text>
+                        </Space>
+                      }
+                      extra={
+                        status === 'pending_manager_review' && (
+                          <Space>
+                            <Button
+                              size="small"
+                              type="primary"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setSelectedRevisionRequest(revision);
+                                setReviewRevisionAction('approve');
+                                setReviewRevisionNote('');
+                                setReviewRevisionModalVisible(true);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="small"
+                              danger
+                              onClick={e => {
+                                e.stopPropagation();
+                                setSelectedRevisionRequest(revision);
+                                setReviewRevisionAction('reject');
+                                setReviewRevisionNote('');
+                                setReviewRevisionModalVisible(true);
+                              }}
+                            >
+                              Reject
+                            </Button>
+                          </Space>
+                        )
+                      }
+                    >
+                      <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="Title">
+                          <Text strong>{revision.title}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Description">
+                          <Paragraph>{revision.description}</Paragraph>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Status">
+                          <Tag color={statusColors[status] || 'default'}>
+                            {statusLabels[status] || status}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Revision Round">
+                          #{revision.revisionRound}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Free Revision">
+                          {revision.isFreeRevision ? (
+                            <Tag color="green">Yes</Tag>
+                          ) : (
+                            <Tag color="orange">No</Tag>
+                          )}
+                        </Descriptions.Item>
+                        {revision.requestedAt && (
+                          <Descriptions.Item label="Requested At">
+                            {dayjs(revision.requestedAt).format(
+                              'HH:mm DD/MM/YYYY'
+                            )}
+                          </Descriptions.Item>
+                        )}
+                        {revision.managerReviewedAt && (
+                          <Descriptions.Item label="Manager Reviewed At">
+                            {dayjs(revision.managerReviewedAt).format(
+                              'HH:mm DD/MM/YYYY'
+                            )}
+                          </Descriptions.Item>
+                        )}
+                        {revision.managerNote && (
+                          <Descriptions.Item label="Manager Note">
+                            <Paragraph>{revision.managerNote}</Paragraph>
+                          </Descriptions.Item>
+                        )}
+                        {revision.specialistSubmittedAt && (
+                          <Descriptions.Item label="Specialist Submitted At">
+                            {dayjs(revision.specialistSubmittedAt).format(
+                              'HH:mm DD/MM/YYYY'
+                            )}
+                          </Descriptions.Item>
+                        )}
+                        {revision.customerConfirmedAt && (
+                          <Descriptions.Item label="Customer Confirmed At">
+                            {dayjs(revision.customerConfirmedAt).format(
+                              'HH:mm DD/MM/YYYY'
+                            )}
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                    </Collapse.Panel>
+                  );
+                })}
+              </Collapse>
+            </Spin>
+          </Card>
+        )}
+
         {/* Khối 1: Current Submission */}
         {currentSubmission && (
           <Card
@@ -1671,6 +1901,70 @@ const TaskDetailPage = () => {
             showIcon
             style={{ marginBottom: 16 }}
           />
+        )}
+      </Modal>
+
+      {/* Review Revision Request Modal */}
+      <Modal
+        title={
+          reviewRevisionAction === 'approve'
+            ? 'Duyệt Revision Request'
+            : 'Từ chối Revision Request'
+        }
+        open={reviewRevisionModalVisible}
+        onOk={handleReviewRevisionRequest}
+        onCancel={() => {
+          setReviewRevisionModalVisible(false);
+          setSelectedRevisionRequest(null);
+          setReviewRevisionAction('');
+          setReviewRevisionNote('');
+        }}
+        confirmLoading={actionLoading}
+        okText={reviewRevisionAction === 'approve' ? 'Duyệt' : 'Từ chối'}
+        cancelText="Hủy"
+        okButtonProps={
+          reviewRevisionAction === 'reject' ? { danger: true } : {}
+        }
+        width={600}
+      >
+        {selectedRevisionRequest && (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Alert
+              message={`Revision Round #${selectedRevisionRequest.revisionRound}`}
+              description={selectedRevisionRequest.title}
+              type="info"
+              showIcon
+            />
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Description">
+                <Paragraph>{selectedRevisionRequest.description}</Paragraph>
+              </Descriptions.Item>
+            </Descriptions>
+            {reviewRevisionAction === 'reject' && (
+              <div>
+                <Text strong>Lý do từ chối (bắt buộc):</Text>
+                <TextArea
+                  rows={4}
+                  value={reviewRevisionNote}
+                  onChange={e => setReviewRevisionNote(e.target.value)}
+                  placeholder="Nhập lý do từ chối revision request này..."
+                  style={{ marginTop: 8 }}
+                />
+              </div>
+            )}
+            {reviewRevisionAction === 'approve' && (
+              <div>
+                <Text strong>Ghi chú (tùy chọn):</Text>
+                <TextArea
+                  rows={4}
+                  value={reviewRevisionNote}
+                  onChange={e => setReviewRevisionNote(e.target.value)}
+                  placeholder="Nhập ghi chú cho specialist..."
+                  style={{ marginTop: 8 }}
+                />
+              </div>
+            )}
+          </Space>
         )}
       </Modal>
 

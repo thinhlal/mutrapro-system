@@ -1210,7 +1210,6 @@ public class TaskAssignmentService {
             .milestoneId(request.getMilestoneId())
             .notes(request.getNotes())
             .assignedDate(java.time.Instant.now())
-            .usedRevisions(0)
             .build();
         
         TaskAssignment saved = taskAssignmentRepository.save(assignment);

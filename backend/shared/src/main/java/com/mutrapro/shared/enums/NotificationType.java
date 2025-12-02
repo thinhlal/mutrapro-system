@@ -21,6 +21,9 @@ public enum NotificationType {
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist cancel
     TASK_FILE_UPLOADED,         // Specialist đã upload file output cho task
     SUBMISSION_DELIVERED,       // Submission đã được gửi cho customer
+    CUSTOMER_REVISION_REQUESTED, // Customer yêu cầu revision, chờ manager duyệt
+    REVISION_REQUEST_APPROVED,  // Manager đã duyệt revision request, specialist bắt đầu làm
+    REVISION_REQUEST_REJECTED,   // Manager từ chối yêu cầu revision
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }
 

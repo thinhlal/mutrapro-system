@@ -4,6 +4,7 @@ import com.mutrapro.project_service.dto.request.ReviewSubmissionRequest;
 import com.mutrapro.project_service.dto.request.CustomerReviewSubmissionRequest;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
 import com.mutrapro.project_service.dto.response.CustomerDeliveriesResponse;
+import com.mutrapro.project_service.exception.ValidationException;
 import com.mutrapro.project_service.service.FileSubmissionService;
 import com.mutrapro.project_service.service.FileAccessService;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -120,7 +121,7 @@ public class FileSubmissionController {
                     userContext.getUserId(),
                     userContext.getRoles());
         } else {
-            throw new IllegalArgumentException("Invalid action: " + request.getAction() + ". Must be 'approve' or 'reject'");
+            throw ValidationException.invalidAction(request.getAction(), "'approve' or 'reject'");
         }
 
         return ApiResponse.<FileSubmissionResponse>builder()
@@ -164,7 +165,8 @@ public class FileSubmissionController {
         FileSubmissionResponse response = fileSubmissionService.customerReviewSubmission(
                 submissionId,
                 request.getAction(),
-                request.getReason(),
+                request.getTitle(),
+                request.getDescription(),
                 userContext.getUserId(),
                 userContext.getRoles());
 

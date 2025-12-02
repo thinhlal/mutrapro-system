@@ -57,7 +57,7 @@ public class FileService {
     ObjectMapper objectMapper;
 
     @Transactional
-    public File createFileFromEvent(FileUploadedEvent event) {
+    public void createFileFromEvent(FileUploadedEvent event) {
         // Idempotency is handled at consumer level (BaseIdempotentConsumer with consumed_events table)
         // This method is only called if the event hasn't been processed before
         
@@ -82,8 +82,7 @@ public class FileService {
         File saved = fileRepository.save(file);
         log.info("File created from event: fileId={}, fileName={}, requestId={}, eventId={}",
                 saved.getFileId(), saved.getFileName(), saved.getRequestId(), event.getEventId());
-        
-        return saved;
+
     }
 
     public List<FileInfoResponse> getFilesByRequestId(String requestId, String userId, List<String> userRoles) {
@@ -93,26 +92,54 @@ public class FileService {
         }
         
         try {
-            // CRITICAL OPTIMIZATION: Verify contract ownership một lần cho MANAGER
-            // Thay vì check từng file (N queries), chỉ cần 1 query
+            // CRITICAL OPTIMIZATION: Verify contract ownership một lần cho MANAGER và SPECIALIST
             boolean skipFileAccessCheck = false;
+            
+            // Tìm contract từ requestId (cần cho cả manager và specialist check)
+            List<Contract> contracts = contractRepository.findByRequestId(requestId);
+            if (contracts.isEmpty()) {
+                log.debug("No contract found for requestId: {}", requestId);
+                return List.of();
+            }
+            Contract contract = contracts.getFirst();
             
             // Check MANAGER ownership
             if (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN")) {
-                List<Contract> contracts = contractRepository.findByRequestId(requestId);
-                if (!contracts.isEmpty()) {
-                    // Lấy contract đầu tiên (thường là contract active)
-                    Contract contract = contracts.get(0);
-                    if (userId.equals(contract.getManagerUserId())) {
+                if (userId.equals(contract.getManagerUserId())) {
+                    skipFileAccessCheck = true;
+                    log.debug("Request {} belongs to contract managed by manager {}, skipping per-file access check", 
+                            requestId, userId);
+                }
+            }
+            
+            // Check SPECIALIST ownership - nếu specialist có assignment thuộc contract của request này
+            if (!skipFileAccessCheck) {
+                boolean isSpecialist = userRoles.stream().anyMatch(role -> 
+                    role.equalsIgnoreCase("TRANSCRIPTION") || 
+                    role.equalsIgnoreCase("ARRANGEMENT") || 
+                    role.equalsIgnoreCase("RECORDING_ARTIST")
+                );
+                
+                if (isSpecialist) {
+                    // Tìm assignments của specialist trong contract này
+                    List<TaskAssignment> assignments = taskAssignmentRepository.findByContractId(contract.getContractId());
+                    boolean hasAssignment = assignments.stream().anyMatch(assignment -> {
+                        String specialistUserId = assignment.getSpecialistUserIdSnapshot() != null 
+                                ? assignment.getSpecialistUserIdSnapshot() 
+                                : assignment.getSpecialistId();
+                        return userId.equals(specialistUserId);
+                    });
+                    
+                    if (hasAssignment) {
                         skipFileAccessCheck = true;
-                        log.debug("Request {} belongs to contract managed by manager {}, skipping per-file access check", 
+                        log.debug("Request {} belongs to contract with assignments for specialist {}, skipping per-file access check", 
                                 requestId, userId);
                     }
                 }
             }
             
             // Lấy files với filter ở database level (chỉ customer_upload và contract_pdf)
-            // (API này được dùng bởi request-service để hiển thị files cho customer)
+            // (API này được dùng bởi request-service để hiển thị files cho customer và specialist)
             List<File> files = fileRepository.findByRequestIdAndFileSourceIn(
                     requestId, 
                     List.of(FileSourceType.customer_upload, FileSourceType.contract_pdf)
@@ -141,8 +168,9 @@ public class FileService {
                         .collect(Collectors.toList());
             }
             
-            // Nếu không verify được ownership, return empty list (API này chỉ dành cho manager)
-            log.warn("Manager {} không có quyền truy cập files của request {}", userId, requestId);
+            // Nếu không verify được ownership, return empty list
+            log.warn("User {} (roles: {}) không có quyền truy cập files của request {}", 
+                    userId, userRoles, requestId);
             return List.of();
         } catch (Exception e) {
             log.error("Error fetching files for requestId: {}", requestId, e);
@@ -443,36 +471,30 @@ public class FileService {
             "audio/ogg", "audio/vorbis"
         );
 
-        boolean isValid = false;
-        String allowedTypes = "";
-
-        switch (taskType) {
-            case transcription:
+        boolean isValid;
+        String allowedTypes = switch (taskType) {
+            case transcription -> {
                 // Chỉ cho notation files
-                isValid = notationExtensions.contains(extension) || 
-                         notationMimeTypes.stream().anyMatch(lowerMimeType::contains);
-                allowedTypes = "notation files (MusicXML, XML, MIDI, PDF)";
-                break;
-                
-            case arrangement:
+                isValid = notationExtensions.contains(extension) ||
+                        notationMimeTypes.stream().anyMatch(lowerMimeType::contains);
+                yield "notation files (MusicXML, XML, MIDI, PDF)";
+            }
+            case arrangement -> {
                 // Cho cả notation và audio
-                isValid = notationExtensions.contains(extension) || 
-                         notationMimeTypes.stream().anyMatch(lowerMimeType::contains) ||
-                         audioExtensions.contains(extension) ||
-                         audioMimeTypes.stream().anyMatch(lowerMimeType::contains);
-                allowedTypes = "notation or audio files";
-                break;
-                
-            case recording:
+                isValid = notationExtensions.contains(extension) ||
+                        notationMimeTypes.stream().anyMatch(lowerMimeType::contains) ||
+                        audioExtensions.contains(extension) ||
+                        audioMimeTypes.stream().anyMatch(lowerMimeType::contains);
+                yield "notation or audio files";
+            }
+            case recording -> {
                 // Chỉ cho audio files
                 isValid = audioExtensions.contains(extension) ||
-                         audioMimeTypes.stream().anyMatch(lowerMimeType::contains);
-                allowedTypes = "audio files (MP3, WAV, FLAC, etc.)";
-                break;
-                
-            default:
-                throw InvalidFileTypeForTaskException.unknownTaskType(taskType.name());
-        }
+                        audioMimeTypes.stream().anyMatch(lowerMimeType::contains);
+                yield "audio files (MP3, WAV, FLAC, etc.)";
+            }
+            default -> throw InvalidFileTypeForTaskException.unknownTaskType(taskType.name());
+        };
 
         if (!isValid) {
             throw InvalidFileTypeForTaskException.notAllowed(

@@ -51,6 +51,7 @@ function getStatusDisplay(status) {
     in_progress: { text: 'In Progress', color: 'geekblue' },
     ready_for_review: { text: 'Ready for Review', color: 'orange' },
     revision_requested: { text: 'Revision Requested', color: 'warning' },
+    in_revision: { text: 'In Revision', color: 'processing' },
     completed: { text: 'Completed', color: 'green' },
     cancelled: { text: 'Cancelled', color: 'default' },
   };

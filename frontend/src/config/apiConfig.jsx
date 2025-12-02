@@ -172,6 +172,19 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/specialist/task-assignments/${assignmentId}/submit-for-review`,
   },
 
+  // === Revision Requests Management ===
+  REVISION_REQUESTS: {
+    // GET /revision-requests/by-assignment/{assignmentId}
+    BY_ASSIGNMENT: assignmentId =>
+      `${PROJECT_PATH}/revision-requests/by-assignment/${assignmentId}`,
+    // POST /revision-requests/{revisionRequestId}/review
+    REVIEW: revisionRequestId =>
+      `${PROJECT_PATH}/revision-requests/${revisionRequestId}/review`,
+    // GET /revision-requests/manager/my-requests?status={status}
+    GET_MY_REQUESTS: status =>
+      `${PROJECT_PATH}/revision-requests/manager/my-requests${status ? `?status=${status}` : ''}`,
+  },
+
   // === File Submissions Management ===
   SUBMISSIONS: {
     // POST /submissions

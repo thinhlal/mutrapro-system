@@ -98,6 +98,7 @@ import TaskAssignmentWorkspace from './pages/manager/TaskAssignmentWorkspace/Tas
 import MilestoneDetailPage from './pages/manager/MilestoneDetail/MilestoneDetailPage';
 import TaskDetailPage from './pages/manager/TaskDetail/TaskDetailPage';
 import ManagerChatPage from './pages/manager/Chat/ManagerChatPage';
+import RevisionRequestsManagement from './pages/manager/RevisionRequests/RevisionRequestsManagement';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -394,6 +395,7 @@ function App() {
               element={<TaskDetailPage />}
             />
             <Route path="profile" element={<ManagerProfile />} />
+            <Route path="revision-requests" element={<RevisionRequestsManagement />} />
             <Route path="chat" element={<ManagerChatPage />} />
             <Route path="chat/:roomId" element={<ManagerChatPage />} />
           </Route>

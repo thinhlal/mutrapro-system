@@ -21,6 +21,7 @@ import {
   Upload,
   Checkbox,
   Collapse,
+  Divider,
 } from 'antd';
 import {
   LeftOutlined,
@@ -48,6 +49,7 @@ import {
 } from '../../../services/fileService';
 import { submitFilesForReview } from '../../../services/taskAssignmentService';
 import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
+import { getRevisionRequestsByAssignment } from '../../../services/revisionRequestService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './TranscriptionTaskDetailPage.module.css';
 
@@ -83,6 +85,7 @@ function getStatusTag(status) {
     in_progress: { color: 'geekblue', text: 'In Progress' },
     ready_for_review: { color: 'orange', text: 'Ready for Review' },
     revision_requested: { color: 'warning', text: 'Revision Requested' },
+    in_revision: { color: 'processing', text: 'In Revision' },
     completed: { color: 'green', text: 'Completed' },
     cancelled: { color: 'default', text: 'Cancelled' },
   };
@@ -239,6 +242,7 @@ const TranscriptionTaskDetailPage = () => {
   const [uploadForm] = Form.useForm();
   const [acceptingTask, setAcceptingTask] = useState(false);
   const [startingTask, setStartingTask] = useState(false);
+  const [submittingForReview, setSubmittingForReview] = useState(false);
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
@@ -251,6 +255,8 @@ const TranscriptionTaskDetailPage = () => {
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
   const [rejectionReasonToView, setRejectionReasonToView] = useState('');
+  const [revisionRequests, setRevisionRequests] = useState([]);
+  const [loadingRevisionRequests, setLoadingRevisionRequests] = useState(false);
 
   const loadContractTasks = useCallback(async contractId => {
     if (!contractId) {
@@ -373,6 +379,24 @@ const TranscriptionTaskDetailPage = () => {
     }
   }, []);
 
+  const loadRevisionRequests = useCallback(async assignmentId => {
+    if (!assignmentId) return;
+    try {
+      setLoadingRevisionRequests(true);
+      const response = await getRevisionRequestsByAssignment(assignmentId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        setRevisionRequests(response.data);
+      } else {
+        setRevisionRequests([]);
+      }
+    } catch (error) {
+      console.error('Error loading revision requests:', error);
+      setRevisionRequests([]);
+    } finally {
+      setLoadingRevisionRequests(false);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -393,11 +417,12 @@ const TranscriptionTaskDetailPage = () => {
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
 
-        // Load song song: tasks cùng contract + files + submissions của assignment hiện tại
+        // Load song song: tasks cùng contract + files + submissions + revision requests của assignment hiện tại
         await Promise.all([
           loadContractTasks(contractId),
           loadTaskFiles(taskData.assignmentId),
           loadSubmissions(taskData.assignmentId),
+          loadRevisionRequests(taskData.assignmentId),
         ]);
       } else {
         setError('Task not found');
@@ -408,7 +433,7 @@ const TranscriptionTaskDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [taskId, loadContractTasks, loadTaskFiles, loadSubmissions]);
+  }, [taskId, loadContractTasks, loadTaskFiles, loadSubmissions, loadRevisionRequests]);
 
   useEffect(() => {
     loadData();
@@ -422,7 +447,7 @@ const TranscriptionTaskDetailPage = () => {
     if (!task) return;
 
     const status = task.status?.toLowerCase();
-    if (status !== 'in_progress' && status !== 'revision_requested') {
+    if (status !== 'in_progress' && status !== 'revision_requested' && status !== 'in_revision') {
       return;
     }
 
@@ -440,6 +465,7 @@ const TranscriptionTaskDetailPage = () => {
     }
 
     try {
+      setSubmittingForReview(true);
       // Backend tự động tạo submission, add files và submit
       const response = await submitFilesForReview(
         task.assignmentId,
@@ -462,6 +488,8 @@ const TranscriptionTaskDetailPage = () => {
     } catch (error) {
       console.error('Error submitting for review:', error);
       message.error(error?.message || 'Lỗi khi submit for review');
+    } finally {
+      setSubmittingForReview(false);
     }
   }, [task, selectedFileIds, files, loadTaskFiles, loadSubmissions]);
 
@@ -563,6 +591,7 @@ const TranscriptionTaskDetailPage = () => {
     setDeletingFileId(fileId);
     setDeleteModalVisible(true);
   }, []);
+  console.log(request);
 
   const handleConfirmDeleteFile = useCallback(async () => {
     if (!deletingFileId) return;
@@ -702,6 +731,35 @@ const TranscriptionTaskDetailPage = () => {
     return submissions.slice(1);
   }, [submissions]);
 
+  // Helper function để match revision requests với submissions
+  const getRevisionRequestsForSubmission = useCallback((submissionId) => {
+    if (!submissionId || !revisionRequests.length) return [];
+    return revisionRequests.filter(
+      revision => 
+        revision.originalSubmissionId === submissionId || 
+        revision.revisedSubmissionId === submissionId
+    );
+  }, [revisionRequests]);
+
+  // Helper function để lấy revision request tạo ra submission này (revised submission)
+  const getRevisionRequestForRevisedSubmission = useCallback((submissionId) => {
+    if (!submissionId || !revisionRequests.length) return null;
+    return revisionRequests.find(
+      revision => revision.revisedSubmissionId === submissionId
+    ) || null;
+  }, [revisionRequests]);
+
+  // Helper function để lấy revision requests không match với submission nào (orphan)
+  const orphanRevisionRequests = useMemo(() => {
+    if (!revisionRequests.length || !submissions.length) return revisionRequests;
+    const allSubmissionIds = new Set(submissions.map(s => s.submissionId));
+    return revisionRequests.filter(
+      revision => 
+        (!revision.originalSubmissionId || !allSubmissionIds.has(revision.originalSubmissionId)) &&
+        (!revision.revisedSubmissionId || !allSubmissionIds.has(revision.revisedSubmissionId))
+    );
+  }, [revisionRequests, submissions]);
+
   // Columns cho Draft Files
   const draftFileColumns = useMemo(
     () => [
@@ -765,19 +823,20 @@ const TranscriptionTaskDetailPage = () => {
               Download
             </Button>
             {(task.status?.toLowerCase() === 'in_progress' ||
-              task.status?.toLowerCase() === 'revision_requested') &&
+              task.status?.toLowerCase() === 'revision_requested' ||
+              task.status?.toLowerCase() === 'in_revision') &&
               task.status?.toLowerCase() !== 'ready_for_review' &&
               task.status?.toLowerCase() !== 'completed' && (
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteFile(record.fileId)}
-                size="small"
-              >
-                Delete
-              </Button>
-            )}
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteFile(record.fileId)}
+                  size="small"
+                >
+                  Delete
+                </Button>
+              )}
           </Space>
         ),
       },
@@ -989,7 +1048,8 @@ const TranscriptionTaskDetailPage = () => {
           const canDelete =
             record.fileStatus === 'uploaded' &&
             (task.status?.toLowerCase() === 'in_progress' ||
-              task.status?.toLowerCase() === 'revision_requested') &&
+              task.status?.toLowerCase() === 'revision_requested' ||
+              task.status?.toLowerCase() === 'in_revision') &&
             task.status?.toLowerCase() !== 'ready_for_review' &&
             task.status?.toLowerCase() !== 'completed';
 
@@ -1452,44 +1512,45 @@ const TranscriptionTaskDetailPage = () => {
                         hasStartButton ||
                         hasSubmitButton ||
                         hasIssueButton) && (
-                        <Space wrap>
-                          {hasAcceptButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleAcceptTask}
-                              loading={acceptingTask}
-                            >
-                              Accept Task
-                            </Button>
-                          )}
-                          {hasSubmitButton && (
-                            <Button
-                              onClick={handleSubmitForReview}
-                              disabled={!hasFilesToSubmit}
-                            >
-                              Submit for Review
-                            </Button>
-                          )}
-                          {hasStartButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleStartTask}
-                              loading={startingTask}
-                            >
-                              Start Task
-                            </Button>
-                          )}
-                          {hasIssueButton && (
-                            <Button
-                              danger
-                              icon={<ExclamationCircleOutlined />}
-                              onClick={handleOpenIssueModal}
-                            >
-                              Báo không kịp deadline
-                            </Button>
-                          )}
-                        </Space>
-                      )}
+                          <Space wrap>
+                            {hasAcceptButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleAcceptTask}
+                                loading={acceptingTask}
+                              >
+                                Accept Task
+                              </Button>
+                            )}
+                            {hasSubmitButton && (
+                              <Button
+                                onClick={handleSubmitForReview}
+                                disabled={!hasFilesToSubmit}
+                                loading={submittingForReview}
+                              >
+                                Submit for Review
+                              </Button>
+                            )}
+                            {hasStartButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleStartTask}
+                                loading={startingTask}
+                              >
+                                Start Task
+                              </Button>
+                            )}
+                            {hasIssueButton && (
+                              <Button
+                                danger
+                                icon={<ExclamationCircleOutlined />}
+                                onClick={handleOpenIssueModal}
+                              >
+                                Báo không kịp deadline
+                              </Button>
+                            )}
+                          </Space>
+                        )}
                     </Space>
                   </Card>
                 );
@@ -1499,58 +1560,176 @@ const TranscriptionTaskDetailPage = () => {
         </Row>
       </Card>
 
-      {/* Audio Preview - TODO: Load from contract/request */}
-      {/* <Card className={styles.section} title="Audio Preview">
-        {task.audioUrl ? (
-          <audio controls src={task.audioUrl} className={styles.audioPlayer} />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No audio provided" />
-        )}
-      </Card> */}
+      {/* Revision Requests (Orphan - không match với submission nào) */}
+      {orphanRevisionRequests.length > 0 && (
+        <Card
+          className={styles.section}
+          title={
+            <Space>
+              <Text strong>Revision Requests (Khác)</Text>
+              <Tag color="orange">{orphanRevisionRequests.length}</Tag>
+            </Space>
+          }
+          extra={
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => loadRevisionRequests(task.assignmentId)}
+              loading={loadingRevisionRequests}
+              size="small"
+            >
+              Reload
+            </Button>
+          }
+        >
+          <Spin spinning={loadingRevisionRequests}>
+            <Collapse>
+              {orphanRevisionRequests.map(revision => {
+                const status = revision.status?.toLowerCase();
+                const statusColors = {
+                  pending_manager_review: 'orange',
+                  in_revision: 'processing',
+                  waiting_manager_review: 'blue',
+                  approved_pending_delivery: 'cyan',
+                  waiting_customer_confirm: 'purple',
+                  completed: 'success',
+                  rejected: 'error',
+                  canceled: 'default',
+                };
+                const statusLabels = {
+                  pending_manager_review: 'Chờ Manager duyệt',
+                  in_revision: 'Đang chỉnh sửa',
+                  waiting_manager_review: 'Chờ Manager review',
+                  approved_pending_delivery: 'Đã duyệt, chờ deliver',
+                  waiting_customer_confirm: 'Chờ Customer xác nhận',
+                  completed: 'Hoàn thành',
+                  rejected: 'Từ chối',
+                  canceled: 'Đã hủy',
+                };
+
+                return (
+                  <Collapse.Panel
+                    key={revision.revisionRequestId}
+                    header={
+                      <Space>
+                        <Text strong>Revision Round #{revision.revisionRound}</Text>
+                        <Tag color={statusColors[status] || 'default'}>
+                          {statusLabels[status] || status}
+                        </Tag>
+                        {revision.isFreeRevision && (
+                          <Tag color="green">Free Revision</Tag>
+                        )}
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {revision.title}
+                        </Text>
+                      </Space>
+                    }
+                  >
+                    <Descriptions bordered column={1} size="small">
+                      <Descriptions.Item label="Title">
+                        <Text strong>{revision.title}</Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Description">
+                        <Text>{revision.description}</Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Status">
+                        <Tag color={statusColors[status] || 'default'}>
+                          {statusLabels[status] || status}
+                        </Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Revision Round">
+                        #{revision.revisionRound}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Free Revision">
+                        {revision.isFreeRevision ? (
+                          <Tag color="green">Yes</Tag>
+                        ) : (
+                          <Tag color="orange">No</Tag>
+                        )}
+                      </Descriptions.Item>
+                      {revision.requestedAt && (
+                        <Descriptions.Item label="Requested At">
+                          {formatDateTime(revision.requestedAt)}
+                        </Descriptions.Item>
+                      )}
+                      {revision.managerReviewedAt && (
+                        <Descriptions.Item label="Manager Reviewed At">
+                          {formatDateTime(revision.managerReviewedAt)}
+                        </Descriptions.Item>
+                      )}
+                      {revision.managerNote && (
+                        <Descriptions.Item label="Manager Note">
+                          <Text>{revision.managerNote}</Text>
+                        </Descriptions.Item>
+                      )}
+                      {revision.specialistSubmittedAt && (
+                        <Descriptions.Item label="Specialist Submitted At">
+                          {formatDateTime(revision.specialistSubmittedAt)}
+                        </Descriptions.Item>
+                      )}
+                      {revision.customerConfirmedAt && (
+                        <Descriptions.Item label="Customer Confirmed At">
+                          {formatDateTime(revision.customerConfirmedAt)}
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+                  </Collapse.Panel>
+                );
+              })}
+            </Collapse>
+          </Spin>
+        </Card>
+      )}
 
       {/* Khối 1: Draft Files */}
-      <Card
-        className={styles.section}
-        title="Draft Files (chưa submit)"
-        extra={
-          task.status?.toLowerCase() !== 'assigned' &&
-          task.status?.toLowerCase() !== 'accepted_waiting' &&
-          task.status?.toLowerCase() !== 'ready_to_start' &&
-          task.status?.toLowerCase() !== 'delivery_pending' &&
-          task.status?.toLowerCase() !== 'cancelled' &&
-          task.status?.toLowerCase() !== 'ready_for_review' &&
-          task.status?.toLowerCase() !== 'completed' && (
-            <Button
-              type="primary"
-              icon={<UploadOutlined />}
-              onClick={handleOpenUploadModal}
-            >
-              Upload new version
-            </Button>
-          )
-        }
-      >
-        {draftFiles.length > 0 ? (
-          <Table
-            rowKey="fileId"
-            dataSource={draftFiles.sort((a, b) => {
-              const dateA = new Date(a.uploadDate || 0);
-              const dateB = new Date(b.uploadDate || 0);
-              return dateB - dateA; // Sort by newest first
-            })}
-            columns={draftFileColumns}
-            pagination={false}
-          />
-        ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Chưa có draft files. Upload file để bắt đầu."
-          />
-        )}
-      </Card>
+      {
+        (task.status?.toLowerCase() === 'in_progress' || 
+         task.status?.toLowerCase() === 'revision_requested' ||
+         task.status?.toLowerCase() === 'in_revision') && (<Card
+          className={styles.section}
+          title="Draft Files (chưa submit)"
+          extra={
+            task.status?.toLowerCase() !== 'assigned' &&
+            task.status?.toLowerCase() !== 'accepted_waiting' &&
+            task.status?.toLowerCase() !== 'ready_to_start' &&
+            task.status?.toLowerCase() !== 'delivery_pending' &&
+            task.status?.toLowerCase() !== 'cancelled' &&
+            task.status?.toLowerCase() !== 'ready_for_review' &&
+            task.status?.toLowerCase() !== 'completed' && (
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={handleOpenUploadModal}
+              >
+                Upload new version
+              </Button>
+            )
+          }
+        >
+          {draftFiles.length > 0 ? (
+            <Table
+              rowKey="fileId"
+              dataSource={draftFiles.sort((a, b) => {
+                const dateA = new Date(a.uploadDate || 0);
+                const dateB = new Date(b.uploadDate || 0);
+                return dateB - dateA; // Sort by newest first
+              })}
+              columns={draftFileColumns}
+              pagination={false}
+            />
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="Chưa có draft files. Upload file để bắt đầu."
+            />
+          )}
+        </Card>
+        )
+      }
 
       {/* Khối 2: Current Submission */}
-      {currentSubmission && (
+      {currentSubmission && (() => {
+        const revisedRevision = getRevisionRequestForRevisedSubmission(currentSubmission.submissionId);
+        return (
         <Card
           className={styles.section}
           title={
@@ -1558,12 +1737,17 @@ const TranscriptionTaskDetailPage = () => {
               <Text strong>
                 {currentSubmission.status?.toLowerCase() === 'rejected'
                   ? `Submission #${currentSubmission.version} – Revision Requested (Manager yêu cầu chỉnh sửa)`
+                  : revisedRevision
+                  ? `Current review – Submission #${currentSubmission.version} (Revision Round #${revisedRevision.revisionRound})`
                   : `Current review – Submission #${currentSubmission.version}`}
               </Text>
+              {revisedRevision && (
+                <Tag color="purple">Revision Round #{revisedRevision.revisionRound}</Tag>
+              )}
               <Tag
                 color={
                   SUBMISSION_STATUS_COLORS[
-                    currentSubmission.status?.toLowerCase()
+                  currentSubmission.status?.toLowerCase()
                   ] || 'default'
                 }
               >
@@ -1589,6 +1773,95 @@ const TranscriptionTaskDetailPage = () => {
             )
           }
         >
+          {/* Revision Request Info */}
+          {(() => {
+            const relatedRevisions = getRevisionRequestsForSubmission(currentSubmission.submissionId);
+            if (relatedRevisions.length > 0) {
+              return (
+                <div style={{ marginBottom: 16 }}>
+                  <Divider orientation="left">
+                    <Text strong>Revision Requests</Text>
+                  </Divider>
+                  <Collapse size="small">
+                    {relatedRevisions.map(revision => {
+                      const status = revision.status?.toLowerCase();
+                      const statusColors = {
+                        pending_manager_review: 'orange',
+                        in_revision: 'processing',
+                        waiting_manager_review: 'blue',
+                        approved_pending_delivery: 'cyan',
+                        waiting_customer_confirm: 'purple',
+                        completed: 'success',
+                        rejected: 'error',
+                        canceled: 'default',
+                      };
+                      const statusLabels = {
+                        pending_manager_review: 'Chờ Manager duyệt',
+                        in_revision: 'Đang chỉnh sửa',
+                        waiting_manager_review: 'Chờ Manager review',
+                        approved_pending_delivery: 'Đã duyệt, chờ deliver',
+                        waiting_customer_confirm: 'Chờ Customer xác nhận',
+                        completed: 'Hoàn thành',
+                        rejected: 'Từ chối',
+                        canceled: 'Đã hủy',
+                      };
+
+                      return (
+                        <Collapse.Panel
+                          key={revision.revisionRequestId}
+                          header={
+                            <Space>
+                              <Text strong>Round #{revision.revisionRound}</Text>
+                              <Tag color={statusColors[status] || 'default'}>
+                                {statusLabels[status] || status}
+                              </Tag>
+                              {revision.isFreeRevision && (
+                                <Tag color="green">Free</Tag>
+                              )}
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {revision.title}
+                              </Text>
+                            </Space>
+                          }
+                        >
+                          <Descriptions bordered column={1} size="small">
+                            <Descriptions.Item label="Title">
+                              <Text strong>{revision.title}</Text>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Description">
+                              <Text>{revision.description}</Text>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status">
+                              <Tag color={statusColors[status] || 'default'}>
+                                {statusLabels[status] || status}
+                              </Tag>
+                            </Descriptions.Item>
+                            {revision.managerNote && (
+                              <Descriptions.Item label="Manager Note">
+                                <Text>{revision.managerNote}</Text>
+                              </Descriptions.Item>
+                            )}
+                            {revision.requestedAt && (
+                              <Descriptions.Item label="Requested At">
+                                {formatDateTime(revision.requestedAt)}
+                              </Descriptions.Item>
+                            )}
+                            {revision.specialistSubmittedAt && (
+                              <Descriptions.Item label="Specialist Submitted At">
+                                {formatDateTime(revision.specialistSubmittedAt)}
+                              </Descriptions.Item>
+                            )}
+                          </Descriptions>
+                        </Collapse.Panel>
+                      );
+                    })}
+                  </Collapse>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          
           {currentSubmission.files && currentSubmission.files.length > 0 ? (
             <Table
               rowKey="fileId"
@@ -1600,7 +1873,8 @@ const TranscriptionTaskDetailPage = () => {
             <Empty description="Không có files trong submission này" />
           )}
         </Card>
-      )}
+        );
+      })()}
 
       {/* Khối 3: Previous Submissions (History) */}
       {previousSubmissions.length > 0 && (
@@ -1609,13 +1883,20 @@ const TranscriptionTaskDetailPage = () => {
             {previousSubmissions.map(submission => {
               const submissionStatus = submission.status?.toLowerCase();
               const files = submission.files || [];
+              const revisedRevision = getRevisionRequestForRevisedSubmission(submission.submissionId);
 
               return (
                 <Collapse.Panel
                   key={submission.submissionId}
                   header={
                     <Space>
-                      <Text strong>Submission #{submission.version}</Text>
+                      <Text strong>
+                        Submission #{submission.version}
+                        {revisedRevision && ` (Revision Round #${revisedRevision.revisionRound})`}
+                      </Text>
+                      {revisedRevision && (
+                        <Tag color="purple">Revision Round #{revisedRevision.revisionRound}</Tag>
+                      )}
                       <Tag
                         color={
                           SUBMISSION_STATUS_COLORS[submissionStatus] ||
@@ -1650,6 +1931,95 @@ const TranscriptionTaskDetailPage = () => {
                     </Space>
                   }
                 >
+                  {/* Revision Request Info */}
+                  {(() => {
+                    const relatedRevisions = getRevisionRequestsForSubmission(submission.submissionId);
+                    if (relatedRevisions.length > 0) {
+                      return (
+                        <div style={{ marginBottom: 16 }}>
+                          <Divider orientation="left">
+                            <Text strong>Revision Requests</Text>
+                          </Divider>
+                          <Collapse size="small">
+                            {relatedRevisions.map(revision => {
+                              const status = revision.status?.toLowerCase();
+                              const statusColors = {
+                                pending_manager_review: 'orange',
+                                in_revision: 'processing',
+                                waiting_manager_review: 'blue',
+                                approved_pending_delivery: 'cyan',
+                                waiting_customer_confirm: 'purple',
+                                completed: 'success',
+                                rejected: 'error',
+                                canceled: 'default',
+                              };
+                              const statusLabels = {
+                                pending_manager_review: 'Chờ Manager duyệt',
+                                in_revision: 'Đang chỉnh sửa',
+                                waiting_manager_review: 'Chờ Manager review',
+                                approved_pending_delivery: 'Đã duyệt, chờ deliver',
+                                waiting_customer_confirm: 'Chờ Customer xác nhận',
+                                completed: 'Hoàn thành',
+                                rejected: 'Từ chối',
+                                canceled: 'Đã hủy',
+                              };
+
+                              return (
+                                <Collapse.Panel
+                                  key={revision.revisionRequestId}
+                                  header={
+                                    <Space>
+                                      <Text strong>Round #{revision.revisionRound}</Text>
+                                      <Tag color={statusColors[status] || 'default'}>
+                                        {statusLabels[status] || status}
+                                      </Tag>
+                                      {revision.isFreeRevision && (
+                                        <Tag color="green">Free</Tag>
+                                      )}
+                                      <Text type="secondary" style={{ fontSize: 12 }}>
+                                        {revision.title}
+                                      </Text>
+                                    </Space>
+                                  }
+                                >
+                                  <Descriptions bordered column={1} size="small">
+                                    <Descriptions.Item label="Title">
+                                      <Text strong>{revision.title}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Description">
+                                      <Text>{revision.description}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Status">
+                                      <Tag color={statusColors[status] || 'default'}>
+                                        {statusLabels[status] || status}
+                                      </Tag>
+                                    </Descriptions.Item>
+                                    {revision.managerNote && (
+                                      <Descriptions.Item label="Manager Note">
+                                        <Text>{revision.managerNote}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                    {revision.requestedAt && (
+                                      <Descriptions.Item label="Requested At">
+                                        {formatDateTime(revision.requestedAt)}
+                                      </Descriptions.Item>
+                                    )}
+                                    {revision.specialistSubmittedAt && (
+                                      <Descriptions.Item label="Specialist Submitted At">
+                                        {formatDateTime(revision.specialistSubmittedAt)}
+                                      </Descriptions.Item>
+                                    )}
+                                  </Descriptions>
+                                </Collapse.Panel>
+                              );
+                            })}
+                          </Collapse>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
                   {files.length > 0 ? (
                     <Table
                       rowKey="fileId"

@@ -10,6 +10,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "file_submissions", indexes = {
     @Index(name = "idx_file_submissions_assignment_id", columnList = "assignment_id"),
+    @Index(name = "idx_file_submissions_revision_request_id", columnList = "revision_request_id"),
     @Index(name = "idx_file_submissions_created_by", columnList = "created_by"),
     @Index(name = "idx_file_submissions_status", columnList = "status"),
     @Index(name = "idx_file_submissions_submitted_at", columnList = "submitted_at")
@@ -29,6 +30,9 @@ public class FileSubmission {
 
     @Column(name = "assignment_id", nullable = false)
     String assignmentId;  // Reference to task_assignments
+
+    @Column(name = "revision_request_id")
+    String revisionRequestId;  // Reference to revision_requests (nếu submission này là revised submission)
 
     @Column(name = "submission_name", length = 255)
     String submissionName;  // Tự động tạo: "Submission v{version}" - để phân biệt các version

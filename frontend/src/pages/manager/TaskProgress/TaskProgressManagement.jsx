@@ -59,6 +59,7 @@ const STATUS_COLORS = {
   in_progress: 'processing',
   ready_for_review: 'orange',
   revision_requested: 'warning',
+  in_revision: 'processing',
   completed: 'success',
   cancelled: 'error',
 };
@@ -71,6 +72,7 @@ const STATUS_LABELS = {
   in_progress: 'Đang thực hiện',
   ready_for_review: 'Chờ duyệt',
   revision_requested: 'Yêu cầu chỉnh sửa',
+  in_revision: 'Đang chỉnh sửa',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };

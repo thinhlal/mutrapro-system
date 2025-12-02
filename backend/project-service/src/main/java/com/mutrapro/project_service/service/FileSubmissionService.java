@@ -2,6 +2,7 @@ package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
+import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.dto.response.CustomerDeliveriesResponse;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
@@ -10,28 +11,34 @@ import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.FileSubmission;
+import com.mutrapro.project_service.entity.RevisionRequest;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
+import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.project_service.enums.SubmissionStatus;
 import com.mutrapro.project_service.entity.OutboxEvent;
+import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.FileSubmissionNotFoundException;
 import com.mutrapro.project_service.exception.InvalidFileStatusException;
 import com.mutrapro.project_service.exception.InvalidSubmissionStatusException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
+import com.mutrapro.project_service.exception.InvalidStateException;
 import com.mutrapro.project_service.exception.NoFilesSelectedException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
+import com.mutrapro.project_service.exception.ValidationException;
 import com.mutrapro.project_service.mapper.FileSubmissionMapper;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
+import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,6 +68,8 @@ public class FileSubmissionService {
     ContractMilestoneRepository contractMilestoneRepository;
     OutboxEventRepository outboxEventRepository;
     RequestServiceFeignClient requestServiceFeignClient;
+    RevisionRequestService revisionRequestService;
+    RevisionRequestRepository revisionRequestRepository;
     ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
 
@@ -98,9 +107,10 @@ public class FileSubmissionService {
             throw UnauthorizedException.create("You can only submit files for your own tasks");
         }
         
-        // Only allow submit if task is in_progress or revision_requested
+        // Only allow submit if task is in_progress, revision_requested (manager revision), or in_revision (customer revision)
         if (assignment.getStatus() != AssignmentStatus.in_progress 
-                && assignment.getStatus() != AssignmentStatus.revision_requested) {
+                && assignment.getStatus() != AssignmentStatus.revision_requested
+                && assignment.getStatus() != AssignmentStatus.in_revision) {
             throw InvalidTaskAssignmentStatusException.cannotSubmitForReview(
                 assignment.getAssignmentId(), 
                 assignment.getStatus()
@@ -157,9 +167,26 @@ public class FileSubmissionService {
         savedSubmission.setSubmittedAt(Instant.now());
         FileSubmission submittedSubmission = fileSubmissionRepository.save(savedSubmission);
         
+        // Lưu status trước khi update để check
+        AssignmentStatus previousStatus = assignment.getStatus();
+        
         // Update assignment status to ready_for_review
         assignment.setStatus(AssignmentStatus.ready_for_review);
         taskAssignmentRepository.save(assignment);
+        
+        // Chỉ update revision request nếu assignment đang ở trạng thái in_revision (customer revision)
+        // hoặc revision_requested (manager reject revision, specialist submit lại)
+        // Không cần update nếu là in_progress (submit lần đầu)
+        // autoUpdateRevisionRequestOnFileSubmit() sẽ tự check và return nếu không có revision request IN_REVISION
+        if (previousStatus == AssignmentStatus.in_revision || previousStatus == AssignmentStatus.revision_requested) {
+            try {
+                revisionRequestService.autoUpdateRevisionRequestOnFileSubmit(assignmentId, submissionId, userId);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.warn("Failed to auto-update revision request on file submit: assignmentId={}, submissionId={}, error={}", 
+                        assignmentId, submissionId, e.getMessage());
+            }
+        }
         
         log.info("Auto-submitted submission: submissionId={}, fileCount={}, assignmentId={}", 
                 submittedSubmission.getSubmissionId(), filesToSubmit.size(), assignmentId);
@@ -261,7 +288,7 @@ public class FileSubmissionService {
         // Verify milestone belongs to contract and get milestone
         ContractMilestone milestone = contractMilestoneRepository
                 .findByMilestoneIdAndContractId(milestoneId, contractId)
-                .orElseThrow(() -> new IllegalArgumentException("Milestone not found in contract"));
+                .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
         
         // Sử dụng JPA query riêng để query trực tiếp từ milestone
         List<FileSubmission> deliveredSubmissions = fileSubmissionRepository
@@ -276,6 +303,7 @@ public class FileSubmissionService {
                 .contractId(contract.getContractId())
                 .contractNumber(contract.getContractNumber())
                 .contractType(contract.getContractType() != null ? contract.getContractType().toString() : null)
+                .requestId(contract.getRequestId()) // Thêm requestId để frontend có thể lazy load request info
                 .build();
         
         CustomerDeliveriesResponse.MilestoneInfo milestoneInfo = CustomerDeliveriesResponse.MilestoneInfo.builder()
@@ -292,7 +320,27 @@ public class FileSubmissionService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
         
-        // Load request info nếu có requestId
+        // Load revision requests cho tất cả assignments trong milestone này
+        // Lấy unique assignmentIds từ submissions
+        List<String> assignmentIds = deliveredSubmissions.stream()
+                .map(FileSubmission::getAssignmentId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        // Batch load revision requests (1 query thay vì N queries)
+        List<RevisionRequestResponse> revisionRequests;
+        try {
+            revisionRequests = revisionRequestService.getRevisionRequestsByAssignmentIds(
+                    assignmentIds,
+                    contractId,
+                    userId,
+                    userRoles);
+        } catch (Exception e) {
+            log.warn("Failed to batch load revision requests: {}", e.getMessage());
+            revisionRequests = java.util.Collections.emptyList();
+        }
+        
+        // Load request info từ request-service và files từ database
         CustomerDeliveriesResponse.RequestInfo requestInfo = null;
         if (contract.getRequestId() != null) {
             try {
@@ -301,9 +349,6 @@ public class FileSubmissionService {
                 if (requestResponse != null && "success".equals(requestResponse.getStatus()) 
                     && requestResponse.getData() != null) {
                     ServiceRequestInfoResponse requestData = requestResponse.getData();
-                    
-                    log.debug("Request data from request-service - requestId: {}, files: {}", 
-                        requestData.getRequestId(), requestData.getFiles());
                     
                     // Convert durationMinutes sang seconds
                     Integer durationSeconds = null;
@@ -344,7 +389,6 @@ public class FileSubmissionService {
                     }
                     
                     // Lấy files từ project-service database (customer_upload files)
-                    // Thay vì dùng files từ request-service response
                     List<File> customerUploadedFiles = fileRepository.findByRequestIdAndFileSourceIn(
                         contract.getRequestId(),
                         List.of(FileSourceType.customer_upload)
@@ -363,8 +407,6 @@ public class FileSubmissionService {
                         })
                         .collect(Collectors.toList());
                     
-                    log.debug("Found {} customer uploaded files for requestId: {}", filesList.size(), contract.getRequestId());
-                    
                     requestInfo = CustomerDeliveriesResponse.RequestInfo.builder()
                         .requestId(requestData.getRequestId())
                         .serviceType(requestData.getRequestType())
@@ -375,11 +417,12 @@ public class FileSubmissionService {
                         .timeSignature(timeSignature)
                         .specialNotes(specialNotes)
                         .instruments(requestData.getInstruments())
-                        .files(filesList) // Sử dụng files từ project-service database
+                        .files(filesList) // Files từ project-service database
                         .build();
                 }
             } catch (Exception e) {
-                log.warn("Failed to fetch request info for requestId {}: {}", contract.getRequestId(), e.getMessage());
+                log.warn("Failed to fetch request info for contractId {}: {}", contractId, e.getMessage());
+                // Không throw error, chỉ log warning để không block response chính
             }
         }
         
@@ -388,6 +431,7 @@ public class FileSubmissionService {
                 .milestone(milestoneInfo)
                 .request(requestInfo)
                 .submissions(submissionResponses)
+                .revisionRequests(revisionRequests)
                 .build();
     }
 
@@ -446,6 +490,22 @@ public class FileSubmissionService {
             log.info("Task assignment marked as delivery_pending: assignmentId={}", assignment.getAssignmentId());
         }
         
+        // Nếu có revision request đang WAITING_MANAGER_REVIEW, update status thành APPROVED_PENDING_DELIVERY
+        // (Manager đã approve nhưng chưa deliver)
+        // Tìm một lần và pass vào method để tránh query lại
+        try {
+            List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                    assignment.getAssignmentId(), RevisionRequestStatus.WAITING_MANAGER_REVIEW);
+            
+            if (!activeRevisions.isEmpty()) {
+                revisionRequestService.updateRevisionRequestOnApproval(activeRevisions.get(0), userId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.warn("Failed to update revision request on approval: assignmentId={}, error={}", 
+                    assignment.getAssignmentId(), e.getMessage());
+        }
+
         log.info("Approved submission: submissionId={}, fileCount={}", submissionId, files.size());
         
         return toResponse(saved);
@@ -504,9 +564,34 @@ public class FileSubmissionService {
         });
         fileRepository.saveAll(files);
         
-        // Update assignment status back to revision_requested
-        assignment.setStatus(AssignmentStatus.revision_requested);
-        taskAssignmentRepository.save(assignment);
+        // Check xem có revision request đang WAITING_MANAGER_REVIEW không
+        // Nếu có → đây là revision flow, assignment status sẽ được update trong updateRevisionRequestOnRejection()
+        // Nếu không → đây là flow bình thường, update assignment status về revision_requested
+        boolean hasActiveRevisionRequest = false;
+        try {
+            hasActiveRevisionRequest = revisionRequestService.hasActiveRevisionRequest(
+                    assignment.getAssignmentId(), RevisionRequestStatus.WAITING_MANAGER_REVIEW);
+        } catch (Exception e) {
+            log.warn("Failed to check revision requests for assignment: {}, error={}", 
+                    assignment.getAssignmentId(), e.getMessage());
+        }
+        
+        // Nếu có revision request đang WAITING_MANAGER_REVIEW, update status về IN_REVISION
+        // (assignment status sẽ được update trong updateRevisionRequestOnRejection())
+        // Nếu không có revision request, update assignment status về revision_requested (flow bình thường)
+        if (!hasActiveRevisionRequest) {
+            assignment.setStatus(AssignmentStatus.revision_requested);
+            taskAssignmentRepository.save(assignment);
+        } else {
+            // Update revision request nếu có
+            try {
+                revisionRequestService.updateRevisionRequestOnRejection(assignment.getAssignmentId(), reason);
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.warn("Failed to update revision request on rejection: assignmentId={}, error={}", 
+                        assignment.getAssignmentId(), e.getMessage());
+            }
+        }
         
         log.info("Rejected submission: submissionId={}, reason={}", submissionId, reason);
         
@@ -515,12 +600,14 @@ public class FileSubmissionService {
 
     /**
      * Customer review submission (accept hoặc request revision)
+     * Khi request revision, sẽ tạo RevisionRequest mới
      */
     @Transactional
     public FileSubmissionResponse customerReviewSubmission(
             String submissionId,
             String action,  // "accept" or "request_revision"
-            String reason,  // Required if action = "request_revision"
+            String title,   // Required if action = "request_revision"
+            String description,  // Required if action = "request_revision"
             String userId,
             List<String> userRoles) {
         
@@ -536,10 +623,7 @@ public class FileSubmissionService {
         
         // Verify submission is delivered
         if (submission.getStatus() != SubmissionStatus.delivered) {
-            throw new InvalidSubmissionStatusException(
-                    "You can only review submissions that have been delivered. Current status: " + submission.getStatus(),
-                    submissionId,
-                    submission.getStatus());
+            throw InvalidSubmissionStatusException.cannotReview(submissionId, submission.getStatus());
         }
         
         // Verify customer has access to assignment
@@ -553,48 +637,67 @@ public class FileSubmissionService {
             throw UnauthorizedException.create("You can only review submissions from your own contracts");
         }
         
-        Instant now = Instant.now();
-        
         if ("accept".equalsIgnoreCase(action)) {
-            // Customer accepts submission - giữ status = delivered
-            // Có thể thêm field customerReviewedAt nếu cần
+            // Customer accepts submission
+            // Nếu có revision request đang WAITING_CUSTOMER_CONFIRM, update revision request → COMPLETED
+            try {
+                revisionRequestService.updateRevisionRequestOnCustomerAccept(assignment.getAssignmentId(), userId);
+                log.info("Updated revision request on customer accept: assignmentId={}", assignment.getAssignmentId());
+            } catch (Exception e) {
+                // Nếu không có revision request, đây là flow bình thường (accept submission lần đầu)
+                log.debug("No active revision request found for assignment: assignmentId={}, this is normal for first-time acceptance", 
+                        assignment.getAssignmentId());
+            }
+            
             log.info("Customer accepted submission: submissionId={}", submissionId);
-            // Không cần thay đổi status, chỉ log lại
             
         } else if ("request_revision".equalsIgnoreCase(action)) {
             // Customer requests revision
-            if (reason == null || reason.trim().isEmpty()) {
-                throw new IllegalArgumentException("Reason is required when requesting revision");
+            if (title == null || title.trim().isEmpty()) {
+                throw ValidationException.missingField("Title");
+            }
+            if (description == null || description.trim().isEmpty()) {
+                throw ValidationException.missingField("Description");
             }
             
-            // Update submission status to revision_requested
-            submission.setStatus(SubmissionStatus.revision_requested);
-            submission.setRejectionReason(reason);
-            submission.setReviewedBy(userId);
-            submission.setReviewedAt(now);
-            fileSubmissionRepository.save(submission);
-            
-            // Update assignment status to revision_requested
-            assignment.setStatus(AssignmentStatus.revision_requested);
-            taskAssignmentRepository.save(assignment);
-            
-            // Update milestone work status back to IN_PROGRESS (nếu đang WAITING_CUSTOMER)
-            if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
-                ContractMilestone milestone = contractMilestoneRepository
-                        .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
-                        .orElse(null);
-                if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
-                    milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
-                    contractMilestoneRepository.save(milestone);
-                    log.info("Milestone work status updated to IN_PROGRESS after customer requested revision: milestoneId={}, contractId={}", 
-                            milestone.getMilestoneId(), assignment.getContractId());
+            // Check xem có revision request đang WAITING_CUSTOMER_CONFIRM không
+            // Nếu có → reject revision hiện tại và tạo revision request mới (next round)
+            // Nếu không → tạo revision request mới (lần đầu)
+            try {
+                boolean hasActiveRevision = revisionRequestService.hasActiveRevisionRequest(
+                        assignment.getAssignmentId(), RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
+                
+                if (hasActiveRevision) {
+                    // Customer reject revision hiện tại và request revision mới
+                    revisionRequestService.updateRevisionRequestOnCustomerReject(
+                            assignment.getAssignmentId(), 
+                            userId,
+                            title,
+                            description);
+                    log.info("Customer rejected revision and created new revision request: assignmentId={}", 
+                            assignment.getAssignmentId());
+                } else {
+                    // Tạo RevisionRequest mới (lần đầu)
+                    revisionRequestService.createRevisionRequestInternal(
+                            submissionId,
+                            title,
+                            description,
+                            userId,
+                            assignment.getContractId(),
+                            assignment.getMilestoneId(),
+                            assignment.getAssignmentId()
+                    );
+                    log.info("Customer created revision request for submission: submissionId={}, title={}", 
+                            submissionId, title);
                 }
+            } catch (Exception e) {
+                log.error("Failed to handle revision request: assignmentId={}, error={}", 
+                        assignment.getAssignmentId(), e.getMessage(), e);
+                throw e;
             }
-            
-            log.info("Customer requested revision for submission: submissionId={}, reason={}", submissionId, reason);
             
         } else {
-            throw new IllegalArgumentException("Invalid action: " + action + ". Must be 'accept' or 'request_revision'");
+            throw ValidationException.invalidAction(action, "'accept' or 'request_revision'");
         }
         
         return toResponse(submission);
@@ -639,7 +742,7 @@ public class FileSubmissionService {
         List<File> submissionFiles = fileRepository.findBySubmissionId(submissionId);
         
         if (submissionFiles.isEmpty()) {
-            throw new IllegalStateException("Submission has no files to deliver");
+            throw InvalidStateException.noFiles("Submission");
         }
         
         // Kiểm tra tất cả files phải đã approved
@@ -668,15 +771,34 @@ public class FileSubmissionService {
         fileSubmissionRepository.save(submission);
         log.info("Submission status updated to delivered: submissionId={}", submissionId);
         
+        // Check xem có revision request đang APPROVED_PENDING_DELIVERY không
+        // Nếu có → đây là delivery cho revision, update revision request thành WAITING_CUSTOMER_CONFIRM
+        boolean hasActiveRevisionRequest = false;
+        try {
+            List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
+                    assignment.getAssignmentId(), RevisionRequestStatus.APPROVED_PENDING_DELIVERY);
+            
+            if (!activeRevisions.isEmpty()) {
+                // Update revision request: APPROVED_PENDING_DELIVERY → WAITING_CUSTOMER_CONFIRM
+                revisionRequestService.updateRevisionRequestOnDelivery(activeRevisions.get(0), userId);
+                hasActiveRevisionRequest = true; // Đã update thành WAITING_CUSTOMER_CONFIRM
+            }
+        } catch (Exception e) {
+            log.warn("Failed to check/update revision requests for assignment: {}, error={}", 
+                    assignment.getAssignmentId(), e.getMessage());
+        }
+        
         // Cập nhật task assignment status thành completed
+        // (Cả flow bình thường và revision flow đều có assignment status = delivery_pending khi deliver)
         if (assignment.getStatus() == AssignmentStatus.delivery_pending) {
             assignment.setStatus(AssignmentStatus.completed);
             assignment.setCompletedDate(now);
             taskAssignmentRepository.save(assignment);
-            log.info("Task assignment marked as completed after submission delivered: assignmentId={}", 
-                    assignment.getAssignmentId());
+            log.info("Task assignment marked as completed after submission delivered: assignmentId={}, hasRevision={}", 
+                    assignment.getAssignmentId(), hasActiveRevisionRequest);
             
             // Update milestone work status: IN_PROGRESS → WAITING_CUSTOMER
+            // (Cả flow bình thường và revision flow đều có milestone ở IN_PROGRESS khi deliver)
             if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
                 ContractMilestone milestone = contractMilestoneRepository
                         .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
@@ -728,7 +850,7 @@ public class FileSubmissionService {
                                 milestoneName,
                                 contractLabel))
                         .referenceType("SUBMISSION")
-                        .actionUrl("/contracts/" + assignment.getContractId())
+                        .actionUrl("/contracts/" + assignment.getContractId() + "/milestones/" + assignment.getMilestoneId() + "/deliveries")
                         .deliveredAt(now)
                         .timestamp(now)
                         .build();
