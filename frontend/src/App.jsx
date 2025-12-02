@@ -43,6 +43,7 @@ import ContractDetailPage from './pages/user/ContractDetail/ContractDetailPage';
 import ContractSignedSuccessPage from './pages/user/ContractSignedSuccess/ContractSignedSuccessPage';
 import PayMilestonePage from './pages/user/PayMilestone/PayMilestonePage';
 import PayDepositPage from './pages/user/PayDeposit/PayDepositPage';
+import PayRevisionFeePage from './pages/user/PayRevisionFee/PayRevisionFeePage';
 import WalletPage from './pages/user/Wallet/WalletPage';
 import WalletManagement from './pages/admin/WalletManagement/WalletManagement';
 
@@ -265,6 +266,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER']}>
                 <PayMilestonePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contracts/:contractId/pay-revision-fee"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
+                <PayRevisionFeePage />
               </ProtectedRoute>
             }
           />

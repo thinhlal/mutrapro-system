@@ -19,6 +19,7 @@ import java.util.Map;
     @Index(name = "idx_wallet_tx_currency", columnList = "currency"),
     @Index(name = "idx_wallet_tx_contract_id", columnList = "contract_id"),
     @Index(name = "idx_wallet_tx_milestone_id", columnList = "milestone_id"),
+    @Index(name = "idx_wallet_tx_submission_id", columnList = "submission_id"),
     @Index(name = "idx_wallet_tx_booking_id", columnList = "booking_id"),
     @Index(name = "idx_wallet_tx_refund_of", columnList = "refund_of_wallet_tx_id"),
     @Index(name = "idx_wallet_tx_created_at", columnList = "created_at")
@@ -45,7 +46,7 @@ public class WalletTransaction {
     WalletTxType txType;
 
     @Column(name = "amount", nullable = false, precision = 14, scale = 2)
-    BigDecimal amount;
+    BigDecimal amount;                                                                                                                                                                                                                                                                                                                                                              
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -68,6 +69,9 @@ public class WalletTransaction {
 
     @Column(name = "milestone_id")
     String milestoneId;  // Soft reference to project-service - contract_milestones
+
+    @Column(name = "submission_id")
+    String submissionId;  // Soft reference to project-service - file_submissions (optional, for revision fee tracking)
 
     @Column(name = "booking_id")
     String bookingId;  // Soft reference to project-service

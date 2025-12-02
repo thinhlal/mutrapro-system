@@ -1,0 +1,26 @@
+.page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.paymentCard {
+  margin-top: 24px;
+}
+
+.descriptions {
+  margin: 24px 0;
+}
+

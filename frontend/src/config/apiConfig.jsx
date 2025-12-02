@@ -238,6 +238,9 @@ export const API_ENDPOINTS = {
     // POST /api/v1/billing/wallets/{walletId}/debit/milestone
     PAY_MILESTONE: walletId =>
       `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
+    // POST /api/v1/billing/wallets/{walletId}/debit/revision-fee
+    PAY_REVISION_FEE: walletId =>
+      `${BILLING_PATH}/wallets/${walletId}/debit/revision-fee`,
     // GET /api/v1/billing/wallets/{walletId}/transactions
     GET_TRANSACTIONS: walletId =>
       `${BILLING_PATH}/wallets/${walletId}/transactions`,

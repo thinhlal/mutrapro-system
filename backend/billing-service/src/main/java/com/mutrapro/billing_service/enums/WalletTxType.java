@@ -5,6 +5,7 @@ public enum WalletTxType {
     payment,
     refund,
     withdrawal,
-    adjustment
+    adjustment,
+    revision_fee
 }
 

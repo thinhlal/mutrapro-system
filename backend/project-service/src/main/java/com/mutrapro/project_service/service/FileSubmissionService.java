@@ -311,6 +311,7 @@ public class FileSubmissionService {
                 .contractType(contract.getContractType() != null ? contract.getContractType().toString() : null)
                 .requestId(contract.getRequestId()) // Thêm requestId để frontend có thể lazy load request info
                 .freeRevisionsIncluded(contract.getFreeRevisionsIncluded()) // Số lần revision free
+                .additionalRevisionFeeVnd(contract.getAdditionalRevisionFeeVnd()) // Phí revision bổ sung
                 .revisionDeadlineDays(contract.getRevisionDeadlineDays()) // Số ngày SLA để hoàn thành revision
                 .build();
 
@@ -704,35 +705,22 @@ public class FileSubmissionService {
                 throw ValidationException.missingField("Description");
             }
 
-            // Check xem có revision request đang WAITING_CUSTOMER_CONFIRM không
-            // Nếu có → reject revision hiện tại và tạo revision request mới (next round)
-            // Nếu không → tạo revision request mới (lần đầu)
+            // Customer reject revision hiện tại (nếu có) và request revision mới
+            // updateRevisionRequestOnCustomerReject sẽ tự xử lý cả 2 trường hợp:
+            // - Có revision cũ → mark COMPLETED và tạo mới
+            // - Không có revision cũ → tạo mới trực tiếp
             try {
-                boolean hasActiveRevision = revisionRequestService.hasActiveRevisionRequest(
-                        assignment.getAssignmentId(), RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
-
-                if (hasActiveRevision) {
-                    // Customer reject revision hiện tại và request revision mới
-                    revisionRequestService.updateRevisionRequestOnCustomerReject(
-                            assignment.getAssignmentId(),
-                            userId,
-                            title,
-                            description);
-                    log.info("Customer rejected revision and created new revision request: assignmentId={}",
-                            assignment.getAssignmentId());
-                } else {
-                    // Tạo RevisionRequest mới (lần đầu)
-                    revisionRequestService.createRevisionRequestInternal(
-                            submissionId,
-                            title,
-                            description,
-                            userId,
-                            assignment.getContractId(),
-                            assignment.getMilestoneId(),
-                            assignment.getAssignmentId());
-                    log.info("Customer created revision request for submission: submissionId={}, title={}",
-                            submissionId, title);
-                }
+                RevisionRequestResponse newRevisionRequest = revisionRequestService.updateRevisionRequestOnCustomerReject(
+                        assignment.getAssignmentId(),
+                        userId,
+                        title,
+                        description,
+                        submissionId,
+                        assignment.getContractId(),
+                        assignment.getMilestoneId(),
+                        null);  // paidWalletTxId = null vì đây là flow customer request revision free (chưa thanh toán)
+                log.info("Customer created/rejected revision request: assignmentId={}, newRevisionRequestId={}",
+                        assignment.getAssignmentId(), newRevisionRequest.getRevisionRequestId());
             } catch (Exception e) {
                 log.error("Failed to handle revision request: assignmentId={}, error={}",
                         assignment.getAssignmentId(), e.getMessage(), e);

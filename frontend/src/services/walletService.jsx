@@ -109,6 +109,36 @@ export const payMilestone = async (walletId, milestoneData) => {
 };
 
 /**
+ * Thanh toán Revision Fee
+ * POST /wallets/{walletId}/debit/revision-fee
+ *
+ * @param {string} walletId - ID của ví
+ * @param {Object} revisionFeeData - Thông tin thanh toán Revision Fee
+ * @param {number} revisionFeeData.amount - Số tiền thanh toán
+ * @param {string} revisionFeeData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} revisionFeeData.contractId - ID hợp đồng (bắt buộc)
+ * @param {string} revisionFeeData.milestoneId - ID milestone (optional)
+ * @param {string} revisionFeeData.taskAssignmentId - ID task assignment (bắt buộc)
+ * @param {string} revisionFeeData.submissionId - ID submission gốc (optional)
+ * @param {number} revisionFeeData.revisionRound - Lần revision (optional)
+ * @param {string} revisionFeeData.title - Tiêu đề revision request (optional)
+ * @param {string} revisionFeeData.description - Mô tả revision request (optional)
+ * @param {string} revisionFeeData.requestedByUserId - ID customer (optional)
+ * @returns {Promise} ApiResponse với thông tin giao dịch
+ */
+export const payRevisionFee = async (walletId, revisionFeeData) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.PAY_REVISION_FEE(walletId),
+      revisionFeeData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi thanh toán Revision Fee' };
+  }
+};
+
+/**
  * Lấy danh sách giao dịch của ví
  * GET /wallets/{walletId}/transactions
  *

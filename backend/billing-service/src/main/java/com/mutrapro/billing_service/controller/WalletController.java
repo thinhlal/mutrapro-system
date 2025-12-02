@@ -2,6 +2,7 @@ package com.mutrapro.billing_service.controller;
 
 import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
+import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -106,6 +107,23 @@ public class WalletController {
         WalletTransactionResponse transaction = walletService.payMilestone(walletId, request);
         return ApiResponse.<WalletTransactionResponse>builder()
                 .message("Milestone payment successful")
+                .data(transaction)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{walletId}/debit/revision-fee")
+    @Operation(summary = "Thanh toán Revision Fee")
+    public ApiResponse<WalletTransactionResponse> payRevisionFee(
+            @Parameter(description = "ID của ví")
+            @PathVariable String walletId,
+            @Valid @RequestBody PayRevisionFeeRequest request) {
+        log.info("Pay revision fee: walletId={}, contractId={}, milestoneId={}, submissionId={}, amount={}", 
+            walletId, request.getContractId(), request.getMilestoneId(), request.getSubmissionId(), request.getAmount());
+        WalletTransactionResponse transaction = walletService.payRevisionFee(walletId, request);
+        return ApiResponse.<WalletTransactionResponse>builder()
+                .message("Revision fee payment successful")
                 .data(transaction)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

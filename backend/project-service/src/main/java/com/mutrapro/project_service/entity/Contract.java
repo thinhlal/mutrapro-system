@@ -101,7 +101,6 @@ public class Contract extends BaseEntity<String> {
     @Column(name = "expected_start_date")
     Instant expectedStartDate;
 
-
     @Column(name = "sla_days")
     Integer slaDays;
 

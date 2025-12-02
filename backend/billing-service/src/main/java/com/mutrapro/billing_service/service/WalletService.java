@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
+import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -13,6 +14,7 @@ import com.mutrapro.billing_service.entity.WalletTransaction;
 import com.mutrapro.billing_service.repository.OutboxEventRepository;
 import com.mutrapro.shared.event.DepositPaidEvent;
 import com.mutrapro.shared.event.MilestonePaidEvent;
+import com.mutrapro.shared.event.RevisionFeePaidEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
 import com.mutrapro.billing_service.enums.WalletTxType;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
@@ -399,6 +401,138 @@ public class WalletService {
 
         log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}, balanceBefore={}, balanceAfter={}",
                 walletId, request.getContractId(), request.getMilestoneId(), request.getAmount(), balanceBefore, balanceAfter);
+
+        return walletMapper.toResponse(savedTransaction);
+    }
+
+    /**
+     * Thanh toán Revision Fee
+     */
+    @Transactional
+    public WalletTransactionResponse payRevisionFee(String walletId, PayRevisionFeeRequest request) {
+        String userId = getCurrentUserId();
+
+        // Lấy wallet với lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Kiểm tra quyền truy cập
+        if (!wallet.getUserId().equals(userId)) {
+            throw UnauthorizedWalletAccessException.create(walletId);
+        }
+
+        // Validate amount
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw InvalidAmountException.forDebit(request.getAmount());
+        }
+
+        // Kiểm tra số dư
+        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+            throw InsufficientBalanceException.create(
+                    walletId, wallet.getBalance(), request.getAmount());
+        }
+
+        // Validate currency
+        CurrencyType currency = request.getCurrency() != null ? request.getCurrency() : CurrencyType.VND;
+        if (!wallet.getCurrency().equals(currency)) {
+            throw CurrencyMismatchException.create(wallet.getCurrency(), currency);
+        }
+
+        // Tính toán số dư mới
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.subtract(request.getAmount());
+
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+
+        // Tạo transaction record
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("debit_amount", request.getAmount().toString());
+        metadata.put("currency", currency.name());
+        metadata.put("payment_method", "wallet");
+        metadata.put("reason", "PAID_REVISION");
+        if (request.getSubmissionId() != null) {
+            metadata.put("originalSubmissionId", request.getSubmissionId());
+        }
+        if (request.getRevisionRound() != null) {
+            metadata.put("revisionRound", request.getRevisionRound().toString());
+        }
+        if (request.getRequestedByUserId() != null) {
+            metadata.put("requestedByUserId", request.getRequestedByUserId());
+        }
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.revision_fee)
+                .amount(request.getAmount())
+                .currency(currency)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .contractId(request.getContractId())
+                .milestoneId(request.getMilestoneId())
+                .submissionId(request.getSubmissionId())
+                .createdAt(Instant.now())
+                .build();
+
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        // Gửi RevisionFeePaidEvent cho revision fee payment
+        try {
+            Instant paidAt = Instant.now();
+            
+            UUID eventId = UUID.randomUUID();
+            RevisionFeePaidEvent event = RevisionFeePaidEvent.builder()
+                .eventId(eventId)
+                .walletTxId(savedTransaction.getWalletTxId())
+                .walletId(walletId)
+                .customerUserId(userId)
+                .contractId(request.getContractId())
+                .milestoneId(request.getMilestoneId())
+                .taskAssignmentId(request.getTaskAssignmentId())  // Lấy từ request
+                .submissionId(request.getSubmissionId())
+                .revisionRound(request.getRevisionRound())
+                .amount(request.getAmount())
+                .currency(currency.name())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .paidAt(paidAt)
+                .timestamp(Instant.now())
+                .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(request.getContractId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+                log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                    request.getContractId());
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType("RevisionRequest")
+                .eventType("billing.revision.fee.paid")
+                .eventPayload(payload)
+                .build();
+            
+            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            
+            log.info("✅ Queued RevisionFeePaidEvent in outbox: outboxId={}, eventId={}, walletTxId={}, contractId={}, submissionId={}, paidAt={}",
+                saved.getOutboxId(), eventId, savedTransaction.getWalletTxId(), request.getContractId(), 
+                request.getSubmissionId(), paidAt);
+        } catch (Exception e) {
+            log.error("❌ Failed to enqueue RevisionFeePaidEvent: walletTxId={}, contractId={}, error={}",
+                savedTransaction.getWalletTxId(), request.getContractId(), e.getMessage(), e);
+            // Không throw exception - transaction đã được tạo thành công
+        }
+
+        log.info("Pay revision fee: walletId={}, contractId={}, milestoneId={}, submissionId={}, amount={}, balanceBefore={}, balanceAfter={}",
+                walletId, request.getContractId(), request.getMilestoneId(), request.getSubmissionId(), 
+                request.getAmount(), balanceBefore, balanceAfter);
 
         return walletMapper.toResponse(savedTransaction);
     }

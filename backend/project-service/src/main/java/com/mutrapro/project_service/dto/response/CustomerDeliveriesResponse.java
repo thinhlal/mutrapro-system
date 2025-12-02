@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class CustomerDeliveriesResponse {
         String contractType;
         String requestId;
         Integer freeRevisionsIncluded;  // Số lần revision free được bao gồm trong contract
+        BigDecimal additionalRevisionFeeVnd;  // Phí revision bổ sung (nếu hết lượt free)
         Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
     }
     

@@ -275,8 +275,10 @@ public class RevisionRequestService {
                 revisionRequestId, assignmentId);
     }
     
+
     /**
-     * Internal method to create revision request (called from FileSubmissionService)
+     * Internal method to create revision request (called from FileSubmissionService or event consumer)
+     * @param paidWalletTxId ID của wallet transaction nếu là paid revision (null nếu free)
      */
     @Transactional
     public RevisionRequestResponse createRevisionRequestInternal(
@@ -286,10 +288,11 @@ public class RevisionRequestService {
             String customerId,
             String contractId,
             String milestoneId,
-            String taskAssignmentId) {
+            String taskAssignmentId,
+            String paidWalletTxId) {
         
-        log.info("Creating revision request: submissionId={}, contractId={}, taskAssignmentId={}", 
-                submissionId, contractId, taskAssignmentId);
+        log.info("Creating revision request: submissionId={}, contractId={}, taskAssignmentId={}, paidWalletTxId={}", 
+                submissionId, contractId, taskAssignmentId, paidWalletTxId);
         
         // Calculate next revision round
         Integer nextRound = revisionRequestRepository.findNextRevisionRound(taskAssignmentId);
@@ -304,7 +307,15 @@ public class RevisionRequestService {
                 .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()))
                 .count();
         
-        boolean isFreeRevision = freeRevisionsUsed < contract.getFreeRevisionsIncluded();
+        boolean isFreeRevision = paidWalletTxId == null && freeRevisionsUsed < contract.getFreeRevisionsIncluded();
+        
+        // Validate: nếu có paidWalletTxId thì phải là paid revision
+        if (paidWalletTxId != null && isFreeRevision) {
+            log.warn("paidWalletTxId provided but revision should be free: contractId={}, freeRevisionsUsed={}, freeRevisionsIncluded={}", 
+                    contractId, freeRevisionsUsed, contract.getFreeRevisionsIncluded());
+            // Vẫn tạo như paid revision vì đã có transaction
+            isFreeRevision = false;
+        }
         
         Instant now = Instant.now();
         
@@ -319,6 +330,7 @@ public class RevisionRequestService {
                 .description(description)
                 .revisionRound(nextRound)
                 .isFreeRevision(isFreeRevision)
+                .paidWalletTxId(paidWalletTxId)  // Set nếu là paid revision
                 .status(RevisionRequestStatus.PENDING_MANAGER_REVIEW)
                 .requestedAt(now)
                 .build();
@@ -339,7 +351,7 @@ public class RevisionRequestService {
                     : contractId;
             
             RevisionRequestedEvent event = RevisionRequestedEvent.builder()
-                    .eventId(java.util.UUID.randomUUID())
+                    .eventId(UUID.randomUUID())
                     .revisionRequestId(saved.getRevisionRequestId())
                     .contractId(contractId)
                     .contractNumber(contractLabel)
@@ -766,21 +778,38 @@ public class RevisionRequestService {
     }
     
     /**
-     * Update revision request khi customer reject và tạo revision request mới (gọi từ customerReviewSubmission)
+     * Update revision request khi customer reject và tạo revision request mới (gọi từ customerReviewSubmission hoặc event consumer)
+     * @param submissionId ID của submission (cần khi không có revision cũ)
+     * @param contractId ID của contract (cần khi không có revision cũ)
+     * @param milestoneId ID của milestone (cần khi không có revision cũ)
+     * @param paidWalletTxId ID của wallet transaction nếu là paid revision (null nếu free)
+     * @return RevisionRequestResponse của revision request mới được tạo
      */
     @Transactional
-    public void updateRevisionRequestOnCustomerReject(
+    public RevisionRequestResponse updateRevisionRequestOnCustomerReject(
             String assignmentId, 
             String userId,
             String title,
-            String description) {
+            String description,
+            String submissionId,
+            String contractId,
+            String milestoneId,
+            String paidWalletTxId) {
         
         List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
                 assignmentId, RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
         
         if (activeRevisions.isEmpty()) {
-            // Không có revision request đang chờ, đây là flow bình thường (tạo revision request mới)
-            return;
+            // Không có revision request đang chờ → tạo revision request mới trực tiếp
+            return createRevisionRequestInternal(
+                    submissionId,
+                    title,
+                    description,
+                    userId,
+                    contractId,
+                    milestoneId,
+                    assignmentId,
+                    paidWalletTxId);
         }
         
         if (activeRevisions.size() > 1) {
@@ -797,7 +826,8 @@ public class RevisionRequestService {
         
         Instant now = Instant.now();
         
-        // Customer rejects - mark old one as completed (rejected)
+        // Customer request revision mới → mark revision request cũ (WAITING_CUSTOMER_CONFIRM) as COMPLETED
+        // (đánh dấu đã xử lý xong vòng revision đó, customer không accept và request revision mới)
         revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
             revisionRequest.setCustomerConfirmedAt(now);
             revisionRequestRepository.save(revisionRequest);
@@ -815,18 +845,28 @@ public class RevisionRequestService {
                 .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()))
                 .count();
         
-        boolean isFreeRevision = freeRevisionsUsed < contract.getFreeRevisionsIncluded();
+        boolean isFreeRevision = paidWalletTxId == null && freeRevisionsUsed < contract.getFreeRevisionsIncluded();
+        
+        // Validate: nếu có paidWalletTxId thì phải là paid revision
+        if (paidWalletTxId != null && isFreeRevision) {
+            log.warn("paidWalletTxId provided but revision should be free: contractId={}, freeRevisionsUsed={}, freeRevisionsIncluded={}", 
+                    revisionRequest.getContractId(), freeRevisionsUsed, contract.getFreeRevisionsIncluded());
+            // Vẫn tạo như paid revision vì đã có transaction
+            isFreeRevision = false;
+        }
             
         RevisionRequest newRevisionRequest = RevisionRequest.builder()
                 .contractId(revisionRequest.getContractId())
                 .milestoneId(revisionRequest.getMilestoneId())
                 .taskAssignmentId(assignmentId)
+                .originalSubmissionId(submissionId)  // Track submission ban đầu mà customer request revision
                 .customerId(userId)
                 .managerId(contract.getManagerUserId())  // Set managerId ngay từ đầu
                 .title(title)
                 .description(description)
                 .revisionRound(nextRound)
                 .isFreeRevision(isFreeRevision)  // Tính toán dựa trên số free revisions đã dùng
+                .paidWalletTxId(paidWalletTxId)  // Set nếu là paid revision
                 .status(RevisionRequestStatus.PENDING_MANAGER_REVIEW)
                 .requestedAt(now)
                 .build();
@@ -879,6 +919,8 @@ public class RevisionRequestService {
             
         log.info("Customer rejected revision, created new revision request: oldRevisionRequestId={}, newRevisionRequestId={}, assignmentId={}", 
                 revisionRequest.getRevisionRequestId(), saved.getRevisionRequestId(), assignmentId);
+        
+        return toResponse(saved);
     }
 
     /**

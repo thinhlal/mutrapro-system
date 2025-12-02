@@ -66,7 +66,7 @@ const MilestoneDeliveriesPage = () => {
   const [revisionTitle, setRevisionTitle] = useState('');
   const [revisionDescription, setRevisionDescription] = useState('');
   const [revisionRequests, setRevisionRequests] = useState([]); // Track revision requests để check xem đã request chưa
-
+  
   const milestoneName = milestoneInfo?.name || location.state?.milestoneName || 'Milestone';
 
   useEffect(() => {
@@ -607,15 +607,27 @@ const MilestoneDeliveriesPage = () => {
                                       title={!hasFreeRevisionsLeft ? "Xác nhận yêu cầu revision có phí" : "Xác nhận yêu cầu revision"}
                                       description={
                                         !hasFreeRevisionsLeft 
-                                          ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí.`
+                                          ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
                                           : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
                                       }
-                                      onConfirm={() =>
-                                        handleOpenReviewModal(
-                                          submission,
-                                          'request_revision'
-                                        )
-                                      }
+                                      onConfirm={() => {
+                                        if (!hasFreeRevisionsLeft) {
+                                          // Paid revision → navigate to payment page
+                                          navigate(`/contracts/${contractId}/pay-revision-fee`, {
+                                            state: {
+                                              contractId: contractId,
+                                              milestoneId: milestoneInfo?.milestoneId,
+                                              submissionId: submission.submissionId,
+                                              taskAssignmentId: submission.assignmentId,
+                                              feeAmount: contractInfo?.additionalRevisionFeeVnd,
+                                              revisionRound: (revisionRequests.length || 0) + 1,
+                                            }
+                                          });
+                                        } else {
+                                          // Free revision → open modal
+                                          handleOpenReviewModal(submission, 'request_revision');
+                                        }
+                                      }}
                                       okText="Xác nhận"
                                       cancelText="Hủy"
                                     >
@@ -679,15 +691,27 @@ const MilestoneDeliveriesPage = () => {
                                 title={!hasFreeRevisionsLeft ? "Xác nhận yêu cầu revision có phí" : "Xác nhận yêu cầu revision"}
                                 description={
                                   !hasFreeRevisionsLeft 
-                                    ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí.`
+                                    ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
                                     : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
                                 }
-                                onConfirm={() =>
-                                  handleOpenReviewModal(
-                                    submission,
-                                    'request_revision'
-                                  )
-                                }
+                                onConfirm={() => {
+                                  if (!hasFreeRevisionsLeft) {
+                                    // Paid revision → navigate to payment page
+                                    navigate(`/contracts/${contractId}/pay-revision-fee`, {
+                                      state: {
+                                        contractId: contractId,
+                                        milestoneId: milestoneInfo?.milestoneId,
+                                        submissionId: submission.submissionId,
+                                        taskAssignmentId: submission.assignmentId,
+                                        feeAmount: contractInfo?.additionalRevisionFeeVnd,
+                                        revisionRound: (revisionRequests.length || 0) + 1,
+                                      }
+                                    });
+                                  } else {
+                                    // Free revision → open modal
+                                    handleOpenReviewModal(submission, 'request_revision');
+                                  }
+                                }}
                                 okText="Xác nhận"
                                 cancelText="Hủy"
                               >

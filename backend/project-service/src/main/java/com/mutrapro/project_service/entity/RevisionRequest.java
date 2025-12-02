@@ -22,7 +22,8 @@ import java.time.Instant;
     @Index(name = "idx_revision_requests_manager_id", columnList = "manager_id"),
     @Index(name = "idx_revision_requests_specialist_id", columnList = "specialist_id"),
     @Index(name = "idx_revision_requests_status", columnList = "status"),
-    @Index(name = "idx_revision_requests_revision_round", columnList = "task_assignment_id, revision_round")
+    @Index(name = "idx_revision_requests_revision_round", columnList = "task_assignment_id, revision_round"),
+    @Index(name = "idx_revision_requests_paid_wallet_tx_id", columnList = "paid_wallet_tx_id")
 })
 @Getter
 @Setter
@@ -74,6 +75,9 @@ public class RevisionRequest extends BaseEntity<String> {
 
     @Column(name = "specialist_note", columnDefinition = "text")
     String specialistNote;  // Ghi chú từ Specialist (optional)
+
+    @Column(name = "paid_wallet_tx_id")
+    String paidWalletTxId;  // ID transaction ví nếu là paid revision (reference to billing-service wallet_transactions)
 
     @Column(name = "revision_round", nullable = false)
     Integer revisionRound;  // Lần revision thứ mấy cho task/milestone này (1,2,3...)
