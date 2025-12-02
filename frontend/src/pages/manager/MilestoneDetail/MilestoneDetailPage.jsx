@@ -46,6 +46,8 @@ const STATUS_COLORS = {
   accepted_waiting: 'gold',
   ready_to_start: 'purple',
   in_progress: 'processing',
+  in_revision: 'processing',
+  waiting_customer_review: 'purple',
   ready_for_review: 'orange',
   revision_requested: 'warning',
   completed: 'success',
@@ -57,6 +59,8 @@ const STATUS_LABELS = {
   accepted_waiting: 'Đã nhận - Chờ',
   ready_to_start: 'Sẵn sàng làm',
   in_progress: 'Đang thực hiện',
+  in_revision: 'Đang chỉnh sửa',
+  waiting_customer_review: 'Chờ khách hàng review',
   ready_for_review: 'Chờ duyệt',
   revision_requested: 'Yêu cầu chỉnh sửa',
   completed: 'Hoàn thành',
@@ -116,6 +120,7 @@ const getPlannedDeadlineDayjs = milestone => {
 };
 
 const getActualDeadlineDayjs = milestone => {
+  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
   if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
     return null;
   }
@@ -167,7 +172,7 @@ const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
 };
 
 const getTaskCompletionDate = task =>
-  task?.completedDate || task?.milestone?.actualEndAt || null;
+  task?.completedDate || task?.milestone?.finalCompletedAt || null;
 
 const formatDateTime = value =>
   value ? dayjs(value).format('HH:mm DD/MM/YYYY') : '—';
@@ -351,7 +356,7 @@ const MilestoneDetailPage = () => {
     );
   }, [milestone]);
 
-  // Kiểm tra xem có task active (assigned hoặc in_progress) không
+  // Kiểm tra xem có task active (assigned, in_progress, in_revision, waiting_customer_review, revision_requested) không
   const hasActiveTask = useMemo(() => {
     return milestoneTasks.some(task => {
       const status = task.status?.toLowerCase();
@@ -359,7 +364,10 @@ const MilestoneDetailPage = () => {
         status === 'assigned' ||
         status === 'accepted_waiting' ||
         status === 'ready_to_start' ||
-        status === 'in_progress'
+        status === 'in_progress' ||
+        status === 'in_revision' ||
+        status === 'waiting_customer_review' ||
+        status === 'revision_requested'
       );
     });
   }, [milestoneTasks]);
@@ -589,6 +597,11 @@ const MilestoneDetailPage = () => {
                           <Text>Start: {formatDateTime(actualStart)}</Text>
                           <Text>
                             Deadline: {formatDateTime(actualDeadline)}
+                            {milestone.milestoneSlaDays && (
+                              <Text type="secondary" style={{ marginLeft: 4 }}>
+                                (+{milestone.milestoneSlaDays} ngày SLA)
+                              </Text>
+                            )}
                           </Text>
                         </Space>
                       </div>
@@ -626,6 +639,36 @@ const MilestoneDetailPage = () => {
                     </Space>
                   );
                 })()}
+              </Descriptions.Item>
+              <Descriptions.Item label="First Submission" span={2}>
+                {milestone.firstSubmissionAt
+                  ? formatDateTime(milestone.firstSubmissionAt)
+                  : '—'}
+                {milestone.firstSubmissionAt && (
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                    (Lần giao đầu tiên - để check SLA)
+                  </Text>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Work Completed" span={2}>
+                {milestone.finalCompletedAt
+                  ? formatDateTime(milestone.finalCompletedAt)
+                  : '—'}
+                {milestone.finalCompletedAt && (
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                    (Customer đã chấp nhận)
+                  </Text>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Payment Completed" span={2}>
+                {milestone.actualEndAt
+                  ? formatDateTime(milestone.actualEndAt)
+                  : '—'}
+                {milestone.actualEndAt && (
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                    (Milestone đã được thanh toán)
+                  </Text>
+                )}
               </Descriptions.Item>
             </Descriptions>
           </Card>

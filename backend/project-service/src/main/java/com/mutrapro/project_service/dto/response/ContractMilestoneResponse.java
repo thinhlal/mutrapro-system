@@ -41,6 +41,10 @@ public class ContractMilestoneResponse {
     LocalDateTime actualStartAt;   // Thời điểm milestone thực tế bắt đầu
 
     LocalDateTime actualEndAt;     // Thời điểm milestone thực tế kết thúc
+
+    LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
+
+    LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     
     LocalDateTime createdAt;
     

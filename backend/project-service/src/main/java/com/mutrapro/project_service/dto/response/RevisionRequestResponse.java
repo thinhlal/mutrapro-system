@@ -36,6 +36,8 @@ public class RevisionRequestResponse {
     
     Instant requestedAt;
     Instant managerReviewedAt;
+    Instant revisionDueAt;  // Deadline phải giao xong revision cho request này
+    Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
     Instant assignedToSpecialistAt;
     Instant specialistSubmittedAt;
     Instant customerConfirmedAt;

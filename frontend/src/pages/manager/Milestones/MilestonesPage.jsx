@@ -49,6 +49,9 @@ const STATUS_COLORS = {
   accepted_waiting: 'gold',
   ready_to_start: 'purple',
   in_progress: 'processing',
+  in_revision: 'processing',
+  waiting_customer_review: 'purple',
+  revision_requested: 'warning',
   completed: 'green',
   cancelled: 'default',
 };
@@ -253,7 +256,13 @@ const MilestonesPage = () => {
       key: 'plannedDueDate',
       width: 160,
       render: (_, record) => {
-        const display = record.actualEndAt || record.plannedDueDate;
+        // Hiển thị deadline: plannedDueDate hoặc tính từ actualStartAt + SLA (nếu có)
+        let display = record.plannedDueDate;
+        if (!display && record.actualStartAt && record.milestoneSlaDays) {
+          display = dayjs(record.actualStartAt)
+            .add(record.milestoneSlaDays, 'day')
+            .toDate();
+        }
         return display ? dayjs(display).format('DD/MM/YYYY') : '—';
       },
     },
@@ -302,6 +311,12 @@ const MilestonesPage = () => {
                   ? 'Ready to Start'
                   : normalized === 'in_progress'
                     ? 'Đang làm'
+                    : normalized === 'in_revision'
+                      ? 'Đang chỉnh sửa'
+                      : normalized === 'waiting_customer_review'
+                        ? 'Chờ khách hàng review'
+                        : normalized === 'revision_requested'
+                          ? 'Yêu cầu chỉnh sửa'
                     : normalized === 'completed'
                       ? 'Hoàn thành'
                       : normalized === 'cancelled'
@@ -347,7 +362,10 @@ const MilestonesPage = () => {
           status === 'assigned' ||
           status === 'accepted_waiting' ||
           status === 'ready_to_start' ||
-          status === 'in_progress';
+          status === 'in_progress' ||
+          status === 'in_revision' ||
+          status === 'waiting_customer_review' ||
+          status === 'revision_requested';
 
         return (
           <Space size="small">

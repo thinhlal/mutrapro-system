@@ -94,6 +94,9 @@ public class RevisionRequest extends BaseEntity<String> {
     @Column(name = "manager_reviewed_at")
     Instant managerReviewedAt;  // Lúc Manager approve/reject
 
+    @Column(name = "revision_due_at")
+    Instant revisionDueAt;  // Deadline phải giao xong revision cho request này (managerReviewedAt + revisionDeadlineDays)
+
     @Column(name = "assigned_to_specialist_at")
     Instant assignedToSpecialistAt;  // Lúc giao cho Specialist
 

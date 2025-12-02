@@ -60,6 +60,8 @@ const STATUS_COLORS = {
   ready_for_review: 'orange',
   revision_requested: 'warning',
   in_revision: 'processing',
+  delivery_pending: 'cyan',
+  waiting_customer_review: 'purple',
   completed: 'success',
   cancelled: 'error',
 };
@@ -73,6 +75,8 @@ const STATUS_LABELS = {
   ready_for_review: 'Chờ duyệt',
   revision_requested: 'Yêu cầu chỉnh sửa',
   in_revision: 'Đang chỉnh sửa',
+  delivery_pending: 'Chờ giao hàng',
+  waiting_customer_review: 'Chờ Customer review',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };
@@ -116,6 +120,7 @@ const getPlannedDeadlineDayjs = milestone => {
 };
 
 const getActualDeadlineDayjs = milestone => {
+  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
   if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
     return null;
   }
@@ -167,7 +172,7 @@ const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
 };
 
 const getTaskCompletionDate = task =>
-  task?.completedDate || task?.milestone?.actualEndAt || null;
+  task?.completedDate || task?.milestone?.finalCompletedAt || null;
 
 const STATUS_OPTIONS = [
   { label: 'Tất cả', value: 'all' },
@@ -175,6 +180,9 @@ const STATUS_OPTIONS = [
   { label: 'Đã nhận - Chờ', value: 'accepted_waiting' },
   { label: 'Ready to Start', value: 'ready_to_start' },
   { label: 'Đang làm', value: 'in_progress' },
+  { label: 'Đang chỉnh sửa', value: 'in_revision' },
+  { label: 'Chờ khách hàng review', value: 'waiting_customer_review' },
+  { label: 'Yêu cầu chỉnh sửa', value: 'revision_requested' },
   { label: 'Hoàn thành', value: 'completed' },
   { label: 'Đã hủy', value: 'cancelled' },
 ];
@@ -350,7 +358,7 @@ export default function TaskProgressManagement() {
   //   - Có submission pending_review: 50%
   //   - Có submission rejected/revision_requested: 40%
   //   - Có submission draft: 30%
-  // - ready_for_review: có submission pending_review → 50%
+  // - ready_for_review: có submission pending_review → 75% (sau khi revision xong và submit lại)
   // - revision_requested: có submission rejected/revision_requested → 40%
   const calculateProgress = record => {
     const status = record.status?.toLowerCase();
@@ -377,12 +385,14 @@ export default function TaskProgressManagement() {
     // Lấy submissions để tính progress
     const submissions = taskSubmissionsMap[record.assignmentId] || [];
 
-    // ready_for_review: có submission pending_review
+    // ready_for_review: đã submit lại và chờ duyệt (sau khi revision)
     if (status === 'ready_for_review') {
       const hasPendingReview = submissions.some(
         s => s.status?.toLowerCase() === 'pending_review'
       );
-      return hasPendingReview ? 50 : 0;
+      // Nếu đã có submission pending_review sau revision → 75% (cao hơn in_revision vì đã submit lại)
+      // Nếu chưa có → 50% (trường hợp hiếm)
+      return hasPendingReview ? 75 : 50;
     }
 
     // revision_requested: có submission rejected hoặc revision_requested
@@ -394,6 +404,31 @@ export default function TaskProgressManagement() {
         s => s.status?.toLowerCase() === 'revision_requested'
       );
       return hasRejected || hasRevisionRequested ? 40 : 0;
+    }
+
+    // in_revision: đang chỉnh sửa lại (đã có submission trước đó, đang làm lại)
+    if (status === 'in_revision') {
+      // Đã có submission trước đó và đang chỉnh sửa lại
+      // Progress cao hơn vì đã làm được phần lớn công việc
+      const hasPendingReview = submissions.some(
+        s => s.status?.toLowerCase() === 'pending_review'
+      );
+      const hasDraft = submissions.some(
+        s => s.status?.toLowerCase() === 'draft'
+      );
+      // Nếu có submission pending_review trong revision → 70%
+      // Nếu có draft → 60%
+      // Mặc định → 60% (đang làm lại)
+      if (hasPendingReview) return 70;
+      if (hasDraft) return 60;
+      return 60;
+    }
+
+    // waiting_customer_review: đã giao cho customer, chờ review
+    if (status === 'waiting_customer_review') {
+      // Đã hoàn thành và giao cho customer, chờ customer review
+      // Progress rất cao vì đã hoàn thành công việc
+      return 90;
     }
 
     // in_progress: tính dựa trên submissions
@@ -653,7 +688,10 @@ export default function TaskProgressManagement() {
         }
 
         const now = dayjs();
+        // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+        const hasFirstSubmission = record.milestone?.firstSubmissionAt;
         const isOverdue =
+          !hasFirstSubmission &&
           actualDeadline &&
           actualDeadline.isBefore(now) &&
           record.status !== 'completed';
@@ -661,7 +699,11 @@ export default function TaskProgressManagement() {
           ? actualDeadline.diff(now, 'day')
           : null;
         const isNearDeadline =
-          diffDays !== null && diffDays <= 3 && diffDays >= 0 && !isOverdue;
+          !hasFirstSubmission &&
+          diffDays !== null &&
+          diffDays <= 3 &&
+          diffDays >= 0 &&
+          !isOverdue;
 
         // Nếu có actual hoặc planned thì chỉ hiển thị actual và planned (không hiển thị estimated)
         const hasActualOrPlanned = actualDeadline || plannedDeadline;
@@ -690,6 +732,11 @@ export default function TaskProgressManagement() {
                     style={{ fontSize: 12 }}
                   >
                     Deadline: {actualDeadline.format('HH:mm DD/MM')}
+                    {record.milestone?.milestoneSlaDays && (
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {' '}(+{record.milestone.milestoneSlaDays} ngày SLA)
+                      </Text>
+                    )}
                   </Text>
                   {isOverdue && (
                     <Tag color="red" size="small">
@@ -1053,36 +1100,40 @@ export default function TaskProgressManagement() {
                   );
                 })()}
               </Descriptions.Item>
-              <Descriptions.Item label="Completed Date">
-                <Space direction="vertical" size="small">
-                  <div>
-                    <Text strong>Actual</Text>
-                    {getTaskCompletionDate(selectedTask) ? (
-                      <Text>
-                        {dayjs(getTaskCompletionDate(selectedTask)).format(
-                          'HH:mm DD/MM/YYYY'
-                        )}
+              {selectedTask.milestone && (
+                <>
+                  <Descriptions.Item label="First Submission">
+                    {selectedTask.milestone.firstSubmissionAt
+                      ? dayjs(selectedTask.milestone.firstSubmissionAt).format('HH:mm DD/MM/YYYY')
+                      : '—'}
+                    {selectedTask.milestone.firstSubmissionAt && (
+                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        (Lần giao đầu tiên - để check SLA)
                       </Text>
-                    ) : (
-                      <Text type="secondary">Chưa có</Text>
                     )}
-                  </div>
-                  <div>
-                    <Text strong type="secondary">
-                      Planned deadline
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Work Completed">
+                    {selectedTask.milestone.finalCompletedAt
+                      ? dayjs(selectedTask.milestone.finalCompletedAt).format('HH:mm DD/MM/YYYY')
+                      : '—'}
+                    {selectedTask.milestone.finalCompletedAt && (
+                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        (Customer đã chấp nhận)
                     </Text>
-                    {getPlannedDeadlineDayjs(selectedTask.milestone) ? (
-                      <Text type="secondary">
-                        {getPlannedDeadlineDayjs(selectedTask.milestone).format(
-                          'HH:mm DD/MM/YYYY'
-                        )}
-                      </Text>
-                    ) : (
-                      <Text type="secondary">-</Text>
                     )}
-                  </div>
-                </Space>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Payment Completed">
+                    {selectedTask.milestone.actualEndAt
+                      ? dayjs(selectedTask.milestone.actualEndAt).format('HH:mm DD/MM/YYYY')
+                      : '—'}
+                    {selectedTask.milestone.actualEndAt && (
+                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        (Milestone đã được thanh toán)
+                      </Text>
+                    )}
               </Descriptions.Item>
+                </>
+              )}
             </Descriptions>
 
             {/* Progress Timeline */}

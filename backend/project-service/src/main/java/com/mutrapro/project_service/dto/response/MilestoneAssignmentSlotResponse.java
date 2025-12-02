@@ -31,7 +31,9 @@ public class MilestoneAssignmentSlotResponse {
     LocalDateTime plannedStartAt;
     LocalDateTime plannedDueDate;
     LocalDateTime actualStartAt;
-    LocalDateTime actualEndAt;
+    LocalDateTime actualEndAt;  // Thời điểm milestone thực tế kết thúc (khi thanh toán)
+    LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
+    LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     Integer milestoneSlaDays;
 
     String assignmentId;

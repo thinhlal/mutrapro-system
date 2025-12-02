@@ -77,6 +77,7 @@ const STATUS_COLORS = {
   revision_requested: 'warning',
   in_revision: 'processing',
   delivery_pending: 'cyan',
+  waiting_customer_review: 'purple',
   completed: 'success',
   cancelled: 'error',
 };
@@ -90,6 +91,7 @@ const STATUS_LABELS = {
   revision_requested: 'Yêu cầu chỉnh sửa',
   in_revision: 'Đang chỉnh sửa',
   delivery_pending: 'Chờ giao hàng',
+  waiting_customer_review: 'Chờ Customer review',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
 };
@@ -600,6 +602,7 @@ const TaskDetailPage = () => {
   };
 
   const getActualDeadlineDayjs = milestone => {
+    // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
     if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
       return null;
     }
@@ -939,11 +942,25 @@ const TaskDetailPage = () => {
                 ? dayjs(task.assignedDate).format('HH:mm DD/MM/YYYY')
                 : 'N/A'}
             </Descriptions.Item>
-            <Descriptions.Item label="Completed Date">
-              {task.completedDate
-                ? dayjs(task.completedDate).format('HH:mm DD/MM/YYYY')
+            {task.milestone && (
+              <>
+                <Descriptions.Item label="First Submission">
+                  {task.milestone.firstSubmissionAt
+                    ? dayjs(task.milestone.firstSubmissionAt).format('HH:mm DD/MM/YYYY')
+                    : '—'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Work Completed">
+                  {task.milestone.finalCompletedAt
+                    ? dayjs(task.milestone.finalCompletedAt).format('HH:mm DD/MM/YYYY')
                 : 'Chưa hoàn thành'}
             </Descriptions.Item>
+                <Descriptions.Item label="Payment Completed">
+                  {task.milestone.actualEndAt
+                    ? dayjs(task.milestone.actualEndAt).format('HH:mm DD/MM/YYYY')
+                    : '—'}
+                </Descriptions.Item>
+              </>
+            )}
             <Descriptions.Item label="Milestone Deadline" span={2}>
               {(() => {
                 const actualDeadline = getActualDeadlineDayjs(task.milestone);
@@ -979,11 +996,15 @@ const TaskDetailPage = () => {
                     : plannedDaysDiff !== null
                       ? plannedDaysDiff
                       : estimatedDaysDiff;
+                // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+                const hasFirstSubmission = task.milestone?.firstSubmissionAt;
                 const isOverdue =
+                  !hasFirstSubmission &&
                   daysDiff !== null &&
                   daysDiff < 0 &&
                   task.status !== 'completed';
                 const isNearDeadline =
+                  !hasFirstSubmission &&
                   daysDiff !== null &&
                   daysDiff <= 3 &&
                   daysDiff >= 0 &&
@@ -1014,6 +1035,11 @@ const TaskDetailPage = () => {
                             }
                           >
                             {actualDeadline.format('HH:mm DD/MM/YYYY')}
+                            {task.milestone?.milestoneSlaDays && (
+                              <Text type="secondary" style={{ marginLeft: 4 }}>
+                                (+{task.milestone.milestoneSlaDays} ngày SLA)
+                              </Text>
+                            )}
                           </Text>
                           {actualDaysDiff !== null && (
                             <>
@@ -1223,6 +1249,16 @@ const TaskDetailPage = () => {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {revision.title}
                           </Text>
+                          {revision.revisionDueAt && (
+                            <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
+                              Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                              {revision.revisionDeadlineDays && (
+                                <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                  (+{revision.revisionDeadlineDays} ngày SLA)
+                                </Text>
+                              )}
+                            </Tag>
+                          )}
                         </Space>
                       }
                       extra={
@@ -1280,6 +1316,30 @@ const TaskDetailPage = () => {
                             <Tag color="orange">No</Tag>
                           )}
                         </Descriptions.Item>
+                        {revision.originalSubmissionId && (
+                          <Descriptions.Item label="Original Submission">
+                            <Text>
+                              Version {
+                                submissions.find(s => s.submissionId === revision.originalSubmissionId)?.version || 'N/A'
+                              }
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                              (Submission bị request revision)
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {revision.revisedSubmissionId && (
+                          <Descriptions.Item label="Revised Submission">
+                            <Text>
+                              Version {
+                                submissions.find(s => s.submissionId === revision.revisedSubmissionId)?.version || 'N/A'
+                              }
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                              (Submission sau khi chỉnh sửa)
+                            </Text>
+                          </Descriptions.Item>
+                        )}
                         {revision.requestedAt && (
                           <Descriptions.Item label="Requested At">
                             {dayjs(revision.requestedAt).format(
@@ -1292,6 +1352,28 @@ const TaskDetailPage = () => {
                             {dayjs(revision.managerReviewedAt).format(
                               'HH:mm DD/MM/YYYY'
                             )}
+                          </Descriptions.Item>
+                        )}
+                        {revision.revisionDueAt && (
+                          <Descriptions.Item label="Revision Deadline">
+                            <Space>
+                              <Text strong>
+                                {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                                {revision.revisionDeadlineDays && (
+                                  <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                    (+{revision.revisionDeadlineDays} ngày SLA)
+                                  </Text>
+                                )}
+                              </Text>
+                              {dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                <Tag color="red">Quá hạn</Tag>
+                              )}
+                              {!dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                <Tag color="blue">
+                                  Còn {dayjs(revision.revisionDueAt).diff(dayjs(), 'day')} ngày
+                                </Tag>
+                              )}
+                            </Space>
                           </Descriptions.Item>
                         )}
                         {revision.managerNote && (

@@ -599,6 +599,8 @@ public class TaskAssignmentService {
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
+                .firstSubmissionAt(milestone.getFirstSubmissionAt())
+                .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
                 .build();
             response.setMilestone(milestoneInfo);
@@ -638,6 +640,8 @@ public class TaskAssignmentService {
                     .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
+                    .firstSubmissionAt(milestone.getFirstSubmissionAt())
+                    .finalCompletedAt(milestone.getFinalCompletedAt())
                     .milestoneSlaDays(milestone.getMilestoneSlaDays())
                     .build();
                 response.setMilestone(milestoneInfo);
@@ -764,6 +768,8 @@ public class TaskAssignmentService {
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
+                .firstSubmissionAt(milestone.getFirstSubmissionAt())
+                .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
                 .assignmentId(assignment != null ? assignment.getAssignmentId() : null)
                 .taskType(assignment != null ? assignment.getTaskType() : null)
@@ -948,6 +954,7 @@ public class TaskAssignmentService {
                         .contractId(c.getContractId())
                         .contractNumber(c.getContractNumber())
                         .nameSnapshot(c.getNameSnapshot())
+                        .revisionDeadlineDays(c.getRevisionDeadlineDays()) // Số ngày SLA để hoàn thành revision
                         .build()
                 ));
         }

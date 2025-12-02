@@ -310,6 +310,26 @@ const RevisionRequestsManagement = () => {
                     <Descriptions.Item label="Description">
                       <Paragraph>{record.description || 'N/A'}</Paragraph>
                     </Descriptions.Item>
+                    {record.originalSubmissionId && (
+                      <Descriptions.Item label="Original Submission">
+                        <Text>
+                          Submission ID: {record.originalSubmissionId.substring(0, 8)}...
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          (Submission bị request revision)
+                        </Text>
+                      </Descriptions.Item>
+                    )}
+                    {record.revisedSubmissionId && (
+                      <Descriptions.Item label="Revised Submission">
+                        <Text>
+                          Submission ID: {record.revisedSubmissionId.substring(0, 8)}...
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          (Submission sau khi chỉnh sửa)
+                        </Text>
+                      </Descriptions.Item>
+                    )}
                     <Descriptions.Item label="Requested At">
                       {formatDateTime(record.requestedAt)}
                     </Descriptions.Item>
@@ -331,6 +351,28 @@ const RevisionRequestsManagement = () => {
                     {record.managerReviewedAt && (
                       <Descriptions.Item label="Manager Reviewed At">
                         {formatDateTime(record.managerReviewedAt)}
+                      </Descriptions.Item>
+                    )}
+                    {record.revisionDueAt && (
+                      <Descriptions.Item label="Revision Deadline">
+                        <Space>
+                          <Text strong>
+                            {formatDateTime(record.revisionDueAt)}
+                            {record.revisionDeadlineDays && (
+                              <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                (+{record.revisionDeadlineDays} ngày SLA)
+                              </Text>
+                            )}
+                          </Text>
+                          {dayjs(record.revisionDueAt).isBefore(dayjs()) && (
+                            <Tag color="red">Quá hạn</Tag>
+                          )}
+                          {!dayjs(record.revisionDueAt).isBefore(dayjs()) && (
+                            <Tag color="blue">
+                              Còn {dayjs(record.revisionDueAt).diff(dayjs(), 'day')} ngày
+                            </Tag>
+                          )}
+                        </Space>
                       </Descriptions.Item>
                     )}
                     {record.deliveredAt && (

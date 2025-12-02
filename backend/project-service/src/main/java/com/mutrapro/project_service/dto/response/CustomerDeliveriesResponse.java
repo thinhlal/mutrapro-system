@@ -43,6 +43,8 @@ public class CustomerDeliveriesResponse {
         String contractNumber;
         String contractType;
         String requestId;
+        Integer freeRevisionsIncluded;  // Số lần revision free được bao gồm trong contract
+        Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
     }
     
     @Data

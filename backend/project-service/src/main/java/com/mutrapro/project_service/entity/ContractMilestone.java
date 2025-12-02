@@ -65,5 +65,11 @@ public class ContractMilestone extends BaseEntity<String> {
 
     @Column(name = "actual_end_at")
     LocalDateTime actualEndAt;  // Ghi nhận thời điểm milestone thực tế kết thúc
+
+    @Column(name = "first_submission_at")
+    LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone - KHÔNG thay đổi khi có revision)
+
+    @Column(name = "final_completed_at")
+    LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
 }
 

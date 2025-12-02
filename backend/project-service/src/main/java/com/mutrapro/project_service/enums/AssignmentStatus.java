@@ -9,7 +9,8 @@ public enum AssignmentStatus {
     revision_requested,    // Manager yêu cầu chỉnh sửa (từ manager)
     in_revision,           // Customer yêu cầu revision, manager đã approve, specialist đang làm
     delivery_pending,      // Đã được approve, chờ specialist deliver files
-    completed,             // Đã hoàn thành (tất cả files đã được delivered)
+    waiting_customer_review, // Đã deliver cho customer, chờ customer review/accept
+    completed,             // Đã hoàn thành (customer đã accept)
     cancelled              // Đã hủy
 }
 

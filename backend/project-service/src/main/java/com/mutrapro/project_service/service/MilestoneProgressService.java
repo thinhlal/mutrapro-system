@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Quản lý logic milestone actualStart dựa trên trạng thái contract, milestone và task assignments.
+ * Quản lý logic milestone actualStart dựa trên trạng thái contract, milestone
+ * và task assignments.
  */
 @Slf4j
 @Service
@@ -47,22 +48,22 @@ public class MilestoneProgressService {
         Contract contract = contractRepository.findById(contractId).orElse(null);
         if (contract == null) {
             log.warn("Cannot evaluate milestone actual start. Contract not found: contractId={}, milestoneId={}",
-                contractId, milestoneId);
+                    contractId, milestoneId);
             return;
         }
 
         ContractStatus contractStatus = contract.getStatus();
-        if (contractStatus != ContractStatus.active && 
-            contractStatus != ContractStatus.active_pending_assignment) {
+        if (contractStatus != ContractStatus.active &&
+                contractStatus != ContractStatus.active_pending_assignment) {
             return; // Chỉ xét khi contract đã active (deposit paid)
         }
 
         ContractMilestone milestone = contractMilestoneRepository
-            .findByMilestoneIdAndContractId(milestoneId, contractId)
-            .orElse(null);
+                .findByMilestoneIdAndContractId(milestoneId, contractId)
+                .orElse(null);
         if (milestone == null) {
             log.warn("Cannot evaluate milestone actual start. Milestone not found: contractId={}, milestoneId={}",
-                contractId, milestoneId);
+                    contractId, milestoneId);
             return;
         }
 
@@ -82,14 +83,16 @@ public class MilestoneProgressService {
             return;
         }
 
+        // actualStartAt = thời điểm hiện tại khi milestone thực sự bắt đầu (khi
+        // manager/specialist start)
         milestone.setActualStartAt(LocalDateTime.now());
         if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED
-            || milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
+                || milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
             milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
         }
         contractMilestoneRepository.save(milestone);
         log.info("Milestone actual start recorded: contractId={}, milestoneId={}, actualStartAt={}",
-            contractId, milestoneId, milestone.getActualStartAt());
+                contractId, milestoneId, milestone.getActualStartAt());
     }
 
     /**
@@ -102,11 +105,11 @@ public class MilestoneProgressService {
         }
 
         ContractMilestone milestone = contractMilestoneRepository
-            .findByMilestoneIdAndContractId(milestoneId, contractId)
-            .orElse(null);
+                .findByMilestoneIdAndContractId(milestoneId, contractId)
+                .orElse(null);
         if (milestone == null) {
             log.warn("Cannot mark milestone actual end. Milestone not found: contractId={}, milestoneId={}",
-                contractId, milestoneId);
+                    contractId, milestoneId);
             return;
         }
 
@@ -119,14 +122,13 @@ public class MilestoneProgressService {
         milestone.setActualEndAt(endAt);
         contractMilestoneRepository.save(milestone);
         log.info("Milestone actual end recorded: contractId={}, milestoneId={}, actualEndAt={}",
-            contractId, milestoneId, endAt);
+                contractId, milestoneId, endAt);
     }
 
     private boolean hasAcceptedOrCompletedTask(String milestoneId) {
         return taskAssignmentRepository.existsByMilestoneIdAndStatusIn(
-            milestoneId,
-            List.of(AssignmentStatus.in_progress, AssignmentStatus.completed)
-        );
+                milestoneId,
+                List.of(AssignmentStatus.in_progress, AssignmentStatus.completed));
     }
 
     private boolean isPreviousMilestoneReady(String contractId, ContractMilestone milestone) {
@@ -136,26 +138,29 @@ public class MilestoneProgressService {
         }
 
         Optional<ContractMilestone> previousOpt = contractMilestoneRepository
-            .findByContractIdAndOrderIndex(contractId, orderIndex - 1);
+                .findByContractIdAndOrderIndex(contractId, orderIndex - 1);
         if (previousOpt.isEmpty()) {
             log.warn("Previous milestone not found while evaluating actual start: contractId={}, milestoneId={}",
-                contractId, milestone.getMilestoneId());
+                    contractId, milestone.getMilestoneId());
             return false;
         }
 
         ContractMilestone previous = previousOpt.get();
-        if (previous.getWorkStatus() != MilestoneWorkStatus.COMPLETED) {
-            return false;
-        }
 
+        // Kiểm tra milestone trước đó đã được thanh toán chưa
+        // Milestone có thể ở trạng thái READY_FOR_PAYMENT hoặc COMPLETED
+        // Nhưng quan trọng là installment phải PAID
         Optional<ContractInstallment> prevInstallment = contractInstallmentRepository
-            .findByContractIdAndMilestoneId(contractId, previous.getMilestoneId());
+                .findByContractIdAndMilestoneId(contractId, previous.getMilestoneId());
+
         if (prevInstallment.isPresent()) {
+            // Nếu có installment, phải PAID
             return prevInstallment.get().getStatus() == InstallmentStatus.PAID;
         }
 
-        return true;
+        // Nếu không có installment (milestone không có payment),
+        // kiểm tra work status phải READY_FOR_PAYMENT hoặc COMPLETED
+        return previous.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT
+                || previous.getWorkStatus() == MilestoneWorkStatus.COMPLETED;
     }
 }
-
-

@@ -103,8 +103,17 @@ public class FileService {
             }
             Contract contract = contracts.getFirst();
             
+            // Check CUSTOMER ownership
+            if (userRoles.contains("CUSTOMER")) {
+                if (userId.equals(contract.getUserId())) {
+                    skipFileAccessCheck = true;
+                    log.debug("Request {} belongs to contract owned by customer {}, skipping per-file access check", 
+                            requestId, userId);
+                }
+            }
+            
             // Check MANAGER ownership
-            if (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN")) {
+            if (!skipFileAccessCheck && (userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN"))) {
                 if (userId.equals(contract.getManagerUserId())) {
                     skipFileAccessCheck = true;
                     log.debug("Request {} belongs to contract managed by manager {}, skipping per-file access check", 

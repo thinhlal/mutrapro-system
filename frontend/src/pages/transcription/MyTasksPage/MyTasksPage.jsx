@@ -52,6 +52,8 @@ function getStatusDisplay(status) {
     ready_for_review: { text: 'Ready for Review', color: 'orange' },
     revision_requested: { text: 'Revision Requested', color: 'warning' },
     in_revision: { text: 'In Revision', color: 'processing' },
+    delivery_pending: { text: 'Delivery Pending', color: 'cyan' },
+    waiting_customer_review: { text: 'Waiting Customer Review', color: 'purple' },
     completed: { text: 'Completed', color: 'green' },
     cancelled: { text: 'Cancelled', color: 'default' },
   };
@@ -125,7 +127,7 @@ function getPlannedDeadline(milestone) {
 }
 
 function getActualDeadline(milestone) {
-  // Chỉ tính actual deadline khi đã có actualStartAt (đã start work)
+  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
   if (!milestone) return null;
   const actualStart = getActualStartDate(milestone);
   const slaDays = milestone.milestoneSlaDays;
@@ -134,7 +136,6 @@ function getActualDeadline(milestone) {
     dueDate.setDate(dueDate.getDate() + Number(slaDays));
     return dueDate;
   }
-  // Không fallback về actualEndAt nếu chưa có actualStartAt
   return null;
 }
 
@@ -298,6 +299,9 @@ const MyTasksPage = ({ onOpenTask }) => {
         ACCEPTED_WAITING: 'accepted_waiting',
         READY_TO_START: 'ready_to_start',
         IN_PROGRESS: 'in_progress',
+        IN_REVISION: 'in_revision',
+        WAITING_CUSTOMER_REVIEW: 'waiting_customer_review',
+        REVISION_REQUESTED: 'revision_requested',
         COMPLETED: 'completed',
         CANCELLED: 'cancelled',
       };
@@ -475,7 +479,10 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isCompleted =
             record.status?.toLowerCase() === 'completed' ||
             record.status?.toLowerCase() === 'cancelled';
+          // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+          const hasFirstSubmission = record?.milestone?.firstSubmissionAt;
           const isOverdue =
+            !hasFirstSubmission &&
             !isCompleted &&
             displayDeadline &&
             displayDeadline.getTime() < now.getTime();
@@ -486,7 +493,11 @@ const MyTasksPage = ({ onOpenTask }) => {
               )
             : null;
           const isNearDeadline =
-            !isOverdue && daysDiff !== null && daysDiff <= 3 && daysDiff >= 0;
+            !hasFirstSubmission &&
+            !isOverdue &&
+            daysDiff !== null &&
+            daysDiff <= 3 &&
+            daysDiff >= 0;
 
           // Chỉ hiển thị actual deadline khi đã có start work (có actualStartAt)
           const showActual =
@@ -497,7 +508,14 @@ const MyTasksPage = ({ onOpenTask }) => {
               {showActual && (
                 <>
                   <Text strong>Actual</Text>
-                  <Text>Deadline: {formatDateTime(actualDeadline)}</Text>
+                  <Text>
+                    Deadline: {formatDateTime(actualDeadline)}
+                    {record.milestone?.milestoneSlaDays && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {' '}(+{record.milestone.milestoneSlaDays} ngày SLA)
+                      </Text>
+                    )}
+                  </Text>
                   {isOverdue && <Tag color="red">Quá hạn</Tag>}
                   {isNearDeadline && <Tag color="orange">Sắp hạn</Tag>}
                   <Divider dashed style={{ margin: '4px 0' }} />
@@ -678,6 +696,9 @@ const MyTasksPage = ({ onOpenTask }) => {
                   value: 'READY_TO_START',
                 },
                 { label: 'In Progress', value: 'IN_PROGRESS' },
+                { label: 'In Revision', value: 'IN_REVISION' },
+                { label: 'Waiting Customer Review', value: 'WAITING_CUSTOMER_REVIEW' },
+                { label: 'Revision Requested', value: 'REVISION_REQUESTED' },
                 { label: 'Completed', value: 'COMPLETED' },
                 { label: 'Cancelled', value: 'CANCELLED' },
               ]}

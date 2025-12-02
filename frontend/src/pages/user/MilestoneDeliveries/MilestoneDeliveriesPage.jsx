@@ -15,6 +15,7 @@ import {
   Alert,
   Descriptions,
   Divider,
+  Collapse,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -88,10 +89,15 @@ const MilestoneDeliveriesPage = () => {
         setContractInfo(data.contract);
         setMilestoneInfo(data.milestone);
         setRequestInfo(data.request); // Request info đã được load từ backend
-        setSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
         
         // Revision requests đã được load từ backend trong response
-        setRevisionRequests(Array.isArray(data.revisionRequests) ? data.revisionRequests : []);
+        const allRevisionRequests = Array.isArray(data.revisionRequests) ? data.revisionRequests : [];
+        setRevisionRequests(allRevisionRequests);
+        
+        // Không filter submissions - hiển thị tất cả submissions đã delivered
+        // Logic ẩn nút sẽ được xử lý trong phần render, không ẩn submission
+        const allSubmissions = Array.isArray(data.submissions) ? data.submissions : [];
+        setSubmissions(allSubmissions);
       } else {
         setContractInfo(null);
         setMilestoneInfo(null);
@@ -190,13 +196,6 @@ const MilestoneDeliveriesPage = () => {
         setRevisionTitle('');
         setRevisionDescription('');
         await loadDeliveries();
-        // Reload contract page if needed
-        if (reviewAction === 'request_revision') {
-          // Navigate back to contract detail to see updated status
-          setTimeout(() => {
-            navigate(`/contracts/${contractId}`);
-          }, 1000);
-        }
       } else {
         // Nếu status không phải success, hiển thị lỗi
         message.error(
@@ -296,6 +295,30 @@ const MilestoneDeliveriesPage = () => {
                   )}
                 </Text>
               </Descriptions.Item>
+              {contractInfo.freeRevisionsIncluded != null && (() => {
+                const totalRevisions = revisionRequests.length;
+                const freeRevisionsUsed = Math.min(
+                  revisionRequests.filter(rr => rr.isFreeRevision === true).length,
+                  contractInfo.freeRevisionsIncluded
+                );
+                const paidRevisionsUsed = totalRevisions - freeRevisionsUsed;
+                
+                return (
+                  <>
+                    <Descriptions.Item label="Free Revisions Included">
+                      <Text strong>{contractInfo.freeRevisionsIncluded}</Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revisions Used">
+                      <Text strong>
+                        {totalRevisions} / {contractInfo.freeRevisionsIncluded} (Free)
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                        Đã dùng {freeRevisionsUsed} lần revision free, {paidRevisionsUsed} lần revision có phí
+                      </Text>
+                    </Descriptions.Item>
+                  </>
+                );
+              })()}
             </Descriptions>
           </Card>
         )}
@@ -480,42 +503,166 @@ const MilestoneDeliveriesPage = () => {
                           // Check xem submission này có đang trong quá trình revision không
                           // Logic:
                           // 1. Nếu submission là originalSubmissionId của revision request đang pending → ẩn nút (đã request revision)
-                          // 2. Nếu submission là revisedSubmissionId của revision request WAITING_CUSTOMER_CONFIRM → hiển thị nút (submission mới sau revision, cần review)
-                          // 3. Nếu submission không có trong revision request nào → hiển thị nút (submission bình thường)
+                          // 2. Nếu submission là originalSubmissionId của revision request đã completed → ẩn nút (đã có submission mới)
+                          // 3. Nếu submission là revisedSubmissionId của revision request WAITING_CUSTOMER_CONFIRM → hiển thị nút (submission mới sau revision, cần review)
+                          // 4. Nếu submission không có trong revision request nào → hiển thị nút (submission bình thường)
                           
                           const submissionId = submission.submissionId;
                           
-                          // Check xem có revision request nào đang pending cho submission này không
-                          const pendingRevisionForThisSubmission = revisionRequests.find(
-                            rr => {
+                          // Check xem có revision request nào đang pending cho cùng milestone không
+                          // (kể cả khi chưa có revisedSubmissionId)
+                          const hasPendingRevisionForMilestone = revisionRequests.some(rr => {
+                            const status = rr.status?.toUpperCase();
+                            return (
+                              (status === 'PENDING_MANAGER_REVIEW' ||
+                               status === 'IN_REVISION' ||
+                               status === 'WAITING_MANAGER_REVIEW' ||
+                               status === 'APPROVED_PENDING_DELIVERY') &&
+                              rr.milestoneId === milestoneInfo?.milestoneId
+                            );
+                          });
+                          
+                          // Tìm TẤT CẢ revision requests liên quan đến submission này
+                          const relatedRevisions = revisionRequests.filter(
+                            rr => rr.originalSubmissionId === submissionId || rr.revisedSubmissionId === submissionId
+                          );
+                          
+                          if (relatedRevisions.length > 0) {
+                            // Ưu tiên check revision request đang pending trước
+                            const pendingRevision = relatedRevisions.find(rr => {
                               const status = rr.status?.toUpperCase();
-                              const isPending = (
+                              return (
                                 status === 'PENDING_MANAGER_REVIEW' ||
                                 status === 'IN_REVISION' ||
                                 status === 'WAITING_MANAGER_REVIEW' ||
                                 status === 'APPROVED_PENDING_DELIVERY'
                               );
+                            });
+                            
+                            // Nếu có revision request đang pending
+                            if (pendingRevision) {
+                              const isOriginal = pendingRevision.originalSubmissionId === submissionId;
+                              const isRevised = pendingRevision.revisedSubmissionId === submissionId;
                               
-                              // Nếu revision request đang pending và submission này là originalSubmissionId
-                              // → đã request revision cho submission này, ẩn nút
-                              if (isPending && rr.originalSubmissionId === submissionId) {
-                                return true;
+                              // Nếu submission là originalSubmissionId và revision request đang pending → ẩn nút
+                              if (isOriginal) {
+                                return (
+                                  <Tag color="orange">
+                                    Đã yêu cầu chỉnh sửa - Đang chờ xử lý
+                                  </Tag>
+                                );
                               }
                               
-                              return false;
+                              // Nếu submission là revisedSubmissionId và revision request đang pending → không hiển thị nút (chưa deliver)
+                              if (isRevised) {
+                                return (
+                                  <Tag color="blue">
+                                    Đang chờ xử lý
+                                  </Tag>
+                                );
+                              }
                             }
-                          );
-                          
-                          // Nếu có revision request đang pending cho submission này → ẩn nút
-                          if (pendingRevisionForThisSubmission) {
-                            return (
-                              <Tag color="orange">
-                                Đã yêu cầu chỉnh sửa - Đang chờ xử lý
-                              </Tag>
-                            );
+                            
+                            // Nếu không có pending trong relatedRevisions, check completed revisions
+                            const completedRevision = relatedRevisions.find(rr => {
+                              const status = rr.status?.toUpperCase();
+                              return status === 'COMPLETED' || status === 'WAITING_CUSTOMER_CONFIRM';
+                            });
+                            
+                            if (completedRevision) {
+                              const status = completedRevision.status?.toUpperCase();
+                              const isOriginal = completedRevision.originalSubmissionId === submissionId;
+                              const isRevised = completedRevision.revisedSubmissionId === submissionId;
+                              
+                              // Nếu submission là originalSubmissionId và revision request đã completed → ẩn nút
+                              if (isOriginal) {
+                                return (
+                                  <Tag color="default">
+                                    Đã được chỉnh sửa - Xem submission mới
+                                  </Tag>
+                                );
+                              }
+                              
+                              // Nếu submission là revisedSubmissionId và revision request đang WAITING_CUSTOMER_CONFIRM → hiển thị nút
+                              if (isRevised && status === 'WAITING_CUSTOMER_CONFIRM') {
+                                // Check xem còn lượt free revision không
+                                // Đếm số revision requests đã có isFreeRevision = true (không phân biệt status)
+                                const freeRevisionsUsed = revisionRequests.filter(rr => rr.isFreeRevision === true).length;
+                                const hasFreeRevisionsLeft = contractInfo?.freeRevisionsIncluded != null && 
+                                                             freeRevisionsUsed < contractInfo.freeRevisionsIncluded;
+                                
+                                return (
+                                  <Space>
+                                    <Button
+                                      type="primary"
+                                      icon={<CheckCircleOutlined />}
+                                      size="small"
+                                      onClick={() =>
+                                        handleOpenReviewModal(submission, 'accept')
+                                      }
+                                    >
+                                      Accept
+                                    </Button>
+                                    <Popconfirm
+                                      title={!hasFreeRevisionsLeft ? "Xác nhận yêu cầu revision có phí" : "Xác nhận yêu cầu revision"}
+                                      description={
+                                        !hasFreeRevisionsLeft 
+                                          ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí.`
+                                          : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
+                                      }
+                                      onConfirm={() =>
+                                        handleOpenReviewModal(
+                                          submission,
+                                          'request_revision'
+                                        )
+                                      }
+                                      okText="Xác nhận"
+                                      cancelText="Hủy"
+                                    >
+                                      <Button
+                                        icon={<CloseCircleOutlined />}
+                                        size="small"
+                                        danger={!hasFreeRevisionsLeft}
+                                      >
+                                        Request Revision
+                                        {!hasFreeRevisionsLeft && (
+                                          <Tag color="orange" style={{ marginLeft: 4 }}>
+                                            (Có phí)
+                                          </Tag>
+                                        )}
+                                      </Button>
+                                    </Popconfirm>
+                                  </Space>
+                                );
+                              }
+                              
+                              // Nếu submission là revisedSubmissionId và revision request đã COMPLETED
+                              // NHƯNG nếu có revision request khác đang pending cho milestone → không hiển thị "Đã chấp nhận"
+                              if (isRevised && status === 'COMPLETED') {
+                                // Nếu có revision request đang pending cho milestone → không hiển thị "Đã chấp nhận"
+                                if (hasPendingRevisionForMilestone) {
+                                  return (
+                                    <Tag color="default">
+                                      Đang có revision mới chờ xử lý
+                                    </Tag>
+                                  );
+                                }
+                                
+                                return (
+                                  <Tag color="success">
+                                    Đã chấp nhận
+                                  </Tag>
+                                );
+                              }
+                            }
                           }
                           
-                          // Nếu không có revision request pending cho submission này → hiển thị nút
+                          // Nếu không có revision request nào cho submission này → hiển thị nút
+                          // Check xem còn lượt free revision không
+                          const freeRevisionsUsed = revisionRequests.filter(rr => rr.isFreeRevision === true).length;
+                          const hasFreeRevisionsLeft = contractInfo?.freeRevisionsIncluded != null && 
+                                                       freeRevisionsUsed < contractInfo.freeRevisionsIncluded;
+                          
                           return (
                             <Space>
                               <Button
@@ -528,18 +675,35 @@ const MilestoneDeliveriesPage = () => {
                               >
                                 Accept
                               </Button>
-                              <Button
-                                icon={<CloseCircleOutlined />}
-                                size="small"
-                                onClick={() =>
+                              <Popconfirm
+                                title={!hasFreeRevisionsLeft ? "Xác nhận yêu cầu revision có phí" : "Xác nhận yêu cầu revision"}
+                                description={
+                                  !hasFreeRevisionsLeft 
+                                    ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí.`
+                                    : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
+                                }
+                                onConfirm={() =>
                                   handleOpenReviewModal(
                                     submission,
                                     'request_revision'
                                   )
                                 }
+                                okText="Xác nhận"
+                                cancelText="Hủy"
                               >
-                                Request Revision
-                              </Button>
+                                <Button
+                                  icon={<CloseCircleOutlined />}
+                                  size="small"
+                                  danger={!hasFreeRevisionsLeft}
+                                >
+                                  Request Revision
+                                  {!hasFreeRevisionsLeft && (
+                                    <Tag color="orange" style={{ marginLeft: 4 }}>
+                                      (Có phí)
+                                    </Tag>
+                                  )}
+                                </Button>
+                              </Popconfirm>
                             </Space>
                           );
                         })()}
@@ -596,12 +760,338 @@ const MilestoneDeliveriesPage = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     )}
+                    
+                    {/* Revision Requests liên quan đến submission này */}
+                    {(() => {
+                      const submissionId = submission.submissionId;
+                      // Hiển thị revision requests nếu submission này liên quan:
+                      // - Nếu submission là originalSubmissionId (submission bị request revision)
+                      // - Nếu submission là revisedSubmissionId (submission sau khi chỉnh sửa)
+                      const relatedRevisions = revisionRequests.filter(rr => 
+                        rr.originalSubmissionId === submissionId || 
+                        rr.revisedSubmissionId === submissionId
+                      );
+                      
+                      if (relatedRevisions.length === 0) return null;
+                      
+                      // Tách thành 2 nhóm: original (chỉ hiển thị tên) và revised (hiển thị chi tiết)
+                      const originalRevisions = relatedRevisions.filter(rr => rr.originalSubmissionId === submissionId);
+                      const revisedRevisions = relatedRevisions.filter(rr => rr.revisedSubmissionId === submissionId);
+                      
+                      return (
+                        <div style={{ marginTop: 16 }}>
+                          <Divider orientation="left">
+                            <Text strong>Revision Requests liên quan</Text>
+                          </Divider>
+                          
+                          {/* Hiển thị revision requests cho originalSubmissionId - chỉ tên thôi */}
+                          {originalRevisions.length > 0 && (
+                            <div style={{ marginBottom: 16 }}>
+                              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                {originalRevisions.map(revision => (
+                                  <div key={revision.revisionRequestId} style={{ padding: '8px 0' }}>
+                                    <Space>
+                                      <Tag color="red">Revision Round #{revision.revisionRound}</Tag>
+                                      <Text strong>{revision.title}</Text>
+                                    </Space>
+                                  </div>
+                                ))}
+                              </Space>
+                            </div>
+                          )}
+                          
+                          {/* Hiển thị revision requests cho revisedSubmissionId - có chi tiết */}
+                          {revisedRevisions.length > 0 && (
+                            <Collapse size="small">
+                              {revisedRevisions.map(revision => (
+                                <Collapse.Panel
+                                  key={revision.revisionRequestId}
+                                  header={
+                                    <Space>
+                                      <Text strong>
+                                        Revision Round #{revision.revisionRound}
+                                      </Text>
+                                      <Tag color="green">Submission này là bản đã chỉnh sửa</Tag>
+                                      {revision.isFreeRevision && (
+                                        <Tag color="green">Free Revision</Tag>
+                                      )}
+                                      {!revision.isFreeRevision && (
+                                        <Tag color="orange">Paid Revision</Tag>
+                                      )}
+                                      <Text type="secondary" style={{ fontSize: 12 }}>
+                                        {revision.title}
+                                      </Text>
+                                      {revision.revisionDueAt && (
+                                        <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
+                                          Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                                          {revision.revisionDeadlineDays && (
+                                            <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                              (+{revision.revisionDeadlineDays} ngày SLA)
+                                            </Text>
+                                          )}
+                                        </Tag>
+                                      )}
+                                    </Space>
+                                  }
+                                >
+                                  <Descriptions bordered column={1} size="small">
+                                    <Descriptions.Item label="Description">
+                                      <Text>{revision.description}</Text>
+                                    </Descriptions.Item>
+                                    {revision.revisionDueAt && (
+                                      <Descriptions.Item label="Revision Deadline">
+                                        <Space>
+                                          <Text strong>
+                                            {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                                            {revision.revisionDeadlineDays && (
+                                              <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                                (+{revision.revisionDeadlineDays} ngày SLA)
+                                              </Text>
+                                            )}
+                                          </Text>
+                                          {dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                            <Tag color="red">Quá hạn</Tag>
+                                          )}
+                                          {!dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                            <Tag color="blue">
+                                              Còn {dayjs(revision.revisionDueAt).diff(dayjs(), 'day')} ngày
+                                            </Tag>
+                                          )}
+                                        </Space>
+                                      </Descriptions.Item>
+                                    )}
+                                    {revision.managerNote && (
+                                      <Descriptions.Item label="Manager Note">
+                                        <Text>{revision.managerNote}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                  </Descriptions>
+                                </Collapse.Panel>
+                              ))}
+                            </Collapse>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </Card>
                 ))}
               </Space>
             )}
           </Spin>
         </Card>
+
+        {/* Revision Requests Tổng hợp - Hiển thị tất cả revision requests */}
+        {revisionRequests.length > 0 && (() => {
+          // Lấy tất cả submission IDs đã được hiển thị
+          const displayedSubmissionIds = new Set(submissions.map(s => s.submissionId));
+          
+          // Tìm các revision requests không liên quan đến submission nào đã hiển thị
+          // (orphan revisions hoặc revisions chưa có originalSubmissionId/revisedSubmissionId)
+          const orphanRevisions = revisionRequests.filter(rr => {
+            // Nếu không có originalSubmissionId và revisedSubmissionId → orphan
+            if (!rr.originalSubmissionId && !rr.revisedSubmissionId) {
+              return true;
+            }
+            // Nếu có originalSubmissionId hoặc revisedSubmissionId nhưng không match với submission nào
+            const hasOriginalMatch = rr.originalSubmissionId && displayedSubmissionIds.has(rr.originalSubmissionId);
+            const hasRevisedMatch = rr.revisedSubmissionId && displayedSubmissionIds.has(rr.revisedSubmissionId);
+            return !hasOriginalMatch && !hasRevisedMatch;
+          });
+
+          // Hiển thị section này để customer có thể xem tổng quan tất cả revision requests
+          // Bao gồm cả những revision requests chưa liên kết với submission (orphan)
+
+          return (
+            <Card
+              title={
+                <Space>
+                  <Text strong>Revision Requests Tổng hợp</Text>
+                  <Tag color="orange">{revisionRequests.length}</Tag>
+                </Space>
+              }
+              style={{ marginTop: 24 }}
+            >
+              <Collapse>
+                {revisionRequests.map(revision => {
+                  const status = revision.status?.toLowerCase();
+                  const statusColors = {
+                    pending_manager_review: 'orange',
+                    in_revision: 'processing',
+                    waiting_manager_review: 'blue',
+                    approved_pending_delivery: 'cyan',
+                    waiting_customer_confirm: 'purple',
+                    completed: 'success',
+                    rejected: 'error',
+                    canceled: 'default',
+                  };
+                  const statusLabels = {
+                    pending_manager_review: 'Chờ Manager duyệt',
+                    in_revision: 'Đang chỉnh sửa',
+                    waiting_manager_review: 'Chờ Manager review',
+                    approved_pending_delivery: 'Đã duyệt, chờ deliver',
+                    waiting_customer_confirm: 'Chờ Customer xác nhận',
+                    completed: 'Hoàn thành',
+                    rejected: 'Từ chối',
+                    canceled: 'Đã hủy',
+                  };
+
+                  const isOrphan = orphanRevisions.includes(revision);
+                  const hasOriginalMatch = revision.originalSubmissionId && displayedSubmissionIds.has(revision.originalSubmissionId);
+                  const hasRevisedMatch = revision.revisedSubmissionId && displayedSubmissionIds.has(revision.revisedSubmissionId);
+
+                  return (
+                    <Collapse.Panel
+                      key={revision.revisionRequestId}
+                      header={
+                        <Space>
+                          <Text strong>
+                            Revision Round #{revision.revisionRound}
+                          </Text>
+                          {isOrphan && (
+                            <Tag color="warning">Chưa liên kết với submission</Tag>
+                          )}
+                          {revision.isFreeRevision && (
+                            <Tag color="green">Free Revision</Tag>
+                          )}
+                          {!revision.isFreeRevision && (
+                            <Tag color="orange">Paid Revision</Tag>
+                          )}
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {revision.title}
+                          </Text>
+                          {revision.revisionDueAt && (
+                            <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
+                              Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                              {revision.revisionDeadlineDays && (
+                                <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                  (+{revision.revisionDeadlineDays} ngày SLA)
+                                </Text>
+                              )}
+                            </Tag>
+                          )}
+                        </Space>
+                      }
+                    >
+                      <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="Title">
+                          <Text strong>{revision.title}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Description">
+                          <Text>{revision.description}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Status">
+                          <Tag color={statusColors[status] || 'default'}>
+                            {statusLabels[status] || status}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Revision Round">
+                          #{revision.revisionRound}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Free Revision">
+                          {revision.isFreeRevision ? (
+                            <Tag color="green">Yes</Tag>
+                          ) : (
+                            <Tag color="orange">No (Có phí)</Tag>
+                          )}
+                        </Descriptions.Item>
+                        {revision.originalSubmissionId && (
+                          <Descriptions.Item label="Original Submission">
+                            <Text>
+                              {hasOriginalMatch ? (
+                                <Tag color="blue">Version {
+                                  submissions.find(s => s.submissionId === revision.originalSubmissionId)?.version || 'N/A'
+                                }</Tag>
+                              ) : (
+                                <>
+                                  Submission ID: {revision.originalSubmissionId.substring(0, 8)}...
+                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                                    (Submission này không có trong danh sách hiện tại)
+                                  </Text>
+                                </>
+                              )}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {revision.revisedSubmissionId && (
+                          <Descriptions.Item label="Revised Submission">
+                            <Text>
+                              {hasRevisedMatch ? (
+                                <Tag color="green">Version {
+                                  submissions.find(s => s.submissionId === revision.revisedSubmissionId)?.version || 'N/A'
+                                }</Tag>
+                              ) : (
+                                <>
+                                  Submission ID: {revision.revisedSubmissionId.substring(0, 8)}...
+                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                                    (Submission này không có trong danh sách hiện tại)
+                                  </Text>
+                                </>
+                              )}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {!revision.originalSubmissionId && !revision.revisedSubmissionId && (
+                          <Descriptions.Item label="Lưu ý">
+                            <Tag color="warning">
+                              Revision request này chưa liên kết với submission nào
+                            </Tag>
+                          </Descriptions.Item>
+                        )}
+                        {revision.requestedAt && (
+                          <Descriptions.Item label="Requested At">
+                            {dayjs(revision.requestedAt).format('DD/MM/YYYY HH:mm')}
+                          </Descriptions.Item>
+                        )}
+                        {revision.managerReviewedAt && (
+                          <Descriptions.Item label="Manager Reviewed At">
+                            {dayjs(revision.managerReviewedAt).format('DD/MM/YYYY HH:mm')}
+                          </Descriptions.Item>
+                        )}
+                        {revision.managerNote && (
+                          <Descriptions.Item label="Manager Note">
+                            <Text>{revision.managerNote}</Text>
+                          </Descriptions.Item>
+                        )}
+                        {revision.specialistSubmittedAt && (
+                          <Descriptions.Item label="Specialist Submitted At">
+                            {dayjs(revision.specialistSubmittedAt).format('DD/MM/YYYY HH:mm')}
+                          </Descriptions.Item>
+                        )}
+                        {revision.customerConfirmedAt && (
+                          <Descriptions.Item label="Customer Confirmed At">
+                            {dayjs(revision.customerConfirmedAt).format('DD/MM/YYYY HH:mm')}
+                          </Descriptions.Item>
+                        )}
+                        {revision.revisionDueAt && (
+                          <Descriptions.Item label="Revision Deadline">
+                            <Space>
+                              <Text strong>
+                                {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
+                                {revision.revisionDeadlineDays && (
+                                  <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                                    (+{revision.revisionDeadlineDays} ngày SLA)
+                                  </Text>
+                                )}
+                              </Text>
+                              {dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                <Tag color="red">Quá hạn</Tag>
+                              )}
+                              {!dayjs(revision.revisionDueAt).isBefore(dayjs()) && (
+                                <Tag color="blue">
+                                  Còn {dayjs(revision.revisionDueAt).diff(dayjs(), 'day')} ngày
+                                </Tag>
+                              )}
+                            </Space>
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                    </Collapse.Panel>
+                  );
+                })}
+              </Collapse>
+            </Card>
+          );
+        })()}
       </div>
 
       {/* Review Modal */}

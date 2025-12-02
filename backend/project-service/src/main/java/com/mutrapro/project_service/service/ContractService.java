@@ -1344,6 +1344,10 @@ public class ContractService {
                 }
 
                 taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
+                
+                // Nếu milestone tiếp theo đã có task accepted/completed (nhưng chưa có actualStartAt vì milestone trước đó chưa paid),
+                // thì set actualStartAt ngay khi milestone trước đó được thanh toán
+                milestoneProgressService.evaluateActualStart(contractId, nextMilestone.getMilestoneId());
             }
         }
         
