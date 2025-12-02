@@ -146,7 +146,7 @@ const AITranscriptionScreen = ({ navigation }) => {
       </View>
 
       {/* Info Banner */}
-      <View style={styles.infoBanner}>
+      {/* <View style={styles.infoBanner}>
         <Ionicons
           name="information-circle"
           size={20}
@@ -157,7 +157,7 @@ const AITranscriptionScreen = ({ navigation }) => {
           Free plan supports audio files ≤ {FREE_PLAN_LIMITS.MAX_DURATION_SECONDS}{" "}
           seconds and ≤ {FREE_PLAN_LIMITS.MAX_FILE_SIZE_MB}MB.
         </Text>
-      </View>
+      </View> */}
 
       {/* Step 1: Select Model (dropdown) */}
       <View style={styles.section}>

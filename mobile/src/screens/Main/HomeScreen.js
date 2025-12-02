@@ -8,7 +8,6 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button, ImageSlider, DiscoverServices } from "../../components";
 import {
@@ -51,84 +50,6 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Discover Our Services */}
       <DiscoverServices />
-
-      {/* Quick Actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActions}>
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={() => {
-            // TODO: Navigate to create request
-          }}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: COLORS.primary + "20" },
-            ]}
-          >
-            <Ionicons name="musical-notes" size={28} color={COLORS.primary} />
-          </View>
-          <Text style={styles.actionText}>New Request</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={() => {
-            // TODO: Navigate to my requests
-          }}
-        >
-          <View
-            style={[styles.actionIcon, { backgroundColor: COLORS.info + "20" }]}
-          >
-            <Ionicons name="list" size={28} color={COLORS.info} />
-          </View>
-          <Text style={styles.actionText}>My Requests</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={() => {
-            // TODO: Navigate to contracts
-          }}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: COLORS.success + "20" },
-            ]}
-          >
-            <Ionicons name="document-text" size={28} color={COLORS.success} />
-          </View>
-          <Text style={styles.actionText}>Contracts</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionCard}
-          onPress={() => {
-            // TODO: Navigate to wallet
-          }}
-        >
-          <View
-            style={[
-              styles.actionIcon,
-              { backgroundColor: COLORS.warning + "20" },
-            ]}
-          >
-            <Ionicons name="wallet" size={28} color={COLORS.warning} />
-          </View>
-          <Text style={styles.actionText}>Wallet</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Logout Button */}
-      {/* <Button
-        title="Logout"
-        onPress={handleLogout}
-        variant="outline"
-        loading={loading}
-        style={styles.logoutButton}
-      /> */}
     </ScrollView>
   );
 };
