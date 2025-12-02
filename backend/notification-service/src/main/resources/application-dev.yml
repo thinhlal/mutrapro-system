@@ -57,7 +57,6 @@ app:
       contract.otp.email: contract-otp-email
       contract.signed.email: contract-signed-email
       task.assignment.assigned: task-assignment-assigned
-      task.file.uploaded: task-file-uploaded
       chat.room.created: chat-events
       submission.delivered: submission-delivered
       revision.requested: revision-requested

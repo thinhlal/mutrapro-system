@@ -52,7 +52,6 @@ app:
       contract.otp.email: ${KAFKA_TOPIC_CONTRACT_OTP_EMAIL:contract-otp-email}
       contract.signed.email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
-      task.file.uploaded: ${KAFKA_TOPIC_TASK_FILE_UPLOADED:task-file-uploaded}
       chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
       submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
       revision.requested: ${KAFKA_TOPIC_REVISION_REQUESTED:revision-requested}

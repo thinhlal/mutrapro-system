@@ -9,9 +9,6 @@ import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.project_service.enums.AssignmentStatus;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.exception.FileNotFoundException;
 import com.mutrapro.project_service.exception.FileUploadException;
 import com.mutrapro.project_service.exception.InvalidFileStatusException;
@@ -21,10 +18,8 @@ import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
-import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.mutrapro.shared.event.FileUploadedEvent;
-import com.mutrapro.shared.event.TaskFileUploadedEvent;
 import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +34,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,8 +47,6 @@ public class FileService {
     ContractRepository contractRepository;
     S3Service s3Service;
     FileAccessService fileAccessService;
-    OutboxEventRepository outboxEventRepository;
-    ObjectMapper objectMapper;
 
     @Transactional
     public void createFileFromEvent(FileUploadedEvent event) {
@@ -362,60 +354,6 @@ public class FileService {
             log.info("File uploaded successfully: fileId={}, assignmentId={}, fileName={}", 
                     saved.getFileId(), assignmentId, file.getOriginalFilename());
             
-            // Enqueue notification event cho manager (Kafka)
-            try {
-                if (contract != null && contract.getManagerUserId() != null) {
-                    String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
-                            ? contract.getContractNumber()
-                            : assignment.getContractId();
-                    
-                    TaskFileUploadedEvent event = TaskFileUploadedEvent.builder()
-                            .eventId(UUID.randomUUID())
-                            .fileId(saved.getFileId())
-                            .fileName(saved.getFileName())
-                            .assignmentId(assignmentId)
-                            .contractId(assignment.getContractId())
-                            .contractNumber(contractLabel)
-                            .taskType(assignment.getTaskType() != null ? assignment.getTaskType().name() : null)
-                            .managerUserId(contract.getManagerUserId())
-                            .title("Specialist đã upload file output")
-                            .content(String.format("Specialist đã upload file \"%s\" cho task %s của contract #%s. Vui lòng chờ specialist submit for review.", 
-                                    saved.getFileName(),
-                                    assignment.getTaskType(),
-                                    contractLabel))
-                            .referenceType("TASK_ASSIGNMENT")
-                            .actionUrl("/manager/contracts/" + assignment.getContractId())
-                            .uploadedAt(saved.getUploadDate())
-                            .timestamp(Instant.now())
-                            .build();
-                    
-                    JsonNode payload = objectMapper.valueToTree(event);
-                    UUID aggregateId;
-                    try {
-                        aggregateId = UUID.fromString(saved.getFileId());
-                    } catch (IllegalArgumentException ex) {
-                        aggregateId = UUID.randomUUID();
-                    }
-                    
-                    OutboxEvent outboxEvent = OutboxEvent.builder()
-                            .aggregateId(aggregateId)
-                            .aggregateType("File")
-                            .eventType("task.file.uploaded")
-                            .eventPayload(payload)
-                            .build();
-                    
-                    outboxEventRepository.save(outboxEvent);
-                    log.info("Queued TaskFileUploadedEvent in outbox: eventId={}, fileId={}, assignmentId={}, managerUserId={}", 
-                            event.getEventId(), saved.getFileId(), assignmentId, contract.getManagerUserId());
-                } else {
-                    log.warn("Cannot enqueue notification event: contract not found or managerUserId is null. contractId={}, assignmentId={}", 
-                            assignment.getContractId(), assignmentId);
-                }
-            } catch (Exception e) {
-                // Log error nhưng không fail transaction
-                log.error("Failed to enqueue TaskFileUploadedEvent: assignmentId={}, error={}", 
-                        assignmentId, e.getMessage(), e);
-            }
             
             return FileInfoResponse.builder()
                     .fileId(saved.getFileId())

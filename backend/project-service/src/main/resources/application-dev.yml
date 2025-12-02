@@ -54,7 +54,6 @@ app:
       billing.deposit.paid: billing-deposit-paid
       billing.milestone.paid: billing-milestone-paid
       task.assignment.assigned: task-assignment-assigned
-      task.file.uploaded: task-file-uploaded
       submission.delivered: submission-delivered
       revision.requested: revision-requested
       revision.delivered: revision-delivered

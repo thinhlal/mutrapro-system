@@ -1,6 +1,5 @@
 package com.mutrapro.project_service.service;
 
-import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
 import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.entity.Contract;
@@ -23,7 +22,6 @@ import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
-import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.shared.event.RevisionRequestedEvent;
 import com.mutrapro.shared.event.RevisionDeliveredEvent;
 import com.mutrapro.shared.event.RevisionSubmittedEvent;
@@ -56,7 +54,6 @@ public class RevisionRequestService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     FileSubmissionRepository fileSubmissionRepository;
-    NotificationServiceFeignClient notificationServiceFeignClient;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
 
