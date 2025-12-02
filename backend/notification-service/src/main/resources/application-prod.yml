@@ -55,6 +55,12 @@ app:
       task.file.uploaded: ${KAFKA_TOPIC_TASK_FILE_UPLOADED:task-file-uploaded}
       chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
       submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
+      revision.requested: ${KAFKA_TOPIC_REVISION_REQUESTED:revision-requested}
+      revision.delivered: ${KAFKA_TOPIC_REVISION_DELIVERED:revision-delivered}
+      revision.submitted: ${KAFKA_TOPIC_REVISION_SUBMITTED:revision-submitted}
+      revision.approved: ${KAFKA_TOPIC_REVISION_APPROVED:revision-approved}
+      revision.rejected: ${KAFKA_TOPIC_REVISION_REJECTED:revision-rejected}
+      milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
 
 logging:
   level:

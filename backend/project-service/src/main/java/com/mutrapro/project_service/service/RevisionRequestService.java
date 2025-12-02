@@ -12,16 +12,25 @@ import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidStateException;
+import com.mutrapro.project_service.exception.RevisionRequestNotFoundException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.ValidationException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
+import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
-import com.mutrapro.shared.enums.NotificationType;
+import com.mutrapro.shared.event.RevisionRequestedEvent;
+import com.mutrapro.shared.event.RevisionDeliveredEvent;
+import com.mutrapro.shared.event.RevisionSubmittedEvent;
+import com.mutrapro.shared.event.RevisionApprovedEvent;
+import com.mutrapro.shared.event.RevisionRejectedEvent;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +42,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,6 +57,37 @@ public class RevisionRequestService {
     ContractMilestoneRepository contractMilestoneRepository;
     FileSubmissionRepository fileSubmissionRepository;
     NotificationServiceFeignClient notificationServiceFeignClient;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
+
+    /**
+     * Helper method để publish event vào outbox
+     */
+    private void publishToOutbox(Object event, String aggregateIdString, String aggregateType, String eventType) {
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(aggregateIdString);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType(aggregateType)
+                    .eventType(eventType)
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.debug("Queued event in outbox: eventType={}, aggregateId={}", eventType, aggregateId);
+        } catch (Exception e) {
+            log.error("Failed to enqueue event to outbox: eventType={}, aggregateId={}, error={}", 
+                    eventType, aggregateIdString, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
 
     /**
      * Check xem có revision request với status cụ thể cho assignment không
@@ -90,7 +131,7 @@ public class RevisionRequestService {
         revisionRequest.setStatus(RevisionRequestStatus.WAITING_CUSTOMER_CONFIRM);
         revisionRequestRepository.save(revisionRequest);
         
-        // Gửi notification cho customer
+        // Gửi Kafka event về revision delivered cho customer
         try {
             Contract contract = contractRepository.findById(revisionRequest.getContractId())
                     .orElse(null);
@@ -103,23 +144,39 @@ public class RevisionRequestService {
                         ? milestone.getName()
                         : "milestone";
                 
-                CreateNotificationRequest customerNotif = CreateNotificationRequest.builder()
-                        .userId(revisionRequest.getCustomerId())
-                        .type(NotificationType.SUBMISSION_DELIVERED)
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : revisionRequest.getContractId();
+                
+                Instant now = Instant.now();
+                RevisionDeliveredEvent event = RevisionDeliveredEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .revisionRequestId(revisionRequestId)
+                        .submissionId(revisionRequest.getRevisedSubmissionId())
+                        .contractId(revisionRequest.getContractId())
+                        .contractNumber(contractLabel)
+                        .milestoneId(revisionRequest.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .taskAssignmentId(assignmentId)
+                        .customerUserId(revisionRequest.getCustomerId())
+                        .revisionRound(revisionRequest.getRevisionRound())
+                        .isFreeRevision(revisionRequest.getIsFreeRevision())
                         .title("Revision đã được chỉnh sửa")
                         .content(String.format("Manager đã gửi revision đã chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và xác nhận.", 
                                 milestoneName))
-                        .referenceId(revisionRequestId)
                         .referenceType("REVISION_REQUEST")
                         .actionUrl("/contracts/" + revisionRequest.getContractId() + "/milestones/" + revisionRequest.getMilestoneId() + "/deliveries")
+                        .deliveredAt(now)
+                        .timestamp(now)
                         .build();
                 
-                notificationServiceFeignClient.createNotification(customerNotif);
-                log.info("Sent revision delivered notification to customer: userId={}, revisionRequestId={}", 
-                        revisionRequest.getCustomerId(), revisionRequestId);
+                publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.delivered");
+                log.info("Queued RevisionDeliveredEvent in outbox: eventId={}, revisionRequestId={}, customerUserId={}", 
+                        event.getEventId(), revisionRequestId, revisionRequest.getCustomerId());
             }
         } catch (Exception e) {
-            log.error("Failed to send notification to customer: revisionRequestId={}, error={}", 
+            // Log error nhưng không fail transaction
+            log.error("Failed to enqueue RevisionDeliveredEvent: revisionRequestId={}, error={}", 
                     revisionRequestId, e.getMessage(), e);
         }
         
@@ -161,37 +218,59 @@ public class RevisionRequestService {
                     assignment.getAssignmentId());
         }
         
-        // Gửi notification cho specialist
+        // Gửi Kafka event về revision rejected cho specialist
         try {
             if (assignment != null) {
                 String specialistUserId = assignment.getSpecialistUserIdSnapshot();
                 if (specialistUserId != null && !specialistUserId.isBlank()) {
-                    ContractMilestone milestone = contractMilestoneRepository
-                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                    Contract contract = contractRepository.findById(revisionRequest.getContractId())
                             .orElse(null);
-                    String milestoneName = milestone != null && milestone.getName() != null
-                            ? milestone.getName()
-                            : "milestone";
+                    if (contract != null) {
+                        ContractMilestone milestone = contractMilestoneRepository
+                                .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                                .orElse(null);
+                        String milestoneName = milestone != null && milestone.getName() != null
+                                ? milestone.getName()
+                                : "milestone";
+                        
+                        String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                                ? contract.getContractNumber()
+                                : revisionRequest.getContractId();
                     
-                    CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
-                            .userId(specialistUserId)
-                            .type(NotificationType.REVISION_REQUEST_APPROVED) // Reuse type này
+                    Instant now = Instant.now();
+                    RevisionRejectedEvent event = RevisionRejectedEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .revisionRequestId(revisionRequestId)
+                            .contractId(revisionRequest.getContractId())
+                            .contractNumber(contractLabel)
+                            .milestoneId(revisionRequest.getMilestoneId())
+                            .milestoneName(milestoneName)
+                            .taskAssignmentId(assignmentId)
+                            .recipientUserId(specialistUserId)
+                            .recipientType("SPECIALIST")
+                            .managerUserId(contract.getManagerUserId())
+                            .managerNote(rejectionReason)
+                            .revisionRound(revisionRequest.getRevisionRound())
+                            .isFreeRevision(revisionRequest.getIsFreeRevision())
                             .title("Revision cần chỉnh sửa lại")
                             .content(String.format("Manager đã từ chối revision cho milestone \"%s\". %s", 
                                     milestoneName,
                                     rejectionReason != null ? "Lý do: " + rejectionReason : "Vui lòng chỉnh sửa lại."))
-                            .referenceId(revisionRequestId)
                             .referenceType("REVISION_REQUEST")
                             .actionUrl("/transcription/my-tasks")
+                            .rejectedAt(now)
+                            .timestamp(now)
                             .build();
                     
-                    notificationServiceFeignClient.createNotification(specialistNotif);
-                    log.info("Sent revision rejection notification to specialist: userId={}, revisionRequestId={}", 
-                            specialistUserId, revisionRequestId);
+                    publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.rejected");
+                    log.info("Queued RevisionRejectedEvent in outbox: eventId={}, revisionRequestId={}, specialistUserId={}", 
+                            event.getEventId(), revisionRequestId, specialistUserId);
+                    }
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to send notification to specialist: revisionRequestId={}, error={}", 
+            // Log error nhưng không fail transaction
+            log.error("Failed to enqueue RevisionRejectedEvent: revisionRequestId={}, error={}", 
                     revisionRequestId, e.getMessage(), e);
         }
         
@@ -249,7 +328,7 @@ public class RevisionRequestService {
         
         RevisionRequest saved = revisionRequestRepository.save(revisionRequest);
         
-        // Send notification to manager
+        // Gửi Kafka event về revision requested cho manager
         try {
             ContractMilestone milestone = contractMilestoneRepository
                     .findByMilestoneIdAndContractId(milestoneId, contractId)
@@ -262,24 +341,32 @@ public class RevisionRequestService {
                     ? contract.getContractNumber()
                     : contractId;
             
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
-                    .userId(contract.getManagerUserId())
-                    .type(NotificationType.CUSTOMER_REVISION_REQUESTED)
+            RevisionRequestedEvent event = RevisionRequestedEvent.builder()
+                    .eventId(java.util.UUID.randomUUID())
+                    .revisionRequestId(saved.getRevisionRequestId())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
+                    .milestoneId(milestoneId)
+                    .milestoneName(milestoneName)
+                    .taskAssignmentId(taskAssignmentId)
+                    .customerUserId(customerId)
+                    .managerUserId(contract.getManagerUserId())
                     .title("Customer yêu cầu chỉnh sửa")
-                    .content(String.format("Customer đã yêu cầu chỉnh sửa cho milestone \"%s\" của contract #%s. %s", 
-                            milestoneName,
-                            contractLabel,
-                            description))
-                    .referenceId(saved.getRevisionRequestId())
+                    .description(description)
+                    .revisionRound(saved.getRevisionRound())
+                    .isFreeRevision(saved.getIsFreeRevision())
                     .referenceType("REVISION_REQUEST")
-                    .actionUrl("/manager/contracts/" + contractId + "/tasks/" + taskAssignmentId)
+                    .actionUrl("/manager/revision-requests")
+                    .requestedAt(now)
+                    .timestamp(now)
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent revision request notification to manager: userId={}, revisionRequestId={}", 
-                    contract.getManagerUserId(), saved.getRevisionRequestId());
+            publishToOutbox(event, saved.getRevisionRequestId(), "RevisionRequest", "revision.requested");
+            log.info("Queued RevisionRequestedEvent in outbox: eventId={}, revisionRequestId={}, managerUserId={}", 
+                    event.getEventId(), saved.getRevisionRequestId(), contract.getManagerUserId());
         } catch (Exception e) {
-            log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+            // Log error nhưng không fail transaction
+            log.error("Failed to enqueue RevisionRequestedEvent: revisionRequestId={}, error={}", 
                     saved.getRevisionRequestId(), e.getMessage(), e);
         }
         
@@ -307,11 +394,11 @@ public class RevisionRequestService {
         }
         
         RevisionRequest revisionRequest = revisionRequestRepository.findById(revisionRequestId)
-                .orElseThrow(() -> new RuntimeException("Revision request not found: " + revisionRequestId));
+                .orElseThrow(() -> RevisionRequestNotFoundException.byId(revisionRequestId));
         
         // Verify status is PENDING_MANAGER_REVIEW
         if (revisionRequest.getStatus() != RevisionRequestStatus.PENDING_MANAGER_REVIEW) {
-            throw new InvalidStateException("Revision request is not pending manager review. Current status: " + revisionRequest.getStatus());
+            throw InvalidStateException.notPendingManagerReview(revisionRequestId, revisionRequest.getStatus().name());
         }
         
         // Verify manager has access to contract
@@ -369,7 +456,7 @@ public class RevisionRequestService {
                     }
                 }
                 
-                // Send notification to specialist
+                // Gửi Kafka event về revision approved cho specialist
                 try {
                     String specialistUserId = assignment.getSpecialistUserIdSnapshot();
                     if (specialistUserId != null && !specialistUserId.isBlank()) {
@@ -380,24 +467,41 @@ public class RevisionRequestService {
                                 ? milestone.getName()
                                 : "milestone";
                         
-                        CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
-                                .userId(specialistUserId)
-                                .type(NotificationType.REVISION_REQUEST_APPROVED)
+                        String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                                ? contract.getContractNumber()
+                                : revisionRequest.getContractId();
+                        
+                        RevisionApprovedEvent event = RevisionApprovedEvent.builder()
+                                .eventId(UUID.randomUUID())
+                                .revisionRequestId(revisionRequestId)
+                                .contractId(revisionRequest.getContractId())
+                                .contractNumber(contractLabel)
+                                .milestoneId(revisionRequest.getMilestoneId())
+                                .milestoneName(milestoneName)
+                                .taskAssignmentId(revisionRequest.getTaskAssignmentId())
+                                .specialistId(assignment.getSpecialistId())
+                                .specialistUserId(specialistUserId)
+                                .managerUserId(userId)
+                                .revisionRound(revisionRequest.getRevisionRound())
+                                .isFreeRevision(revisionRequest.getIsFreeRevision())
+                                .managerNote(request.getManagerNote())
                                 .title("Yêu cầu chỉnh sửa")
                                 .content(String.format("Manager đã duyệt yêu cầu chỉnh sửa cho milestone \"%s\". %s", 
                                         milestoneName,
                                         revisionRequest.getDescription()))
-                                .referenceId(revisionRequestId)
                                 .referenceType("REVISION_REQUEST")
                                 .actionUrl("/transcription/my-tasks")
+                                .approvedAt(now)
+                                .timestamp(now)
                                 .build();
                         
-                        notificationServiceFeignClient.createNotification(specialistNotif);
-                        log.info("Sent revision request notification to specialist: userId={}, revisionRequestId={}", 
-                                specialistUserId, revisionRequestId);
+                        publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.approved");
+                        log.info("Queued RevisionApprovedEvent in outbox: eventId={}, revisionRequestId={}, specialistUserId={}", 
+                                event.getEventId(), revisionRequestId, specialistUserId);
                     }
                 } catch (Exception e) {
-                    log.error("Failed to send notification to specialist: revisionRequestId={}, error={}", 
+                    // Log error nhưng không fail transaction
+                    log.error("Failed to enqueue RevisionApprovedEvent: revisionRequestId={}, error={}", 
                             revisionRequestId, e.getMessage(), e);
                 }
             }
@@ -410,7 +514,7 @@ public class RevisionRequestService {
             revisionRequest.setManagerNote(request.getManagerNote());
             revisionRequest.setManagerReviewedAt(now);
             
-            // Send notification to customer
+            // Gửi Kafka event về revision rejected cho customer
             try {
                 ContractMilestone milestone = contractMilestoneRepository
                         .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
@@ -423,24 +527,37 @@ public class RevisionRequestService {
                         ? contract.getContractNumber()
                         : contract.getContractId();
                 
-                CreateNotificationRequest customerNotif = CreateNotificationRequest.builder()
-                        .userId(revisionRequest.getCustomerId())
-                        .type(NotificationType.REVISION_REQUEST_REJECTED)
+                RevisionRejectedEvent event = RevisionRejectedEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .revisionRequestId(revisionRequestId)
+                        .contractId(revisionRequest.getContractId())
+                        .contractNumber(contractLabel)
+                        .milestoneId(revisionRequest.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .taskAssignmentId(revisionRequest.getTaskAssignmentId())
+                        .recipientUserId(revisionRequest.getCustomerId())
+                        .recipientType("CUSTOMER")
+                        .managerUserId(userId)
+                        .managerNote(request.getManagerNote())
+                        .revisionRound(revisionRequest.getRevisionRound())
+                        .isFreeRevision(revisionRequest.getIsFreeRevision())
                         .title("Yêu cầu chỉnh sửa không được chấp nhận")
                         .content(String.format("Manager đã từ chối yêu cầu chỉnh sửa cho milestone \"%s\" của contract #%s. %s", 
                                 milestoneName,
                                 contractLabel,
                                 request.getManagerNote() != null ? "Lý do: " + request.getManagerNote() : ""))
-                        .referenceId(revisionRequestId)
                         .referenceType("REVISION_REQUEST")
                         .actionUrl("/contracts/" + revisionRequest.getContractId())
+                        .rejectedAt(now)
+                        .timestamp(now)
                         .build();
                 
-                notificationServiceFeignClient.createNotification(customerNotif);
-                log.info("Sent rejection notification to customer: userId={}, revisionRequestId={}", 
-                        revisionRequest.getCustomerId(), revisionRequestId);
+                publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.rejected");
+                log.info("Queued RevisionRejectedEvent in outbox: eventId={}, revisionRequestId={}, customerUserId={}", 
+                        event.getEventId(), revisionRequestId, revisionRequest.getCustomerId());
             } catch (Exception e) {
-                log.error("Failed to send notification to customer: revisionRequestId={}, error={}", 
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue RevisionRejectedEvent: revisionRequestId={}, error={}", 
                         revisionRequestId, e.getMessage(), e);
             }
             
@@ -523,7 +640,7 @@ public class RevisionRequestService {
                         submissionId, revisionRequestId);
             });
         
-            // Send notification to manager để review
+            // Gửi Kafka event về revision submitted cho manager
         try {
             Contract contract = contractRepository.findById(revisionRequest.getContractId())
                     .orElse(null);
@@ -536,23 +653,45 @@ public class RevisionRequestService {
                         ? milestone.getName()
                         : "milestone";
                 
-                    CreateNotificationRequest managerNotif = CreateNotificationRequest.builder()
-                            .userId(contract.getManagerUserId())
-                        .type(NotificationType.SUBMISSION_DELIVERED)
-                            .title("Revision đã được chỉnh sửa - cần review")
-                            .content(String.format("Specialist đã hoàn thành chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và duyệt trước khi gửi cho customer.", 
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : revisionRequest.getContractId();
+                
+                TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
+                        .orElse(null);
+                String specialistId = assignment != null ? assignment.getSpecialistId() : null;
+                // specialistUserId đã có từ parameter của method
+                
+                RevisionSubmittedEvent event = RevisionSubmittedEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .revisionRequestId(revisionRequestId)
+                        .submissionId(submissionId)
+                        .contractId(revisionRequest.getContractId())
+                        .contractNumber(contractLabel)
+                        .milestoneId(revisionRequest.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .taskAssignmentId(assignmentId)
+                        .specialistId(specialistId)
+                        .specialistUserId(specialistUserId)
+                        .managerUserId(contract.getManagerUserId())
+                        .revisionRound(revisionRequest.getRevisionRound())
+                        .isFreeRevision(revisionRequest.getIsFreeRevision())
+                        .title("Revision đã được chỉnh sửa - cần review")
+                        .content(String.format("Specialist đã hoàn thành chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và duyệt trước khi gửi cho customer.", 
                                 milestoneName))
-                        .referenceId(revisionRequestId)
                         .referenceType("REVISION_REQUEST")
-                            .actionUrl("/manager/contracts/" + revisionRequest.getContractId() + "/tasks/" + assignmentId)
+                        .actionUrl("/manager/contracts/" + revisionRequest.getContractId() + "/tasks/" + assignmentId)
+                        .submittedAt(now)
+                        .timestamp(now)
                         .build();
                 
-                    notificationServiceFeignClient.createNotification(managerNotif);
-                    log.info("Sent revision submitted notification to manager: userId={}, revisionRequestId={}", 
-                            contract.getManagerUserId(), revisionRequestId);
+                publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.submitted");
+                log.info("Queued RevisionSubmittedEvent in outbox: eventId={}, revisionRequestId={}, managerUserId={}", 
+                        event.getEventId(), revisionRequestId, contract.getManagerUserId());
             }
         } catch (Exception e) {
-                log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue RevisionSubmittedEvent: revisionRequestId={}, error={}", 
                     revisionRequestId, e.getMessage(), e);
         }
         
@@ -697,27 +836,47 @@ public class RevisionRequestService {
             
             RevisionRequest saved = revisionRequestRepository.save(newRevisionRequest);
             
-            // Send notification to manager
+            // Gửi Kafka event về revision requested cho manager
             try {
-                
                 if (contract != null && contract.getManagerUserId() != null) {
-                    CreateNotificationRequest managerNotif = CreateNotificationRequest.builder()
-                            .userId(contract.getManagerUserId())
-                        .type(NotificationType.CUSTOMER_REVISION_REQUESTED)
+                    ContractMilestone milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                            .orElse(null);
+                    String milestoneName = milestone != null && milestone.getName() != null
+                            ? milestone.getName()
+                            : "milestone";
+                    
+                    String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                            ? contract.getContractNumber()
+                            : revisionRequest.getContractId();
+                    
+                    RevisionRequestedEvent event = RevisionRequestedEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .revisionRequestId(saved.getRevisionRequestId())
+                            .contractId(revisionRequest.getContractId())
+                            .contractNumber(contractLabel)
+                            .milestoneId(revisionRequest.getMilestoneId())
+                            .milestoneName(milestoneName)
+                            .taskAssignmentId(assignmentId)
+                            .customerUserId(userId)
+                            .managerUserId(contract.getManagerUserId())
                             .title("Customer yêu cầu chỉnh sửa lại")
-                            .content(String.format("Customer đã từ chối revision và yêu cầu chỉnh sửa lại. Vui lòng xem xét.", 
-                                description != null ? "Lý do: " + description : ""))
-                            .referenceId(saved.getRevisionRequestId())
+                            .description(description)
+                            .revisionRound(saved.getRevisionRound())
+                            .isFreeRevision(saved.getIsFreeRevision())
                             .referenceType("REVISION_REQUEST")
-                            .actionUrl("/manager/contracts/" + revisionRequest.getContractId())
+                            .actionUrl("/manager/revision-requests")
+                            .requestedAt(now)
+                            .timestamp(now)
                             .build();
                     
-                    notificationServiceFeignClient.createNotification(managerNotif);
-                    log.info("Sent new revision request notification to manager: userId={}, revisionRequestId={}", 
-                            contract.getManagerUserId(), saved.getRevisionRequestId());
+                    publishToOutbox(event, saved.getRevisionRequestId(), "RevisionRequest", "revision.requested");
+                    log.info("Queued RevisionRequestedEvent in outbox: eventId={}, revisionRequestId={}, managerUserId={}", 
+                            event.getEventId(), saved.getRevisionRequestId(), contract.getManagerUserId());
                 }
             } catch (Exception e) {
-                log.error("Failed to send notification to manager: revisionRequestId={}, error={}", 
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue RevisionRequestedEvent: revisionRequestId={}, error={}", 
                         saved.getRevisionRequestId(), e.getMessage(), e);
             }
             

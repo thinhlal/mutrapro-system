@@ -56,6 +56,12 @@ app:
       task.assignment.assigned: task-assignment-assigned
       task.file.uploaded: task-file-uploaded
       submission.delivered: submission-delivered
+      revision.requested: revision-requested
+      revision.delivered: revision-delivered
+      revision.submitted: revision-submitted
+      revision.approved: revision-approved
+      revision.rejected: revision-rejected
+      milestone.paid.notification: milestone-paid-notification
 
 # Request Service Configuration
 request:

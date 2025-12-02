@@ -60,6 +60,12 @@ app:
       task.file.uploaded: task-file-uploaded
       chat.room.created: chat-events
       submission.delivered: submission-delivered
+      revision.requested: revision-requested
+      revision.delivered: revision-delivered
+      revision.submitted: revision-submitted
+      revision.approved: revision-approved
+      revision.rejected: revision-rejected
+      milestone.paid.notification: milestone-paid-notification
 
 logging:
   level:

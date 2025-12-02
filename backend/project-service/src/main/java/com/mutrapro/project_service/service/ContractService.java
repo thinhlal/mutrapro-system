@@ -55,6 +55,11 @@ import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
+import com.mutrapro.project_service.repository.OutboxEventRepository;
+import com.mutrapro.project_service.entity.OutboxEvent;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -103,6 +108,8 @@ public class ContractService {
     FileRepository fileRepository;
     MilestoneProgressService milestoneProgressService;
     TaskAssignmentService taskAssignmentService;
+    OutboxEventRepository outboxEventRepository;
+    ObjectMapper objectMapper;
     
     @Autowired(required = false)
     S3Service s3Service;
@@ -1293,28 +1300,55 @@ public class ContractService {
 
         milestoneProgressService.markActualEnd(contractId, milestoneId, paidAt);
         
-        // Gửi notification cho manager
+        // Gửi Kafka event về milestone paid notification cho manager
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
-                    .userId(contract.getManagerUserId())
-                    .type(NotificationType.MILESTONE_PAID)
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : contractId;
+            
+            MilestonePaidNotificationEvent event = MilestonePaidNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
+                    .milestoneId(milestoneId)
+                    .milestoneName(milestone.getName())
+                    .managerUserId(contract.getManagerUserId())
+                    .amount(installment.getAmount())
+                    .currency(contract.getCurrency() != null ? contract.getCurrency().toString() : "VND")
                     .title("Milestone đã được thanh toán")
                     .content(String.format("Customer đã thanh toán milestone \"%s\" cho contract #%s. Số tiền: %s %s", 
                             milestone.getName(), 
-                            contract.getContractNumber(),
+                            contractLabel,
                             installment.getAmount().toPlainString(),
-                            contract.getCurrency() != null ? contract.getCurrency() : "VND"))
-                    .referenceId(contractId)
+                            contract.getCurrency() != null ? contract.getCurrency().toString() : "VND"))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
+                    .paidAt(paidAt)
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent milestone paid notification to manager: userId={}, contractId={}, milestoneId={}", 
-                    contract.getManagerUserId(), contractId, milestoneId);
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(contractId);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("Contract")
+                    .eventType("milestone.paid.notification")
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued MilestonePaidNotificationEvent in outbox: eventId={}, contractId={}, milestoneId={}, managerUserId={}", 
+                    event.getEventId(), contractId, milestoneId, contract.getManagerUserId());
         } catch (Exception e) {
-            log.error("Failed to send milestone paid notification: userId={}, contractId={}, milestoneId={}, error={}", 
-                    contract.getManagerUserId(), contractId, milestoneId, e.getMessage(), e);
+            // Log error nhưng không fail transaction
+            log.error("Failed to enqueue MilestonePaidNotificationEvent: contractId={}, milestoneId={}, error={}", 
+                    contractId, milestoneId, e.getMessage(), e);
         }
         
         // Gửi system message vào chat room

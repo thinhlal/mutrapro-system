@@ -15,5 +15,11 @@ public class InvalidStateException extends BusinessException {
     public static InvalidStateException noFiles(String entityName) {
         return new InvalidStateException(String.format("%s has no files", entityName));
     }
+
+    public static InvalidStateException notPendingManagerReview(String revisionRequestId, String currentStatus) {
+        return new InvalidStateException(
+            String.format("Revision request is not pending manager review. Current status: %s", currentStatus)
+        );
+    }
 }
 

@@ -237,6 +237,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
         "Invalid revision request status",
         Retryable.NON_TRANSIENT),
     
+    REVISION_REQUEST_NOT_FOUND("CONTRACT_7049", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7049",
+        "Revision request not found",
+        Retryable.NON_TRANSIENT),
+    
     VALIDATION_ERROR("CONTRACT_7047", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7047",
         "Validation error",
