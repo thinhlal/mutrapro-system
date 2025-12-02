@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.exception;
 
 import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
+import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.shared.exception.BusinessException;
 
 /**
@@ -19,6 +20,13 @@ public class InvalidStateException extends BusinessException {
     public static InvalidStateException notPendingManagerReview(String revisionRequestId, String currentStatus) {
         return new InvalidStateException(
             String.format("Revision request is not pending manager review. Current status: %s", currentStatus)
+        );
+    }
+
+    public static InvalidStateException cannotReject(String revisionRequestId, RevisionRequestStatus currentStatus) {
+        return new InvalidStateException(
+            String.format("Cannot reject revision request %s. Current status: %s. Only PENDING_MANAGER_REVIEW or APPROVED_PENDING_DELIVERY can be rejected.", 
+                revisionRequestId, currentStatus)
         );
     }
 }

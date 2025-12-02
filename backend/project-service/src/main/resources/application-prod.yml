@@ -58,6 +58,7 @@ app:
       revision.approved: ${KAFKA_TOPIC_REVISION_APPROVED:revision-approved}
       revision.rejected: ${KAFKA_TOPIC_REVISION_REJECTED:revision-rejected}
       milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
+      billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees
 
 # Request Service Configuration
 request:

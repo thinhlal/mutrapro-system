@@ -36,6 +36,7 @@ public class RevisionRejectedEvent implements Serializable {
     
     Integer revisionRound;
     Boolean isFreeRevision;
+    String paidWalletTxId;  // ID của wallet transaction nếu là paid revision (cần refund khi reject)
     
     String title;
     String content;

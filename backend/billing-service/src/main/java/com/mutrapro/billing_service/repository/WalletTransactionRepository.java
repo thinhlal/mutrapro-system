@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, String> {
@@ -125,5 +126,11 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     List<WalletTransaction> findByMilestoneId(String milestoneId);
 
     List<WalletTransaction> findByBookingId(String bookingId);
+    
+    // Find transaction by walletTxId
+    Optional<WalletTransaction> findByWalletTxId(String walletTxId);
+    
+    // Check if transaction already has refund
+    Optional<WalletTransaction> findByRefundOfWalletTx_WalletTxId(String walletTxId);
 }
 

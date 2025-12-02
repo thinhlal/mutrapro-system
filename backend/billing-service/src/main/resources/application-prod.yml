@@ -18,6 +18,14 @@ spring:
       mode: never
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:billing-service}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "*"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -41,3 +49,4 @@ app:
       billing.deposit.paid: ${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:billing-deposit-paid}
       billing.milestone.paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
       billing.revision.fee.paid: ${KAFKA_TOPIC_BILLING_REVISION_FEE_PAID:billing-revision-fee-paid}
+      billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees

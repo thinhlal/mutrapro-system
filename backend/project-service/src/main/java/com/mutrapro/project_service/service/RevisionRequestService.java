@@ -27,6 +27,7 @@ import com.mutrapro.shared.event.RevisionDeliveredEvent;
 import com.mutrapro.shared.event.RevisionSubmittedEvent;
 import com.mutrapro.shared.event.RevisionApprovedEvent;
 import com.mutrapro.shared.event.RevisionRejectedEvent;
+import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
@@ -301,10 +302,13 @@ public class RevisionRequestService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
-        // Đếm số revision requests đã có isFreeRevision = true cho contract này
-        // (không phân biệt status, vì free revision được tính ngay khi tạo)
+        // Đếm số revision requests đã có isFreeRevision = true và KHÔNG bị REJECTED cho contract này
+        // Đếm tất cả revision free (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
+        // CHỈ loại trừ REJECTED (vì revision bị reject không được tính là đã sử dụng lượt free)
         long freeRevisionsUsed = revisionRequestRepository.findByContractId(contractId).stream()
-                .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()))
+                .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()) 
+                        && rr.getStatus() != RevisionRequestStatus.REJECTED
+                        && rr.getStatus() != RevisionRequestStatus.CANCELED)
                 .count();
         
         boolean isFreeRevision = paidWalletTxId == null && freeRevisionsUsed < contract.getFreeRevisionsIncluded();
@@ -523,6 +527,10 @@ public class RevisionRequestService {
             revisionRequest.setManagerNote(request.getManagerNote());
             revisionRequest.setManagerReviewedAt(now);
             
+            // Nếu là paid revision → cần refund tiền cho customer
+            // (billing service sẽ xử lý refund qua Kafka event)
+            boolean isPaidRevision = revisionRequest.getPaidWalletTxId() != null && !revisionRequest.getPaidWalletTxId().isBlank();
+            
             // Gửi Kafka event về revision rejected cho customer
             try {
                 ContractMilestone milestone = contractMilestoneRepository
@@ -550,6 +558,7 @@ public class RevisionRequestService {
                         .managerNote(request.getManagerNote())
                         .revisionRound(revisionRequest.getRevisionRound())
                         .isFreeRevision(revisionRequest.getIsFreeRevision())
+                        .paidWalletTxId(revisionRequest.getPaidWalletTxId())  // Để notification service hiển thị
                         .title("Yêu cầu chỉnh sửa không được chấp nhận")
                         .content(String.format("Manager đã từ chối yêu cầu chỉnh sửa cho milestone \"%s\" của contract #%s. %s", 
                                 milestoneName,
@@ -562,15 +571,61 @@ public class RevisionRequestService {
                         .build();
                 
                 publishToOutbox(event, revisionRequestId, "RevisionRequest", "revision.rejected");
-                log.info("Queued RevisionRejectedEvent in outbox: eventId={}, revisionRequestId={}, customerUserId={}", 
-                        event.getEventId(), revisionRequestId, revisionRequest.getCustomerId());
+                log.info("Queued RevisionRejectedEvent in outbox: eventId={}, revisionRequestId={}, customerUserId={}, isPaidRevision={}, paidWalletTxId={}", 
+                        event.getEventId(), revisionRequestId, revisionRequest.getCustomerId(), isPaidRevision, revisionRequest.getPaidWalletTxId());
             } catch (Exception e) {
                 // Log error nhưng không fail transaction
                 log.error("Failed to enqueue RevisionRejectedEvent: revisionRequestId={}, error={}", 
                         revisionRequestId, e.getMessage(), e);
             }
             
-            log.info("Manager rejected revision request: revisionRequestId={}", revisionRequestId);
+            // Nếu là paid revision → gửi event để billing service refund
+            // Billing service sẽ refund và publish lại event với đầy đủ thông tin cho notification service
+            if (isPaidRevision) {
+                try {
+                    ContractMilestone milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
+                            .orElse(null);
+                    String milestoneName = milestone != null && milestone.getName() != null
+                            ? milestone.getName()
+                            : "milestone";
+                    
+                    String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                            ? contract.getContractNumber()
+                            : contract.getContractId();
+                    
+                    // Event này chỉ để billing service refund, không phải để notification
+                    // Billing service sẽ publish lại event với đầy đủ thông tin sau khi refund thành công
+                    RevisionFeeRefundedEvent refundEvent = RevisionFeeRefundedEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .revisionRequestId(revisionRequestId)
+                            .contractId(revisionRequest.getContractId())
+                            .contractNumber(contractLabel)
+                            .milestoneId(revisionRequest.getMilestoneId())
+                            .milestoneName(milestoneName)
+                            .taskAssignmentId(revisionRequest.getTaskAssignmentId())
+                            .customerUserId(revisionRequest.getCustomerId())
+                            .paidWalletTxId(revisionRequest.getPaidWalletTxId())
+                            .refundAmount(null)  // Billing service sẽ tự lấy từ transaction
+                            .currency(null)  // Billing service sẽ tự lấy từ transaction
+                            .refundReason(request.getManagerNote() != null ? request.getManagerNote() : "Manager rejected revision request")
+                            .managerUserId(userId)
+                            .refundedAt(now)
+                            .timestamp(now)
+                            .build();
+                    
+                    publishToOutbox(refundEvent, revisionRequestId, "RevisionRequest", "billing.revision.fee.refunded");
+                    log.info("Queued RevisionFeeRefundedEvent for billing service to refund: eventId={}, revisionRequestId={}, paidWalletTxId={}", 
+                            refundEvent.getEventId(), revisionRequestId, revisionRequest.getPaidWalletTxId());
+                } catch (Exception e) {
+                    // Log error nhưng không fail transaction
+                    log.error("Failed to enqueue RevisionFeeRefundedEvent: revisionRequestId={}, error={}", 
+                            revisionRequestId, e.getMessage(), e);
+                }
+            }
+            
+            log.info("Manager rejected revision request: revisionRequestId={}, isPaidRevision={}, paidWalletTxId={}", 
+                    revisionRequestId, isPaidRevision, revisionRequest.getPaidWalletTxId());
             
         } else {
             throw ValidationException.invalidAction(request.getAction(), "'approve' or 'reject'");
@@ -740,18 +795,18 @@ public class RevisionRequestService {
         
         Instant now = Instant.now();
         
-            // Customer accepts - mark as completed
-            revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
-            revisionRequest.setCustomerConfirmedAt(now);
-            revisionRequestRepository.save(revisionRequest);
+        // Customer accepts - mark as completed
+        revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
+        revisionRequest.setCustomerConfirmedAt(now);
+        revisionRequestRepository.save(revisionRequest);
             
-            // Update task assignment status to completed
+        // Update task assignment status to completed
         TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
                 
-                assignment.setStatus(AssignmentStatus.completed);
-                assignment.setCompletedDate(now);
-                taskAssignmentRepository.save(assignment);
+        assignment.setStatus(AssignmentStatus.completed);
+        assignment.setCompletedDate(now);
+        taskAssignmentRepository.save(assignment);
         
         // Update milestone work status: WAITING_CUSTOMER → READY_FOR_PAYMENT
         if (revisionRequest.getMilestoneId() != null && revisionRequest.getContractId() != null) {
@@ -829,8 +884,7 @@ public class RevisionRequestService {
         // Customer request revision mới → mark revision request cũ (WAITING_CUSTOMER_CONFIRM) as COMPLETED
         // (đánh dấu đã xử lý xong vòng revision đó, customer không accept và request revision mới)
         revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
-            revisionRequest.setCustomerConfirmedAt(now);
-            revisionRequestRepository.save(revisionRequest);
+        revisionRequestRepository.save(revisionRequest);
             
             // Create new revision request for next round
         Integer nextRound = revisionRequestRepository.findNextRevisionRound(assignmentId);
@@ -839,10 +893,13 @@ public class RevisionRequestService {
         Contract contract = contractRepository.findById(revisionRequest.getContractId())
                 .orElseThrow(() -> ContractNotFoundException.byId(revisionRequest.getContractId()));
         
-        // Đếm số revision requests đã có isFreeRevision = true cho contract này
-        // (không phân biệt status, vì free revision được tính ngay khi tạo)
+        // Đếm số revision requests đã có isFreeRevision = true và KHÔNG bị REJECTED cho contract này
+        // Đếm tất cả revision free (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
+        // CHỈ loại trừ REJECTED (vì revision bị reject không được tính là đã sử dụng lượt free)
         long freeRevisionsUsed = revisionRequestRepository.findByContractId(revisionRequest.getContractId()).stream()
-                .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()))
+                .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision()) 
+                        && rr.getStatus() != RevisionRequestStatus.REJECTED
+                        && rr.getStatus() != RevisionRequestStatus.CANCELED)
                 .count();
         
         boolean isFreeRevision = paidWalletTxId == null && freeRevisionsUsed < contract.getFreeRevisionsIncluded();

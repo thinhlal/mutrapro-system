@@ -24,6 +24,7 @@ public enum NotificationType {
     CUSTOMER_REVISION_REQUESTED, // Customer yêu cầu revision, chờ manager duyệt
     REVISION_REQUEST_APPROVED,  // Manager đã duyệt revision request, specialist bắt đầu làm
     REVISION_REQUEST_REJECTED,   // Manager từ chối yêu cầu revision
+    REVISION_FEE_REFUNDED,       // Revision fee đã được refund vào wallet
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }
 

@@ -15,6 +15,7 @@ import com.mutrapro.billing_service.repository.OutboxEventRepository;
 import com.mutrapro.shared.event.DepositPaidEvent;
 import com.mutrapro.shared.event.MilestonePaidEvent;
 import com.mutrapro.shared.event.RevisionFeePaidEvent;
+import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
 import com.mutrapro.billing_service.enums.WalletTxType;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
@@ -688,6 +689,142 @@ public class WalletService {
         }
 
         return transactions.map(walletMapper::toResponse);
+    }
+
+    /**
+     * Refund revision fee (gọi từ Kafka consumer khi manager reject paid revision)
+     * Internal method - không cần authentication vì gọi từ consumer
+     */
+    @Transactional
+    public WalletTransactionResponse refundRevisionFee(String paidWalletTxId, String refundReason) {
+        log.info("Refunding revision fee: paidWalletTxId={}, refundReason={}", paidWalletTxId, refundReason);
+        
+        // Tìm original transaction
+        WalletTransaction originalTx = walletTransactionRepository.findByWalletTxId(paidWalletTxId)
+                .orElseThrow(() -> new RuntimeException("Original transaction not found: " + paidWalletTxId));
+        
+        // Verify đây là revision_fee transaction
+        if (originalTx.getTxType() != WalletTxType.revision_fee) {
+            throw new RuntimeException("Transaction is not a revision fee: " + paidWalletTxId + ", type: " + originalTx.getTxType());
+        }
+        
+        // Verify chưa được refund
+        if (walletTransactionRepository.findByRefundOfWalletTx_WalletTxId(paidWalletTxId).isPresent()) {
+            throw new RuntimeException("Transaction already refunded: " + paidWalletTxId);
+        }
+        
+        // Lấy wallet và lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(originalTx.getWallet().getWalletId())
+                .orElseThrow(() -> WalletNotFoundException.byId(originalTx.getWallet().getWalletId()));
+        
+        // Tính toán số dư mới (refund = cộng tiền lại)
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal refundAmount = originalTx.getAmount();  // Refund toàn bộ số tiền đã trừ
+        BigDecimal balanceAfter = balanceBefore.add(refundAmount);
+        
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+        
+        // Tạo refund transaction record
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("refund_amount", refundAmount.toString());
+        metadata.put("currency", originalTx.getCurrency().name());
+        metadata.put("payment_method", "wallet");
+        metadata.put("reason", "REVISION_REJECTED");
+        metadata.put("refund_reason", refundReason != null ? refundReason : "Manager rejected revision request");
+        metadata.put("original_wallet_tx_id", paidWalletTxId);
+        metadata.put("contract_id", originalTx.getContractId());
+        metadata.put("milestone_id", originalTx.getMilestoneId());
+        metadata.put("submission_id", originalTx.getSubmissionId());
+        
+        WalletTransaction refundTx = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.refund)
+                .amount(refundAmount)
+                .currency(originalTx.getCurrency())
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .refundOfWalletTx(originalTx)  // Link đến original transaction
+                .contractId(originalTx.getContractId())
+                .milestoneId(originalTx.getMilestoneId())
+                .submissionId(originalTx.getSubmissionId())
+                .createdAt(Instant.now())
+                .build();
+        
+        WalletTransaction savedRefundTx = walletTransactionRepository.save(refundTx);
+        
+        log.info("Refunded revision fee: originalTxId={}, refundTxId={}, amount={}, balanceBefore={}, balanceAfter={}", 
+                paidWalletTxId, savedRefundTx.getWalletTxId(), refundAmount, balanceBefore, balanceAfter);
+        
+        return walletMapper.toResponse(savedRefundTx);
+    }
+
+    /**
+     * Refund revision fee và publish event với đầy đủ thông tin (gọi từ consumer)
+     */
+    @Transactional
+    public WalletTransactionResponse refundRevisionFeeAndPublishEvent(
+            String paidWalletTxId,
+            String refundReason,
+            RevisionFeeRefundedEvent originalEvent) {
+        
+        // Thực hiện refund
+        WalletTransactionResponse refundResponse = refundRevisionFee(paidWalletTxId, refundReason);
+        
+        // Publish event với đầy đủ thông tin sau khi refund thành công
+        try {
+            Instant refundedAt = Instant.now();
+            
+            UUID eventId = UUID.randomUUID();
+            RevisionFeeRefundedEvent event = RevisionFeeRefundedEvent.builder()
+                    .eventId(eventId)
+                    .revisionRequestId(originalEvent.getRevisionRequestId())
+                    .contractId(originalEvent.getContractId())
+                    .contractNumber(originalEvent.getContractNumber())
+                    .milestoneId(originalEvent.getMilestoneId())
+                    .milestoneName(originalEvent.getMilestoneName())
+                    .taskAssignmentId(originalEvent.getTaskAssignmentId())
+                    .customerUserId(originalEvent.getCustomerUserId())
+                    .paidWalletTxId(paidWalletTxId)
+                    .refundAmount(refundResponse.getAmount())  // Lấy từ refund transaction
+                    .currency(refundResponse.getCurrency().name())  // Lấy từ refund transaction
+                    .refundReason(refundReason)
+                    .managerUserId(originalEvent.getManagerUserId())
+                    .refundedAt(refundedAt)
+                    .timestamp(refundedAt)
+                    .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(originalEvent.getContractId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+                log.warn("Invalid contractId format, using random UUID: contractId={}", 
+                        originalEvent.getContractId());
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("RevisionRequest")
+                    .eventType("billing.revision.fee.refunded")
+                    .eventPayload(payload)
+                    .build();
+            
+            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            
+            log.info("✅ Queued RevisionFeeRefundedEvent in outbox: outboxId={}, eventId={}, paidWalletTxId={}, refundAmount={}, currency={}",
+                    saved.getOutboxId(), eventId, paidWalletTxId, refundResponse.getAmount(), refundResponse.getCurrency());
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction vì refund đã thành công
+            log.error("Failed to enqueue RevisionFeeRefundedEvent: paidWalletTxId={}, error={}", 
+                    paidWalletTxId, e.getMessage(), e);
+        }
+        
+        return refundResponse;
     }
 
     /**

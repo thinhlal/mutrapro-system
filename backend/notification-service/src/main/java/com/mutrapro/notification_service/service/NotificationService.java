@@ -12,6 +12,7 @@ import com.mutrapro.shared.event.RevisionDeliveredEvent;
 import com.mutrapro.shared.event.RevisionSubmittedEvent;
 import com.mutrapro.shared.event.RevisionApprovedEvent;
 import com.mutrapro.shared.event.RevisionRejectedEvent;
+import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
@@ -461,6 +462,70 @@ public class NotificationService {
 
         log.info("Revision rejected notification created: revisionRequestId={}, recipientUserId={}, recipientType={}",
                 event.getRevisionRequestId(), event.getRecipientUserId(), event.getRecipientType());
+    }
+
+    /**
+     * Tạo notification khi revision fee được refund cho customer (Kafka event).
+     * Chỉ xử lý event từ billing service sau khi refund thành công (có refundAmount và currency).
+     */
+    @Transactional
+    public void createRevisionFeeRefundedNotification(RevisionFeeRefundedEvent event) {
+        // Chỉ xử lý event từ billing service sau khi refund thành công (có đầy đủ thông tin)
+        if (event.getRefundAmount() == null || event.getCurrency() == null || event.getCurrency().isBlank()) {
+            log.debug("Skipping notification for RevisionFeeRefundedEvent without refundAmount/currency (from project-service): eventId={}, revisionRequestId={}",
+                    event.getEventId(), event.getRevisionRequestId());
+            return;
+        }
+        
+        if (event.getCustomerUserId() == null || event.getCustomerUserId().isBlank()) {
+            log.warn("Cannot create revision fee refunded notification, customerUserId missing: revisionRequestId={}, contractId={}",
+                    event.getRevisionRequestId(), event.getContractId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+                ? event.getContractNumber()
+                : event.getContractId();
+
+        String title = "Phí chỉnh sửa đã được hoàn lại";
+        String content;
+        if (event.getRefundAmount() != null && event.getCurrency() != null) {
+            content = String.format(
+                    "Phí chỉnh sửa cho milestone \"%s\" của contract #%s đã được hoàn lại vào wallet của bạn. Số tiền: %s %s. %s",
+                    event.getMilestoneName() != null ? event.getMilestoneName() : "milestone",
+                    contractLabel,
+                    event.getRefundAmount().toPlainString(),
+                    event.getCurrency(),
+                    event.getRefundReason() != null ? "Lý do: " + event.getRefundReason() : ""
+            );
+        } else {
+            content = String.format(
+                    "Phí chỉnh sửa cho milestone \"%s\" của contract #%s đã được hoàn lại vào wallet của bạn. %s",
+                    event.getMilestoneName() != null ? event.getMilestoneName() : "milestone",
+                    contractLabel,
+                    event.getRefundReason() != null ? "Lý do: " + event.getRefundReason() : ""
+            );
+        }
+        // Link tới deliveries page của milestone
+        String actionUrl = "/contracts/" + event.getContractId() + "/milestones/" + event.getMilestoneId() + "/deliveries";
+        String referenceType = "REVISION_REQUEST";
+
+        Notification notification = Notification.builder()
+                .userId(event.getCustomerUserId())
+                .type(NotificationType.REVISION_FEE_REFUNDED)
+                .title(title)
+                .content(content)
+                .referenceId(event.getRevisionRequestId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getCustomerUserId(), saved);
+
+        log.info("Revision fee refunded notification created: revisionRequestId={}, customerUserId={}, refundAmount={}, currency={}",
+                event.getRevisionRequestId(), event.getCustomerUserId(), event.getRefundAmount(), event.getCurrency());
     }
 
     /**

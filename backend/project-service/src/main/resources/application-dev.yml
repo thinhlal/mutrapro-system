@@ -62,6 +62,7 @@ app:
       revision.approved: revision-approved
       revision.rejected: revision-rejected
       milestone.paid.notification: milestone-paid-notification
+      billing.revision.fee.refunded: billing-revision-fee-refunded # New topic for refunded revision fees
 
 # Request Service Configuration
 request:

@@ -297,8 +297,15 @@ const MilestoneDeliveriesPage = () => {
               </Descriptions.Item>
               {contractInfo.freeRevisionsIncluded != null && (() => {
                 const totalRevisions = revisionRequests.length;
+                // Đếm tất cả revision free KHÔNG bị REJECTED hoặc CANCELED
+                // (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
+                // CHỈ loại trừ REJECTED và CANCELED (vì revision bị reject/cancel không được tính là đã sử dụng lượt free)
                 const freeRevisionsUsed = Math.min(
-                  revisionRequests.filter(rr => rr.isFreeRevision === true).length,
+                  revisionRequests.filter(rr => 
+                    rr.isFreeRevision === true && 
+                    rr.status?.toUpperCase() !== 'REJECTED' &&
+                    rr.status?.toUpperCase() !== 'CANCELED'
+                  ).length,
                   contractInfo.freeRevisionsIncluded
                 );
                 const paidRevisionsUsed = totalRevisions - freeRevisionsUsed;
@@ -528,7 +535,107 @@ const MilestoneDeliveriesPage = () => {
                           );
                           
                           if (relatedRevisions.length > 0) {
-                            // Ưu tiên check revision request đang pending trước
+                            // ƯU TIÊN: Check rejected revisions TRƯỚC - nếu submission này là originalSubmissionId của revision bị reject
+                            // → Hiển thị lại nút Accept và Request Revision (vì manager đã reject, customer có thể accept hoặc request lại)
+                            // NHƯNG chỉ hiển thị nếu KHÔNG có revision nào mới hơn đang pending hoặc completed từ submission này
+                            const rejectedRevision = relatedRevisions.find(rr => {
+                              const status = rr.status?.toUpperCase();
+                              return status === 'REJECTED' && rr.originalSubmissionId === submissionId;
+                            });
+                            
+                            if (rejectedRevision) {
+                              // Check xem có revision nào mới hơn (pending hoặc completed) từ submission này không
+                              // Nếu có → không hiển thị nút (vì đã có revision mới hơn)
+                              const hasNewerRevision = relatedRevisions.some(rr => {
+                                const rrStatus = rr.status?.toUpperCase();
+                                // Revision mới hơn = revision có revisionRound lớn hơn hoặc createdAfter sau rejectedRevision
+                                // Và status là pending hoặc completed
+                                const isNewer = (rr.revisionRound || 0) > (rejectedRevision.revisionRound || 0) ||
+                                                (rr.requestedAt && rejectedRevision.requestedAt && 
+                                                 new Date(rr.requestedAt) > new Date(rejectedRevision.requestedAt));
+                                const isActive = (
+                                  rrStatus === 'PENDING_MANAGER_REVIEW' ||
+                                  rrStatus === 'IN_REVISION' ||
+                                  rrStatus === 'WAITING_MANAGER_REVIEW' ||
+                                  rrStatus === 'APPROVED_PENDING_DELIVERY' ||
+                                  rrStatus === 'WAITING_CUSTOMER_CONFIRM' ||
+                                  rrStatus === 'COMPLETED'
+                                );
+                                return isNewer && isActive && rr.originalSubmissionId === submissionId;
+                              });
+                              
+                              // Nếu không có revision mới hơn → hiển thị nút
+                              if (!hasNewerRevision) {
+                                // Check xem còn lượt free revision không
+                                // Đếm tất cả revision free KHÔNG bị REJECTED hoặc CANCELED
+                                // (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
+                                const freeRevisionsUsed = revisionRequests.filter(rr => 
+                                  rr.isFreeRevision === true && 
+                                  rr.status?.toUpperCase() !== 'REJECTED' &&
+                                  rr.status?.toUpperCase() !== 'CANCELED'
+                                ).length;
+                                const hasFreeRevisionsLeft = contractInfo?.freeRevisionsIncluded != null && 
+                                                             freeRevisionsUsed < contractInfo.freeRevisionsIncluded;
+                                
+                                return (
+                                  <Space>
+                                    <Button
+                                      type="primary"
+                                      icon={<CheckCircleOutlined />}
+                                      size="small"
+                                      onClick={() =>
+                                        handleOpenReviewModal(submission, 'accept')
+                                      }
+                                    >
+                                      Accept
+                                    </Button>
+                                    <Popconfirm
+                                      title={!hasFreeRevisionsLeft ? "Xác nhận yêu cầu revision có phí" : "Xác nhận yêu cầu revision"}
+                                      description={
+                                        !hasFreeRevisionsLeft 
+                                          ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
+                                          : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
+                                      }
+                                      onConfirm={() => {
+                                        if (!hasFreeRevisionsLeft) {
+                                          // Paid revision → navigate to payment page
+                                          navigate(`/contracts/${contractId}/pay-revision-fee`, {
+                                            state: {
+                                              contractId: contractId,
+                                              milestoneId: milestoneInfo?.milestoneId,
+                                              submissionId: submission.submissionId,
+                                              taskAssignmentId: submission.assignmentId,
+                                              feeAmount: contractInfo?.additionalRevisionFeeVnd,
+                                              revisionRound: (revisionRequests.length || 0) + 1,
+                                            }
+                                          });
+                                        } else {
+                                          // Free revision → open modal
+                                          handleOpenReviewModal(submission, 'request_revision');
+                                        }
+                                      }}
+                                      okText="Xác nhận"
+                                      cancelText="Hủy"
+                                    >
+                                      <Button
+                                        icon={<CloseCircleOutlined />}
+                                        size="small"
+                                        danger={!hasFreeRevisionsLeft}
+                                      >
+                                        Request Revision
+                                        {!hasFreeRevisionsLeft && (
+                                          <Tag color="orange" style={{ marginLeft: 4 }}>
+                                            (Có phí)
+                                          </Tag>
+                                        )}
+                                      </Button>
+                                    </Popconfirm>
+                                  </Space>
+                                );
+                              }
+                            }
+                            
+                            // Check revision request đang pending
                             const pendingRevision = relatedRevisions.find(rr => {
                               const status = rr.status?.toUpperCase();
                               return (
@@ -563,7 +670,7 @@ const MilestoneDeliveriesPage = () => {
                               }
                             }
                             
-                            // Nếu không có pending trong relatedRevisions, check completed revisions
+                            // Check completed revisions
                             const completedRevision = relatedRevisions.find(rr => {
                               const status = rr.status?.toUpperCase();
                               return status === 'COMPLETED' || status === 'WAITING_CUSTOMER_CONFIRM';
@@ -586,8 +693,13 @@ const MilestoneDeliveriesPage = () => {
                               // Nếu submission là revisedSubmissionId và revision request đang WAITING_CUSTOMER_CONFIRM → hiển thị nút
                               if (isRevised && status === 'WAITING_CUSTOMER_CONFIRM') {
                                 // Check xem còn lượt free revision không
-                                // Đếm số revision requests đã có isFreeRevision = true (không phân biệt status)
-                                const freeRevisionsUsed = revisionRequests.filter(rr => rr.isFreeRevision === true).length;
+                                // Đếm tất cả revision free KHÔNG bị REJECTED hoặc CANCELED
+                                // (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
+                                const freeRevisionsUsed = revisionRequests.filter(rr => 
+                                  rr.isFreeRevision === true && 
+                                  rr.status?.toUpperCase() !== 'REJECTED' &&
+                                  rr.status?.toUpperCase() !== 'CANCELED'
+                                ).length;
                                 const hasFreeRevisionsLeft = contractInfo?.freeRevisionsIncluded != null && 
                                                              freeRevisionsUsed < contractInfo.freeRevisionsIncluded;
                                 
@@ -649,13 +761,26 @@ const MilestoneDeliveriesPage = () => {
                               }
                               
                               // Nếu submission là revisedSubmissionId và revision request đã COMPLETED
-                              // NHƯNG nếu có revision request khác đang pending cho milestone → không hiển thị "Đã chấp nhận"
+                              // NHƯNG nếu có revision request khác đang pending mà submission này là originalSubmissionId → hiển thị "Đã được chỉnh sửa - Xem submission mới"
                               if (isRevised && status === 'COMPLETED') {
-                                // Nếu có revision request đang pending cho milestone → không hiển thị "Đã chấp nhận"
-                                if (hasPendingRevisionForMilestone) {
+                                // Check xem có revision request nào khác đang pending mà submission này là originalSubmissionId không
+                                // (tức là submission này đã được chỉnh sửa thành submission mới)
+                                const hasPendingRevisionWhereThisIsOriginal = relatedRevisions.some(rr => {
+                                  const rrStatus = rr.status?.toUpperCase();
+                                  return (
+                                    rr.revisionRequestId !== completedRevision.revisionRequestId && // Không phải revision đã completed
+                                    (rrStatus === 'PENDING_MANAGER_REVIEW' ||
+                                     rrStatus === 'IN_REVISION' ||
+                                     rrStatus === 'WAITING_MANAGER_REVIEW' ||
+                                     rrStatus === 'APPROVED_PENDING_DELIVERY') &&
+                                    rr.originalSubmissionId === submissionId // Submission này là originalSubmissionId của revision đang pending
+                                  );
+                                });
+                                
+                                if (hasPendingRevisionWhereThisIsOriginal) {
                                   return (
                                     <Tag color="default">
-                                      Đang có revision mới chờ xử lý
+                                      Đã được chỉnh sửa - Xem submission mới
                                     </Tag>
                                   );
                                 }
@@ -671,7 +796,11 @@ const MilestoneDeliveriesPage = () => {
                           
                           // Nếu không có revision request nào cho submission này → hiển thị nút
                           // Check xem còn lượt free revision không
-                          const freeRevisionsUsed = revisionRequests.filter(rr => rr.isFreeRevision === true).length;
+                          // Chỉ đếm revision free đã COMPLETED (vì chỉ revision đã hoàn thành mới được tính là đã sử dụng lượt free)
+                          const freeRevisionsUsed = revisionRequests.filter(rr => 
+                            rr.isFreeRevision === true && 
+                            rr.status?.toUpperCase() === 'COMPLETED'
+                          ).length;
                           const hasFreeRevisionsLeft = contractInfo?.freeRevisionsIncluded != null && 
                                                        freeRevisionsUsed < contractInfo.freeRevisionsIncluded;
                           
@@ -845,16 +974,6 @@ const MilestoneDeliveriesPage = () => {
                                       <Text type="secondary" style={{ fontSize: 12 }}>
                                         {revision.title}
                                       </Text>
-                                      {revision.revisionDueAt && (
-                                        <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
-                                          Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}
-                                          {revision.revisionDeadlineDays && (
-                                            <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
-                                              (+{revision.revisionDeadlineDays} ngày SLA)
-                                            </Text>
-                                          )}
-                                        </Tag>
-                                      )}
                                     </Space>
                                   }
                                 >
@@ -980,9 +1099,6 @@ const MilestoneDeliveriesPage = () => {
                           {!revision.isFreeRevision && (
                             <Tag color="orange">Paid Revision</Tag>
                           )}
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {revision.title}
-                          </Text>
                           {revision.revisionDueAt && (
                             <Tag color={dayjs(revision.revisionDueAt).isBefore(dayjs()) ? 'red' : 'blue'}>
                               Deadline: {dayjs(revision.revisionDueAt).format('DD/MM/YYYY HH:mm')}

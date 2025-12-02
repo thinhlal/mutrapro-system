@@ -59,6 +59,7 @@ app:
       revision.submitted: ${KAFKA_TOPIC_REVISION_SUBMITTED:revision-submitted}
       revision.approved: ${KAFKA_TOPIC_REVISION_APPROVED:revision-approved}
       revision.rejected: ${KAFKA_TOPIC_REVISION_REJECTED:revision-rejected}
+      billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded}
       milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
 
 logging:
