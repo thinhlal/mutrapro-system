@@ -61,6 +61,32 @@ export const createServiceRequest = async requestData => {
       });
     }
 
+    // Recording-specific fields
+    if (requestData.requestType === 'recording') {
+      if (requestData.bookingDate) {
+        formData.append('bookingDate', requestData.bookingDate);
+      }
+      if (requestData.bookingStartTime) {
+        formData.append('bookingStartTime', requestData.bookingStartTime);
+      }
+      if (requestData.bookingEndTime) {
+        formData.append('bookingEndTime', requestData.bookingEndTime);
+      }
+      if (requestData.vocalistId) {
+        formData.append('vocalistId', requestData.vocalistId);
+      }
+      if (requestData.instrumentalistIds && requestData.instrumentalistIds.length > 0) {
+        requestData.instrumentalistIds.forEach(id => {
+          formData.append('instrumentalistIds', id);
+        });
+      }
+      if (requestData.equipmentIds && requestData.equipmentIds.length > 0) {
+        requestData.equipmentIds.forEach(id => {
+          formData.append('equipmentIds', id);
+        });
+      }
+    }
+
     // Thêm files
     if (requestData.files && requestData.files.length > 0) {
       requestData.files.forEach(file => {

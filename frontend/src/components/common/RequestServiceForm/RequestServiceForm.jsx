@@ -82,7 +82,6 @@ export default function RequestServiceForm({
         contactPhone: initialFormData.contactPhone || '',
         contactEmail: initialFormData.contactEmail || user?.email || '',
         hasVocalist: initialFormData.hasVocalist || false,
-        externalGuestCount: initialFormData.externalGuestCount || 0,
         musicOptions: initialFormData.musicOptions || null,
       };
       form.setFieldsValue(formValues);
@@ -165,6 +164,48 @@ export default function RequestServiceForm({
     []
   );
 
+  // If recording service, don't show form - use multi-step flow instead
+  if (serviceType === 'recording') {
+    return (
+      <section
+        id="request-service-form"
+        className={styles.wrapper}
+        aria-labelledby="request-title"
+        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}
+      >
+        <div className={styles.card} style={{ maxWidth: '500px', width: '100%', textAlign: 'center' }}>
+          <h2 id="request-title" className={styles.title}>
+            Recording Service
+          </h2>
+          <p className={styles.desc} style={{ marginBottom: '24px', color: '#666' }}>
+            Please use the new multi-step flow for recording bookings.
+          </p>
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => {
+              // Clear old form data and navigate to new flow
+              sessionStorage.removeItem('serviceRequestFormData');
+              sessionStorage.removeItem('serviceRequestType');
+              window.location.href = '/recording-flow';
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%)',
+              border: 'none',
+              padding: '12px 32px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              height: 'auto',
+            }}
+          >
+            Start Recording Flow
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="request-service-form"
@@ -243,6 +284,7 @@ export default function RequestServiceForm({
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
+          {/* Tempo Percentage - Only for transcription, arrangement */}
           <Form.Item
             label="Tempo Percentage"
             name="tempoPercentage"
