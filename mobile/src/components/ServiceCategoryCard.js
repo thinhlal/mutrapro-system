@@ -68,25 +68,22 @@ const ServiceCategoryCard = ({ item, onPress }) => {
       onPress={() => onPress && onPress(item)}
       activeOpacity={0.8}
     >
-      {/* Image Section - Left Side */}
+      {/* Image Section - Full Card */}
       <View style={styles.imageContainer}>
         <Image source={item.image} style={styles.image} />
         <LinearGradient
-          colors={["rgba(0,0,0,0.2)", "rgba(0,0,0,0.6)"]}
+          colors={["rgba(0,0,0,0.3)", "rgba(0,0,0,0.7)"]}
           style={styles.imageOverlay}
         />
-      </View>
-
-      {/* Content Section - Right Side */}
-      <View style={styles.contentContainer}>
-        {/* Price Badge */}
+        
+        {/* Price Badge - Top Right */}
         {item.pricing && (
           <View style={styles.priceBadge}>
             <Text style={styles.priceText}>{getPriceDisplay()}</Text>
           </View>
         )}
 
-        {/* Title & Description */}
+        {/* Title & Description - Centered Overlay */}
         <View style={styles.textContent}>
           <Text style={styles.title} numberOfLines={2}>
             {getServiceTypeName(item.serviceType)}
@@ -104,7 +101,6 @@ const styles = StyleSheet.create({
   container: {
     width: CARD_WIDTH,
     height: 140,
-    flexDirection: "row",
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     overflow: "hidden",
@@ -122,7 +118,7 @@ const styles = StyleSheet.create({
     }),
   },
   imageContainer: {
-    width: "40%",
+    width: "100%",
     height: "100%",
     position: "relative",
   },
@@ -138,18 +134,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  contentContainer: {
-    flex: 1,
-    padding: SPACING.md,
-    justifyContent: "space-between",
-  },
   priceBadge: {
-    alignSelf: "flex-end",
+    position: "absolute",
+    top: SPACING.md,
+    right: SPACING.md,
     backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.xs,
+    zIndex: 1,
   },
   priceText: {
     color: COLORS.white,
@@ -157,20 +150,31 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   textContent: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.xl,
+    marginTop: SPACING.xl,
   },
   title: {
     fontSize: FONT_SIZES.md,
-
     fontWeight: "bold",
-    color: COLORS.text,
+    color: COLORS.white,
     marginBottom: SPACING.xs,
+    textAlign: "center",
   },
   description: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: COLORS.white,
     lineHeight: 20,
+    textAlign: "center",
+    opacity: 0.9,
   },
 });
 
