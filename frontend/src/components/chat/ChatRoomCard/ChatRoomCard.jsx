@@ -59,8 +59,8 @@ const ChatRoomCard = ({ room }) => {
   const isInactive = room.isActive === false;
 
   return (
-    <div 
-      className={`${styles.chatRoomCard} ${isInactive ? styles.inactive : ''}`} 
+    <div
+      className={`${styles.chatRoomCard} ${isInactive ? styles.inactive : ''}`}
       onClick={handleClick}
       title={isInactive ? 'Phòng chat này đã được đóng' : ''}
     >
@@ -69,9 +69,11 @@ const ChatRoomCard = ({ room }) => {
           <Avatar
             size={50}
             icon={<MessageOutlined />}
-            style={{ 
-              backgroundColor: isInactive ? '#d9d9d9' : getRoomTypeColor(room.roomType),
-              opacity: isInactive ? 0.6 : 1
+            style={{
+              backgroundColor: isInactive
+                ? '#d9d9d9'
+                : getRoomTypeColor(room.roomType),
+              opacity: isInactive ? 0.6 : 1,
             }}
           />
         </Badge>
@@ -79,15 +81,40 @@ const ChatRoomCard = ({ room }) => {
 
       <div className={styles.roomContent}>
         <div className={styles.roomHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-            <h3 className={styles.roomName} style={{ margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            <h3
+              className={styles.roomName}
+              style={{
+                margin: 0,
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {room.roomName || 'Chat Room'}
             </h3>
             {isInactive && (
               <Tag
                 icon={<LockOutlined />}
                 color="default"
-                style={{ margin: 0, fontSize: '10px', padding: '0 4px', height: '18px', lineHeight: '18px', flexShrink: 0 }}
+                style={{
+                  margin: 0,
+                  fontSize: '10px',
+                  padding: '0 4px',
+                  height: '18px',
+                  lineHeight: '18px',
+                  flexShrink: 0,
+                }}
               >
                 Closed
               </Tag>
@@ -109,7 +136,10 @@ const ChatRoomCard = ({ room }) => {
         </div>
 
         {room.lastMessage && (
-          <div className={styles.lastMessage} style={{ opacity: isInactive ? 0.6 : 1 }}>
+          <div
+            className={styles.lastMessage}
+            style={{ opacity: isInactive ? 0.6 : 1 }}
+          >
             <span className={styles.senderName}>
               {room.lastMessage.senderName}:
             </span>
@@ -120,7 +150,10 @@ const ChatRoomCard = ({ room }) => {
         )}
 
         <div className={styles.roomFooter}>
-          <div className={styles.participants} style={{ opacity: isInactive ? 0.6 : 1 }}>
+          <div
+            className={styles.participants}
+            style={{ opacity: isInactive ? 0.6 : 1 }}
+          >
             <UserOutlined /> {room.participantCount} người
           </div>
           {room.unreadCount > 0 && !isInactive && (

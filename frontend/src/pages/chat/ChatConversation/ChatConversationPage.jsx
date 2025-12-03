@@ -40,7 +40,13 @@ const ChatConversationPage = () => {
     if (roomId && !loadingRoom) {
       loadMessages(0, selectedContextType, selectedContextId);
     }
-  }, [roomId, selectedContextType, selectedContextId, loadingRoom, loadMessages]);
+  }, [
+    roomId,
+    selectedContextType,
+    selectedContextId,
+    loadingRoom,
+    loadMessages,
+  ]);
 
   // Load room details
   useEffect(() => {
@@ -48,13 +54,13 @@ const ChatConversationPage = () => {
       try {
         setLoadingRoom(true);
         const roomData = await chatService.getChatRoomById(roomId);
-        
+
         // Check if room is active
         if (roomData?.data?.isActive === false) {
           message.warning('Phòng chat này đã được đóng');
           setRoom(roomData.data); // Vẫn set để hiển thị messages cũ
         } else {
-        setRoom(roomData.data);
+          setRoom(roomData.data);
         }
 
         // Get current user ID from localStorage
@@ -133,8 +139,8 @@ const ChatConversationPage = () => {
 
   return (
     <div className={styles.chatConversationPage}>
-      <ChatHeader 
-        room={room} 
+      <ChatHeader
+        room={room}
         connected={connected}
         selectedContextType={selectedContextType}
         onContextTypeChange={setSelectedContextType}
@@ -162,7 +168,9 @@ const ChatConversationPage = () => {
         {hasMore && (
           <div className={styles.loadMoreContainer}>
             <Button
-              onClick={() => loadMoreMessages(selectedContextType, selectedContextId)}
+              onClick={() =>
+                loadMoreMessages(selectedContextType, selectedContextId)
+              }
               loading={loading}
               icon={<ReloadOutlined />}
             >

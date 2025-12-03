@@ -79,11 +79,17 @@ export const removeParticipant = async (roomId, userId) => {
  * @param {string} contextType - Optional: Filter by context type (GENERAL, MILESTONE, REVISION_REQUEST, etc.)
  * @param {string} contextId - Optional: Filter by context ID (milestoneId, revisionRequestId, etc.)
  */
-export const getMessages = async (roomId, page = 0, size = 50, contextType = null, contextId = null) => {
+export const getMessages = async (
+  roomId,
+  page = 0,
+  size = 50,
+  contextType = null,
+  contextId = null
+) => {
   const params = { page, size };
   if (contextType) params.contextType = contextType;
   if (contextId) params.contextId = contextId;
-  
+
   const response = await axiosInstance.get(
     API_ENDPOINTS.CHAT.GET_MESSAGES(roomId),
     { params }

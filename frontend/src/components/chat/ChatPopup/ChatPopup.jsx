@@ -24,7 +24,13 @@ import styles from './ChatPopup.module.css';
  * @param {string} contextType - Optional: Message context type (e.g., 'GENERAL', 'REVISION_REQUEST')
  * @param {string} contextId - Optional: Message context ID (e.g., revisionRequestId)
  */
-const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextType = null, contextId = null }) => {
+const ChatPopup = ({
+  requestId,
+  contractId,
+  roomType = 'REQUEST_CHAT',
+  contextType = null,
+  contextId = null,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [room, setRoom] = useState(null);
@@ -45,8 +51,9 @@ const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextTy
     messagesEndRef,
   } = useChat(room?.roomId);
   // Determine contextId based on roomType
-  const contextIdForRoom = roomType === 'CONTRACT_CHAT' ? contractId : requestId;
-  
+  const contextIdForRoom =
+    roomType === 'CONTRACT_CHAT' ? contractId : requestId;
+
   // Load chat room by contextId (requestId or contractId)
   useEffect(() => {
     const loadChatRoom = async () => {
@@ -78,7 +85,10 @@ const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextTy
         } else {
           setRoom(null);
           setRoomUnavailable(true);
-          console.warn('Chat room not found:', { roomType, contextId: contextIdForRoom });
+          console.warn('Chat room not found:', {
+            roomType,
+            contextId: contextIdForRoom,
+          });
         }
       } catch (error) {
         console.error('Failed to load chat room:', error);
@@ -176,7 +186,7 @@ const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextTy
 
   const handleSendMessage = async content => {
     if (!room?.roomId || !content.trim()) return;
-    
+
     // Check if room is active
     if (room?.isActive === false) {
       message.warning('Không thể gửi tin nhắn. Phòng chat này đã được đóng.');
@@ -297,7 +307,13 @@ const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextTy
                     />
                   </div>
                   <div className={styles.headerInfo}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
                       <div className={styles.roomName}>{getRoomName()}</div>
                       {room?.isActive === false && (
                         <span
@@ -320,7 +336,13 @@ const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextTy
                     <div className={styles.roomStatus}>
                       {connected ? 'Đang kết nối' : 'Đang kết nối...'}
                       {room?.isActive === false && (
-                        <span style={{ marginLeft: '8px', color: '#999', fontSize: '11px' }}>
+                        <span
+                          style={{
+                            marginLeft: '8px',
+                            color: '#999',
+                            fontSize: '11px',
+                          }}
+                        >
                           • Chỉ xem
                         </span>
                       )}

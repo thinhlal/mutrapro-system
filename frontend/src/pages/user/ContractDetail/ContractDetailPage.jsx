@@ -1661,10 +1661,12 @@ const ContractDetailPage = () => {
 
   // Contract is signed or active - milestones can be paid (but not if canceled, expired, or completed)
   // Also check if contract has been signed to show signature
-  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
+  const canPayMilestones =
+    (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
 
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.customerSignedAt || isSigned || isActive || isCompleted;
+  const hasSigned =
+    contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
@@ -3058,15 +3060,15 @@ const ContractDetailPage = () => {
           → chỉ có request chat room
           → Hiển thị REQUEST_CHAT
       */}
-      {contract?.contractId && 
-       (contract?.status?.toLowerCase() === 'signed' || 
-        contract?.status?.toLowerCase() === 'active_pending_assignment' || 
+      {contract?.contractId &&
+      (contract?.status?.toLowerCase() === 'signed' ||
+        contract?.status?.toLowerCase() === 'active_pending_assignment' ||
         contract?.status?.toLowerCase() === 'active' ||
         contract?.status?.toLowerCase() === 'completed') ? (
         /* Contract chat (after contract signed) - contextType = GENERAL, contextId = null */
-        <ChatPopup 
-          contractId={contract.contractId} 
-          roomType="CONTRACT_CHAT" 
+        <ChatPopup
+          contractId={contract.contractId}
+          roomType="CONTRACT_CHAT"
           contextType="GENERAL"
           contextId={null}
         />

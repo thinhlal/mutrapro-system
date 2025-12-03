@@ -37,7 +37,13 @@ export const useChat = roomId => {
 
       try {
         setLoading(true);
-        const response = await chatService.getMessages(roomId, pageNum, 50, contextType, contextId);
+        const response = await chatService.getMessages(
+          roomId,
+          pageNum,
+          50,
+          contextType,
+          contextId
+        );
 
         const pageData = response.data || response;
         const messagesList = pageData.content || [];
@@ -69,11 +75,14 @@ export const useChat = roomId => {
    * @param {string} contextType - Optional: Filter by context type
    * @param {string} contextId - Optional: Filter by context ID
    */
-  const loadMoreMessages = useCallback((contextType = null, contextId = null) => {
-    if (!loading && hasMore) {
-      loadMessages(page + 1, contextType, contextId);
-    }
-  }, [loading, hasMore, page, loadMessages]);
+  const loadMoreMessages = useCallback(
+    (contextType = null, contextId = null) => {
+      if (!loading && hasMore) {
+        loadMessages(page + 1, contextType, contextId);
+      }
+    },
+    [loading, hasMore, page, loadMessages]
+  );
 
   /**
    * Handle incoming real-time message
@@ -105,7 +114,13 @@ export const useChat = roomId => {
    * @param {string} contextId - Optional: Message context ID (e.g., revisionRequestId)
    */
   const sendMessage = useCallback(
-    async (content, messageType = 'TEXT', metadata = null, contextType = null, contextId = null) => {
+    async (
+      content,
+      messageType = 'TEXT',
+      metadata = null,
+      contextType = null,
+      contextId = null
+    ) => {
       if (!roomId || !content.trim()) return;
 
       try {

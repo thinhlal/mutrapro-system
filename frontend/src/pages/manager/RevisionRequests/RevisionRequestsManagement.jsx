@@ -331,8 +331,13 @@ const RevisionRequestsManagement = () => {
                   <Descriptions bordered column={1} size="small">
                     <Descriptions.Item label="Revision Type">
                       <Space>
-                        <Tag color={record.isFreeRevision ? 'blue' : 'orange'} style={{ fontSize: 13 }}>
-                          {record.isFreeRevision ? 'Free Revision (Miễn phí)' : 'Paid Revision (Có phí)'}
+                        <Tag
+                          color={record.isFreeRevision ? 'blue' : 'orange'}
+                          style={{ fontSize: 13 }}
+                        >
+                          {record.isFreeRevision
+                            ? 'Free Revision (Miễn phí)'
+                            : 'Paid Revision (Có phí)'}
                         </Tag>
                         {!record.isFreeRevision && record.paidWalletTxId && (
                           <Text type="secondary" style={{ fontSize: 12 }}>

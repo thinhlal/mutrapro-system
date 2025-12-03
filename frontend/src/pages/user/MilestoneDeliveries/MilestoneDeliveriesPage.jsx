@@ -79,13 +79,13 @@ const MilestoneDeliveriesPage = () => {
     }
   }, [contractId, milestoneId]);
 
-  const loadRequestInfo = async (requestId) => {
+  const loadRequestInfo = async requestId => {
     if (!requestId) return;
-    
+
     try {
       setRequestInfoLoading(true);
       const response = await getServiceRequestById(requestId);
-      
+
       if (response?.status === 'success' && response?.data) {
         setRequestInfo(response.data);
       } else {
@@ -112,7 +112,7 @@ const MilestoneDeliveriesPage = () => {
         const data = response.data;
         setContractInfo(data.contract);
         setMilestoneInfo(data.milestone);
-        
+
         // Lazy load request info nếu có requestId
         if (data.contract?.requestId) {
           loadRequestInfo(data.contract.requestId);
@@ -400,7 +400,9 @@ const MilestoneDeliveriesPage = () => {
                   </Descriptions.Item>
                   <Descriptions.Item label="Service Type">
                     <Tag color="purple">
-                      {(requestInfo.requestType || requestInfo.serviceType)?.toUpperCase() || 'N/A'}
+                      {(
+                        requestInfo.requestType || requestInfo.serviceType
+                      )?.toUpperCase() || 'N/A'}
                     </Tag>
                   </Descriptions.Item>
                   <Descriptions.Item label="Title" span={2}>
@@ -411,19 +413,21 @@ const MilestoneDeliveriesPage = () => {
                       <Text>{requestInfo.description}</Text>
                     </Descriptions.Item>
                   )}
-                  {(requestInfo.durationMinutes || requestInfo.durationSeconds) && (
+                  {(requestInfo.durationMinutes ||
+                    requestInfo.durationSeconds) && (
                     <Descriptions.Item label="Duration">
                       <Text>
-                        {requestInfo.durationMinutes 
+                        {requestInfo.durationMinutes
                           ? `${Math.floor(requestInfo.durationMinutes)} phút ${Math.round((requestInfo.durationMinutes % 1) * 60)} giây`
-                          : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} phút ${(requestInfo.durationSeconds || 0) % 60} giây`
-                        }
+                          : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} phút ${(requestInfo.durationSeconds || 0) % 60} giây`}
                       </Text>
                     </Descriptions.Item>
                   )}
                   {(requestInfo.tempoPercentage || requestInfo.tempo) && (
                     <Descriptions.Item label="Tempo">
-                      <Text>{requestInfo.tempoPercentage || requestInfo.tempo}%</Text>
+                      <Text>
+                        {requestInfo.tempoPercentage || requestInfo.tempo}%
+                      </Text>
                     </Descriptions.Item>
                   )}
                   {requestInfo.timeSignature && (
@@ -431,19 +435,21 @@ const MilestoneDeliveriesPage = () => {
                       <Text>{requestInfo.timeSignature}</Text>
                     </Descriptions.Item>
                   )}
-                  {requestInfo.instruments && 
-                   Array.isArray(requestInfo.instruments) && 
-                   requestInfo.instruments.length > 0 && (
-                    <Descriptions.Item label="Instruments" span={2}>
-                      <Space wrap>
-                        {requestInfo.instruments.map((instrument, index) => (
-                          <Tag key={index} color="blue">
-                            {instrument.instrumentName || instrument.name || instrument}
-                          </Tag>
-                        ))}
-                      </Space>
-                    </Descriptions.Item>
-                  )}
+                  {requestInfo.instruments &&
+                    Array.isArray(requestInfo.instruments) &&
+                    requestInfo.instruments.length > 0 && (
+                      <Descriptions.Item label="Instruments" span={2}>
+                        <Space wrap>
+                          {requestInfo.instruments.map((instrument, index) => (
+                            <Tag key={index} color="blue">
+                              {instrument.instrumentName ||
+                                instrument.name ||
+                                instrument}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
                   {requestInfo.specialNotes && (
                     <Descriptions.Item label="Special Notes" span={2}>
                       <Text>{requestInfo.specialNotes}</Text>
@@ -454,16 +460,17 @@ const MilestoneDeliveriesPage = () => {
                 {/* Customer Uploaded Files - Filter out contract PDF */}
                 {requestInfo.files &&
                   Array.isArray(requestInfo.files) &&
-                  requestInfo.files.length > 0 && (() => {
+                  requestInfo.files.length > 0 &&
+                  (() => {
                     // Filter out contract PDF files, only show customer uploaded files
                     const customerFiles = requestInfo.files.filter(
                       file =>
                         file.fileSource !== 'contract_pdf' &&
                         file.contentType !== 'contract_pdf'
                     );
-                    
+
                     if (customerFiles.length === 0) return null;
-                    
+
                     return (
                       <div style={{ marginTop: 16 }}>
                         <Divider orientation="left">Files đã upload</Divider>
@@ -471,66 +478,76 @@ const MilestoneDeliveriesPage = () => {
                           size="small"
                           dataSource={customerFiles}
                           renderItem={file => {
-                          // Handle both object format (from project-service) and string format
-                          const fileName = file.fileName || file.name || 'File';
-                          const fileId = file.fileId || file;
-                          const fileSize = file.fileSize;
-                          const mimeType = file.mimeType;
+                            // Handle both object format (from project-service) and string format
+                            const fileName =
+                              file.fileName || file.name || 'File';
+                            const fileId = file.fileId || file;
+                            const fileSize = file.fileSize;
+                            const mimeType = file.mimeType;
 
-                          return (
-                            <List.Item
-                              actions={[
-                                <Button
-                                  key="preview"
-                                  type="link"
-                                  icon={<EyeOutlined />}
-                                  size="small"
-                                  onClick={() => {
-                                    if (fileId && typeof fileId === 'string') {
-                                      window.open(
-                                        `/api/v1/projects/files/preview/${fileId}`,
-                                        '_blank'
-                                      );
-                                    } else if (file.url) {
-                                      window.open(file.url, '_blank');
-                                    }
-                                  }}
-                                >
-                                  Xem
-                                </Button>,
-                                <Button
-                                  key="download"
-                                  type="link"
-                                  icon={<DownloadOutlined />}
-                                  size="small"
-                                  onClick={() => {
-                                    if (fileId && typeof fileId === 'string') {
-                                      handleDownloadFile(fileId, fileName);
-                                    } else if (file.url) {
-                                      const link = document.createElement('a');
-                                      link.href = file.url;
-                                      link.download = fileName;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    }
-                                  }}
-                                >
-                                  Tải xuống
-                                </Button>,
-                              ]}
-                            >
-                              <List.Item.Meta
-                                avatar={<FileOutlined style={{ fontSize: 20 }} />}
-                                title={fileName}
-                                description={
-                                  fileSize
-                                    ? `${(fileSize / 1024 / 1024).toFixed(2)} MB`
-                                    : mimeType || ''
-                                }
-                              />
-                            </List.Item>
-                          );
+                            return (
+                              <List.Item
+                                actions={[
+                                  <Button
+                                    key="preview"
+                                    type="link"
+                                    icon={<EyeOutlined />}
+                                    size="small"
+                                    onClick={() => {
+                                      if (
+                                        fileId &&
+                                        typeof fileId === 'string'
+                                      ) {
+                                        window.open(
+                                          `/api/v1/projects/files/preview/${fileId}`,
+                                          '_blank'
+                                        );
+                                      } else if (file.url) {
+                                        window.open(file.url, '_blank');
+                                      }
+                                    }}
+                                  >
+                                    Xem
+                                  </Button>,
+                                  <Button
+                                    key="download"
+                                    type="link"
+                                    icon={<DownloadOutlined />}
+                                    size="small"
+                                    onClick={() => {
+                                      if (
+                                        fileId &&
+                                        typeof fileId === 'string'
+                                      ) {
+                                        handleDownloadFile(fileId, fileName);
+                                      } else if (file.url) {
+                                        const link =
+                                          document.createElement('a');
+                                        link.href = file.url;
+                                        link.download = fileName;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                      }
+                                    }}
+                                  >
+                                    Tải xuống
+                                  </Button>,
+                                ]}
+                              >
+                                <List.Item.Meta
+                                  avatar={
+                                    <FileOutlined style={{ fontSize: 20 }} />
+                                  }
+                                  title={fileName}
+                                  description={
+                                    fileSize
+                                      ? `${(fileSize / 1024 / 1024).toFixed(2)} MB`
+                                      : mimeType || ''
+                                  }
+                                />
+                              </List.Item>
+                            );
                           }}
                         />
                       </div>
@@ -1230,7 +1247,9 @@ const MilestoneDeliveriesPage = () => {
                                                 }}
                                               >
                                                 (+
-                                                {revision.revisionDeadlineDays}{' '}
+                                                {
+                                                  revision.revisionDeadlineDays
+                                                }{' '}
                                                 ngày SLA)
                                               </Text>
                                             )}

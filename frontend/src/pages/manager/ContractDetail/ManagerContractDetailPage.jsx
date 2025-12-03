@@ -1333,10 +1333,12 @@ const ManagerContractDetailPage = () => {
 
   // Contract is signed or active - milestones can be paid (but not if canceled, expired, or completed)
   const isCompleted = currentStatus === 'completed';
-  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
+  const canPayMilestones =
+    (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
 
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.customerSignedAt || isSigned || isActive || isCompleted;
+  const hasSigned =
+    contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
   const canViewReason = isCanceled || isNeedRevision;
 

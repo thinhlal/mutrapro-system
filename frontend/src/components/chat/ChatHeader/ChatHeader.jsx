@@ -15,7 +15,12 @@ const { Option } = Select;
  * Chat Header Component
  * Header for chat conversation page
  */
-const ChatHeader = ({ room, connected = false, selectedContextType = null, onContextTypeChange = null }) => {
+const ChatHeader = ({
+  room,
+  connected = false,
+  selectedContextType = null,
+  onContextTypeChange = null,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -95,9 +100,7 @@ const ChatHeader = ({ room, connected = false, selectedContextType = null, onCon
           {room.isActive === false && (
             <>
               <span className={styles.separator}>•</span>
-              <span style={{ color: '#999', fontSize: '12px' }}>
-                Chỉ xem
-              </span>
+              <span style={{ color: '#999', fontSize: '12px' }}>Chỉ xem</span>
             </>
           )}
         </div>
