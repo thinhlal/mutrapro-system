@@ -922,15 +922,16 @@ public class ContractService {
         }
         
         // Kiểm tra status: chỉ cho phép hủy khi status = SENT
-        // Không cho phép hủy khi đã APPROVED, SIGNED, ACTIVE hoặc đã bắt đầu thực hiện
+        // Không cho phép hủy khi đã APPROVED, SIGNED, ACTIVE, COMPLETED hoặc đã bắt đầu thực hiện
         if (contract.getStatus() != ContractStatus.sent) {
             if (contract.getStatus() == ContractStatus.approved || 
                 contract.getStatus() == ContractStatus.signed ||
                 contract.getStatus() == ContractStatus.active ||
-                contract.getStatus() == ContractStatus.active_pending_assignment) {
+                contract.getStatus() == ContractStatus.active_pending_assignment ||
+                contract.getStatus() == ContractStatus.completed) {
                 throw InvalidContractStatusException.cannotCancel(
                     contractId, contract.getStatus(),
-                    "Contract đã được approve, đã ký hoặc đã active. Không thể hủy trực tiếp. Vui lòng liên hệ support để yêu cầu hủy hợp đồng.");
+                    "Contract đã được approve, đã ký, đã active hoặc đã completed. Không thể hủy trực tiếp. Vui lòng liên hệ support để yêu cầu hủy hợp đồng.");
             }
             throw InvalidContractStatusException.cannotCancel(
                 contractId, contract.getStatus(),
@@ -1015,15 +1016,16 @@ public class ContractService {
                 "Only the contract manager can cancel this contract");
         }
         
-        // Kiểm tra status: không cho phép hủy khi đã APPROVED, SIGNED hoặc ACTIVE
+        // Kiểm tra status: không cho phép hủy khi đã APPROVED, SIGNED, ACTIVE hoặc COMPLETED
         // Cho phép hủy khi DRAFT hoặc SENT
         if (contract.getStatus() == ContractStatus.approved || 
             contract.getStatus() == ContractStatus.signed ||
             contract.getStatus() == ContractStatus.active ||
-            contract.getStatus() == ContractStatus.active_pending_assignment) {
+            contract.getStatus() == ContractStatus.active_pending_assignment ||
+            contract.getStatus() == ContractStatus.completed) {
             throw InvalidContractStatusException.cannotCancel(
                 contractId, contract.getStatus(),
-                "Contract đã được approve, đã ký hoặc đã active. Không thể hủy. Vui lòng liên hệ support để xử lý.");
+                "Contract đã được approve, đã ký, đã active hoặc đã completed. Không thể hủy. Vui lòng liên hệ support để xử lý.");
         }
         
         // Nếu contract đã SENT, log để biết cần thông báo cho customer
@@ -1392,8 +1394,9 @@ public class ContractService {
         if (allInstallmentsPaid && (contract.getStatus() == ContractStatus.active 
                 || contract.getStatus() == ContractStatus.active_pending_assignment)) {
             // Tất cả installments đã được thanh toán → contract completed
-        contractRepository.save(contract);
-            log.info("All installments paid for contract: contractId={}, allInstallmentsCount={}", 
+            contract.setStatus(ContractStatus.completed);
+            contractRepository.save(contract);
+            log.info("Contract status updated to COMPLETED: contractId={}, allInstallmentsCount={}", 
                 contractId, allInstallments.size());
             
             // Update work status của milestone cuối cùng thành COMPLETED

@@ -1,6 +1,5 @@
 package com.mutrapro.project_service.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;

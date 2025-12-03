@@ -439,7 +439,8 @@ const ContractDetailPage = () => {
     if (
       (contractStatus === 'signed' ||
         contractStatus === 'active' ||
-        contractStatus === 'active_pending_assignment') &&
+        contractStatus === 'active_pending_assignment' ||
+        contractStatus === 'completed') &&
       contractData?.customerSignedAt
     ) {
       try {
@@ -826,7 +827,8 @@ const ContractDetailPage = () => {
           const isSignedOrActive =
             contractStatus === 'signed' ||
             contractStatus === 'active' ||
-            contractStatus === 'active_pending_assignment';
+            contractStatus === 'active_pending_assignment' ||
+            contractStatus === 'completed';
           return isSignedOrActive;
         })() && (
           <View style={pdfStyles.seal}>
@@ -877,7 +879,8 @@ const ContractDetailPage = () => {
           const isSignedOrActive =
             contractStatus === 'signed' ||
             contractStatus === 'active' ||
-            contractStatus === 'active_pending_assignment';
+            contractStatus === 'active_pending_assignment' ||
+            contractStatus === 'completed';
           return !isSignedOrActive ? (
             <View style={pdfStyles.watermark}>
               <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
@@ -1405,7 +1408,8 @@ const ContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return isSignedOrActive && partyASignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1442,7 +1446,8 @@ const ContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return !isSignedOrActive ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
@@ -1461,7 +1466,8 @@ const ContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return isSignedOrActive && partyBSignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1560,6 +1566,7 @@ const ContractDetailPage = () => {
         text: 'Deposit Paid - Pending Assignment',
       },
       active: { color: 'green', text: 'Active - Deposit Paid' },
+      completed: { color: 'success', text: 'Completed - All Milestones Paid' },
       rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
       need_revision: { color: 'orange', text: 'Needs Revision' },
       canceled_by_customer: { color: 'red', text: 'Canceled by Customer' },
@@ -1645,18 +1652,19 @@ const ContractDetailPage = () => {
   const isSigned = currentStatus === 'signed';
   const isActive =
     currentStatus === 'active' || currentStatus === 'active_pending_assignment';
+  const isCompleted = currentStatus === 'completed';
   const isCanceled =
     currentStatus === 'canceled_by_customer' ||
     currentStatus === 'canceled_by_manager';
   const isNeedRevision = currentStatus === 'need_revision';
   const isExpired = currentStatus === 'expired';
 
-  // Contract is signed or active - milestones can be paid (but not if canceled or expired)
+  // Contract is signed or active - milestones can be paid (but not if canceled, expired, or completed)
   // Also check if contract has been signed to show signature
-  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
+  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
 
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.customerSignedAt || isSigned || isActive;
+  const hasSigned = contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
@@ -3038,10 +3046,34 @@ const ContractDetailPage = () => {
         />
       )}
 
-      {/* Chat Popup - Facebook Messenger style for request chat */}
-      {contract?.requestId && (
+      {/* Chat Popup - Facebook Messenger style */}
+      {/* 
+        Logic: 
+        - Contract chat room chỉ được tạo khi contract được signed
+        - Nếu contract đã signed (signed, active_pending_assignment, active, expired) 
+          → contract chat room đã được tạo, request chat room đã bị đóng
+          → Hiển thị CONTRACT_CHAT
+        - Nếu contract chưa signed (draft, sent, approved, rejected_by_customer, 
+          need_revision, canceled_by_customer, canceled_by_manager)
+          → chỉ có request chat room
+          → Hiển thị REQUEST_CHAT
+      */}
+      {contract?.contractId && 
+       (contract?.status?.toLowerCase() === 'signed' || 
+        contract?.status?.toLowerCase() === 'active_pending_assignment' || 
+        contract?.status?.toLowerCase() === 'active' ||
+        contract?.status?.toLowerCase() === 'completed') ? (
+        /* Contract chat (after contract signed) - contextType = GENERAL, contextId = null */
+        <ChatPopup 
+          contractId={contract.contractId} 
+          roomType="CONTRACT_CHAT" 
+          contextType="GENERAL"
+          contextId={null}
+        />
+      ) : contract?.requestId ? (
+        /* Request chat (before contract signed) */
         <ChatPopup requestId={contract.requestId} roomType="REQUEST_CHAT" />
-      )}
+      ) : null}
     </div>
   );
 };

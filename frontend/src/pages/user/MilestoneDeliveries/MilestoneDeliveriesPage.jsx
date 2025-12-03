@@ -34,6 +34,7 @@ import {
 } from '../../../services/fileSubmissionService';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
+import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './MilestoneDeliveriesPage.module.css';
 
 const { Title, Text } = Typography;
@@ -1600,6 +1601,16 @@ const MilestoneDeliveriesPage = () => {
           />
         )}
       </Modal>
+
+      {/* Chat Popup - Chat về milestone này với contextType = MILESTONE */}
+      {contractInfo?.contractId && milestoneId && (
+        <ChatPopup
+          contractId={contractInfo.contractId}
+          roomType="CONTRACT_CHAT"
+          contextType="MILESTONE"
+          contextId={milestoneId}
+        />
+      )}
     </div>
   );
 };

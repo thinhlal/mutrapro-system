@@ -73,13 +73,20 @@ export const removeParticipant = async (roomId, userId) => {
 /**
  * Get messages in a chat room with pagination
  * Note: To send messages, use WebSocket via websocketService.sendMessage()
+ * @param {string} roomId - Chat room ID
+ * @param {number} page - Page number (default: 0)
+ * @param {number} size - Page size (default: 50)
+ * @param {string} contextType - Optional: Filter by context type (GENERAL, MILESTONE, REVISION_REQUEST, etc.)
+ * @param {string} contextId - Optional: Filter by context ID (milestoneId, revisionRequestId, etc.)
  */
-export const getMessages = async (roomId, page = 0, size = 50) => {
+export const getMessages = async (roomId, page = 0, size = 50, contextType = null, contextId = null) => {
+  const params = { page, size };
+  if (contextType) params.contextType = contextType;
+  if (contextId) params.contextId = contextId;
+  
   const response = await axiosInstance.get(
     API_ENDPOINTS.CHAT.GET_MESSAGES(roomId),
-    {
-      params: { page, size },
-    }
+    { params }
   );
   return response.data;
 };

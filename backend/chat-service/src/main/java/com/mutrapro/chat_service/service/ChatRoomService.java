@@ -281,7 +281,8 @@ public class ChatRoomService {
             
             outboxEventRepository.save(outboxEvent);
             
-            log.debug("ChatRoomCreated event saved to outbox: roomId={}", room.getRoomId());
+            log.info("ChatRoomCreated event saved to outbox: roomId={}, eventType={}, participantIds={}", 
+                    room.getRoomId(), "chat.room.created", allParticipantIds);
             
         } catch (Exception e) {
             log.error("Failed to publish ChatRoomCreated event: roomId={}, error={}", 

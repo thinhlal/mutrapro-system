@@ -1,18 +1,21 @@
-import { Avatar, Button, Badge, Tag } from 'antd';
+import { Avatar, Button, Badge, Tag, Select } from 'antd';
 import {
   ArrowLeftOutlined,
   MoreOutlined,
   UserOutlined,
   LockOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './ChatHeader.module.css';
+
+const { Option } = Select;
 
 /**
  * Chat Header Component
  * Header for chat conversation page
  */
-const ChatHeader = ({ room, connected = false }) => {
+const ChatHeader = ({ room, connected = false, selectedContextType = null, onContextTypeChange = null }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -98,6 +101,22 @@ const ChatHeader = ({ room, connected = false }) => {
             </>
           )}
         </div>
+        {/* Filter by context type - Only show for CONTRACT_CHAT */}
+        {room?.roomType === 'CONTRACT_CHAT' && onContextTypeChange && (
+          <div style={{ marginTop: '8px' }}>
+            <Select
+              placeholder="Lọc theo loại tin nhắn"
+              allowClear
+              value={selectedContextType}
+              onChange={onContextTypeChange}
+              style={{ width: '100%', fontSize: '12px' }}
+              size="small"
+            >
+              <Option value="GENERAL">Chat chung</Option>
+              <Option value="MILESTONE">Milestone</Option>
+            </Select>
+          </div>
+        )}
       </div>
 
       <Button

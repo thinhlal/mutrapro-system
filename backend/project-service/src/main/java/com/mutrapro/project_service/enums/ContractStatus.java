@@ -11,6 +11,7 @@ public enum ContractStatus {
     signed,                // Đã ký nhưng chưa thanh toán deposit
     active_pending_assignment, // Đã thanh toán deposit, chờ manager assign/start
     active,                // Đang thực thi (đã start work)
+    completed,             // Đã hoàn thành (tất cả milestones đã được thanh toán)
     expired
 }
 

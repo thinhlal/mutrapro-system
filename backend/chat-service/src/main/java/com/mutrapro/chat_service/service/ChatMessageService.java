@@ -5,6 +5,7 @@ import com.mutrapro.chat_service.dto.response.ChatMessageResponse;
 import com.mutrapro.chat_service.entity.ChatMessage;
 import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
+import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageStatus;
 import com.mutrapro.chat_service.exception.ChatRoomAccessDeniedException;
 import com.mutrapro.chat_service.exception.ChatRoomNotFoundException;
@@ -129,14 +130,46 @@ public class ChatMessageService {
 
     @Transactional(readOnly = true)
     public Page<ChatMessageResponse> getRoomMessages(String roomId, int page, int size) {
+        return getRoomMessages(roomId, page, size, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChatMessageResponse> getRoomMessages(String roomId, int page, int size,
+                                                       String contextType, String contextId) {
         String userId = getCurrentUserId();
         
         // Verify access
         verifyParticipantAccess(roomId, userId);
         
         Pageable pageable = PageRequest.of(page, size);
-        // Query DESC để page 0 là tin nhắn mới nhất (đúng cho pagination)
-        Page<ChatMessage> messagesPage = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+        Page<ChatMessage> messagesPage;
+
+        // Filter theo contextType và contextId nếu có (để filter messages theo revision, milestone, etc.)
+        if (contextType != null && !contextType.isBlank() && contextId != null && !contextId.isBlank()) {
+            try {
+                MessageContextType messageContextType = MessageContextType.valueOf(contextType);
+                messagesPage = chatMessageRepository.findByChatRoomAndContextTypeAndContextId(
+                        roomId, messageContextType, contextId, pageable);
+                log.debug("Filtering messages by context: roomId={}, contextType={}, contextId={}",
+                        roomId, contextType, contextId);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid contextType: {}, falling back to all messages", contextType);
+                messagesPage = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+            }
+        } else if (contextType != null && !contextType.isBlank()) {
+            // Filter chỉ theo contextType (không có contextId cụ thể)
+            try {
+                MessageContextType messageContextType = MessageContextType.valueOf(contextType);
+                messagesPage = chatMessageRepository.findByChatRoomAndContextType(roomId, messageContextType, pageable);
+                log.debug("Filtering messages by contextType only: roomId={}, contextType={}", roomId, contextType);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid contextType: {}, falling back to all messages", contextType);
+                messagesPage = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+            }
+        } else {
+            // Không filter - lấy tất cả messages
+            messagesPage = chatMessageRepository.findByRoomIdOrderBySentAtDesc(roomId, pageable);
+        }
         
         // Reverse content để trả về ASC (cũ nhất -> mới nhất) cho frontend
         // Frontend cần tin nhắn mới nhất ở dưới cùng (bottom của chat)

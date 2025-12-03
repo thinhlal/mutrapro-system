@@ -18,8 +18,13 @@ import styles from './ChatPopup.module.css';
 /**
  * Chat Popup Component - Facebook Messenger style
  * Floating chat window that can be minimized/maximized
+ * @param {string} requestId - Request ID (for REQUEST_CHAT)
+ * @param {string} contractId - Contract ID (for CONTRACT_CHAT)
+ * @param {string} roomType - Room type: 'REQUEST_CHAT' or 'CONTRACT_CHAT'
+ * @param {string} contextType - Optional: Message context type (e.g., 'GENERAL', 'REVISION_REQUEST')
+ * @param {string} contextId - Optional: Message context ID (e.g., revisionRequestId)
  */
-const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
+const ChatPopup = ({ requestId, contractId, roomType = 'REQUEST_CHAT', contextType = null, contextId = null }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [room, setRoom] = useState(null);
@@ -39,18 +44,20 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
     loadMoreMessages,
     messagesEndRef,
   } = useChat(room?.roomId);
-  console.log('room', room);
-  // Load chat room by requestId
+  // Determine contextId based on roomType
+  const contextIdForRoom = roomType === 'CONTRACT_CHAT' ? contractId : requestId;
+  
+  // Load chat room by contextId (requestId or contractId)
   useEffect(() => {
     const loadChatRoom = async () => {
-      if (!requestId) return;
+      if (!contextIdForRoom) return;
 
       try {
         setLoadingRoom(true);
         setRoomUnavailable(false);
         const response = await chatService.getChatRoomByContext(
           roomType,
-          requestId
+          contextIdForRoom
         );
 
         if (response?.status === 'success' && response?.data) {
@@ -71,7 +78,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
         } else {
           setRoom(null);
           setRoomUnavailable(true);
-          console.warn('Chat room not found for request:', requestId);
+          console.warn('Chat room not found:', { roomType, contextId: contextIdForRoom });
         }
       } catch (error) {
         console.error('Failed to load chat room:', error);
@@ -83,7 +90,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
       }
     };
 
-    if (requestId) {
+    if (contextIdForRoom) {
       loadChatRoom();
     }
 
@@ -92,7 +99,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
     if (userData?.id) {
       setCurrentUserId(userData.id);
     }
-  }, [requestId, roomType]);
+  }, [contextIdForRoom, roomType]);
 
   // Load unread count
   const loadUnreadCount = async roomId => {
@@ -177,7 +184,9 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
     }
 
     try {
-      await sendMessage(content);
+      // Send message with contextType and contextId if provided
+      // For CONTRACT_CHAT with GENERAL context: contextType = 'GENERAL', contextId = null
+      await sendMessage(content, 'TEXT', null, contextType, contextId);
     } catch (error) {
       console.error('Failed to send message:', error);
       message.error('Không thể gửi tin nhắn');
@@ -201,13 +210,20 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
   // Get room name
   const getRoomName = () => {
     if (!room) return 'Chat';
-    return room.roomName || `Request #${requestId?.substring(0, 8)}`;
+    if (room.roomName) return room.roomName;
+    if (roomType === 'CONTRACT_CHAT' && contractId) {
+      return `Contract #${contractId.substring(0, 8)}`;
+    }
+    if (requestId) {
+      return `Request #${requestId.substring(0, 8)}`;
+    }
+    return 'Chat';
   };
 
   // Display unread count (0 if chat is open and maximized)
   const displayUnreadCount = isOpen && !isMinimized ? 0 : unreadCount;
 
-  if (!requestId) return null;
+  if (!contextIdForRoom) return null;
 
   if (!loadingRoom && roomUnavailable && !room) {
     return null;

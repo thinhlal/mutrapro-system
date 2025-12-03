@@ -50,6 +50,7 @@ const CONTRACT_STATUS = [
   { label: 'Signed - Pending Deposit', value: 'signed' },
   { label: 'Active - Deposit Paid', value: 'active' },
   { label: 'Active - Pending Assignment', value: 'active_pending_assignment' },
+  { label: 'Completed', value: 'completed' },
   { label: 'Rejected by Customer', value: 'rejected_by_customer' },
   { label: 'Need Revision', value: 'need_revision' },
   { label: 'Canceled by Customer', value: 'canceled_by_customer' },
@@ -139,6 +140,7 @@ const getDepositAmount = contract => {
 };
 
 const statusColor = {
+  completed: 'success',
   draft: 'default',
   sent: 'geekblue',
   approved: 'green',
@@ -159,6 +161,7 @@ const statusText = {
   signed: 'Đã ký - Chờ thanh toán deposit',
   active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
   active: 'Đã ký - Đã thanh toán deposit',
+  completed: 'Hoàn thành - Đã thanh toán hết',
   rejected_by_customer: 'Bị từ chối',
   need_revision: 'Cần chỉnh sửa',
   canceled_by_customer: 'Đã hủy',

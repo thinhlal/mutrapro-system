@@ -29,13 +29,16 @@ public class ChatMessageController {
     ChatMessageService chatMessageService;
 
     @GetMapping("/room/{roomId}")
-    @Operation(summary = "Lấy danh sách tin nhắn trong phòng chat (phân trang)")
+    @Operation(summary = "Lấy danh sách tin nhắn trong phòng chat (phân trang) và có thể filter theo context")
     public ApiResponse<PageResponse<ChatMessageResponse>> getRoomMessages(
             @PathVariable String roomId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
-        log.info("Getting messages for room: roomId={}, page={}, size={}", roomId, page, size);
-        Page<ChatMessageResponse> responses = chatMessageService.getRoomMessages(roomId, page, size);
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String contextType, // Optional: GENERAL, MILESTONE, REVISION_REQUEST, etc.
+            @RequestParam(required = false) String contextId) { // Optional: milestoneId, revisionRequestId, etc.
+        log.info("Getting messages for room: roomId={}, page={}, size={}, contextType={}, contextId={}",
+                roomId, page, size, contextType, contextId);
+        Page<ChatMessageResponse> responses = chatMessageService.getRoomMessages(roomId, page, size, contextType, contextId);
         
         PageResponse<ChatMessageResponse> pageResponse = PageResponse.from(responses);
         

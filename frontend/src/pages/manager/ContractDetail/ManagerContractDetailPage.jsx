@@ -309,7 +309,8 @@ const ManagerContractDetailPage = () => {
     if (
       (contractStatus === 'signed' ||
         contractStatus === 'active' ||
-        contractStatus === 'active_pending_assignment') &&
+        contractStatus === 'active_pending_assignment' ||
+        contractStatus === 'completed') &&
       contractData?.customerSignedAt
     ) {
       try {
@@ -499,7 +500,8 @@ const ManagerContractDetailPage = () => {
           const isSignedOrActive =
             contractStatus === 'signed' ||
             contractStatus === 'active' ||
-            contractStatus === 'active_pending_assignment';
+            contractStatus === 'active_pending_assignment' ||
+            contractStatus === 'completed';
           return isSignedOrActive;
         })() && (
           <View style={pdfStyles.seal}>
@@ -548,7 +550,8 @@ const ManagerContractDetailPage = () => {
           const isSignedOrActive =
             contractStatus === 'signed' ||
             contractStatus === 'active' ||
-            contractStatus === 'active_pending_assignment';
+            contractStatus === 'active_pending_assignment' ||
+            contractStatus === 'completed';
           return !isSignedOrActive ? (
             <View style={pdfStyles.watermark}>
               <PdfText>{statusConfig?.text?.toUpperCase() || 'DRAFT'}</PdfText>
@@ -1074,7 +1077,8 @@ const ManagerContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return isSignedOrActive && partyASignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1111,7 +1115,8 @@ const ManagerContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return !isSignedOrActive ? (
                 <>
                   <View style={pdfStyles.signatureLine} />
@@ -1130,7 +1135,8 @@ const ManagerContractDetailPage = () => {
               const isSignedOrActive =
                 contractStatus === 'signed' ||
                 contractStatus === 'active' ||
-                contractStatus === 'active_pending_assignment';
+                contractStatus === 'active_pending_assignment' ||
+                contractStatus === 'completed';
               return isSignedOrActive && partyBSignatureBase64 ? (
                 <>
                   <PdfImage
@@ -1229,6 +1235,7 @@ const ManagerContractDetailPage = () => {
         text: 'Deposit Paid - Pending Assignment',
       },
       active: { color: 'green', text: 'Active - In Progress' },
+      completed: { color: 'success', text: 'Completed - All Milestones Paid' },
       rejected_by_customer: { color: 'red', text: 'Rejected by Customer' },
       need_revision: { color: 'orange', text: 'Needs Revision' },
       canceled_by_customer: { color: 'red', text: 'Canceled by Customer' },
@@ -1324,11 +1331,12 @@ const ManagerContractDetailPage = () => {
   const isNeedRevision = currentStatus === 'need_revision';
   const isExpired = currentStatus === 'expired';
 
-  // Contract is signed or active - milestones can be paid (but not if canceled or expired)
-  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired;
+  // Contract is signed or active - milestones can be paid (but not if canceled, expired, or completed)
+  const isCompleted = currentStatus === 'completed';
+  const canPayMilestones = (isSigned || isActive) && !isCanceled && !isExpired && !isCompleted;
 
   // Show signature if contract has been signed (regardless of current status for display purposes)
-  const hasSigned = contract?.customerSignedAt || isSigned || isActive;
+  const hasSigned = contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
   const canViewReason = isCanceled || isNeedRevision;
 

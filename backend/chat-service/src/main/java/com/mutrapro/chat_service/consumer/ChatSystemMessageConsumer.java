@@ -91,6 +91,7 @@ public class ChatSystemMessageConsumer extends BaseIdempotentConsumer<ChatSystem
             String roomId = room.getRoomId();
             
             // 2. Gửi system message vào chat room
+            // System messages trong contract chat room mặc định là GENERAL (chat chung về contract)
             SendMessageRequest messageRequest = SendMessageRequest.builder()
                     .roomId(roomId)
                     .messageType(MessageType.SYSTEM)

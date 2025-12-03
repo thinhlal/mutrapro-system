@@ -52,6 +52,7 @@ const CONTRACT_STATUS = [
   { label: 'Signed - Pending Deposit', value: 'signed' },
   { label: 'Active - Deposit Paid', value: 'active' },
   { label: 'Active - Pending Assignment', value: 'active_pending_assignment' },
+  { label: 'Completed', value: 'completed' },
   { label: 'Rejected by Customer', value: 'rejected_by_customer' },
   { label: 'Need Revision', value: 'need_revision' },
   { label: 'Canceled by Customer', value: 'canceled_by_customer' },
@@ -141,6 +142,7 @@ const getDepositAmount = contract => {
 };
 
 const statusColor = {
+  completed: 'success',
   draft: 'default',
   sent: 'geekblue',
   approved: 'green',
@@ -161,6 +163,7 @@ const statusText = {
   signed: 'Signed - Pending Deposit',
   active_pending_assignment: 'Deposit Paid - Pending Assignment',
   active: 'Active - Deposit Paid',
+  completed: 'Completed - All Milestones Paid',
   rejected_by_customer: 'Rejected by Customer',
   need_revision: 'Need Revision',
   canceled_by_customer: 'Canceled by Customer',

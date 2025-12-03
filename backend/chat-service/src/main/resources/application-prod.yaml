@@ -60,7 +60,7 @@ jwt:
 app:
   outbox:
     max-retries: ${OUTBOX_MAX_RETRIES:3}
-    event-topics:
+  event-topics:
     mappings:
       request.assigned: ${KAFKA_TOPIC_REQUEST_ASSIGNED:request-events}
       contract.signed: ${KAFKA_TOPIC_CONTRACT_SIGNED:contract-events}

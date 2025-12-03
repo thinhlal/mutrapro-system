@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Alert, Button, message } from 'antd';
+import { Spin, Alert, Button, message, Select } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useChat } from '../../../hooks/useChat';
 import chatService from '../../../services/chatService';
@@ -19,6 +19,8 @@ const ChatConversationPage = () => {
   const [room, setRoom] = useState(null);
   const [loadingRoom, setLoadingRoom] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [selectedContextType, setSelectedContextType] = useState('GENERAL'); // Default: GENERAL (chat chung)
+  const [selectedContextId, setSelectedContextId] = useState(null);
   const messagesContainerRef = useRef(null);
 
   const {
@@ -29,8 +31,16 @@ const ChatConversationPage = () => {
     hasMore,
     sendMessage,
     loadMoreMessages,
+    loadMessages,
     messagesEndRef,
   } = useChat(roomId);
+
+  // Reload messages when filter changes
+  useEffect(() => {
+    if (roomId && !loadingRoom) {
+      loadMessages(0, selectedContextType, selectedContextId);
+    }
+  }, [roomId, selectedContextType, selectedContextId, loadingRoom, loadMessages]);
 
   // Load room details
   useEffect(() => {
@@ -44,7 +54,7 @@ const ChatConversationPage = () => {
           message.warning('Phòng chat này đã được đóng');
           setRoom(roomData.data); // Vẫn set để hiển thị messages cũ
         } else {
-          setRoom(roomData.data);
+        setRoom(roomData.data);
         }
 
         // Get current user ID from localStorage
@@ -72,7 +82,7 @@ const ChatConversationPage = () => {
     // If scrolled to top, load more messages
     if (container.scrollTop < 100 && hasMore && !loading) {
       const previousHeight = container.scrollHeight;
-      loadMoreMessages();
+      loadMoreMessages(selectedContextType, selectedContextId);
 
       // Maintain scroll position after loading more messages
       setTimeout(() => {
@@ -119,9 +129,16 @@ const ChatConversationPage = () => {
     );
   }
 
+  const { Option } = Select;
+
   return (
     <div className={styles.chatConversationPage}>
-      <ChatHeader room={room} connected={connected} />
+      <ChatHeader 
+        room={room} 
+        connected={connected}
+        selectedContextType={selectedContextType}
+        onContextTypeChange={setSelectedContextType}
+      />
 
       <div
         className={styles.messagesContainer}
@@ -145,7 +162,7 @@ const ChatConversationPage = () => {
         {hasMore && (
           <div className={styles.loadMoreContainer}>
             <Button
-              onClick={loadMoreMessages}
+              onClick={() => loadMoreMessages(selectedContextType, selectedContextId)}
               loading={loading}
               icon={<ReloadOutlined />}
             >

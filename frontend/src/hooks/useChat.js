@@ -27,14 +27,17 @@ export const useChat = roomId => {
 
   /**
    * Load messages from server
+   * @param {number} pageNum - Page number
+   * @param {string} contextType - Optional: Filter by context type
+   * @param {string} contextId - Optional: Filter by context ID
    */
   const loadMessages = useCallback(
-    async (pageNum = 0) => {
+    async (pageNum = 0, contextType = null, contextId = null) => {
       if (!roomId) return;
 
       try {
         setLoading(true);
-        const response = await chatService.getMessages(roomId, pageNum, 50);
+        const response = await chatService.getMessages(roomId, pageNum, 50, contextType, contextId);
 
         const pageData = response.data || response;
         const messagesList = pageData.content || [];
@@ -63,10 +66,12 @@ export const useChat = roomId => {
 
   /**
    * Load more messages (pagination)
+   * @param {string} contextType - Optional: Filter by context type
+   * @param {string} contextId - Optional: Filter by context ID
    */
-  const loadMoreMessages = useCallback(() => {
+  const loadMoreMessages = useCallback((contextType = null, contextId = null) => {
     if (!loading && hasMore) {
-      loadMessages(page + 1);
+      loadMessages(page + 1, contextType, contextId);
     }
   }, [loading, hasMore, page, loadMessages]);
 
@@ -93,9 +98,14 @@ export const useChat = roomId => {
 
   /**
    * Send a message via WebSocket
+   * @param {string} content - Message content
+   * @param {string} messageType - Message type (default: 'TEXT')
+   * @param {object} metadata - Optional metadata
+   * @param {string} contextType - Optional: Message context type (e.g., 'GENERAL', 'REVISION_REQUEST')
+   * @param {string} contextId - Optional: Message context ID (e.g., revisionRequestId)
    */
   const sendMessage = useCallback(
-    async (content, messageType = 'TEXT', metadata = null) => {
+    async (content, messageType = 'TEXT', metadata = null, contextType = null, contextId = null) => {
       if (!roomId || !content.trim()) return;
 
       try {
@@ -107,6 +117,15 @@ export const useChat = roomId => {
           messageType,
           metadata,
         };
+
+        // Add contextType and contextId if provided
+        // For CONTRACT_CHAT general chat: contextType = 'GENERAL', contextId = null
+        if (contextType) {
+          messageData.contextType = contextType;
+          if (contextId) {
+            messageData.contextId = contextId;
+          }
+        }
 
         // Send via WebSocket (backend will broadcast to all subscribers)
         websocketService.sendMessage(roomId, messageData);
@@ -190,6 +209,7 @@ export const useChat = roomId => {
     connected,
     hasMore,
     sendMessage,
+    loadMessages,
     loadMoreMessages,
     scrollToBottom,
     messagesEndRef,

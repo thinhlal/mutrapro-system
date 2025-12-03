@@ -47,8 +47,8 @@ jwt:
 app:
   outbox:
     max-retries: 3
-    event-topics:
-      mappings:
+  event-topics:
+    mappings:
       request.assigned: request-events
       contract.signed: contract-events
       chat.room.created: chat-events
