@@ -51,10 +51,7 @@ import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
-import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
-import com.mutrapro.project_service.entity.RevisionRequest;
-import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +92,6 @@ public class TaskAssignmentService {
     ObjectMapper objectMapper;
     MilestoneProgressService milestoneProgressService;
     com.mutrapro.project_service.repository.FileSubmissionRepository fileSubmissionRepository;
-    RevisionRequestRepository revisionRequestRepository;
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -237,22 +233,20 @@ public class TaskAssignmentService {
 
         Map<String, SpecialistTaskStats> result = new HashMap<>();
 
+        // Tính SLA window end (chung cho tất cả specialists, chỉ dùng milestone deadline)
+        // Không cần tính revision deadline vì milestone đang muốn assign chưa có task
+        LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(request.getContractId(), request.getMilestoneId());
+
         assignmentsBySpecialist.forEach((specialistId, tasks) -> {
+            // Đếm tasks đang active
             int totalOpenTasks = (int) tasks.stream()
                 .filter(task -> isOpenStatus(task.getStatus()))
                 .count();
 
-            // Tính SLA window end cho specialist này (có tính đến revision deadline)
-            LocalDateTime slaWindowEnd = calculateSlaWindowEndWithRevision(
-                request.getContractId(), 
-                request.getMilestoneId(), 
-                specialistId
-            );
-
             int tasksInSlaWindow = 0;
             if (slaWindowStart != null && slaWindowEnd != null) {
                 tasksInSlaWindow = (int) tasks.stream()
-                    .filter(task -> isOpenStatus(task.getStatus()))
+                    .filter(task -> isOpenStatus(task.getStatus()))  // Bao gồm cả in_revision
                     .map(task -> {
                         LocalDateTime deadline = resolveTaskDeadline(task);
                         // Debug log
@@ -268,7 +262,7 @@ public class TaskAssignmentService {
                     })
                     .filter(deadline -> deadline != null
                         && !deadline.isBefore(slaWindowStart)  // >= milestone start
-                        && !deadline.isAfter(slaWindowEnd))     // <= milestone deadline (hoặc revision deadline nếu có)
+                        && !deadline.isAfter(slaWindowEnd))     // <= milestone deadline
                     .count();
                 
                 log.debug("Specialist {}: totalOpenTasks={}, tasksInSlaWindow={}, window=[{}, {}]",
@@ -298,7 +292,13 @@ public class TaskAssignmentService {
         return status == AssignmentStatus.assigned
             || status == AssignmentStatus.accepted_waiting
             || status == AssignmentStatus.ready_to_start
-            || status == AssignmentStatus.in_progress;
+            || status == AssignmentStatus.in_progress
+            || status == AssignmentStatus.ready_for_review      // Đã submit, chờ manager review (có thể bị reject → cần làm lại)
+            || status == AssignmentStatus.revision_requested    // Manager yêu cầu chỉnh sửa (specialist cần làm)
+            || status == AssignmentStatus.in_revision           // Customer yêu cầu revision, specialist đang làm
+            || status == AssignmentStatus.delivery_pending;    // Đã được approve, chờ specialist deliver files
+            // Không bao gồm waiting_customer_review vì specialist đã deliver, không cần làm gì nữa
+            // Không bao gồm completed và cancelled vì đã hoàn thành hoặc hủy
     }
 
     private LocalDateTime resolveTaskDeadline(TaskAssignment assignment) {
@@ -349,63 +349,6 @@ public class TaskAssignmentService {
     private LocalDateTime calculateSlaWindowEndInternal(String contractId, String milestoneId) {
         ContractMilestoneAndContract data = fetchMilestoneAndContract(contractId, milestoneId);
         LocalDateTime milestoneDeadline = data != null ? resolveMilestoneDeadlineWithFallback(data.milestone, data.contract, data.contractId) : null;
-        return milestoneDeadline;
-    }
-    
-    /**
-     * Tính deadline cho task window có tính đến revision của specialist
-     * Nếu specialist có revision đang active, dùng revision deadline làm deadline cho task window
-     * (vì specialist phải làm revision trước, task mới nên có deadline sau revision deadline)
-     */
-    private LocalDateTime calculateSlaWindowEndWithRevision(String contractId, String milestoneId, String specialistId) {
-        // Tính milestone deadline cơ bản
-        LocalDateTime milestoneDeadline = calculateSlaWindowEndInternal(contractId, milestoneId);
-        
-        // Nếu không có specialistId hoặc không có milestone deadline, trả về milestone deadline
-        if (specialistId == null || specialistId.isBlank() || milestoneDeadline == null) {
-            return milestoneDeadline;
-        }
-        
-        // Tìm revision đang active của specialist (status = IN_REVISION, WAITING_MANAGER_REVIEW, APPROVED_PENDING_DELIVERY)
-        // Revision đang active = revision mà specialist phải làm trước khi nhận task mới
-        List<RevisionRequest> activeRevisions = revisionRequestRepository.findBySpecialistId(specialistId).stream()
-                .filter(rr -> {
-                    RevisionRequestStatus status = rr.getStatus();
-                    return status == RevisionRequestStatus.IN_REVISION
-                            || status == RevisionRequestStatus.WAITING_MANAGER_REVIEW
-                            || status == RevisionRequestStatus.APPROVED_PENDING_DELIVERY;
-                })
-                .filter(rr -> rr.getRevisionDueAt() != null) // Chỉ lấy revision có deadline
-                .collect(Collectors.toList());
-        
-        // Nếu không có revision đang active, trả về milestone deadline
-        if (activeRevisions.isEmpty()) {
-            return milestoneDeadline;
-        }
-        
-        // Tìm revision deadline mới nhất (deadline xa nhất trong tương lai)
-        Optional<Instant> latestRevisionDeadline = activeRevisions.stream()
-                .map(RevisionRequest::getRevisionDueAt)
-                .max(Comparator.naturalOrder());
-        
-        if (latestRevisionDeadline.isEmpty()) {
-            return milestoneDeadline;
-        }
-        
-        // Convert Instant to LocalDateTime
-        LocalDateTime revisionDeadline = latestRevisionDeadline.get()
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDateTime();
-        
-        // Nếu revision deadline > milestone deadline, dùng revision deadline
-        // (vì specialist phải làm revision trước, task mới nên có deadline sau revision deadline)
-        if (revisionDeadline.isAfter(milestoneDeadline)) {
-            log.debug("Specialist {} has active revision with deadline {} (after milestone deadline {}), using revision deadline for SLA window",
-                    specialistId, revisionDeadline, milestoneDeadline);
-            return revisionDeadline;
-        }
-        
-        // Nếu revision deadline <= milestone deadline, vẫn dùng milestone deadline
         return milestoneDeadline;
     }
 
