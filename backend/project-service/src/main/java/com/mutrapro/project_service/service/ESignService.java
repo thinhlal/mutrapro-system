@@ -48,6 +48,7 @@ import java.util.UUID;
 
 import com.mutrapro.shared.event.ContractOtpEmailEvent;
 import com.mutrapro.shared.event.ContractSignedEmailEvent;
+import com.mutrapro.shared.event.ContractSignedEvent;
 
 @Service
 @RequiredArgsConstructor
@@ -280,7 +281,10 @@ public class ESignService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
 
-        // 4. Gửi system message vào chat room
+        // 4. Publish ContractSignedEvent để chat-service tạo room
+        publishContractSignedEvent(contract, now);
+
+        // 5. Gửi system message vào chat room
         try {
             ApiResponse<ChatRoomResponse> roomResponse = 
                 chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", contract.getRequestId());
@@ -473,6 +477,59 @@ public class ESignService {
         } catch (Exception ex) {
             log.error("Failed to enqueue ContractSignedEmailEvent: contractId={}, email={}, error={}",
                     contract.getContractId(), customerEmail, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Publish ContractSignedEvent để chat-service tạo room
+     */
+    private void publishContractSignedEvent(Contract contract, Instant signedAt) {
+        try {
+            String contractDisplay = contract.getContractNumber();
+            if (contractDisplay == null || contractDisplay.isBlank()) {
+                contractDisplay = contract.getContractId().substring(0, Math.min(8, contract.getContractId().length()));
+            }
+
+            String customerName = contract.getNameSnapshot();
+            if (customerName == null || customerName.isBlank()) {
+                customerName = "Customer";
+            }
+
+            ContractSignedEvent event = ContractSignedEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contract.getContractId())
+                    .contractNumber(contractDisplay)
+                    .customerId(contract.getUserId())
+                    .customerName(customerName)
+                    .managerId(contract.getManagerUserId())
+                    .managerName(null) // Manager name sẽ được fetch trong consumer nếu cần
+                    .signedAt(signedAt)
+                    .timestamp(Instant.now())
+                    .build();
+
+            JsonNode payload = objectMapper.valueToTree(event);
+
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(contract.getContractId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("Contract")
+                    .eventType("contract.signed")
+                    .eventPayload(payload)
+                    .build();
+
+            outboxEventRepository.save(outboxEvent);
+
+            log.info("Queued ContractSignedEvent in outbox: eventId={}, contractId={}, customerId={}, managerId={}",
+                    event.getEventId(), contract.getContractId(), contract.getUserId(), contract.getManagerUserId());
+        } catch (Exception ex) {
+            log.error("Failed to enqueue ContractSignedEvent: contractId={}, error={}",
+                    contract.getContractId(), ex.getMessage(), ex);
         }
     }
 

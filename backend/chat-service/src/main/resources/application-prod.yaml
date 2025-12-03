@@ -49,6 +49,47 @@ spring:
       enable-auto-commit: false
       properties:
         spring.json.trusted.packages: "*"
+
+# JWT Configuration (from shared module)
+jwt:
+  signerKey: ${JWT_SIGNER_KEY}
+  valid-duration: ${JWT_VALID_DURATION:3600}
+  refreshable-duration: ${JWT_REFRESHABLE_DURATION:86400}
+
+# Outbox Configuration
+app:
+  outbox:
+    max-retries: ${OUTBOX_MAX_RETRIES:3}
+  event-topics:
+    mappings:
+      request.assigned: ${KAFKA_TOPIC_REQUEST_ASSIGNED:request-events}
+      contract.signed: ${KAFKA_TOPIC_CONTRACT_SIGNED:contract-events}
+      chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
+
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:false}
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: true
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
         
 notification:
   service:

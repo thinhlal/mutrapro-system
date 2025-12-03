@@ -37,6 +37,47 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
 
+# JWT Configuration (from shared module)
+jwt:
+  signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
+  valid-duration: 3600 # 1 hour
+  refreshable-duration: 86400 # 24 hours
+
+# Outbox Configuration
+app:
+  outbox:
+    max-retries: 3
+  event-topics:
+    mappings:
+      request.assigned: request-events
+      contract.signed: contract-events
+      chat.room.created: chat-events
+
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: true
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
 logging:
   level:
     root: INFO

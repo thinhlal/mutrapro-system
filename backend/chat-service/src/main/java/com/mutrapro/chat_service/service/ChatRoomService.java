@@ -3,6 +3,7 @@ package com.mutrapro.chat_service.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.chat_service.dto.request.AddParticipantRequest;
 import com.mutrapro.chat_service.dto.request.CreateChatRoomRequest;
+import com.mutrapro.chat_service.dto.request.CreateContractChatRequest;
 import com.mutrapro.chat_service.dto.request.CreateRequestChatRequest;
 import com.mutrapro.chat_service.dto.response.ChatRoomResponse;
 import com.mutrapro.chat_service.entity.ChatParticipant;
@@ -126,13 +127,76 @@ public class ChatRoomService {
         
         return chatRoomMapper.toResponse(savedRoom);
     }
+
+    /**
+     * Tạo room cho contract khi contract được tạo
+     * Được gọi từ Kafka event consumer hoặc project-service
+     * IDEMPOTENT - Nếu room đã tồn tại thì return room hiện tại
+     */
+    @Transactional
+    public ChatRoomResponse createRoomForContract(String contractId,
+                                                   CreateContractChatRequest request) {
+        
+        log.info("Creating chat room for contract: contractId={}, customer={}, manager={}", 
+                contractId, request.getCustomerId(), request.getManagerId());
+        
+        // 1. Check if room already exists (idempotent)
+        Optional<ChatRoom> existingRoom = chatRoomRepository
+                .findByRoomTypeAndContextId(RoomType.CONTRACT_CHAT, contractId);
+        
+        if (existingRoom.isPresent()) {
+            log.info("Chat room already exists for contract: contractId={}, roomId={}", 
+                    contractId, existingRoom.get().getRoomId());
+            return chatRoomMapper.toResponse(existingRoom.get());
+        }
+        
+        // 2. Create room
+        ChatRoom chatRoom = ChatRoom.builder()
+                .roomType(RoomType.CONTRACT_CHAT)
+                .contextId(contractId)
+                .roomName(request.getRoomName())
+                .description("Chat cho contract")
+                .isActive(true)
+                .build();
+        
+        ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
+        
+        // 3. Add customer as OWNER
+        addParticipantToRoom(savedRoom, 
+                           request.getCustomerId(), 
+                           request.getCustomerName(), 
+                           ParticipantRole.OWNER);
+        
+        // 4. Add manager as MANAGER role
+        addParticipantToRoom(savedRoom, 
+                           request.getManagerId(), 
+                           request.getManagerName(), 
+                           ParticipantRole.MANAGER);
+        
+        log.info("Chat room created for contract: contractId={}, roomId={}, participants=[customer={}, manager={}]", 
+                contractId, savedRoom.getRoomId(), request.getCustomerId(), request.getManagerId());
+        
+        // 5. Publish ChatRoomCreated event (for notification service)
+        publishChatRoomCreatedEvent(savedRoom, 
+                                  request.getCustomerId(), 
+                                  request.getManagerId());
+        
+        return chatRoomMapper.toResponse(savedRoom);
+    }
     
     /**
      * Publish event khi room được tạo
      * Notification Service sẽ lắng nghe để gửi thông báo
      */
-    private void publishChatRoomCreatedEvent(ChatRoom room, String ownerId, String managerId) {
+    private void publishChatRoomCreatedEvent(ChatRoom room, String ownerId, String... otherParticipantIds) {
         try {
+            // Combine owner and other participants
+            List<String> allParticipantIds = new java.util.ArrayList<>();
+            allParticipantIds.add(ownerId);
+            if (otherParticipantIds != null) {
+                allParticipantIds.addAll(java.util.Arrays.asList(otherParticipantIds));
+            }
+            
             ChatRoomCreatedEvent event = ChatRoomCreatedEvent.builder()
                     .eventId(java.util.UUID.randomUUID())
                     .roomId(room.getRoomId())
@@ -140,7 +204,7 @@ public class ChatRoomService {
                     .contextId(room.getContextId())
                     .roomName(room.getRoomName())
                     .ownerId(ownerId)
-                    .participantIds(new String[]{ownerId, managerId})
+                    .participantIds(allParticipantIds.toArray(new String[0]))
                     .timestamp(Instant.now())
                     .build();
             

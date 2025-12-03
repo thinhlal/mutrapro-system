@@ -50,6 +50,7 @@ app:
     mappings:
       file.uploaded: file-uploaded
       contract.otp.email: contract-otp-email
+      contract.signed: contract-events
       contract.signed.email: contract-signed-email
       billing.deposit.paid: billing-deposit-paid
       billing.milestone.paid: billing-milestone-paid
