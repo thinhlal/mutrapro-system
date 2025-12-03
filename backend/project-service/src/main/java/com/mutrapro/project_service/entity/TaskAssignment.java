@@ -14,6 +14,7 @@ import java.time.Instant;
     @Index(name = "idx_task_assignments_contract_id", columnList = "contract_id"),
     @Index(name = "idx_task_assignments_specialist_id", columnList = "specialist_id"),
     @Index(name = "idx_task_assignments_milestone_id", columnList = "milestone_id"),
+    @Index(name = "idx_task_assignments_milestone_contract", columnList = "milestone_id, contract_id"),
     @Index(name = "idx_task_assignments_status", columnList = "status"),
     @Index(name = "idx_task_assignments_task_type", columnList = "task_type")
 })

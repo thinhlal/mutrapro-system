@@ -25,9 +25,6 @@ public class CustomerDeliveriesResponse {
     // Milestone info
     MilestoneInfo milestone;
     
-    // Request info
-    RequestInfo request;
-    
     // List of delivered submissions
     List<FileSubmissionResponse> submissions;
     

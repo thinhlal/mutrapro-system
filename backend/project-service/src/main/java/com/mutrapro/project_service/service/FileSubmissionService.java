@@ -4,9 +4,6 @@ import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.dto.response.FileSubmissionResponse;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.dto.response.CustomerDeliveriesResponse;
-import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
-import com.mutrapro.project_service.client.RequestServiceFeignClient;
-import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
@@ -52,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,7 +66,6 @@ public class FileSubmissionService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     OutboxEventRepository outboxEventRepository;
-    RequestServiceFeignClient requestServiceFeignClient;
     RevisionRequestService revisionRequestService;
     RevisionRequestRepository revisionRequestRepository;
     ObjectMapper objectMapper;
@@ -277,7 +274,7 @@ public class FileSubmissionService {
             String userId,
             List<String> userRoles) {
 
-        // Verify contract access - customer phải là owner của contract
+        // Step 1: Load contract & milestone
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> ContractNotFoundException.byId(contractId));
 
@@ -297,7 +294,7 @@ public class FileSubmissionService {
                 .findByMilestoneIdAndContractId(milestoneId, contractId)
                 .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
 
-        // Sử dụng JPA query riêng để query trực tiếp từ milestone
+        // Step 2: Load submissions
         List<FileSubmission> deliveredSubmissions = fileSubmissionRepository
                 .findDeliveredSubmissionsByMilestoneAndContract(
                         milestoneId,
@@ -325,11 +322,30 @@ public class FileSubmissionService {
                 .actualEndAt(milestone.getActualEndAt())
                 .build();
 
+        // Step 3: Batch load files cho tất cả submissions trước (tránh N+1 problem)
+        List<String> submissionIds = deliveredSubmissions.stream()
+                .map(FileSubmission::getSubmissionId)
+                .collect(Collectors.toList());
+        
+        List<File> allFiles = submissionIds.isEmpty() 
+                ? Collections.emptyList() 
+                : fileRepository.findBySubmissionIdIn(submissionIds);
+        
+        // Group files by submissionId để map nhanh hơn
+        Map<String, List<File>> filesBySubmissionId = allFiles.stream()
+                .collect(Collectors.groupingBy(File::getSubmissionId));
+        
+        // Map submissions với files đã được batch load
         List<FileSubmissionResponse> submissionResponses = deliveredSubmissions.stream()
-                .map(this::toResponse)
+                .map(submission -> {
+                    List<File> files = filesBySubmissionId.getOrDefault(
+                            submission.getSubmissionId(), 
+                            java.util.Collections.emptyList());
+                    return toResponseWithFiles(submission, files);
+                })
                 .collect(Collectors.toList());
 
-        // Load revision requests cho tất cả assignments trong milestone này
+        // Step 4: Load revision requests cho tất cả assignments trong milestone này
         // Lấy unique assignmentIds từ submissions
         List<String> assignmentIds = deliveredSubmissions.stream()
                 .map(FileSubmission::getAssignmentId)
@@ -337,107 +353,23 @@ public class FileSubmissionService {
                 .collect(Collectors.toList());
 
         // Batch load revision requests (1 query thay vì N queries)
+        // Truyền contract đã load để tránh query lại
         List<RevisionRequestResponse> revisionRequests;
         try {
-            revisionRequests = revisionRequestService.getRevisionRequestsByAssignmentIds(
+            revisionRequests = revisionRequestService.getRevisionRequestsByAssignmentIdsWithContract(
                     assignmentIds,
                     contractId,
                     userId,
-                    userRoles);
+                    userRoles,
+                    contract); // Truyền contract đã load ở Step 1a
         } catch (Exception e) {
             log.warn("Failed to batch load revision requests: {}", e.getMessage());
             revisionRequests = java.util.Collections.emptyList();
         }
 
-        // Load request info từ request-service và files từ database
-        CustomerDeliveriesResponse.RequestInfo requestInfo = null;
-        if (contract.getRequestId() != null) {
-            try {
-                ApiResponse<ServiceRequestInfoResponse> requestResponse = requestServiceFeignClient
-                        .getServiceRequestById(contract.getRequestId());
-                if (requestResponse != null && "success".equals(requestResponse.getStatus())
-                        && requestResponse.getData() != null) {
-                    ServiceRequestInfoResponse requestData = requestResponse.getData();
-
-                    // Convert durationMinutes sang seconds
-                    Integer durationSeconds = null;
-                    if (requestData.getDurationMinutes() != null) {
-                        try {
-                            double minutes = requestData.getDurationMinutes().doubleValue();
-                            durationSeconds = (int) Math.round(minutes * 60);
-                        } catch (Exception ex) {
-                            log.warn("Failed to convert durationMinutes to seconds: {}", ex.getMessage());
-                        }
-                    }
-
-                    // Extract tempo từ tempoPercentage
-                    Integer tempo = null;
-                    if (requestData.getTempoPercentage() != null) {
-                        try {
-                            tempo = requestData.getTempoPercentage().intValue();
-                        } catch (Exception ex) {
-                            log.warn("Failed to extract tempo: {}", ex.getMessage());
-                        }
-                    }
-
-                    // Extract timeSignature và specialNotes từ musicOptions
-                    String timeSignature = null;
-                    String specialNotes = null;
-                    if (requestData.getMusicOptions() != null) {
-                        try {
-                            Map<String, Object> musicOptions = requestData.getMusicOptions();
-                            if (musicOptions.get("timeSignature") != null) {
-                                timeSignature = musicOptions.get("timeSignature").toString();
-                            }
-                            if (musicOptions.get("specialNotes") != null) {
-                                specialNotes = musicOptions.get("specialNotes").toString();
-                            }
-                        } catch (Exception ex) {
-                            log.warn("Failed to extract musicOptions: {}", ex.getMessage());
-                        }
-                    }
-
-                    // Lấy files từ project-service database (customer_upload files)
-                    List<File> customerUploadedFiles = fileRepository.findByRequestIdAndFileSourceIn(
-                            contract.getRequestId(),
-                            List.of(FileSourceType.customer_upload));
-
-                    // Convert File entities to List of Maps for response
-                    List<Map<String, Object>> filesList = customerUploadedFiles.stream()
-                            .map(file -> {
-                                Map<String, Object> fileMap = new java.util.HashMap<>();
-                                fileMap.put("fileId", file.getFileId());
-                                fileMap.put("fileName", file.getFileName());
-                                fileMap.put("fileSize", file.getFileSize());
-                                fileMap.put("mimeType", file.getMimeType());
-                                fileMap.put("url", null); // Không có URL trực tiếp, dùng fileId để preview/download
-                                return fileMap;
-                            })
-                            .collect(Collectors.toList());
-
-                    requestInfo = CustomerDeliveriesResponse.RequestInfo.builder()
-                            .requestId(requestData.getRequestId())
-                            .serviceType(requestData.getRequestType())
-                            .title(requestData.getTitle())
-                            .description(requestData.getDescription())
-                            .durationSeconds(durationSeconds)
-                            .tempo(tempo)
-                            .timeSignature(timeSignature)
-                            .specialNotes(specialNotes)
-                            .instruments(requestData.getInstruments())
-                            .files(filesList) // Files từ project-service database
-                            .build();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to fetch request info for contractId {}: {}", contractId, e.getMessage());
-                // Không throw error, chỉ log warning để không block response chính
-            }
-        }
-
         return CustomerDeliveriesResponse.builder()
-                .contract(contractInfo)
+                .contract(contractInfo)  // contractInfo đã có requestId để frontend lazy load
                 .milestone(milestoneInfo)
-                .request(requestInfo)
                 .submissions(submissionResponses)
                 .revisionRequests(revisionRequests)
                 .build();
@@ -964,7 +896,13 @@ public class FileSubmissionService {
     private FileSubmissionResponse toResponse(FileSubmission submission) {
         // Get files in submission
         List<File> files = fileRepository.findBySubmissionId(submission.getSubmissionId());
+        return toResponseWithFiles(submission, files);
+    }
 
+    /**
+     * Helper: Convert entity to response DTO with pre-loaded files (optimized for batch loading)
+     */
+    private FileSubmissionResponse toResponseWithFiles(FileSubmission submission, List<File> files) {
         List<FileInfoResponse> fileInfos = files.stream()
                 .map(this::toFileInfoResponse)
                 .collect(Collectors.toList());

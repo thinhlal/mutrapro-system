@@ -39,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -1068,31 +1070,26 @@ public class RevisionRequestService {
     }
     
     /**
-     * Batch get revision requests by multiple assignment IDs (optimized for performance)
-     * This method assumes permission has already been verified at contract level
+     * Batch get revision requests by multiple assignment IDs with pre-loaded contract (optimized)
+     * Sử dụng contract đã load để tránh query lại
      * 
      * @param assignmentIds List of assignment IDs
      * @param contractId Contract ID (for permission verification)
      * @param userId User ID
      * @param userRoles User roles
+     * @param contract Contract đã được load trước đó
      * @return List of revision request responses
      */
-    public List<RevisionRequestResponse> getRevisionRequestsByAssignmentIds(
+    public List<RevisionRequestResponse> getRevisionRequestsByAssignmentIdsWithContract(
             List<String> assignmentIds,
             String contractId,
             String userId,
-            List<String> userRoles) {
+            List<String> userRoles,
+            Contract contract) {
         
         if (assignmentIds == null || assignmentIds.isEmpty()) {
             return java.util.Collections.emptyList();
         }
-        
-        log.info("Batch getting revision requests for {} assignments, contractId: {}, userId: {}", 
-                assignmentIds.size(), contractId, userId);
-        
-        // Verify contract access (only need to check once for all assignments)
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
         // Verify user has permission at contract level
         if (userRoles.stream().anyMatch(role -> 
@@ -1137,17 +1134,36 @@ public class RevisionRequestService {
                     .collect(Collectors.toList());
         }
         
-        return revisionRequests.stream()
-                .map(this::toResponse)
-                .collect(java.util.stream.Collectors.toList());
+        // Sử dụng contract đã được load thay vì query lại
+        // Tất cả revision requests đều thuộc cùng contractId (đã verify ở đầu method)
+        Map<String, Contract> contractsMap = new HashMap<>();
+        contractsMap.put(contractId, contract); // Sử dụng contract đã load, không query lại
+        
+        // Map với contract đã có sẵn
+        List<RevisionRequestResponse> responses = revisionRequests.stream()
+                .map(rr -> {
+                    // Tất cả revision requests đều thuộc cùng contractId
+                    Contract contractForRR = contractsMap.get(rr.getContractId());
+                    return toResponseWithContract(rr, contractForRR);
+                })
+                .collect(Collectors.toList());
+        
+        return responses;
     }
 
     /**
      * Convert entity to response DTO
      */
     private RevisionRequestResponse toResponse(RevisionRequest revisionRequest) {
-        // Get contract để lấy revisionDeadlineDays
+        // Get contract để lấy revisionDeadlineDays (fallback cho các trường hợp khác)
         Contract contract = contractRepository.findById(revisionRequest.getContractId()).orElse(null);
+        return toResponseWithContract(revisionRequest, contract);
+    }
+
+    /**
+     * Convert entity to response DTO with pre-loaded contract (optimized for batch loading)
+     */
+    private RevisionRequestResponse toResponseWithContract(RevisionRequest revisionRequest, Contract contract) {
         Integer revisionDeadlineDays = contract != null ? contract.getRevisionDeadlineDays() : null;
         
         return RevisionRequestResponse.builder()

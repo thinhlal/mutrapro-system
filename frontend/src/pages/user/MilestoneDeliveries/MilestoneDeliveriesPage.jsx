@@ -32,6 +32,7 @@ import {
   getDeliveredSubmissionsByMilestone,
   customerReviewSubmission,
 } from '../../../services/fileSubmissionService';
+import { getServiceRequestById } from '../../../services/serviceRequestService';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
@@ -59,6 +60,7 @@ const MilestoneDeliveriesPage = () => {
   const [contractInfo, setContractInfo] = useState(null);
   const [milestoneInfo, setMilestoneInfo] = useState(null);
   const [requestInfo, setRequestInfo] = useState(null);
+  const [requestInfoLoading, setRequestInfoLoading] = useState(false);
   const [submissions, setSubmissions] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -77,6 +79,27 @@ const MilestoneDeliveriesPage = () => {
     }
   }, [contractId, milestoneId]);
 
+  const loadRequestInfo = async (requestId) => {
+    if (!requestId) return;
+    
+    try {
+      setRequestInfoLoading(true);
+      const response = await getServiceRequestById(requestId);
+      
+      if (response?.status === 'success' && response?.data) {
+        setRequestInfo(response.data);
+      } else {
+        setRequestInfo(null);
+      }
+    } catch (error) {
+      console.error('Error loading request info:', error);
+      // Không hiển thị error message vì đây là lazy load, không ảnh hưởng đến chức năng chính
+      setRequestInfo(null);
+    } finally {
+      setRequestInfoLoading(false);
+    }
+  };
+
   const loadDeliveries = async () => {
     try {
       setLoading(true);
@@ -87,10 +110,15 @@ const MilestoneDeliveriesPage = () => {
 
       if (response?.status === 'success' && response?.data) {
         const data = response.data;
-        console.log(data.request);
         setContractInfo(data.contract);
         setMilestoneInfo(data.milestone);
-        setRequestInfo(data.request); // Request info đã được load từ backend
+        
+        // Lazy load request info nếu có requestId
+        if (data.contract?.requestId) {
+          loadRequestInfo(data.contract.requestId);
+        } else {
+          setRequestInfo(null);
+        }
 
         // Revision requests đã được load từ backend trong response
         const allRevisionRequests = Array.isArray(data.revisionRequests)
@@ -350,7 +378,7 @@ const MilestoneDeliveriesPage = () => {
         )}
 
         {/* Request Info */}
-        {requestInfo && (
+        {contractInfo?.requestId && (
           <Card
             title="Thông tin Request"
             extra={
@@ -362,123 +390,156 @@ const MilestoneDeliveriesPage = () => {
               </Button>
             }
             style={{ marginBottom: 24 }}
+            loading={requestInfoLoading}
           >
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="Request ID">
-                <Text strong>{requestInfo.requestId || 'N/A'}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Service Type">
-                <Tag color="purple">
-                  {requestInfo.serviceType?.toUpperCase() || 'N/A'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Title" span={2}>
-                <Text strong>{requestInfo.title || 'N/A'}</Text>
-              </Descriptions.Item>
-              {requestInfo.description && (
-                <Descriptions.Item label="Description" span={2}>
-                  <Text>{requestInfo.description}</Text>
-                </Descriptions.Item>
-              )}
-              {requestInfo.durationSeconds && (
-                <Descriptions.Item label="Duration">
-                  <Text>
-                    {Math.floor(requestInfo.durationSeconds / 60)} phút{' '}
-                    {requestInfo.durationSeconds % 60} giây
-                  </Text>
-                </Descriptions.Item>
-              )}
-              {requestInfo.tempo && (
-                <Descriptions.Item label="Tempo">
-                  <Text>{requestInfo.tempo}%</Text>
-                </Descriptions.Item>
-              )}
-              {requestInfo.timeSignature && (
-                <Descriptions.Item label="Time Signature">
-                  <Text>{requestInfo.timeSignature}</Text>
-                </Descriptions.Item>
-              )}
-              {requestInfo.specialNotes && (
-                <Descriptions.Item label="Special Notes" span={2}>
-                  <Text>{requestInfo.specialNotes}</Text>
-                </Descriptions.Item>
-              )}
-            </Descriptions>
+            {requestInfo ? (
+              <>
+                <Descriptions bordered column={2} size="small">
+                  <Descriptions.Item label="Request ID">
+                    <Text strong>{requestInfo.requestId || 'N/A'}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Service Type">
+                    <Tag color="purple">
+                      {(requestInfo.requestType || requestInfo.serviceType)?.toUpperCase() || 'N/A'}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Title" span={2}>
+                    <Text strong>{requestInfo.title || 'N/A'}</Text>
+                  </Descriptions.Item>
+                  {requestInfo.description && (
+                    <Descriptions.Item label="Description" span={2}>
+                      <Text>{requestInfo.description}</Text>
+                    </Descriptions.Item>
+                  )}
+                  {(requestInfo.durationMinutes || requestInfo.durationSeconds) && (
+                    <Descriptions.Item label="Duration">
+                      <Text>
+                        {requestInfo.durationMinutes 
+                          ? `${Math.floor(requestInfo.durationMinutes)} phút ${Math.round((requestInfo.durationMinutes % 1) * 60)} giây`
+                          : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} phút ${(requestInfo.durationSeconds || 0) % 60} giây`
+                        }
+                      </Text>
+                    </Descriptions.Item>
+                  )}
+                  {(requestInfo.tempoPercentage || requestInfo.tempo) && (
+                    <Descriptions.Item label="Tempo">
+                      <Text>{requestInfo.tempoPercentage || requestInfo.tempo}%</Text>
+                    </Descriptions.Item>
+                  )}
+                  {requestInfo.timeSignature && (
+                    <Descriptions.Item label="Time Signature">
+                      <Text>{requestInfo.timeSignature}</Text>
+                    </Descriptions.Item>
+                  )}
+                  {requestInfo.instruments && 
+                   Array.isArray(requestInfo.instruments) && 
+                   requestInfo.instruments.length > 0 && (
+                    <Descriptions.Item label="Instruments" span={2}>
+                      <Space wrap>
+                        {requestInfo.instruments.map((instrument, index) => (
+                          <Tag key={index} color="blue">
+                            {instrument.instrumentName || instrument.name || instrument}
+                          </Tag>
+                        ))}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+                  {requestInfo.specialNotes && (
+                    <Descriptions.Item label="Special Notes" span={2}>
+                      <Text>{requestInfo.specialNotes}</Text>
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
 
-            {/* Customer Uploaded Files */}
-            {requestInfo.files &&
-              Array.isArray(requestInfo.files) &&
-              requestInfo.files.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <Divider orientation="left">Files đã upload</Divider>
-                  <List
-                    size="small"
-                    dataSource={requestInfo.files}
-                    renderItem={file => {
-                      // Handle both object format (from project-service) and string format
-                      const fileName = file.fileName || file.name || 'File';
-                      const fileId = file.fileId || file;
-                      const fileSize = file.fileSize;
-                      const mimeType = file.mimeType;
+                {/* Customer Uploaded Files - Filter out contract PDF */}
+                {requestInfo.files &&
+                  Array.isArray(requestInfo.files) &&
+                  requestInfo.files.length > 0 && (() => {
+                    // Filter out contract PDF files, only show customer uploaded files
+                    const customerFiles = requestInfo.files.filter(
+                      file =>
+                        file.fileSource !== 'contract_pdf' &&
+                        file.contentType !== 'contract_pdf'
+                    );
+                    
+                    if (customerFiles.length === 0) return null;
+                    
+                    return (
+                      <div style={{ marginTop: 16 }}>
+                        <Divider orientation="left">Files đã upload</Divider>
+                        <List
+                          size="small"
+                          dataSource={customerFiles}
+                          renderItem={file => {
+                          // Handle both object format (from project-service) and string format
+                          const fileName = file.fileName || file.name || 'File';
+                          const fileId = file.fileId || file;
+                          const fileSize = file.fileSize;
+                          const mimeType = file.mimeType;
 
-                      return (
-                        <List.Item
-                          actions={[
-                            <Button
-                              key="preview"
-                              type="link"
-                              icon={<EyeOutlined />}
-                              size="small"
-                              onClick={() => {
-                                if (fileId && typeof fileId === 'string') {
-                                  window.open(
-                                    `/api/v1/projects/files/preview/${fileId}`,
-                                    '_blank'
-                                  );
-                                } else if (file.url) {
-                                  window.open(file.url, '_blank');
-                                }
-                              }}
+                          return (
+                            <List.Item
+                              actions={[
+                                <Button
+                                  key="preview"
+                                  type="link"
+                                  icon={<EyeOutlined />}
+                                  size="small"
+                                  onClick={() => {
+                                    if (fileId && typeof fileId === 'string') {
+                                      window.open(
+                                        `/api/v1/projects/files/preview/${fileId}`,
+                                        '_blank'
+                                      );
+                                    } else if (file.url) {
+                                      window.open(file.url, '_blank');
+                                    }
+                                  }}
+                                >
+                                  Xem
+                                </Button>,
+                                <Button
+                                  key="download"
+                                  type="link"
+                                  icon={<DownloadOutlined />}
+                                  size="small"
+                                  onClick={() => {
+                                    if (fileId && typeof fileId === 'string') {
+                                      handleDownloadFile(fileId, fileName);
+                                    } else if (file.url) {
+                                      const link = document.createElement('a');
+                                      link.href = file.url;
+                                      link.download = fileName;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }
+                                  }}
+                                >
+                                  Tải xuống
+                                </Button>,
+                              ]}
                             >
-                              Xem
-                            </Button>,
-                            <Button
-                              key="download"
-                              type="link"
-                              icon={<DownloadOutlined />}
-                              size="small"
-                              onClick={() => {
-                                if (fileId && typeof fileId === 'string') {
-                                  handleDownloadFile(fileId, fileName);
-                                } else if (file.url) {
-                                  const link = document.createElement('a');
-                                  link.href = file.url;
-                                  link.download = fileName;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
+                              <List.Item.Meta
+                                avatar={<FileOutlined style={{ fontSize: 20 }} />}
+                                title={fileName}
+                                description={
+                                  fileSize
+                                    ? `${(fileSize / 1024 / 1024).toFixed(2)} MB`
+                                    : mimeType || ''
                                 }
-                              }}
-                            >
-                              Tải xuống
-                            </Button>,
-                          ]}
-                        >
-                          <List.Item.Meta
-                            avatar={<FileOutlined style={{ fontSize: 20 }} />}
-                            title={fileName}
-                            description={
-                              fileSize
-                                ? `${(fileSize / 1024 / 1024).toFixed(2)} MB`
-                                : mimeType || ''
-                            }
-                          />
-                        </List.Item>
-                      );
-                    }}
-                  />
-                </div>
-              )}
+                              />
+                            </List.Item>
+                          );
+                          }}
+                        />
+                      </div>
+                    );
+                  })()}
+              </>
+            ) : (
+              <Empty description="Không thể tải thông tin request" />
+            )}
           </Card>
         )}
 

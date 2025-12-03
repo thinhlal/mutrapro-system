@@ -45,5 +45,8 @@ public interface FileRepository extends JpaRepository<File, String> {
 
     // Find files by submission ID
     List<File> findBySubmissionId(String submissionId);
+
+    // Batch find files by multiple submission IDs (optimized for performance)
+    List<File> findBySubmissionIdIn(List<String> submissionIds);
 }
 
