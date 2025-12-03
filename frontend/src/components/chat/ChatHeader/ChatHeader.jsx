@@ -1,8 +1,9 @@
-import { Avatar, Button, Badge } from 'antd';
+import { Avatar, Button, Badge, Tag } from 'antd';
 import {
   ArrowLeftOutlined,
   MoreOutlined,
   UserOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './ChatHeader.module.css';
@@ -63,7 +64,18 @@ const ChatHeader = ({ room, connected = false }) => {
       <Avatar size={40} icon={<UserOutlined />} className={styles.avatar} />
 
       <div className={styles.headerInfo}>
-        <h3 className={styles.roomName}>{room.roomName || 'Chat Room'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 className={styles.roomName}>{room.roomName || 'Chat Room'}</h3>
+          {room.isActive === false && (
+            <Tag
+              icon={<LockOutlined />}
+              color="default"
+              style={{ margin: 0, fontSize: '11px' }}
+            >
+              Closed
+            </Tag>
+          )}
+        </div>
         <div className={styles.roomMeta}>
           <Badge
             status={connected ? 'success' : 'default'}
@@ -77,6 +89,14 @@ const ChatHeader = ({ room, connected = false }) => {
           <span className={styles.participants}>
             {room.participantCount} người
           </span>
+          {room.isActive === false && (
+            <>
+              <span className={styles.separator}>•</span>
+              <span style={{ color: '#999', fontSize: '12px' }}>
+                Chỉ xem
+              </span>
+            </>
+          )}
         </div>
       </div>
 

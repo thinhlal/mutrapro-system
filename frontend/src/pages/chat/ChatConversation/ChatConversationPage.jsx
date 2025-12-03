@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Alert, Button } from 'antd';
+import { Spin, Alert, Button, message } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { useChat } from '../../../hooks/useChat';
 import chatService from '../../../services/chatService';
@@ -38,7 +38,14 @@ const ChatConversationPage = () => {
       try {
         setLoadingRoom(true);
         const roomData = await chatService.getChatRoomById(roomId);
-        setRoom(roomData.data);
+        
+        // Check if room is active
+        if (roomData?.data?.isActive === false) {
+          message.warning('Phòng chat này đã được đóng');
+          setRoom(roomData.data); // Vẫn set để hiển thị messages cũ
+        } else {
+          setRoom(roomData.data);
+        }
 
         // Get current user ID from localStorage
         const userData = getItem('user');
@@ -77,10 +84,17 @@ const ChatConversationPage = () => {
 
   // Handle send message
   const handleSendMessage = async content => {
+    // Check if room is active
+    if (room?.isActive === false) {
+      message.warning('Không thể gửi tin nhắn. Phòng chat này đã được đóng.');
+      return;
+    }
+
     try {
       await sendMessage(content);
     } catch (error) {
       console.error('Failed to send message:', error);
+      message.error('Không thể gửi tin nhắn');
     }
   };
 
@@ -166,7 +180,7 @@ const ChatConversationPage = () => {
       <MessageInput
         onSend={handleSendMessage}
         sending={sending}
-        disabled={!connected}
+        disabled={!connected || room?.isActive === false}
       />
     </div>
   );

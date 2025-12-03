@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Badge, Spin } from 'antd';
+import { Button, Badge, Spin, message, Alert } from 'antd';
 import {
   MessageOutlined,
   CloseOutlined,
   MinusOutlined,
   UpOutlined,
   UserOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { useChat } from '../../../hooks/useChat';
 import chatService from '../../../services/chatService';
@@ -38,7 +39,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
     loadMoreMessages,
     messagesEndRef,
   } = useChat(room?.roomId);
-
+  console.log('room', room);
   // Load chat room by requestId
   useEffect(() => {
     const loadChatRoom = async () => {
@@ -53,8 +54,15 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
         );
 
         if (response?.status === 'success' && response?.data) {
-          setRoom(response.data);
-          setRoomUnavailable(false);
+          // Check if room is active
+          if (response.data.isActive === false) {
+            message.warning('Phòng chat này đã được đóng');
+            setRoom(response.data); // Vẫn set để hiển thị messages cũ
+            setRoomUnavailable(false);
+          } else {
+            setRoom(response.data);
+            setRoomUnavailable(false);
+          }
 
           // Load unread count if room exists
           if (response.data.roomId) {
@@ -161,10 +169,18 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
 
   const handleSendMessage = async content => {
     if (!room?.roomId || !content.trim()) return;
+    
+    // Check if room is active
+    if (room?.isActive === false) {
+      message.warning('Không thể gửi tin nhắn. Phòng chat này đã được đóng.');
+      return;
+    }
+
     try {
       await sendMessage(content);
     } catch (error) {
       console.error('Failed to send message:', error);
+      message.error('Không thể gửi tin nhắn');
     }
   };
 
@@ -265,9 +281,33 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
                     />
                   </div>
                   <div className={styles.headerInfo}>
-                    <div className={styles.roomName}>{getRoomName()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className={styles.roomName}>{getRoomName()}</div>
+                      {room?.isActive === false && (
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: '#999',
+                            padding: '2px 6px',
+                            background: '#f0f0f0',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <LockOutlined style={{ fontSize: '10px' }} />
+                          Closed
+                        </span>
+                      )}
+                    </div>
                     <div className={styles.roomStatus}>
                       {connected ? 'Đang kết nối' : 'Đang kết nối...'}
+                      {room?.isActive === false && (
+                        <span style={{ marginLeft: '8px', color: '#999', fontSize: '11px' }}>
+                          • Chỉ xem
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -350,7 +390,7 @@ const ChatPopup = ({ requestId, roomType = 'REQUEST_CHAT' }) => {
                 <MessageInput
                   onSend={handleSendMessage}
                   sending={sending}
-                  disabled={!connected || !room}
+                  disabled={!connected || !room || room?.isActive === false}
                 />
               </div>
             </>

@@ -183,6 +183,38 @@ public class ChatRoomService {
         
         return chatRoomMapper.toResponse(savedRoom);
     }
+
+    /**
+     * Tạo contract chat room và đóng request chat room (nếu có)
+     * Được gọi từ ContractEventConsumer
+     */
+    @Transactional
+    public ChatRoomResponse createContractRoomAndCloseRequestRoom(String contractId,
+                                                                   String requestId,
+                                                                   CreateContractChatRequest request) {
+        // 1. Tạo contract chat room
+        ChatRoomResponse contractRoom = createRoomForContract(contractId, request);
+        
+        // 2. Đóng request chat room nếu có requestId
+        if (requestId != null && !requestId.isBlank()) {
+            try {
+                Optional<ChatRoom> requestRoom = chatRoomRepository
+                        .findByRoomTypeAndContextId(RoomType.REQUEST_CHAT, requestId);
+                
+                if (requestRoom.isPresent() && requestRoom.get().getIsActive()) {
+                    deactivateRoom(requestRoom.get().getRoomId());
+                    log.info("Deactivated request chat room: requestId={}, roomId={}", 
+                            requestId, requestRoom.get().getRoomId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to deactivate request chat room: requestId={}, error={}", 
+                        requestId, e.getMessage(), e);
+                // Không throw exception - contract room đã tạo thành công
+            }
+        }
+        
+        return contractRoom;
+    }
     
     /**
      * Publish event khi room được tạo
@@ -288,6 +320,22 @@ public class ChatRoomService {
                 roomId, request.getUserId(), request.getRole());
         
         return chatRoomMapper.toResponse(chatRoom);
+    }
+
+    /**
+     * Deactivate chat room (đóng room)
+     * Thường dùng khi request đã chuyển sang contract
+     */
+    @Transactional
+    public void deactivateRoom(String roomId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> ChatRoomNotFoundException.byId(roomId));
+        
+        chatRoom.setIsActive(false);
+        chatRoomRepository.save(chatRoom);
+        
+        log.info("Deactivated chat room: roomId={}, type={}, contextId={}", 
+                roomId, chatRoom.getRoomType(), chatRoom.getContextId());
     }
 
     @Transactional

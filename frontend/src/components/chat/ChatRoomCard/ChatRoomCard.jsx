@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge } from 'antd';
-import { MessageOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Badge, Tag } from 'antd';
+import { MessageOutlined, UserOutlined, LockOutlined } from '@ant-design/icons';
 import styles from './ChatRoomCard.module.css';
 
 /**
@@ -56,21 +56,43 @@ const ChatRoomCard = ({ room }) => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  const isInactive = room.isActive === false;
+
   return (
-    <div className={styles.chatRoomCard} onClick={handleClick}>
+    <div 
+      className={`${styles.chatRoomCard} ${isInactive ? styles.inactive : ''}`} 
+      onClick={handleClick}
+      title={isInactive ? 'Phòng chat này đã được đóng' : ''}
+    >
       <div className={styles.roomAvatar}>
-        <Badge dot={room.unreadCount > 0} offset={[-5, 5]}>
+        <Badge dot={room.unreadCount > 0 && !isInactive} offset={[-5, 5]}>
           <Avatar
             size={50}
             icon={<MessageOutlined />}
-            style={{ backgroundColor: getRoomTypeColor(room.roomType) }}
+            style={{ 
+              backgroundColor: isInactive ? '#d9d9d9' : getRoomTypeColor(room.roomType),
+              opacity: isInactive ? 0.6 : 1
+            }}
           />
         </Badge>
       </div>
 
       <div className={styles.roomContent}>
         <div className={styles.roomHeader}>
-          <h3 className={styles.roomName}>{room.roomName || 'Chat Room'}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+            <h3 className={styles.roomName} style={{ margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {room.roomName || 'Chat Room'}
+            </h3>
+            {isInactive && (
+              <Tag
+                icon={<LockOutlined />}
+                color="default"
+                style={{ margin: 0, fontSize: '10px', padding: '0 4px', height: '18px', lineHeight: '18px', flexShrink: 0 }}
+              >
+                Closed
+              </Tag>
+            )}
+          </div>
           <span className={styles.roomTime}>{formatDate(room.updatedAt)}</span>
         </div>
 
@@ -87,7 +109,7 @@ const ChatRoomCard = ({ room }) => {
         </div>
 
         {room.lastMessage && (
-          <div className={styles.lastMessage}>
+          <div className={styles.lastMessage} style={{ opacity: isInactive ? 0.6 : 1 }}>
             <span className={styles.senderName}>
               {room.lastMessage.senderName}:
             </span>
@@ -98,10 +120,10 @@ const ChatRoomCard = ({ room }) => {
         )}
 
         <div className={styles.roomFooter}>
-          <div className={styles.participants}>
+          <div className={styles.participants} style={{ opacity: isInactive ? 0.6 : 1 }}>
             <UserOutlined /> {room.participantCount} người
           </div>
-          {room.unreadCount > 0 && (
+          {room.unreadCount > 0 && !isInactive && (
             <Badge count={room.unreadCount} className={styles.unreadBadge} />
           )}
         </div>

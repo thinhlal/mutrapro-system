@@ -22,6 +22,7 @@ public class ContractSignedEvent implements Serializable {
     UUID eventId;           // Unique event ID for idempotency
     String contractId;      // Contract ID
     String contractNumber;  // Contract number for display
+    String requestId;       // Request ID (để đóng request chat room)
     
     // Customer (contract owner)
     String customerId;

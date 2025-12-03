@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Spin, Empty, Badge, Avatar } from 'antd';
-import { SearchOutlined, MessageOutlined } from '@ant-design/icons';
+import { Input, Spin, Empty, Badge, Avatar, Tag } from 'antd';
+import { SearchOutlined, MessageOutlined, LockOutlined } from '@ant-design/icons';
 import { useChatRooms } from '../../hooks/useChat';
 import ChatConversationPage from '../../pages/chat/ChatConversation/ChatConversationPage';
 import Header from '../../components/common/Header/Header';
@@ -129,37 +129,52 @@ const ChatLayout = () => {
                   />
                 </div>
               ) : (
-                filteredRooms.map(room => (
+                filteredRooms.map(room => {
+                  const isInactive = room.isActive === false;
+                  return (
                   <div
                     key={room.roomId}
-                    className={`${styles.roomItem} ${roomId === room.roomId ? styles.active : ''}`}
+                      className={`${styles.roomItem} ${roomId === room.roomId ? styles.active : ''} ${isInactive ? styles.inactive : ''}`}
                     onClick={() => handleRoomClick(room)}
+                      title={isInactive ? 'Phòng chat này đã được đóng' : ''}
                   >
                     <div className={styles.roomAvatar}>
                       <Avatar
                         size={56}
                         icon={<MessageOutlined />}
                         style={{
-                          backgroundColor: getRoomTypeColor(room.roomType),
+                            backgroundColor: isInactive ? '#d9d9d9' : getRoomTypeColor(room.roomType),
+                            opacity: isInactive ? 0.6 : 1,
                         }}
                       />
-                      {room.unreadCount > 0 && (
+                        {room.unreadCount > 0 && !isInactive && (
                         <span className={styles.unreadDot}></span>
                       )}
                     </div>
 
                     <div className={styles.roomInfo}>
                       <div className={styles.roomTop}>
-                        <h4 className={styles.roomName}>
-                          {room.roomName || 'Chat Room'}
-                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                          <h4 className={styles.roomName} style={{ margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {room.roomName || 'Chat Room'}
+                          </h4>
+                          {isInactive && (
+                            <Tag
+                              icon={<LockOutlined />}
+                              color="default"
+                              style={{ margin: 0, fontSize: '10px', padding: '0 4px', height: '18px', lineHeight: '18px', flexShrink: 0 }}
+                            >
+                              Closed
+                            </Tag>
+                          )}
+                        </div>
                         <span className={styles.roomTime}>
                           {formatDate(room.updatedAt)}
                         </span>
                       </div>
 
                       <div className={styles.roomBottom}>
-                        <p className={styles.lastMessage}>
+                        <p className={styles.lastMessage} style={{ opacity: isInactive ? 0.6 : 1 }}>
                           {room.lastMessage ? (
                             <>
                               <span className={styles.senderName}>
@@ -171,7 +186,7 @@ const ChatLayout = () => {
                             room.description || 'No messages yet'
                           )}
                         </p>
-                        {room.unreadCount > 0 && (
+                        {room.unreadCount > 0 && !isInactive && (
                           <Badge
                             count={room.unreadCount}
                             className={styles.unreadBadge}
@@ -180,7 +195,8 @@ const ChatLayout = () => {
                       </div>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

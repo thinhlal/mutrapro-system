@@ -499,6 +499,7 @@ public class ESignService {
                     .eventId(UUID.randomUUID())
                     .contractId(contract.getContractId())
                     .contractNumber(contractDisplay)
+                    .requestId(contract.getRequestId())
                     .customerId(contract.getUserId())
                     .customerName(customerName)
                     .managerId(contract.getManagerUserId())

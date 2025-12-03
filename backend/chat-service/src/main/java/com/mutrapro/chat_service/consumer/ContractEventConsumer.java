@@ -85,8 +85,8 @@ public class ContractEventConsumer extends BaseIdempotentConsumer<ContractSigned
                 .managerName(event.getManagerName() != null ? event.getManagerName() : "Manager")
                 .build();
         
-        ChatRoomResponse room = chatRoomService.createRoomForContract(
-                event.getContractId(), request);
+        ChatRoomResponse room = chatRoomService.createContractRoomAndCloseRequestRoom(
+                event.getContractId(), event.getRequestId(), request);
         
         log.info("Chat room created successfully: eventId={}, contractId={}, roomId={}", 
                 event.getEventId(), event.getContractId(), room.getRoomId());
