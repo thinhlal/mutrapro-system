@@ -151,15 +151,16 @@ const RevisionRequestsManagement = () => {
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
-      render: (title, record) => (
-        <Space direction="vertical" size="small">
-          <Text strong>{title || 'N/A'}</Text>
-          {record.isFreeRevision && (
-            <Tag color="blue" size="small">
-              Miễn phí
-            </Tag>
-          )}
-        </Space>
+      render: title => <Text strong>{title || 'N/A'}</Text>,
+    },
+    {
+      title: 'Type',
+      key: 'type',
+      width: 100,
+      render: (_, record) => (
+        <Tag color={record.isFreeRevision ? 'blue' : 'orange'}>
+          {record.isFreeRevision ? 'Free' : 'Paid'}
+        </Tag>
       ),
     },
     {
@@ -328,6 +329,18 @@ const RevisionRequestsManagement = () => {
               expandedRowRender: record => (
                 <div style={{ padding: '16px' }}>
                   <Descriptions bordered column={1} size="small">
+                    <Descriptions.Item label="Revision Type">
+                      <Space>
+                        <Tag color={record.isFreeRevision ? 'blue' : 'orange'} style={{ fontSize: 13 }}>
+                          {record.isFreeRevision ? 'Free Revision (Miễn phí)' : 'Paid Revision (Có phí)'}
+                        </Tag>
+                        {!record.isFreeRevision && record.paidWalletTxId && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            TX: {record.paidWalletTxId.substring(0, 8)}...
+                          </Text>
+                        )}
+                      </Space>
+                    </Descriptions.Item>
                     <Descriptions.Item label="Description">
                       <Paragraph>{record.description || 'N/A'}</Paragraph>
                     </Descriptions.Item>
