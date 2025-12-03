@@ -64,8 +64,8 @@ Request Service                Chat Service              Notification Service
 ```
 ChatRoom (phòng chat)
 ├── roomId: UUID
-├── roomType: RoomType (REQUEST_CHAT, PROJECT_CHAT...)
-├── contextId: String (request_id, project_id...)
+├── roomType: RoomType (REQUEST_CHAT, CONTRACT_CHAT...)
+├── contextId: String (request_id, contract_id...)
 ├── roomName: String
 ├── isActive: Boolean
 ├── lastMessageAt: Instant

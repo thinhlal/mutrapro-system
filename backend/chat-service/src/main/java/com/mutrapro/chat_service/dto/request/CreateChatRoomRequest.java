@@ -20,7 +20,7 @@ public class CreateChatRoomRequest {
     
     @NotBlank(message = "Context ID is required")
     @Size(max = 100, message = "Context ID must not exceed 100 characters")
-    String contextId;  // request_id, project_id, etc.
+    String contextId;  // request_id, contract_id, etc.
     
     @Size(max = 200, message = "Room name must not exceed 200 characters")
     String roomName;

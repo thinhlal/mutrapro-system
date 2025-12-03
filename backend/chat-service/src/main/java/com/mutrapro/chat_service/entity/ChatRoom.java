@@ -39,7 +39,7 @@ public class ChatRoom extends BaseEntity<String> {
     RoomType roomType;
 
     @Column(name = "context_id", nullable = false, length = 100)
-    String contextId;  // request_id, project_id, hoặc user_id pair
+    String contextId;  // request_id, contract_id, hoặc user_id pair
 
     @Column(name = "room_name", length = 200)
     String roomName;

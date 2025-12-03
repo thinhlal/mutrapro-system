@@ -1,6 +1,7 @@
 package com.mutrapro.chat_service.dto.request;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,5 +28,10 @@ public class SendMessageRequest {
     String content;
     
     JsonNode metadata;  // Optional: file info, image dimensions, etc.
+    
+    MessageContextType contextType;  // Optional: GENERAL, MILESTONE, SUBMISSION, etc.
+    
+    @Size(max = 100, message = "Context ID must not exceed 100 characters")
+    String contextId;  // Optional: milestoneId, submissionId, revisionRequestId, etc.
 }
 

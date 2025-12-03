@@ -68,6 +68,8 @@ public class ChatMessageService {
                 .messageType(request.getMessageType())
                 .content(request.getContent())
                 .metadata(request.getMetadata())
+                .contextType(request.getContextType())
+                .contextId(request.getContextId())
                 .status(MessageStatus.SENT)
                 .sentAt(Instant.now())
                 .build();
@@ -99,6 +101,8 @@ public class ChatMessageService {
                 .messageType(request.getMessageType())
                 .content(request.getContent())
                 .metadata(request.getMetadata())
+                .contextType(request.getContextType())
+                .contextId(request.getContextId())
                 .status(MessageStatus.SENT)
                 .sentAt(Instant.now())
                 .build();
@@ -222,19 +226,6 @@ public class ChatMessageService {
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
             // JWT subject is email, actual userId is in claim
             return jwt.getClaim("userId");
-        }
-        throw UnauthorizedException.create();
-    }
-
-    private String getUserName() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            // Try to get fullName from claim, fallback to email (subject)
-            String fullName = jwt.getClaim("fullName");
-            if (fullName != null) {
-                return fullName;
-            }
-            return jwt.getSubject(); // Return email as fallback
         }
         throw UnauthorizedException.create();
     }

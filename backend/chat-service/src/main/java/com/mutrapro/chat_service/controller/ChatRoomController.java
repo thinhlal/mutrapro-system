@@ -54,7 +54,7 @@ public class ChatRoomController {
     }
 
     @GetMapping("/by-context")
-    @Operation(summary = "Lấy phòng chat theo context (request_id, project_id)")
+    @Operation(summary = "Lấy phòng chat theo context (request_id, contract_id)")
     public ApiResponse<ChatRoomResponse> getChatRoomByContext(
             @RequestParam String roomType,
             @RequestParam String contextId) {

@@ -1,17 +1,18 @@
 package com.mutrapro.chat_service.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageStatus;
 import com.mutrapro.chat_service.enums.MessageType;
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.Instant;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(
@@ -19,7 +20,8 @@ import java.util.List;
     indexes = {
         @Index(name = "idx_message_room", columnList = "room_id, created_at DESC"),
         @Index(name = "idx_message_sender", columnList = "sender_id"),
-        @Index(name = "idx_message_status", columnList = "status")
+        @Index(name = "idx_message_status", columnList = "status"),
+        @Index(name = "idx_message_context", columnList = "context_type, context_id")
     }
 )
 @Getter
@@ -60,8 +62,16 @@ public class ChatMessage extends BaseEntity<String> {
     @Column(name = "status", nullable = false, length = 20)
     MessageStatus status;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "context_type", length = 30)
+    MessageContextType contextType = MessageContextType.GENERAL;
+
+    @Column(name = "context_id", length = 100)
+    String contextId; // milestoneId / submissionId / revisionRequestId
+
     @Column(name = "sent_at", nullable = false)
-    java.time.Instant sentAt;
+    Instant sentAt;
 
     public String getId() {
         return messageId;

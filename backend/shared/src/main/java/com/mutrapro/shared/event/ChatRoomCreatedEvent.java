@@ -21,8 +21,8 @@ public class ChatRoomCreatedEvent implements Serializable {
     
     UUID eventId;
     String roomId;
-    String roomType;        // REQUEST_CHAT, PROJECT_CHAT, etc
-    String contextId;       // request_id, project_id
+    String roomType;        // REQUEST_CHAT, CONTRACT_CHAT, etc
+    String contextId;       // request_id, contract_id
     String roomName;
     
     String ownerId;
