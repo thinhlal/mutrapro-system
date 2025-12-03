@@ -230,7 +230,7 @@ public class WalletService {
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
-                .txType(WalletTxType.payment)
+                .txType(WalletTxType.contract_deposit_payment)
                 .amount(request.getAmount())
                 .currency(currency)
                 .balanceBefore(balanceBefore)
@@ -258,24 +258,12 @@ public class WalletService {
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
-            
-            UUID aggregateId;
-            try {
-                aggregateId = UUID.fromString(request.getContractId());
-            } catch (IllegalArgumentException ex) {
-                aggregateId = UUID.randomUUID();
-                log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                    request.getContractId());
-            }
-            
-            OutboxEvent outboxEvent = OutboxEvent.builder()
-                .aggregateId(aggregateId)
-                .aggregateType("Contract")
-                .eventType("billing.deposit.paid")
-                .eventPayload(payload)
-                .build();
-            
-            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            OutboxEvent saved = saveOutboxEvent(
+                request.getContractId(),
+                "Contract",
+                "billing.deposit.paid",
+                payload
+            );
             
             log.info("✅ Queued DepositPaidEvent in outbox: outboxId={}, eventId={}, contractId={}, installmentId={}, paidAt={}",
                 saved.getOutboxId(), eventId, request.getContractId(), request.getInstallmentId(), paidAt);
@@ -342,7 +330,7 @@ public class WalletService {
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
-                .txType(WalletTxType.payment)
+                .txType(WalletTxType.milestone_payment)
                 .amount(request.getAmount())
                 .currency(currency)
                 .balanceBefore(balanceBefore)
@@ -372,24 +360,12 @@ public class WalletService {
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
-            
-            UUID aggregateId;
-            try {
-                aggregateId = UUID.fromString(request.getContractId());
-            } catch (IllegalArgumentException ex) {
-                aggregateId = UUID.randomUUID();
-                log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                    request.getContractId());
-            }
-            
-            OutboxEvent outboxEvent = OutboxEvent.builder()
-                .aggregateId(aggregateId)
-                .aggregateType("ContractMilestone")
-                .eventType("billing.milestone.paid")
-                .eventPayload(payload)
-                .build();
-            
-            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            OutboxEvent saved = saveOutboxEvent(
+                request.getContractId(),
+                "ContractMilestone",
+                "billing.milestone.paid",
+                payload
+            );
             
             log.info("✅ Queued Milestone MilestonePaidEvent in outbox: outboxId={}, eventId={}, contractId={}, milestoneId={}, orderIndex={}, paidAt={}",
                 saved.getOutboxId(), eventId, request.getContractId(), 
@@ -503,24 +479,12 @@ public class WalletService {
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
-            
-            UUID aggregateId;
-            try {
-                aggregateId = UUID.fromString(request.getContractId());
-            } catch (IllegalArgumentException ex) {
-                aggregateId = UUID.randomUUID();
-                log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                    request.getContractId());
-            }
-            
-            OutboxEvent outboxEvent = OutboxEvent.builder()
-                .aggregateId(aggregateId)
-                .aggregateType("RevisionRequest")
-                .eventType("billing.revision.fee.paid")
-                .eventPayload(payload)
-                .build();
-            
-            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            OutboxEvent saved = saveOutboxEvent(
+                request.getContractId(),
+                "RevisionRequest",
+                "billing.revision.fee.paid",
+                payload
+            );
             
             log.info("✅ Queued RevisionFeePaidEvent in outbox: outboxId={}, eventId={}, walletTxId={}, contractId={}, submissionId={}, paidAt={}",
                 saved.getOutboxId(), eventId, savedTransaction.getWalletTxId(), request.getContractId(), 
@@ -797,24 +761,12 @@ public class WalletService {
                     .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
-            
-            UUID aggregateId;
-            try {
-                aggregateId = UUID.fromString(originalEvent.getContractId());
-            } catch (IllegalArgumentException ex) {
-                aggregateId = UUID.randomUUID();
-                log.warn("Invalid contractId format, using random UUID: contractId={}", 
-                        originalEvent.getContractId());
-            }
-            
-            OutboxEvent outboxEvent = OutboxEvent.builder()
-                    .aggregateId(aggregateId)
-                    .aggregateType("RevisionRequest")
-                    .eventType("billing.revision.fee.refunded")
-                    .eventPayload(payload)
-                    .build();
-            
-            OutboxEvent saved = outboxEventRepository.save(outboxEvent);
+            OutboxEvent saved = saveOutboxEvent(
+                originalEvent.getContractId(),
+                "RevisionRequest",
+                "billing.revision.fee.refunded",
+                payload
+            );
             
             log.info("✅ Queued RevisionFeeRefundedEvent in outbox: outboxId={}, eventId={}, paidWalletTxId={}, refundAmount={}, currency={}",
                     saved.getOutboxId(), eventId, paidWalletTxId, refundResponse.getAmount(), refundResponse.getCurrency());
@@ -825,6 +777,34 @@ public class WalletService {
         }
         
         return refundResponse;
+    }
+
+    /**
+     * Helper method để lưu OutboxEvent với pattern chung
+     * 
+     * @param contractId Contract ID để tạo aggregateId
+     * @param aggregateType Loại aggregate (ví dụ: "Contract", "RevisionRequest")
+     * @param eventType Loại event (ví dụ: "billing.deposit.paid")
+     * @param payload JsonNode payload của event
+     * @return OutboxEvent đã được lưu
+     */
+    private OutboxEvent saveOutboxEvent(String contractId, String aggregateType, String eventType, JsonNode payload) {
+        UUID aggregateId;
+        try {
+            aggregateId = UUID.fromString(contractId);
+        } catch (IllegalArgumentException ex) {
+            aggregateId = UUID.randomUUID();
+            log.warn("Invalid contractId format, using random UUID: contractId={}", contractId);
+        }
+        
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType(aggregateType)
+                .eventType(eventType)
+                .eventPayload(payload)
+                .build();
+        
+        return outboxEventRepository.save(outboxEvent);
     }
 
     /**
