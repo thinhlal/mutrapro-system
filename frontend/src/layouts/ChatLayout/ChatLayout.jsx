@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Spin, Empty, Badge, Avatar, Tag } from 'antd';
+import { Input, Spin, Empty, Badge, Avatar, Tag, Select } from 'antd';
 import { SearchOutlined, MessageOutlined, LockOutlined } from '@ant-design/icons';
 import { useChatRooms } from '../../hooks/useChat';
 import ChatConversationPage from '../../pages/chat/ChatConversation/ChatConversationPage';
 import Header from '../../components/common/Header/Header';
 import styles from './ChatLayout.module.css';
+
+const { Option } = Select;
 
 /**
  * Chat Layout - Facebook Messenger Style
@@ -17,30 +19,36 @@ const ChatLayout = () => {
   const navigate = useNavigate();
   const { rooms, loading } = useChatRooms();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState(null);
   const [filteredRooms, setFilteredRooms] = useState([]);
 
-  // Filter rooms based on search query
+  // Filter rooms based on search query and room type
   useEffect(() => {
     if (!rooms) {
       setFilteredRooms([]);
       return;
     }
 
-    if (!searchQuery.trim()) {
-      setFilteredRooms(rooms);
-      return;
+    let filtered = rooms;
+
+    // Filter by room type
+    if (selectedRoomType) {
+      filtered = filtered.filter(room => room.roomType === selectedRoomType);
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = rooms.filter(
-      room =>
-        room.roomName?.toLowerCase().includes(query) ||
-        room.description?.toLowerCase().includes(query) ||
-        room.contextId?.toLowerCase().includes(query)
-    );
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        room =>
+          room.roomName?.toLowerCase().includes(query) ||
+          room.description?.toLowerCase().includes(query) ||
+          room.contextId?.toLowerCase().includes(query)
+      );
+    }
 
     setFilteredRooms(filtered);
-  }, [rooms, searchQuery]);
+  }, [rooms, searchQuery, selectedRoomType]);
 
   // Calculate total unread messages
   const totalUnread =
@@ -109,6 +117,19 @@ const ChatLayout = () => {
                   onChange={e => setSearchQuery(e.target.value)}
                   className={styles.searchInput}
                 />
+              </div>
+              <div style={{ marginTop: '12px' }}>
+                <Select
+                  placeholder="Filter by type"
+                  allowClear
+                  value={selectedRoomType}
+                  onChange={setSelectedRoomType}
+                  style={{ width: '100%' }}
+                  size="small"
+                >
+                  <Option value="REQUEST_CHAT">Request</Option>
+                  <Option value="CONTRACT_CHAT">Contract</Option>
+                </Select>
               </div>
             </div>
 

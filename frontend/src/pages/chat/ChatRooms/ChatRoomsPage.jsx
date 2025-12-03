@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Input, Spin, Empty, Badge } from 'antd';
+import { Input, Spin, Empty, Badge, Select } from 'antd';
 import { SearchOutlined, MessageOutlined } from '@ant-design/icons';
 import { useChatRooms } from '../../../hooks/useChat';
 import ChatRoomCard from '../../../components/chat/ChatRoomCard/ChatRoomCard';
 import styles from './ChatRoomsPage.module.css';
+
+const { Option } = Select;
 
 /**
  * Chat Rooms List Page
@@ -12,30 +14,36 @@ import styles from './ChatRoomsPage.module.css';
 const ChatRoomsPage = () => {
   const { rooms, loading, refreshRooms } = useChatRooms();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState(null);
   const [filteredRooms, setFilteredRooms] = useState([]);
 
-  // Filter rooms based on search query
+  // Filter rooms based on search query and room type
   useEffect(() => {
     if (!rooms) {
       setFilteredRooms([]);
       return;
     }
 
-    if (!searchQuery.trim()) {
-      setFilteredRooms(rooms);
-      return;
+    let filtered = rooms;
+
+    // Filter by room type
+    if (selectedRoomType) {
+      filtered = filtered.filter(room => room.roomType === selectedRoomType);
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = rooms.filter(
-      room =>
-        room.roomName?.toLowerCase().includes(query) ||
-        room.description?.toLowerCase().includes(query) ||
-        room.contextId?.toLowerCase().includes(query)
-    );
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        room =>
+          room.roomName?.toLowerCase().includes(query) ||
+          room.description?.toLowerCase().includes(query) ||
+          room.contextId?.toLowerCase().includes(query)
+      );
+    }
 
     setFilteredRooms(filtered);
-  }, [rooms, searchQuery]);
+  }, [rooms, searchQuery, selectedRoomType]);
 
   // Calculate total unread messages
   const totalUnread =
@@ -62,14 +70,28 @@ const ChatRoomsPage = () => {
 
       <div className={styles.content}>
         <div className={styles.searchSection}>
-          <Input
-            size="large"
-            placeholder="Tìm kiếm cuộc trò chuyện..."
-            prefix={<SearchOutlined />}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <Input
+              size="large"
+              placeholder="Tìm kiếm cuộc trò chuyện..."
+              prefix={<SearchOutlined />}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+              style={{ flex: 1 }}
+            />
+            <Select
+              placeholder="Lọc theo loại"
+              allowClear
+              value={selectedRoomType}
+              onChange={setSelectedRoomType}
+              style={{ width: '200px' }}
+              size="large"
+            >
+              <Option value="REQUEST_CHAT">Request</Option>
+              <Option value="CONTRACT_CHAT">Contract</Option>
+            </Select>
+          </div>
         </div>
 
         {loading ? (
