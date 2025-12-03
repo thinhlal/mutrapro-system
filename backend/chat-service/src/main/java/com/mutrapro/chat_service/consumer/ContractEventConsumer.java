@@ -85,10 +85,15 @@ public class ContractEventConsumer extends BaseIdempotentConsumer<ContractSigned
                 .managerName(event.getManagerName() != null ? event.getManagerName() : "Manager")
                 .build();
         
-        ChatRoomResponse room = chatRoomService.createContractRoomAndCloseRequestRoom(
-                event.getContractId(), event.getRequestId(), request);
+        // Tạo contract chat room, đóng request chat room và gửi welcome message
+        ChatRoomResponse room = chatRoomService.createContractRoomAndSendWelcomeMessage(
+                event.getContractId(), 
+                event.getRequestId(), 
+                request,
+                event.getContractNumber()
+        );
         
-        log.info("Chat room created successfully: eventId={}, contractId={}, roomId={}", 
+        log.info("Chat room created and welcome message sent: eventId={}, contractId={}, roomId={}", 
                 event.getEventId(), event.getContractId(), room.getRoomId());
     }
 }

@@ -1,13 +1,10 @@
 package com.mutrapro.project_service.service;
 
-import com.mutrapro.project_service.client.ChatServiceFeignClient;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.CreateMilestoneRequest;
 import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
-import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
-import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
@@ -56,6 +53,7 @@ import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
+import com.mutrapro.shared.event.ChatSystemMessageEvent;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -102,7 +100,6 @@ public class ContractService {
     ContractMapper contractMapper;
     ContractMilestoneMapper contractMilestoneMapper;
     RequestServiceFeignClient requestServiceFeignClient;
-    ChatServiceFeignClient chatServiceFeignClient;
     NotificationServiceFeignClient notificationServiceFeignClient;
     ContractSignSessionRepository contractSignSessionRepository;
     FileRepository fileRepository;
@@ -587,13 +584,13 @@ public class ContractService {
                     contract.getUserId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (TRƯỚC contract signed → REQUEST_CHAT)
         String systemMessage = String.format(
             "📄 Manager đã gửi contract #%s cho bạn. Vui lòng xem xét và phản hồi trong vòng %d ngày.",
             contract.getContractNumber(),
             expiresInDays != null ? expiresInDays : 7
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("REQUEST_CHAT", contract.getRequestId(), systemMessage);
         
         ContractResponse response = contractMapper.toResponse(saved);
         return enrichWithMilestonesAndInstallments(response);
@@ -810,12 +807,12 @@ public class ContractService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (TRƯỚC contract signed → REQUEST_CHAT)
         String systemMessage = String.format(
             "✅ Customer đã duyệt contract #%s. Đang chờ ký để bắt đầu thực hiện.",
             contract.getContractNumber()
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("REQUEST_CHAT", contract.getRequestId(), systemMessage);
         
         ContractResponse response = contractMapper.toResponse(saved);
         return enrichWithMilestonesAndInstallments(response);
@@ -892,13 +889,13 @@ public class ContractService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (TRƯỚC contract signed → REQUEST_CHAT)
         String systemMessage = String.format(
             "✏️ Customer yêu cầu chỉnh sửa contract #%s.\nLý do: %s",
             contract.getContractNumber(),
             request.getReason()
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("REQUEST_CHAT", contract.getRequestId(), systemMessage);
         
         ContractResponse response = contractMapper.toResponse(saved);
         return enrichWithMilestonesAndInstallments(response);
@@ -985,13 +982,13 @@ public class ContractService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (TRƯỚC contract signed → REQUEST_CHAT)
         String systemMessage = String.format(
             "❌ Customer đã hủy contract #%s.\nLý do: %s",
             contract.getContractNumber(),
             request.getReason()
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("REQUEST_CHAT", contract.getRequestId(), systemMessage);
         
         ContractResponse response = contractMapper.toResponse(saved);
         return enrichWithMilestonesAndInstallments(response);
@@ -1051,13 +1048,13 @@ public class ContractService {
         
         // Nếu contract đã được gửi cho customer, gửi system message và notification
         if (wasSent) {
-            // Gửi system message vào chat room
+            // Gửi system message vào chat room (TRƯỚC contract signed → REQUEST_CHAT)
             String systemMessage = String.format(
                 "🚫 Manager đã thu hồi contract #%s.\nLý do: %s",
                 contract.getContractNumber(),
                 request.getReason()
             );
-            sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+            publishChatSystemMessageEvent("REQUEST_CHAT", contract.getRequestId(), systemMessage);
             
             // Gửi notification cho customer về việc manager hủy contract
             try {
@@ -1157,14 +1154,14 @@ public class ContractService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (SAU contract signed → CONTRACT_CHAT)
         String systemMessage = String.format(
             "💰 Customer đã thanh toán deposit cho contract #%s.\nSố tiền: %s %s",
             contract.getContractNumber(),
             depositInstallment.getAmount().toPlainString(),
             contract.getCurrency() != null ? contract.getCurrency() : "VND"
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), systemMessage);
         
         contract.setDepositPaidAt(paidAt);
 
@@ -1351,7 +1348,7 @@ public class ContractService {
                     contractId, milestoneId, e.getMessage(), e);
         }
         
-        // Gửi system message vào chat room
+        // Gửi system message vào chat room (SAU contract signed → CONTRACT_CHAT)
         String systemMessage = String.format(
             "💰 Customer đã thanh toán milestone \"%s\" cho contract #%s.\nSố tiền: %s %s",
             milestone.getName(),
@@ -1359,7 +1356,7 @@ public class ContractService {
             installment.getAmount().toPlainString(),
             contract.getCurrency() != null ? contract.getCurrency() : "VND"
         );
-        sendSystemMessageToChat(contract.getRequestId(), systemMessage);
+        publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), systemMessage);
         
         // Tự động unlock milestone tiếp theo: Khi milestone N được thanh toán → milestone N+1 READY_TO_START
         if (orderIndex > 0) {
@@ -1443,12 +1440,12 @@ public class ContractService {
                         contract.getManagerUserId(), contractId, e.getMessage(), e);
             }
             
-            // Gửi system message vào chat room khi tất cả milestones đã được thanh toán
+            // Gửi system message vào chat room khi tất cả milestones đã được thanh toán (SAU contract signed → CONTRACT_CHAT)
             String allPaidMessage = String.format(
                 "✅ Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.",
                 contract.getContractNumber()
             );
-            sendSystemMessageToChat(contract.getRequestId(), allPaidMessage);
+            publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), allPaidMessage);
         }
     }
     
@@ -1778,40 +1775,42 @@ public class ContractService {
     }
     
     /**
-     * Helper method để gửi system message vào chat room
+     * Publish event để gửi system message vào chat room
+     * Chat Service sẽ lắng nghe event này và gửi message vào đúng room
      */
-    private void sendSystemMessageToChat(String requestId, String message) {
+    private void publishChatSystemMessageEvent(String roomType, String contextId, String message) {
         try {
-            // 1. Tìm chat room theo requestId
-            ApiResponse<ChatRoomResponse> roomResponse = 
-                chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", requestId);
+            ChatSystemMessageEvent event = ChatSystemMessageEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .roomType(roomType)  // "REQUEST_CHAT" hoặc "CONTRACT_CHAT"
+                    .contextId(contextId)  // requestId hoặc contractId
+                    .message(message)
+                    .timestamp(Instant.now())
+                    .build();
             
-            if (roomResponse != null && "success".equals(roomResponse.getStatus()) 
-                && roomResponse.getData() != null) {
-                ChatRoomResponse roomData = roomResponse.getData();
-                String roomId = roomData.getRoomId();
-                
-                if (roomId != null && !roomId.isBlank()) {
-                    // 2. Gửi system message vào chat room
-                    SendSystemMessageRequest messageRequest = SendSystemMessageRequest.builder()
-                        .roomId(roomId)
-                        .messageType("SYSTEM")
-                        .content(message)
-                        .build();
-                    
-                    chatServiceFeignClient.sendSystemMessage(messageRequest);
-                    log.info("Sent system message to chat room: roomId={}, requestId={}", 
-                        roomId, requestId);
-                } else {
-                    log.warn("Chat room found but roomId is null: requestId={}", requestId);
-                }
-            } else {
-                log.warn("Chat room not found for request: requestId={}", requestId);
+            JsonNode payload = objectMapper.valueToTree(event);
+            
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(contextId);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
             }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("ChatMessage")
+                    .eventType("chat.system.message")
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued ChatSystemMessageEvent in outbox: eventId={}, roomType={}, contextId={}", 
+                    event.getEventId(), roomType, contextId);
         } catch (Exception e) {
             // Log error nhưng không fail transaction
-            log.error("Failed to send system message to chat room: requestId={}, error={}", 
-                requestId, e.getMessage(), e);
+            log.error("Failed to enqueue ChatSystemMessageEvent: roomType={}, contextId={}, error={}", 
+                    roomType, contextId, e.getMessage(), e);
         }
     }
     

@@ -64,6 +64,7 @@ app:
       revision.rejected: revision-rejected
       milestone.paid.notification: milestone-paid-notification
       billing.revision.fee.refunded: billing-revision-fee-refunded # New topic for refunded revision fees
+      chat.system.message: chat-system-message-events
 
 # Request Service Configuration
 request:

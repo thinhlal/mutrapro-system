@@ -60,6 +60,7 @@ app:
       revision.rejected: ${KAFKA_TOPIC_REVISION_REJECTED:revision-rejected}
       milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees
+      chat.system.message: ${KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE:chat-system-message-events}
 
 # Request Service Configuration
 request:

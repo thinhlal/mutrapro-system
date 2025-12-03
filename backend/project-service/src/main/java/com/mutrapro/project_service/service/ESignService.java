@@ -7,16 +7,12 @@ import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.NotificationServiceFeignClient;
-import com.mutrapro.project_service.client.ChatServiceFeignClient;
 import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
-import com.mutrapro.project_service.dto.request.SendSystemMessageRequest;
-import com.mutrapro.project_service.dto.response.ChatRoomResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractSignSession;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
-import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.exception.*;
 import com.mutrapro.project_service.repository.ContractInstallmentRepository;
@@ -64,7 +60,6 @@ public class ESignService {
     final S3Service s3Service;
     final RequestServiceFeignClient requestServiceFeignClient;
     final NotificationServiceFeignClient notificationServiceFeignClient;
-    final ChatServiceFeignClient chatServiceFeignClient;
 
     @Value("${esign.otp.expiration-minutes:5}")
     int otpExpirationMinutes;
@@ -281,40 +276,9 @@ public class ESignService {
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
 
-        // 4. Publish ContractSignedEvent để chat-service tạo room
+        // 4. Publish ContractSignedEvent để chat-service tạo room và gửi system message
+        // Note: System message sẽ được gửi từ ContractEventConsumer sau khi room được tạo
         publishContractSignedEvent(contract, now);
-
-        // 5. Gửi system message vào chat room
-        try {
-            ApiResponse<ChatRoomResponse> roomResponse = 
-                chatServiceFeignClient.getChatRoomByRequestId("REQUEST_CHAT", contract.getRequestId());
-            
-            if (roomResponse != null && "success".equals(roomResponse.getStatus()) 
-                && roomResponse.getData() != null) {
-                ChatRoomResponse roomData = roomResponse.getData();
-                String roomId = roomData.getRoomId();
-                
-                if (roomId != null && !roomId.isBlank()) {
-                    String systemMessage = String.format(
-                        "✍️ Customer đã ký contract #%s. Đang chờ thanh toán deposit để bắt đầu công việc.",
-                        contract.getContractNumber()
-                    );
-                    
-                    SendSystemMessageRequest messageRequest = SendSystemMessageRequest.builder()
-                        .roomId(roomId)
-                        .messageType("SYSTEM")
-                        .content(systemMessage)
-                        .build();
-                    
-                    chatServiceFeignClient.sendSystemMessage(messageRequest);
-                    log.info("Sent system message to chat room: roomId={}, requestId={}", 
-                        roomId, contract.getRequestId());
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to send system message to chat room: requestId={}, error={}", 
-                contract.getRequestId(), e.getMessage(), e);
-        }
 
         // 5. Send success email
         sendSignSuccessEmail(contract);

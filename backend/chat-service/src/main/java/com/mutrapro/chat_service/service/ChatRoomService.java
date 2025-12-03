@@ -5,14 +5,15 @@ import com.mutrapro.chat_service.dto.request.AddParticipantRequest;
 import com.mutrapro.chat_service.dto.request.CreateChatRoomRequest;
 import com.mutrapro.chat_service.dto.request.CreateContractChatRequest;
 import com.mutrapro.chat_service.dto.request.CreateRequestChatRequest;
+import com.mutrapro.chat_service.dto.request.SendMessageRequest;
 import com.mutrapro.chat_service.dto.response.ChatRoomResponse;
 import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
 import com.mutrapro.chat_service.entity.OutboxEvent;
+import com.mutrapro.chat_service.enums.MessageType;
 import com.mutrapro.chat_service.enums.ParticipantRole;
 import com.mutrapro.chat_service.enums.RoomType;
 import com.mutrapro.chat_service.exception.*;
-import com.mutrapro.chat_service.mapper.ChatParticipantMapper;
 import com.mutrapro.chat_service.mapper.ChatRoomMapper;
 import com.mutrapro.chat_service.repository.ChatParticipantRepository;
 import com.mutrapro.chat_service.repository.ChatRoomRepository;
@@ -43,7 +44,7 @@ public class ChatRoomService {
     ChatParticipantRepository chatParticipantRepository;
     OutboxEventRepository outboxEventRepository;
     ChatRoomMapper chatRoomMapper;
-    ChatParticipantMapper chatParticipantMapper;
+    ChatMessageService chatMessageService;
     ObjectMapper objectMapper;
 
     @Transactional
@@ -185,13 +186,14 @@ public class ChatRoomService {
     }
 
     /**
-     * Tạo contract chat room và đóng request chat room (nếu có)
-     * Được gọi từ ContractEventConsumer
+     * Tạo contract chat room, đóng request chat room và gửi welcome system message
+     * Được gọi từ ContractEventConsumer khi contract được signed
      */
     @Transactional
-    public ChatRoomResponse createContractRoomAndCloseRequestRoom(String contractId,
-                                                                   String requestId,
-                                                                   CreateContractChatRequest request) {
+    public ChatRoomResponse createContractRoomAndSendWelcomeMessage(String contractId,
+                                                                     String requestId,
+                                                                     CreateContractChatRequest request,
+                                                                     String contractNumber) {
         // 1. Tạo contract chat room
         ChatRoomResponse contractRoom = createRoomForContract(contractId, request);
         
@@ -211,6 +213,33 @@ public class ChatRoomService {
                         requestId, e.getMessage(), e);
                 // Không throw exception - contract room đã tạo thành công
             }
+        }
+        
+        // 3. Gửi system message vào contract chat room (sau khi room đã được tạo)
+        try {
+            String displayContractNumber = contractNumber != null && !contractNumber.isBlank()
+                    ? contractNumber
+                    : contractId.substring(0, Math.min(8, contractId.length()));
+            
+            String systemMessage = String.format(
+                    "✍️ Customer đã ký contract #%s. Đang chờ thanh toán deposit để bắt đầu công việc.",
+                    displayContractNumber
+            );
+            
+            chatMessageService.sendSystemMessage(
+                    SendMessageRequest.builder()
+                            .roomId(contractRoom.getRoomId())
+                            .messageType(MessageType.SYSTEM)
+                            .content(systemMessage)
+                            .build()
+            );
+            
+            log.info("Sent welcome system message to contract chat room: contractId={}, roomId={}", 
+                    contractId, contractRoom.getRoomId());
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction - room đã tạo thành công
+            log.error("Failed to send welcome system message to contract chat room: contractId={}, roomId={}, error={}", 
+                    contractId, contractRoom.getRoomId(), e.getMessage(), e);
         }
         
         return contractRoom;
