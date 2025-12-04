@@ -1446,7 +1446,18 @@ const TranscriptionTaskDetailPage = () => {
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
+                // VÀ không có submission nào đang active (pending_review, approved, delivered, customer_accepted)
+                const hasActiveSubmission = submissions.some(
+                  sub => {
+                    const subStatus = sub.status?.toLowerCase();
+                    return subStatus === 'pending_review' ||
+                           subStatus === 'approved' ||
+                           subStatus === 'delivered' ||
+                           subStatus === 'customer_accepted';
+                  }
+                );
                 const hasSubmitButton =
+                  !hasActiveSubmission &&
                   (status === 'in_progress' ||
                     status === 'revision_requested' ||
                     status === 'in_revision') &&

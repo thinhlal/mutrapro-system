@@ -6,14 +6,12 @@ import com.mutrapro.project_service.dto.request.InitESignRequest;
 import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
-import com.mutrapro.project_service.client.NotificationServiceFeignClient;
-import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
+import com.mutrapro.shared.event.ContractNotificationEvent;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractSignSession;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
-import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.project_service.exception.*;
 import com.mutrapro.project_service.repository.ContractInstallmentRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
@@ -59,7 +57,6 @@ public class ESignService {
     final ObjectMapper objectMapper;
     final S3Service s3Service;
     final RequestServiceFeignClient requestServiceFeignClient;
-    final NotificationServiceFeignClient notificationServiceFeignClient;
 
     @Value("${esign.otp.expiration-minutes:5}")
     int otpExpirationMinutes;
@@ -69,6 +66,35 @@ public class ESignService {
 
     @Value("${esign.otp.length:6}")
     int otpLength;
+
+    /**
+     * Helper method để publish event vào outbox
+     */
+    private void publishToOutbox(Object event, String aggregateIdString, String aggregateType, String eventType) {
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(aggregateIdString);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType(aggregateType)
+                    .eventType(eventType)
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.debug("Queued event in outbox: eventType={}, aggregateId={}", eventType, aggregateId);
+        } catch (Exception e) {
+            log.error("Failed to enqueue event to outbox: eventType={}, aggregateId={}, error={}", 
+                    eventType, aggregateIdString, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
 
     /**
      * Initialize e-signature process: save signature temporarily and send OTP
@@ -255,24 +281,31 @@ public class ESignService {
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
 
-        // 3. Gửi notification cho manager
+        // 3. Gửi notification cho manager qua Kafka
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getManagerUserId())
-                    .type(NotificationType.CONTRACT_APPROVED)
+                    .notificationType("CONTRACT_APPROVED")
                     .title("Contract đã được ký")
                     .content(String.format("Customer đã ký contract #%s. Đang chờ thanh toán deposit để bắt đầu công việc.", 
-                            contract.getContractNumber()))
-                    .referenceId(contractId)
+                            contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent notification to manager: userId={}, contractId={}", 
-                    contract.getManagerUserId(), contractId);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
+            log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                    event.getEventId(), contractId, contract.getManagerUserId());
         } catch (Exception e) {
-            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+            log.error("Failed to enqueue notification: userId={}, contractId={}, error={}", 
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
 

@@ -58,6 +58,9 @@ app:
       contract.signed.email: contract-signed-email
       task.assignment.assigned: task-assignment-assigned
       task.assignment.ready.to.start: task-assignment-ready-to-start
+      task.assignment.canceled: task-assignment-canceled
+      task.issue.reported: task-issue-reported
+      contract.notification: contract-notification
       chat.room.created: chat-events
       submission.delivered: submission-delivered
       revision.requested: revision-requested

@@ -18,6 +18,9 @@ import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
+import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
+import com.mutrapro.shared.event.TaskIssueReportedEvent;
+import com.mutrapro.shared.event.ContractNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -180,6 +183,128 @@ public class NotificationService {
 
         log.info("Task ready to start notification created: assignmentId={}, userId={}",
             event.getAssignmentId(), event.getSpecialistUserId());
+    }
+
+    /**
+     * Tạo notification khi task assignment bị hủy (Kafka event).
+     */
+    @Transactional
+    public void createTaskAssignmentCanceledNotification(TaskAssignmentCanceledEvent event) {
+        if (event.getUserId() == null || event.getUserId().isBlank()) {
+            log.warn("Cannot create task assignment canceled notification, userId missing: assignmentId={}, contractId={}",
+                    event.getAssignmentId(), event.getContractId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Task assignment đã bị hủy";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Task assignment cho contract #%s đã bị hủy. %s",
+                        event.getContractNumber() != null ? event.getContractNumber() : event.getContractId(),
+                        event.getReason() != null ? "Lý do: " + event.getReason() : "");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : 
+                (event.getCanceledBy() != null && event.getCanceledBy().equals("SPECIALIST") 
+                    ? "/manager/milestone-assignments?contractId=" + event.getContractId()
+                    : "/transcription/my-tasks");
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+                .userId(event.getUserId())
+                .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
+                .title(title)
+                .content(content)
+                .referenceId(event.getAssignmentId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getUserId(), saved);
+
+        log.info("Task assignment canceled notification created: assignmentId={}, userId={}, canceledBy={}",
+                event.getAssignmentId(), event.getUserId(), event.getCanceledBy());
+    }
+
+    /**
+     * Tạo notification cho manager khi specialist báo issue (Kafka event).
+     */
+    @Transactional
+    public void createTaskIssueReportedNotification(TaskIssueReportedEvent event) {
+        if (event.getManagerUserId() == null || event.getManagerUserId().isBlank()) {
+            log.warn("Cannot create task issue reported notification, managerUserId missing: assignmentId={}, contractId={}",
+                    event.getAssignmentId(), event.getContractId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Task có vấn đề / không kịp deadline";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Specialist đã báo issue cho task assignment của contract #%s. Task type: %s. Lý do: %s. Vui lòng kiểm tra và xử lý.",
+                        event.getContractNumber() != null ? event.getContractNumber() : event.getContractId(),
+                        event.getTaskType() != null ? event.getTaskType() : "",
+                        event.getReason() != null ? event.getReason() : "");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : 
+                "/manager/milestone-assignments?contractId=" + event.getContractId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+                .userId(event.getManagerUserId())
+                .type(NotificationType.TASK_ISSUE_REPORTED)
+                .title(title)
+                .content(content)
+                .referenceId(event.getAssignmentId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getManagerUserId(), saved);
+
+        log.info("Task issue reported notification created: assignmentId={}, managerUserId={}",
+                event.getAssignmentId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification cho contract events (Kafka event).
+     */
+    @Transactional
+    public void createContractNotification(ContractNotificationEvent event) {
+        if (event.getUserId() == null || event.getUserId().isBlank()) {
+            log.warn("Cannot create contract notification, userId missing: contractId={}, notificationType={}",
+                    event.getContractId(), event.getNotificationType());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Contract notification";
+        String content = event.getContent() != null ? event.getContent() : "";
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/contracts/" + event.getContractId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "CONTRACT";
+
+        // Map notificationType string to NotificationType enum
+        NotificationType notificationType;
+        try {
+            notificationType = NotificationType.valueOf(event.getNotificationType());
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown notification type: {}, defaulting to SYSTEM_ANNOUNCEMENT", event.getNotificationType());
+            notificationType = NotificationType.SYSTEM_ANNOUNCEMENT;
+        }
+
+        Notification notification = Notification.builder()
+                .userId(event.getUserId())
+                .type(notificationType)
+                .title(title)
+                .content(content)
+                .referenceId(event.getContractId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getUserId(), saved);
+
+        log.info("Contract notification created: contractId={}, userId={}, notificationType={}",
+                event.getContractId(), event.getUserId(), event.getNotificationType());
     }
 
     /**
@@ -410,7 +535,7 @@ public class NotificationService {
                 String.format("Specialist đã hoàn thành chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và duyệt trước khi gửi cho customer.",
                         event.getMilestoneName() != null ? event.getMilestoneName() : "milestone");
         String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : 
-                "/manager/contracts/" + event.getContractId() + "/tasks/" + event.getTaskAssignmentId();
+                "/manager/tasks/" + event.getContractId() + "/" + event.getTaskAssignmentId();
         String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "REVISION_REQUEST";
 
         Notification notification = Notification.builder()

@@ -53,6 +53,9 @@ app:
       contract.signed.email: ${KAFKA_TOPIC_CONTRACT_SIGNED_EMAIL:contract-signed-email}
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
       task.assignment.ready.to.start: ${KAFKA_TOPIC_TASK_ASSIGNMENT_READY_TO_START:task-assignment-ready-to-start}
+      task.assignment.canceled: ${KAFKA_TOPIC_TASK_ASSIGNMENT_CANCELED:task-assignment-canceled}
+      task.issue.reported: ${KAFKA_TOPIC_TASK_ISSUE_REPORTED:task-issue-reported}
+      contract.notification: ${KAFKA_TOPIC_CONTRACT_NOTIFICATION:contract-notification}
       chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
       submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
       revision.requested: ${KAFKA_TOPIC_REVISION_REQUESTED:revision-requested}

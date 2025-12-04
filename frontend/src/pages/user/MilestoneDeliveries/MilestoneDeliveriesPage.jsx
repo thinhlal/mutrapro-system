@@ -254,6 +254,10 @@ const MilestoneDeliveriesPage = () => {
         setRevisionTitle('');
         setRevisionDescription('');
         await loadDeliveries();
+        // Reload revision stats để cập nhật số lượng free/paid revisions sau khi review
+        if (contractId) {
+          await loadRevisionStats(contractId);
+        }
       } else {
         // Nếu status không phải success, hiển thị lỗi
         message.error(response?.message || 'Lỗi khi review submission');

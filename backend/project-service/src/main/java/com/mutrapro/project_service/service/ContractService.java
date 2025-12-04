@@ -1,10 +1,9 @@
 package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
-import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.dto.request.CreateContractRequest;
 import com.mutrapro.project_service.dto.request.CreateMilestoneRequest;
-import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
+import com.mutrapro.shared.event.ContractNotificationEvent;
 import com.mutrapro.project_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
@@ -50,7 +49,6 @@ import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.ContentType;
-import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
@@ -101,7 +99,6 @@ public class ContractService {
     ContractMapper contractMapper;
     ContractMilestoneMapper contractMilestoneMapper;
     RequestServiceFeignClient requestServiceFeignClient;
-    NotificationServiceFeignClient notificationServiceFeignClient;
     ContractSignSessionRepository contractSignSessionRepository;
     FileRepository fileRepository;
     MilestoneProgressService milestoneProgressService;
@@ -111,6 +108,35 @@ public class ContractService {
     
     @Autowired(required = false)
     S3Service s3Service;
+
+    /**
+     * Helper method để publish event vào outbox
+     */
+    private void publishToOutbox(Object event, String aggregateIdString, String aggregateType, String eventType) {
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(aggregateIdString);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType(aggregateType)
+                    .eventType(eventType)
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.debug("Queued event in outbox: eventType={}, aggregateId={}", eventType, aggregateId);
+        } catch (Exception e) {
+            log.error("Failed to enqueue event to outbox: eventType={}, aggregateId={}, error={}", 
+                    eventType, aggregateIdString, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
 
     /**
      * Tạo contract từ service request
@@ -564,24 +590,31 @@ public class ContractService {
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi notification cho customer
+        // Gửi notification cho customer qua Kafka
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getUserId())
-                    .type(NotificationType.CONTRACT_SENT)
+                    .notificationType("CONTRACT_SENT")
                     .title("Contract mới đã được gửi")
                     .content(String.format("Contract #%s đã được gửi cho bạn. Vui lòng xem xét và phản hồi.", 
-                            contract.getContractNumber()))
-                    .referenceId(contractId)
+                            contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/contracts/" + contractId)
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent notification to customer: userId={}, contractId={}", 
-                    contract.getUserId(), contractId);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
+            log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                    event.getEventId(), contractId, contract.getUserId());
         } catch (Exception e) {
-            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+            log.error("Failed to enqueue notification: userId={}, contractId={}, error={}", 
                     contract.getUserId(), contractId, e.getMessage(), e);
         }
         
@@ -787,24 +820,31 @@ public class ContractService {
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi notification cho manager
+        // Gửi notification cho manager qua Kafka
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getManagerUserId())
-                    .type(NotificationType.CONTRACT_APPROVED)
+                    .notificationType("CONTRACT_APPROVED")
                     .title("Contract đã được duyệt")
                     .content(String.format("Customer đã duyệt contract #%s. Vui lòng chờ customer ký để bắt đầu thực hiện.", 
-                            contract.getContractNumber()))
-                    .referenceId(contractId)
+                            contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent notification to manager: userId={}, contractId={}", 
-                    contract.getManagerUserId(), contractId);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
+            log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                    event.getEventId(), contractId, contract.getManagerUserId());
         } catch (Exception e) {
-            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+            log.error("Failed to enqueue notification: userId={}, contractId={}, error={}", 
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
@@ -871,18 +911,26 @@ public class ContractService {
         
         // Gửi notification cho manager
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getManagerUserId())
-                    .type(NotificationType.CONTRACT_NEED_REVISION)
+                    .notificationType("CONTRACT_NEED_REVISION")
                     .title("Customer yêu cầu chỉnh sửa Contract")
                     .content(String.format("Customer đã yêu cầu chỉnh sửa contract #%s. Lý do: %s", 
-                            contract.getContractNumber(), request.getReason()))
-                    .referenceId(contractId)
+                            contractLabel, request.getReason()))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
+                    .reason(request.getReason())
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
             log.info("Sent notification to manager: userId={}, contractId={}", 
                     contract.getManagerUserId(), contractId);
         } catch (Exception e) {
@@ -963,24 +1011,32 @@ public class ContractService {
                 contract.getRequestId(), contractId, e.getMessage(), e);
         }
         
-        // Gửi notification cho manager
+        // Gửi notification cho manager qua Kafka
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getManagerUserId())
-                    .type(NotificationType.CONTRACT_CANCELED_BY_CUSTOMER)
+                    .notificationType("CONTRACT_CANCELED_BY_CUSTOMER")
                     .title("Customer đã hủy Contract")
                     .content(String.format("Customer đã hủy contract #%s. Lý do: %s", 
-                            contract.getContractNumber(), request.getReason()))
-                    .referenceId(contractId)
+                            contractLabel, request.getReason()))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
+                    .reason(request.getReason())
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
-            log.info("Sent notification to manager: userId={}, contractId={}", 
-                    contract.getManagerUserId(), contractId);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
+            log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                    event.getEventId(), contractId, contract.getManagerUserId());
         } catch (Exception e) {
-            log.error("Failed to send notification: userId={}, contractId={}, error={}", 
+            log.error("Failed to enqueue notification: userId={}, contractId={}, error={}", 
                     contract.getManagerUserId(), contractId, e.getMessage(), e);
         }
         
@@ -1061,18 +1117,26 @@ public class ContractService {
             
             // Gửi notification cho customer về việc manager hủy contract
             try {
-                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : contractId;
+                
+                ContractNotificationEvent event = ContractNotificationEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .contractId(contractId)
+                        .contractNumber(contractLabel)
                         .userId(contract.getUserId())
-                        .type(NotificationType.CONTRACT_CANCELED_BY_MANAGER)
+                        .notificationType("CONTRACT_CANCELED_BY_MANAGER")
                         .title("Contract đã bị thu hồi")
                         .content(String.format("Manager đã thu hồi contract #%s. Lý do: %s", 
-                                contract.getContractNumber(), request.getReason()))
-                        .referenceId(contractId)
+                                contractLabel, request.getReason()))
                         .referenceType("CONTRACT")
                         .actionUrl("/contracts/" + contractId)
+                        .reason(request.getReason())
+                        .timestamp(Instant.now())
                         .build();
                 
-                notificationServiceFeignClient.createNotification(notifRequest);
+                publishToOutbox(event, contractId, "Contract", "contract.notification");
                 log.info("Sent notification to customer: userId={}, contractId={}", 
                         contract.getUserId(), contractId);
             } catch (Exception e) {
@@ -1136,20 +1200,28 @@ public class ContractService {
         
         // Gửi notification cho manager
         try {
-            CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+            String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                ? contract.getContractNumber()
+                : contractId;
+            String currency = contract.getCurrency() != null ? contract.getCurrency().toString() : "VND";
+            
+            ContractNotificationEvent event = ContractNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
                     .userId(contract.getManagerUserId())
-                    .type(NotificationType.MILESTONE_PAID)
+                    .notificationType("MILESTONE_PAID")
                     .title("Deposit đã được thanh toán")
                     .content(String.format("Customer đã thanh toán deposit cho contract #%s. Số tiền: %s %s", 
-                            contract.getContractNumber(),
+                            contractLabel,
                             depositInstallment.getAmount().toPlainString(),
-                            contract.getCurrency() != null ? contract.getCurrency() : "VND"))
-                    .referenceId(contractId)
+                            currency))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
+                    .timestamp(Instant.now())
                     .build();
             
-            notificationServiceFeignClient.createNotification(notifRequest);
+            publishToOutbox(event, contractId, "Contract", "contract.notification");
             log.info("Sent deposit paid notification to manager: userId={}, contractId={}", 
                     contract.getManagerUserId(), contractId);
         } catch (Exception e) {
@@ -1432,23 +1504,30 @@ public class ContractService {
             
             // Gửi notification cho manager khi tất cả milestones đã được thanh toán
             try {
-                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : contractId;
+                
+                ContractNotificationEvent event = ContractNotificationEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .contractId(contractId)
+                        .contractNumber(contractLabel)
                         .userId(contract.getManagerUserId())
-                        .type(NotificationType.ALL_MILESTONES_PAID)
+                        .notificationType("ALL_MILESTONES_PAID")
                         .title("Tất cả milestones đã được thanh toán")
                         .content(String.format("Customer đã thanh toán tất cả milestones cho contract #%s. Contract đã hoàn thành thanh toán.", 
-                                contract.getContractNumber()))
-                        .referenceId(contractId)
+                                contractLabel))
                         .referenceType("CONTRACT")
                         .actionUrl("/manager/contracts/" + contractId)
+                        .timestamp(Instant.now())
                         .build();
                 
-                notificationServiceFeignClient.createNotification(notifRequest);
-                log.info("Sent all milestones paid notification to manager: userId={}, contractId={}", 
-                        contract.getManagerUserId(), contractId);
+                publishToOutbox(event, contractId, "Contract", "contract.notification");
+                log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
+                        event.getEventId(), contractId, contract.getManagerUserId());
             } catch (Exception e) {
                 // Log error nhưng không fail transaction
-                log.error("Failed to send all milestones paid notification: userId={}, contractId={}, error={}", 
+                log.error("Failed to enqueue all milestones paid notification: userId={}, contractId={}, error={}", 
                         contract.getManagerUserId(), contractId, e.getMessage(), e);
             }
             

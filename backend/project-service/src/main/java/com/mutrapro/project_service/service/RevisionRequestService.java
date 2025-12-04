@@ -775,7 +775,7 @@ public class RevisionRequestService {
                         .content(String.format("Specialist đã hoàn thành chỉnh sửa cho milestone \"%s\". Vui lòng xem xét và duyệt trước khi gửi cho customer.", 
                                 milestoneName))
                         .referenceType("REVISION_REQUEST")
-                        .actionUrl("/manager/contracts/" + revisionRequest.getContractId() + "/tasks/" + assignmentId)
+                        .actionUrl("/manager/tasks/" + revisionRequest.getContractId() + "/" + assignmentId)
                         .submittedAt(now)
                         .timestamp(now)
                         .build();

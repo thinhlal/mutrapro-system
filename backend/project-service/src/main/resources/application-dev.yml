@@ -57,6 +57,9 @@ app:
       billing.revision.fee.paid: billing-revision-fee-paid
       task.assignment.assigned: task-assignment-assigned
       task.assignment.ready.to.start: task-assignment-ready-to-start
+      task.assignment.canceled: task-assignment-canceled
+      task.issue.reported: task-issue-reported
+      contract.notification: contract-notification
       submission.delivered: submission-delivered
       revision.requested: revision-requested
       revision.delivered: revision-delivered

@@ -2,10 +2,10 @@ package com.mutrapro.project_service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mutrapro.project_service.client.NotificationServiceFeignClient;
 import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
-import com.mutrapro.project_service.dto.request.CreateNotificationRequest;
+import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
+import com.mutrapro.shared.event.TaskIssueReportedEvent;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -29,7 +29,6 @@ import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.TaskType;
-import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
 import com.mutrapro.project_service.mapper.TaskAssignmentMapper;
@@ -87,12 +86,40 @@ public class TaskAssignmentService {
     ContractMilestoneRepository contractMilestoneRepository;
     TaskAssignmentMapper taskAssignmentMapper;
     SpecialistServiceFeignClient specialistServiceFeignClient;
-    NotificationServiceFeignClient notificationServiceFeignClient;
     RequestServiceFeignClient requestServiceFeignClient;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     MilestoneProgressService milestoneProgressService;
     com.mutrapro.project_service.repository.FileSubmissionRepository fileSubmissionRepository;
+
+    /**
+     * Helper method để publish event vào outbox
+     */
+    private void publishToOutbox(Object event, String aggregateIdString, String aggregateType, String eventType) {
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(aggregateIdString);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType(aggregateType)
+                    .eventType(eventType)
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.debug("Queued event in outbox: eventType={}, aggregateId={}", eventType, aggregateId);
+        } catch (Exception e) {
+            log.error("Failed to enqueue event to outbox: eventType={}, aggregateId={}, error={}", 
+                    eventType, aggregateIdString, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
 
     /**
      * Lấy danh sách task assignments theo contract ID
@@ -1680,35 +1707,56 @@ public class TaskAssignmentService {
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment cancelled successfully: assignmentId={}, reason={}", assignmentId, reason);
         
-        // Gửi notification cho manager
+        // Gửi notification cho manager qua Kafka
         try {
             Contract contract = contractRepository.findById(assignment.getContractId())
                 .orElse(null);
             
             if (contract != null && contract.getManagerUserId() != null) {
-                CreateNotificationRequest managerNotif = CreateNotificationRequest.builder()
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : assignment.getContractId();
+                
+                ContractMilestone milestone = contractMilestoneRepository.findById(assignment.getMilestoneId())
+                    .orElse(null);
+                String milestoneName = milestone != null && milestone.getName() != null && !milestone.getName().isBlank()
+                    ? milestone.getName()
+                    : "Milestone " + (milestone != null && milestone.getOrderIndex() != null ? milestone.getOrderIndex() : "");
+                
+                TaskAssignmentCanceledEvent event = TaskAssignmentCanceledEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .assignmentId(assignmentId)
+                        .contractId(assignment.getContractId())
+                        .contractNumber(contractLabel)
                         .userId(contract.getManagerUserId())
-                        .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
+                        .specialistId(assignment.getSpecialistId())
+                        .specialistUserId(assignment.getSpecialistUserIdSnapshot())
+                        .taskType(assignment.getTaskType() != null ? assignment.getTaskType().toString() : "")
+                        .milestoneId(assignment.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .reason(reason)
+                        .canceledBy("SPECIALIST")
                         .title("Task assignment đã bị hủy")
                         .content(String.format("Specialist đã hủy task assignment cho contract #%s. Task type: %s. Lý do: %s", 
-                                contract.getContractNumber() != null ? contract.getContractNumber() : assignment.getContractId(),
+                                contractLabel,
                                 assignment.getTaskType(),
                                 reason))
-                        .referenceId(assignmentId)
                         .referenceType("TASK_ASSIGNMENT")
-                        .actionUrl("/manager/task-assignments?contractId=" + assignment.getContractId())
+                        .actionUrl("/manager/milestone-assignments?contractId=" + assignment.getContractId())
+                        .canceledAt(Instant.now())
+                        .timestamp(Instant.now())
                         .build();
                 
-                notificationServiceFeignClient.createNotification(managerNotif);
-                log.info("Sent task cancellation notification to manager: userId={}, assignmentId={}, contractId={}", 
-                        contract.getManagerUserId(), assignmentId, assignment.getContractId());
+                publishToOutbox(event, assignmentId, "TaskAssignment", "task.assignment.canceled");
+                log.info("Queued TaskAssignmentCanceledEvent in outbox: eventId={}, assignmentId={}, managerUserId={}", 
+                        event.getEventId(), assignmentId, contract.getManagerUserId());
             } else {
                 log.warn("Cannot send notification: contract not found or managerUserId is null. contractId={}, assignmentId={}", 
                         assignment.getContractId(), assignmentId);
             }
         } catch (Exception e) {
             // Log error nhưng không fail transaction
-            log.error("Failed to send task cancellation notification: assignmentId={}, error={}", 
+            log.error("Failed to enqueue task cancellation notification: assignmentId={}, error={}", 
                     assignmentId, e.getMessage(), e);
         }
         
@@ -1745,35 +1793,55 @@ public class TaskAssignmentService {
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Issue reported successfully: assignmentId={}", assignmentId);
         
-        // Gửi notification cho manager
+        // Gửi notification cho manager qua Kafka
         try {
             Contract contract = contractRepository.findById(assignment.getContractId())
                 .orElse(null);
             
             if (contract != null && contract.getManagerUserId() != null) {
-                CreateNotificationRequest notifRequest = CreateNotificationRequest.builder()
-                        .userId(contract.getManagerUserId())
-                        .type(NotificationType.TASK_ASSIGNMENT_CANCELED) // Có thể tạo type mới TASK_ISSUE_REPORTED sau
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : assignment.getContractId();
+                
+                ContractMilestone milestone = contractMilestoneRepository.findById(assignment.getMilestoneId())
+                    .orElse(null);
+                String milestoneName = milestone != null && milestone.getName() != null && !milestone.getName().isBlank()
+                    ? milestone.getName()
+                    : "Milestone " + (milestone != null && milestone.getOrderIndex() != null ? milestone.getOrderIndex() : "");
+                
+                TaskIssueReportedEvent event = TaskIssueReportedEvent.builder()
+                        .eventId(UUID.randomUUID())
+                        .assignmentId(assignmentId)
+                        .contractId(assignment.getContractId())
+                        .contractNumber(contractLabel)
+                        .managerUserId(contract.getManagerUserId())
+                        .specialistId(assignment.getSpecialistId())
+                        .specialistUserId(assignment.getSpecialistUserIdSnapshot())
+                        .taskType(assignment.getTaskType() != null ? assignment.getTaskType().toString() : "")
+                        .milestoneId(assignment.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .reason(reason)
                         .title("Task có vấn đề / không kịp deadline")
                         .content(String.format("Specialist đã báo issue cho task assignment của contract #%s. Task type: %s. Lý do: %s. Vui lòng kiểm tra và xử lý.", 
-                                contract.getContractNumber() != null ? contract.getContractNumber() : assignment.getContractId(),
+                                contractLabel,
                                 assignment.getTaskType(),
                                 reason))
-                        .referenceId(assignmentId)
                         .referenceType("TASK_ASSIGNMENT")
-                        .actionUrl("/manager/task-assignments?contractId=" + assignment.getContractId())
+                        .actionUrl("/manager/milestone-assignments?contractId=" + assignment.getContractId())
+                        .reportedAt(Instant.now())
+                        .timestamp(Instant.now())
                         .build();
                 
-                notificationServiceFeignClient.createNotification(notifRequest);
-                log.info("Sent issue report notification to manager: userId={}, assignmentId={}, contractId={}", 
-                        contract.getManagerUserId(), assignmentId, assignment.getContractId());
+                publishToOutbox(event, assignmentId, "TaskAssignment", "task.issue.reported");
+                log.info("Queued TaskIssueReportedEvent in outbox: eventId={}, assignmentId={}, managerUserId={}", 
+                        event.getEventId(), assignmentId, contract.getManagerUserId());
             } else {
                 log.warn("Cannot send notification: contract not found or managerUserId is null. contractId={}, assignmentId={}", 
                         assignment.getContractId(), assignmentId);
             }
         } catch (Exception e) {
             // Log error nhưng không fail transaction
-            log.error("Failed to send issue report notification: assignmentId={}, error={}", 
+            log.error("Failed to enqueue issue report notification: assignmentId={}, error={}", 
                     assignmentId, e.getMessage(), e);
         }
         
@@ -1859,7 +1927,7 @@ public class TaskAssignmentService {
         log.info("Task assignment cancelled by manager successfully: assignmentId={}, contractId={}, hadIssue={}", 
             assignmentId, contractId, saved.getIssueReason() != null);
         
-        // Gửi notification cho specialist
+        // Gửi notification cho specialist qua Kafka
         try {
             if (assignment.getSpecialistId() != null) {
                 String specialistUserId = assignment.getSpecialistUserIdSnapshot();
@@ -1869,30 +1937,51 @@ public class TaskAssignmentService {
                         issueInfo = String.format(" (Bạn đã báo issue: %s)", saved.getIssueReason());
                     }
                     
-                    CreateNotificationRequest specialistNotif = CreateNotificationRequest.builder()
+                    String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contractId;
+                    
+                    ContractMilestone milestone = contractMilestoneRepository.findById(assignment.getMilestoneId())
+                        .orElse(null);
+                    String milestoneName = milestone != null && milestone.getName() != null && !milestone.getName().isBlank()
+                        ? milestone.getName()
+                        : "Milestone " + (milestone != null && milestone.getOrderIndex() != null ? milestone.getOrderIndex() : "");
+                    
+                    TaskAssignmentCanceledEvent event = TaskAssignmentCanceledEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .assignmentId(assignmentId)
+                            .contractId(contractId)
+                            .contractNumber(contractLabel)
                             .userId(specialistUserId)
-                            .type(NotificationType.TASK_ASSIGNMENT_CANCELED)
+                            .specialistId(assignment.getSpecialistId())
+                            .specialistUserId(specialistUserId)
+                            .taskType(assignment.getTaskType() != null ? assignment.getTaskType().toString() : "")
+                            .milestoneId(assignment.getMilestoneId())
+                            .milestoneName(milestoneName)
+                            .reason(saved.getIssueReason())
+                            .canceledBy("MANAGER")
                             .title("Task đã bị hủy bởi Manager")
                             .content(String.format("Manager đã hủy task %s cho contract #%s.%s Task sẽ được gán lại cho specialist khác.", 
                                     assignment.getTaskType(),
-                                    contract.getContractNumber() != null ? contract.getContractNumber() : contractId,
+                                    contractLabel,
                                     issueInfo))
-                            .referenceId(assignmentId)
                             .referenceType("TASK_ASSIGNMENT")
                             .actionUrl("/transcription/my-tasks")
+                            .canceledAt(Instant.now())
+                            .timestamp(Instant.now())
                             .build();
                     
-                    notificationServiceFeignClient.createNotification(specialistNotif);
-                    log.info("Sent task cancellation notification to specialist: userId={}, specialistId={}, assignmentId={}, contractId={}", 
-                        specialistUserId, assignment.getSpecialistId(), assignmentId, contractId);
+                    publishToOutbox(event, assignmentId, "TaskAssignment", "task.assignment.canceled");
+                    log.info("Queued TaskAssignmentCanceledEvent in outbox: eventId={}, assignmentId={}, specialistUserId={}", 
+                            event.getEventId(), assignmentId, specialistUserId);
                 } else {
                     log.warn("Specialist userId not available for specialistId={}, assignmentId={}", 
                         assignment.getSpecialistId(), assignmentId);
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to send cancellation notification to specialist: assignmentId={}, error={}", 
-                assignmentId, e.getMessage(), e);
+            log.error("Failed to enqueue cancellation notification to specialist: assignmentId={}, error={}", 
+                    assignmentId, e.getMessage(), e);
         }
         
         return taskAssignmentMapper.toResponse(saved);
