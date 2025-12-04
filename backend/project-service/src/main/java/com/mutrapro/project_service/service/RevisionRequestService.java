@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
+import com.mutrapro.project_service.dto.response.ContractRevisionStatsResponse;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
@@ -1207,6 +1208,74 @@ public class RevisionRequestService {
                 .collect(Collectors.toList());
         
         return responses;
+    }
+
+    /**
+     * Get revision statistics for a contract (free/paid revisions used)
+     * Customer chỉ được xem stats của contract của mình
+     */
+    @Transactional(readOnly = true)
+    public ContractRevisionStatsResponse getContractRevisionStats(
+            String contractId,
+            String userId,
+            List<String> userRoles) {
+        log.info("Getting revision stats for contract: {}, userId: {}", contractId, userId);
+        
+        // Verify contract exists
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Verify user has permission
+        // Customer chỉ được xem stats của contract của mình
+        if (userRoles.contains("CUSTOMER") && !contract.getUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only view revision stats from your own contracts");
+        }
+        
+        // Manager có thể xem stats của contract mình quản lý
+        if ((userRoles.contains("MANAGER") || userRoles.contains("SYSTEM_ADMIN"))
+                && !contract.getManagerUserId().equals(userId)) {
+            throw UnauthorizedException.create("You can only view revision stats from contracts you manage");
+        }
+        
+        // Load tất cả revision requests của contract
+        List<RevisionRequest> allRevisionRequests = revisionRequestRepository.findByContractId(contractId);
+        
+        // Đếm free revisions đã sử dụng (không tính REJECTED/CANCELED)
+        int freeRevisionsUsed = (int) allRevisionRequests.stream()
+                .filter(rr -> Boolean.TRUE.equals(rr.getIsFreeRevision())
+                        && rr.getStatus() != RevisionRequestStatus.REJECTED
+                        && rr.getStatus() != RevisionRequestStatus.CANCELED)
+                .count();
+        
+        // Giới hạn free revisions used không vượt quá freeRevisionsIncluded
+        Integer freeRevisionsIncluded = contract.getFreeRevisionsIncluded();
+        if (freeRevisionsIncluded != null) {
+            freeRevisionsUsed = Math.min(freeRevisionsUsed, freeRevisionsIncluded);
+        }
+        
+        // Đếm paid revisions đã sử dụng (không tính REJECTED/CANCELED)
+        int paidRevisionsUsed = (int) allRevisionRequests.stream()
+                .filter(rr -> Boolean.FALSE.equals(rr.getIsFreeRevision())
+                        && rr.getStatus() != RevisionRequestStatus.REJECTED
+                        && rr.getStatus() != RevisionRequestStatus.CANCELED)
+                .count();
+        
+        int totalRevisionsUsed = freeRevisionsUsed + paidRevisionsUsed;
+        
+        // Tính số lượt free còn lại
+        Integer freeRevisionsRemaining = null;
+        if (freeRevisionsIncluded != null) {
+            freeRevisionsRemaining = Math.max(0, freeRevisionsIncluded - freeRevisionsUsed);
+        }
+        
+        return ContractRevisionStatsResponse.builder()
+                .contractId(contractId)
+                .freeRevisionsIncluded(freeRevisionsIncluded)
+                .freeRevisionsUsed(freeRevisionsUsed)
+                .paidRevisionsUsed(paidRevisionsUsed)
+                .totalRevisionsUsed(totalRevisionsUsed)
+                .freeRevisionsRemaining(freeRevisionsRemaining)
+                .build();
     }
 
     /**

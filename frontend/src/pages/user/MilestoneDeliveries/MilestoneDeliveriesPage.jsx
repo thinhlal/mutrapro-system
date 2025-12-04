@@ -34,6 +34,7 @@ import {
   customerReviewSubmission,
 } from '../../../services/fileSubmissionService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
+import { getContractRevisionStats } from '../../../services/revisionRequestService';
 import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
@@ -74,6 +75,7 @@ const MilestoneDeliveriesPage = () => {
   const [revisionTitle, setRevisionTitle] = useState('');
   const [revisionDescription, setRevisionDescription] = useState('');
   const [revisionRequests, setRevisionRequests] = useState([]); // Track revision requests để check xem đã request chưa
+  const [revisionStats, setRevisionStats] = useState(null); // Thống kê free/paid revisions của contract
 
   const milestoneName =
     milestoneInfo?.name || location.state?.milestoneName || 'Milestone';
@@ -105,6 +107,21 @@ const MilestoneDeliveriesPage = () => {
     }
   };
 
+  const loadRevisionStats = async contractId => {
+    try {
+      const response = await getContractRevisionStats(contractId);
+      if (response?.status === 'success' && response?.data) {
+        setRevisionStats(response.data);
+      } else {
+        setRevisionStats(null);
+      }
+    } catch (error) {
+      console.error('Error loading revision stats:', error);
+      // Không hiển thị error message vì đây là lazy load, không ảnh hưởng đến chức năng chính
+      setRevisionStats(null);
+    }
+  };
+
   const loadDeliveries = async () => {
     try {
       setLoading(true);
@@ -124,6 +141,9 @@ const MilestoneDeliveriesPage = () => {
         } else {
           setRequestInfo(null);
         }
+
+        // Load revision stats của contract (để tính free/paid revisions chính xác)
+        loadRevisionStats(contractId);
 
         // Revision requests đã được load từ backend trong response
         const allRevisionRequests = Array.isArray(data.revisionRequests)
@@ -367,47 +387,31 @@ const MilestoneDeliveriesPage = () => {
                 </Text>
               </Descriptions.Item>
               {contractInfo.freeRevisionsIncluded != null &&
-                (() => {
-                  const totalRevisions = revisionRequests.length;
-                  // Đếm tất cả revision free KHÔNG bị REJECTED hoặc CANCELED
-                  // (kể cả đang pending, in_revision, waiting_customer_confirm, completed)
-                  // CHỈ loại trừ REJECTED và CANCELED (vì revision bị reject/cancel không được tính là đã sử dụng lượt free)
-                  const freeRevisionsUsed = Math.min(
-                    revisionRequests.filter(
-                      rr =>
-                        rr.isFreeRevision === true &&
-                        rr.status?.toUpperCase() !== 'REJECTED' &&
-                        rr.status?.toUpperCase() !== 'CANCELED'
-                    ).length,
-                    contractInfo.freeRevisionsIncluded
-                  );
-                  const paidRevisionsUsed = totalRevisions - freeRevisionsUsed;
-
-                  return (
-                    <>
-                      <Descriptions.Item label="Free Revisions Included">
-                        <Text strong>{contractInfo.freeRevisionsIncluded}</Text>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Revisions Used">
-                        <Text strong>
-                          {totalRevisions} /{' '}
-                          {contractInfo.freeRevisionsIncluded} (Free)
-                        </Text>
-                        <Text
-                          type="secondary"
-                          style={{
-                            fontSize: 11,
-                            display: 'block',
-                            marginTop: 4,
-                          }}
-                        >
-                          Đã dùng {freeRevisionsUsed} lần revision free,{' '}
-                          {paidRevisionsUsed} lần revision có phí
-                        </Text>
-                      </Descriptions.Item>
-                    </>
-                  );
-                })()}
+                revisionStats && (
+                  <>
+                    <Descriptions.Item label="Free Revisions Included">
+                      <Text strong>{revisionStats.freeRevisionsIncluded}</Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Revisions Used">
+                      <Text strong>
+                        {revisionStats.totalRevisionsUsed} /{' '}
+                        {revisionStats.freeRevisionsIncluded} (Free)
+                      </Text>
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: 11,
+                          display: 'block',
+                          marginTop: 4,
+                        }}
+                      >
+                        Đã dùng {revisionStats.freeRevisionsUsed} lần revision
+                        free, {revisionStats.paidRevisionsUsed} lần revision có
+                        phí
+                      </Text>
+                    </Descriptions.Item>
+                  </>
+                )}
             </Descriptions>
           </Card>
         )}
@@ -716,17 +720,12 @@ const MilestoneDeliveriesPage = () => {
                             }
 
                             // Nếu không có revision request nào cho submission này → hiển thị nút
-                            // Check xem còn lượt free revision không
-                            // Chỉ đếm revision free đã COMPLETED (vì chỉ revision đã hoàn thành mới được tính là đã sử dụng lượt free)
-                            const freeRevisionsUsed = revisionRequests.filter(
-                              rr =>
-                                rr.isFreeRevision === true &&
-                                rr.status?.toUpperCase() === 'COMPLETED'
-                            ).length;
+                            // Check xem còn lượt free revision không (dùng revisionStats từ API)
                             const hasFreeRevisionsLeft =
-                              contractInfo?.freeRevisionsIncluded != null &&
-                              freeRevisionsUsed <
-                                contractInfo.freeRevisionsIncluded;
+                              revisionStats &&
+                              revisionStats.freeRevisionsIncluded != null &&
+                              revisionStats.freeRevisionsRemaining != null &&
+                              revisionStats.freeRevisionsRemaining > 0;
 
                             return (
                               <Space>
@@ -748,8 +747,8 @@ const MilestoneDeliveriesPage = () => {
                                   }
                                   description={
                                     !hasFreeRevisionsLeft
-                                      ? `Bạn đã dùng hết ${contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
-                                      : `Bạn còn ${(contractInfo?.freeRevisionsIncluded || 0) - freeRevisionsUsed} lượt revision miễn phí.`
+                                      ? `Bạn đã dùng hết ${revisionStats?.freeRevisionsIncluded || contractInfo?.freeRevisionsIncluded || 0} lượt revision miễn phí. Revision này sẽ tính phí ${contractInfo?.additionalRevisionFeeVnd?.toLocaleString() || 0} VND.`
+                                      : `Bạn còn ${revisionStats?.freeRevisionsRemaining || 0} lượt revision miễn phí.`
                                   }
                                   onConfirm={() => {
                                     if (!hasFreeRevisionsLeft) {

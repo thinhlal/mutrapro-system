@@ -183,6 +183,9 @@ export const API_ENDPOINTS = {
     // GET /revision-requests/manager/my-requests?status={status}
     GET_MY_REQUESTS: status =>
       `${PROJECT_PATH}/revision-requests/manager/my-requests${status ? `?status=${status}` : ''}`,
+    // GET /revision-requests/contract/{contractId}/stats
+    GET_CONTRACT_STATS: contractId =>
+      `${PROJECT_PATH}/revision-requests/contract/${contractId}/stats`,
   },
 
   // === File Submissions Management ===

@@ -1,6 +1,7 @@
 package com.mutrapro.project_service.controller;
 
 import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
+import com.mutrapro.project_service.dto.response.ContractRevisionStatsResponse;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.project_service.exception.InvalidRevisionRequestStatusException;
@@ -106,6 +107,27 @@ public class RevisionRequestController {
         return ApiResponse.<List<RevisionRequestResponse>>builder()
                 .message("Revision requests retrieved successfully")
                 .data(responses)
+                .statusCode(HttpStatus.OK.value())
+                .build();
+    }
+
+    @GetMapping("/contract/{contractId}/stats")
+    @Operation(summary = "Get revision statistics for a contract (free/paid revisions used)")
+    public ApiResponse<ContractRevisionStatsResponse> getContractRevisionStats(
+            @Parameter(description = "ID của contract")
+            @PathVariable String contractId,
+            Authentication authentication) {
+        log.info("Getting revision stats for contract: {}", contractId);
+        
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        ContractRevisionStatsResponse response = revisionRequestService.getContractRevisionStats(
+                contractId,
+                userContext.getUserId(),
+                userContext.getRoles());
+
+        return ApiResponse.<ContractRevisionStatsResponse>builder()
+                .message("Revision statistics retrieved successfully")
+                .data(response)
                 .statusCode(HttpStatus.OK.value())
                 .build();
     }

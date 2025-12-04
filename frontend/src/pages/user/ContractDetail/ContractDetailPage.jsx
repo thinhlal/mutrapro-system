@@ -52,6 +52,7 @@ import {
   getServiceRequestById,
   calculatePricing,
 } from '../../../services/serviceRequestService';
+import { getContractRevisionStats } from '../../../services/revisionRequestService';
 import {
   formatDurationMMSS,
   formatTempoPercentage,
@@ -142,6 +143,9 @@ const ContractDetailPage = () => {
 
   // Deposit milestone state
   const [depositMilestone, setDepositMilestone] = useState(null);
+
+  // Revision stats state
+  const [revisionStats, setRevisionStats] = useState(null);
 
   // Load contract data
   useEffect(() => {
@@ -249,6 +253,21 @@ const ContractDetailPage = () => {
     fetchSignature();
   }, [contract?.contractId, contract?.customerSignedAt]);
 
+  const loadRevisionStats = async contractId => {
+    try {
+      const response = await getContractRevisionStats(contractId);
+      if (response?.status === 'success' && response?.data) {
+        setRevisionStats(response.data);
+      } else {
+        setRevisionStats(null);
+      }
+    } catch (error) {
+      console.error('Error loading revision stats:', error);
+      // Không hiển thị error message vì đây là lazy load, không ảnh hưởng đến chức năng chính
+      setRevisionStats(null);
+    }
+  };
+
   const loadContract = async () => {
     try {
       setLoading(true);
@@ -288,6 +307,11 @@ const ContractDetailPage = () => {
         // Load pricing breakdown if requestId is available
         if (response.data.requestId) {
           await loadPricingBreakdown(response.data.requestId);
+        }
+
+        // Load revision stats của contract (để hiển thị thống kê free/paid revisions)
+        if (contractData.freeRevisionsIncluded != null) {
+          loadRevisionStats(contractId);
         }
       } else {
         throw new Error('Failed to load contract');
@@ -1862,9 +1886,35 @@ const ContractDetailPage = () => {
                 {dayjs(contract.signedAt).format('YYYY-MM-DD HH:mm')}
               </Descriptions.Item>
             )}
-            <Descriptions.Item label="Free Revisions">
+            <Descriptions.Item label="Free Revisions Included">
               {contract.freeRevisionsIncluded || 0}
             </Descriptions.Item>
+            {revisionStats && (
+              <>
+                <Descriptions.Item label="Revisions Used">
+                  <Text strong>
+                    {revisionStats.totalRevisionsUsed} /{' '}
+                    {revisionStats.freeRevisionsIncluded} (Free)
+                  </Text>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: 11,
+                      display: 'block',
+                      marginTop: 4,
+                    }}
+                  >
+                    Đã dùng {revisionStats.freeRevisionsUsed} lần revision free,{' '}
+                    {revisionStats.paidRevisionsUsed} lần revision có phí
+                  </Text>
+                </Descriptions.Item>
+                {revisionStats.freeRevisionsRemaining != null && (
+                  <Descriptions.Item label="Free Revisions Remaining">
+                    <Text strong>{revisionStats.freeRevisionsRemaining}</Text>
+                  </Descriptions.Item>
+                )}
+              </>
+            )}
             {contract.additionalRevisionFeeVnd && (
               <Descriptions.Item label="Additional Revision Fee">
                 {contract.additionalRevisionFeeVnd.toLocaleString()} VND
