@@ -161,3 +161,24 @@ export const getMyContracts = async () => {
   }
 };
 
+/**
+ * Lấy tất cả contracts (cho customer - tương đương my-contracts)
+ * GET /contracts/my-contracts
+ * 
+ * Note: getAllContracts và getMyContracts có thể dùng chung endpoint
+ * 
+ * @returns {Promise} ApiResponse với danh sách contracts
+ */
+export const getAllContracts = async () => {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.CONTRACTS.MY_CONTRACTS);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Get All Contracts Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi lấy danh sách contracts',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+

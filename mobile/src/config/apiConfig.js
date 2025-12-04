@@ -66,6 +66,7 @@ export const API_ENDPOINTS = {
     TOPUP: (walletId) => `${BILLING_PATH}/wallets/${walletId}/topup`,
     PAY_DEPOSIT: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/deposit`,
     PAY_MILESTONE: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/milestone`,
+    PAY_REVISION_FEE: (walletId) => `${BILLING_PATH}/wallets/${walletId}/debit/revision-fee`,
     GET_TRANSACTIONS: (walletId) => `${BILLING_PATH}/wallets/${walletId}/transactions`,
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
   },
@@ -75,6 +76,27 @@ export const API_ENDPOINTS = {
     BASE: `${PROJECT_PATH}/contracts`,
     MY_CONTRACTS: `${PROJECT_PATH}/contracts/my-contracts`,
     GET_BY_ID: (contractId) => `${PROJECT_PATH}/contracts/${contractId}`,
+    GET_MILESTONE_BY_ID: (contractId, milestoneId) =>
+      `${PROJECT_PATH}/contracts/${contractId}/milestones/${milestoneId}`,
+  },
+
+  // === File Submissions Management ===
+  SUBMISSIONS: {
+    // GET /submissions/by-milestone/{milestoneId}?contractId={contractId} (cho customer)
+    GET_DELIVERED_BY_MILESTONE: (milestoneId, contractId) =>
+      `${PROJECT_PATH}/submissions/by-milestone/${milestoneId}?contractId=${contractId}`,
+    // POST /submissions/{submissionId}/customer-review
+    CUSTOMER_REVIEW: (submissionId) =>
+      `${PROJECT_PATH}/submissions/${submissionId}/customer-review`,
+    // GET /submissions/{submissionId}
+    GET: (submissionId) => `${PROJECT_PATH}/submissions/${submissionId}`,
+  },
+
+  // === Revision Requests Management ===
+  REVISION_REQUESTS: {
+    // GET /revision-requests/by-assignment/{assignmentId}
+    BY_ASSIGNMENT: (assignmentId) =>
+      `${PROJECT_PATH}/revision-requests/by-assignment/${assignmentId}`,
   },
 
   // === Notifications ===

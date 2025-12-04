@@ -10,6 +10,10 @@ import ContractDetailScreen from '../screens/Contracts/ContractDetailScreen';
 import WalletScreen from '../screens/Wallet/WalletScreen';
 import PaymentDepositScreen from '../screens/Payments/PaymentDepositScreen';
 import PaymentMilestoneScreen from '../screens/Payments/PaymentMilestoneScreen';
+import PaymentRevisionFeeScreen from '../screens/Payments/PaymentRevisionFeeScreen';
+import MilestoneDeliveriesScreen from '../screens/Milestones/MilestoneDeliveriesScreen';
+import ContractsListScreen from '../screens/Contracts/ContractsListScreen';
+import ContractSignedSuccessScreen from '../screens/Contracts/ContractSignedSuccessScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -94,6 +98,44 @@ const MainStack = () => {
         component={PaymentMilestoneScreen}
         options={{
           title: 'Pay Milestone',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="PaymentRevisionFee"
+        component={PaymentRevisionFeeScreen}
+        options={{
+          title: 'Pay Revision Fee',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="MilestoneDeliveries"
+        component={MilestoneDeliveriesScreen}
+        options={{
+          title: 'Milestone Deliveries',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="ContractsList"
+        component={ContractsListScreen}
+        options={{
+          title: 'My Contracts',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
+          ),
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="ContractSignedSuccess"
+        component={ContractSignedSuccessScreen}
+        options={{
+          title: 'Contract Signed Success',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
           headerShown: false,
         }}
