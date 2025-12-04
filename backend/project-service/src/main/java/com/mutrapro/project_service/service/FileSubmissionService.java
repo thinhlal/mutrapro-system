@@ -30,6 +30,7 @@ import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.ValidationException;
 import com.mutrapro.project_service.mapper.FileSubmissionMapper;
+import com.mutrapro.project_service.repository.ContractInstallmentRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
@@ -37,6 +38,7 @@ import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.project_service.entity.ContractInstallment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
@@ -52,6 +54,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -65,9 +68,11 @@ public class FileSubmissionService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
+    ContractInstallmentRepository contractInstallmentRepository;
     OutboxEventRepository outboxEventRepository;
     RevisionRequestService revisionRequestService;
     RevisionRequestRepository revisionRequestRepository;
+    ContractService contractService;
     ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
 
@@ -312,6 +317,16 @@ public class FileSubmissionService {
                 .revisionDeadlineDays(contract.getRevisionDeadlineDays()) // Số ngày SLA để hoàn thành revision
                 .build();
 
+        // Load installment để lấy status (để check xem đã thanh toán chưa)
+        String installmentStatus = null;
+        Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
+                .findByContractIdAndMilestoneId(contractId, milestoneId);
+        if (installmentOpt.isPresent()) {
+            installmentStatus = installmentOpt.get().getStatus() != null 
+                    ? installmentOpt.get().getStatus().toString() 
+                    : null;
+        }
+
         CustomerDeliveriesResponse.MilestoneInfo milestoneInfo = CustomerDeliveriesResponse.MilestoneInfo.builder()
                 .milestoneId(milestone.getMilestoneId())
                 .name(milestone.getName())
@@ -320,6 +335,7 @@ public class FileSubmissionService {
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
+                .installmentStatus(installmentStatus)
                 .build();
 
         // Step 3: Batch load files cho tất cả submissions trước (tránh N+1 problem)
@@ -622,6 +638,16 @@ public class FileSubmissionService {
                         log.info(
                                 "Tracked final completion time for milestone (first acceptance, no revision): milestoneId={}, finalCompletedAt={}",
                                 milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                        
+                        // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
+                        try {
+                            contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
+                            log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
+                        } catch (Exception e) {
+                            // Log error nhưng không fail transaction
+                            log.error("Failed to open installment for milestone: milestoneId={}, error={}",
+                                    milestone.getMilestoneId(), e.getMessage(), e);
+                        }
                     }
                 }
                 log.debug(

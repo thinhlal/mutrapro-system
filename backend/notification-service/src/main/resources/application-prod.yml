@@ -61,6 +61,7 @@ app:
       revision.rejected: ${KAFKA_TOPIC_REVISION_REJECTED:revision-rejected}
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded}
       milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
+      milestone.ready.for.payment.notification: ${KAFKA_TOPIC_MILESTONE_READY_FOR_PAYMENT_NOTIFICATION:milestone-ready-for-payment-notification}
 
 logging:
   level:

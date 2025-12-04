@@ -53,6 +53,7 @@ import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
+import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.ChatSystemMessageEvent;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
@@ -1295,6 +1296,14 @@ public class ContractService {
         log.info("Updated milestone installment to PAID: contractId={}, installmentId={}, milestoneId={}", 
             contractId, installment.getInstallmentId(), milestoneId);
         
+        // Update milestone work status: READY_FOR_PAYMENT → COMPLETED (khi milestone được thanh toán)
+        // Lưu ý: Milestone cuối cùng sẽ được set COMPLETED sau khi tất cả installments đã paid
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT) {
+            milestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+            log.info("Updated milestone work status to COMPLETED after payment: contractId={}, milestoneId={}, orderIndex={}", 
+                contractId, milestoneId, orderIndex);
+        }
+        
         contractMilestoneRepository.save(milestone);
 
         milestoneProgressService.markActualEnd(contractId, milestoneId, paidAt);
@@ -1763,17 +1772,88 @@ public class ContractService {
         Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
             .findByContractIdAndMilestoneId(contractId, milestoneId);
         
-        if (installmentOpt.isPresent()) {
-            ContractInstallment installment = installmentOpt.get();
+        if (installmentOpt.isEmpty()) {
+            log.debug("No installment found for milestone: contractId={}, milestoneId={}", contractId, milestoneId);
+            return;
+        }
+        
+        ContractInstallment installment = installmentOpt.get();
+        
+        // Chỉ mở nếu installment có gateCondition = AFTER_MILESTONE_DONE và status = PENDING
+        if (installment.getGateCondition() != GateCondition.AFTER_MILESTONE_DONE) {
+            log.debug("Installment has different gateCondition, skipping: contractId={}, milestoneId={}, gateCondition={}", 
+                contractId, milestoneId, installment.getGateCondition());
+            return;
+        }
+        
+        if (installment.getStatus() != InstallmentStatus.PENDING) {
+            log.debug("Installment already opened or paid, skipping: contractId={}, milestoneId={}, status={}", 
+                contractId, milestoneId, installment.getStatus());
+            return;
+        }
+        
+        // Mở installment DUE
+        installment.setStatus(InstallmentStatus.DUE);
+        contractInstallmentRepository.save(installment);
+        log.info("✅ Auto-opened milestone installment for payment: contractId={}, milestoneId={}, installmentId={}", 
+            contractId, milestoneId, installment.getInstallmentId());
+        
+        // Gửi Kafka event về milestone ready for payment notification cho customer
+        try {
+            Contract contract = contractRepository.findById(contractId).orElse(null);
+            ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId).orElse(null);
             
-            // Chỉ mở nếu installment có gateCondition = AFTER_MILESTONE_DONE và status = PENDING
-            if (installment.getGateCondition() == GateCondition.AFTER_MILESTONE_DONE 
-                && installment.getStatus() == InstallmentStatus.PENDING) {
-                installment.setStatus(InstallmentStatus.DUE);
-                contractInstallmentRepository.save(installment);
-                log.info("✅ Auto-opened milestone installment for payment: contractId={}, milestoneId={}, installmentId={}", 
-                    contractId, milestoneId, installment.getInstallmentId());
+            if (contract != null && milestone != null) {
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                    ? contract.getContractNumber()
+                    : contractId;
+                String milestoneName = milestone.getName() != null && !milestone.getName().isBlank()
+                    ? milestone.getName()
+                    : "Milestone " + (milestone.getOrderIndex() != null ? milestone.getOrderIndex() : "");
+                String currency = installment.getCurrency() != null 
+                    ? installment.getCurrency().toString() 
+                    : (contract.getCurrency() != null ? contract.getCurrency().toString() : "VND");
+                
+                MilestoneReadyForPaymentNotificationEvent event = MilestoneReadyForPaymentNotificationEvent.builder()
+                    .eventId(UUID.randomUUID())
+                    .contractId(contractId)
+                    .contractNumber(contractLabel)
+                    .milestoneId(milestoneId)
+                    .milestoneName(milestoneName)
+                    .customerUserId(contract.getUserId())
+                    .amount(installment.getAmount())
+                    .currency(currency)
+                    .title("Milestone sẵn sàng thanh toán")
+                    .content(String.format("Milestone \"%s\" của contract #%s đã sẵn sàng thanh toán. Số tiền: %s %s. Vui lòng thanh toán để tiếp tục.", 
+                        milestoneName, contractLabel, installment.getAmount().toPlainString(), currency))
+                    .referenceType("CONTRACT")
+                    .actionUrl("/contracts/" + contractId)
+                    .timestamp(Instant.now())
+                    .build();
+                
+                JsonNode payload = objectMapper.valueToTree(event);
+                UUID aggregateId;
+                try {
+                    aggregateId = UUID.fromString(contractId);
+                } catch (IllegalArgumentException ex) {
+                    aggregateId = UUID.randomUUID();
+                }
+                
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("Contract")
+                    .eventType("milestone.ready.for.payment.notification")
+                    .eventPayload(payload)
+                    .build();
+                
+                outboxEventRepository.save(outboxEvent);
+                log.info("Queued MilestoneReadyForPaymentNotificationEvent in outbox: eventId={}, contractId={}, milestoneId={}, customerUserId={}", 
+                    event.getEventId(), contractId, milestoneId, contract.getUserId());
             }
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to enqueue MilestoneReadyForPaymentNotificationEvent: contractId={}, milestoneId={}, error={}", 
+                contractId, milestoneId, e.getMessage(), e);
         }
     }
     

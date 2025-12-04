@@ -66,6 +66,7 @@ app:
       revision.rejected: revision-rejected
       billing.revision.fee.refunded: billing-revision-fee-refunded
       milestone.paid.notification: milestone-paid-notification
+      milestone.ready.for.payment.notification: milestone-ready-for-payment-notification
 
 logging:
   level:

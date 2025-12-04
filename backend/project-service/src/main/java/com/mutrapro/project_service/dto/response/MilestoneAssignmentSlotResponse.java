@@ -35,6 +35,7 @@ public class MilestoneAssignmentSlotResponse {
     LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
     LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     Integer milestoneSlaDays;
+    String milestoneWorkStatus;  // PLANNED, READY_TO_START, IN_PROGRESS, WAITING_CUSTOMER, READY_FOR_PAYMENT, COMPLETED, CANCELLED
 
     String assignmentId;
     TaskType taskType;

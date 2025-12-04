@@ -69,18 +69,22 @@ const STATUS_LABELS = {
 
 const WORK_STATUS_COLORS = {
   planned: 'default',
-  active: 'processing',
+  ready_to_start: 'purple',
+  in_progress: 'processing',
+  waiting_customer: 'orange',
+  ready_for_payment: 'gold',
   completed: 'success',
-  on_hold: 'orange',
-  cancelled: 'red',
+  cancelled: 'error',
 };
 
 const WORK_STATUS_LABELS = {
   planned: 'Chưa bắt đầu',
-  active: 'Đang triển khai',
+  ready_to_start: 'Sẵn sàng bắt đầu',
+  in_progress: 'Đang thực hiện',
+  waiting_customer: 'Chờ khách hàng',
+  ready_for_payment: 'Sẵn sàng thanh toán',
   completed: 'Hoàn thành',
-  on_hold: 'Tạm dừng',
-  cancelled: 'Đã huỷ',
+  cancelled: 'Đã hủy',
 };
 
 const FILE_STATUS_LABELS = {
@@ -372,6 +376,32 @@ const MilestoneDetailPage = () => {
     });
   }, [milestoneTasks]);
 
+  // Kiểm tra xem có thể hiển thị nút Assign Task không
+  const canShowAssignButton = useMemo(() => {
+    // Không hiện nếu milestone đã completed hoặc cancelled
+    if (workStatus === 'completed' || workStatus === 'cancelled') {
+      return false;
+    }
+    
+    // Không hiện nếu có task đang active
+    if (hasActiveTask) {
+      return false;
+    }
+    
+    // Chỉ chặn nếu có task đã completed (không chặn nếu cancelled vì có thể assign task mới)
+    if (milestoneTasks.length > 0) {
+      const hasCompletedTask = milestoneTasks.some(task => {
+        const status = task.status?.toLowerCase();
+        return status === 'completed';
+      });
+      if (hasCompletedTask) {
+        return false;
+      }
+    }
+    
+    return true;
+  }, [workStatus, hasActiveTask, milestoneTasks]);
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -399,6 +429,11 @@ const MilestoneDetailPage = () => {
           <Space size="small" wrap className={styles.headerMeta}>
             {contract?.contractNumber && <Tag>{contract.contractNumber}</Tag>}
             {milestoneTitle && <Tag color="blue">{milestoneTitle}</Tag>}
+            {workStatus && (
+              <Tag color={WORK_STATUS_COLORS[workStatus] || 'default'}>
+                {WORK_STATUS_LABELS[workStatus] || milestone.workStatus}
+              </Tag>
+            )}
           </Space>
         </div>
         <div className={styles.headerInfo}>
@@ -421,7 +456,7 @@ const MilestoneDetailPage = () => {
             >
               Mở Task Progress
             </Button>
-            {!hasActiveTask && (
+            {canShowAssignButton && (
               <Button
                 type="primary"
                 icon={<UserAddOutlined />}
@@ -686,8 +721,7 @@ const MilestoneDetailPage = () => {
         <Card
           title="Danh sách task của milestone này"
           extra={
-            !hasActiveTask &&
-            milestoneTasks.length > 0 && (
+            canShowAssignButton && (
               <Button
                 type="primary"
                 icon={<UserAddOutlined />}

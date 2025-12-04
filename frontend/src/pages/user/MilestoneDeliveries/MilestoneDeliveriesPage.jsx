@@ -25,6 +25,7 @@ import {
   CloseCircleOutlined,
   FileOutlined,
   ReloadOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -294,25 +295,55 @@ const MilestoneDeliveriesPage = () => {
                 <Text strong>{milestoneInfo.name || 'N/A'}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Status">
-                <Tag
-                  color={
-                    milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                      ? 'warning'
-                      : milestoneInfo.workStatus === 'COMPLETED'
-                        ? 'success'
-                        : milestoneInfo.workStatus === 'IN_PROGRESS'
-                          ? 'processing'
-                          : 'default'
-                  }
-                >
-                  {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                    ? 'Chờ khách hàng phản hồi'
-                    : milestoneInfo.workStatus === 'COMPLETED'
-                      ? 'Hoàn thành'
-                      : milestoneInfo.workStatus === 'IN_PROGRESS'
-                        ? 'Đang thực hiện'
-                        : milestoneInfo.workStatus || 'N/A'}
-                </Tag>
+                <Space>
+                  <Tag
+                    color={
+                      milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                        ? 'warning'
+                        : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
+                          ? 'gold'
+                          : milestoneInfo.workStatus === 'COMPLETED'
+                            ? 'success'
+                            : milestoneInfo.workStatus === 'IN_PROGRESS'
+                              ? 'processing'
+                              : 'default'
+                    }
+                  >
+                    {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                      ? 'Chờ khách hàng phản hồi'
+                      : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
+                        ? 'Sẵn sàng thanh toán'
+                        : milestoneInfo.workStatus === 'COMPLETED'
+                          ? 'Hoàn thành'
+                          : milestoneInfo.workStatus === 'IN_PROGRESS'
+                            ? 'Đang thực hiện'
+                            : milestoneInfo.workStatus || 'N/A'}
+                  </Tag>
+                  {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
+                  {(milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||
+                    milestoneInfo.workStatus === 'COMPLETED') &&
+                    milestoneInfo.installmentStatus !== 'PAID' && (
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<DollarOutlined />}
+                      onClick={() =>
+                        navigate(`/contracts/${contractId}/pay-milestone`, {
+                          state: {
+                            milestoneId: milestoneInfo.milestoneId,
+                            contractId: contractId,
+                          },
+                        })
+                      }
+                    >
+                      Thanh toán
+                    </Button>
+                  )}
+                  {/* Hiển thị tag "Đã thanh toán" nếu installment đã PAID */}
+                  {milestoneInfo.installmentStatus === 'PAID' && (
+                    <Tag color="success">Đã thanh toán</Tag>
+                  )}
+                </Space>
               </Descriptions.Item>
               {milestoneInfo.description && (
                 <Descriptions.Item label="Description" span={2}>

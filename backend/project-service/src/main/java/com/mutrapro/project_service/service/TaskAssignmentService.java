@@ -785,6 +785,7 @@ public class TaskAssignmentService {
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .milestoneWorkStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().name() : null)
                 .assignmentId(assignment != null ? assignment.getAssignmentId() : null)
                 .taskType(assignment != null ? assignment.getTaskType() : null)
                 .assignmentStatus(assignment != null && assignment.getStatus() != null

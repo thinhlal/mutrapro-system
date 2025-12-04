@@ -60,6 +60,7 @@ public class RevisionRequestService {
     ContractMilestoneRepository contractMilestoneRepository;
     FileSubmissionRepository fileSubmissionRepository;
     OutboxEventRepository outboxEventRepository;
+    ContractService contractService;
     ObjectMapper objectMapper;
 
     /**
@@ -854,6 +855,16 @@ public class RevisionRequestService {
                 contractMilestoneRepository.save(milestone);
                 log.info("Milestone work status updated to READY_FOR_PAYMENT after customer accepted revision: milestoneId={}, contractId={}", 
                         milestone.getMilestoneId(), revisionRequest.getContractId());
+                
+                // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
+                try {
+                    contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
+                    log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
+                } catch (Exception e) {
+                    // Log error nhưng không fail transaction
+                    log.error("Failed to open installment for milestone: milestoneId={}, error={}",
+                            milestone.getMilestoneId(), e.getMessage(), e);
+                }
             }
         }
         

@@ -56,6 +56,26 @@ const STATUS_COLORS = {
   cancelled: 'default',
 };
 
+const MILESTONE_WORK_STATUS_COLORS = {
+  planned: 'default',
+  ready_to_start: 'purple',
+  in_progress: 'processing',
+  waiting_customer: 'orange',
+  ready_for_payment: 'gold',
+  completed: 'success',
+  cancelled: 'error',
+};
+
+const MILESTONE_WORK_STATUS_LABELS = {
+  planned: 'Chưa bắt đầu',
+  ready_to_start: 'Sẵn sàng bắt đầu',
+  in_progress: 'Đang thực hiện',
+  waiting_customer: 'Chờ khách hàng',
+  ready_for_payment: 'Sẵn sàng thanh toán',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+};
+
 const MilestonesPage = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -294,37 +314,19 @@ const MilestonesPage = () => {
       },
     },
     {
-      title: 'Task Status',
-      dataIndex: 'assignmentStatus',
-      key: 'assignmentStatus',
-      width: 150,
-      render: (status, record) => {
-        const normalized = (status || 'unassigned').toLowerCase();
+      title: 'Milestone Status',
+      dataIndex: 'milestoneWorkStatus',
+      key: 'milestoneWorkStatus',
+      width: 180,
+      render: (workStatus, record) => {
+        const normalized = (workStatus || 'planned').toLowerCase();
         const label =
-          normalized === 'unassigned'
-            ? 'Chưa gán'
-            : normalized === 'assigned'
-              ? 'Đã gán'
-              : normalized === 'accepted_waiting'
-                ? 'Đã nhận - Chờ'
-                : normalized === 'ready_to_start'
-                  ? 'Ready to Start'
-                  : normalized === 'in_progress'
-                    ? 'Đang làm'
-                    : normalized === 'in_revision'
-                      ? 'Đang chỉnh sửa'
-                      : normalized === 'waiting_customer_review'
-                        ? 'Chờ khách hàng review'
-                        : normalized === 'revision_requested'
-                          ? 'Yêu cầu chỉnh sửa'
-                          : normalized === 'completed'
-                            ? 'Hoàn thành'
-                            : normalized === 'cancelled'
-                              ? 'Đã hủy'
-                              : normalized;
+          MILESTONE_WORK_STATUS_LABELS[normalized] || workStatus || 'N/A';
         return (
           <Space direction="vertical" size={2}>
-            <Tag color={STATUS_COLORS[normalized] || 'default'}>{label}</Tag>
+            <Tag color={MILESTONE_WORK_STATUS_COLORS[normalized] || 'default'}>
+              {label}
+            </Tag>
             {record.hasIssue && (
               <Tag color="orange" icon={<ExclamationCircleOutlined />}>
                 Issue
@@ -357,19 +359,29 @@ const MilestonesPage = () => {
       fixed: 'right',
       width: 200,
       render: (_, record) => {
-        const status = record.assignmentStatus?.toLowerCase();
+        const assignmentStatus = record.assignmentStatus?.toLowerCase();
+        const milestoneWorkStatus = record.milestoneWorkStatus?.toLowerCase();
+        
+        // Không hiện nút Assign Task nếu:
+        // 1. Task đã completed (không chặn nếu cancelled vì có thể assign task mới)
+        // 2. Milestone đã completed hoặc cancelled
+        // 3. Có task đang active (assigned, in_progress, etc.)
+        const isTaskCompleted = assignmentStatus === 'completed';
+        const isMilestoneCompleted = milestoneWorkStatus === 'completed' || milestoneWorkStatus === 'cancelled';
         const hasActiveTask =
-          status === 'assigned' ||
-          status === 'accepted_waiting' ||
-          status === 'ready_to_start' ||
-          status === 'in_progress' ||
-          status === 'in_revision' ||
-          status === 'waiting_customer_review' ||
-          status === 'revision_requested';
+          assignmentStatus === 'assigned' ||
+          assignmentStatus === 'accepted_waiting' ||
+          assignmentStatus === 'ready_to_start' ||
+          assignmentStatus === 'in_progress' ||
+          assignmentStatus === 'in_revision' ||
+          assignmentStatus === 'waiting_customer_review' ||
+          assignmentStatus === 'revision_requested';
+
+        const canShowAssignButton = !isTaskCompleted && !isMilestoneCompleted && !hasActiveTask;
 
         return (
           <Space size="small">
-            {!hasActiveTask && (
+            {canShowAssignButton && (
               <Button
                 type="primary"
                 size="small"

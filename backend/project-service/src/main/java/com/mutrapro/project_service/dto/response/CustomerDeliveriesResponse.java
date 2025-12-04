@@ -59,6 +59,7 @@ public class CustomerDeliveriesResponse {
         LocalDateTime plannedDueDate;
         LocalDateTime actualStartAt;
         LocalDateTime actualEndAt;
+        String installmentStatus;  // PENDING, DUE, PAID - để frontend check xem đã thanh toán chưa
     }
     
     @Data

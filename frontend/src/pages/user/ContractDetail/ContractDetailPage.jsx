@@ -2181,12 +2181,6 @@ const ContractDetailPage = () => {
                             }}
                           >
                             <Space size="small">
-                              {targetInstallment &&
-                                targetInstallment.status === 'DUE' && (
-                                  <Tag color={getPaymentStatusColor()}>
-                                    Payment: {getPaymentStatusText()}
-                                  </Tag>
-                                )}
                               <Tag color={getWorkStatusColor()}>
                                 Status: {getWorkStatusText()}
                               </Tag>

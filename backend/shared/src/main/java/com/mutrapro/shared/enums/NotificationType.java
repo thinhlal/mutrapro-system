@@ -16,6 +16,7 @@ public enum NotificationType {
     CONTRACT_CANCELED_BY_CUSTOMER,  // Contract bị customer hủy
     CONTRACT_CANCELED_BY_MANAGER,   // Contract bị manager hủy
     MILESTONE_PAID,             // Milestone đã được thanh toán
+    MILESTONE_READY_FOR_PAYMENT, // Milestone sẵn sàng thanh toán (customer đã accept submission)
     ALL_MILESTONES_PAID,        // Tất cả milestones đã được thanh toán
     TASK_ASSIGNMENT_ASSIGNED,   // Specialist được giao task mới
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist cancel

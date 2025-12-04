@@ -14,6 +14,7 @@ import com.mutrapro.shared.event.RevisionApprovedEvent;
 import com.mutrapro.shared.event.RevisionRejectedEvent;
 import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
+import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import lombok.RequiredArgsConstructor;
@@ -565,6 +566,45 @@ public class NotificationService {
 
         log.info("Milestone paid notification created: contractId={}, milestoneId={}, managerUserId={}",
                 event.getContractId(), event.getMilestoneId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification cho customer khi milestone sẵn sàng thanh toán
+     */
+    @Transactional
+    public void createMilestoneReadyForPaymentNotification(MilestoneReadyForPaymentNotificationEvent event) {
+        if (event.getCustomerUserId() == null || event.getCustomerUserId().isBlank()) {
+            log.warn("Cannot create milestone ready for payment notification, customerUserId missing: contractId={}, milestoneId={}",
+                    event.getContractId(), event.getMilestoneId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Milestone sẵn sàng thanh toán";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Milestone \"%s\" của contract #%s đã sẵn sàng thanh toán. Số tiền: %s %s. Vui lòng thanh toán để tiếp tục.",
+                        event.getMilestoneName() != null ? event.getMilestoneName() : "milestone",
+                        event.getContractNumber() != null ? event.getContractNumber() : event.getContractId(),
+                        event.getAmount() != null ? event.getAmount().toPlainString() : "0",
+                        event.getCurrency() != null ? event.getCurrency() : "VND");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/contracts/" + event.getContractId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "CONTRACT";
+
+        Notification notification = Notification.builder()
+                .userId(event.getCustomerUserId())
+                .type(NotificationType.MILESTONE_READY_FOR_PAYMENT)
+                .title(title)
+                .content(content)
+                .referenceId(event.getContractId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getCustomerUserId(), saved);
+
+        log.info("Milestone ready for payment notification created: contractId={}, milestoneId={}, customerUserId={}",
+                event.getContractId(), event.getMilestoneId(), event.getCustomerUserId());
     }
 
     /**
