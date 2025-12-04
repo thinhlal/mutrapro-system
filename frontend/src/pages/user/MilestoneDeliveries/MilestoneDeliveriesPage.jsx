@@ -616,12 +616,15 @@ const MilestoneDeliveriesPage = () => {
                             )}
                           </Text>
                         )}
-                        {(submission.status?.toLowerCase() === 'delivered' || 
-                          submission.status?.toLowerCase() === 'customer_accepted' ||
-                          submission.status?.toLowerCase() === 'customer_rejected') &&
+                        {(submission.status?.toLowerCase() === 'delivered' ||
+                          submission.status?.toLowerCase() ===
+                            'customer_accepted' ||
+                          submission.status?.toLowerCase() ===
+                            'customer_rejected') &&
                           (() => {
                             const submissionId = submission.submissionId;
-                            const submissionStatus = submission.status?.toLowerCase();
+                            const submissionStatus =
+                              submission.status?.toLowerCase();
 
                             // ƯU TIÊN 1: Nếu submission đã được customer accept → không hiển thị gì ở extra
                             // (status tag đã được hiển thị ở title rồi)
@@ -679,7 +682,7 @@ const MilestoneDeliveriesPage = () => {
                                   );
                                 }
                               }
-        }
+                            }
 
                             // Nếu không có revision request nào cho submission này → hiển thị nút
                             // Check xem còn lượt free revision không
