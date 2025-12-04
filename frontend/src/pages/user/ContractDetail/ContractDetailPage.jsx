@@ -2874,25 +2874,6 @@ const ContractDetailPage = () => {
                   </p>
                 </>
               )}
-
-              {contract.termsAndConditions && (
-                <>
-                  <h3>Terms & Conditions</h3>
-                  <p style={{ whiteSpace: 'pre-line' }}>
-                    {contract.termsAndConditions}
-                  </p>
-                </>
-              )}
-
-              {contract.specialClauses && (
-                <>
-                  <h3>Special Clauses</h3>
-                  <p style={{ whiteSpace: 'pre-line' }}>
-                    {contract.specialClauses}
-                  </p>
-                </>
-              )}
-
               <Divider />
               <div className={styles.signRow}>
                 <div>
