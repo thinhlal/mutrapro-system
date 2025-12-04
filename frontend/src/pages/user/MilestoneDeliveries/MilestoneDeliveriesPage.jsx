@@ -320,29 +320,29 @@ const MilestoneDeliveriesPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Status">
                 <Space>
-                  <Tag
-                    color={
-                      milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                        ? 'warning'
+                <Tag
+                  color={
+                    milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                      ? 'warning'
                         : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
                           ? 'gold'
-                          : milestoneInfo.workStatus === 'COMPLETED'
-                            ? 'success'
-                            : milestoneInfo.workStatus === 'IN_PROGRESS'
-                              ? 'processing'
-                              : 'default'
-                    }
-                  >
-                    {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                      ? 'Chờ khách hàng phản hồi'
+                      : milestoneInfo.workStatus === 'COMPLETED'
+                        ? 'success'
+                        : milestoneInfo.workStatus === 'IN_PROGRESS'
+                          ? 'processing'
+                          : 'default'
+                  }
+                >
+                  {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                    ? 'Chờ khách hàng phản hồi'
                       : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
                         ? 'Sẵn sàng thanh toán'
-                        : milestoneInfo.workStatus === 'COMPLETED'
-                          ? 'Hoàn thành'
-                          : milestoneInfo.workStatus === 'IN_PROGRESS'
-                            ? 'Đang thực hiện'
-                            : milestoneInfo.workStatus || 'N/A'}
-                  </Tag>
+                    : milestoneInfo.workStatus === 'COMPLETED'
+                      ? 'Hoàn thành'
+                      : milestoneInfo.workStatus === 'IN_PROGRESS'
+                        ? 'Đang thực hiện'
+                        : milestoneInfo.workStatus || 'N/A'}
+                </Tag>
                   {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
                   {(milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||
                     milestoneInfo.workStatus === 'COMPLETED') &&
@@ -392,29 +392,29 @@ const MilestoneDeliveriesPage = () => {
               </Descriptions.Item>
               {contractInfo.freeRevisionsIncluded != null &&
                 revisionStats && (
-                  <>
-                    <Descriptions.Item label="Free Revisions Included">
+                    <>
+                      <Descriptions.Item label="Free Revisions Included">
                       <Text strong>{revisionStats.freeRevisionsIncluded}</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Revisions Used">
-                      <Text strong>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Revisions Used">
+                        <Text strong>
                         {revisionStats.totalRevisionsUsed} /{' '}
                         {revisionStats.freeRevisionsIncluded} (Free)
-                      </Text>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: 11,
-                          display: 'block',
-                          marginTop: 4,
-                        }}
-                      >
+                        </Text>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            display: 'block',
+                            marginTop: 4,
+                          }}
+                        >
                         Đã dùng {revisionStats.freeRevisionsUsed} lần revision
                         free, {revisionStats.paidRevisionsUsed} lần revision có
                         phí
-                      </Text>
-                    </Descriptions.Item>
-                  </>
+                        </Text>
+                      </Descriptions.Item>
+                    </>
                 )}
             </Descriptions>
           </Card>

@@ -946,8 +946,8 @@ public class RevisionRequestService {
         // (đánh dấu đã xử lý xong vòng revision đó, customer không accept và request revision mới)
         revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
         revisionRequestRepository.save(revisionRequest);
-        
-        // Create new revision request for next round
+            
+            // Create new revision request for next round
         Integer nextRound = revisionRequestRepository.findNextRevisionRound(assignmentId);
         
         // Get contract to get managerId and check free revisions

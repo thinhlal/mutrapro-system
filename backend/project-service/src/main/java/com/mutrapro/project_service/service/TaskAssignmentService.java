@@ -1981,7 +1981,7 @@ public class TaskAssignmentService {
             }
         } catch (Exception e) {
             log.error("Failed to enqueue cancellation notification to specialist: assignmentId={}, error={}", 
-                    assignmentId, e.getMessage(), e);
+                assignmentId, e.getMessage(), e);
         }
         
         return taskAssignmentMapper.toResponse(saved);
