@@ -435,21 +435,48 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
               />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Milestone Status</Text>
-                <View style={styles.statusBadge}>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: getWorkStatusColor(milestoneInfo.workStatus) },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: getWorkStatusColor(milestoneInfo.workStatus) },
-                    ]}
-                  >
-                    {getWorkStatusLabel(milestoneInfo.workStatus)}
-                  </Text>
+                <View style={styles.statusRow}>
+                  <View style={styles.statusBadge}>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        { backgroundColor: getWorkStatusColor(milestoneInfo.workStatus) },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getWorkStatusColor(milestoneInfo.workStatus) },
+                      ]}
+                    >
+                      {getWorkStatusLabel(milestoneInfo.workStatus)}
+                    </Text>
+                  </View>
+                  {/* Button "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
+                  {(milestoneInfo.workStatus === "READY_FOR_PAYMENT" ||
+                    milestoneInfo.workStatus === "COMPLETED") &&
+                    milestoneInfo.installmentStatus !== "PAID" && (
+                      <TouchableOpacity
+                        style={styles.payMilestoneButton}
+                        onPress={() =>
+                          navigation.navigate("PaymentMilestone", {
+                            contractId,
+                            milestoneId: milestoneInfo.milestoneId,
+                          })
+                        }
+                      >
+                        <Ionicons name="card-outline" size={16} color={COLORS.white} />
+                        <Text style={styles.payMilestoneButtonText}>Pay</Text>
+                      </TouchableOpacity>
+                    )}
+                  {/* Tag "Đã thanh toán" nếu installment đã PAID */}
+                  {milestoneInfo.installmentStatus === "PAID" && (
+                    <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
+                      <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
+                        Paid
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -555,13 +582,114 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     </Text>
                   </View>
                 )}
-                {requestInfo.durationMinutes && (
+                {(requestInfo.durationMinutes || requestInfo.durationSeconds) && (
                   <InfoRow
                     icon="time-outline"
                     label="Duration"
-                    value={`${Math.floor(requestInfo.durationMinutes)} phút ${Math.round((requestInfo.durationMinutes % 1) * 60)} giây`}
+                    value={
+                      requestInfo.durationMinutes
+                        ? `${Math.floor(requestInfo.durationMinutes)} phút ${Math.round((requestInfo.durationMinutes % 1) * 60)} giây`
+                        : `${Math.floor((requestInfo.durationSeconds || 0) / 60)} phút ${(requestInfo.durationSeconds || 0) % 60} giây`
+                    }
                   />
                 )}
+                {(requestInfo.tempoPercentage || requestInfo.tempo) && (
+                  <InfoRow
+                    icon="musical-notes-outline"
+                    label="Tempo"
+                    value={`${requestInfo.tempoPercentage || requestInfo.tempo}%`}
+                  />
+                )}
+                {requestInfo.timeSignature && (
+                  <InfoRow
+                    icon="time-outline"
+                    label="Time Signature"
+                    value={requestInfo.timeSignature}
+                  />
+                )}
+                {requestInfo.instruments &&
+                  Array.isArray(requestInfo.instruments) &&
+                  requestInfo.instruments.length > 0 && (
+                    <View style={styles.infoRow}>
+                      <Ionicons
+                        name="musical-note-outline"
+                        size={18}
+                        color={COLORS.textSecondary}
+                      />
+                      <View style={styles.infoContent}>
+                        <Text style={styles.infoLabel}>Instruments</Text>
+                        <View style={styles.tagsContainer}>
+                          {requestInfo.instruments.map((instrument, index) => (
+                            <View key={index} style={styles.tag}>
+                              <Text style={styles.tagText}>
+                                {instrument.instrumentName ||
+                                  instrument.name ||
+                                  instrument}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                {requestInfo.specialNotes && (
+                  <View style={styles.descriptionBox}>
+                    <Text style={styles.descriptionLabel}>Special Notes</Text>
+                    <Text style={styles.descriptionText}>
+                      {requestInfo.specialNotes}
+                    </Text>
+                  </View>
+                )}
+                {/* Customer Uploaded Files - Filter out contract PDF */}
+                {requestInfo.files &&
+                  Array.isArray(requestInfo.files) &&
+                  requestInfo.files.length > 0 &&
+                  (() => {
+                    const customerFiles = requestInfo.files.filter(
+                      (file) =>
+                        file.fileSource !== "contract_pdf" &&
+                        file.contentType !== "contract_pdf"
+                    );
+                    if (customerFiles.length === 0) return null;
+                    return (
+                      <View style={styles.filesSection}>
+                        <Text style={styles.sectionTitle}>Uploaded Files</Text>
+                        {customerFiles.map((file, index) => {
+                          const fileName = file.fileName || file.name || "File";
+                          const fileId = file.fileId || file;
+                          return (
+                            <View key={index} style={styles.fileRow}>
+                              <FileItem file={file} />
+                              <View style={styles.fileActions}>
+                                <TouchableOpacity
+                                  style={styles.fileActionButton}
+                                  onPress={() => handlePreviewFile(file)}
+                                >
+                                  <Ionicons
+                                    name="eye-outline"
+                                    size={18}
+                                    color={COLORS.primary}
+                                  />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.fileActionButton}
+                                  onPress={() =>
+                                    handleDownloadFile(fileId, fileName)
+                                  }
+                                >
+                                  <Ionicons
+                                    name="download-outline"
+                                    size={18}
+                                    color={COLORS.primary}
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    );
+                  })()}
               </>
             ) : (
               <Text style={styles.emptyText}>Loading request info...</Text>
@@ -636,7 +764,9 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     <View style={styles.filesContainer}>
                       {submission.files.map((file, index) => (
                         <View key={index} style={styles.fileRow}>
-                          <FileItem file={file} />
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <FileItem file={file} />
+                          </View>
                           <View style={styles.fileActions}>
                             <TouchableOpacity
                               style={styles.fileActionButton}
@@ -710,6 +840,63 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     </View>
                   )}
 
+                  {/* Revision Requests liên quan đến submission này */}
+                  {(() => {
+                    const submissionId = submission.submissionId;
+                    const relatedRevisions = revisionRequests.filter(
+                      (rr) =>
+                        rr.originalSubmissionId === submissionId ||
+                        rr.revisedSubmissionId === submissionId
+                    );
+
+                    if (relatedRevisions.length === 0) return null;
+
+                    const originalRevisions = relatedRevisions.filter(
+                      (rr) => rr.originalSubmissionId === submissionId
+                    );
+                    const revisedRevisions = relatedRevisions.filter(
+                      (rr) => rr.revisedSubmissionId === submissionId
+                    );
+
+                    return (
+                      <View style={styles.revisionSection}>
+                        <Text style={styles.sectionTitle}>
+                          Related Revision Requests
+                        </Text>
+                        {originalRevisions.length > 0 && (
+                          <View style={styles.revisionList}>
+                            {originalRevisions.map((revision) => (
+                              <View
+                                key={revision.revisionRequestId}
+                                style={styles.revisionItem}
+                              >
+                                <View style={styles.revisionTag}>
+                                  <Text style={styles.revisionTagText}>
+                                    Round #{revision.revisionRound}
+                                  </Text>
+                                </View>
+                                <Text style={styles.revisionTitle}>
+                                  {revision.title}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        {revisedRevisions.length > 0 && (
+                          <View style={styles.revisionList}>
+                            {revisedRevisions.map((revision) => (
+                              <CollapsibleRevision
+                                key={revision.revisionRequestId}
+                                revision={revision}
+                                submission={submission}
+                              />
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+
                   {/* Revision Status Info */}
                   {!canShowActions && (() => {
                     // Nếu submission đã được customer accept → hiển thị status tag (đã có ở trên)
@@ -764,6 +951,66 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
             })
           )}
         </View>
+
+        {/* Revision Requests Tổng hợp - Hiển thị tất cả revision requests */}
+        {revisionRequests.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>All Revision Requests</Text>
+              <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
+                <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
+                  {revisionRequests.length}
+                </Text>
+              </View>
+            </View>
+            {revisionRequests.map((revision) => {
+              const status = revision.status?.toLowerCase();
+              const statusColors = {
+                pending_manager_review: COLORS.warning,
+                in_revision: COLORS.info,
+                waiting_manager_review: COLORS.info,
+                approved_pending_delivery: COLORS.info,
+                waiting_customer_confirm: COLORS.primary,
+                completed: COLORS.success,
+                rejected: COLORS.error,
+                canceled: COLORS.textSecondary,
+              };
+              const statusLabels = {
+                pending_manager_review: "Pending Manager Review",
+                in_revision: "In Revision",
+                waiting_manager_review: "Waiting Manager Review",
+                approved_pending_delivery: "Approved - Pending Delivery",
+                waiting_customer_confirm: "Waiting Customer Confirm",
+                completed: "Completed",
+                rejected: "Rejected",
+                canceled: "Canceled",
+              };
+
+              const displayedSubmissionIds = new Set(
+                submissions.map((s) => s.submissionId)
+              );
+              const hasOriginalMatch =
+                revision.originalSubmissionId &&
+                displayedSubmissionIds.has(revision.originalSubmissionId);
+              const hasRevisedMatch =
+                revision.revisedSubmissionId &&
+                displayedSubmissionIds.has(revision.revisedSubmissionId);
+              const isOrphan = !hasOriginalMatch && !hasRevisedMatch;
+
+              return (
+                <CollapsibleRevision
+                  key={revision.revisionRequestId}
+                  revision={revision}
+                  submission={null}
+                  showStatus={true}
+                  statusColor={statusColors[status]}
+                  statusLabel={statusLabels[status]}
+                  isOrphan={isOrphan}
+                />
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       {/* Review Modal */}
@@ -886,6 +1133,199 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   );
 };
 
+// Collapsible Revision Component
+const CollapsibleRevision = ({
+  revision,
+  submission,
+  showStatus = false,
+  statusColor,
+  statusLabel,
+  isOrphan = false,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const daysRemaining = revision.revisionDueAt
+    ? dayjs(revision.revisionDueAt).diff(dayjs(), "day")
+    : null;
+  const isOverdue =
+    revision.revisionDueAt && dayjs(revision.revisionDueAt).isBefore(dayjs());
+
+  return (
+    <View style={styles.collapsibleRevision}>
+      <TouchableOpacity
+        style={styles.collapsibleHeader}
+        onPress={() => setExpanded(!expanded)}
+      >
+        <View style={styles.collapsibleHeaderLeft}>
+          <View style={styles.revisionTag}>
+            <Text style={styles.revisionTagText}>
+              Round #{revision.revisionRound}
+            </Text>
+          </View>
+          {submission && (
+            <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
+              <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
+                Revised Version
+              </Text>
+            </View>
+          )}
+          {isOrphan && (
+            <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
+              <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
+                Not Linked
+              </Text>
+            </View>
+          )}
+          {revision.isFreeRevision && (
+            <View style={[styles.revisionTag, { backgroundColor: COLORS.success + "20" }]}>
+              <Text style={[styles.revisionTagText, { color: COLORS.success }]}>
+                Free
+              </Text>
+            </View>
+          )}
+          {!revision.isFreeRevision && (
+            <View style={[styles.revisionTag, { backgroundColor: COLORS.warning + "20" }]}>
+              <Text style={[styles.revisionTagText, { color: COLORS.warning }]}>
+                Paid
+              </Text>
+            </View>
+          )}
+          {showStatus && statusColor && statusLabel && (
+            <View style={[styles.revisionTag, { backgroundColor: statusColor + "20" }]}>
+              <Text style={[styles.revisionTagText, { color: statusColor }]}>
+                {statusLabel}
+              </Text>
+            </View>
+          )}
+          {revision.revisionDueAt && (
+            <View
+              style={[
+                styles.revisionTag,
+                {
+                  backgroundColor: isOverdue
+                    ? COLORS.error + "20"
+                    : COLORS.info + "20",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.revisionTagText,
+                  { color: isOverdue ? COLORS.error : COLORS.info },
+                ]}
+              >
+                {isOverdue
+                  ? "Overdue"
+                  : daysRemaining !== null
+                    ? `${daysRemaining}d left`
+                    : dayjs(revision.revisionDueAt).format("DD/MM/YYYY")}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.revisionTitleSmall} numberOfLines={1}>
+            {revision.title}
+          </Text>
+        </View>
+        <Ionicons
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={COLORS.textSecondary}
+        />
+      </TouchableOpacity>
+      {expanded && (
+        <View style={styles.collapsibleContent}>
+          <InfoRow
+            icon="text-outline"
+            label="Description"
+            value={revision.description || "N/A"}
+          />
+          {showStatus && statusColor && statusLabel && (
+            <InfoRow
+              icon="information-circle-outline"
+              label="Status"
+              value={statusLabel}
+            />
+          )}
+          {revision.revisionRound && (
+            <InfoRow
+              icon="repeat-outline"
+              label="Revision Round"
+              value={`#${revision.revisionRound}`}
+            />
+          )}
+          <InfoRow
+            icon={revision.isFreeRevision ? "checkmark-circle-outline" : "card-outline"}
+            label="Free Revision"
+            value={revision.isFreeRevision ? "Yes" : "No (Paid)"}
+          />
+          {revision.originalSubmissionId && (
+            <InfoRow
+              icon="document-outline"
+              label="Original Submission"
+              value={revision.originalSubmissionId.substring(0, 8) + "..."}
+            />
+          )}
+          {revision.revisedSubmissionId && (
+            <InfoRow
+              icon="document-text-outline"
+              label="Revised Submission"
+              value={revision.revisedSubmissionId.substring(0, 8) + "..."}
+            />
+          )}
+          {revision.revisionDueAt && (
+            <View style={styles.infoRow}>
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={COLORS.textSecondary}
+              />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Revision Deadline</Text>
+                <View style={styles.deadlineRow}>
+                  <Text style={styles.infoValue}>
+                    {dayjs(revision.revisionDueAt).format("DD/MM/YYYY HH:mm")}
+                  </Text>
+                  {revision.revisionDeadlineDays && (
+                    <Text style={styles.infoHint}>
+                      (+{revision.revisionDeadlineDays} days SLA)
+                    </Text>
+                  )}
+                  {isOverdue ? (
+                    <View style={[styles.revisionTag, { backgroundColor: COLORS.error + "20" }]}>
+                      <Text style={[styles.revisionTagText, { color: COLORS.error }]}>
+                        Overdue
+                      </Text>
+                    </View>
+                  ) : daysRemaining !== null ? (
+                    <View style={[styles.revisionTag, { backgroundColor: COLORS.info + "20" }]}>
+                      <Text style={[styles.revisionTagText, { color: COLORS.info }]}>
+                        {daysRemaining} days left
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+          )}
+          {revision.managerNote && (
+            <InfoRow
+              icon="information-circle-outline"
+              label="Manager Note"
+              value={revision.managerNote}
+            />
+          )}
+          {revision.requestedAt && (
+            <InfoRow
+              icon="time-outline"
+              label="Requested At"
+              value={dayjs(revision.requestedAt).format("DD/MM/YYYY HH:mm")}
+            />
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
 // Helper Component
 const InfoRow = ({ icon, label, value }) => (
   <View style={styles.infoRow}>
@@ -916,11 +1356,12 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
   headerTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
     textAlign: "center",
+    paddingHorizontal: SPACING.xs,
   },
   loadingContainer: {
     flex: 1,
@@ -938,6 +1379,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -955,20 +1397,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.md,
+    gap: SPACING.sm,
   },
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
     marginBottom: SPACING.md,
+    flex: 1,
+    flexShrink: 1,
   },
   infoRow: {
     flexDirection: "row",
     marginBottom: SPACING.md,
+    alignItems: "flex-start",
   },
   infoContent: {
     flex: 1,
     marginLeft: SPACING.sm,
+    minWidth: 0, // Allow text to wrap
   },
   infoLabel: {
     fontSize: FONT_SIZES.sm,
@@ -979,6 +1426,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
+    flexWrap: "wrap",
   },
   infoHint: {
     fontSize: FONT_SIZES.xs,
@@ -1004,9 +1452,11 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.sm,
+    flexShrink: 0,
+    maxWidth: "100%",
   },
   statusDot: {
     width: 8,
@@ -1015,8 +1465,9 @@ const styles = StyleSheet.create({
     marginRight: SPACING.xs,
   },
   statusText: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.xs - 1,
     fontWeight: "600",
+    flexShrink: 1,
   },
   emptyContainer: {
     alignItems: "center",
@@ -1035,6 +1486,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    width: "100%",
   },
   submissionHeader: {
     marginBottom: SPACING.md,
@@ -1042,14 +1494,16 @@ const styles = StyleSheet.create({
   submissionTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: SPACING.xs,
+    gap: SPACING.xs,
   },
   submissionTitle: {
     fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
     flex: 1,
+    flexShrink: 1,
   },
   deliveredAt: {
     fontSize: FONT_SIZES.xs,
@@ -1058,33 +1512,40 @@ const styles = StyleSheet.create({
   },
   filesContainer: {
     marginBottom: SPACING.md,
+    width: "100%",
   },
   fileRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: SPACING.sm,
+    gap: SPACING.xs,
+    width: "100%",
+    minWidth: 0,
   },
   fileActions: {
     flexDirection: "row",
-    marginLeft: SPACING.sm,
+    flexShrink: 0,
+    gap: SPACING.xs / 2,
   },
   fileActionButton: {
     padding: SPACING.xs,
-    marginLeft: SPACING.xs,
   },
   actionButtons: {
     flexDirection: "row",
     gap: SPACING.sm,
     marginTop: SPACING.md,
+    flexWrap: "wrap",
   },
   actionButton: {
     flex: 1,
+    minWidth: "45%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
-    gap: SPACING.xs,
+    gap: SPACING.xs / 2,
   },
   acceptButton: {
     backgroundColor: COLORS.success,
@@ -1098,19 +1559,20 @@ const styles = StyleSheet.create({
     borderColor: COLORS.warning,
   },
   actionButtonText: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.white,
+    flexShrink: 1,
   },
   revisionButtonTextPaid: {
     color: COLORS.warning,
   },
   paidBadge: {
     backgroundColor: COLORS.warning,
-    paddingHorizontal: SPACING.xs,
+    paddingHorizontal: SPACING.xs / 2,
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.sm,
-    marginLeft: SPACING.xs,
+    marginLeft: SPACING.xs / 2,
   },
   paidBadgeText: {
     fontSize: FONT_SIZES.xs,
@@ -1124,11 +1586,14 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     backgroundColor: COLORS.background,
     borderRadius: BORDER_RADIUS.sm,
+    flexWrap: "wrap",
   },
   infoBadgeText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginLeft: SPACING.xs,
+    flex: 1,
+    flexShrink: 1,
   },
   // Modal styles
   modalOverlay: {
@@ -1141,6 +1606,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BORDER_RADIUS.xl,
     borderTopRightRadius: BORDER_RADIUS.xl,
     maxHeight: "90%",
+    width: "100%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1149,15 +1615,19 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    gap: SPACING.sm,
   },
   modalTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
+    flex: 1,
+    flexShrink: 1,
   },
   modalBody: {
     padding: SPACING.lg,
     maxHeight: 400,
+    flexGrow: 0,
   },
   alertBox: {
     flexDirection: "row",
@@ -1188,6 +1658,7 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
+    width: "100%",
   },
   textArea: {
     minHeight: 120,
@@ -1232,6 +1703,153 @@ const styles = StyleSheet.create({
   },
   modalButtonDisabled: {
     opacity: 0.6,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+    flexWrap: "wrap",
+    marginTop: SPACING.xs / 2,
+  },
+  payMilestoneButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs / 2,
+    flexShrink: 0,
+  },
+  payMilestoneButtonText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.white,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
+  },
+  tag: {
+    backgroundColor: COLORS.primary + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  tagText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  filesSection: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    width: "100%",
+  },
+  sectionTitle: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  revisionSection: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    width: "100%",
+  },
+  revisionList: {
+    marginTop: SPACING.sm,
+  },
+  revisionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  revisionTag: {
+    backgroundColor: COLORS.error + "20",
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    flexShrink: 0,
+  },
+  revisionTagText: {
+    fontSize: FONT_SIZES.xs - 1,
+    fontWeight: "600",
+    color: COLORS.error,
+  },
+  revisionTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.text,
+    flex: 1,
+  },
+  revisionTitleSmall: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.text,
+    flex: 1,
+    marginLeft: SPACING.xs / 2,
+    flexShrink: 1,
+  },
+  collapsibleRevision: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  collapsibleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    padding: SPACING.md,
+    gap: SPACING.xs,
+  },
+  collapsibleHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    flexWrap: "wrap",
+    gap: SPACING.xs / 2,
+    paddingRight: SPACING.xs,
+  },
+  collapsibleContent: {
+    padding: SPACING.md,
+    paddingTop: 0,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  deadlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: SPACING.xs / 2,
+    marginTop: SPACING.xs / 2,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs / 2,
+    marginTop: SPACING.xs / 2,
+  },
+  tag: {
+    backgroundColor: COLORS.primary + "20",
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
+    flexShrink: 0,
+  },
+  tagText: {
+    fontSize: FONT_SIZES.xs - 1,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
 });
 

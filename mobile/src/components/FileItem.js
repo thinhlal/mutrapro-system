@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
   fileInfo: {
     flex: 1,
     marginRight: SPACING.sm,
+    minWidth: 0,
   },
   fileName: {
     fontSize: FONT_SIZES.sm,

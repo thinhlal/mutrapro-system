@@ -247,13 +247,9 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
         await loadContract();
 
-        // Show success message and navigate
+        // Navigate to ContractSignedSuccessScreen
         setTimeout(() => {
-          Alert.alert(
-            "Contract Signed",
-            "Your contract has been signed successfully. Please pay the deposit to activate the contract.",
-            [{ text: "OK", onPress: () => navigation.goBack() }]
-          );
+          navigation.navigate("ContractSignedSuccess", { contractId });
         }, 500);
       }
     } catch (error) {
@@ -727,23 +723,46 @@ const ContractDetailScreen = ({ navigation, route }) => {
                           </Text>
                         </View>
                       </View>
-                      {isDue &&
-                        !isPaid &&
-                        (workStatus === "READY_FOR_PAYMENT" ||
+                      <View style={styles.milestoneActions}>
+                        {/* View Deliveries Button - chỉ hiển thị khi milestone có work status WAITING_CUSTOMER, READY_FOR_PAYMENT, hoặc COMPLETED */}
+                        {(workStatus === "WAITING_CUSTOMER" ||
+                          workStatus === "READY_FOR_PAYMENT" ||
                           workStatus === "COMPLETED") && (
                           <TouchableOpacity
-                            style={styles.payButton}
+                            style={[styles.actionButton, styles.viewDeliveriesButton]}
                             onPress={() =>
-                              navigation.navigate("PaymentMilestone", {
+                              navigation.navigate("MilestoneDeliveries", {
                                 contractId,
                                 milestoneId: milestone.milestoneId,
-                                installmentId: installment?.installmentId,
+                                milestoneName:
+                                  milestone.name ||
+                                  `Milestone ${milestone.orderIndex || index + 1}`,
                               })
                             }
                           >
-                            <Text style={styles.payButtonText}>Pay</Text>
+                            <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
+                            <Text style={styles.viewDeliveriesButtonText}>View Deliveries</Text>
                           </TouchableOpacity>
                         )}
+                        {/* Pay Button */}
+                        {isDue &&
+                          !isPaid &&
+                          (workStatus === "READY_FOR_PAYMENT" ||
+                            workStatus === "COMPLETED") && (
+                            <TouchableOpacity
+                              style={styles.payButton}
+                              onPress={() =>
+                                navigation.navigate("PaymentMilestone", {
+                                  contractId,
+                                  milestoneId: milestone.milestoneId,
+                                  installmentId: installment?.installmentId,
+                                })
+                              }
+                            >
+                              <Text style={styles.payButtonText}>Pay</Text>
+                            </TouchableOpacity>
+                          )}
+                      </View>
                     </View>
                   </View>
                 );
@@ -1249,9 +1268,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  milestoneActions: {
+    flexDirection: "row",
+    gap: SPACING.sm,
+    alignItems: "center",
+  },
   milestoneTags: {
     flexDirection: "row",
     gap: SPACING.xs,
+  },
+  viewDeliveriesButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs / 2,
+  },
+  viewDeliveriesButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   tag: {
     paddingHorizontal: SPACING.sm,
