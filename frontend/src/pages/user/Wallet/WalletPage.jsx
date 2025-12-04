@@ -17,6 +17,8 @@ import {
   Statistic,
   Empty,
   Spin,
+  Descriptions,
+  Divider,
 } from 'antd';
 import {
   WalletOutlined,
@@ -26,13 +28,20 @@ import {
   ArrowDownOutlined,
   HistoryOutlined,
   DollarOutlined,
+  EyeOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 import {
   getOrCreateMyWallet,
   topupWallet,
   getMyWalletTransactions,
 } from '../../../services/walletService';
+import {
+  getContractById,
+  getMilestoneById,
+} from '../../../services/contractService';
 import Header from '../../../components/common/Header/Header';
 import WalletPageStyles from './WalletPage.module.css';
 
@@ -41,12 +50,18 @@ const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const WalletContent = () => {
+  const navigate = useNavigate();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [topupModalVisible, setTopupModalVisible] = useState(false);
   const [topupForm] = Form.useForm();
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [contractInfo, setContractInfo] = useState(null);
+  const [milestoneInfo, setMilestoneInfo] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [filters, setFilters] = useState({
     txType: null,
     fromDate: null,
@@ -185,6 +200,10 @@ const WalletContent = () => {
     const colors = {
       topup: 'success',
       payment: 'error',
+      contract_deposit_payment: 'error',
+      milestone_payment: 'error',
+      recording_booking_payment: 'error',
+      revision_fee: 'error',
       refund: 'processing',
       withdrawal: 'warning',
       adjustment: 'default',
@@ -195,11 +214,15 @@ const WalletContent = () => {
   // Get transaction type label
   const getTxTypeLabel = type => {
     const labels = {
-      topup: 'Deposit',
-      payment: 'Payment',
-      refund: 'Refund',
-      withdrawal: 'Withdrawal',
-      adjustment: 'Adjustment',
+      topup: 'Nạp tiền',
+      payment: 'Thanh toán',
+      contract_deposit_payment: 'Thanh toán cọc hợp đồng',
+      milestone_payment: 'Thanh toán milestone',
+      recording_booking_payment: 'Thanh toán đặt phòng thu âm',
+      revision_fee: 'Phí chỉnh sửa',
+      refund: 'Hoàn tiền',
+      withdrawal: 'Rút tiền',
+      adjustment: 'Điều chỉnh',
     };
     return labels[type] || type;
   };
@@ -208,6 +231,17 @@ const WalletContent = () => {
   const getTxIcon = type => {
     if (type === 'topup' || type === 'refund') {
       return <ArrowUpOutlined style={{ color: '#52c41a' }} />;
+    }
+    // Các loại payment đều là chi tiêu
+    if (
+      type === 'payment' ||
+      type === 'contract_deposit_payment' ||
+      type === 'milestone_payment' ||
+      type === 'recording_booking_payment' ||
+      type === 'revision_fee' ||
+      type === 'withdrawal'
+    ) {
+      return <ArrowDownOutlined style={{ color: '#ff4d4f' }} />;
     }
     return <ArrowDownOutlined style={{ color: '#ff4d4f' }} />;
   };
@@ -221,8 +255,16 @@ const WalletContent = () => {
     const stats = transactions.reduce(
       (acc, tx) => {
         if (tx.txType === 'topup') acc.totalTopup += parseFloat(tx.amount) || 0;
-        if (tx.txType === 'payment')
+        // Tất cả các loại payment đều tính vào totalPayment
+        if (
+          tx.txType === 'payment' ||
+          tx.txType === 'contract_deposit_payment' ||
+          tx.txType === 'milestone_payment' ||
+          tx.txType === 'recording_booking_payment' ||
+          tx.txType === 'revision_fee'
+        ) {
           acc.totalPayment += parseFloat(tx.amount) || 0;
+        }
         if (tx.txType === 'refund')
           acc.totalRefund += parseFloat(tx.amount) || 0;
         return acc;
@@ -235,10 +277,86 @@ const WalletContent = () => {
 
   const stats = calculateStats();
 
+  // Get transaction description
+  const getTransactionDescription = (record, contractInfo = null, milestoneInfo = null) => {
+    const { txType, metadata, contractId, milestoneId } = record;
+    
+    // Nếu có description trong metadata
+    if (metadata?.description) {
+      return metadata.description;
+    }
+    
+    // Tạo description dựa trên txType và các thông tin khác
+    switch (txType) {
+      case 'contract_deposit_payment':
+        if (contractInfo?.contractNumber) {
+          return `Thanh toán cọc cho hợp đồng ${contractInfo.contractNumber}`;
+        }
+        return contractId
+          ? `Thanh toán cọc cho hợp đồng ${contractId.substring(0, 8)}...`
+          : 'Thanh toán cọc hợp đồng';
+      
+      case 'milestone_payment':
+        if (contractInfo?.contractNumber && milestoneInfo?.name) {
+          return `Thanh toán milestone "${milestoneInfo.name}" cho hợp đồng ${contractInfo.contractNumber}`;
+        }
+        if (contractInfo?.contractNumber) {
+          return `Thanh toán milestone cho hợp đồng ${contractInfo.contractNumber}`;
+        }
+        if (milestoneInfo?.name) {
+          return `Thanh toán milestone "${milestoneInfo.name}"`;
+        }
+        if (contractId && milestoneId) {
+          return `Thanh toán milestone cho hợp đồng ${contractId.substring(0, 8)}...`;
+        }
+        return contractId
+          ? `Thanh toán milestone cho hợp đồng ${contractId.substring(0, 8)}...`
+          : 'Thanh toán milestone';
+      
+      case 'revision_fee':
+        if (metadata?.revisionRound) {
+          return `Phí chỉnh sửa lần ${metadata.revisionRound}`;
+        }
+        return 'Phí chỉnh sửa';
+      
+      case 'recording_booking_payment':
+        return record.bookingId
+          ? `Thanh toán đặt phòng thu âm ${record.bookingId.substring(0, 8)}...`
+          : 'Thanh toán đặt phòng thu âm';
+      
+      case 'refund':
+        if (metadata?.refund_reason) {
+          return `Hoàn tiền: ${metadata.refund_reason}`;
+        }
+        if (metadata?.reason === 'REVISION_REJECTED') {
+          return 'Hoàn tiền phí chỉnh sửa (yêu cầu bị từ chối)';
+        }
+        return 'Hoàn tiền';
+      
+      case 'topup':
+        if (metadata?.payment_method) {
+          return `Nạp tiền qua ${metadata.payment_method}`;
+        }
+        return 'Nạp tiền vào ví';
+      
+      case 'withdrawal':
+        return 'Rút tiền';
+      
+      case 'adjustment':
+        if (metadata?.reason) {
+          return `Điều chỉnh: ${metadata.reason}`;
+        }
+        return 'Điều chỉnh số dư';
+      
+      default:
+        return getTxTypeLabel(txType);
+    }
+  };
+
   // Table columns
   const columns = [
     {
-      title: 'Transaction Type',
+      title: 'Loại giao dịch',
       dataIndex: 'txType',
       key: 'txType',
       width: 150,
@@ -250,28 +368,29 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Amount',
+      title: 'Số tiền',
       dataIndex: 'amount',
       key: 'amount',
       width: 180,
-      render: (amount, record) => (
-        <Text
-          strong
-          style={{
-            color:
-              record.txType === 'topup' || record.txType === 'refund'
-                ? '#52c41a'
-                : '#ff4d4f',
-            fontSize: '16px',
-          }}
-        >
-          {record.txType === 'topup' || record.txType === 'refund' ? '+' : '-'}
-          {formatCurrency(amount, record.currency)}
-        </Text>
-      ),
+      render: (amount, record) => {
+        const isIncome =
+          record.txType === 'topup' || record.txType === 'refund';
+        return (
+          <Text
+            strong
+            style={{
+              color: isIncome ? '#52c41a' : '#ff4d4f',
+              fontSize: '16px',
+            }}
+          >
+            {isIncome ? '+' : '-'}
+            {formatCurrency(amount, record.currency)}
+          </Text>
+        );
+      },
     },
     {
-      title: 'Balance Before',
+      title: 'Số dư trước',
       dataIndex: 'balanceBefore',
       key: 'balanceBefore',
       width: 180,
@@ -280,7 +399,7 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Balance After',
+      title: 'Số dư sau',
       dataIndex: 'balanceAfter',
       key: 'balanceAfter',
       width: 180,
@@ -291,11 +410,64 @@ const WalletContent = () => {
       ),
     },
     {
-      title: 'Time',
+      title: 'Thời gian',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 200,
       render: date => <Text>{dayjs(date).format('DD/MM/YYYY HH:mm:ss')}</Text>,
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 120,
+      fixed: 'right',
+      render: (_, record) => (
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={async () => {
+            setSelectedTransaction(record);
+            setContractInfo(null);
+            setMilestoneInfo(null);
+            setDetailModalVisible(true);
+            
+            // Load contract info nếu có contractId
+            if (record.contractId) {
+              setDetailLoading(true);
+              try {
+                const contractResponse = await getContractById(record.contractId);
+                if (contractResponse?.status === 'success' && contractResponse?.data) {
+                  setContractInfo(contractResponse.data);
+                  
+                  // Load milestone info nếu có milestoneId
+                  if (record.milestoneId) {
+                    try {
+                      const milestoneResponse = await getMilestoneById(
+                        record.contractId,
+                        record.milestoneId
+                      );
+                      if (
+                        milestoneResponse?.status === 'success' &&
+                        milestoneResponse?.data
+                      ) {
+                        setMilestoneInfo(milestoneResponse.data);
+                      }
+                    } catch (error) {
+                      console.warn('Failed to load milestone info:', error);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.warn('Failed to load contract info:', error);
+              } finally {
+                setDetailLoading(false);
+              }
+            }
+          }}
+        >
+          Chi tiết
+        </Button>
+      ),
     },
   ];
 
@@ -416,17 +588,25 @@ const WalletContent = () => {
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
               <Col xs={24} sm={12} md={6}>
                 <Select
-                  placeholder="Transaction Type"
+                  placeholder="Loại giao dịch"
                   allowClear
                   style={{ width: '100%' }}
                   value={filters.txType}
                   onChange={value => handleFilterChange('txType', value)}
                 >
-                  <Option value="topup">Deposit</Option>
-                  <Option value="payment">Payment</Option>
-                  <Option value="refund">Refund</Option>
-                  <Option value="withdrawal">Withdrawal</Option>
-                  <Option value="adjustment">Adjustment</Option>
+                  <Option value="topup">Nạp tiền</Option>
+                  <Option value="payment">Thanh toán</Option>
+                  <Option value="contract_deposit_payment">
+                    Thanh toán cọc hợp đồng
+                  </Option>
+                  <Option value="milestone_payment">Thanh toán milestone</Option>
+                  <Option value="recording_booking_payment">
+                    Thanh toán đặt phòng thu âm
+                  </Option>
+                  <Option value="revision_fee">Phí chỉnh sửa</Option>
+                  <Option value="refund">Hoàn tiền</Option>
+                  <Option value="withdrawal">Rút tiền</Option>
+                  <Option value="adjustment">Điều chỉnh</Option>
                 </Select>
               </Col>
               <Col xs={24} sm={12} md={12}>
@@ -511,6 +691,250 @@ const WalletContent = () => {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Transaction Detail Modal */}
+      <Modal
+        title={
+          <Space>
+            <FileTextOutlined />
+            <span>Chi tiết giao dịch</span>
+          </Space>
+        }
+        open={detailModalVisible}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setSelectedTransaction(null);
+          setContractInfo(null);
+          setMilestoneInfo(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            Đóng
+          </Button>,
+          selectedTransaction?.contractId && (
+            <Button
+              key="contract"
+              type="primary"
+              onClick={() => {
+                navigate(`/contracts/${selectedTransaction.contractId}`);
+                setDetailModalVisible(false);
+              }}
+            >
+              Xem hợp đồng
+            </Button>
+          ),
+        ].filter(Boolean)}
+        width={700}
+      >
+        {selectedTransaction && (
+          <Spin spinning={detailLoading}>
+            <div>
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="Loại giao dịch">
+                <Space>
+                  {getTxIcon(selectedTransaction.txType)}
+                  <Tag color={getTxTypeColor(selectedTransaction.txType)}>
+                    {getTxTypeLabel(selectedTransaction.txType)}
+                  </Tag>
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="Mô tả">
+                <Text>
+                  {getTransactionDescription(
+                    selectedTransaction,
+                    contractInfo,
+                    milestoneInfo
+                  )}
+                </Text>
+              </Descriptions.Item>
+              {contractInfo && (
+                <Descriptions.Item label="Contract Number">
+                  <Text strong>{contractInfo.contractNumber || 'N/A'}</Text>
+                </Descriptions.Item>
+              )}
+              {milestoneInfo && (
+                <Descriptions.Item label="Milestone Name">
+                  <Text strong>{milestoneInfo.name || 'N/A'}</Text>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Số tiền">
+                <Text
+                  strong
+                  style={{
+                    color:
+                      selectedTransaction.txType === 'topup' ||
+                      selectedTransaction.txType === 'refund'
+                        ? '#52c41a'
+                        : '#ff4d4f',
+                    fontSize: '16px',
+                  }}
+                >
+                  {selectedTransaction.txType === 'topup' ||
+                  selectedTransaction.txType === 'refund'
+                    ? '+'
+                    : '-'}
+                  {formatCurrency(
+                    selectedTransaction.amount,
+                    selectedTransaction.currency
+                  )}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số dư trước">
+                <Text>
+                  {formatCurrency(
+                    selectedTransaction.balanceBefore,
+                    selectedTransaction.currency
+                  )}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số dư sau">
+                <Text strong>
+                  {formatCurrency(
+                    selectedTransaction.balanceAfter,
+                    selectedTransaction.currency
+                  )}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Thời gian">
+                <Text>
+                  {dayjs(selectedTransaction.createdAt).format(
+                    'DD/MM/YYYY HH:mm:ss'
+                  )}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Transaction ID">
+                <Text code>{selectedTransaction.walletTxId}</Text>
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Thông tin liên quan dựa trên txType */}
+            {(selectedTransaction.contractId ||
+              selectedTransaction.milestoneId ||
+              selectedTransaction.bookingId ||
+              selectedTransaction.metadata) && (
+              <>
+                <Divider orientation="left">Thông tin liên quan</Divider>
+                <Descriptions bordered column={1} size="small">
+                  {selectedTransaction.contractId && (
+                    <Descriptions.Item label="Contract">
+                      <Space>
+                        {contractInfo ? (
+                          <>
+                            <Text strong>{contractInfo.contractNumber}</Text>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              ({selectedTransaction.contractId.substring(0, 8)}...)
+                            </Text>
+                          </>
+                        ) : (
+                          <Text code>{selectedTransaction.contractId}</Text>
+                        )}
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={() => {
+                            navigate(
+                              `/contracts/${selectedTransaction.contractId}`
+                            );
+                            setDetailModalVisible(false);
+                          }}
+                        >
+                          Xem hợp đồng
+                        </Button>
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+                  {selectedTransaction.milestoneId && (
+                    <Descriptions.Item label="Milestone">
+                      <Space>
+                        {milestoneInfo ? (
+                          <>
+                            <Text strong>{milestoneInfo.name}</Text>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              ({selectedTransaction.milestoneId.substring(0, 8)}...)
+                            </Text>
+                          </>
+                        ) : (
+                          <Text code>{selectedTransaction.milestoneId}</Text>
+                        )}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+                  {selectedTransaction.bookingId && (
+                    <Descriptions.Item label="Booking ID">
+                      <Text code>{selectedTransaction.bookingId}</Text>
+                    </Descriptions.Item>
+                  )}
+                  {selectedTransaction.metadata && (
+                    <>
+                      {selectedTransaction.metadata.payment_method && (
+                        <Descriptions.Item label="Phương thức thanh toán">
+                          <Text>
+                            {selectedTransaction.metadata.payment_method}
+                          </Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.installment_id && (
+                        <Descriptions.Item label="Installment ID">
+                          <Text code>
+                            {selectedTransaction.metadata.installment_id}
+                          </Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.payment_type && (
+                        <Descriptions.Item label="Loại thanh toán">
+                          <Tag>
+                            {selectedTransaction.metadata.payment_type ===
+                            'DEPOSIT'
+                              ? 'Cọc hợp đồng'
+                              : selectedTransaction.metadata.payment_type ===
+                                'MILESTONE'
+                              ? 'Thanh toán milestone'
+                              : selectedTransaction.metadata.payment_type}
+                          </Tag>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.txType ===
+                        'contract_deposit_payment' &&
+                        selectedTransaction.metadata?.installment_id && (
+                          <Descriptions.Item label="Installment (Cọc)">
+                            <Text code>
+                              {selectedTransaction.metadata.installment_id}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                      {selectedTransaction.metadata.revisionRound && (
+                        <Descriptions.Item label="Lần chỉnh sửa">
+                          <Text>Lần {selectedTransaction.metadata.revisionRound}</Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.reason && (
+                        <Descriptions.Item label="Lý do">
+                          <Text>{selectedTransaction.metadata.reason}</Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.refund_reason && (
+                        <Descriptions.Item label="Lý do hoàn tiền">
+                          <Text>
+                            {selectedTransaction.metadata.refund_reason}
+                          </Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.original_wallet_tx_id && (
+                        <Descriptions.Item label="Giao dịch gốc">
+                          <Text code>
+                            {selectedTransaction.metadata.original_wallet_tx_id}
+                          </Text>
+                        </Descriptions.Item>
+                      )}
+                    </>
+                  )}
+                </Descriptions>
+              </>
+            )}
+            </div>
+          </Spin>
+        )}
       </Modal>
     </div>
   );
