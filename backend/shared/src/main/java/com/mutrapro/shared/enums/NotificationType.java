@@ -19,6 +19,7 @@ public enum NotificationType {
     MILESTONE_READY_FOR_PAYMENT, // Milestone sẵn sàng thanh toán (customer đã accept submission)
     ALL_MILESTONES_PAID,        // Tất cả milestones đã được thanh toán
     TASK_ASSIGNMENT_ASSIGNED,   // Specialist được giao task mới
+    TASK_ASSIGNMENT_READY_TO_START, // Task assignment đã sẵn sàng để specialist bắt đầu làm (milestone đã unlock)
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist cancel
     TASK_FILE_UPLOADED,         // Specialist đã upload file output cho task
     SUBMISSION_DELIVERED,       // Submission đã được gửi cho customer

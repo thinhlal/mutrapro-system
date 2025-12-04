@@ -31,6 +31,7 @@ import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.shared.enums.NotificationType;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
+import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
 import com.mutrapro.project_service.mapper.TaskAssignmentMapper;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
@@ -1047,6 +1048,21 @@ public class TaskAssignmentService {
         enqueueTaskAssignmentAssignedEvent(assignment, contract, milestone, specialistUserId);
     }
 
+    private void notifySpecialistTaskReadyToStart(TaskAssignment assignment, Contract contract, ContractMilestone milestone) {
+        if (assignment.getSpecialistId() == null) {
+            return;
+        }
+
+        String specialistUserId = assignment.getSpecialistUserIdSnapshot();
+        if (specialistUserId == null || specialistUserId.isBlank()) {
+            log.warn("Cannot enqueue task ready to start notification. specialistUserId missing for specialistId={}",
+                    assignment.getSpecialistId());
+            return;
+        }
+
+        enqueueTaskAssignmentReadyToStartEvent(assignment, contract, milestone, specialistUserId);
+    }
+
     private void enqueueTaskAssignmentAssignedEvent(
             TaskAssignment assignment,
             Contract contract,
@@ -1103,6 +1119,65 @@ public class TaskAssignmentService {
                 assignment.getAssignmentId(), specialistUserId);
         } catch (Exception ex) {
             log.error("Failed to enqueue TaskAssignmentAssignedEvent: assignmentId={}, error={}",
+                assignment.getAssignmentId(), ex.getMessage(), ex);
+        }
+    }
+
+    private void enqueueTaskAssignmentReadyToStartEvent(
+            TaskAssignment assignment,
+            Contract contract,
+            ContractMilestone milestone,
+            String specialistUserId) {
+
+        String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+            ? contract.getContractNumber()
+            : contract.getContractId();
+        String milestoneLabel = milestone != null && milestone.getName() != null
+            ? milestone.getName()
+            : assignment.getMilestoneId();
+
+        TaskAssignmentReadyToStartEvent event = TaskAssignmentReadyToStartEvent.builder()
+            .eventId(UUID.randomUUID())
+            .assignmentId(assignment.getAssignmentId())
+            .contractId(contract.getContractId())
+            .contractNumber(contractLabel)
+            .specialistId(assignment.getSpecialistId())
+            .specialistUserId(specialistUserId)
+            .taskType(assignment.getTaskType() != null ? assignment.getTaskType().name() : null)
+            .milestoneId(assignment.getMilestoneId())
+            .milestoneName(milestoneLabel)
+            .title("Task đã sẵn sàng để bắt đầu")
+            .content(String.format(
+                "Task %s cho contract #%s (Milestone: %s) đã sẵn sàng để bạn bắt đầu làm việc. Vui lòng kiểm tra mục My Tasks.",
+                assignment.getTaskType(),
+                contractLabel,
+                milestoneLabel))
+            .referenceType("TASK_ASSIGNMENT")
+            .actionUrl("/transcription/my-tasks")
+            .timestamp(Instant.now())
+            .build();
+
+        try {
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(assignment.getAssignmentId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateId(aggregateId)
+                .aggregateType("TaskAssignment")
+                .eventType("task.assignment.ready.to.start")
+                .eventPayload(payload)
+                .build();
+
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued TaskAssignmentReadyToStartEvent: assignmentId={}, userId={}",
+                assignment.getAssignmentId(), specialistUserId);
+        } catch (Exception ex) {
+            log.error("Failed to enqueue TaskAssignmentReadyToStartEvent: assignmentId={}, error={}",
                 assignment.getAssignmentId(), ex.getMessage(), ex);
         }
     }
@@ -1837,6 +1912,17 @@ public class TaskAssignmentService {
             taskAssignmentRepository.saveAll(toUpdate);
             log.info("Activated {} assignments for milestone ready_to_start: contractId={}, milestoneId={}",
                 toUpdate.size(), contractId, milestoneId);
+            
+            // Gửi notification cho từng specialist khi task được activate
+            Contract contract = contractRepository.findById(contractId).orElse(null);
+            ContractMilestone milestone = contractMilestoneRepository
+                .findByMilestoneIdAndContractId(milestoneId, contractId).orElse(null);
+            
+            if (contract != null && milestone != null) {
+                for (TaskAssignment assignment : toUpdate) {
+                    notifySpecialistTaskReadyToStart(assignment, contract, milestone);
+                }
+            }
         }
     }
 

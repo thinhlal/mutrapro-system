@@ -1452,9 +1452,17 @@ const TranscriptionTaskDetailPage = () => {
                     status === 'in_revision') &&
                   status !== 'ready_for_review' &&
                   status !== 'completed';
-                // Không cho report issue khi ready_for_review hoặc completed (chỉ cho khi đang in_progress)
+                // Chỉ cho phép báo issue khi task đang in_progress (đang làm việc)
+                // Không cho phép khi đã submit (ready_for_review), đã hoàn thành (completed), 
+                // đang chờ deliver (delivery_pending), hoặc các trạng thái khác
                 const hasIssueButton =
-                  status === 'in_progress' && !task.hasIssue;
+                  status === 'in_progress' && 
+                  !task.hasIssue &&
+                  status !== 'ready_for_review' &&
+                  status !== 'delivery_pending' &&
+                  status !== 'waiting_customer_review' &&
+                  status !== 'completed' &&
+                  status !== 'cancelled';
 
                 // Check có ít nhất 1 draft file được chọn (fileStatus = 'uploaded' và không có submissionId)
                 const draftFileIds = Array.from(selectedFileIds).filter(

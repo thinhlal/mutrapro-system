@@ -52,6 +52,7 @@ app:
       billing.milestone.paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
       billing.revision.fee.paid: ${KAFKA_TOPIC_BILLING_REVISION_FEE_PAID:billing-revision-fee-paid}
       task.assignment.assigned: ${KAFKA_TOPIC_TASK_ASSIGNMENT_ASSIGNED:task-assignment-assigned}
+      task.assignment.ready.to.start: ${KAFKA_TOPIC_TASK_ASSIGNMENT_READY_TO_START:task-assignment-ready-to-start}
       submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
       revision.requested: ${KAFKA_TOPIC_REVISION_REQUESTED:revision-requested}
       revision.delivered: ${KAFKA_TOPIC_REVISION_DELIVERED:revision-delivered}

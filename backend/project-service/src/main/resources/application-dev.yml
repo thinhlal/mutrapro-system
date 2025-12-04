@@ -56,6 +56,7 @@ app:
       billing.milestone.paid: billing-milestone-paid
       billing.revision.fee.paid: billing-revision-fee-paid
       task.assignment.assigned: task-assignment-assigned
+      task.assignment.ready.to.start: task-assignment-ready-to-start
       submission.delivered: submission-delivered
       revision.requested: revision-requested
       revision.delivered: revision-delivered

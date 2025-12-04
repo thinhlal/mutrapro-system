@@ -17,6 +17,7 @@ import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
+import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -131,6 +132,53 @@ public class NotificationService {
         sendRealTimeNotification(event.getSpecialistUserId(), saved);
 
         log.info("Task assignment notification created: assignmentId={}, userId={}",
+            event.getAssignmentId(), event.getSpecialistUserId());
+    }
+
+    /**
+     * Tạo notification khi task assignment đã sẵn sàng để specialist bắt đầu làm việc (Kafka event).
+     */
+    @Transactional
+    public void createTaskAssignmentReadyToStartNotification(TaskAssignmentReadyToStartEvent event) {
+        if (event.getSpecialistUserId() == null || event.getSpecialistUserId().isBlank()) {
+            log.warn("Cannot create task ready to start notification, userId missing: assignmentId={}", event.getAssignmentId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+            ? event.getContractNumber()
+            : event.getContractId();
+        String milestoneLabel = event.getMilestoneName() != null && !event.getMilestoneName().isBlank()
+            ? event.getMilestoneName()
+            : event.getMilestoneId();
+
+        String defaultContent = String.format(
+            "Task %s cho contract #%s (Milestone: %s) đã sẵn sàng để bạn bắt đầu làm việc. Vui lòng kiểm tra mục My Tasks.",
+            event.getTaskType(),
+            contractLabel,
+            milestoneLabel
+        );
+
+        String title = event.getTitle() != null ? event.getTitle() : "Task đã sẵn sàng để bắt đầu";
+        String content = event.getContent() != null ? event.getContent() : defaultContent;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/transcription/my-tasks";
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+            .userId(event.getSpecialistUserId())
+            .type(NotificationType.TASK_ASSIGNMENT_READY_TO_START)
+            .title(title)
+            .content(content)
+            .referenceId(event.getAssignmentId())
+            .referenceType(referenceType)
+            .actionUrl(actionUrl)
+            .isRead(false)
+            .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getSpecialistUserId(), saved);
+
+        log.info("Task ready to start notification created: assignmentId={}, userId={}",
             event.getAssignmentId(), event.getSpecialistUserId());
     }
 
