@@ -40,8 +40,8 @@ services:
       # JWT để validate tokens từ clients
       - JWT_SIGNER_KEY=${JWT_SECRET}
       # API Gateway configuration (match với application-prod.yml)
-      - API_PREFIX=${API_PREFIX:/api/v1}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+      - API_PREFIX=${API_PREFIX:-/api/v1}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       # Service URIs (match với application-prod.yml routes)
       - IDENTITY_URI=${IDENTITY_URI:-http://identity-service:8081}
       - PROJECT_URI=${PROJECT_URI:-http://project-service:8082}
