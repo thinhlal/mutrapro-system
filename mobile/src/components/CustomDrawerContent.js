@@ -49,11 +49,11 @@ const CustomDrawerContent = (props) => {
     },
     {
       id: 'contracts',
-      label: 'Contracts',
+      label: 'My Contracts',
       icon: 'document-text-outline',
-      screen: 'MainTabs',
-      tab: 'Home',
-      onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+      screen: 'ContractsList',
+      tab: null,
+      onPress: () => navigation.navigate('ContractsList'),
     },
     {
       id: 'wallet',
