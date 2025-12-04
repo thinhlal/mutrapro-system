@@ -1,5 +1,5 @@
 server:
-  port: 8088
+  port: ${SERVER_PORT:8088}
   error:
     include-message: always
     include-binding-errors: always
@@ -42,7 +42,7 @@ spring:
       properties:
         enable.idempotence: true
     consumer:
-      group-id: chat-service
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:chat-service}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       auto-offset-reset: earliest
@@ -94,7 +94,7 @@ management:
         
 notification:
   service:
-    base-url: ${NOTIFICATION_SERVICE_BASE_URL}
+    base-url: ${NOTIFICATION_SERVICE_BASE_URL:http://notification-service:8085}
 
 logging:
   level:

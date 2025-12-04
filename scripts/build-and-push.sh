@@ -5,15 +5,19 @@
 
 set -e
 
-# Default values
-REGISTRY_URL=${1:-"your-registry.com/mutrapro"}
-TAG=${2:-"latest"}
-BUILD_CONTEXT=${3:-"backend"}
-
 echo "🚀 Building and pushing MuTraPro Docker images..."
-echo "Registry: $REGISTRY_URL"
+echo "Docker Hub Username: $DOCKER_HUB_USERNAME"
 echo "Tag: $TAG"
-echo "Build Context: $BUILD_CONTEXT"
+echo ""
+
+# Load .env file nếu có
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+# Docker Hub username (từ .env hoặc default)
+DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME:-mutrapro}
+TAG=${TAG:-latest}
 
 # List of services
 SERVICES=(
@@ -25,19 +29,23 @@ SERVICES=(
     "notification-service"
     "specialist-service"
     "studio-service"
+    "chat-service"
 )
 
 # Function to build and push a service
 build_and_push_service() {
     local service=$1
-    local image_name="$REGISTRY_URL/$service:$TAG"
+    local image_name="${DOCKER_HUB_USERNAME}/${service}:${TAG}"
     
-    echo "📦 Building $service..."
+    echo "========================================"
+    echo "Building $service..."
+    echo "========================================"
     
     # Build the Docker image
-    docker build -f "$BUILD_CONTEXT/$service/Dockerfile" \
+    docker build -f "backend/${service}/Dockerfile" \
         -t "$image_name" \
-        "$BUILD_CONTEXT"
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        ./backend
     
     if [ $? -eq 0 ]; then
         echo "✅ Successfully built $service"
@@ -56,23 +64,34 @@ build_and_push_service() {
         echo "❌ Failed to build $service"
         exit 1
     fi
+    
+    echo ""
 }
 
-# Build shared module first (if needed)
-echo "📦 Building shared module..."
-docker build -f "$BUILD_CONTEXT/shared/Dockerfile" \
-    -t "$REGISTRY_URL/shared:$TAG" \
-    "$BUILD_CONTEXT/shared"
+# Kiểm tra đã login Docker Hub chưa
+if ! docker info | grep -q "Username"; then
+    echo "⚠️  Chưa đăng nhập Docker Hub"
+    echo "Chạy: docker login"
+    exit 1
+fi
 
 # Build and push each service
+echo "Sẽ build và push ${#SERVICES[@]} services..."
+echo ""
+
 for service in "${SERVICES[@]}"; do
     build_and_push_service "$service"
 done
 
-echo "🎉 All images built and pushed successfully!"
+echo "========================================"
+echo "✅ Hoàn thành!"
+echo "========================================"
 echo ""
-echo "Images pushed:"
+echo "Images đã được push lên Docker Hub:"
 for service in "${SERVICES[@]}"; do
-    echo "  - $REGISTRY_URL/$service:$TAG"
+    echo "  - ${DOCKER_HUB_USERNAME}/${service}:${TAG}"
 done
-echo "  - $REGISTRY_URL/shared:$TAG"
+echo ""
+echo "Trên EC2, chạy:"
+echo "  docker-compose -f docker-compose.prod.yml pull"
+echo "  docker-compose -f docker-compose.prod.yml up -d"

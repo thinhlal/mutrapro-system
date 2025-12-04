@@ -1,23 +1,23 @@
 # Multi-stage build cho Specialist Service
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
 
 # Set working directory
 WORKDIR /app
 
 # Copy shared module first (dependency)
-COPY ../shared /app/shared
+COPY shared /app/shared
 
 # Build shared module
 RUN cd shared && mvn clean install -DskipTests
 
 # Copy specialist-service source code
-COPY . /app/specialist-service
+COPY specialist-service /app/specialist-service
 
 # Build specialist-service
 RUN cd specialist-service && mvn clean package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21.0.2_13-jre-alpine
 
 # Install necessary packages
 RUN apk add --no-cache \
@@ -46,11 +46,7 @@ RUN chown appuser:appgroup app.jar
 USER appuser
 
 # Expose port
-EXPOSE 8090
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8090/actuator/health || exit 1
+EXPOSE 8086
 
 # JVM options for container
 ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"

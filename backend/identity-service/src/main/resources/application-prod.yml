@@ -1,7 +1,7 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
   servlet:
-    context-path: 
+    context-path: ${SERVER_CONTEXT_PATH:} 
 
 spring:
   datasource:
@@ -52,8 +52,8 @@ app:
     max-retries: ${OUTBOX_MAX_RETRIES:3}
   event-topics:
     mappings:
-      email.verification: email-verification
-      password.reset: password-reset
+      email.verification: ${KAFKA_TOPIC_EMAIL_VERIFICATION:email-verification}
+      password.reset: ${KAFKA_TOPIC_PASSWORD_RESET:password-reset}
 
 # Outbound OAuth configuration (prod)
 outbound:

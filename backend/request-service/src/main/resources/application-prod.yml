@@ -1,7 +1,7 @@
 server:
-  port: 8084
+  port: ${SERVER_PORT:8084}
   servlet:
-    context-path: 
+    context-path: ${SERVER_CONTEXT_PATH:} 
 
 spring:
   datasource:
@@ -59,11 +59,11 @@ aws:
 # Outbox Configuration
 app:
   outbox:
-    max-retries: 3
+    max-retries: ${OUTBOX_MAX_RETRIES:3}
   event-topics:
     mappings:
-      file.uploaded: file-uploaded
-      request.assigned: request-events
+      file.uploaded: ${KAFKA_TOPIC_FILE_UPLOADED:file-uploaded}
+      request.assigned: ${KAFKA_TOPIC_REQUEST_ASSIGNED:request-events}
 
 # Project Service Configuration
 project:
