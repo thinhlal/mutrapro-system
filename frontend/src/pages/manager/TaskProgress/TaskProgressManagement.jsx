@@ -439,6 +439,12 @@ export default function TaskProgressManagement() {
       }
 
       // Kiểm tra submission status cao nhất (theo thứ tự ưu tiên)
+      const hasCustomerAccepted = submissions.some(
+        s => s.status?.toLowerCase() === 'customer_accepted'
+      );
+      const hasCustomerRejected = submissions.some(
+        s => s.status?.toLowerCase() === 'customer_rejected'
+      );
       const hasApproved = submissions.some(
         s => s.status?.toLowerCase() === 'approved'
       );
@@ -455,10 +461,11 @@ export default function TaskProgressManagement() {
         s => s.status?.toLowerCase() === 'draft'
       );
 
-      // Ưu tiên: approved > pending_review > rejected/revision_requested > draft
+      // Ưu tiên: customer_accepted > approved > pending_review > customer_rejected/rejected/revision_requested > draft
+      if (hasCustomerAccepted) return 95; // Đã được customer accept, gần hoàn thành
       if (hasApproved) return 75;
       if (hasPendingReview) return 50;
-      if (hasRejected || hasRevisionRequested) return 40;
+      if (hasCustomerRejected || hasRejected || hasRevisionRequested) return 40; // Customer đã reject, cần revision
       if (hasDraft) return 30;
 
       // Có submission nhưng status không rõ

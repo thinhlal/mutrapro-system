@@ -566,6 +566,8 @@ public class FileSubmissionService {
                 .orElseThrow(() -> FileSubmissionNotFoundException.byId(submissionId));
 
         // Verify submission is delivered
+        // Customer chỉ có thể review submissions đã delivered (chưa accept)
+        // Nếu đã customer_accepted thì không thể review lại
         if (submission.getStatus() != SubmissionStatus.delivered) {
             throw InvalidSubmissionStatusException.cannotReview(submissionId, submission.getStatus());
         }
@@ -591,10 +593,11 @@ public class FileSubmissionService {
 
             if (!activeRevisions.isEmpty()) {
                 // Có revision request → update revision request → COMPLETED
-                // (updateRevisionRequestOnCustomerAccept sẽ set completedDate và
-                // finalCompletedAt)
+                // (updateRevisionRequestOnCustomerAccept sẽ set completedDate, finalCompletedAt
+                // và update revised submission status thành customer_accepted)
                 revisionRequestService.updateRevisionRequestOnCustomerAccept(assignment.getAssignmentId(), userId);
                 log.info("Updated revision request on customer accept: assignmentId={}", assignment.getAssignmentId());
+                // Note: Không cần update submission status ở đây vì đã được xử lý trong updateRevisionRequestOnCustomerAccept
             } else {
                 // Không có revision request → đây là flow bình thường (accept submission lần
                 // đầu)
@@ -624,6 +627,11 @@ public class FileSubmissionService {
                 log.debug(
                         "No active revision request found for assignment: assignmentId={}, this is normal for first-time acceptance",
                         assignment.getAssignmentId());
+                
+                // Update submission status to customer_accepted (chỉ khi không có revision request)
+                submission.setStatus(SubmissionStatus.customer_accepted);
+                fileSubmissionRepository.save(submission);
+                log.info("Submission status updated to customer_accepted: submissionId={}", submissionId);
             }
 
             log.info("Customer accepted submission: submissionId={}", submissionId);

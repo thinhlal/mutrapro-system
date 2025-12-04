@@ -6,6 +6,8 @@ public enum SubmissionStatus {
     approved,                   // Đã được duyệt
     rejected,                   // Bị từ chối
     revision_requested,         // Yêu cầu chỉnh sửa (từ manager hoặc đã được manager approve)
-    delivered                   // Đã được gửi cho customer
+    delivered,                  // Đã được gửi cho customer
+    customer_accepted,          // Customer đã chấp nhận submission
+    customer_rejected           // Customer đã từ chối và yêu cầu revision
 }
 

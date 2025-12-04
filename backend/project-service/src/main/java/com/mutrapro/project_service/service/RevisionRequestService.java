@@ -4,11 +4,13 @@ import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
+import com.mutrapro.project_service.entity.FileSubmission;
 import com.mutrapro.project_service.entity.RevisionRequest;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.RevisionRequestStatus;
+import com.mutrapro.project_service.enums.SubmissionStatus;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidStateException;
 import com.mutrapro.project_service.exception.RevisionRequestNotFoundException;
@@ -471,6 +473,31 @@ public class RevisionRequestService {
                     }
                 }
                 
+                // Update original submission status to customer_rejected (khi manager approve revision request)
+                if (revisionRequest.getOriginalSubmissionId() != null) {
+                    try {
+                        FileSubmission originalSubmission = fileSubmissionRepository.findById(revisionRequest.getOriginalSubmissionId())
+                                .orElse(null);
+                        if (originalSubmission != null) {
+                            // Chỉ set nếu submission đang ở delivered hoặc customer_accepted
+                            // (tránh set lại nếu đã là customer_rejected rồi)
+                            if (originalSubmission.getStatus() == SubmissionStatus.delivered || 
+                                originalSubmission.getStatus() == SubmissionStatus.customer_accepted) {
+                                originalSubmission.setStatus(SubmissionStatus.customer_rejected);
+                                fileSubmissionRepository.save(originalSubmission);
+                                log.info("Original submission status updated to customer_rejected: submissionId={}, revisionRequestId={}", 
+                                        revisionRequest.getOriginalSubmissionId(), revisionRequest.getRevisionRequestId());
+                            }
+                        } else {
+                            log.warn("Original submission not found: submissionId={}, revisionRequestId={}", 
+                                    revisionRequest.getOriginalSubmissionId(), revisionRequest.getRevisionRequestId());
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to update original submission status: submissionId={}, revisionRequestId={}, error={}", 
+                                revisionRequest.getOriginalSubmissionId(), revisionRequest.getRevisionRequestId(), e.getMessage(), e);
+                    }
+                }
+                
                 // Gửi Kafka event về revision approved cho specialist
                 try {
                     String specialistUserId = assignment.getSpecialistUserIdSnapshot();
@@ -830,6 +857,26 @@ public class RevisionRequestService {
             }
         }
         
+        // Update revised submission status to customer_accepted
+        if (revisionRequest.getRevisedSubmissionId() != null) {
+            try {
+                FileSubmission revisedSubmission = fileSubmissionRepository.findById(revisionRequest.getRevisedSubmissionId())
+                        .orElse(null);
+                if (revisedSubmission != null) {
+                    revisedSubmission.setStatus(SubmissionStatus.customer_accepted);
+                    fileSubmissionRepository.save(revisedSubmission);
+                    log.info("Revised submission status updated to customer_accepted: submissionId={}, revisionRequestId={}", 
+                            revisionRequest.getRevisedSubmissionId(), revisionRequest.getRevisionRequestId());
+                } else {
+                    log.warn("Revised submission not found: submissionId={}, revisionRequestId={}", 
+                            revisionRequest.getRevisedSubmissionId(), revisionRequest.getRevisionRequestId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to update revised submission status: submissionId={}, revisionRequestId={}, error={}", 
+                        revisionRequest.getRevisedSubmissionId(), revisionRequest.getRevisionRequestId(), e.getMessage(), e);
+            }
+        }
+        
         log.info("Customer accepted revision: revisionRequestId={}, assignmentId={}", 
                 revisionRequest.getRevisionRequestId(), assignmentId);
     }
@@ -887,8 +934,8 @@ public class RevisionRequestService {
         // (đánh dấu đã xử lý xong vòng revision đó, customer không accept và request revision mới)
         revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
         revisionRequestRepository.save(revisionRequest);
-            
-            // Create new revision request for next round
+        
+        // Create new revision request for next round
         Integer nextRound = revisionRequestRepository.findNextRevisionRound(assignmentId);
         
         // Get contract to get managerId and check free revisions

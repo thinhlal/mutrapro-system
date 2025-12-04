@@ -34,12 +34,13 @@ public interface FileSubmissionRepository extends JpaRepository<FileSubmission, 
     /**
      * Tìm delivered submissions theo milestoneId và contractId (cho customer)
      * Query trực tiếp từ milestone, không qua assignment
+     * Lấy cả delivered, customer_accepted và customer_rejected submissions
      */
     @Query("SELECT fs FROM FileSubmission fs " +
            "JOIN TaskAssignment ta ON fs.assignmentId = ta.assignmentId " +
            "WHERE ta.milestoneId = :milestoneId " +
            "AND ta.contractId = :contractId " +
-           "AND fs.status = :status " +
+           "AND (fs.status = :status OR fs.status = 'customer_accepted' OR fs.status = 'customer_rejected') " +
            "ORDER BY fs.createdAt DESC")
     List<FileSubmission> findDeliveredSubmissionsByMilestoneAndContract(
             @Param("milestoneId") String milestoneId,

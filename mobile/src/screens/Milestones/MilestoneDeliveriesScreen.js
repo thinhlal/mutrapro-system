@@ -231,6 +231,17 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
   // Helper function to check if submission can show action buttons
   const canShowActionButtons = (submission) => {
+    // ƯU TIÊN 1: Nếu submission đã được customer accept → không hiển thị nút
+    if (submission.status?.toLowerCase() === "customer_accepted") {
+      return false;
+    }
+    
+    // ƯU TIÊN 2: Nếu submission đã bị customer reject → không hiển thị nút (đã request revision)
+    if (submission.status?.toLowerCase() === "customer_rejected") {
+      return false;
+    }
+    
+    // Chỉ hiển thị nút nếu submission status là delivered
     if (submission.status?.toLowerCase() !== "delivered") {
       return false;
     }
@@ -244,42 +255,15 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
         rr.revisedSubmissionId === submissionId
     );
 
+    // Nếu không có revision requests liên quan → hiển thị nút
     if (relatedRevisions.length === 0) {
-      // No revision requests - can accept or request revision
       return true;
     }
 
-    // Check for rejected revisions
-    const rejectedRevision = relatedRevisions.find((rr) => {
-      const status = rr.status?.toUpperCase();
-      return status === "REJECTED" && rr.originalSubmissionId === submissionId;
-    });
-
-    if (rejectedRevision) {
-      // Check if there's a newer revision
-      const hasNewerRevision = relatedRevisions.some((rr) => {
-        const rrStatus = rr.status?.toUpperCase();
-        const isNewer =
-          (rr.revisionRound || 0) > (rejectedRevision.revisionRound || 0) ||
-          (rr.requestedAt &&
-            rejectedRevision.requestedAt &&
-            new Date(rr.requestedAt) > new Date(rejectedRevision.requestedAt));
-        const isActive =
-          rrStatus === "PENDING_MANAGER_REVIEW" ||
-          rrStatus === "IN_REVISION" ||
-          rrStatus === "WAITING_MANAGER_REVIEW" ||
-          rrStatus === "APPROVED_PENDING_DELIVERY" ||
-          rrStatus === "WAITING_CUSTOMER_CONFIRM" ||
-          rrStatus === "COMPLETED";
-        return isNewer && isActive && rr.originalSubmissionId === submissionId;
-      });
-
-      if (!hasNewerRevision) {
-        return true; // Can show buttons after rejection
-      }
-    }
-
-    // Check for pending revisions
+    // Logic đơn giản:
+    // - Nếu submission là originalSubmissionId của revision request đang pending → không hiển thị nút
+    // - Nếu không có pending revision → hiển thị nút Accept và Request Revision
+    // Note: Nếu submission là originalSubmissionId và revision request đã completed → submission đã được set thành customer_rejected → đã return ở trên
     const pendingRevision = relatedRevisions.find((rr) => {
       const status = rr.status?.toUpperCase();
       return (
@@ -290,51 +274,16 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
       );
     });
 
+    // Nếu submission là originalSubmissionId và revision request đang pending → không hiển thị nút
     if (pendingRevision) {
       const isOriginal = pendingRevision.originalSubmissionId === submissionId;
       if (isOriginal) {
-        return false; // Already requested revision
+        return false;
       }
     }
 
-    // Check for completed revisions
-    const completedRevision = relatedRevisions.find((rr) => {
-      const status = rr.status?.toUpperCase();
-      return status === "COMPLETED" || status === "WAITING_CUSTOMER_CONFIRM";
-    });
-
-    if (completedRevision) {
-      const status = completedRevision.status?.toUpperCase();
-      const isOriginal = completedRevision.originalSubmissionId === submissionId;
-      const isRevised = completedRevision.revisedSubmissionId === submissionId;
-
-      if (isOriginal) {
-        return false; // Already has new submission
-      }
-
-      if (isRevised && status === "WAITING_CUSTOMER_CONFIRM") {
-        return true; // New submission after revision, needs review
-      }
-
-      if (isRevised && status === "COMPLETED") {
-        // Check if there's another pending revision
-        const hasPendingRevision = relatedRevisions.some((rr) => {
-          const rrStatus = rr.status?.toUpperCase();
-          return (
-            rr.revisionRequestId !== completedRevision.revisionRequestId &&
-            (rrStatus === "PENDING_MANAGER_REVIEW" ||
-              rrStatus === "IN_REVISION" ||
-              rrStatus === "WAITING_MANAGER_REVIEW" ||
-              rrStatus === "APPROVED_PENDING_DELIVERY") &&
-            rr.originalSubmissionId === submissionId
-          );
-        });
-
-        return !hasPendingRevision; // Show accepted if no pending revisions
-      }
-    }
-
-    return true; // Default: can show buttons
+    // Mặc định: hiển thị nút
+    return true;
   };
 
   // Helper function to check if free revisions are available
@@ -396,6 +345,8 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const getStatusColor = (status) => {
     const statusLower = status?.toLowerCase() || "";
     if (statusLower === "delivered") return COLORS.success;
+    if (statusLower === "customer_accepted") return COLORS.success;
+    if (statusLower === "customer_rejected") return COLORS.error;
     if (statusLower === "revision_requested") return COLORS.warning;
     return COLORS.textSecondary;
   };
@@ -403,6 +354,8 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
   const getStatusLabel = (status) => {
     const statusLower = status?.toLowerCase() || "";
     if (statusLower === "delivered") return "Đã gửi";
+    if (statusLower === "customer_accepted") return "Đã chấp nhận";
+    if (statusLower === "customer_rejected") return "Đã từ chối - Yêu cầu chỉnh sửa";
     if (statusLower === "revision_requested") return "Yêu cầu chỉnh sửa";
     return status || "Unknown";
   };
@@ -759,6 +712,17 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
 
                   {/* Revision Status Info */}
                   {!canShowActions && (() => {
+                    // Nếu submission đã được customer accept → hiển thị status tag (đã có ở trên)
+                    if (submission.status?.toLowerCase() === "customer_accepted") {
+                      return null; // Status tag đã được hiển thị ở trên
+                    }
+
+                    // Nếu submission đã bị customer reject → hiển thị status tag (đã có ở trên)
+                    if (submission.status?.toLowerCase() === "customer_rejected") {
+                      return null; // Status tag đã được hiển thị ở trên
+                    }
+
+                    // Check revision request đang pending
                     const submissionId = submission.submissionId;
                     const relatedRevisions = revisionRequests.filter(
                       (rr) =>
@@ -785,27 +749,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                             <View style={styles.infoBadge}>
                               <Ionicons name="time-outline" size={16} color={COLORS.warning} />
                               <Text style={styles.infoBadgeText}>
-                                Revision requested - Processing
-                              </Text>
-                            </View>
-                          );
-                        }
-                      }
-
-                      const completedRevision = relatedRevisions.find((rr) => {
-                        const status = rr.status?.toUpperCase();
-                        return status === "COMPLETED" || status === "WAITING_CUSTOMER_CONFIRM";
-                      });
-
-                      if (completedRevision) {
-                        const isOriginal =
-                          completedRevision.originalSubmissionId === submissionId;
-                        if (isOriginal) {
-                          return (
-                            <View style={styles.infoBadge}>
-                              <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-                              <Text style={styles.infoBadgeText}>
-                                Revised - See new submission
+                                Đã yêu cầu chỉnh sửa - Đang chờ xử lý
                               </Text>
                             </View>
                           );

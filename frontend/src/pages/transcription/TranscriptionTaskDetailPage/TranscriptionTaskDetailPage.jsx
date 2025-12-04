@@ -119,6 +119,8 @@ const SUBMISSION_STATUS_LABELS = {
   approved: 'Approved',
   rejected: 'Rejected',
   delivered: 'Delivered',
+  customer_accepted: 'Customer Accepted',
+  customer_rejected: 'Customer Rejected',
 };
 
 const SUBMISSION_STATUS_COLORS = {
@@ -127,6 +129,8 @@ const SUBMISSION_STATUS_COLORS = {
   approved: 'success',
   rejected: 'error',
   delivered: 'green',
+  customer_accepted: 'success',
+  customer_rejected: 'error',
 };
 
 function getTaskTypeLabel(taskType) {

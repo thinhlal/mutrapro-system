@@ -118,6 +118,8 @@ const SUBMISSION_STATUS_LABELS = {
   approved: 'Đã duyệt',
   rejected: 'Đã từ chối',
   delivered: 'Đã gửi',
+  customer_accepted: 'Đã chấp nhận',
+  customer_rejected: 'Khách từ chối - Yêu cầu chỉnh sửa',
 };
 
 const SUBMISSION_STATUS_COLORS = {
@@ -126,6 +128,8 @@ const SUBMISSION_STATUS_COLORS = {
   approved: 'success',
   rejected: 'error',
   delivered: 'green',
+  customer_accepted: 'success',
+  customer_rejected: 'error',
 };
 
 const TaskDetailPage = () => {
