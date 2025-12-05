@@ -427,26 +427,6 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            // If we came from RequestDetail, go back to RequestDetail
-            // Otherwise go to ContractsList
-            if (requestId) {
-              navigation.navigate("RequestDetail", { requestId });
-            } else {
-              navigation.navigate("ContractsList");
-            }
-          }}
-          style={styles.headerBackButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Contract Detail</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
       {/* Tab Selector */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
@@ -1038,25 +1018,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginTop: SPACING.lg,
-  },
-  headerBackButton: {
-    padding: SPACING.xs,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: "700",
-    color: COLORS.text,
   },
   loadingContainer: {
     flex: 1,
