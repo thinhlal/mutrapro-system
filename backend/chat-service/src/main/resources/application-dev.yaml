@@ -87,6 +87,10 @@ management:
       prometheus:
         enabled: true
 
+notification:
+  service:
+    base-url: http://localhost:8085
+
 # AWS S3 Configuration
 aws:
   s3:

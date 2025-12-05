@@ -400,6 +400,12 @@ services:
       - KAFKA_TOPIC_CONTRACT_SIGNED=${KAFKA_TOPIC_CONTRACT_SIGNED:-contract-events}
       - KAFKA_TOPIC_CHAT_ROOM_CREATED=${KAFKA_TOPIC_CHAT_ROOM_CREATED:-chat-events}
       - KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE=${KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE:-chat-system-message-events}
+      # AWS S3 Configuration (match với application-prod.yml)
+      - AWS_S3_ENABLED=${AWS_S3_ENABLED:-true}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-mutrapro-dev-files}
+      - AWS_S3_REGION=${AWS_S3_REGION:-ap-southeast-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     # Nếu dùng external Kafka, comment out depends_on này
     # Nếu dùng local Kafka container, giữ lại depends_on
     depends_on:

@@ -75,6 +75,15 @@ app:
       chat.room.created: ${KAFKA_TOPIC_CHAT_ROOM_CREATED:chat-events}
       chat.system.message: ${KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE:chat-system-message-events}
 
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: ${AWS_S3_ENABLED:true}
+    bucket-name: ${AWS_S3_BUCKET_NAME:mutrapro-dev-files}
+    region: ${AWS_S3_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
+
 # Springdoc OpenAPI
 springdoc:
   api-docs:
