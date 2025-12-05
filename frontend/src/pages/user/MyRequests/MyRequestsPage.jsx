@@ -23,6 +23,7 @@ import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
 import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import { formatPrice } from '../../../services/pricingMatrixService';
 import { Space } from 'antd';
 
 const { Option } = Select;
@@ -408,6 +409,21 @@ const MyRequestsContent = () => {
                           </span>
                         </div>
                       )}
+
+                    {request.totalPrice && (
+                      <div className={styles.infoRow}>
+                        <span className={styles.infoLabel}>Total Price:</span>
+                        <span
+                          className={styles.infoValue}
+                          style={{ fontWeight: 600, color: '#52c41a', fontSize: '16px' }}
+                        >
+                          {formatPrice(
+                            request.totalPrice,
+                            request.currency || 'VND'
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.cardFooter}>

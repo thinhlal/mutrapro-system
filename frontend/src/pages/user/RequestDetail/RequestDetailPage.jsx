@@ -27,6 +27,7 @@ import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import { formatPrice } from '../../../services/pricingMatrixService';
 import {
   getContractsByRequestId,
   approveContract,
@@ -508,6 +509,39 @@ const RequestDetailPage = () => {
                 <div>
                   <Tag color="default">{getManagerStatusText()}</Tag>
                 </div>
+              </Descriptions.Item>
+            )}
+
+            {/* Pricing Information */}
+            {request.servicePrice && (
+              <Descriptions.Item label="Service Price">
+                <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+                  {formatPrice(
+                    request.servicePrice,
+                    request.currency || 'VND'
+                  )}
+                </Tag>
+              </Descriptions.Item>
+            )}
+            {request.instrumentPrice &&
+              request.instrumentPrice > 0 && (
+                <Descriptions.Item label="Instruments Price">
+                  <Tag color="orange" style={{ fontSize: 14, padding: '4px 12px' }}>
+                    {formatPrice(
+                      request.instrumentPrice,
+                      request.currency || 'VND'
+                    )}
+                  </Tag>
+                </Descriptions.Item>
+              )}
+            {request.totalPrice && (
+              <Descriptions.Item label="Total Price">
+                <Tag color="green" style={{ fontSize: 16, padding: '6px 16px', fontWeight: 600 }}>
+                  {formatPrice(
+                    request.totalPrice,
+                    request.currency || 'VND'
+                  )}
+                </Tag>
               </Descriptions.Item>
             )}
 
