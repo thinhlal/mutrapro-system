@@ -38,7 +38,7 @@ chmod +x scripts/build-and-push.sh
 ./scripts/build-and-push.sh
 ```
 
-**Script sẽ tự động build và push tất cả 9 services:**
+**Script sẽ tự động build và push tất cả 8 services:**
 - api-gateway
 - identity-service
 - project-service
@@ -46,7 +46,6 @@ chmod +x scripts/build-and-push.sh
 - request-service
 - notification-service
 - specialist-service
-- studio-service
 - chat-service
 
 ### 1.4. Build và Push TỪNG Service (Nếu muốn build riêng)
@@ -93,12 +92,6 @@ docker build -f backend/specialist-service/Dockerfile -t your-dockerhub-username
 docker push your-dockerhub-username/specialist-service:latest
 ```
 
-**Studio Service:**
-```bash
-docker build -f backend/studio-service/Dockerfile -t your-dockerhub-username/studio-service:latest ./backend
-docker push your-dockerhub-username/studio-service:latest
-```
-
 **Chat Service:**
 ```bash
 docker build -f backend/chat-service/Dockerfile -t your-dockerhub-username/chat-service:latest ./backend
@@ -130,7 +123,6 @@ sudo docker pull your-dockerhub-username/billing-service:latest
 sudo docker pull your-dockerhub-username/request-service:latest
 sudo docker pull your-dockerhub-username/notification-service:latest
 sudo docker pull your-dockerhub-username/specialist-service:latest
-sudo docker pull your-dockerhub-username/studio-service:latest
 sudo docker pull your-dockerhub-username/chat-service:latest
 ```
 
@@ -199,11 +191,6 @@ sudo docker logs mutrapro-notification-service -f
 sudo docker logs mutrapro-specialist-service -f
 ```
 
-**Studio Service:**
-```bash
-sudo docker logs mutrapro-studio-service -f
-```
-
 **Chat Service:**
 ```bash
 sudo docker logs mutrapro-chat-service -f
@@ -237,7 +224,6 @@ curl http://localhost:8083/actuator/health
 curl http://localhost:8084/actuator/health
 curl http://localhost:8085/actuator/health
 curl http://localhost:8086/actuator/health
-curl http://localhost:8087/actuator/health
 curl http://localhost:8088/actuator/health
 ```
 

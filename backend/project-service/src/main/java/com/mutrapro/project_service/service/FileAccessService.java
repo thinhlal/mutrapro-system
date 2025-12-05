@@ -229,7 +229,7 @@ public class FileAccessService {
             }
         }
         
-        // Nếu file có bookingId, check qua studio-service (chưa implement)
+        // Nếu file có bookingId, check booking access (studio bookings trong cùng project-service)
         // TODO: Implement booking manager check
         
         return false;
@@ -265,7 +265,7 @@ public class FileAccessService {
             }
         }
         
-        // Nếu file có bookingId, check qua studio-service (chưa implement)
+        // Nếu file có bookingId, check booking access (studio bookings trong cùng project-service)
         // TODO: Implement booking owner check
         
         return false;

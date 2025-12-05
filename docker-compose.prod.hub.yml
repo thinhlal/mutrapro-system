@@ -48,7 +48,6 @@ services:
       - REQUEST_URI=${REQUEST_URI:-http://request-service:8084}
       - BILLING_URI=${BILLING_URI:-http://billing-service:8083}
       - SPECIALIST_URI=${SPECIALIST_URI:-http://specialist-service:8086}
-      - STUDIO_URI=${STUDIO_URI:-http://studio-service:8087}
       - NOTIFICATION_URI=${NOTIFICATION_URI:-http://notification-service:8085}
       - CHAT_URI=${CHAT_URI:-http://chat-service:8088}
     networks:
@@ -342,31 +341,6 @@ services:
       retries: 3
       start_period: 60s
 
-  # Studio Service
-  studio-service:
-    image: ${DOCKER_HUB_USERNAME:-mutrapro}/studio-service:latest
-    container_name: mutrapro-studio-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      # Server Configuration (match với application-prod.yml)
-      - SERVER_PORT=${SERVER_PORT:-8087}
-      - SERVER_CONTEXT_PATH=${SERVER_CONTEXT_PATH:-}
-      # Connect đến external database trên Railway (match với application-prod.yml: ${DATABASE_URL})
-      - DATABASE_URL=${STUDIO_DATASOURCE_URL}
-      - DATABASE_USERNAME=${STUDIO_DATASOURCE_USERNAME}
-      - DATABASE_PASSWORD=${STUDIO_DATASOURCE_PASSWORD}
-      # JWT để validate tokens từ API Gateway
-      - JWT_SIGNER_KEY=${JWT_SECRET}
-    networks:
-      - mutrapro-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
   # Chat Service
   chat-service:
     image: ${DOCKER_HUB_USERNAME:-mutrapro}/chat-service:latest
@@ -431,7 +405,6 @@ services:
       - request-service
       - notification-service
       - specialist-service
-      - studio-service
       - chat-service
     networks:
       - mutrapro-network

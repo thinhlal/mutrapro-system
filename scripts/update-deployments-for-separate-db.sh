@@ -35,7 +35,6 @@ SERVICES=(
     "quotation-service"
     "revision-service"
     "specialist-service"
-    "studio-service"
     "task-service"
 )
 

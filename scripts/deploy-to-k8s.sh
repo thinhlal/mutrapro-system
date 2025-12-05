@@ -63,7 +63,6 @@ kubectl wait --for=condition=available --timeout=300s deployment/billing-service
 kubectl wait --for=condition=available --timeout=300s deployment/request-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/notification-service -n $NAMESPACE
 kubectl wait --for=condition=available --timeout=300s deployment/specialist-service -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/studio-service -n $NAMESPACE
 
 # 5. Apply services
 echo "Applying Kubernetes services..."

@@ -132,11 +132,6 @@ SPECIALIST_DATASOURCE_URL=jdbc:postgresql://switchyard.proxy.rlwy.net:23349/rail
 SPECIALIST_DATASOURCE_USERNAME=postgres
 SPECIALIST_DATASOURCE_PASSWORD=your_password
 
-# Studio DB
-STUDIO_DATASOURCE_URL=jdbc:postgresql://turntable.proxy.rlwy.net:56638/railway
-STUDIO_DATASOURCE_USERNAME=postgres
-STUDIO_DATASOURCE_PASSWORD=your_password
-
 # Chat DB
 CHAT_DATASOURCE_URL=jdbc:postgresql://metro.proxy.rlwy.net:31175/railway
 CHAT_DATASOURCE_USERNAME=postgres

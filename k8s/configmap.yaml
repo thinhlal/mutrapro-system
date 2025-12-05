@@ -23,8 +23,6 @@ data:
   SPECIALIST_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/specialist_db"
   SPECIALIST_DATASOURCE_USERNAME: "specialist_service_user"
   
-  STUDIO_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/studio_db"
-  STUDIO_DATASOURCE_USERNAME: "studio_service_user"
   
   # API Gateway database (if needed)
   GATEWAY_DATASOURCE_URL: "jdbc:postgresql://postgres-service:5432/gateway_db"

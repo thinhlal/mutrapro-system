@@ -64,13 +64,6 @@ spec:
             name: specialist-service
             port:
               number: 8086
-      - path: /api/studios
-        pathType: Prefix
-        backend:
-          service:
-            name: studio-service
-            port:
-              number: 8087
       - path: /
         pathType: Prefix
         backend:

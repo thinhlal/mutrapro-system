@@ -54,7 +54,7 @@ public class FileUploadedEvent implements Serializable {
     // assignment_id (optional) - Soft reference to project-service task_assignments
     String assignmentId;
     
-    // booking_id (optional) - Soft reference to studio-service
+    // booking_id (optional) - Reference to studio_bookings (project-service)
     String bookingId;
 }
 

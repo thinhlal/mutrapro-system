@@ -142,7 +142,7 @@ public void handleQuotationApproved(QuotationApprovedEvent event) {
 - `package.prepared`
 - `package.delivered`
 
-### studio-service
+### project-service (includes studio bookings)
 - `booking.created`
 - `booking.confirmed`
 - `booking.completed`

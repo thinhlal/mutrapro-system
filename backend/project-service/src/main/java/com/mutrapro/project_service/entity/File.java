@@ -45,7 +45,7 @@ public class File extends BaseEntity<String> {
     String submissionId;  // Reference to file_submissions (optional - file có thể thuộc submission package)
 
     @Column(name = "booking_id")
-    String bookingId;  // Soft reference to studio-service
+    String bookingId;  // Reference to studio_bookings (same service - project-service)
 
     // File metadata
     @Column(name = "file_name", nullable = false, length = 255)

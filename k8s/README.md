@@ -23,7 +23,6 @@ k8s/
 │   ├── quotation-service-deployment.yaml
 │   ├── revision-service-deployment.yaml
 │   ├── specialist-service-deployment.yaml
-│   ├── studio-service-deployment.yaml
 │   └── task-service-deployment.yaml
 ├── services/                        # Service manifests
 │   ├── api-gateway.yaml
@@ -37,7 +36,6 @@ k8s/
 │   ├── quotation-service.yaml
 │   ├── revision-service.yaml
 │   ├── specialist-service.yaml
-│   ├── studio-service.yaml
 │   ├── task-service.yaml
 │   ├── postgres.yaml
 │   └── redis.yaml
@@ -60,7 +58,6 @@ k8s/
 | Quotation Service | 8088 | 2 | 256Mi/250m | 512Mi/500m |
 | Revision Service | 8089 | 2 | 256Mi/250m | 512Mi/500m |
 | Specialist Service | 8090 | 2 | 256Mi/250m | 512Mi/500m |
-| Studio Service | 8091 | 2 | 256Mi/250m | 512Mi/500m |
 | Task Service | 8092 | 2 | 256Mi/250m | 512Mi/500m |
 
 ## 🔧 Configuration
@@ -82,7 +79,6 @@ Hệ thống sử dụng **Database Per Service** pattern, trong đó mỗi micr
 | Quotation Service | `quotation_db` | `quotation_service_user` | `quotation_service_password` |
 | Revision Service | `revision_db` | `revision_service_user` | `revision_service_password` |
 | Specialist Service | `specialist_db` | `specialist_service_user` | `specialist_service_password` |
-| Studio Service | `studio_db` | `studio_service_user` | `studio_service_password` |
 | Task Service | `task_db` | `task_service_user` | `task_service_password` |
 
 ### Environment Variables

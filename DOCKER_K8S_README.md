@@ -19,7 +19,6 @@ backend/
 ├── request-service/Dockerfile
 ├── notification-service/Dockerfile
 ├── specialist-service/Dockerfile
-├── studio-service/Dockerfile
 └── shared/Dockerfile
 ```
 
@@ -57,7 +56,6 @@ docker-compose up --build
 | Request Service | **8084** | **8084** | **8084** | **8084** |
 | Notification Service | **8085** | **8085** | **8085** | **8085** |
 | Specialist Service | **8086** | **8086** | **8086** | **8086** |
-| Studio Service | **8087** | **8087** | **8087** | **8087** |
 
 **Giải thích Port Mapping:**
 
@@ -83,7 +81,7 @@ docker-compose up --build
 
 **Lưu ý:** 
 - API Gateway dùng port 80 cho Service Port (HTTP standard), nhưng Container Port vẫn là 8080
-- Các service khác dùng port tuần tự từ 8081 → 8087, **TẤT CẢ PORT ĐỒNG BỘ** (Container = Docker Host = K8s Service = K8s Target)
+- Các service khác dùng port tuần tự từ 8081 → 8088, **TẤT CẢ PORT ĐỒNG BỘ** (Container = Docker Host = K8s Service = K8s Target)
 
 ## ☸️ Kubernetes Setup
 
@@ -134,7 +132,6 @@ k8s/
 │   ├── request-service-deployment.yaml
 │   ├── notification-service-deployment.yaml
 │   ├── specialist-service-deployment.yaml
-│   └── studio-service-deployment.yaml
 ├── services/
 │   ├── api-gateway.yaml
 │   ├── identity-service.yaml
@@ -143,7 +140,6 @@ k8s/
 │   ├── request-service.yaml
 │   ├── notification-service.yaml
 │   ├── specialist-service.yaml
-│   ├── studio-service.yaml
 │   ├── postgres.yaml
 │   └── redis.yaml
 └── ingress/
@@ -251,7 +247,6 @@ deploy:
 - `GET /api/requests/**` - Request Service
 - `GET /api/notifications/**` - Notification Service
 - `GET /api/specialists/**` - Specialist Service
-- `GET /api/studios/**` - Studio Service
 
 ## 📊 Monitoring & Health Checks
 
@@ -287,7 +282,6 @@ kubectl port-forward service/billing-service 8083:8083 -n mutrapro
 kubectl port-forward service/request-service 8084:8084 -n mutrapro
 kubectl port-forward service/notification-service 8085:8085 -n mutrapro
 kubectl port-forward service/specialist-service 8086:8086 -n mutrapro
-kubectl port-forward service/studio-service 8087:8087 -n mutrapro
 ```
 
 ## 🔍 Troubleshooting

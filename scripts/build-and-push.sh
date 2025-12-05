@@ -28,7 +28,6 @@ SERVICES=(
     "request-service"
     "notification-service"
     "specialist-service"
-    "studio-service"
     "chat-service"
 )
 

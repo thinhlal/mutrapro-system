@@ -35,7 +35,6 @@ declare -A SERVICES=(
     ["quotation-service"]="quotation_db:quotation_service_user:quotation_service_password"
     ["revision-service"]="revision_db:revision_service_user:revision_service_password"
     ["specialist-service"]="specialist_db:specialist_service_user:specialist_service_password"
-    ["studio-service"]="studio_db:studio_service_user:studio_service_password"
     ["task-service"]="task_db:task_service_user:task_service_password"
 )
 

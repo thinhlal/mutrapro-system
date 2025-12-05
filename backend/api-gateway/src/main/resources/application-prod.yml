@@ -33,7 +33,7 @@ spring:
               filters:
                 - StripPrefix=3
 
-            # Project Service
+            # Project Service (handles contracts, tasks, files, and studio bookings)
             - id: project-service
               uri: ${PROJECT_URI:http://project-service:8082}
               predicates:
@@ -62,14 +62,6 @@ spring:
               uri: ${SPECIALIST_URI:http://specialist-service:8086}
               predicates:
                 - Path=${app.api-prefix}/specialists/**
-              filters:
-                - StripPrefix=3
-
-            # Studio Service
-            - id: studio-service
-              uri: ${STUDIO_URI:http://studio-service:8087}
-              predicates:
-                - Path=${app.api-prefix}/studios/**
               filters:
                 - StripPrefix=3
 
