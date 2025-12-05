@@ -1,0 +1,482 @@
+# 🚀 MuTraPro - Build và Deploy lên EC2
+
+Tài liệu tổng hợp các lệnh build images và deploy lên EC2.
+
+---
+
+## 📦 PHẦN 1: BUILD VÀ PUSH IMAGES (Trên máy Local)
+
+### Bước 1: Chuẩn bị
+
+#### 1.1. Đăng nhập Docker Hub
+
+```bash
+docker login
+```
+
+#### 1.2. Cấu hình Docker Hub Username
+
+**Windows PowerShell:**
+```powershell
+$env:DOCKER_HUB_USERNAME="your-dockerhub-username"
+```
+
+**Linux/Mac:**
+```bash
+export DOCKER_HUB_USERNAME="your-dockerhub-username"
+```
+
+**Hoặc thêm vào file `.env` trong thư mục root:**
+```env
+DOCKER_HUB_USERNAME=your-dockerhub-username
+```
+
+### Bước 2: Build và Push TẤT CẢ Services (Khuyến nghị)
+
+**Windows PowerShell:**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1
+```
+
+**Linux/Mac:**
+```bash
+chmod +x scripts/build-and-push.sh
+./scripts/build-and-push.sh
+```
+
+**Hoặc dùng Makefile (nếu có):**
+```bash
+make docker-build
+```
+
+Script sẽ tự động build và push 9 services:
+- ✅ api-gateway
+- ✅ identity-service
+- ✅ project-service
+- ✅ billing-service
+- ✅ request-service
+- ✅ notification-service
+- ✅ specialist-service
+- ✅ studio-service
+- ✅ chat-service
+
+### Bước 3: Build và Push TỪNG Service (Tùy chọn)
+
+**Windows PowerShell:**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api-gateway
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service identity-service
+# ... các service khác
+```
+
+**Linux/Mac - Build từng service thủ công:**
+```bash
+# API Gateway
+docker build -f backend/api-gateway/Dockerfile -t your-dockerhub-username/api-gateway:latest ./backend
+docker push your-dockerhub-username/api-gateway:latest
+
+# Identity Service
+docker build -f backend/identity-service/Dockerfile -t your-dockerhub-username/identity-service:latest ./backend
+docker push your-dockerhub-username/identity-service:latest
+
+# Project Service
+docker build -f backend/project-service/Dockerfile -t your-dockerhub-username/project-service:latest ./backend
+docker push your-dockerhub-username/project-service:latest
+
+# Billing Service
+docker build -f backend/billing-service/Dockerfile -t your-dockerhub-username/billing-service:latest ./backend
+docker push your-dockerhub-username/billing-service:latest
+
+# Request Service
+docker build -f backend/request-service/Dockerfile -t your-dockerhub-username/request-service:latest ./backend
+docker push your-dockerhub-username/request-service:latest
+
+# Notification Service
+docker build -f backend/notification-service/Dockerfile -t your-dockerhub-username/notification-service:latest ./backend
+docker push your-dockerhub-username/notification-service:latest
+
+# Specialist Service
+docker build -f backend/specialist-service/Dockerfile -t your-dockerhub-username/specialist-service:latest ./backend
+docker push your-dockerhub-username/specialist-service:latest
+
+# Studio Service
+docker build -f backend/studio-service/Dockerfile -t your-dockerhub-username/studio-service:latest ./backend
+docker push your-dockerhub-username/studio-service:latest
+
+# Chat Service
+docker build -f backend/chat-service/Dockerfile -t your-dockerhub-username/chat-service:latest ./backend
+docker push your-dockerhub-username/chat-service:latest
+```
+
+---
+
+## 🌐 PHẦN 2: DEPLOY VÀ CHẠY TRÊN EC2
+
+### Bước 1: SSH vào EC2 và chuẩn bị môi trường
+
+```bash
+# SSH vào EC2
+ssh -i your-key.pem ubuntu@your-ec2-ip
+
+# Di chuyển đến thư mục project
+cd ~/mutrapro
+
+# Hoặc clone từ GitHub (nếu chưa có)
+mkdir -p ~/projects
+cd ~/projects
+git clone https://github.com/<your-org>/<your-repo>.git
+cd <your-repo>
+```
+
+### Bước 2: Kiểm tra Docker và Docker Compose
+
+```bash
+# Kiểm tra Docker đã cài chưa
+docker --version
+docker-compose --version
+
+# Nếu chưa có, cài đặt:
+sudo apt update && sudo apt upgrade -y
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Cài Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+  -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+```
+
+### Bước 3: Cấu hình file .env
+
+Đảm bảo file `.env` đã được tạo và điền đầy đủ thông tin:
+
+```bash
+nano .env
+```
+
+**Nội dung tối thiểu cần có:**
+```env
+# Docker Hub
+DOCKER_HUB_USERNAME=your-dockerhub-username
+
+# Redis
+REDIS_HOST=redis-xxx.xxx.redis-cloud.com
+REDIS_PORT=11105
+REDIS_PASSWORD=your_redis_password
+
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# JWT
+JWT_SECRET=your_super_secret_jwt_key
+
+# Databases (Railway hoặc external)
+IDENTITY_DATASOURCE_URL=jdbc:postgresql://xxx.xxx:xxxxx/railway
+IDENTITY_DATASOURCE_USERNAME=postgres
+IDENTITY_DATASOURCE_PASSWORD=your_password
+
+# ... các database khác tương tự
+
+# AWS S3
+AWS_S3_BUCKET_NAME=mutrapro-dev-files
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+
+# Mail
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+
+# Application URLs (QUAN TRỌNG)
+API_BASE_URL=http://your-ec2-ip
+FRONTEND_URL=http://your-frontend-url
+CORS_ALLOWED_ORIGINS=http://your-ec2-ip,http://your-frontend-url
+```
+
+### Bước 4: Đăng nhập Docker Hub trên EC2 (nếu images là private)
+
+```bash
+docker login
+# Nhập username và password/PAT
+```
+
+### Bước 5: Pull Images và Chạy Services
+
+#### 5.1. Pull tất cả images từ Docker Hub
+
+```bash
+sudo docker compose -f docker-compose.prod.yml pull
+```
+
+**Hoặc pull từng service:**
+```bash
+sudo docker pull your-dockerhub-username/api-gateway:latest
+sudo docker pull your-dockerhub-username/identity-service:latest
+sudo docker pull your-dockerhub-username/project-service:latest
+sudo docker pull your-dockerhub-username/billing-service:latest
+sudo docker pull your-dockerhub-username/request-service:latest
+sudo docker pull your-dockerhub-username/notification-service:latest
+sudo docker pull your-dockerhub-username/specialist-service:latest
+sudo docker pull your-dockerhub-username/studio-service:latest
+sudo docker pull your-dockerhub-username/chat-service:latest
+```
+
+#### 5.2. Chạy tất cả services
+
+```bash
+# Chạy ở chế độ background
+sudo docker compose -f docker-compose.prod.yml up -d
+```
+
+**Hoặc stop và start lại (nếu đã chạy rồi):**
+```bash
+sudo docker compose -f docker-compose.prod.yml down
+sudo docker compose -f docker-compose.prod.yml up -d
+```
+
+#### 5.3. Kiểm tra trạng thái
+
+```bash
+# Xem status tất cả containers
+sudo docker compose -f docker-compose.prod.yml ps
+
+# Hoặc
+sudo docker ps
+```
+
+### Bước 6: Kiểm tra Health và Logs
+
+#### 6.1. Kiểm tra Health Endpoints
+
+```bash
+# Kiểm tra qua Nginx (port 80)
+curl http://localhost/actuator/health
+
+# Kiểm tra trực tiếp API Gateway
+curl http://localhost:8080/actuator/health
+
+# Kiểm tra từng service
+curl http://localhost:8081/actuator/health  # Identity
+curl http://localhost:8082/actuator/health  # Project
+curl http://localhost:8083/actuator/health  # Billing
+curl http://localhost:8084/actuator/health  # Request
+curl http://localhost:8085/actuator/health  # Notification
+curl http://localhost:8086/actuator/health  # Specialist
+curl http://localhost:8087/actuator/health  # Studio
+curl http://localhost:8088/actuator/health  # Chat
+```
+
+#### 6.2. Xem Logs
+
+**Xem logs tất cả services:**
+```bash
+sudo docker compose -f docker-compose.prod.yml logs -f
+```
+
+**Xem logs từng service:**
+```bash
+# API Gateway
+sudo docker logs mutrapro-api-gateway -f
+
+# Identity Service
+sudo docker logs mutrapro-identity-service -f
+
+# Project Service
+sudo docker logs mutrapro-project-service -f
+
+# Billing Service
+sudo docker logs mutrapro-billing-service -f
+
+# Request Service
+sudo docker logs mutrapro-request-service -f
+
+# Notification Service
+sudo docker logs mutrapro-notification-service -f
+
+# Specialist Service
+sudo docker logs mutrapro-specialist-service -f
+
+# Studio Service
+sudo docker logs mutrapro-studio-service -f
+
+# Chat Service
+sudo docker logs mutrapro-chat-service -f
+
+# Nginx
+sudo docker logs mutrapro-nginx -f
+
+# Kafka
+sudo docker logs mutrapro-kafka -f
+```
+
+### Bước 7: Cấu hình AWS Security Group
+
+Đảm bảo đã mở các ports cần thiết trong AWS Security Group:
+
+- **Port 80** (HTTP): `0.0.0.0/0` - Cho phép truy cập từ bên ngoài
+- **Port 443** (HTTPS): `0.0.0.0/0` - Nếu có SSL
+- **Port 22** (SSH): `Your-IP/32` - Chỉ cho phép IP của bạn (bảo mật)
+
+**Cách mở port trong AWS Console:**
+1. Vào **EC2 → Instances → chọn instance**
+2. Tab **Security → Security Groups → Inbound rules**
+3. Click **Edit inbound rules**
+4. Thêm rule:
+   - Type: `HTTP`
+   - Port: `80`
+   - Source: `0.0.0.0/0`
+
+### Bước 8: Kiểm tra từ bên ngoài
+
+```bash
+# Test từ máy local
+curl http://your-ec2-public-ip/actuator/health
+
+# Hoặc mở trình duyệt
+http://your-ec2-public-ip
+```
+
+---
+
+## 🔄 QUY TRÌNH UPDATE SAU NÀY
+
+Khi có code mới và muốn update trên EC2:
+
+### 1. Trên máy Local - Build và Push
+
+```bash
+# Build và push lại tất cả
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1
+
+# Hoặc chỉ build một service cụ thể
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api-gateway
+```
+
+### 2. Trên EC2 - Pull và Restart
+
+```bash
+# Pull images mới
+sudo docker compose -f docker-compose.prod.yml pull
+
+# Restart với images mới
+sudo docker compose -f docker-compose.prod.yml up -d
+
+# Hoặc restart một service cụ thể
+sudo docker compose -f docker-compose.prod.yml pull api-gateway
+sudo docker compose -f docker-compose.prod.yml up -d api-gateway
+```
+
+---
+
+## 🛠️ CÁC LỆNH HỮU ÍCH KHÁC
+
+### Restart Services
+
+```bash
+# Restart tất cả
+sudo docker compose -f docker-compose.prod.yml restart
+
+# Restart một service
+sudo docker compose -f docker-compose.prod.yml restart api-gateway
+```
+
+### Stop Services
+
+```bash
+# Stop (giữ containers)
+sudo docker compose -f docker-compose.prod.yml stop
+
+# Stop và xóa containers
+sudo docker compose -f docker-compose.prod.yml down
+```
+
+### Kiểm tra Resource Usage
+
+```bash
+# CPU và Memory usage
+sudo docker stats
+
+# Disk usage
+sudo docker system df
+
+# Xem chi tiết một container
+sudo docker stats mutrapro-api-gateway
+```
+
+### Xem Network và Volumes
+
+```bash
+# List networks
+sudo docker network ls
+sudo docker network inspect mutrapro-network
+
+# List volumes
+sudo docker volume ls
+```
+
+### Troubleshooting
+
+```bash
+# Xem events
+sudo docker events
+
+# Inspect container
+sudo docker inspect mutrapro-api-gateway
+
+# Xem cấu hình nginx
+sudo docker exec mutrapro-nginx nginx -t
+
+# Reload nginx
+sudo docker compose -f docker-compose.prod.yml restart nginx
+```
+
+---
+
+## ⚡ QUICK DEPLOY (Tất cả trong 1 lần)
+
+### Trên EC2 - Quick Deploy:
+
+```bash
+cd ~/mutrapro
+sudo docker compose -f docker-compose.prod.yml pull
+sudo docker compose -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.prod.yml ps
+curl http://localhost/actuator/health
+```
+
+---
+
+## ✅ CHECKLIST SAU KHI DEPLOY
+
+- [ ] Tất cả containers đang chạy (`sudo docker compose -f docker-compose.prod.yml ps`)
+- [ ] Health check pass (`curl http://localhost/actuator/health`)
+- [ ] Không có lỗi trong logs (`sudo docker compose -f docker-compose.prod.yml logs | grep -i error`)
+- [ ] Resource usage OK (`sudo docker stats --no-stream`)
+- [ ] Có thể truy cập từ bên ngoài (`curl http://your-ec2-ip/actuator/health`)
+- [ ] Database connections OK (kiểm tra logs)
+- [ ] Redis connections OK (kiểm tra logs)
+- [ ] Kafka connections OK (kiểm tra logs)
+
+---
+
+## 📝 LƯU Ý QUAN TRỌNG
+
+1. **Docker Hub Username**: Thay `your-dockerhub-username` bằng username Docker Hub thật của bạn
+2. **File docker-compose**: Đảm bảo đã có file `docker-compose.prod.yml` hoặc `docker-compose.prod.hub.yml` trên EC2
+3. **File .env**: Đảm bảo đã copy và điền đầy đủ các biến môi trường
+4. **Nginx config**: Đảm bảo đã copy file `docker/nginx/nginx.conf` lên EC2
+5. **Security Group**: Đảm bảo đã mở ports 80, 443 trong AWS Security Group
+6. **Database**: Đảm bảo databases (Railway hoặc external) đã cho phép kết nối từ EC2 IP
+
+---
+
+## 🔗 TÀI LIỆU LIÊN QUAN
+
+- [EC2_DEPLOY_COMMANDS.md](./EC2_DEPLOY_COMMANDS.md) - Danh sách lệnh chi tiết
+- [EC2_DEPLOY_GUIDE.md](./EC2_DEPLOY_GUIDE.md) - Hướng dẫn deploy chi tiết
+- [DOCKER_K8S_README.md](../../DOCKER_K8S_README.md) - Hướng dẫn Docker & Kubernetes
+
