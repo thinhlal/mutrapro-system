@@ -29,7 +29,7 @@ import OTPVerificationModal from "../../components/OTPVerificationModal";
 import ContractPreview from "../../components/ContractPreview";
 
 const ContractDetailScreen = ({ navigation, route }) => {
-  const { contractId } = route.params;
+  const { contractId, requestId } = route.params;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [contract, setContract] = useState(null);
@@ -429,7 +429,18 @@ const ContractDetailScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+        <TouchableOpacity
+          onPress={() => {
+            // If we came from RequestDetail, go back to RequestDetail
+            // Otherwise go to ContractsList
+            if (requestId) {
+              navigation.navigate("RequestDetail", { requestId });
+            } else {
+              navigation.navigate("ContractsList");
+            }
+          }}
+          style={styles.headerBackButton}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Contract Detail</Text>
@@ -653,12 +664,15 @@ const ContractDetailScreen = ({ navigation, route }) => {
                       <Text style={styles.milestoneTitle}>
                         {milestone.name || `Milestone ${milestone.orderIndex || index + 1}`}
                       </Text>
-                      {installment && (
+                    </View>
+                    {installment && (
+                      <View style={styles.milestonePriceRow}>
+                        <Text style={styles.milestonePriceLabel}>Price:</Text>
                         <Text style={styles.milestoneAmount}>
                           {formatCurrency(installment.amount, installment.currency)}
                         </Text>
-                      )}
-                    </View>
+                      </View>
+                    )}
                     {milestone.description && (
                       <Text style={styles.milestoneDescription}>{milestone.description}</Text>
                     )}
@@ -724,26 +738,6 @@ const ContractDetailScreen = ({ navigation, route }) => {
                         </View>
                       </View>
                       <View style={styles.milestoneActions}>
-                        {/* View Deliveries Button - chỉ hiển thị khi milestone có work status WAITING_CUSTOMER, READY_FOR_PAYMENT, hoặc COMPLETED */}
-                        {(workStatus === "WAITING_CUSTOMER" ||
-                          workStatus === "READY_FOR_PAYMENT" ||
-                          workStatus === "COMPLETED") && (
-                          <TouchableOpacity
-                            style={[styles.actionButton, styles.viewDeliveriesButton]}
-                            onPress={() =>
-                              navigation.navigate("MilestoneDeliveries", {
-                                contractId,
-                                milestoneId: milestone.milestoneId,
-                                milestoneName:
-                                  milestone.name ||
-                                  `Milestone ${milestone.orderIndex || index + 1}`,
-                              })
-                            }
-                          >
-                            <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
-                            <Text style={styles.viewDeliveriesButtonText}>View Deliveries</Text>
-                          </TouchableOpacity>
-                        )}
                         {/* Pay Button */}
                         {isDue &&
                           !isPaid &&
@@ -764,6 +758,28 @@ const ContractDetailScreen = ({ navigation, route }) => {
                           )}
                       </View>
                     </View>
+                    {/* View Deliveries Button - chỉ hiển thị khi milestone có work status WAITING_CUSTOMER, READY_FOR_PAYMENT, hoặc COMPLETED */}
+                    {(workStatus === "WAITING_CUSTOMER" ||
+                      workStatus === "READY_FOR_PAYMENT" ||
+                      workStatus === "COMPLETED") && (
+                      <View style={styles.viewDeliveriesContainer}>
+                        <TouchableOpacity
+                          style={[styles.actionButton, styles.viewDeliveriesButton]}
+                          onPress={() =>
+                            navigation.navigate("MilestoneDeliveries", {
+                              contractId,
+                              milestoneId: milestone.milestoneId,
+                              milestoneName:
+                                milestone.name ||
+                                `Milestone ${milestone.orderIndex || index + 1}`,
+                            })
+                          }
+                        >
+                          <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
+                          <Text style={styles.viewDeliveriesButtonText}>View Deliveries</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -1252,11 +1268,21 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
   },
+  milestonePriceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  milestonePriceLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.xs,
+  },
   milestoneAmount: {
     fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.primary,
-    marginLeft: SPACING.sm,
   },
   milestoneDescription: {
     fontSize: FONT_SIZES.sm,
@@ -1292,6 +1318,9 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.primary,
+  },
+  viewDeliveriesContainer: {
+    marginTop: SPACING.sm,
   },
   tag: {
     paddingHorizontal: SPACING.sm,

@@ -5,20 +5,79 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants"
 
 const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading }) => {
   const formatCurrency = (amount, currency = "VND") => {
+    if (amount === undefined || amount === null || isNaN(amount)) return "N/A";
     if (currency === "VND") {
-      return `${amount?.toLocaleString("vi-VN")} ₫`;
+      return `${amount.toLocaleString("vi-VN")} ₫`;
     }
-    return `${currency} ${amount?.toLocaleString()}`;
+    return `${currency} ${amount.toLocaleString()}`;
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
+
+  // Helper function to get deposit amount (similar to frontend)
+  const getDepositAmount = (contract) => {
+    if (!contract) return null;
+
+    // 1. Check depositAmount field first
+    if (
+      contract.depositAmount !== undefined &&
+      contract.depositAmount !== null &&
+      !isNaN(contract.depositAmount) &&
+      Number(contract.depositAmount) > 0
+    ) {
+      return Number(contract.depositAmount);
+    }
+
+    // 2. Check from installments with type DEPOSIT
+    const depositInstallment = contract.installments?.find(
+      (inst) => inst.type === "DEPOSIT"
+    );
+    if (
+      depositInstallment &&
+      depositInstallment.amount !== undefined &&
+      depositInstallment.amount !== null &&
+      !isNaN(depositInstallment.amount) &&
+      Number(depositInstallment.amount) > 0
+    ) {
+      return Number(depositInstallment.amount);
+    }
+
+    // 3. Calculate from totalPrice * depositPercent / 100
+    if (
+      contract.totalPrice !== undefined &&
+      contract.totalPrice !== null &&
+      contract.depositPercent !== undefined &&
+      contract.depositPercent !== null
+    ) {
+      const totalPriceNumber = Number(contract.totalPrice);
+      const depositPercentNumber = Number(contract.depositPercent);
+      if (
+        !isNaN(totalPriceNumber) &&
+        !isNaN(depositPercentNumber) &&
+        totalPriceNumber > 0 &&
+        depositPercentNumber > 0
+      ) {
+        return (totalPriceNumber * depositPercentNumber) / 100;
+      }
+    }
+
+    return null;
+  };
+
+  // Get deposit info
+  const depositAmount = getDepositAmount(contract);
+  const depositPercent =
+    contract.depositPercent !== undefined && contract.depositPercent !== null
+      ? Number(contract.depositPercent)
+      : null;
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -105,12 +164,16 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
             {formatCurrency(contract.totalPrice, contract.currency)}
           </Text>
         </View>
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>Deposit ({contract.depositPercent}%):</Text>
-          <Text style={styles.depositValue}>
-            {formatCurrency(contract.depositAmount, contract.currency)}
-          </Text>
-        </View>
+        {(depositPercent !== null || depositAmount !== null) && (
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>
+              Deposit {depositPercent !== null ? `(${depositPercent}%)` : ""}:
+            </Text>
+            <Text style={styles.depositValue}>
+              {formatCurrency(depositAmount, contract.currency)}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Details */}
