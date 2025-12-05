@@ -123,6 +123,20 @@ const WalletScreen = ({ navigation }) => {
     loadTransactions(true);
   }, []);
 
+  // Set header right button for refresh
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={onRefresh}
+          style={{ marginRight: 15 }}
+        >
+          <Ionicons name="refresh" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, onRefresh]);
+
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       setFilters((prev) => ({ ...prev, page: prev.page + 1 }));
@@ -298,16 +312,6 @@ const WalletScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onRefresh}>
-          <Ionicons name="refresh" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -547,17 +551,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginTop: SPACING.lg,
   },
   loadingContainer: {
     flex: 1,

@@ -4,6 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { SCREEN_NAMES, COLORS } from '../config/constants';
 import { CustomDrawerContent } from '../components';
 import BottomTabNavigator from './BottomTabNavigator';
+import {
+  defaultDrawerScreenOptions,
+  getRequestDetailHeaderLeft,
+  getContractDetailHeaderLeft,
+  getMilestoneDeliveriesHeaderLeft,
+  getPaymentHeaderLeft,
+  getContractSignedSuccessHeaderLeft,
+} from '../config/navigationStyles';
 import MyRequestsScreen from '../screens/Requests/MyRequestsScreen';
 import RequestDetailScreen from '../screens/Requests/RequestDetailScreen';
 import ContractDetailScreen from '../screens/Contracts/ContractDetailScreen';
@@ -52,7 +60,7 @@ const MainStack = () => {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={size} color={color} />
           ),
-          headerShown: true,
+          ...defaultDrawerScreenOptions,
         }}
       />
       <Drawer.Screen
@@ -63,62 +71,68 @@ const MainStack = () => {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="wallet-outline" size={size} color={color} />
           ),
-          headerShown: false,
+          ...defaultDrawerScreenOptions,
         }}
       />
       <Drawer.Screen
         name="RequestDetail"
         component={RequestDetailScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Request Detail',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getRequestDetailHeaderLeft(navigation),
+        })}
       />
       <Drawer.Screen
         name="ContractDetail"
         component={ContractDetailScreen}
-        options={{
+        options={({ navigation, route }) => ({
           title: 'Contract Detail',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getContractDetailHeaderLeft(navigation, route),
+        })}
       />
       <Drawer.Screen
         name="PaymentDeposit"
         component={PaymentDepositScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Pay Deposit',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getPaymentHeaderLeft(navigation),
+        })}
       />
       <Drawer.Screen
         name="PaymentMilestone"
         component={PaymentMilestoneScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Pay Milestone',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getPaymentHeaderLeft(navigation),
+        })}
       />
       <Drawer.Screen
         name="PaymentRevisionFee"
         component={PaymentRevisionFeeScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Pay Revision Fee',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getPaymentHeaderLeft(navigation),
+        })}
       />
       <Drawer.Screen
         name="MilestoneDeliveries"
         component={MilestoneDeliveriesScreen}
-        options={{
+        options={({ navigation, route }) => ({
           title: 'Milestone Deliveries',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getMilestoneDeliveriesHeaderLeft(navigation, route),
+        })}
       />
       <Drawer.Screen
         name="ContractsList"
@@ -128,17 +142,18 @@ const MainStack = () => {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={size} color={color} />
           ),
-          headerShown: false,
+          ...defaultDrawerScreenOptions,
         }}
       />
       <Drawer.Screen
         name="ContractSignedSuccess"
         component={ContractSignedSuccessScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'Contract Signed Success',
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
-          headerShown: false,
-        }}
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getContractSignedSuccessHeaderLeft(navigation),
+        })}
       />
     </Drawer.Navigator>
   );
