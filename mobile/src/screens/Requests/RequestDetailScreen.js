@@ -345,7 +345,10 @@ const RequestDetailScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("MyRequests")}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Request Detail</Text>
@@ -549,6 +552,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 onPress={() =>
                   navigation.navigate("ContractDetail", {
                     contractId: contract.contractId,
+                    requestId: requestId, // Pass requestId so we can navigate back
                   })
                 }
               >
