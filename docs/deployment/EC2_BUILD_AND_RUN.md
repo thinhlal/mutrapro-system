@@ -204,7 +204,7 @@ docker login
 #### 5.1. Pull tất cả images từ Docker Hub
 
 ```bash
-sudo docker compose -f docker-compose.prod.yml pull
+sudo docker compose -f docker-compose.prod.hub.yml pull
 ```
 
 **Hoặc pull từng service:**
@@ -223,20 +223,20 @@ sudo docker pull your-dockerhub-username/chat-service:latest
 
 ```bash
 # Chạy ở chế độ background
-sudo docker compose -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.prod.hub.yml up -d
 ```
 
 **Hoặc stop và start lại (nếu đã chạy rồi):**
 ```bash
-sudo docker compose -f docker-compose.prod.yml down
-sudo docker compose -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.prod.hub.yml down
+sudo docker compose -f docker-compose.prod.hub.yml up -d
 ```
 
 #### 5.3. Kiểm tra trạng thái
 
 ```bash
 # Xem status tất cả containers
-sudo docker compose -f docker-compose.prod.yml ps
+sudo docker compose -f docker-compose.prod.hub.yml ps
 
 # Hoặc
 sudo docker ps
@@ -267,7 +267,7 @@ curl http://localhost:8088/actuator/health  # Chat
 
 **Xem logs tất cả services:**
 ```bash
-sudo docker compose -f docker-compose.prod.yml logs -f
+sudo docker compose -f docker-compose.prod.hub.yml logs -f
 ```
 
 **Xem logs từng service:**
@@ -350,14 +350,14 @@ powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api
 
 ```bash
 # Pull images mới
-sudo docker compose -f docker-compose.prod.yml pull
+sudo docker compose -f docker-compose.prod.hub.yml pull
 
 # Restart với images mới
-sudo docker compose -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.prod.hub.yml up -d
 
 # Hoặc restart một service cụ thể
-sudo docker compose -f docker-compose.prod.yml pull api-gateway
-sudo docker compose -f docker-compose.prod.yml up -d api-gateway
+sudo docker compose -f docker-compose.prod.hub.yml pull api-gateway
+sudo docker compose -f docker-compose.prod.hub.yml up -d api-gateway
 ```
 
 ---
@@ -368,20 +368,20 @@ sudo docker compose -f docker-compose.prod.yml up -d api-gateway
 
 ```bash
 # Restart tất cả
-sudo docker compose -f docker-compose.prod.yml restart
+sudo docker compose -f docker-compose.prod.hub.yml restart
 
 # Restart một service
-sudo docker compose -f docker-compose.prod.yml restart api-gateway
+sudo docker compose -f docker-compose.prod.hub.yml restart api-gateway
 ```
 
 ### Stop Services
 
 ```bash
 # Stop (giữ containers)
-sudo docker compose -f docker-compose.prod.yml stop
+sudo docker compose -f docker-compose.prod.hub.yml stop
 
 # Stop và xóa containers
-sudo docker compose -f docker-compose.prod.yml down
+sudo docker compose -f docker-compose.prod.hub.yml down
 ```
 
 ### Kiểm tra Resource Usage
@@ -421,7 +421,7 @@ sudo docker inspect mutrapro-api-gateway
 sudo docker exec mutrapro-nginx nginx -t
 
 # Reload nginx
-sudo docker compose -f docker-compose.prod.yml restart nginx
+sudo docker compose -f docker-compose.prod.hub.yml restart nginx
 ```
 
 ---
@@ -432,9 +432,9 @@ sudo docker compose -f docker-compose.prod.yml restart nginx
 
 ```bash
 cd ~/mutrapro
-sudo docker compose -f docker-compose.prod.yml pull
-sudo docker compose -f docker-compose.prod.yml up -d
-sudo docker compose -f docker-compose.prod.yml ps
+sudo docker compose -f docker-compose.prod.hub.yml pull
+sudo docker compose -f docker-compose.prod.hub.yml up -d
+sudo docker compose -f docker-compose.prod.hub.yml ps
 curl http://localhost/actuator/health
 ```
 
@@ -442,9 +442,9 @@ curl http://localhost/actuator/health
 
 ## ✅ CHECKLIST SAU KHI DEPLOY
 
-- [ ] Tất cả containers đang chạy (`sudo docker compose -f docker-compose.prod.yml ps`)
+- [ ] Tất cả containers đang chạy (`sudo docker compose -f docker-compose.prod.hub.yml ps`)
 - [ ] Health check pass (`curl http://localhost/actuator/health`)
-- [ ] Không có lỗi trong logs (`sudo docker compose -f docker-compose.prod.yml logs | grep -i error`)
+- [ ] Không có lỗi trong logs (`sudo docker compose -f docker-compose.prod.hub.yml logs | grep -i error`)
 - [ ] Resource usage OK (`sudo docker stats --no-stream`)
 - [ ] Có thể truy cập từ bên ngoài (`curl http://your-ec2-ip/actuator/health`)
 - [ ] Database connections OK (kiểm tra logs)
@@ -456,7 +456,7 @@ curl http://localhost/actuator/health
 ## 📝 LƯU Ý QUAN TRỌNG
 
 1. **Docker Hub Username**: Thay `your-dockerhub-username` bằng username Docker Hub thật của bạn
-2. **File docker-compose**: Đảm bảo đã có file `docker-compose.prod.yml` hoặc `docker-compose.prod.hub.yml` trên EC2
+2. **File docker-compose**: Đảm bảo đã có file `docker-compose.prod.hub.yml` trên EC2
 3. **File .env**: Đảm bảo đã copy và điền đầy đủ các biến môi trường
 4. **Nginx config**: Đảm bảo đã copy file `docker/nginx/nginx.conf` lên EC2
 5. **Security Group**: Đảm bảo đã mở ports 80, 443 trong AWS Security Group
