@@ -4,6 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, StyleSheet } from "react-native";
 import { COLORS, FONT_SIZES, SPACING } from "../config/constants";
+import { defaultStackScreenOptions } from "../config/navigationStyles";
 
 // Import hooks for real-time badge counts
 import { useUnreadMessagesCount } from "../hooks/useChat";
@@ -29,18 +30,7 @@ const Stack = createStackNavigator();
 const HomeStack = ({ navigation }) => {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: "center",
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E5E5E5",
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
+      screenOptions={defaultStackScreenOptions}
     >
       <Stack.Screen
         name="HomeMain"
@@ -77,18 +67,7 @@ const HomeStack = ({ navigation }) => {
 const NotificationsStack = () => {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: "center",
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E5E5E5",
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
+      screenOptions={defaultStackScreenOptions}
     >
       <Stack.Screen
         name="NotificationsMain"
@@ -103,18 +82,7 @@ const NotificationsStack = () => {
 const ChatStack = () => {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: "center",
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E5E5E5",
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
+      screenOptions={defaultStackScreenOptions}
     >
       <Stack.Screen
         name="ChatList"
@@ -134,18 +102,7 @@ const ChatStack = () => {
 const AIStack = () => {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: "center",
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E5E5E5",
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
+      screenOptions={defaultStackScreenOptions}
     >
       <Stack.Screen
         name="AITranscription"
@@ -165,18 +122,7 @@ const AIStack = () => {
 const ProfileStack = () => {
   return (
     <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerTitleAlign: "center",
-        headerStyle: {
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: "#E5E5E5",
-          backgroundColor: COLORS.white,
-        },
-        headerTintColor: COLORS.text,
-      }}
+      screenOptions={defaultStackScreenOptions}
     >
       <Stack.Screen
         name="ProfileMain"

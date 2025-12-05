@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
@@ -137,19 +138,7 @@ const ContractsListScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerBackButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Contracts</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Search and Filter */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
@@ -162,7 +151,10 @@ const ContractsListScreen = ({ navigation }) => {
             placeholderTextColor={COLORS.textSecondary}
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch("")}>
+            <TouchableOpacity 
+              onPress={() => setSearch("")}
+              style={styles.clearSearchButton}
+            >
               <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           )}
@@ -181,6 +173,7 @@ const ContractsListScreen = ({ navigation }) => {
               !filterStatus && styles.filterChipActive,
             ]}
             onPress={() => setFilterStatus(null)}
+            activeOpacity={0.7}
           >
             <Text
               style={[
@@ -199,6 +192,7 @@ const ContractsListScreen = ({ navigation }) => {
                 filterStatus === status && styles.filterChipActive,
               ]}
               onPress={() => setFilterStatus(status)}
+              activeOpacity={0.7}
             >
               <Text
                 style={[
@@ -217,8 +211,14 @@ const ContractsListScreen = ({ navigation }) => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
         }
       >
         {filteredContracts.length === 0 ? (
@@ -263,7 +263,7 @@ const ContractsListScreen = ({ navigation }) => {
           ))
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -280,62 +280,76 @@ const ContractCard = ({
   const statusLabel = getStatusLabel(contract.status);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Ionicons name="document-text" size={24} color={COLORS.primary} />
-          <View style={styles.cardHeaderText}>
-            <Text style={styles.contractNumber}>
-              {contract.contractNumber || contract.contractId}
-            </Text>
-            <Text style={styles.contractType}>
-              {getServiceName(contract.contractType)}
-            </Text>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.cardContent}>
+        {/* Header Section */}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="document-text" size={22} color={COLORS.primary} />
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.contractNumber} numberOfLines={1}>
+                {contract.contractNumber || contract.contractId}
+              </Text>
+              <Text style={styles.contractType} numberOfLines={1}>
+                {getServiceName(contract.contractType)}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.cardHeaderRight}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusColor + "15" },
+              ]}
+            >
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusText, { color: statusColor }]} numberOfLines={1}>
+                {statusLabel}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} style={styles.arrowIcon} />
           </View>
         </View>
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusColor + "20" },
-          ]}
-        >
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusText, { color: statusColor }]}>
-            {statusLabel}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <Ionicons name="cash-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoLabel}>Total Price:</Text>
-          <Text style={styles.infoValue}>
-            {formatCurrency(contract.totalPrice, contract.currency)}
-          </Text>
-        </View>
-        {contract.depositAmount && (
-          <View style={styles.infoRow}>
-            <Ionicons name="wallet-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>Deposit:</Text>
-            <Text style={styles.infoValue}>
-              {formatCurrency(contract.depositAmount, contract.currency)}
-            </Text>
-          </View>
-        )}
-        {contract.createdAt && (
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoLabel}>Created:</Text>
-            <Text style={styles.infoValue}>
-              {dayjs(contract.createdAt).format("DD/MM/YYYY")}
-            </Text>
-          </View>
-        )}
-      </View>
+        {/* Divider */}
+        <View style={styles.divider} />
 
-      <View style={styles.cardFooter}>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+        {/* Body Section */}
+        <View style={styles.cardBody}>
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Ionicons name="cash-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.infoLabel}>Total Price</Text>
+            </View>
+            <Text style={styles.infoValue}>
+              {formatCurrency(contract.totalPrice, contract.currency)}
+            </Text>
+          </View>
+          {contract.depositAmount && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoLeft}>
+                <Ionicons name="wallet-outline" size={18} color={COLORS.textSecondary} />
+                <Text style={styles.infoLabel}>Deposit</Text>
+              </View>
+              <Text style={styles.infoValue}>
+                {formatCurrency(contract.depositAmount, contract.currency)}
+              </Text>
+            </View>
+          )}
+          {contract.createdAt && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoLeft}>
+                <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
+                <Text style={styles.infoLabel}>Created</Text>
+              </View>
+              <Text style={styles.infoValue}>
+                {dayjs(contract.createdAt).format("DD/MM/YYYY")}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -345,24 +359,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerBackButton: {
-    padding: SPACING.xs,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: "700",
-    color: COLORS.text,
   },
   loadingContainer: {
     flex: 1,
@@ -374,42 +370,60 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     fontSize: FONT_SIZES.base,
     color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   searchContainer: {
     backgroundColor: COLORS.white,
-    padding: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.gray[100],
+    borderRadius: BORDER_RADIUS.lg,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
     marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
     marginLeft: SPACING.sm,
     fontSize: FONT_SIZES.base,
     color: COLORS.text,
+    paddingVertical: 0,
+  },
+  clearSearchButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
   },
   filterContainer: {
-    marginTop: SPACING.sm,
+    maxHeight: 50,
   },
   filterContent: {
-    paddingRight: SPACING.md,
+    paddingRight: SPACING.lg,
+    paddingVertical: SPACING.xs,
   },
   filterChip: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md + 2,
+    paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.gray[100],
     marginRight: SPACING.sm,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
+    minHeight: 36,
+    justifyContent: "center",
   },
   filterChipActive: {
     backgroundColor: COLORS.primary,
@@ -422,46 +436,58 @@ const styles = StyleSheet.create({
   },
   filterChipTextActive: {
     color: COLORS.white,
+    fontWeight: "700",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.xxl,
+    paddingVertical: SPACING.xxl * 2,
+    paddingHorizontal: SPACING.xl,
   },
   emptyText: {
     fontSize: FONT_SIZES.lg,
     color: COLORS.textSecondary,
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
     textAlign: "center",
+    fontWeight: "500",
   },
   clearButton: {
-    marginTop: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    marginTop: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
     backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   clearButtonText: {
     fontSize: FONT_SIZES.base,
-    fontWeight: "600",
+    fontWeight: "700",
     color: COLORS.white,
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.xl,
     marginBottom: SPACING.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: "hidden",
+  },
+  cardContent: {
+    padding: SPACING.md + 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -473,62 +499,92 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    marginRight: SPACING.sm,
+  },
+  cardHeaderRight: {
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    minHeight: 50,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.primary + "15",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: SPACING.sm,
   },
   cardHeaderText: {
-    marginLeft: SPACING.sm,
     flex: 1,
   },
   contractNumber: {
-    fontSize: FONT_SIZES.base,
+    fontSize: FONT_SIZES.base + 1,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: 2,
+    marginBottom: 4,
+    letterSpacing: 0.2,
   },
   contractType: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs / 2,
-    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.sm + 2,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.xs,
+    maxWidth: 140,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     marginRight: SPACING.xs,
   },
   statusText: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  arrowIcon: {
+    marginTop: SPACING.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
+    marginHorizontal: -SPACING.md - 2,
   },
   cardBody: {
-    marginBottom: SPACING.sm,
+    paddingTop: SPACING.xs,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.xs,
+    justifyContent: "space-between",
+    marginBottom: SPACING.sm + 2,
+    paddingVertical: SPACING.xs,
+  },
+  infoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   infoLabel: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginLeft: SPACING.xs,
-    marginRight: SPACING.xs,
+    marginLeft: SPACING.sm,
+    fontWeight: "500",
   },
   infoValue: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
+    fontSize: FONT_SIZES.base,
+    fontWeight: "700",
     color: COLORS.text,
-    flex: 1,
     textAlign: "right",
-  },
-  cardFooter: {
-    alignItems: "flex-end",
-    marginTop: SPACING.xs,
   },
 });
 
