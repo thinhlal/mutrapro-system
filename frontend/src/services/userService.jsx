@@ -64,6 +64,12 @@ export const updateFullUser = async (userId, payload) => {
 };
 
 /**
+ * Update user profile (alias for updateFullUser)
+ * Endpoint: PUT /api/users/{id}/full
+ */
+export const updateUserProfile = updateFullUser;
+
+/**
  * Delete user
  * Endpoint: DELETE /api/users/{id}
  */

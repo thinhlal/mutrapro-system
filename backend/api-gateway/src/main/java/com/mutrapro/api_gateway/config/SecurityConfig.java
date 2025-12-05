@@ -46,8 +46,10 @@ public class SecurityConfig {
             "/*/swagger-ui/**",
             "/*/swagger-ui.html",
             "/*/v3/api-docs/**",
-            "/chat/ws/**",  // WebSocket for chat service
-            "/notifications/notifications-ws/**"  // WebSocket for notification service
+            "/chat/ws/**",  // WebSocket for chat service (path BEFORE StripPrefix)
+            "/chat/ws/info",  // SockJS info endpoint
+            "/notifications/notifications-ws/**",  // WebSocket for notification service
+            "/notifications/notifications-ws/info"  // SockJS info endpoint
     };
 
     @Bean
