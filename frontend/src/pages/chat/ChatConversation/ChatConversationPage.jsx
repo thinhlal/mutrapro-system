@@ -107,10 +107,44 @@ const ChatConversationPage = () => {
     }
 
     try {
-      await sendMessage(content);
+      await sendMessage(content, 'TEXT', null, selectedContextType, selectedContextId);
     } catch (error) {
       console.error('Failed to send message:', error);
       message.error('Không thể gửi tin nhắn');
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (fileKey, fileName, fileType, metadata) => {
+    // Check if room is active
+    if (room?.isActive === false) {
+      message.warning('Không thể gửi file. Phòng chat này đã được đóng.');
+      return;
+    }
+
+    try {
+      // Determine message type based on file type
+      let messageType = 'FILE';
+      if (fileType === 'image') {
+        messageType = 'IMAGE';
+      } else if (fileType === 'audio') {
+        messageType = 'AUDIO';
+      } else if (fileType === 'video') {
+        messageType = 'VIDEO';
+      }
+
+      // Send file message via WebSocket
+      // content = fileKey (không phải URL nữa, để download qua API)
+      await sendMessage(
+        fileKey, // content = fileKey để download sau này
+        messageType,
+        metadata, // metadata = file info (bao gồm fileKey)
+        selectedContextType,
+        selectedContextId
+      );
+    } catch (error) {
+      console.error('Failed to send file message:', error);
+      message.error('Không thể gửi file');
     }
   };
 
@@ -195,6 +229,7 @@ const ChatConversationPage = () => {
                 key={message.messageId}
                 message={message}
                 isOwnMessage={message.senderId === currentUserId}
+                roomId={room?.roomId}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -204,6 +239,8 @@ const ChatConversationPage = () => {
 
       <MessageInput
         onSend={handleSendMessage}
+        onFileUpload={handleFileUpload}
+        roomId={room?.roomId}
         sending={sending}
         disabled={!connected || room?.isActive === false}
       />

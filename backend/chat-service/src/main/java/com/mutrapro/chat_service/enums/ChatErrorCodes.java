@@ -32,7 +32,27 @@ public enum ChatErrorCodes implements ErrorCode {
         "User is already a participant in this chat room", Retryable.NON_TRANSIENT),
     CANNOT_REMOVE_OWNER("ERR_6203", 403,
         "https://docs.mutrapro.com/errors/ERR_6203",
-        "Cannot remove the owner from chat room", Retryable.NON_TRANSIENT);
+        "Cannot remove the owner from chat room", Retryable.NON_TRANSIENT),
+    
+    // File upload/download errors (6300-6399)
+    FILE_UPLOAD_EMPTY("ERR_6301", 400,
+        "https://docs.mutrapro.com/errors/ERR_6301",
+        "File cannot be empty", Retryable.NON_TRANSIENT),
+    FILE_UPLOAD_TOO_LARGE("ERR_6302", 400,
+        "https://docs.mutrapro.com/errors/ERR_6302",
+        "File size exceeds maximum limit", Retryable.NON_TRANSIENT),
+    FILE_UPLOAD_FAILED("ERR_6303", 500,
+        "https://docs.mutrapro.com/errors/ERR_6303",
+        "Failed to upload file", Retryable.TRANSIENT),
+    FILE_DOWNLOAD_NOT_FOUND("ERR_6304", 404,
+        "https://docs.mutrapro.com/errors/ERR_6304",
+        "File not found", Retryable.NON_TRANSIENT),
+    FILE_DOWNLOAD_FAILED("ERR_6305", 500,
+        "https://docs.mutrapro.com/errors/ERR_6305",
+        "Failed to download file", Retryable.TRANSIENT),
+    FILE_ACCESS_DENIED("ERR_6306", 403,
+        "https://docs.mutrapro.com/errors/ERR_6306",
+        "File access denied: file does not belong to this chat room", Retryable.NON_TRANSIENT);
     
     private final String code;
     private final int httpStatus;

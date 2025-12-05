@@ -22,6 +22,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.LocalDateTime;
@@ -430,6 +431,40 @@ public class GlobalExceptionHandler {
                 .build();
         
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(errorResponse);
+    }
+    
+    /**
+     * Xử lý MaxUploadSizeExceededException (File upload vượt quá giới hạn)
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        
+        log.warn("Maximum upload size exceeded: {}", ex.getMessage());
+        
+        // Extract max size from exception message if possible
+        long maxSize = ex.getMaxUploadSize();
+        String maxSizeText = maxSize > 0 
+            ? String.format("%.2f MB", maxSize / (1024.0 * 1024.0))
+            : "unknown";
+        
+        ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                .status("error")
+                .errorCode(CommonErrorCodes.VALIDATION_ERROR.getCode())
+                .message("File size exceeds maximum upload limit")
+                .details(Map.of(
+                    "error", "Maximum upload size exceeded",
+                    "maxSize", maxSizeText,
+                    "maxSizeBytes", maxSize > 0 ? maxSize : "unknown"
+                ))
+                .path(request.getRequestURI())
+                .statusCode(HttpStatus.PAYLOAD_TOO_LARGE.value())
+                .timestamp(LocalDateTime.now())
+                .serviceName(serviceName)
+                .traceId(getTraceId(request))
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(errorResponse);
     }
     
     /**

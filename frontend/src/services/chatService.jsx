@@ -127,6 +127,46 @@ export const markAsRead = async roomId => {
   return response.data;
 };
 
+/**
+ * Upload file for chat
+ * @param {File} file - File to upload
+ * @param {string} roomId - Chat room ID
+ * @returns {Promise<{status: string, data: {fileKey: string, fileName: string, fileSize: number, mimeType: string, fileType: string}}>}
+ */
+export const uploadFile = async (file, roomId) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('roomId', roomId);
+  
+  const response = await axiosInstance.post(
+    API_ENDPOINTS.CHAT.UPLOAD_FILE,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Download file from chat (requires authentication)
+ * @param {string} fileKey - S3 file key (from message metadata)
+ * @param {string} roomId - Chat room ID
+ * @returns {Promise<Blob>} File blob
+ */
+export const downloadFile = async (fileKey, roomId) => {
+  const response = await axiosInstance.get(
+    API_ENDPOINTS.CHAT.DOWNLOAD_FILE,
+    {
+      params: { fileKey, roomId },
+      responseType: 'blob', // Important: responseType must be 'blob' for file download
+    }
+  );
+  return response.data;
+};
+
 export default {
   getChatRooms,
   getChatRoomById,
@@ -138,4 +178,6 @@ export default {
   getRecentMessages,
   getUnreadCount,
   markAsRead,
+  uploadFile,
+  downloadFile,
 };

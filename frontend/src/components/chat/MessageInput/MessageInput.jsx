@@ -1,16 +1,29 @@
 import { useState, useRef } from 'react';
-import { Input, Button, Upload } from 'antd';
+import { Input, Button, Upload, message as antMessage } from 'antd';
 import { SendOutlined, PaperClipOutlined } from '@ant-design/icons';
 import styles from './MessageInput.module.css';
+import chatService from '../../../services/chatService';
 
 const { TextArea } = Input;
 
 /**
  * Message Input Component
  * Input area for sending messages
+ * @param {Function} onSend - Callback khi gửi text message
+ * @param {Function} onFileUpload - Callback khi upload file thành công (fileUrl, fileName, fileType, metadata)
+ * @param {string} roomId - Chat room ID (cần để upload file)
+ * @param {boolean} sending - Đang gửi message
+ * @param {boolean} disabled - Disable input
  */
-const MessageInput = ({ onSend, sending = false, disabled = false }) => {
+const MessageInput = ({ 
+  onSend, 
+  onFileUpload, 
+  roomId, 
+  sending = false, 
+  disabled = false 
+}) => {
   const [message, setMessage] = useState('');
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
 
   const handleSend = () => {
@@ -29,9 +42,53 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
     }
   };
 
-  const handleUpload = file => {
-    // TODO: Implement file upload
-    console.log('File upload:', file);
+  const handleUpload = async file => {
+    if (!roomId) {
+      antMessage.error('Không tìm thấy phòng chat');
+      return false;
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      antMessage.error('File không được vượt quá 50MB');
+      return false;
+    }
+
+    try {
+      setUploading(true);
+      
+      // Upload file to backend
+      const response = await chatService.uploadFile(file, roomId);
+      
+      if (response?.status === 'success' && response?.data) {
+        const { fileKey, fileName, fileType, mimeType, fileSize } = response.data;
+        
+        // Create metadata object (bao gồm fileKey)
+        const metadata = {
+          fileName,
+          fileSize,
+          mimeType,
+          fileType,
+          fileKey, // Lưu fileKey để download sau này
+        };
+        
+        // Call callback with file info (fileKey thay vì fileUrl)
+        if (onFileUpload) {
+          onFileUpload(fileKey, fileName, fileType, metadata);
+        }
+        
+        antMessage.success('Upload file thành công');
+      } else {
+        throw new Error(response?.message || 'Upload file thất bại');
+      }
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      antMessage.error(error?.response?.data?.message || error?.message || 'Upload file thất bại');
+    } finally {
+      setUploading(false);
+    }
+    
     return false; // Prevent default upload
   };
 
@@ -41,13 +98,15 @@ const MessageInput = ({ onSend, sending = false, disabled = false }) => {
         <Upload
           beforeUpload={handleUpload}
           showUploadList={false}
-          disabled={disabled || sending}
+          disabled={disabled || sending || uploading}
         >
           <Button
             type="text"
             icon={<PaperClipOutlined />}
-            disabled={disabled || sending}
+            disabled={disabled || sending || uploading}
+            loading={uploading}
             className={styles.actionButton}
+            title="Đính kèm file"
           />
         </Upload>
 

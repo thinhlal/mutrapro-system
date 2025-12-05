@@ -1,7 +1,10 @@
 package com.mutrapro.chat_service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mutrapro.chat_service.dto.request.SendMessageRequest;
 import com.mutrapro.chat_service.dto.response.ChatMessageResponse;
+import com.mutrapro.chat_service.dto.response.FileUploadResponse;
 import com.mutrapro.chat_service.entity.ChatMessage;
 import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
@@ -9,11 +12,15 @@ import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageStatus;
 import com.mutrapro.chat_service.exception.ChatRoomAccessDeniedException;
 import com.mutrapro.chat_service.exception.ChatRoomNotFoundException;
+import com.mutrapro.chat_service.exception.FileAccessDeniedException;
+import com.mutrapro.chat_service.exception.FileDownloadException;
+import com.mutrapro.chat_service.exception.FileUploadException;
 import com.mutrapro.chat_service.exception.UnauthorizedException;
 import com.mutrapro.chat_service.mapper.ChatMessageMapper;
 import com.mutrapro.chat_service.repository.ChatMessageRepository;
 import com.mutrapro.chat_service.repository.ChatParticipantRepository;
 import com.mutrapro.chat_service.repository.ChatRoomRepository;
+import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +37,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.List;
@@ -46,6 +54,8 @@ public class ChatMessageService {
     ChatParticipantRepository chatParticipantRepository;
     ChatMessageMapper chatMessageMapper;
     SimpMessagingTemplate messagingTemplate;
+    S3Service s3Service;
+    ObjectMapper objectMapper;
 
     /**
      * Send message with explicit user info (called by WebSocketChatController)
@@ -251,6 +261,131 @@ public class ChatMessageService {
     private void verifyParticipantAccess(String roomId, String userId) {
         if (!chatParticipantRepository.existsByChatRoom_RoomIdAndUserIdAndIsActiveTrue(roomId, userId)) {
             throw ChatRoomAccessDeniedException.create(roomId, userId);
+        }
+    }
+
+    /**
+     * Upload file cho chat và trả về file URL
+     * File được upload lên S3 public folder và trả về public URL
+     * Frontend sẽ dùng URL này để gửi message qua WebSocket
+     */
+    @Transactional
+    public FileUploadResponse uploadFile(MultipartFile file, String roomId) {
+        String userId = getCurrentUserId();
+        
+        // Verify user is participant
+        verifyParticipantAccess(roomId, userId);
+        
+        // Validate file
+        if (file == null || file.isEmpty()) {
+            throw FileUploadException.empty();
+        }
+        
+        // Validate file size (max 50MB)
+        long maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.getSize() > maxSize) {
+            throw FileUploadException.tooLarge(file.getSize(), maxSize);
+        }
+        
+        try {
+            // Upload to S3 private folder (không public, cần authentication để download)
+            String fileKey = s3Service.uploadFileAndReturnKey(
+                    file.getInputStream(),
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    file.getSize(),
+                    "chat-files/" + roomId  // folder: chat-files/{roomId}/
+            );
+            
+            // Determine file type based on MIME type
+            String fileType = determineFileType(file.getContentType());
+            
+            // Create metadata JSON (lưu fileKey để download sau này)
+            ObjectNode metadata = objectMapper.createObjectNode();
+            metadata.put("fileName", file.getOriginalFilename());
+            metadata.put("fileSize", file.getSize());
+            metadata.put("mimeType", file.getContentType());
+            metadata.put("fileType", fileType);
+            metadata.put("fileKey", fileKey);  // Lưu S3 key để download
+            
+            log.info("File uploaded successfully: roomId={}, fileName={}, fileKey={}, fileType={}", 
+                    roomId, file.getOriginalFilename(), fileKey, fileType);
+            
+            // Return fileKey thay vì public URL (frontend sẽ dùng để download qua API)
+            return FileUploadResponse.builder()
+                    .fileUrl(null)  // Không trả về public URL
+                    .fileName(file.getOriginalFilename())
+                    .fileKey(fileKey)  // Trả về fileKey để frontend dùng download API
+                    .fileSize(file.getSize())
+                    .mimeType(file.getContentType())
+                    .fileType(fileType)
+                    .build();
+                    
+        } catch (FileUploadException e) {
+            // Re-throw FileUploadException as-is
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to upload file: roomId={}, fileName={}, error={}", 
+                    roomId, file.getOriginalFilename(), e.getMessage(), e);
+            throw FileUploadException.failed(
+                file.getOriginalFilename(), 
+                e.getMessage(), 
+                e
+            );
+        }
+    }
+    
+    /**
+     * Determine file type from MIME type
+     */
+    private String determineFileType(String mimeType) {
+        if (mimeType == null) {
+            return "file";
+        }
+        
+        String lowerMimeType = mimeType.toLowerCase();
+        
+        if (lowerMimeType.startsWith("image/")) {
+            return "image";
+        } else if (lowerMimeType.startsWith("audio/")) {
+            return "audio";
+        } else if (lowerMimeType.startsWith("video/")) {
+            return "video";
+        } else {
+            return "file";
+        }
+    }
+    
+    /**
+     * Download file by fileKey (với authentication và participant check)
+     * @param fileKey S3 object key
+     * @param roomId Chat room ID (để verify participant access)
+     * @return File content as byte array
+     */
+    @Transactional(readOnly = true)
+    public byte[] downloadFile(String fileKey, String roomId) {
+        String userId = getCurrentUserId();
+        
+        // Verify user is participant of the chat room
+        verifyParticipantAccess(roomId, userId);
+        
+        // Verify fileKey belongs to this room (security check)
+        if (!fileKey.startsWith("chat-files/" + roomId + "/")) {
+            log.warn("File key does not belong to room: fileKey={}, roomId={}, userId={}", 
+                    fileKey, roomId, userId);
+            throw FileAccessDeniedException.fileNotBelongsToRoom(fileKey, roomId);
+        }
+        
+        try {
+            // Download file from S3
+            byte[] fileContent = s3Service.downloadFile(fileKey);
+            log.info("File downloaded successfully: fileKey={}, roomId={}, userId={}, size={}", 
+                    fileKey, roomId, userId, fileContent.length);
+            return fileContent;
+        } catch (Exception e) {
+            log.error("Failed to download file: fileKey={}, roomId={}, userId={}, error={}", 
+                    fileKey, roomId, userId, e.getMessage(), e);
+            throw FileDownloadException.failed(fileKey, e.getMessage(), e);
         }
     }
 
