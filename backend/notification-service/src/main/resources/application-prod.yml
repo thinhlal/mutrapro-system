@@ -75,3 +75,15 @@ logging:
 jwt:
   signerKey: ${JWT_SIGNER_KEY}
 
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+

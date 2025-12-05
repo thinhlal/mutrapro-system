@@ -111,3 +111,15 @@ esign:
     expiration-minutes: 5
     max-attempts: 3
     length: 6
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

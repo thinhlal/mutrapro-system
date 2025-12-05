@@ -50,3 +50,15 @@ app:
       billing.milestone.paid: ${KAFKA_TOPIC_BILLING_MILESTONE_PAID:billing-milestone-paid}
       billing.revision.fee.paid: ${KAFKA_TOPIC_BILLING_REVISION_FEE_PAID:billing-revision-fee-paid}
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true

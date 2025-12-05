@@ -86,15 +86,53 @@ public class FileService {
         try {
             // CRITICAL OPTIMIZATION: Verify contract ownership một lần cho MANAGER và SPECIALIST
             boolean skipFileAccessCheck = false;
+            Contract contract = null;
             
             // Tìm contract từ requestId (cần cho cả manager và specialist check)
             List<Contract> contracts = contractRepository.findByRequestId(requestId);
-            if (contracts.isEmpty()) {
-                log.debug("No contract found for requestId: {}", requestId);
-                return List.of();
+            if (!contracts.isEmpty()) {
+                contract = contracts.getFirst();
+            } else {
+                log.debug("No contract found for requestId: {}, will check files ownership via createdBy", requestId);
             }
-            Contract contract = contracts.getFirst();
             
+            // Nếu không có contract, vẫn cần trả về files customer_upload nếu có
+            // Verify ownership qua file.createdBy === userId
+            if (contract == null) {
+                // Lấy files customer_upload (chỉ files mà customer đã upload)
+                List<File> files = fileRepository.findByRequestIdAndFileSourceIn(
+                        requestId, 
+                        List.of(FileSourceType.customer_upload)
+                );
+                
+                // Filter files theo userId (verify ownership via createdBy)
+                List<File> filteredFiles = files.stream()
+                        .filter(file -> file.getCreatedBy() != null && file.getCreatedBy().equals(userId))
+                        .collect(Collectors.toList());
+                
+                log.debug("No contract found for requestId: {}, returning {} customer_upload files (verified via createdBy)", 
+                        requestId, filteredFiles.size());
+                
+                return filteredFiles.stream()
+                        .map(f -> FileInfoResponse.builder()
+                                .fileId(f.getFileId())
+                                .fileName(f.getFileName())
+                                .fileSize(f.getFileSize())
+                                .mimeType(f.getMimeType())
+                                .contentType(f.getContentType() != null ? f.getContentType().name() : null)
+                                .fileSource(f.getFileSource())
+                                .description(f.getDescription())
+                                .uploadDate(f.getUploadDate())
+                                .fileStatus(f.getFileStatus() != null ? f.getFileStatus().name() : null)
+                                .deliveredToCustomer(f.getDeliveredToCustomer())
+                                .deliveredAt(f.getDeliveredAt())
+                                .reviewedAt(f.getReviewedAt())
+                                .rejectionReason(f.getRejectionReason())
+                                .build())
+                        .collect(Collectors.toList());
+            }
+            
+            // Nếu có contract, tiếp tục logic như cũ
             // Check CUSTOMER ownership
             if (userRoles.contains("CUSTOMER")) {
                 if (userId.equals(contract.getUserId())) {

@@ -40,3 +40,15 @@ feign:
         connectTimeout: 5000
         readTimeout: 60000  # 60 seconds for batch API calls
 
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+

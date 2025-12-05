@@ -64,3 +64,15 @@ outbound:
     client-id: "531413256463-rnt0s858u2gs7fgheov0guko7fc52cca.apps.googleusercontent.com"
     client-secret: "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"
     redirect-uri: "http://localhost:5173/authenticate"
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

@@ -107,3 +107,15 @@ esign:
     expiration-minutes: ${ESIGN_OTP_EXPIRATION_MINUTES:5}
     max-attempts: ${ESIGN_OTP_MAX_ATTEMPTS:3}
     length: ${ESIGN_OTP_LENGTH:6}
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
