@@ -419,10 +419,10 @@ services:
     container_name: mutrapro-nginx
     ports:
       - "80:80"
-      # - "443:443"  # Uncomment khi đã có SSL certificate
+      - "443:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # - ./docker/nginx/ssl:/etc/nginx/ssl:ro  # Uncomment khi đã có SSL certificate
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - api-gateway
       - identity-service

@@ -136,6 +136,6 @@ foreach ($service in $Services) {
 }
 Write-Host ""
 Write-Host "Trên EC2, chạy:"
-Write-Host "  docker-compose -f docker-compose.prod.yml pull" -ForegroundColor Cyan
-Write-Host "  docker-compose -f docker-compose.prod.yml up -d" -ForegroundColor Cyan
+Write-Host "  docker-compose -f docker-compose.prod.hub.yml pull" -ForegroundColor Cyan
+Write-Host "  docker-compose -f docker-compose.prod.hub.yml up -d" -ForegroundColor Cyan
 

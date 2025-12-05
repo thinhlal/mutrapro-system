@@ -93,5 +93,5 @@ for service in "${SERVICES[@]}"; do
 done
 echo ""
 echo "Trên EC2, chạy:"
-echo "  docker-compose -f docker-compose.prod.yml pull"
-echo "  docker-compose -f docker-compose.prod.yml up -d"
+echo "  docker-compose -f docker-compose.prod.hub.yml pull"
+echo "  docker-compose -f docker-compose.prod.hub.yml up -d"
