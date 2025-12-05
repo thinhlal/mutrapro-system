@@ -19,7 +19,8 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {Array<string>} requestData.instrumentIds - Danh sách ID nhạc cụ
  * @param {boolean} requestData.hasVocalist - Có ca sĩ không (optional)
  * @param {number} requestData.externalGuestCount - Số lượng khách mời (optional)
- * @param {any} requestData.musicOptions - Các tùy chọn khác (optional)
+ * @param {Array<string>} requestData.genres - Danh sách genres (optional, cho arrangement)
+ * @param {string} requestData.purpose - Mục đích (optional, cho arrangement)
  * @param {Array<Object>} requestData.files - Danh sách files upload (with uri property)
  *
  * @returns {Promise} ApiResponse
@@ -50,8 +51,15 @@ export const createServiceRequest = async (requestData) => {
       formData.append('externalGuestCount', requestData.externalGuestCount);
     }
 
-    if (requestData.musicOptions) {
-      formData.append('musicOptions', JSON.stringify(requestData.musicOptions));
+    // Music options - genres và purpose riêng
+    if (requestData.genres && requestData.genres.length > 0) {
+      requestData.genres.forEach((genre) => {
+        formData.append('genres', genre);
+      });
+    }
+
+    if (requestData.purpose) {
+      formData.append('purpose', requestData.purpose);
     }
 
     // Thêm instrumentIds (array)

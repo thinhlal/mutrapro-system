@@ -26,6 +26,7 @@ import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import {
   getContractsByRequestId,
   approveContract,
@@ -203,7 +204,7 @@ const RequestDetailPage = () => {
       minute: '2-digit',
     });
   };
-
+  console.log('request', request);
   const getManagerStatusText = () => {
     if (!request) return '';
     const hasManager = !!request.managerUserId;
@@ -372,7 +373,7 @@ const RequestDetailPage = () => {
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
-            {request.durationMinutes && (
+            {request.requestType === 'transcription' && request.durationMinutes && (
               <Descriptions.Item label="Duration">
                 <Tag color="green">
                   {formatDurationMMSS(request.durationMinutes)}
@@ -388,7 +389,7 @@ const RequestDetailPage = () => {
               )}
 
             {request.hasVocalist !== undefined &&
-              request.requestType !== 'transcription' && (
+              request.requestType === 'arrangement_with_recording' && (
                 <Descriptions.Item label="Vocalist">
                   {request.hasVocalist ? (
                     <Tag color="green">Yes</Tag>
@@ -398,7 +399,7 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-            {request.externalGuestCount > 0 && (
+            {request.externalGuestCount > 0 && request.requestType === 'recording' && (
               <Descriptions.Item label="Guests">
                 <Tag>
                   {request.externalGuestCount}{' '}
@@ -407,23 +408,61 @@ const RequestDetailPage = () => {
               </Descriptions.Item>
             )}
 
-            {request.instrumentIds && request.instrumentIds.length > 0 && (
+            {/* Hiển thị genres và purpose cho arrangement requests */}
+            {(request.requestType === 'arrangement' ||
+              request.requestType === 'arrangement_with_recording') && (
+                <>
+                  <Descriptions.Item label="Genres">
+                    {request.genres && request.genres.length > 0 ? (
+                      <Space wrap>
+                        {request.genres.map((genre, idx) => (
+                          <Tag key={idx} color="purple">
+                            {getGenreLabel(genre)}
+                          </Tag>
+                        ))}
+                      </Space>
+                    ) : (
+                      <span style={{ color: '#999' }}>Not specified</span>
+                    )}
+                  </Descriptions.Item>
+
+                  <Descriptions.Item label="Purpose">
+                    {request.purpose ? (
+                      getPurposeLabel(request.purpose)
+                    ) : (
+                      <span style={{ color: '#999' }}>Not specified</span>
+                    )}
+                  </Descriptions.Item>
+                </>
+              )}
+
+            {((request.instruments && request.instruments.length > 0) ||
+              (request.instrumentIds && request.instrumentIds.length > 0)) && (
               <Descriptions.Item label="Instruments">
                 <Space wrap>
-                  {request.instrumentIds.map(id => {
-                    const inst = instrumentsData.find(
-                      i => i.instrumentId === id
-                    );
-                    return inst ? (
-                      <Tag key={id} color="purple">
-                        {inst.instrumentName}
-                      </Tag>
-                    ) : (
-                      <Tag key={id} color="default">
-                        {id}
-                      </Tag>
-                    );
-                  })}
+                  {request.instruments && request.instruments.length > 0
+                    ? request.instruments.map((inst, idx) => (
+                        <Tag
+                          key={inst.instrumentId || idx}
+                          color="purple"
+                        >
+                          {inst.instrumentName || inst.name || inst}
+                        </Tag>
+                      ))
+                    : request.instrumentIds.map(id => {
+                        const inst = instrumentsData.find(
+                          i => i.instrumentId === id
+                        );
+                        return inst ? (
+                          <Tag key={id} color="purple">
+                            {inst.instrumentName}
+                          </Tag>
+                        ) : (
+                          <Tag key={id} color="default">
+                            {id}
+                          </Tag>
+                        );
+                      })}
                 </Space>
               </Descriptions.Item>
             )}

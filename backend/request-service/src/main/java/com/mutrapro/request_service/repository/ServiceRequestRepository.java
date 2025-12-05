@@ -67,5 +67,9 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     Page<ServiceRequest> findByUserId(String userId, Pageable pageable);
     
     Page<ServiceRequest> findByUserIdAndStatus(String userId, RequestStatus status, Pageable pageable);
+    
+    Page<ServiceRequest> findByUserIdAndRequestType(String userId, ServiceType requestType, Pageable pageable);
+    
+    Page<ServiceRequest> findByUserIdAndStatusAndRequestType(String userId, RequestStatus status, ServiceType requestType, Pageable pageable);
 }
 

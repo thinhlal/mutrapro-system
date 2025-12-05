@@ -137,7 +137,8 @@ export default function TranscriptionQuotePageSimplified() {
       durationMinutes: formData.durationMinutes,
       hasVocalist: formData.hasVocalist || false,
       externalGuestCount: formData.externalGuestCount || 0,
-      musicOptions: formData.musicOptions || null,
+      genres: formData.genres || null,
+      purpose: formData.purpose || null,
       files: uploadedFile ? [uploadedFile] : [],
     };
 

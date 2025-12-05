@@ -38,6 +38,19 @@ const REQUEST_STATUS_COLORS = {
   in_progress: 'blue',
   completed: 'green',
   cancelled: 'red',
+  rejected: 'red',
+};
+
+const REQUEST_STATUS_TEXT = {
+  pending: 'Pending',
+  contract_sent: 'Contract sent',
+  contract_approved: 'Contract approved',
+  contract_signed: 'Contract signed',
+  awaiting_assignment: 'Awaiting assignment',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
 };
 
 const REQUEST_TYPE_LABELS = {
@@ -55,6 +68,7 @@ const CONTRACT_STATUS_COLORS = {
   signed: 'orange',
   active_pending_assignment: 'gold',
   active: 'green',
+  completed: 'success',
   rejected_by_customer: 'red',
   need_revision: 'orange',
   canceled_by_customer: 'default',
@@ -68,7 +82,8 @@ const CONTRACT_STATUS_TEXT = {
   approved: 'Đã duyệt',
   signed: 'Đã ký - Chờ thanh toán deposit',
   active_pending_assignment: 'Đã nhận cọc - Chờ gán task',
-  active: 'Đã ký - Đã thanh toán deposit',
+  active: 'Đang thực thi',
+  completed: 'Đã hoàn thành',
   rejected_by_customer: 'Khách từ chối',
   need_revision: 'Cần chỉnh sửa',
   canceled_by_customer: 'Khách hủy',
@@ -215,49 +230,166 @@ export default function ServiceRequestContracts() {
       title: 'Giá trị',
       key: 'totalPrice',
       width: 160,
-      render: (_, record) => (
-        <div>
-          <Text strong>
-            {formatCurrency(record.totalPrice, record.currency)}
-          </Text>
-          <div className={styles.subText}>
-            Đặt cọc {Number(record.depositPercent || 0)}% ={' '}
-            {formatCurrency(record.depositAmount, record.currency)}
+      render: (_, record) => {
+        // Helper function để lấy deposit amount
+        const getDepositAmount = contract => {
+          if (!contract) return null;
+
+          // 1. Ưu tiên lấy từ installments với type DEPOSIT (nếu backend enrich installments)
+          if (contract.installments && contract.installments.length > 0) {
+            const depositInstallment = contract.installments.find(
+              inst => inst.type === 'DEPOSIT'
+            );
+            if (
+              depositInstallment &&
+              depositInstallment.amount !== undefined &&
+              depositInstallment.amount !== null &&
+              !isNaN(depositInstallment.amount) &&
+              Number(depositInstallment.amount) > 0
+            ) {
+              return Number(depositInstallment.amount);
+            }
+          }
+
+          // 2. Fallback: Tính từ totalPrice * depositPercent / 100
+          // (Vì backend không enrich installments khi lấy danh sách contracts)
+          if (
+            contract.totalPrice !== undefined &&
+            contract.totalPrice !== null &&
+            contract.depositPercent !== undefined &&
+            contract.depositPercent !== null
+          ) {
+            const totalPriceNumber = Number(contract.totalPrice);
+            const depositPercentNumber = Number(contract.depositPercent);
+            if (
+              !isNaN(totalPriceNumber) &&
+              !isNaN(depositPercentNumber) &&
+              totalPriceNumber > 0 &&
+              depositPercentNumber > 0
+            ) {
+              return Math.round((totalPriceNumber * depositPercentNumber) / 100);
+            }
+          }
+
+          return null;
+        };
+
+        const depositAmount = getDepositAmount(record);
+        const depositPercent = Number(record.depositPercent || 0);
+
+        return (
+          <div>
+            <Text strong>
+              {formatCurrency(record.totalPrice, record.currency)}
+            </Text>
+            <div className={styles.subText}>
+              Đặt cọc {depositPercent}% ={' '}
+              {depositAmount !== null
+                ? formatCurrency(depositAmount, record.currency)
+                : 'N/A'}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Tiến độ',
       key: 'timeline',
       width: 220,
-      render: (_, record) => (
-        <div className={styles.timeline}>
-          <div>
-            <span className={styles.subText}>Start:</span>{' '}
-            {record.expectedStartDate
-              ? dayjs(record.expectedStartDate).format('DD/MM/YYYY')
-              : 'Chưa lên lịch (sau khi Start Work)'}
+      render: (_, record) => {
+
+        // Get actual start from first milestone that has actualStartAt
+        const getActualStart = () => {
+          if (!record?.milestones || record.milestones.length === 0) {
+            return null;
+          }
+          
+          // Tìm milestone đầu tiên có actualStartAt (sắp xếp theo orderIndex)
+          const sortedMilestones = [...record.milestones].sort(
+            (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)
+          );
+          
+          for (const milestone of sortedMilestones) {
+            if (milestone.actualStartAt) {
+              return milestone.actualStartAt;
+            }
+          }
+          return null;
+        };
+
+        // Get actual end from last milestone that has actualEndAt
+        const getActualEnd = () => {
+          if (!record?.milestones || record.milestones.length === 0) {
+            return null;
+          }
+          
+          // Tìm milestone cuối cùng có actualEndAt (sắp xếp theo orderIndex)
+          const sortedMilestones = [...record.milestones].sort(
+            (a, b) => (b.orderIndex || 0) - (a.orderIndex || 0)
+          );
+          
+          for (const milestone of sortedMilestones) {
+            if (milestone.actualEndAt) {
+              return milestone.actualEndAt;
+            }
+          }
+          return null;
+        };
+
+        // Get planned end from last milestone
+        const getPlannedEnd = () => {
+          if (record?.milestones && record.milestones.length > 0) {
+            const sortedMilestones = [...record.milestones].sort(
+              (a, b) => (b.orderIndex || 0) - (a.orderIndex || 0)
+            );
+            const lastMilestone = sortedMilestones[0];
+            return lastMilestone?.plannedDueDate || null;
+          }
+          return null;
+        };
+
+        const actualStart = getActualStart();
+        const actualEnd = getActualEnd();
+        const plannedEnd = getPlannedEnd();
+
+        // Nếu contract đã completed nhưng không có actualEnd, có thể dùng createdAt hoặc updatedAt của contract
+        const getCompletedDate = () => {
+          if (record.status?.toLowerCase() === 'completed') {
+            // Ưu tiên: actualEnd > plannedEnd > updatedAt > createdAt
+            return actualEnd || plannedEnd || record.updatedAt || record.createdAt;
+          }
+          return null;
+        };
+
+        const completedDate = getCompletedDate();
+
+        return (
+          <div className={styles.timeline}>
+            <div>
+              <span className={styles.subText}>
+                {actualStart ? 'Actual Start:' : 'Start:'}
+              </span>{' '}
+              {actualStart
+                ? dayjs(actualStart).format('DD/MM/YYYY')
+                : record.expectedStartDate
+                ? dayjs(record.expectedStartDate).format('DD/MM/YYYY')
+                : 'Chưa lên lịch'}
+            </div>
+            <div>
+              <span className={styles.subText}>
+                {actualEnd || completedDate ? 'Actual End:' : 'Due:'}
+              </span>{' '}
+              {actualEnd
+                ? dayjs(actualEnd).format('DD/MM/YYYY')
+                : completedDate
+                ? dayjs(completedDate).format('DD/MM/YYYY')
+                : plannedEnd
+                ? dayjs(plannedEnd).format('DD/MM/YYYY')
+                : 'N/A'}
+            </div>
           </div>
-          <div>
-            <span className={styles.subText}>Due:</span>{' '}
-            {(() => {
-              // Get due date from last milestone's plannedDueDate (calculated by backend)
-              if (record?.milestones && record.milestones.length > 0) {
-                const lastMilestone =
-                  record.milestones[record.milestones.length - 1];
-                if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format(
-                    'DD/MM/YYYY'
-                  );
-                }
-              }
-              // No plannedDueDate yet (not calculated)
-              return 'N/A';
-            })()}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Ngày tạo',
@@ -324,7 +456,9 @@ export default function ServiceRequestContracts() {
                       'default'
                     }
                   >
-                    {request.status?.toUpperCase() || 'N/A'}
+                    {REQUEST_STATUS_TEXT[request.status?.toLowerCase()] ||
+                      request.status?.toUpperCase() ||
+                      'N/A'}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Loại dịch vụ">

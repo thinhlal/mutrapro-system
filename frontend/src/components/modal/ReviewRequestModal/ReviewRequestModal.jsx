@@ -106,7 +106,7 @@ export default function ReviewRequestModal({
 
         <Descriptions.Item label="Total Price">
           <span style={{ fontSize: 18, fontWeight: 600, color: '#52c41a' }}>
-            ${Number(totalPrice).toFixed(2)}
+            {formatPrice(totalPrice, 'VND')}
           </span>
         </Descriptions.Item>
       </Descriptions>

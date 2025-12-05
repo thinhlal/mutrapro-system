@@ -1,7 +1,10 @@
-import { Modal, Button, Descriptions, Tag } from 'antd';
+import { Modal, Button, Descriptions, Tag, Space } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import FileList from '../../common/FileList/FileList';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import { formatDurationMMSS } from '../../../utils/timeUtils';
+import { formatPrice } from '../../../services/pricingMatrixService';
 
 const STATUS_COLORS = {
   pending: 'gold',
@@ -102,24 +105,55 @@ export default function ServiceRequestDetailModal({
               'UNKNOWN'}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Total Price">
-          <Tag color="green" style={{ fontSize: 16, padding: '6px 16px' }}>
-            ${Number(request.totalPrice || 0).toFixed(2)}
-          </Tag>
-        </Descriptions.Item>
-        {request.requestType === 'arrangement' && (
-          <Descriptions.Item label="Has Vocalist">
-            {request.hasVocalist ? 'Yes' : 'No'}
+        {request.totalPrice && (
+          <Descriptions.Item label="Total Price">
+            <Tag color="green" style={{ fontSize: 16, padding: '6px 16px' }}>
+              {formatPrice(request.totalPrice, request.currency || 'VND')}
+            </Tag>
           </Descriptions.Item>
         )}
+        {request.requestType === 'transcription' && request.durationMinutes && (
+          <Descriptions.Item label="Duration">
+            <Tag color="green">{formatDurationMMSS(request.durationMinutes)}</Tag>
+          </Descriptions.Item>
+        )}
+        {request.requestType === 'transcription' && request.tempoPercentage && (
+          <Descriptions.Item label="Tempo Percentage">
+            {request.tempoPercentage}%
+          </Descriptions.Item>
+        )}
+        {(request.requestType === 'arrangement' ||
+          request.requestType === 'arrangement_with_recording') && (
+          <>
+            {request.genres && request.genres.length > 0 && (
+              <Descriptions.Item label="Genres">
+                <Space wrap>
+                  {request.genres.map((genre, idx) => (
+                    <Tag key={idx} color="purple">
+                      {getGenreLabel(genre)}
+                    </Tag>
+                  ))}
+                </Space>
+              </Descriptions.Item>
+            )}
+            {request.purpose && (
+              <Descriptions.Item label="Purpose">
+                {getPurposeLabel(request.purpose)}
+              </Descriptions.Item>
+            )}
+          </>
+        )}
+        {request.requestType === 'arrangement_with_recording' &&
+          request.hasVocalist !== undefined && (
+            <Descriptions.Item label="Has Vocalist">
+              <Tag color={request.hasVocalist ? 'green' : 'default'}>
+                {request.hasVocalist ? 'Yes' : 'No'}
+              </Tag>
+            </Descriptions.Item>
+          )}
         {request.requestType === 'recording' && (
           <Descriptions.Item label="External Guest Count">
             {request.externalGuestCount || 0}
-          </Descriptions.Item>
-        )}
-        {request.requestType === 'transcription' && (
-          <Descriptions.Item label="Tempo Percentage">
-            {request.tempoPercentage}%
           </Descriptions.Item>
         )}
         <Descriptions.Item label="Contact Name">

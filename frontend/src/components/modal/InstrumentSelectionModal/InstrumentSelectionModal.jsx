@@ -34,20 +34,6 @@ const InstrumentSelectionModal = ({
     return selectedInstruments === instrumentId;
   };
 
-  // Calculate total price
-  const totalPrice = multipleSelection
-    ? instruments
-        .filter(inst => selectedInstruments.includes(inst.instrumentId))
-        .reduce((sum, inst) => sum + (inst.basePrice || 0), 0)
-    : instruments.find(inst => inst.instrumentId === selectedInstruments)
-        ?.basePrice || 0;
-
-  const selectedCount = multipleSelection
-    ? selectedInstruments.length
-    : selectedInstruments
-      ? 1
-      : 0;
-
   return (
     <Modal
       title={
@@ -59,14 +45,6 @@ const InstrumentSelectionModal = ({
           }}
         >
           <span>{title}</span>
-          {/* <div style={{ fontSize: 18, fontWeight: 'normal' }}>
-            {selectedCount > 0 && (
-              <>
-                <Tag color="blue">{selectedCount} selected</Tag>
-                <Tag color="green">Total: ${totalPrice.toFixed(2)}</Tag>
-              </>
-            )}
-          </div> */}
         </div>
       }
       open={visible}
@@ -91,7 +69,7 @@ const InstrumentSelectionModal = ({
                 <Badge.Ribbon
                   text={
                     <span style={{ fontSize: 18 }}>
-                      ${Number(instrument.basePrice || 0).toFixed(2)}
+                      {Number(instrument.basePrice || 0).toFixed(2)} VND
                     </span>
                   }
                   color="green"

@@ -55,7 +55,7 @@ import DiscoverProsPage from './pages/professionals/Discover/DiscoverProsPage';
 // Services Pages
 import ServiceRequestPage from './pages/services/ServiceRequest/ServiceRequestPage';
 import TranscriptionQuotePage from './pages/services/quotes/Transcription/TranscriptionQuotePageSimplified';
-import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePageSimplified';
+import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePage';
 import RecordingQuotePage from './pages/services/quotes/Recording/RecordingQuotePage';
 import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage';
 // Recording Flow

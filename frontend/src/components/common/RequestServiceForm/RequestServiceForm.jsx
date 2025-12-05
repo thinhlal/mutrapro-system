@@ -1,9 +1,10 @@
 import { useMemo, useEffect, useState, useRef } from 'react';
-import { Form, Input, Tag, InputNumber, Button, Space } from 'antd';
+import { Form, Input, Tag, InputNumber, Button, Space, Select } from 'antd';
 import { SelectOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import InstrumentSelectionModal from '../../modal/InstrumentSelectionModal/InstrumentSelectionModal';
+import { MUSIC_GENRES, MUSIC_PURPOSES } from '../../../constants/musicOptionsConstants';
 import styles from './RequestServiceForm.module.css';
 
 const { TextArea } = Input;
@@ -82,7 +83,9 @@ export default function RequestServiceForm({
         contactPhone: initialFormData.contactPhone || '',
         contactEmail: initialFormData.contactEmail || user?.email || '',
         hasVocalist: initialFormData.hasVocalist || false,
-        musicOptions: initialFormData.musicOptions || null,
+        // Restore genres và purpose fields if exists
+        musicGenres: initialFormData.genres || [],
+        musicPurpose: initialFormData.purpose || null,
       };
       form.setFieldsValue(formValues);
 
@@ -136,7 +139,17 @@ export default function RequestServiceForm({
       // Optional fields based on service type
       hasVocalist: allValues.hasVocalist || false,
       externalGuestCount: allValues.externalGuestCount || 0,
-      musicOptions: allValues.musicOptions || null,
+      // Music options - chỉ cho arrangement
+      genres:
+        serviceType === 'arrangement' ||
+        serviceType === 'arrangement_with_recording'
+          ? allValues.musicGenres || []
+          : null,
+      purpose:
+        serviceType === 'arrangement' ||
+        serviceType === 'arrangement_with_recording'
+          ? allValues.musicPurpose || null
+          : null,
     };
     onFormComplete?.(formData);
   };
@@ -295,22 +308,24 @@ export default function RequestServiceForm({
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
-          {/* Tempo Percentage - Only for transcription, arrangement */}
-          <Form.Item
-            label="Tempo Percentage"
-            name="tempoPercentage"
-            tooltip="Adjust playback speed (100 = normal speed)"
-          >
-            <InputNumber
-              size="large"
-              min={50}
-              max={200}
-              step={5}
-              style={{ width: '100%' }}
-              formatter={value => `${value}%`}
-              parser={value => value.replace('%', '')}
-            />
-          </Form.Item>
+          {/* Tempo Percentage - Only for transcription */}
+          {serviceType === 'transcription' && (
+            <Form.Item
+              label="Tempo Percentage"
+              name="tempoPercentage"
+              tooltip="Adjust playback speed (100 = normal speed)"
+            >
+              <InputNumber
+                size="large"
+                min={50}
+                max={200}
+                step={5}
+                style={{ width: '100%' }}
+                formatter={value => `${value}%`}
+                parser={value => value.replace('%', '')}
+              />
+            </Form.Item>
+          )}
 
           {serviceType && (
             <Form.Item label="Service Type">
@@ -318,6 +333,39 @@ export default function RequestServiceForm({
                 {SERVICE_LABELS[serviceType] || serviceType}
               </Tag>
             </Form.Item>
+          )}
+
+          {/* Music Options - Only for arrangement, arrangement_with_recording */}
+          {(serviceType === 'arrangement' ||
+            serviceType === 'arrangement_with_recording') && (
+            <>
+              <Form.Item
+                label="Music Genres"
+                name="musicGenres"
+                tooltip="Select one or more music genres for your arrangement"
+              >
+                <Select
+                  mode="multiple"
+                  size="large"
+                  placeholder="Select genres (e.g., Pop, Rock, Jazz...)"
+                  style={{ width: '100%' }}
+                  options={MUSIC_GENRES}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Purpose"
+                name="musicPurpose"
+                tooltip="What is the purpose of this arrangement?"
+              >
+                <Select
+                  size="large"
+                  placeholder="Select purpose"
+                  style={{ width: '100%' }}
+                  options={MUSIC_PURPOSES}
+                />
+              </Form.Item>
+            </>
           )}
 
           {/* Instrument Selection - Only for transcription, arrangement, arrangement_with_recording */}

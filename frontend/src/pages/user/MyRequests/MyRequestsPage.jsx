@@ -22,14 +22,24 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import { Space } from 'antd';
 
 const { Option } = Select;
+
+const REQUEST_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement + Recording',
+  recording: 'Recording',
+};
 
 const MyRequestsContent = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedServiceType, setSelectedServiceType] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -37,7 +47,7 @@ const MyRequestsContent = () => {
   });
 
   // Load requests với phân trang
-  const loadRequests = async (status = '', page = 0, size = 10) => {
+  const loadRequests = async (status = '', requestType = '', page = 0, size = 10) => {
     try {
       setLoading(true);
 
@@ -59,12 +69,17 @@ const MyRequestsContent = () => {
         filters.status = status;
       }
 
+      // Thêm requestType nếu có giá trị
+      if (requestType && requestType.trim() !== '') {
+        filters.requestType = requestType;
+      }
+
       const response = await getMyRequests(filters);
 
       if (response && response.status === 'success') {
         // API trả về Page object hoặc array trực tiếp
         const pageData = response.data;
-
+        console.log('pageData', pageData);
         // Kiểm tra xem pageData là array hay Page object
         let data = [];
         let paginationInfo = {
@@ -113,26 +128,31 @@ const MyRequestsContent = () => {
 
   // Load data khi component mount lần đầu
   useEffect(() => {
-    loadRequests(selectedStatus, 0, pagination.pageSize);
+    loadRequests(selectedStatus, selectedServiceType, 0, pagination.pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Chỉ chạy 1 lần khi mount
 
   // Load data khi filter thay đổi
   useEffect(() => {
-    if (selectedStatus !== undefined) {
+    if (selectedStatus !== undefined || selectedServiceType !== undefined) {
       // Reset về trang 1 khi filter thay đổi
-      loadRequests(selectedStatus, 0, pagination.pageSize);
+      loadRequests(selectedStatus, selectedServiceType, 0, pagination.pageSize);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatus]); // Chỉ chạy khi selectedStatus thay đổi
+  }, [selectedStatus, selectedServiceType]); // Chạy khi selectedStatus hoặc selectedServiceType thay đổi
 
   const handleStatusChange = value => {
     setSelectedStatus(value);
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
+  const handleServiceTypeChange = value => {
+    setSelectedServiceType(value);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
   const handlePageChange = (page, pageSize) => {
-    loadRequests(selectedStatus, page - 1, pageSize); // Spring Data page starts from 0
+    loadRequests(selectedStatus, selectedServiceType, page - 1, pageSize); // Spring Data page starts from 0
   };
 
   const getStatusConfig = (status, hasManager) => {
@@ -229,28 +249,48 @@ const MyRequestsContent = () => {
       </div>
 
       <div className={styles.filterSection}>
-        <label className={styles.filterLabel}>Filter by status:</label>
-        <Select
-          style={{ width: 280 }}
-          placeholder="All status"
-          value={selectedStatus || undefined}
-          onChange={handleStatusChange}
-          allowClear
-        >
-          <Option value="">All</Option>
-          <Option value="pending_no_manager">Waiting for manager</Option>
-          <Option value="pending_has_manager">Assigned - pending</Option>
-          <Option value="contract_sent">Contract sent</Option>
-          <Option value="contract_approved">
-            Contract approved - awaiting signature
-          </Option>
-          <Option value="contract_signed">Contract signed</Option>
-          <Option value="awaiting_assignment">Awaiting assignment</Option>
-          <Option value="in_progress">In progress</Option>
-          <Option value="completed">Completed</Option>
-          <Option value="cancelled">Cancelled</Option>
-          <Option value="rejected">Rejected</Option>
-        </Select>
+        <Space size="large">
+          <div>
+            <label className={styles.filterLabel}>Filter by status:</label>
+            <Select
+              style={{ width: 280, marginLeft: 8 }}
+              placeholder="All status"
+              value={selectedStatus || undefined}
+              onChange={handleStatusChange}
+              allowClear
+            >
+              <Option value="">All</Option>
+              <Option value="pending_no_manager">Waiting for manager</Option>
+              <Option value="pending_has_manager">Assigned - pending</Option>
+              <Option value="contract_sent">Contract sent</Option>
+              <Option value="contract_approved">
+                Contract approved - awaiting signature
+              </Option>
+              <Option value="contract_signed">Contract signed</Option>
+              <Option value="awaiting_assignment">Awaiting assignment</Option>
+              <Option value="in_progress">In progress</Option>
+              <Option value="completed">Completed</Option>
+              <Option value="cancelled">Cancelled</Option>
+              <Option value="rejected">Rejected</Option>
+            </Select>
+          </div>
+          <div>
+            <label className={styles.filterLabel}>Filter by service:</label>
+            <Select
+              style={{ width: 200, marginLeft: 8 }}
+              placeholder="All services"
+              value={selectedServiceType || undefined}
+              onChange={handleServiceTypeChange}
+              allowClear
+            >
+              <Option value="">All</Option>
+              <Option value="transcription">Transcription</Option>
+              <Option value="arrangement">Arrangement</Option>
+              <Option value="arrangement_with_recording">Arrangement + Recording</Option>
+              <Option value="recording">Recording</Option>
+            </Select>
+          </div>
+        </Space>
       </div>
 
       {loading ? (
@@ -278,9 +318,7 @@ const MyRequestsContent = () => {
                     <div className={styles.titleSection}>
                       <h3 className={styles.requestTitle}>{request.title}</h3>
                       <Tag color="blue" className={styles.typeTag}>
-                        {request.requestType === 'transcription'
-                          ? 'Transcription'
-                          : 'Arrangement'}
+                        {REQUEST_TYPE_LABELS[request.requestType] || request.requestType}
                       </Tag>
                     </div>
                     <Tag
@@ -340,6 +378,36 @@ const MyRequestsContent = () => {
                         </span>
                       </div>
                     )}
+
+                    {/* Hiển thị genres và purpose cho arrangement requests */}
+                    {(request.requestType === 'arrangement' ||
+                      request.requestType === 'arrangement_with_recording') &&
+                      request.genres &&
+                      request.genres.length > 0 && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Genres:</span>
+                          <span className={styles.infoValue}>
+                            <Space wrap>
+                              {request.genres.map((genre, idx) => (
+                                <Tag key={idx} color="purple">
+                                  {getGenreLabel(genre)}
+                                </Tag>
+                              ))}
+                            </Space>
+                          </span>
+                        </div>
+                      )}
+
+                    {(request.requestType === 'arrangement' ||
+                      request.requestType === 'arrangement_with_recording') &&
+                      request.purpose && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Purpose:</span>
+                          <span className={styles.infoValue}>
+                            {getPurposeLabel(request.purpose)}
+                          </span>
+                        </div>
+                      )}
                   </div>
 
                   <div className={styles.cardFooter}>

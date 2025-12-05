@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ServiceRequestDetailModal from '../../../components/modal/ServiceRequestDetailModal/ServiceRequestDetailModal';
+import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestManagement.module.css';
 
 const { Title } = Typography;
@@ -357,13 +358,32 @@ export default function ServiceRequestManagement() {
       ),
     },
     {
-      title: 'Total Price',
+      title: 'Service Price',
+      dataIndex: 'servicePrice',
+      key: 'servicePrice',
+      width: 140,
+      render: (_, record) => {
+        // Dùng servicePrice từ backend (đã được tính đúng)
+        const servicePrice = record.servicePrice || 0;
+        
+        return (
+          <span style={{ fontWeight: 500, color: '#1890ff' }}>
+            {servicePrice > 0
+              ? formatPrice(servicePrice, record.currency || 'VND')
+              : 'N/A'}
+          </span>
+        );
+      },
+      sorter: (a, b) => (a.servicePrice || 0) - (b.servicePrice || 0),
+    },
+    {
+      title: 'Tổng giá',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
-      width: 120,
-      render: price => (
-        <span style={{ fontWeight: 500, color: '#52c41a' }}>
-          ${price ? Number(price).toFixed(2) : '0.00'}
+      width: 150,
+      render: (price, record) => (
+        <span style={{ fontWeight: 600, color: '#52c41a', fontSize: '14px' }}>
+          {price ? formatPrice(price, record.currency || 'VND') : 'N/A'}
         </span>
       ),
       sorter: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0),

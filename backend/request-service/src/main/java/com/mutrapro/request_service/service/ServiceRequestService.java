@@ -16,6 +16,7 @@ import com.mutrapro.request_service.entity.RequestNotationInstrument;
 import com.mutrapro.request_service.entity.ServiceRequest;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
+import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.NotationInstrumentUsage;
 import com.mutrapro.request_service.exception.CannotAssignToOtherManagerException;
 import com.mutrapro.request_service.exception.DurationRequiredException;
@@ -122,7 +123,8 @@ public class ServiceRequestService {
                 .contactName(request.getContactName())
                 .contactPhone(request.getContactPhone())
                 .contactEmail(request.getContactEmail())
-                .musicOptions(request.getMusicOptions())
+                .genres(request.getGenres())
+                .purpose(request.getPurpose())
                 .tempoPercentage(request.getTempoPercentage())
                 .durationMinutes(request.getDurationMinutes())  // Lưu độ dài audio (phút)
                 .hasVocalist(request.getHasVocalist() != null ? request.getHasVocalist() : false)
@@ -132,13 +134,26 @@ public class ServiceRequestService {
                 .status(RequestStatus.pending)
                 .build();
 
-        // Tính và gắn total price snapshot cho transcription
+        // Tính và gắn service price snapshot
         try {
             if (requestType == ServiceType.transcription && request.getDurationMinutes() != null
                     && request.getDurationMinutes().compareTo(BigDecimal.ZERO) > 0) {
+                // Transcription: tính dựa trên duration
                 PriceCalculationResponse calc = pricingMatrixService.calculateTranscriptionPrice(request.getDurationMinutes());
                 if (calc != null && calc.getTotalPrice() != null) {
-                    serviceRequest.setTotalPrice(calc.getTotalPrice());
+                    serviceRequest.setServicePrice(calc.getTotalPrice());
+                    serviceRequest.setCurrency(calc.getCurrency());
+                }
+            } else if (requestType == ServiceType.arrangement) {
+                PriceCalculationResponse calc = pricingMatrixService.calculateArrangementPrice(1);
+                if (calc != null && calc.getTotalPrice() != null) {
+                    serviceRequest.setServicePrice(calc.getTotalPrice());
+                    serviceRequest.setCurrency(calc.getCurrency());
+                }
+            } else if (requestType == ServiceType.arrangement_with_recording) {
+                PriceCalculationResponse calc = pricingMatrixService.calculateArrangementWithRecordingPrice(1, null);
+                if (calc != null && calc.getTotalPrice() != null) {
+                    serviceRequest.setServicePrice(calc.getTotalPrice());
                     serviceRequest.setCurrency(calc.getCurrency());
                 }
             }
@@ -250,26 +265,42 @@ public class ServiceRequestService {
             // Add to ServiceRequest's collection (bidirectional relationship)
             saved.getNotationInstruments().addAll(requestInstruments);
             
-            // Calculate flat surcharge from instruments' basePrice
+            // Calculate instrument price (tổng giá instruments)
             long instrumentSum = instruments.stream()
                     .mapToLong(NotationInstrument::getBasePrice)
                     .sum();
-            if (instrumentSum > 0) {
-                BigDecimal surcharge = BigDecimal.valueOf(instrumentSum).setScale(2, java.math.RoundingMode.HALF_UP);
-                if (saved.getTotalPrice() == null) {
-                    saved.setTotalPrice(surcharge);
-                } else {
-                    saved.setTotalPrice(saved.getTotalPrice().add(surcharge).setScale(2, java.math.RoundingMode.HALF_UP));
-                }
-                if (saved.getCurrency() == null) {
-                    saved.setCurrency(com.mutrapro.request_service.enums.CurrencyType.VND);
-                }
+            
+            BigDecimal instrumentPrice = BigDecimal.valueOf(instrumentSum).setScale(2, java.math.RoundingMode.HALF_UP);
+            saved.setInstrumentPrice(instrumentPrice);
+            
+            // Tính totalPrice = servicePrice + instrumentPrice
+            BigDecimal servicePrice = saved.getServicePrice() != null 
+                ? saved.getServicePrice() 
+                : BigDecimal.ZERO;
+            BigDecimal totalPrice = servicePrice.add(instrumentPrice).setScale(2, java.math.RoundingMode.HALF_UP);
+            saved.setTotalPrice(totalPrice);
+            
+            if (saved.getCurrency() == null) {
+                saved.setCurrency(CurrencyType.VND);
             }
             
             serviceRequestRepository.save(saved);
             
-            log.info("Saved {} instrument selections for request: {} (surcharge={})", 
-                    requestInstruments.size(), saved.getRequestId(), instrumentSum);
+            log.info("Saved {} instrument selections for request: {} (servicePrice={}, instrumentPrice={}, totalPrice={})", 
+                    requestInstruments.size(), saved.getRequestId(), servicePrice, instrumentPrice, totalPrice);
+        } else {
+            // Không có instruments, totalPrice = servicePrice
+            BigDecimal servicePrice = saved.getServicePrice() != null 
+                ? saved.getServicePrice() 
+                : BigDecimal.ZERO;
+            saved.setInstrumentPrice(BigDecimal.ZERO);
+            saved.setTotalPrice(servicePrice);
+            
+            if (saved.getCurrency() == null) {
+                saved.setCurrency(CurrencyType.VND);
+            }
+            
+            serviceRequestRepository.save(saved);
         }
         
         // Build response using MapStruct mapper
@@ -588,22 +619,28 @@ public class ServiceRequestService {
     /**
      * Lấy danh sách request mà user hiện tại đã tạo (có phân trang)
      * @param status Optional filter theo status, nếu null thì lấy tất cả
+     * @param requestType Optional filter theo request type, nếu null thì lấy tất cả
      * @param pageable Phân trang
      * @return Page chứa danh sách ServiceRequestResponse
      */
-    public Page<ServiceRequestResponse> getUserRequests(RequestStatus status, Pageable pageable) {
+    public Page<ServiceRequestResponse> getUserRequests(RequestStatus status, ServiceType requestType, Pageable pageable) {
         String userId = getCurrentUserId();
         
         Page<ServiceRequest> requestsPage;
-        if (status != null) {
+        if (status != null && requestType != null) {
+            requestsPage = serviceRequestRepository.findByUserIdAndStatusAndRequestType(userId, status, requestType, pageable);
+        } else if (status != null) {
             requestsPage = serviceRequestRepository.findByUserIdAndStatus(userId, status, pageable);
+        } else if (requestType != null) {
+            requestsPage = serviceRequestRepository.findByUserIdAndRequestType(userId, requestType, pageable);
         } else {
             requestsPage = serviceRequestRepository.findByUserId(userId, pageable);
         }
         
-        log.info("Retrieved {} requests for user: userId={}, status={}, page={}/{}", 
+        log.info("Retrieved {} requests for user: userId={}, status={}, requestType={}, page={}/{}", 
                 requestsPage.getNumberOfElements(), userId, 
                 status != null ? status.name() : "all",
+                requestType != null ? requestType.name() : "all",
                 requestsPage.getNumber(), requestsPage.getTotalPages());
         
         List<ServiceRequestResponse> responses = requestsPage.getContent().stream()

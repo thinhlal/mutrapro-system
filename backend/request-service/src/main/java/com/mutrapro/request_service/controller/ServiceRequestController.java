@@ -50,15 +50,19 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/my-requests")
-    @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status, có phân trang)")
+    @Operation(summary = "Lấy danh sách request mà user hiện tại đã tạo (có thể filter theo status và requestType, có phân trang)")
     public ApiResponse<PageResponse<ServiceRequestResponse>> getUserRequests(
             @Parameter(description = "Filter theo status (pending, in_progress, completed, cancelled). Nếu không truyền thì trả về tất cả")
             @RequestParam(required = false) RequestStatus status,
+            @Parameter(description = "Filter theo request type (transcription, arrangement, arrangement_with_recording, recording). Nếu không truyền thì trả về tất cả")
+            @RequestParam(required = false) ServiceType requestType,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "10") int size,
             @RequestParam(required = false, defaultValue = "createdAt,desc") String sort) {
-        log.info("Getting user requests with status filter: {}, page={}, size={}, sort={}", 
-                status != null ? status.name() : "all", page, size, sort);
+        log.info("Getting user requests with filters: status={}, requestType={}, page={}, size={}, sort={}", 
+                status != null ? status.name() : "all",
+                requestType != null ? requestType.name() : "all",
+                page, size, sort);
         
         // Parse sort string (format: "field,direction")
         Sort.Direction direction = Sort.Direction.DESC;
@@ -74,7 +78,7 @@ public class ServiceRequestController {
         }
         
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
-        Page<ServiceRequestResponse> requestsPage = serviceRequestService.getUserRequests(status, pageable);
+        Page<ServiceRequestResponse> requestsPage = serviceRequestService.getUserRequests(status, requestType, pageable);
         
         PageResponse<ServiceRequestResponse> pageResponse = PageResponse.from(requestsPage);
         

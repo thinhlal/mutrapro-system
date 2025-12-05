@@ -473,11 +473,6 @@ const MilestoneDeliveriesPage = () => {
                       </Text>
                     </Descriptions.Item>
                   )}
-                  {requestInfo.timeSignature && (
-                    <Descriptions.Item label="Time Signature">
-                      <Text>{requestInfo.timeSignature}</Text>
-                    </Descriptions.Item>
-                  )}
                   {requestInfo.instruments &&
                     Array.isArray(requestInfo.instruments) &&
                     requestInfo.instruments.length > 0 && (
@@ -493,11 +488,6 @@ const MilestoneDeliveriesPage = () => {
                         </Space>
                       </Descriptions.Item>
                     )}
-                  {requestInfo.specialNotes && (
-                    <Descriptions.Item label="Special Notes" span={2}>
-                      <Text>{requestInfo.specialNotes}</Text>
-                    </Descriptions.Item>
-                  )}
                 </Descriptions>
 
                 {/* Customer Uploaded Files - Filter out contract PDF */}

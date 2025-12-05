@@ -19,7 +19,8 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {Array<string>} requestData.instrumentIds - Danh sách ID nhạc cụ
  * @param {boolean} requestData.hasVocalist - Có ca sĩ không (optional)
  * @param {number} requestData.externalGuestCount - Số lượng khách mời (optional)
- * @param {any} requestData.musicOptions - Các tùy chọn khác (optional)
+ * @param {Array<string>} requestData.genres - Danh sách genres (optional, cho arrangement)
+ * @param {string} requestData.purpose - Mục đích (optional, cho arrangement)
  * @param {Array<File>} requestData.files - Danh sách files upload
  *
  * @returns {Promise} ApiResponse
@@ -50,8 +51,15 @@ export const createServiceRequest = async requestData => {
       formData.append('externalGuestCount', requestData.externalGuestCount);
     }
 
-    if (requestData.musicOptions) {
-      formData.append('musicOptions', JSON.stringify(requestData.musicOptions));
+    // Music options - genres và purpose riêng
+    if (requestData.genres && requestData.genres.length > 0) {
+      requestData.genres.forEach(genre => {
+        formData.append('genres', genre);
+      });
+    }
+
+    if (requestData.purpose) {
+      formData.append('purpose', requestData.purpose);
     }
 
     // Thêm instrumentIds (array)
@@ -212,10 +220,11 @@ export const getMyAssignedRequests = async (userId, additionalFilters = {}) => {
 
 /**
  * Lấy danh sách requests mà user hiện tại đã tạo
- * GET /requests/my-requests?status=&page=&size=&sort=
+ * GET /requests/my-requests?status=&requestType=&page=&size=&sort=
  *
  * @param {Object} filters - Các filter tùy chọn
  * @param {string} filters.status - Trạng thái: pending, contract_sent, contract_approved, contract_signed, in_progress, completed, cancelled, rejected
+ * @param {string} filters.requestType - Loại service: transcription, arrangement, arrangement_with_recording, recording
  * @param {number} filters.page - Trang (default: 0)
  * @param {number} filters.size - Số lượng (default: 10)
  * @param {string} filters.sort - Sắp xếp (default: createdAt,desc)
@@ -227,6 +236,7 @@ export const getMyRequests = async (filters = {}) => {
     const params = new URLSearchParams();
 
     if (filters.status) params.append('status', filters.status);
+    if (filters.requestType) params.append('requestType', filters.requestType);
     if (filters.page !== undefined) params.append('page', filters.page);
     if (filters.size !== undefined) params.append('size', filters.size);
     if (filters.sort) params.append('sort', filters.sort);
@@ -312,14 +322,13 @@ export const getNotationInstrumentsByIds = async instrumentIds => {
  * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording
  * @param {Object} params - Tham số tính giá
  * @param {number} params.durationMinutes - Thời lượng (phút) - chỉ cho transcription
- * @param {number} params.numberOfSongs - Số bài - chỉ cho arrangement
  * @param {number} params.artistFee - Phí ca sĩ - chỉ cho arrangement_with_recording
  *
  * @returns {Promise} ApiResponse với PriceCalculationResponse
  */
 export const calculatePricing = async (serviceType, params = {}) => {
   try {
-    const { durationMinutes, numberOfSongs, artistFee } = params;
+    const { durationMinutes, artistFee } = params;
     let url;
     const urlParams = new URLSearchParams();
 
@@ -336,17 +345,12 @@ export const calculatePricing = async (serviceType, params = {}) => {
       }
     } else if (serviceType === 'arrangement') {
       url = `${requestPath}/pricing-matrix/calculate/arrangement`;
-      if (numberOfSongs !== undefined && numberOfSongs !== null) {
-        urlParams.append('numberOfSongs', numberOfSongs);
-      }
+      // Arrangement mặc định 1 bài, không cần truyền numberOfSongs
     } else if (
       serviceType === 'arrangement_with_recording' ||
       serviceType === 'arrangement-with-recording'
     ) {
       url = `${requestPath}/pricing-matrix/calculate/arrangement-with-recording`;
-      if (numberOfSongs !== undefined && numberOfSongs !== null) {
-        urlParams.append('numberOfSongs', numberOfSongs);
-      }
       if (artistFee !== undefined && artistFee !== null) {
         urlParams.append('artistFee', artistFee);
       }

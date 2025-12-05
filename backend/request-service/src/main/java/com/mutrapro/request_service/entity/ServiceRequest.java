@@ -1,6 +1,5 @@
 package com.mutrapro.request_service.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
@@ -54,9 +53,12 @@ public class ServiceRequest extends BaseEntity<String> {
     @Column(name = "contact_email", length = 100)
     String contactEmail;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "music_options", columnDefinition = "jsonb")
-    JsonNode musicOptions;  // VD: { "genres": ["Pop","Rock"], "purpose": "karaoke_cover" } - NULL cho transcription
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "genres", columnDefinition = "text[]")
+    List<String> genres;  // Optional - Danh sách genres (VD: ["Pop", "Rock"]) cho arrangement
+    
+    @Column(name = "purpose", length = 100)
+    String purpose;  // Optional - Mục đích (VD: "karaoke_cover", "performance") cho arrangement
 
     @Column(name = "tempo_percentage", precision = 5, scale = 2)
     BigDecimal tempoPercentage;  // VD: 80.00, 50.00 (tốc độ phát cho transcription)
@@ -83,8 +85,14 @@ public class ServiceRequest extends BaseEntity<String> {
     @Column(name = "status", nullable = false, length = 20)
     RequestStatus status = RequestStatus.pending;
 
+    @Column(name = "service_price", precision = 12, scale = 2)
+    BigDecimal servicePrice;  // Giá dịch vụ cơ bản (không bao gồm instrument costs)
+
+    @Column(name = "instrument_price", precision = 12, scale = 2)
+    BigDecimal instrumentPrice;  // Tổng giá instruments
+
     @Column(name = "total_price", precision = 12, scale = 2)
-    BigDecimal totalPrice;  // Snapshot tổng giá tại thời điểm tạo/cập nhật
+    BigDecimal totalPrice;  // Tổng giá cuối cùng (servicePrice + instrumentPrice)
 
     @Enumerated(EnumType.STRING)
     @Column(name = "currency", length = 10)

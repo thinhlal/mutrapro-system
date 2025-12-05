@@ -1364,11 +1364,6 @@ const TranscriptionTaskDetailPage = () => {
                         <Text>{request.tempo} BPM</Text>
                       </Descriptions.Item>
                     )}
-                    {request.timeSignature && (
-                      <Descriptions.Item label="Time Signature">
-                        <Text>{request.timeSignature}</Text>
-                      </Descriptions.Item>
-                    )}
                     {request.instruments && request.instruments.length > 0 && (
                       <Descriptions.Item label="Instruments" span={2}>
                         <Space wrap>
@@ -1378,11 +1373,6 @@ const TranscriptionTaskDetailPage = () => {
                             </Tag>
                           ))}
                         </Space>
-                      </Descriptions.Item>
-                    )}
-                    {request.specialNotes && (
-                      <Descriptions.Item label="Special Notes" span={2}>
-                        <Text>{request.specialNotes}</Text>
                       </Descriptions.Item>
                     )}
                     {request.files &&

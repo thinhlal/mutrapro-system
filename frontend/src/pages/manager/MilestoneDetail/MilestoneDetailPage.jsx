@@ -30,6 +30,7 @@ import {
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import axiosInstance from '../../../utils/axiosInstance';
 import styles from './MilestoneDetailPage.module.css';
 
@@ -517,16 +518,17 @@ const MilestoneDetailPage = () => {
                   ).toUpperCase()}
                 </Tag>
               </div>
-              {request.durationMinutes && (
-                <div>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Audio duration:{' '}
-                  </Text>
-                  <Text strong>
-                    {formatDurationMMSS(request.durationMinutes)}
-                  </Text>
-                </div>
-              )}
+              {request.requestType === 'transcription' &&
+                request.durationMinutes && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      Audio duration:{' '}
+                    </Text>
+                    <Text strong>
+                      {formatDurationMMSS(request.durationMinutes)}
+                    </Text>
+                  </div>
+                )}
               {request.instrumentIds &&
                 request.instrumentIds.length > 0 &&
                 instrumentsData.length > 0 && (
@@ -548,7 +550,35 @@ const MilestoneDetailPage = () => {
                     </Space>
                   </div>
                 )}
-              {(request.specialNotes || request.description) && (
+              {/* Hiển thị genres và purpose cho arrangement requests */}
+              {(request.requestType === 'arrangement' ||
+                request.requestType === 'arrangement_with_recording') && (
+                <>
+                  {request.genres && request.genres.length > 0 && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Genres:{' '}
+                      </Text>
+                      <Space wrap size={[4, 4]}>
+                        {request.genres.map((genre, idx) => (
+                          <Tag key={idx} color="purple" style={{ margin: 0 }}>
+                            {getGenreLabel(genre)}
+                          </Tag>
+                        ))}
+                      </Space>
+                    </div>
+                  )}
+                  {request.purpose && (
+                    <div>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        Purpose:{' '}
+                      </Text>
+                      <Text strong>{getPurposeLabel(request.purpose)}</Text>
+                    </div>
+                  )}
+                </>
+              )}
+              {request.description && (
                 <div>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     Notes:{' '}
@@ -563,7 +593,7 @@ const MilestoneDetailPage = () => {
                     }}
                     ellipsis={{ rows: 2, expandable: false }}
                   >
-                    {request.specialNotes || request.description}
+                    {request.description}
                   </Text>
                 </div>
               )}

@@ -74,8 +74,6 @@ public class CustomerDeliveriesResponse {
         String description;
         Integer durationSeconds; // durationMinutes * 60 nếu có
         Integer tempo;
-        String timeSignature;
-        String specialNotes;
         Object instruments; // List instruments nếu có
         Object files; // List files mà customer đã upload
     }

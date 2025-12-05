@@ -1,6 +1,5 @@
 package com.mutrapro.request_service.dto.request;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.mutrapro.request_service.enums.ServiceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,7 +31,9 @@ public class CreateServiceRequestRequest {
     @Size(max = 100, message = "Contact email must not exceed 100 characters")
     String contactEmail;  // Optional
     
-    JsonNode musicOptions;  // Optional - JSON object: { "genres": ["Pop","Rock"], "purpose": "karaoke_cover" }
+    List<String> genres;  // Optional - Danh sách genres (VD: ["Pop", "Rock"]) cho arrangement
+    
+    String purpose;  // Optional - Mục đích (VD: "karaoke_cover", "performance") cho arrangement
     
     BigDecimal tempoPercentage;  // Optional - VD: 80.00, 50.00 (tốc độ phát cho transcription)
     
@@ -53,4 +54,3 @@ public class CreateServiceRequestRequest {
     
     List<MultipartFile> files;  // Optional - Files: audio cho transcription, PDF/MusicXML/MIDI cho arrangement
 }
-

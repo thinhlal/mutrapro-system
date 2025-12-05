@@ -1,376 +1,480 @@
-// src/pages/Arrangement/ArrangementQuotePage.jsx
-import { useMemo, useState, useEffect } from 'react';
+// ArrangementQuotePage - Hiển thị báo giá và submit cuối cùng (giống TranscriptionQuotePageSimplified)
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Typography,
-  Collapse,
   Button,
-  Divider,
-  Select,
-  Tag,
-  Slider,
-  Checkbox,
-  Drawer,
-  Input,
   Empty,
+  Card,
   Space,
+  Tag,
   Spin,
-  message,
+  Alert,
+  Descriptions,
+  Divider,
+  Table,
 } from 'antd';
-import styles from './ArrangementQuotePage.module.css';
+import {
+  DollarOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
+import { toast } from 'react-hot-toast';
 import Header from '../../../../components/common/Header/Header';
 import Footer from '../../../../components/common/Footer/Footer';
 import BackToTop from '../../../../components/common/BackToTop/BackToTop';
+import {
+  formatPrice,
+  getPricingDetail,
+} from '../../../../services/pricingMatrixService';
+import { calculatePricing } from '../../../../services/serviceRequestService';
+import { createServiceRequest } from '../../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
+import { MUSIC_GENRES, MUSIC_PURPOSES, getGenreLabel, getPurposeLabel } from '../../../../constants/musicOptionsConstants';
+import styles from './ArrangementQuotePage.module.css';
 
 const { Title, Text } = Typography;
 
-// ---- Pricing mock (có thể thay bằng API sau) ----
-const PRICE_BASE = 25; // base cho 1 nhạc cụ, complexity = 1
-const PRICE_PER_INSTRUMENT = 10;
-const PRICE_PER_COMPLEXITY = 15; // mỗi bậc phức tạp
-const PRICE_EDITABLE = 5;
-const PRICE_VOCALIST = 20;
-
-function calcPrice(instruments, complexity, editableFormats, withVocalist) {
-  const items = [];
-  const base = PRICE_BASE;
-  items.push({ label: 'Base arrangement', amount: base });
-
-  const instExtra = Math.max(0, instruments.length - 1) * PRICE_PER_INSTRUMENT;
-  if (instExtra)
-    items.push({
-      label: `Extra instruments x${instruments.length - 1}`,
-      amount: instExtra,
-    });
-
-  const complexityFee = (complexity - 1) * PRICE_PER_COMPLEXITY;
-  if (complexityFee > 0)
-    items.push({
-      label: `Complexity x${complexity - 1}`,
-      amount: complexityFee,
-    });
-
-  const editableFee = (editableFormats?.length || 0) * PRICE_EDITABLE;
-  if (editableFee)
-    items.push({
-      label: `Editable formats x${editableFormats.length}`,
-      amount: editableFee,
-    });
-
-  if (withVocalist)
-    items.push({
-      label: 'Include vocalist (recording add-on)',
-      amount: PRICE_VOCALIST,
-    });
-
-  const subtotal = items.reduce((s, i) => s + i.amount, 0);
-  return { items, subtotal, total: subtotal };
-}
+const SERVICE_TYPE_LABELS = {
+  transcription: 'Transcription (Sound → Sheet)',
+  arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement + Recording (with Vocalist)',
+  recording: 'Recording (Studio Booking)',
+};
 
 export default function ArrangementQuotePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const navState = location?.state || {};
-  const hasSource = !!navState?.fileName;
 
-  // Source
-  const [source, setSource] = useState({
-    fileName: navState.fileName || '',
-    fileType: navState.fileType || '',
-    size: Number(navState.size) || 0,
-    variant: navState.variant || 'pure', // "pure" | "with_recording"
-  });
+  // Data từ previous pages
+  const formData = navState.formData || {};
+  const uploadedFile = navState.uploadedFile;
+  const fileName = navState.fileName || 'Untitled';
+  const serviceType = navState.serviceType || (navState.variant === 'with_recording' ? 'arrangement_with_recording' : 'arrangement');
 
-  // Form options
-  const [instruments, setInstruments] = useState([]);
-  const [complexity, setComplexity] = useState(1); // 1–5
-  const [editableFormats, setEditableFormats] = useState([]);
-  const withVocalist = source.variant === 'with_recording';
-  const [lyricsProvided, setLyricsProvided] = useState(false);
+  const [priceData, setPriceData] = useState(null);
+  const [servicePricing, setServicePricing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // NEW: state cho Drawer
-  const [showCart, setShowCart] = useState(false);
+  const { instruments: instrumentsData } = useInstrumentStore();
 
-  // ===== Instrument Store =====
-  const {
-    instruments: instrumentsData,
-    loading: instrumentsLoading,
-    error: instrumentsError,
-    fetchInstruments,
-    getInstrumentsByUsage,
-  } = useInstrumentStore();
-
-  // Fetch instruments on mount
-  useEffect(() => {
-    const loadInstruments = async () => {
-      try {
-        await fetchInstruments();
-      } catch (error) {
-        message.error('Không thể tải danh sách nhạc cụ. Vui lòng thử lại.');
-        console.error('Error fetching instruments:', error);
-      }
-    };
-
-    loadInstruments();
-  }, [fetchInstruments]);
-
-  const price = useMemo(
-    () => calcPrice(instruments, complexity, editableFormats, withVocalist),
-    [instruments, complexity, editableFormats, withVocalist]
-  );
-
-  const canProceed = hasSource && instruments.length > 0;
-
-  const clearSource = () => {
-    setSource({ fileName: '', fileType: '', size: 0, variant: 'pure' });
-  };
-
-  if (!hasSource) {
+  // Validate thiếu data
+  if (!formData || !formData.title || !fileName) {
     return (
       <div className={styles.wrap}>
-        <Title level={3}>No notation uploaded</Title>
-        <Empty description="Please upload your notation on the previous page." />
-        <Button
-          type="primary"
-          onClick={() => navigate(-1)}
-          style={{ marginTop: 12 }}
-        >
-          Go back to uploader
+        <Header />
+        <Empty description="Missing data. Please go back and complete the form." />
+        <Button type="primary" onClick={() => navigate('/services/request-service')}>
+          Go Back
         </Button>
+        <Footer />
       </div>
     );
   }
+
+  // Fetch price calculation and service pricing detail
+  useEffect(() => {
+    const fetchPricingData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch calculated price - arrangement mặc định 1 bài
+        const priceResponse = await calculatePricing(serviceType, {
+          ...(serviceType === 'arrangement_with_recording' && formData.artistFee ? { artistFee: formData.artistFee } : {}),
+        });
+        if (priceResponse.status === 'success' && priceResponse.data) {
+          setPriceData(priceResponse.data);
+        }
+
+        // Fetch service pricing detail
+        const servicePricingResponse = await getPricingDetail(serviceType);
+        if (
+          servicePricingResponse.status === 'success' &&
+          servicePricingResponse.data
+        ) {
+          setServicePricing(servicePricingResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching pricing data:', error);
+        toast.error('Không thể tải thông tin giá. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPricingData();
+  }, [serviceType, formData.artistFee]);
+
+  // Tính tổng giá instruments và combine với priceData
+  const finalPriceData = priceData ? (() => {
+    // Tính tổng giá của instruments
+    const instrumentTotal = (formData.instrumentIds || []).reduce((sum, id) => {
+      const inst = instrumentsData.find(i => i.instrumentId === id);
+      return sum + (inst?.basePrice || 0);
+    }, 0);
+
+    // Cộng vào totalPrice từ API
+    const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
+
+    // Tạo breakdown mới với instruments
+    const breakdown = [...(priceData.breakdown || [])];
+    if (instrumentTotal > 0) {
+      breakdown.push({
+        label: 'Instruments',
+        amount: instrumentTotal,
+        description: `${(formData.instrumentIds || []).length} instrument(s)`,
+      });
+    }
+
+    return {
+      ...priceData,
+      totalPrice: finalTotal,
+      breakdown: breakdown,
+    };
+  })() : null;
+
+  const handleSubmit = async () => {
+    // 1. Validate trước
+    if (!uploadedFile) {
+      toast.error('File notation là bắt buộc cho arrangement.');
+      return;
+    }
+
+    // 2. Chuẩn bị payload gửi lên backend
+    const requestData = {
+      requestType: serviceType,
+      title: formData.title,
+      description: formData.description,
+      contactName: formData.contactName,
+      contactPhone: formData.contactPhone,
+      contactEmail: formData.contactEmail,
+      instrumentIds: formData.instrumentIds || [],
+      hasVocalist: formData.hasVocalist || false,
+      externalGuestCount: formData.externalGuestCount || 0,
+      genres: formData.genres || null,
+      purpose: formData.purpose || null,
+      files: uploadedFile ? [uploadedFile] : [],
+    };
+
+    try {
+      setSubmitting(true);
+
+      // 3. Gọi API – nếu lỗi, createServiceRequest sẽ throw
+      await createServiceRequest(requestData);
+
+      // 4. Thành công → clear sessionStorage + show toast + điều hướng
+      sessionStorage.removeItem('serviceRequestFormData');
+      sessionStorage.removeItem('serviceRequestType');
+      toast.success('Service request created successfully!');
+      navigate('/');
+    } catch (error) {
+      console.error('Error creating request:', error);
+      const errorMessage =
+        error?.message || error?.data?.message || 'Failed to create request';
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <>
       <Header />
       <div className={styles.wrap}>
-        <Title level={2}>Arrangement — Files & Options</Title>
+        <Title level={2} style={{ marginBottom: 24 }}>
+          Review Your Quote
+        </Title>
 
+        {/* 2 cột: bên trái 2 phần, bên phải 2 phần */}
         <div className={styles.row}>
+          {/* LEFT COLUMN */}
           <div className={styles.left}>
-            {/* Không cần waveform; giữ khu vực trống hoặc thông tin hướng dẫn */}
-            <div
-              style={{
-                padding: 12,
-                border: '1px dashed #ddd',
-                borderRadius: 8,
-              }}
-            >
-              <Text type="secondary">
-                Please review your instruments and complexity level. You can
-                attach lyrics if vocalist is included.
-              </Text>
-            </div>
+            {/* Service Info */}
+            <Card title="Service Details" style={{ marginBottom: 24 }}>
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Service Type">
+                  <Tag color="orange">{SERVICE_TYPE_LABELS[serviceType] || serviceType}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Title">
+                  {formData.title}
+                </Descriptions.Item>
+                <Descriptions.Item label="Description">
+                  {formData.description}
+                </Descriptions.Item>
+                <Descriptions.Item label="File">{fileName}</Descriptions.Item>
+                {formData.genres && formData.genres.length > 0 && (
+                  <Descriptions.Item label="Music Genres">
+                    <Space wrap>
+                      {formData.genres.map((genre, idx) => (
+                        <Tag key={idx} color="blue">
+                          {getGenreLabel(genre) || genre}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                {formData.purpose && (
+                  <Descriptions.Item label="Purpose">
+                    <Tag color="purple">{getPurposeLabel(formData.purpose) || formData.purpose}</Tag>
+                  </Descriptions.Item>
+                )}
+                {formData.instrumentIds &&
+                  formData.instrumentIds.length > 0 && (
+                    <Descriptions.Item label="Instruments">
+                      <Space wrap>
+                        {formData.instrumentIds.map(id => {
+                          const inst = instrumentsData.find(
+                            i => i.instrumentId === id
+                          );
+                          return inst ? (
+                            <Tag key={id} color="orange">
+                              {inst.instrumentName}
+                            </Tag>
+                          ) : null;
+                        })}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+              </Descriptions>
+            </Card>
+
+            {/* Contact Info */}
+            <Card title="Contact Information" style={{ marginBottom: 24 }}>
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="Name">
+                  {formData.contactName}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email">
+                  {formData.contactEmail}
+                </Descriptions.Item>
+                <Descriptions.Item label="Phone">
+                  {formData.contactPhone}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
           </div>
 
+          {/* RIGHT COLUMN */}
           <div className={styles.right}>
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-              <div className={styles.metaRow}>
-                <Text strong>Notation File:</Text>
-                <Input
-                  value={source.fileName}
-                  placeholder="Untitled"
-                  onChange={e =>
-                    setSource(s => ({ ...s, fileName: e.target.value }))
-                  }
-                  variant="filled"
-                  style={{ maxWidth: 360 }}
-                  allowClear
-                />
-              </div>
-              <div className={styles.metaRow}>
-                <Text strong>Type:</Text>
-                <Text>{source.fileType || 'Unknown'}</Text>
-              </div>
-
-              <div className={styles.rightAlign}>
-                <Button danger type="text" onClick={clearSource}>
-                  Remove source
-                </Button>
-                <Button
-                  type="link"
-                  onClick={() => navigate(-1)}
-                  style={{ paddingLeft: 8 }}
-                >
-                  Change on previous page
-                </Button>
-              </div>
-            </Space>
-          </div>
-        </div>
-
-        <Divider />
-
-        <Collapse
-          bordered={false}
-          defaultActiveKey={['instruments']}
-          items={[
-            {
-              key: 'instruments',
-              label: (
-                <div className={styles.sectionTitle}>Instrument Selection</div>
-              ),
-              extra: <Text strong>{`+$${price.subtotal.toFixed(2)}`}</Text>,
-              children: (
-                <Spin spinning={instrumentsLoading}>
-                  <Select
-                    mode="multiple"
-                    placeholder="Pick instruments (required)"
-                    value={instruments}
-                    onChange={setInstruments}
-                    style={{ width: '100%' }}
-                    options={getInstrumentsByUsage('arrangement').map(inst => ({
-                      value: inst.instrumentId,
-                      label: inst.instrumentName,
-                    }))}
-                    tagRender={props => (
-                      <Tag closable={props.closable} onClose={props.onClose}>
-                        {props.label}
-                      </Tag>
-                    )}
-                    notFoundContent={
-                      instrumentsError ? (
-                        <Empty
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                          description={instrumentsError}
-                        />
-                      ) : (
-                        <Empty
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                          description="Không có nhạc cụ nào"
-                        />
-                      )
-                    }
-                  />
-                </Spin>
-              ),
-            },
-            {
-              key: 'complexity',
-              label: <div className={styles.sectionTitle}>Complexity</div>,
-              children: (
-                <div className={styles.inlineRow}>
-                  <div>
-                    <Text strong>Complexity Level</Text>
-                    <Slider
-                      min={1}
-                      max={5}
-                      value={complexity}
-                      onChange={setComplexity}
-                      tooltip={{ formatter: v => `Level ${v}` }}
-                    />
-                  </div>
-                </div>
-              ),
-            },
-            {
-              key: 'editable',
-              label: (
-                <div className={styles.sectionTitle}>Editable Formats</div>
-              ),
-              children: (
-                <Select
-                  mode="multiple"
-                  value={editableFormats}
-                  onChange={setEditableFormats}
-                  placeholder="Editable formats (+$5 each)"
-                  style={{ width: '100%' }}
-                  options={[
-                    { value: 'musicxml', label: 'MusicXML (.xml)' },
-                    { value: 'midi', label: 'MIDI (.mid)' },
-                    { value: 'sib', label: 'Sibelius (.sib)' },
-                    { value: 'gp', label: 'Guitar Pro (.gp)' },
-                    { value: 'musx', label: 'Finale (.musx)' },
-                    { value: 'mscz', label: 'MuseScore (.mscz)' },
-                    { value: 'dorico', label: 'Dorico' },
-                  ]}
-                />
-              ),
-            },
-            ...(withVocalist
-              ? [
-                  {
-                    key: 'vocal',
-                    label: <div className={styles.sectionTitle}>Vocalist</div>,
-                    children: (
-                      <Checkbox
-                        checked={lyricsProvided}
-                        onChange={e => setLyricsProvided(e.target.checked)}
-                      >
-                        I will provide lyrics (recommended for vocalist)
-                      </Checkbox>
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-        />
-
-        <div className={styles.footerBar}>
-          <div>
-            <Text type="secondary">Current total</Text>
-            <Title level={4} style={{ margin: 0 }}>
-              ${price.total.toFixed(2)}
-            </Title>
-          </div>
-          <div>
-            <Button
-              size="large"
-              disabled={!canProceed}
-              onClick={() => setShowCart(true)}
-              type="primary"
+            {/* Service & Instruments Pricing */}
+            <Card
+              title="Service & Instruments Pricing"
+              style={{ marginBottom: 24 }}
             >
-              Review Cart
-            </Button>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <Spin tip="Loading pricing information..." />
+                </div>
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                  {/* Service Pricing */}
+                  <div>
+                    <Text
+                      strong
+                      style={{
+                        fontSize: 16,
+                        marginBottom: 12,
+                        display: 'block',
+                      }}
+                    >
+                      Selected Service:
+                    </Text>
+                    <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <Text strong style={{ fontSize: 16 }}>
+                              {SERVICE_TYPE_LABELS[serviceType] || serviceType}
+                            </Text>
+                            {servicePricing?.description && (
+                              <div style={{ marginTop: 4 }}>
+                                <Text type="secondary" style={{ fontSize: 13 }}>
+                                  {servicePricing.description}
+                                </Text>
+                              </div>
+                            )}
+                          </div>
+                          <Tag
+                            color="green"
+                            style={{ fontSize: 16, padding: '6px 16px' }}
+                          >
+                            {servicePricing
+                              ? formatPrice(
+                                  servicePricing.basePrice,
+                                  servicePricing.currency
+                                )
+                              : 'N/A'}
+                            {servicePricing &&
+                              ` / ${servicePricing.unitType || 'song'}`}
+                          </Tag>
+                        </div>
+                      </Space>
+                    </Card>
+                  </div>
+
+                  {/* Instruments Pricing */}
+                  {formData.instrumentIds &&
+                    formData.instrumentIds.length > 0 && (
+                      <div>
+                        <Text
+                          strong
+                          style={{
+                            fontSize: 16,
+                            marginBottom: 12,
+                            display: 'block',
+                          }}
+                        >
+                          Selected Instruments:
+                        </Text>
+                        <Table
+                          dataSource={formData.instrumentIds
+                            .map(id => {
+                              const inst = instrumentsData.find(
+                                i => i.instrumentId === id
+                              );
+                              return inst
+                                ? {
+                                    key: id,
+                                    instrumentId: id,
+                                    instrumentName: inst.instrumentName,
+                                    basePrice: inst.basePrice || 0,
+                                    usage: inst.usage,
+                                  }
+                                : null;
+                            })
+                            .filter(Boolean)}
+                          columns={[
+                            {
+                              title: 'Instrument Name',
+                              dataIndex: 'instrumentName',
+                              key: 'instrumentName',
+                              render: text => (
+                                <Space>
+                                  <Text strong>{text}</Text>
+                                </Space>
+                              ),
+                            },
+                            {
+                              title: 'Base Price',
+                              dataIndex: 'basePrice',
+                              key: 'basePrice',
+                              align: 'right',
+                              render: price => (
+                                <Text
+                                  strong
+                                  style={{ color: '#52c41a', fontSize: 15 }}
+                                >
+                                  {formatPrice(
+                                    price,
+                                    servicePricing?.currency || 'VND'
+                                  )}
+                                </Text>
+                              ),
+                            },
+                          ]}
+                          pagination={false}
+                          size="small"
+                        />
+                      </div>
+                    )}
+                </Space>
+              )}
+            </Card>
+
+            {/* Price Calculation */}
+            <Card
+              title={<span>Price Calculation</span>}
+              style={{ marginBottom: 24 }}
+            >
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <Spin tip="Calculating price..." />
+                </div>
+              ) : finalPriceData ? (
+                <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                  <Alert
+                    message="Estimated Total"
+                    description={
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 'bold',
+                          color: '#52c41a',
+                        }}
+                      >
+                        {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
+                      </div>
+                    }
+                    type="success"
+                    showIcon
+                    icon={<DollarOutlined />}
+                  />
+
+                  <Divider style={{ margin: '12px 0' }} />
+
+                  <div>
+                    <Text type="secondary">Breakdown:</Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Descriptions column={1} size="small">
+                        {finalPriceData.breakdown && finalPriceData.breakdown.map((item, idx) => (
+                          <Descriptions.Item key={idx} label={item.label}>
+                            {formatPrice(item.amount, finalPriceData.currency)}
+                            {item.description && (
+                              <Text type="secondary" style={{ marginLeft: 8 }}>
+                                ({item.description})
+                              </Text>
+                            )}
+                          </Descriptions.Item>
+                        ))}
+                        <Descriptions.Item label="Total">
+                          <Text strong>
+                            {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
+                          </Text>
+                        </Descriptions.Item>
+                      </Descriptions>
+                    </div>
+                  </div>
+
+                  {finalPriceData.notes && (
+                    <Alert
+                      message="Note"
+                      description={finalPriceData.notes}
+                      type="info"
+                      showIcon
+                    />
+                  )}
+                </Space>
+              ) : (
+                <Empty description="Unable to calculate price" />
+              )}
+            </Card>
           </div>
         </div>
 
-        <Drawer
-          title="What's in your cart"
-          placement="bottom"
-          height={320}
-          open={showCart}
-          onClose={() => setShowCart(false)}
-        >
-          <div className={styles.cartGrid}>
-            <div>
-              <Title level={4} style={{ marginTop: 0 }}>
-                {source.fileName || 'Untitled'}
-              </Title>
-              <Divider />
-              <ul className={styles.listDots}>
-                {price.items.map((it, idx) => (
-                  <li key={idx}>• {it.label}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div className={styles.cartRight}>
-              <div className={styles.totalLine}>
-                <Text>Subtotal:</Text>
-                <Text>${price.subtotal.toFixed(2)}</Text>
-              </div>
-              <div className={styles.totalLineStrong}>
-                <Text strong>Total:</Text>
-                <Text strong>${price.total.toFixed(2)}</Text>
-              </div>
-              <Divider />
-              <div className={styles.rightAlign}>
-                <Button
-                  onClick={() => setShowCart(false)}
-                  style={{ marginRight: 8 }}
-                >
-                  Edit Order
-                </Button>
-                <Button type="primary" href="/checkout/review">
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Drawer>
+        {/* Actions – thanh button cố định dưới */}
+        <div className={styles.footerBar}>
+          <Button size="large" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CheckCircleOutlined />}
+            onClick={handleSubmit}
+            loading={submitting}
+            disabled={loading || !finalPriceData}
+            style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
+          >
+            Confirm & Submit Request
+          </Button>
+        </div>
       </div>
       <Footer />
       <BackToTop />

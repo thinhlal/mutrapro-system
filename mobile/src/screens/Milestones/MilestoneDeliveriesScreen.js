@@ -600,13 +600,6 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     value={`${requestInfo.tempoPercentage || requestInfo.tempo}%`}
                   />
                 )}
-                {requestInfo.timeSignature && (
-                  <InfoRow
-                    icon="time-outline"
-                    label="Time Signature"
-                    value={requestInfo.timeSignature}
-                  />
-                )}
                 {requestInfo.instruments &&
                   Array.isArray(requestInfo.instruments) &&
                   requestInfo.instruments.length > 0 && (
@@ -632,14 +625,6 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                       </View>
                     </View>
                   )}
-                {requestInfo.specialNotes && (
-                  <View style={styles.descriptionBox}>
-                    <Text style={styles.descriptionLabel}>Special Notes</Text>
-                    <Text style={styles.descriptionText}>
-                      {requestInfo.specialNotes}
-                    </Text>
-                  </View>
-                )}
                 {/* Customer Uploaded Files - Filter out contract PDF */}
                 {requestInfo.files &&
                   Array.isArray(requestInfo.files) &&

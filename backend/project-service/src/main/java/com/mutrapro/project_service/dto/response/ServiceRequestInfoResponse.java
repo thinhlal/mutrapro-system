@@ -9,7 +9,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -40,7 +39,8 @@ public class ServiceRequestInfoResponse {
     // Thêm các field cho specialist (từ ServiceRequestResponse)
     BigDecimal durationMinutes;  // Độ dài audio file (phút)
     BigDecimal tempoPercentage;  // Tempo percentage
-    Map<String, Object> musicOptions;  // Music options (có thể chứa timeSignature, specialNotes)
+    List<String> genres;  // Danh sách genres (VD: ["Pop", "Rock"]) cho arrangement
+    String purpose;  // Mục đích (VD: "karaoke_cover", "performance") cho arrangement
     List<Object> instruments;  // Danh sách instruments
     List<Object> files;  // Danh sách files mà customer đã upload
 }

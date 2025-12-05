@@ -1692,6 +1692,9 @@ const ContractDetailPage = () => {
   const hasSigned =
     contract?.customerSignedAt || isSigned || isActive || isCompleted;
 
+  // Show Party A signature when contract is signed/active/completed (same logic as PDF)
+  const shouldShowPartyASignature = isSigned || isActive || isCompleted;
+
   // Customer can take action when contract is SENT
   const canCustomerAction = isSent;
   const canSign = isApproved;
@@ -2922,7 +2925,7 @@ const ContractDetailPage = () => {
               <div className={styles.signRow}>
                 <div>
                   <div className={styles.sigLabel}>Party A Representative</div>
-                  {canPayMilestones ? (
+                  {shouldShowPartyASignature ? (
                     <>
                       <div className={styles.signature}>
                         <img

@@ -1,7 +1,6 @@
 package com.mutrapro.request_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
@@ -31,7 +30,9 @@ public class ServiceRequestResponse {
     String contactName;
     String contactPhone;
     String contactEmail;
-    JsonNode musicOptions;
+    List<String> genres;  // Optional - Danh sách genres (VD: ["Pop", "Rock"]) cho arrangement
+    
+    String purpose;  // Optional - Mục đích (VD: "karaoke_cover", "performance") cho arrangement
     BigDecimal tempoPercentage;
     BigDecimal durationMinutes;  // Độ dài audio file (phút)
     Boolean hasVocalist;
@@ -44,7 +45,9 @@ public class ServiceRequestResponse {
     List<NotationInstrumentResponse> instruments;  // Danh sách đầy đủ thông tin instruments đã chọn
     List<FileInfoResponse> files;  // Danh sách files đã upload
     ManagerInfoResponse managerInfo;
-    BigDecimal totalPrice;
+    BigDecimal servicePrice;  // Giá dịch vụ cơ bản (không bao gồm instrument costs)
+    BigDecimal instrumentPrice;  // Tổng giá instruments
+    BigDecimal totalPrice;  // Tổng giá cuối cùng (servicePrice + instrumentPrice)
     CurrencyType currency;
     
     // Contract info (enriched từ project-service)

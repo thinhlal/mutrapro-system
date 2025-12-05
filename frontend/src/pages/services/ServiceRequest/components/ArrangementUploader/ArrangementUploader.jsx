@@ -1,20 +1,14 @@
 // src/pages/ServiceRequest/components/ArrangementUploader/ArrangementUploader.jsx
 import { useState, useCallback } from 'react';
-import { Upload, Space, Tag, Button, message, InputNumber } from 'antd';
+import { Upload, Space, Tag, Button, message } from 'antd';
 import {
   InboxOutlined,
   FileTextOutlined,
   DeleteOutlined,
-  ClockCircleOutlined,
   ArrowRightOutlined,
-  PlusOutlined,
-  MinusOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './ArrangementUploader.module.css';
-import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
-import { createServiceRequest } from '../../../../../services/serviceRequestService';
-import { formatDurationMMSS } from '../../../../../utils/timeUtils';
 const { Dragger } = Upload;
 
 const toSize = (bytes = 0) =>
@@ -26,10 +20,6 @@ export default function ArrangementUploader({
   formData,
 }) {
   const [file, setFile] = useState(null);
-  const [blobUrl, setBlobUrl] = useState('');
-  const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
-  const [adjustedDurationMinutes, setAdjustedDurationMinutes] = useState(3); // Default 3 for non-audio
-  const [isAudioFile, setIsAudioFile] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -43,49 +33,11 @@ export default function ArrangementUploader({
     }
 
     setFile(f);
-
-    // Check if it's audio/video file
-    const isAudio =
-      f.type?.startsWith('audio/') || f.type?.startsWith('video/');
-    setIsAudioFile(isAudio);
-
-    if (isAudio) {
-      const url = URL.createObjectURL(f);
-      setBlobUrl(url);
-
-      try {
-        const sec = await getMediaDurationSec(f);
-        const minutes = parseFloat((sec / 60).toFixed(2));
-        setDetectedDurationMinutes(minutes);
-        setAdjustedDurationMinutes(minutes);
-      } catch {
-        setDetectedDurationMinutes(0);
-        setAdjustedDurationMinutes(3);
-      }
-    } else {
-      // For non-audio files (MIDI, PDF, XML), default to 3 minutes
-      setDetectedDurationMinutes(0);
-      setAdjustedDurationMinutes(3);
-    }
+    // Arrangement only accepts notation files (MusicXML/MIDI/PDF), not audio
   };
 
   const clearFile = () => {
-    if (blobUrl) {
-      try {
-        URL.revokeObjectURL(blobUrl);
-      } catch {}
-    }
     setFile(null);
-    setBlobUrl('');
-    setDetectedDurationMinutes(0);
-    setAdjustedDurationMinutes(3);
-    setIsAudioFile(false);
-  };
-
-  const handleDurationChange = value => {
-    if (value && value > 0) {
-      setAdjustedDurationMinutes(parseFloat(value));
-    }
   };
 
   const handleSubmit = () => {
@@ -106,12 +58,7 @@ export default function ArrangementUploader({
       return;
     }
 
-    // Validate duration
-    if (adjustedDurationMinutes <= 0) {
-      message.warning('Please set a valid duration.');
-      return;
-    }
-
+    // Duration only needed for transcription
     const actualServiceType =
       serviceType ||
       (variant === 'with_recording'
@@ -123,11 +70,11 @@ export default function ArrangementUploader({
       state: {
         formData: {
           ...formData,
-          durationMinutes: adjustedDurationMinutes,
         },
         uploadedFile: file,
-        blobUrl: blobUrl,
         fileName: file.name,
+        fileType: file.type || 'unknown',
+        size: file.size || 0,
         serviceType: actualServiceType,
         variant: variant,
       },
@@ -152,8 +99,9 @@ export default function ArrangementUploader({
                 : 'Arrangement Uploader'}
             </h2>
             <p className={styles.desc}>
-              Upload your original notation (MusicXML/MIDI/PDF). We’ll arrange
-              and deliver for review.
+              {variant === 'with_recording'
+                ? "Upload your original notation (MusicXML/MIDI/PDF). We'll arrange and record it for you."
+                : "Upload your original notation (MusicXML/MIDI/PDF). We'll arrange it and deliver for review."}
             </p>
           </div>
         </div>
@@ -198,90 +146,6 @@ export default function ArrangementUploader({
                   Remove
                 </Button>
               </div>
-
-              {/* Audio Player */}
-              {isAudioFile && blobUrl && (
-                <div style={{ marginTop: 16 }}>
-                  <audio
-                    controls
-                    src={blobUrl}
-                    style={{ width: '100%' }}
-                    aria-label="Audio preview"
-                  />
-                </div>
-              )}
-
-              {/* Duration Adjustment */}
-              <div style={{ padding: '16px 0', marginTop: 16 }}>
-                <div style={{ marginBottom: 12 }}>
-                  <ClockCircleOutlined style={{ marginRight: 8 }} />
-                  <span style={{ fontWeight: 600 }}>
-                    Adjust Duration (Minutes):
-                  </span>
-                  {isAudioFile && detectedDurationMinutes > 0 && (
-                    <Tag color="cyan" style={{ marginLeft: 8 }}>
-                      Detected: {formatDurationMMSS(detectedDurationMinutes)}
-                    </Tag>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Button
-                    icon={<MinusOutlined />}
-                    onClick={() =>
-                      handleDurationChange(
-                        Math.max(0.01, adjustedDurationMinutes - 0.01)
-                      )
-                    }
-                    disabled={adjustedDurationMinutes <= 0.01}
-                  >
-                    -0.01
-                  </Button>
-
-                  <InputNumber
-                    min={0.01}
-                    max={999}
-                    step={0.01}
-                    value={adjustedDurationMinutes}
-                    onChange={handleDurationChange}
-                    precision={2}
-                    style={{ width: 120 }}
-                    addonAfter="min"
-                  />
-
-                  <Button
-                    icon={<PlusOutlined />}
-                    onClick={() =>
-                      handleDurationChange(adjustedDurationMinutes + 0.01)
-                    }
-                  >
-                    +0.01
-                  </Button>
-
-                  {isAudioFile && detectedDurationMinutes > 0 && (
-                    <Button
-                      type="link"
-                      onClick={() =>
-                        setAdjustedDurationMinutes(detectedDurationMinutes)
-                      }
-                    >
-                      Reset to {detectedDurationMinutes} min
-                    </Button>
-                  )}
-                </div>
-
-                <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-                  Hiện tại: {formatDurationMMSS(adjustedDurationMinutes)}
-                </div>
-
-                <div style={{ marginTop: 8, color: '#888', fontSize: 13 }}>
-                  💡{' '}
-                  {isAudioFile
-                    ? 'Adjust the detected duration'
-                    : 'Estimate the duration'}{' '}
-                  for billing purposes
-                </div>
-              </div>
             </Space>
           </div>
         )}
@@ -293,7 +157,7 @@ export default function ArrangementUploader({
             className={styles.ctaBtn}
             onClick={handleSubmit}
             loading={submitting}
-            disabled={!file || !formData || adjustedDurationMinutes <= 0}
+            disabled={!file || !formData}
           >
             Submit Request <ArrowRightOutlined />
           </Button>

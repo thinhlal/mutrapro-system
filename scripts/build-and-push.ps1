@@ -99,11 +99,42 @@ Write-Host "Image Tag: $ImageTag" -ForegroundColor Yellow
 Write-Host ""
 
 # Kiểm tra đã login Docker Hub chưa
-$dockerInfo = docker info 2>&1
-if ($dockerInfo -notmatch "Username") {
+$dockerConfigPath = Join-Path $env:USERPROFILE ".docker\config.json"
+$isLoggedIn = $false
+
+if (Test-Path $dockerConfigPath) {
+    try {
+        $dockerConfig = Get-Content $dockerConfigPath -Raw | ConvertFrom-Json
+        if ($dockerConfig.PSObject.Properties.Name -contains "auths") {
+            $auths = $dockerConfig.auths
+            if ($auths.PSObject.Properties.Count -gt 0) {
+                $isLoggedIn = $true
+            }
+        }
+    } catch {
+        # Nếu không parse được JSON, thử cách khác
+    }
+}
+
+# Nếu không tìm thấy trong config, thử kiểm tra bằng docker info
+if (-not $isLoggedIn) {
+    $dockerInfo = docker info 2>&1 | Out-String
+    if ($dockerInfo -match "Username") {
+        $isLoggedIn = $true
+    }
+}
+
+if (-not $isLoggedIn) {
     Write-Host "⚠️  Chưa đăng nhập Docker Hub" -ForegroundColor Yellow
-    Write-Host "Chạy: docker login" -ForegroundColor Yellow
-    exit 1
+    Write-Host "Vui lòng chạy lệnh sau để đăng nhập:" -ForegroundColor Yellow
+    Write-Host "  docker login" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Hoặc nếu bạn chắc chắn đã đăng nhập, script sẽ thử push và báo lỗi nếu cần." -ForegroundColor Yellow
+    Write-Host "Bạn có muốn tiếp tục? (Y/N): " -ForegroundColor Yellow -NoNewline
+    $response = Read-Host
+    if ($response -ne "Y" -and $response -ne "y") {
+        exit 1
+    }
 }
 
 # Nếu có Service argument, chỉ build service đó

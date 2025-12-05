@@ -57,6 +57,7 @@ import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import FileList from '../../../components/common/FileList/FileList';
 import axiosInstance from '../../../utils/axiosInstance';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import styles from './TaskDetailPage.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -847,6 +848,38 @@ const TaskDetailPage = () => {
                       ))}
                     </Space>
                   </Descriptions.Item>
+                )}
+
+                {/* Hiển thị genres và purpose cho arrangement requests */}
+                {((request?.requestType === 'arrangement' ||
+                    request?.requestType === 'arrangement_with_recording') ||
+                  (task?.request?.requestType === 'arrangement' ||
+                    task?.request?.requestType === 'arrangement_with_recording')) && (
+                  <>
+                    {((request?.genres && request.genres.length > 0) ||
+                      (task?.request?.genres &&
+                        Array.isArray(task.request.genres) &&
+                        task.request.genres.length > 0)) && (
+                      <Descriptions.Item label="Genres" span={2}>
+                        <Space wrap>
+                          {(request?.genres || task?.request?.genres || []).map(
+                            (genre, idx) => (
+                              <Tag key={idx} color="purple">
+                                {getGenreLabel(genre)}
+                              </Tag>
+                            )
+                          )}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {(request?.purpose || task?.request?.purpose) && (
+                      <Descriptions.Item label="Purpose" span={2}>
+                        {getPurposeLabel(
+                          request?.purpose || task?.request?.purpose
+                        )}
+                      </Descriptions.Item>
+                    )}
+                  </>
                 )}
 
                 {request?.files &&

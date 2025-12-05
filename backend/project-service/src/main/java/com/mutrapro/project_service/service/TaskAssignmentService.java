@@ -1540,23 +1540,6 @@ public class TaskAssignmentService {
                             }
                         }
                         
-                        // Extract timeSignature và specialNotes từ musicOptions
-                        String timeSignature = null;
-                        String specialNotes = null;
-                        if (requestData.getMusicOptions() != null) {
-                            try {
-                                Map<String, Object> musicOptions = requestData.getMusicOptions();
-                                if (musicOptions.get("timeSignature") != null) {
-                                    timeSignature = musicOptions.get("timeSignature").toString();
-                                }
-                                if (musicOptions.get("specialNotes") != null) {
-                                    specialNotes = musicOptions.get("specialNotes").toString();
-                                }
-                            } catch (Exception ex) {
-                                log.warn("Failed to extract musicOptions: {}", ex.getMessage());
-                            }
-                        }
-                        
                         // Map request info (đầy đủ thông tin cho specialist)
                         TaskAssignmentResponse.RequestInfo requestInfo = TaskAssignmentResponse.RequestInfo.builder()
                             .requestId(requestData.getRequestId())
@@ -1565,8 +1548,6 @@ public class TaskAssignmentService {
                             .description(requestData.getDescription())
                             .durationSeconds(durationSeconds)
                             .tempo(tempo)
-                            .timeSignature(timeSignature)
-                            .specialNotes(specialNotes)
                             .instruments(requestData.getInstruments()) // List instruments nếu có
                             .files(requestData.getFiles()) // List files mà customer đã upload
                             .build();

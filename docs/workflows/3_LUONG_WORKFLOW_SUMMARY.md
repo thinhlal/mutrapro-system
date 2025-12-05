@@ -105,7 +105,104 @@ payments:
 
 ---
 
-## 🎼 LUỒNG 2: ARRANGEMENT (+ RECORDING)
+## 🎼 LUỒNG 2: ARRANGEMENT (CHỈ ARRANGEMENT)
+
+### **Bước 1: Customer tạo yêu cầu**
+```
+service_requests:
+- request_type: 'arrangement'
+- contact_name: "Trần Thị B"
+- contact_phone: "0907654321"
+- contact_email: "tranthib@gmail.com"
+- music_options: {"genres": ["Pop","Rock"], "purpose": "karaoke_cover"}
+- tempo_percentage: NULL (không cần cho arrangement)
+- has_vocalist: false (không có ca sĩ cho arrangement thuần)
+- external_guest_count: 0
+- title: "Arrangement bài XYZ"
+- description: "Cần arrangement bài XYZ"
+- status: 'pending'
+```
+
+**Files upload:**
+```
+files:
+- file_source: 'customer_upload'
+- content_type: 'notation'
+- request_id: [request_id]
+- file_path: "/uploads/notation/xyz.musicxml"
+```
+
+**Nhạc cụ arrangement:**
+```
+request_notation_instruments:
+- request_id: [request_id]
+- notation_instrument_id: [piano_id]
+- notation_instrument_id: [guitar_id] (chọn nhiều loại)
+```
+
+### **Bước 2: Manager tạo hợp đồng**
+```
+contracts:
+- request_id: [request_id]
+- contract_type: 'arrangement'
+- base_price: 1500000 (từ pricing_matrix)
+- total_price: 1500000
+- deposit_percent: 40.0
+- deposit_amount: 600000
+- final_amount: 900000
+- sla_days: 5 (từ service_sla_defaults)
+- due_date: expected_start_date + 5 ngày
+- free_revisions_included: 1
+- additional_revision_fee_vnd: 150000
+- status: 'draft'
+```
+
+### **Bước 3: Manager phân task**
+```
+task_assignments:
+- contract_id: [contract_id]
+- specialist_id: [arrangement_specialist_id]
+- task_type: 'arrangement'
+- assignment_status: 'assigned'
+- created_at: now()
+```
+
+### **Bước 4: Specialist thực hiện arrangement**
+```
+task_assignments:
+- assignment_status: 'in_progress'
+- specialist_started_at: now()
+```
+
+**Files upload:**
+```
+files:
+- file_source: 'specialist_upload'
+- content_type: 'notation'
+- assignment_id: [assignment_id]
+- file_path: "/uploads/notation/xyz_arranged.musicxml"
+```
+
+### **Bước 5: Giao file**
+```
+files:
+- delivered_to_customer: true
+- delivered_at: now()
+- delivered_by: [manager_id]
+```
+
+### **Bước 6: Thanh toán**
+```
+payments:
+- contract_id: [contract_id]
+- milestone_id: [milestone_id]
+- amount: 900000
+- status: 'completed'
+```
+
+---
+
+## 🎼 LUỒNG 3: ARRANGEMENT (+ RECORDING)
 
 ### **Bước 1: Customer tạo yêu cầu**
 ```
@@ -259,7 +356,7 @@ payments:
 
 ---
 
-## 🎤 LUỒNG 3: RECORDING (STUDIO BOOKING)
+## 🎤 LUỒNG 4: RECORDING (STUDIO BOOKING)
 
 ### **Bước 1: Customer tạo yêu cầu**
 ```
@@ -491,7 +588,17 @@ revision_requests:
 - [x] Giao file notation
 - [x] Thanh toán
 
-### **Luồng 2 (Arrangement + Recording):**
+### **Luồng 2 (Arrangement):**
+- [x] Customer tạo request với contact_*
+- [x] Upload notation file
+- [x] Chọn nhạc cụ arrangement
+- [x] Manager tạo contract
+- [x] Manager phân task arrangement
+- [x] Specialist thực hiện arrangement
+- [x] Giao file arrangement
+- [x] Thanh toán
+
+### **Luồng 3 (Arrangement + Recording):**
 - [x] Customer tạo request với contact_*
 - [x] Upload notation file
 - [x] Chọn nhạc cụ arrangement
@@ -505,7 +612,7 @@ revision_requests:
 - [x] Giao file final
 - [x] Thanh toán
 
-### **Luồng 3 (Recording):**
+### **Luồng 4 (Recording):**
 - [x] Customer tạo request với contact_*
 - [x] Upload file tham khảo (nếu có)
 - [x] Chọn ca sĩ (nếu có)
