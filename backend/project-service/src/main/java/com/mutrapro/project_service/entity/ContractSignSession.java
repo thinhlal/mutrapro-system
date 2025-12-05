@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contract_sign_sessions", indexes = {
@@ -40,7 +40,7 @@ public class ContractSignSession {
     String otpCode;  // 6-digit OTP
 
     @Column(name = "expire_at", nullable = false)
-    Instant expireAt;  // OTP expiration time (5 minutes from creation)
+    LocalDateTime expireAt;  // OTP expiration time (5 minutes from creation)
 
     @Builder.Default
     @Column(name = "attempt_count", nullable = false)
@@ -53,14 +53,14 @@ public class ContractSignSession {
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)
-    Instant createdAt = Instant.now();
+    LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
-    Instant updatedAt;
+    LocalDateTime updatedAt;
 
     @PreUpdate
     public void onPreUpdate() {
-        this.updatedAt = Instant.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
 

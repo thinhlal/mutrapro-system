@@ -6,7 +6,7 @@ import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "email_verifications")
@@ -33,7 +33,7 @@ public class EmailVerification extends BaseEntity<String> {
     private VerificationChannel channel; // EMAIL_OTP
 
     @Column(name = "expires_at", nullable = false)
-    private Instant expiresAt;
+    private LocalDateTime expiresAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)

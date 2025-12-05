@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -39,7 +39,7 @@ public class CreateContractRequest {
     BigDecimal depositPercent;  // Default 40
     
     // Timeline & SLA
-    Instant expectedStartDate;
+    LocalDateTime expectedStartDate;
     
     Integer slaDays;  // Default based on contract type
     
@@ -51,7 +51,7 @@ public class CreateContractRequest {
     Integer revisionDeadlineDays;  // Số ngày SLA để team hoàn thành revision sau khi manager approve (14/21/30 days based on contract type)
     
     // Expiration
-    Instant expiresAt;
+    LocalDateTime expiresAt;
     
     // Milestones (optional - có thể tạo milestones ngay khi tạo contract)
     List<CreateMilestoneRequest> milestones;

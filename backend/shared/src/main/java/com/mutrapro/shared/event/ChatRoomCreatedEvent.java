@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -28,6 +28,6 @@ public class ChatRoomCreatedEvent implements Serializable {
     String ownerId;
     String[] participantIds;
     
-    Instant timestamp;
+    LocalDateTime timestamp;
 }
 

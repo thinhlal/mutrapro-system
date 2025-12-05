@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -101,7 +101,7 @@ public class FileUploadService {
                     .fileSource("customer_upload")  // file_source_type enum
                     .contentType(contentType)  // content_type enum: audio, sheet_music, etc.
                     .description(String.format("%s file uploaded by customer", contentType))
-                    .uploadDate(Instant.now())
+                    .uploadDate(LocalDateTime.now())
                     .createdBy(userId)
                     .requestId(requestId)  // Link với service request
                     .assignmentId(null)  // null vì chưa có assignment
@@ -116,7 +116,7 @@ public class FileUploadService {
                     .aggregateType("service-request")
                     .eventType("file.uploaded")
                     .eventPayload(eventPayload)
-                    .occurredAt(Instant.now())
+                    .occurredAt(LocalDateTime.now())
                     .build();
             
             outboxEventRepository.save(outboxEvent);

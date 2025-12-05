@@ -16,9 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,7 +97,7 @@ public class MilestoneProgressService {
      * Ghi nhận thời điểm milestone hoàn tất thực tế.
      */
     @Transactional
-    public void markActualEnd(String contractId, String milestoneId, Instant completedAt) {
+    public void markActualEnd(String contractId, String milestoneId, LocalDateTime completedAt) {
         if (contractId == null || milestoneId == null) {
             return;
         }
@@ -117,8 +115,7 @@ public class MilestoneProgressService {
             return;
         }
 
-        Instant effectiveInstant = completedAt != null ? completedAt : Instant.now();
-        LocalDateTime endAt = LocalDateTime.ofInstant(effectiveInstant, ZoneId.systemDefault());
+        LocalDateTime endAt = completedAt != null ? completedAt : LocalDateTime.now();
         milestone.setActualEndAt(endAt);
         contractMilestoneRepository.save(milestone);
         log.info("Milestone actual end recorded: contractId={}, milestoneId={}, actualEndAt={}",

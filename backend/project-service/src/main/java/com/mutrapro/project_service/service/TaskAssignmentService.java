@@ -56,7 +56,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -457,9 +457,7 @@ public class TaskAssignmentService {
         
         // Nếu milestone là milestone đầu tiên (orderIndex = 1), dùng workStartAt
         if (milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
-            return contract.getWorkStartAt()
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDateTime();
+            return contract.getWorkStartAt();
         }
         
         // Nếu không phải milestone đầu tiên, tìm milestone trước đó
@@ -474,9 +472,7 @@ public class TaskAssignmentService {
         Integer currentOrderIndex = milestone.getOrderIndex();
         if (currentOrderIndex == null || currentOrderIndex <= 1) {
             // Nếu không có orderIndex hoặc là milestone đầu tiên, dùng workStartAt
-            return contract.getWorkStartAt()
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDateTime();
+            return contract.getWorkStartAt();
         }
         
         ContractMilestone previousMilestone = allMilestones.stream()
@@ -486,9 +482,7 @@ public class TaskAssignmentService {
         
         if (previousMilestone == null) {
             // Không tìm thấy milestone trước đó, dùng workStartAt
-            return contract.getWorkStartAt()
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDateTime();
+            return contract.getWorkStartAt();
         }
         
         // Tính plannedStartAt của milestone hiện tại = plannedDueDate của milestone trước đó
@@ -506,9 +500,7 @@ public class TaskAssignmentService {
         }
         
         // Fallback: dùng workStartAt
-        return contract.getWorkStartAt()
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDateTime();
+        return contract.getWorkStartAt();
     }
 
     /**
@@ -1122,7 +1114,7 @@ public class TaskAssignmentService {
             .referenceType("TASK_ASSIGNMENT")
             .actionUrl("/transcription/my-tasks")
             .assignedAt(assignment.getAssignedDate())
-            .timestamp(Instant.now())
+            .timestamp(LocalDateTime.now())
             .build();
 
         try {
@@ -1181,7 +1173,7 @@ public class TaskAssignmentService {
                 milestoneLabel))
             .referenceType("TASK_ASSIGNMENT")
             .actionUrl("/transcription/my-tasks")
-            .timestamp(Instant.now())
+            .timestamp(LocalDateTime.now())
             .build();
 
         try {
@@ -1333,7 +1325,7 @@ public class TaskAssignmentService {
             .status(AssignmentStatus.assigned)
             .milestoneId(request.getMilestoneId())
             .notes(request.getNotes())
-            .assignedDate(java.time.Instant.now())
+            .assignedDate(LocalDateTime.now())
             .build();
         
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
@@ -1590,7 +1582,7 @@ public class TaskAssignmentService {
             throw InvalidTaskAssignmentStatusException.cannotAccept(assignment.getAssignmentId(), assignment.getStatus());
         }
         
-        assignment.setSpecialistRespondedAt(Instant.now());
+        assignment.setSpecialistRespondedAt(LocalDateTime.now());
         assignment.setSpecialistResponseReason(null);
 
         ContractMilestone milestone = contractMilestoneRepository.findByMilestoneIdAndContractId(
@@ -1646,7 +1638,7 @@ public class TaskAssignmentService {
         }
 
         assignment.setStatus(AssignmentStatus.in_progress);
-        assignment.setSpecialistRespondedAt(Instant.now());
+        assignment.setSpecialistRespondedAt(LocalDateTime.now());
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment moved to IN_PROGRESS: assignmentId={}", assignmentId);
 
@@ -1684,7 +1676,7 @@ public class TaskAssignmentService {
         
         assignment.setStatus(AssignmentStatus.cancelled);
         assignment.setSpecialistResponseReason(reason);
-        assignment.setSpecialistRespondedAt(Instant.now());
+        assignment.setSpecialistRespondedAt(LocalDateTime.now());
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Task assignment cancelled successfully: assignmentId={}, reason={}", assignmentId, reason);
         
@@ -1724,8 +1716,8 @@ public class TaskAssignmentService {
                                 reason))
                         .referenceType("TASK_ASSIGNMENT")
                         .actionUrl("/manager/milestone-assignments?contractId=" + assignment.getContractId())
-                        .canceledAt(Instant.now())
-                        .timestamp(Instant.now())
+                        .canceledAt(LocalDateTime.now())
+                        .timestamp(LocalDateTime.now())
                         .build();
                 
                 publishToOutbox(event, assignmentId, "TaskAssignment", "task.assignment.canceled");
@@ -1770,7 +1762,7 @@ public class TaskAssignmentService {
         // Set issue flag và thông tin
         assignment.setHasIssue(true);
         assignment.setIssueReason(reason);
-        assignment.setIssueReportedAt(Instant.now());
+        assignment.setIssueReportedAt(LocalDateTime.now());
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
         log.info("Issue reported successfully: assignmentId={}", assignmentId);
         
@@ -1809,8 +1801,8 @@ public class TaskAssignmentService {
                                 reason))
                         .referenceType("TASK_ASSIGNMENT")
                         .actionUrl("/manager/milestone-assignments?contractId=" + assignment.getContractId())
-                        .reportedAt(Instant.now())
-                        .timestamp(Instant.now())
+                        .reportedAt(LocalDateTime.now())
+                        .timestamp(LocalDateTime.now())
                         .build();
                 
                 publishToOutbox(event, assignmentId, "TaskAssignment", "task.issue.reported");
@@ -1898,7 +1890,7 @@ public class TaskAssignmentService {
         
         // Set status to cancelled
         assignment.setStatus(AssignmentStatus.cancelled);
-        assignment.setSpecialistRespondedAt(Instant.now());
+        assignment.setSpecialistRespondedAt(LocalDateTime.now());
         // Giữ lại thông tin issue report (issueReason, issueReportedAt) để lưu lịch sử
         // Chỉ clear hasIssue flag vì task đã bị cancel
         assignment.setHasIssue(false);
@@ -1948,8 +1940,8 @@ public class TaskAssignmentService {
                                     issueInfo))
                             .referenceType("TASK_ASSIGNMENT")
                             .actionUrl("/transcription/my-tasks")
-                            .canceledAt(Instant.now())
-                            .timestamp(Instant.now())
+                            .canceledAt(LocalDateTime.now())
+                            .timestamp(LocalDateTime.now())
                             .build();
                     
                     publishToOutbox(event, assignmentId, "TaskAssignment", "task.assignment.canceled");

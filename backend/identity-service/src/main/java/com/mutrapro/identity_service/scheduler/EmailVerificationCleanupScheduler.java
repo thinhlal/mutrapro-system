@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Component
@@ -21,10 +21,10 @@ public class EmailVerificationCleanupScheduler {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void cleanupExpiredVerifications() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         int expired = emailVerificationRepository.markExpired(now);
 
-        Instant cutoff = now.minus(30, ChronoUnit.DAYS);
+        LocalDateTime cutoff = now.minusDays(30);
         int deleted = emailVerificationRepository.deleteExpiredOlderThan(cutoff);
 
         if (expired > 0 || deleted > 0) {

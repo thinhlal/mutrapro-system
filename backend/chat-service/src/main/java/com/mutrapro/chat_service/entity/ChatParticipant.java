@@ -46,17 +46,17 @@ public class ChatParticipant extends BaseEntity<String> {
     ParticipantRole role;
 
     @Column(name = "joined_at", nullable = false)
-    java.time.Instant joinedAt;
+    java.time.LocalDateTime joinedAt;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     Boolean isActive = true;
 
     @Column(name = "left_at")
-    java.time.Instant leftAt;
+    java.time.LocalDateTime leftAt;
 
     @Column(name = "last_seen_at")
-    java.time.Instant lastSeenAt;
+    java.time.LocalDateTime lastSeenAt;
 
     public String getId() {
         return participantId;
@@ -64,11 +64,11 @@ public class ChatParticipant extends BaseEntity<String> {
 
     public void leave() {
         this.isActive = false;
-        this.leftAt = java.time.Instant.now();
+        this.leftAt = java.time.LocalDateTime.now();
     }
 
     public void markAsSeen() {
-        this.lastSeenAt = java.time.Instant.now();
+        this.lastSeenAt = java.time.LocalDateTime.now();
     }
 }
 

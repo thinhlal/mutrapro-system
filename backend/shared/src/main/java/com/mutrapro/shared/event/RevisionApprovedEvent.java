@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -39,7 +39,7 @@ public class RevisionApprovedEvent implements Serializable {
     String referenceType;  // "REVISION_REQUEST"
     String actionUrl;
     
-    Instant approvedAt;
-    Instant timestamp;
+    LocalDateTime approvedAt;
+    LocalDateTime timestamp;
 }
 

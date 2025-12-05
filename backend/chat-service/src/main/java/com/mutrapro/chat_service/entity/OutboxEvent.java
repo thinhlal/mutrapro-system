@@ -7,7 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -45,10 +45,10 @@ public class OutboxEvent {
 
     @Builder.Default
     @Column(name = "occurred_at", nullable = false)
-    Instant occurredAt = Instant.now();
+    LocalDateTime occurredAt = LocalDateTime.now();
 
     @Column(name = "published_at")
-    Instant publishedAt;
+    LocalDateTime publishedAt;
 
     @Builder.Default
     @Column(name = "retry_count", nullable = false)
@@ -58,7 +58,7 @@ public class OutboxEvent {
     String lastError;
 
     @Column(name = "next_retry_at")
-    Instant nextRetryAt;
+    LocalDateTime nextRetryAt;
 
     @Column(name = "trace_id", length = 100)
     String traceId;

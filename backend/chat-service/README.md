@@ -68,7 +68,7 @@ ChatRoom (phòng chat)
 ├── contextId: String (request_id, contract_id...)
 ├── roomName: String
 ├── isActive: Boolean
-├── lastMessageAt: Instant
+├── lastMessageAt: LocalDateTime
 └── Relationships:
     ├── participants: List<ChatParticipant>
     └── messages: List<ChatMessage>
@@ -79,9 +79,9 @@ ChatParticipant (người tham gia)
 ├── userId: String
 ├── userName: String (cached)
 ├── role: ParticipantRole (OWNER, MANAGER, MEMBER, ADMIN)
-├── joinedAt: Instant
+├── joinedAt: LocalDateTime
 ├── isActive: Boolean
-└── leftAt: Instant
+└── leftAt: LocalDateTime
 
 ChatMessage (tin nhắn - IMMUTABLE)
 ├── messageId: UUID
@@ -92,7 +92,7 @@ ChatMessage (tin nhắn - IMMUTABLE)
 ├── content: String
 ├── metadata: JsonNode
 ├── status: MessageStatus (SENT, DELIVERED, READ)
-└── sentAt: Instant
+└── sentAt: LocalDateTime
 
 OutboxEvent (outbox pattern)
 ├── outboxId: UUID
@@ -100,15 +100,15 @@ OutboxEvent (outbox pattern)
 ├── aggregateType: String
 ├── eventType: String
 ├── eventPayload: JsonNode
-├── occurredAt: Instant
-├── publishedAt: Instant
+├── occurredAt: LocalDateTime
+├── publishedAt: LocalDateTime
 ├── retryCount: Integer
-└── nextRetryAt: Instant
+└── nextRetryAt: LocalDateTime
 
 ConsumedEvent (idempotency)
 ├── eventId: UUID (PK)
 ├── consumerName: String (PK)
-└── processedAt: Instant
+└── processedAt: LocalDateTime
 ```
 
 ### **Unique Constraints**

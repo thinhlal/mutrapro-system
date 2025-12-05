@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -59,7 +59,7 @@ public class PasswordResetService {
         // Generate reset token
         String resetToken = generateResetToken();
         String tokenHash = passwordEncoder.encode(resetToken);
-        Instant expiresAt = Instant.now().plus(passwordResetExpiryHours, ChronoUnit.HOURS);
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(passwordResetExpiryHours);
 
         // Update reset token vào UsersAuth
         usersAuth.setPasswordResetTokenHash(tokenHash);
@@ -78,7 +78,7 @@ public class PasswordResetService {
                 .fullName(fullName)
                 .resetToken(resetToken)
                 .expiryHours(passwordResetExpiryHours)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
 
         publishPasswordResetEvent(event, usersAuth.getUserId());
@@ -111,7 +111,7 @@ public class PasswordResetService {
                 });
 
         // Check token exists and not expired
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         if (usersAuth.getPasswordResetTokenHash() == null || 
             usersAuth.getPasswordResetTokenExpiresAt() == null ||
             usersAuth.getPasswordResetTokenExpiresAt().isBefore(now)) {
@@ -163,7 +163,7 @@ public class PasswordResetService {
                     .aggregateType("user")
                     .eventType("password.reset")
                     .eventPayload(eventJson)
-                    .occurredAt(Instant.now())
+                    .occurredAt(LocalDateTime.now())
                     .build();
 
             outboxEventRepository.save(outboxEvent);

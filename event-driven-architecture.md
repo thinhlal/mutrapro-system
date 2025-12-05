@@ -172,7 +172,7 @@ public class OutboxPublisher {
                 messagePublisher.publish(event);
                 
                 // Mark as published
-                event.setPublishedAt(Instant.now());
+                event.setPublishedAt(LocalDateTime.now());
                 outboxRepo.save(event);
                 
             } catch (Exception e) {
@@ -188,7 +188,7 @@ public class OutboxPublisher {
         
         if (event.getRetryCount() >= MAX_RETRIES) {
             // Mark as published và đẩy vào DLQ
-            event.setPublishedAt(Instant.now());
+            event.setPublishedAt(LocalDateTime.now());
             deadLetterQueueService.send(event);
         } else {
             // Set next retry time (exponential backoff)
@@ -201,7 +201,7 @@ public class OutboxPublisher {
     // Query method trong repository
     @Query("SELECT e FROM OutboxEvent e WHERE e.publishedAt IS NULL " +
            "AND (e.nextRetryAt IS NULL OR e.nextRetryAt <= :now)")
-    List<OutboxEvent> findPendingEvents(@Param("now") Instant now);
+    List<OutboxEvent> findPendingEvents(@Param("now") LocalDateTime now);
 }
 ```
 
@@ -213,7 +213,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
     
     @Query("SELECT e FROM OutboxEvent e WHERE e.publishedAt IS NULL " +
            "AND (e.nextRetryAt IS NULL OR e.nextRetryAt <= :now)")
-    List<OutboxEvent> findPendingEvents(@Param("now") Instant now);
+    List<OutboxEvent> findPendingEvents(@Param("now") LocalDateTime now);
 }
 
 @Repository
@@ -226,7 +226,7 @@ public interface ConsumedEventRepository extends JpaRepository<ConsumedEvent, Co
            nativeQuery = true)
     int insert(@Param("eventId") UUID eventId, 
                @Param("consumerName") String consumerName, 
-               @Param("processedAt") Instant processedAt);
+               @Param("processedAt") LocalDateTime processedAt);
 }
 ```
 

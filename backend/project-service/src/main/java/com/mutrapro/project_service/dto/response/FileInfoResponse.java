@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -24,10 +24,10 @@ public class FileInfoResponse {
     String contentType;
     FileSourceType fileSource;  // Thêm field để phân biệt loại file
     String description;  // Note/description từ specialist khi upload
-    Instant uploadDate;
+    LocalDateTime uploadDate;
     String fileStatus;  // uploaded, pending_review, approved, rejected, delivered, deleted
     Boolean deliveredToCustomer;
-    Instant deliveredAt;
-    Instant reviewedAt;
+    LocalDateTime deliveredAt;
+    LocalDateTime reviewedAt;
     String rejectionReason;  // Lý do từ chối (khi fileStatus = rejected)
 }

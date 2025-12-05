@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -22,11 +22,11 @@ public class FileInfoResponse {
     String mimeType;
     String contentType;
     String fileSource;
-    Instant uploadDate;
+    LocalDateTime uploadDate;
     String fileStatus;
     Boolean deliveredToCustomer;
-    Instant deliveredAt;
-    Instant reviewedAt;
+    LocalDateTime deliveredAt;
+    LocalDateTime reviewedAt;
     String rejectionReason;  // Lý do từ chối (khi fileStatus = rejected)
 }
 

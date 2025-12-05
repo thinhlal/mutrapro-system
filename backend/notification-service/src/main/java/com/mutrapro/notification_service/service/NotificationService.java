@@ -30,7 +30,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -474,7 +474,7 @@ public class NotificationService {
         
         if (!notification.getIsRead()) {
             notification.setIsRead(true);
-            notification.setReadAt(Instant.now());
+            notification.setReadAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             log.info("Notification marked as read: notificationId={}, userId={}", 
@@ -791,7 +791,7 @@ public class NotificationService {
             return 0;
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         unreadNotifications.forEach(n -> {
             n.setIsRead(true);
             n.setReadAt(now);

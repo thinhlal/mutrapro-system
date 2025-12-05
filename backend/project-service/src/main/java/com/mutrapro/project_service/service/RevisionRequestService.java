@@ -40,7 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -152,7 +151,7 @@ public class RevisionRequestService {
                         ? contract.getContractNumber()
                         : revisionRequest.getContractId();
                 
-                Instant now = Instant.now();
+                LocalDateTime now = LocalDateTime.now();
                 RevisionDeliveredEvent event = RevisionDeliveredEvent.builder()
                         .eventId(UUID.randomUUID())
                         .revisionRequestId(revisionRequestId)
@@ -241,7 +240,7 @@ public class RevisionRequestService {
                                 ? contract.getContractNumber()
                                 : revisionRequest.getContractId();
                     
-                    Instant now = Instant.now();
+                    LocalDateTime now = LocalDateTime.now();
                     RevisionRejectedEvent event = RevisionRejectedEvent.builder()
                             .eventId(UUID.randomUUID())
                             .revisionRequestId(revisionRequestId)
@@ -327,7 +326,7 @@ public class RevisionRequestService {
             isFreeRevision = false;
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         
         RevisionRequest revisionRequest = RevisionRequest.builder()
                 .contractId(contractId)
@@ -428,7 +427,7 @@ public class RevisionRequestService {
             throw UnauthorizedException.create("You can only review revision requests from your contracts");
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         
         if ("approve".equalsIgnoreCase(request.getAction())) {
             // Manager approves - send to specialist
@@ -440,7 +439,7 @@ public class RevisionRequestService {
             // Set revision deadline: managerReviewedAt + revisionDeadlineDays từ contract
             Integer revisionDeadlineDays = contract.getRevisionDeadlineDays();
             if (revisionDeadlineDays != null && revisionDeadlineDays > 0) {
-                revisionRequest.setRevisionDueAt(now.plus(revisionDeadlineDays, java.time.temporal.ChronoUnit.DAYS));
+                revisionRequest.setRevisionDueAt(now.plusDays(revisionDeadlineDays));
                 log.info("Set revision deadline: revisionRequestId={}, revisionDueAt={}, revisionDeadlineDays={}", 
                         revisionRequestId, revisionRequest.getRevisionDueAt(), revisionDeadlineDays);
             } else {
@@ -718,7 +717,7 @@ public class RevisionRequestService {
             }
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         
             // Update revision request status - chờ manager review
             // Track submission mới sau khi specialist làm lại
@@ -824,7 +823,7 @@ public class RevisionRequestService {
             throw UnauthorizedException.create("You can only accept your own revision requests");
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         
         // Customer accepts - mark as completed
         revisionRequest.setStatus(RevisionRequestStatus.COMPLETED);
@@ -848,8 +847,7 @@ public class RevisionRequestService {
                 milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
                 
                 // Track finalCompletedAt: lúc customer chấp nhận bản cuối cùng (sau mọi revision)
-                LocalDateTime completedAt = now.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-                milestone.setFinalCompletedAt(completedAt);
+                milestone.setFinalCompletedAt(now);
                 log.info("Tracked final completion time for milestone: milestoneId={}, finalCompletedAt={}", 
                         milestone.getMilestoneId(), milestone.getFinalCompletedAt());
                 
@@ -940,7 +938,7 @@ public class RevisionRequestService {
             throw UnauthorizedException.create("You can only reject your own revision requests");
         }
         
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         
         // Customer request revision mới → mark revision request cũ (WAITING_CUSTOMER_CONFIRM) as COMPLETED
         // (đánh dấu đã xử lý xong vòng revision đó, customer không accept và request revision mới)
@@ -1318,8 +1316,8 @@ public class RevisionRequestService {
                 .specialistSubmittedAt(revisionRequest.getSpecialistSubmittedAt())
                 .customerConfirmedAt(revisionRequest.getCustomerConfirmedAt())
                 .canceledAt(revisionRequest.getCanceledAt())
-                .createdAt(revisionRequest.getCreatedAt() != null ? revisionRequest.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
-                .updatedAt(revisionRequest.getUpdatedAt() != null ? revisionRequest.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
+                .createdAt(revisionRequest.getCreatedAt())
+                .updatedAt(revisionRequest.getUpdatedAt())
                 .createdBy(revisionRequest.getCreatedBy())
                 .updatedBy(revisionRequest.getUpdatedBy())
                 .build();

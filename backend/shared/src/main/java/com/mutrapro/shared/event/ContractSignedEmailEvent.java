@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -23,7 +23,7 @@ public class ContractSignedEmailEvent implements Serializable {
     private String customerEmail;
     private String managerName;
     private String managerEmail;
-    private Instant signedAt;
-    private Instant timestamp;
+    private LocalDateTime signedAt;
+    private LocalDateTime timestamp;
 }
 

@@ -29,7 +29,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -266,7 +266,7 @@ public class ChatRoomService {
                     .roomName(room.getRoomName())
                     .ownerId(ownerId)
                     .participantIds(allParticipantIds.toArray(new String[0]))
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             // Save to outbox for guaranteed delivery
@@ -390,7 +390,7 @@ public class ChatRoomService {
                 .userId(userId)
                 .userName(userName)
                 .role(role)
-                .joinedAt(Instant.now())
+                .joinedAt(LocalDateTime.now())
                 .isActive(true)
                 .build();
         

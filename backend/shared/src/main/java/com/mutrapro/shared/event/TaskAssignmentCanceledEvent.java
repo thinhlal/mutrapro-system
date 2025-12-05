@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -41,7 +41,7 @@ public class TaskAssignmentCanceledEvent implements Serializable {
     String referenceType;  // "TASK_ASSIGNMENT"
     String actionUrl;
     
-    Instant canceledAt;
-    Instant timestamp;
+    LocalDateTime canceledAt;
+    LocalDateTime timestamp;
 }
 

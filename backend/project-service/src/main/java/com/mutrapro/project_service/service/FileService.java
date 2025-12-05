@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -62,7 +62,7 @@ public class FileService {
                 .fileSource(FileSourceType.valueOf(event.getFileSource()))
                 .contentType(ContentType.valueOf(event.getContentType()))
                 .description(event.getDescription())
-                .uploadDate(event.getUploadDate() != null ? event.getUploadDate() : java.time.Instant.now())
+                .uploadDate(event.getUploadDate() != null ? event.getUploadDate() : LocalDateTime.now())
                 .createdBy(event.getCreatedBy())
                 .requestId(event.getRequestId())
                 .assignmentId(event.getAssignmentId())
@@ -392,7 +392,7 @@ public class FileService {
                     .fileSource(FileSourceType.specialist_output)
                     .contentType(contentType)
                     .description(description)
-                    .uploadDate(Instant.now())
+                    .uploadDate(LocalDateTime.now())
                     .createdBy(userId)
                     .assignmentId(assignmentId)
                     .requestId(requestId)
@@ -603,7 +603,7 @@ public class FileService {
         
         file.setFileStatus(FileStatus.approved);
         file.setReviewedBy(userId);
-        file.setReviewedAt(Instant.now());
+        file.setReviewedAt(LocalDateTime.now());
         file.setRejectionReason(null); // Clear rejection reason if any
         
         File saved = fileRepository.save(file);
@@ -643,7 +643,7 @@ public class FileService {
         
         file.setFileStatus(FileStatus.rejected);
         file.setReviewedBy(userId);
-        file.setReviewedAt(Instant.now());
+        file.setReviewedAt(LocalDateTime.now());
         file.setRejectionReason(rejectionReason);
         
         File saved = fileRepository.save(file);

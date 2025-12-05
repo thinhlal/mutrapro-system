@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -45,7 +44,7 @@ public class ContractInstallmentResponse {
     
     GateCondition gateCondition;
     
-    Instant paidAt;
+    LocalDateTime paidAt;
     
     LocalDateTime createdAt;
     

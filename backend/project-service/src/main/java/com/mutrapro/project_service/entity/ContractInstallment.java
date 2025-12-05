@@ -10,7 +10,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -72,6 +71,6 @@ public class ContractInstallment extends BaseEntity<String> {
     GateCondition gateCondition = GateCondition.BEFORE_START;
 
     @Column(name = "paid_at")
-    Instant paidAt;
+    LocalDateTime paidAt;
 }
 

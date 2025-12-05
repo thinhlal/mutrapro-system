@@ -4,7 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -43,7 +43,7 @@ public class FileUploadedEvent implements Serializable {
     String description;
     
     // upload_date timestamp [default: `now()`]
-    Instant uploadDate;
+    LocalDateTime uploadDate;
     
     // created_by uuid [not null]
     String createdBy;

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -181,7 +181,7 @@ public class EmailService {
      * Gửi email xác nhận contract đã ký
      */
     public void sendContractSignedEmail(String toEmail, String customerName,
-                                        String contractDisplay, Instant signedAt) {
+                                        String contractDisplay, LocalDateTime signedAt) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -192,12 +192,10 @@ public class EmailService {
             String signedAtFormatted = signedAt != null
                     ? DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
                     .withLocale(Locale.US)
-                    .withZone(ZoneId.of("Asia/Ho_Chi_Minh"))
                     .format(signedAt)
                     : DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
                     .withLocale(Locale.US)
-                    .withZone(ZoneId.of("Asia/Ho_Chi_Minh"))
-                    .format(Instant.now());
+                    .format(LocalDateTime.now());
 
             String body = String.format("""
                 <html>

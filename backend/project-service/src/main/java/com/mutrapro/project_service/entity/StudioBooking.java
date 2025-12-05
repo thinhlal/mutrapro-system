@@ -9,7 +9,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -71,7 +70,7 @@ public class StudioBooking extends BaseEntity<String> {
     BookingStatus status = BookingStatus.TENTATIVE;
 
     @Column(name = "hold_expires_at")
-    Instant holdExpiresAt;
+    LocalDateTime holdExpiresAt;
 
     // Billing config & derivation
     @Builder.Default

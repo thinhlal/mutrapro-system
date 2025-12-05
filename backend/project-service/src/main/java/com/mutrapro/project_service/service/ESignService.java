@@ -33,8 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 import java.util.Random;
@@ -113,7 +112,7 @@ public class ESignService {
         }
 
         // Validate contract not expired
-        if (contract.getExpiresAt() != null && Instant.now().isAfter(contract.getExpiresAt())) {
+        if (contract.getExpiresAt() != null && LocalDateTime.now().isAfter(contract.getExpiresAt())) {
             throw InvalidContractStatusException.forExpired(contractId);
         }
 
@@ -132,14 +131,14 @@ public class ESignService {
                 contractId, currentUserId, SignSessionStatus.PENDING
         ).ifPresent(existingSession -> {
             existingSession.setStatus(SignSessionStatus.CANCELLED);
-            existingSession.setUpdatedAt(Instant.now());
+            existingSession.setUpdatedAt(LocalDateTime.now());
             signSessionRepository.save(existingSession);
             log.info("Cancelled existing sign session: {}", existingSession.getSessionId());
         });
 
         // Generate OTP
         String otpCode = generateOTP();
-        Instant expireAt = Instant.now().plus(otpExpirationMinutes, ChronoUnit.MINUTES);
+        LocalDateTime expireAt = LocalDateTime.now().plusMinutes(otpExpirationMinutes);
 
         // Create new sign session
         ContractSignSession signSession = ContractSignSession.builder()
@@ -150,7 +149,7 @@ public class ESignService {
                 .expireAt(expireAt)
                 .attemptCount(0)
                 .status(SignSessionStatus.PENDING)
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         signSessionRepository.save(signSession);
@@ -191,9 +190,9 @@ public class ESignService {
         }
 
         // Check if expired
-        if (Instant.now().isAfter(signSession.getExpireAt())) {
+        if (LocalDateTime.now().isAfter(signSession.getExpireAt())) {
             signSession.setStatus(SignSessionStatus.EXPIRED);
-            signSession.setUpdatedAt(Instant.now());
+            signSession.setUpdatedAt(LocalDateTime.now());
             signSessionRepository.save(signSession);
             throw OTPException.expired();
         }
@@ -201,7 +200,7 @@ public class ESignService {
         // Check max attempts
         if (signSession.getAttemptCount() >= maxOtpAttempts) {
             signSession.setStatus(SignSessionStatus.CANCELLED);
-            signSession.setUpdatedAt(Instant.now());
+            signSession.setUpdatedAt(LocalDateTime.now());
             signSessionRepository.save(signSession);
             throw OTPException.maxAttemptsExceeded(maxOtpAttempts);
         }
@@ -210,7 +209,7 @@ public class ESignService {
         if (!signSession.getOtpCode().equals(request.getOtpCode())) {
             // Increment attempt count
             signSession.setAttemptCount(signSession.getAttemptCount() + 1);
-            signSession.setUpdatedAt(Instant.now());
+            signSession.setUpdatedAt(LocalDateTime.now());
             signSessionRepository.save(signSession);
 
             // Check if max attempts exceeded after increment
@@ -240,7 +239,7 @@ public class ESignService {
 
         // Update contract with signature
         contract.setCustomerSignatureS3Key(signatureS3Key);
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         contract.setCustomerSignedAt(now);
         contract.setSignedAt(now);
         contract.setStatus(ContractStatus.signed);
@@ -266,7 +265,7 @@ public class ESignService {
 
         // Mark sign session as verified
         signSession.setStatus(SignSessionStatus.VERIFIED);
-        signSession.setUpdatedAt(Instant.now());
+        signSession.setUpdatedAt(LocalDateTime.now());
         signSessionRepository.save(signSession);
 
         log.info("Contract signed successfully: {}, signature key: {}", contractId, signatureS3Key);
@@ -298,7 +297,7 @@ public class ESignService {
                             contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -363,8 +362,8 @@ public class ESignService {
     /**
      * Publish event to send OTP email via notification-service
      */
-    private void sendOTPEmail(Contract contract, String targetEmail, String otpCode, Instant expireAt) {
-        long expiresInMinutes = ChronoUnit.MINUTES.between(Instant.now(), expireAt);
+    private void sendOTPEmail(Contract contract, String targetEmail, String otpCode, LocalDateTime expireAt) {
+        long expiresInMinutes = java.time.Duration.between(LocalDateTime.now(), expireAt).toMinutes();
         if (expiresInMinutes <= 0) {
             expiresInMinutes = otpExpirationMinutes;
         }
@@ -388,7 +387,7 @@ public class ESignService {
                 .otpCode(otpCode)
                 .expiresInMinutes(expiresInMinutes)
                 .maxAttempts(maxOtpAttempts)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
 
         try {
@@ -447,7 +446,7 @@ public class ESignService {
                 .managerName(null)
                 .managerEmail(null)
                 .signedAt(contract.getSignedAt())
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
 
         try {
@@ -480,7 +479,7 @@ public class ESignService {
     /**
      * Publish ContractSignedEvent để chat-service tạo room
      */
-    private void publishContractSignedEvent(Contract contract, Instant signedAt) {
+    private void publishContractSignedEvent(Contract contract, LocalDateTime signedAt) {
         try {
             String contractDisplay = contract.getContractNumber();
             if (contractDisplay == null || contractDisplay.isBlank()) {
@@ -502,7 +501,7 @@ public class ESignService {
                     .managerId(contract.getManagerUserId())
                     .managerName(null) // Manager name sẽ được fetch trong consumer nếu cần
                     .signedAt(signedAt)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
 
             JsonNode payload = objectMapper.valueToTree(event);

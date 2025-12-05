@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -24,6 +24,6 @@ public class PasswordResetEvent implements Serializable {
     private String fullName;
     private String resetToken; // Plain token to include in email link
     private Long expiryHours;
-    private Instant timestamp;
+    private LocalDateTime timestamp;
 }
 

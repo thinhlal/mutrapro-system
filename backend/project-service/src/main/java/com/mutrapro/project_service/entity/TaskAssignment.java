@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "task_assignments", indexes = {
@@ -66,10 +66,10 @@ public class TaskAssignment extends BaseEntity<String> {
 
     @Builder.Default
     @Column(name = "assigned_date", nullable = false)
-    Instant assignedDate = Instant.now();
+    LocalDateTime assignedDate = LocalDateTime.now();
 
     @Column(name = "completed_date")
-    Instant completedDate;
+    LocalDateTime completedDate;
 
     @Column(name = "notes", columnDefinition = "text")
     String notes;
@@ -78,7 +78,7 @@ public class TaskAssignment extends BaseEntity<String> {
     String specialistResponseReason;
 
     @Column(name = "specialist_responded_at")
-    Instant specialistRespondedAt;
+    LocalDateTime specialistRespondedAt;
 
     // Issue reporting (khi specialist báo không kịp deadline)
     @Builder.Default
@@ -89,6 +89,6 @@ public class TaskAssignment extends BaseEntity<String> {
     String issueReason;  // Lý do báo issue (ví dụ: không kịp deadline)
 
     @Column(name = "issue_reported_at")
-    Instant issueReportedAt;  // Thời gian specialist báo issue
+    LocalDateTime issueReportedAt;  // Thời gian specialist báo issue
 }
 

@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "file_submissions", indexes = {
@@ -47,16 +47,16 @@ public class FileSubmission {
 
     @Builder.Default
     @Column(name = "created_at", nullable = false)
-    Instant createdAt = Instant.now();
+    LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "submitted_at")
-    Instant submittedAt;  // Khi nào specialist submit for review
+    LocalDateTime submittedAt;  // Khi nào specialist submit for review
 
     @Column(name = "reviewed_by")
     String reviewedBy;  // Soft reference to identity-service (manager)
 
     @Column(name = "reviewed_at")
-    Instant reviewedAt;  // Khi nào manager review
+    LocalDateTime reviewedAt;  // Khi nào manager review
 
     @Column(name = "rejection_reason", columnDefinition = "text")
     String rejectionReason;  // Lý do reject (nếu có)

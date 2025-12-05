@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -36,7 +36,7 @@ public class UpdateContractRequest {
     BigDecimal depositPercent;  // Optional
     
     // Timeline & SLA
-    Instant expectedStartDate;  // Optional
+    LocalDateTime expectedStartDate;  // Optional
     
     Integer slaDays;  // Optional
     
@@ -48,6 +48,6 @@ public class UpdateContractRequest {
     Integer revisionDeadlineDays;  // Optional
     
     // Expiration
-    Instant expiresAt;  // Optional
+    LocalDateTime expiresAt;  // Optional
 }
 

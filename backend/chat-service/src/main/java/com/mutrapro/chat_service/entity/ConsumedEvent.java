@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,6 +27,6 @@ public class ConsumedEvent {
     String consumerName;
 
     @Column(name = "processed_at", nullable = false)
-    Instant processedAt;
+    LocalDateTime processedAt;
 }
 

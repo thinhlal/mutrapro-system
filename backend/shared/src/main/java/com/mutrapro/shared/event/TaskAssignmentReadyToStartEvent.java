@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -36,6 +36,6 @@ public class TaskAssignmentReadyToStartEvent implements Serializable {
     String referenceType;
     String actionUrl;
 
-    Instant timestamp;
+    LocalDateTime timestamp;
 }
 

@@ -25,7 +25,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Slf4j
 @RestController
@@ -138,9 +138,9 @@ public class WalletController {
             @Parameter(description = "Loại giao dịch (topup, payment, refund, withdrawal, adjustment)")
             @RequestParam(required = false) WalletTxType txType,
             @Parameter(description = "Ngày bắt đầu (ISO format)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @Parameter(description = "Ngày kết thúc (ISO format)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant toDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
             @Parameter(description = "Số trang (0-based)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Số lượng items mỗi trang")
@@ -175,9 +175,9 @@ public class WalletController {
             @Parameter(description = "Loại giao dịch (topup, payment, refund, withdrawal, adjustment)")
             @RequestParam(required = false) WalletTxType txType,
             @Parameter(description = "Ngày bắt đầu (ISO format)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
             @Parameter(description = "Ngày kết thúc (ISO format)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant toDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
             @Parameter(description = "Số trang (0-based)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Số lượng items mỗi trang")

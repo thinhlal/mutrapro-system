@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "files", indexes = {
@@ -75,7 +75,7 @@ public class File extends BaseEntity<String> {
 
     @Column(name = "upload_date", nullable = false)
     @Builder.Default
-    Instant uploadDate = Instant.now();
+    LocalDateTime uploadDate = LocalDateTime.now();
 
     @Column(name = "created_by", nullable = false)
     String createdBy;  // Soft reference to identity-service
@@ -86,7 +86,7 @@ public class File extends BaseEntity<String> {
     Boolean deliveredToCustomer = false;
 
     @Column(name = "delivered_at")
-    Instant deliveredAt;
+    LocalDateTime deliveredAt;
 
     @Column(name = "delivered_by")
     String deliveredBy;  // Soft reference to identity-service
@@ -104,6 +104,6 @@ public class File extends BaseEntity<String> {
     String reviewedBy;  // Soft reference to identity-service
 
     @Column(name = "reviewed_at")
-    Instant reviewedAt;
+    LocalDateTime reviewedAt;
 }
 

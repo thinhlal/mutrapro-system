@@ -76,7 +76,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -245,7 +245,7 @@ public class ContractService {
         
         // KHÔNG set expectedStartDate lúc tạo contract
         // Chỉ set khi deposit được thanh toán để đảm bảo tính đúng từ ngày thanh toán
-        Instant expectedStartDate = null;
+        LocalDateTime expectedStartDate = null;
         
         // Tạo contract entity
         Contract contract = Contract.builder()
@@ -398,7 +398,7 @@ public class ContractService {
      */
     @Transactional
     public int checkAndUpdateExpiredContracts() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         List<Contract> expiredContracts = contractRepository.findExpiredContracts(now);
         
         int updatedCount = 0;
@@ -443,7 +443,7 @@ public class ContractService {
      */
     @Transactional
     public int cleanupExpiredSignSessions() {
-        Instant cutoff = Instant.now();
+        LocalDateTime cutoff = LocalDateTime.now();
         int removedSessions = 0;
         removedSessions += contractSignSessionRepository.deleteByStatusAndExpireAtBefore(
                 SignSessionStatus.PENDING,
@@ -562,16 +562,16 @@ public class ContractService {
         
         // Update status thành SENT
         contract.setStatus(ContractStatus.sent);
-        contract.setSentToCustomerAt(Instant.now());
+        contract.setSentToCustomerAt(LocalDateTime.now());
         
         // Set expiresAt (mặc định 7 ngày nếu chưa có)
         if (expiresInDays != null && expiresInDays > 0) {
-            contract.setExpiresAt(Instant.now().plusSeconds(expiresInDays * 24L * 60 * 60));
+            contract.setExpiresAt(LocalDateTime.now().plusDays(expiresInDays));
             log.info("Set expiresAt for contract: contractId={}, expiresInDays={}", contractId, expiresInDays);
         } else if (contract.getExpiresAt() == null) {
             // Mặc định 7 ngày nếu không chỉ định và chưa có
             int defaultDays = 7;
-            contract.setExpiresAt(Instant.now().plusSeconds(defaultDays * 24L * 60 * 60));
+            contract.setExpiresAt(LocalDateTime.now().plusDays(defaultDays));
             log.info("Set expiresAt for contract (default 7 days): contractId={}", contractId);
         }
         
@@ -607,7 +607,7 @@ public class ContractService {
                             contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/contracts/" + contractId)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -796,13 +796,13 @@ public class ContractService {
         }
         
         // Check expired
-        if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(Instant.now())) {
+        if (contract.getExpiresAt() != null && contract.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw ContractExpiredException.cannotSign(contract.getContractId(), contract.getExpiresAt());
         }
         
         // Update status - CHỈ set APPROVED, chưa ký
         contract.setStatus(ContractStatus.approved);
-        contract.setCustomerReviewedAt(Instant.now());
+        contract.setCustomerReviewedAt(LocalDateTime.now());
         // KHÔNG set signedAt ở đây - phải ký qua OTP flow (init-esign + verify-otp)
         // DEPOSIT installment sẽ được chuyển sang DUE khi contract được ký (trong verifyOTPAndSign)
         
@@ -837,7 +837,7 @@ public class ContractService {
                             contractLabel))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -893,7 +893,7 @@ public class ContractService {
         // Update status và lưu lý do
         contract.setStatus(ContractStatus.need_revision);
         contract.setCancellationReason(request.getReason());
-        contract.setCustomerReviewedAt(Instant.now());
+        contract.setCustomerReviewedAt(LocalDateTime.now());
         
         Contract saved = contractRepository.save(contract);
         log.info("Customer requested change for contract: contractId={}, userId={}, reason={}", 
@@ -927,7 +927,7 @@ public class ContractService {
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
                     .reason(request.getReason())
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -995,7 +995,7 @@ public class ContractService {
         // Update status và lưu lý do
         contract.setStatus(ContractStatus.canceled_by_customer);
         contract.setCancellationReason(request.getReason());
-        contract.setCustomerReviewedAt(Instant.now());
+        contract.setCustomerReviewedAt(LocalDateTime.now());
         
         Contract saved = contractRepository.save(contract);
         log.info("Customer canceled contract: contractId={}, userId={}, reason={}", 
@@ -1029,7 +1029,7 @@ public class ContractService {
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts")
                     .reason(request.getReason())
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -1133,7 +1133,7 @@ public class ContractService {
                         .referenceType("CONTRACT")
                         .actionUrl("/contracts/" + contractId)
                         .reason(request.getReason())
-                        .timestamp(Instant.now())
+                        .timestamp(LocalDateTime.now())
                         .build();
                 
                 publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -1169,7 +1169,7 @@ public class ContractService {
      * @param paidAt Thời điểm thanh toán
      */
     @Transactional
-    public void handleDepositPaid(String contractId, String installmentId, Instant paidAt) {
+    public void handleDepositPaid(String contractId, String installmentId, LocalDateTime paidAt) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
@@ -1218,7 +1218,7 @@ public class ContractService {
                             currency))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -1263,7 +1263,7 @@ public class ContractService {
      * Manager xác nhận đã assign xong và bắt đầu thực thi contract.
      */
     @Transactional
-    public ContractResponse startContractWork(String contractId, Instant requestedStartAt) {
+    public ContractResponse startContractWork(String contractId, LocalDateTime requestedStartAt) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
 
@@ -1283,11 +1283,11 @@ public class ContractService {
             );
         }
 
-        Instant startAt = requestedStartAt != null ? requestedStartAt : Instant.now();
+        LocalDateTime startAt = requestedStartAt != null ? requestedStartAt : LocalDateTime.now();
         if (startAt.isBefore(contract.getDepositPaidAt())) {
             startAt = contract.getDepositPaidAt();
         }
-
+        
         contract.setWorkStartAt(startAt);
         contract.setExpectedStartDate(startAt);
 
@@ -1329,7 +1329,7 @@ public class ContractService {
      * @param paidAt Thời điểm thanh toán
      */
     @Transactional
-    public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, Instant paidAt) {
+    public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, LocalDateTime paidAt) {
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
@@ -1404,7 +1404,7 @@ public class ContractService {
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
                     .paidAt(paidAt)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -1519,7 +1519,7 @@ public class ContractService {
                                 contractLabel))
                         .referenceType("CONTRACT")
                         .actionUrl("/manager/contracts/" + contractId)
-                        .timestamp(Instant.now())
+                        .timestamp(LocalDateTime.now())
                         .build();
                 
                 publishToOutbox(event, contractId, "Contract", "contract.notification");
@@ -1624,7 +1624,7 @@ public class ContractService {
             .label("Deposit")
             .percent(depositPercent)
             .dueDate(contract.getExpectedStartDate() != null 
-                ? contract.getExpectedStartDate().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+                ? contract.getExpectedStartDate()
                 : null)
             .amount(depositAmount)
             .currency(currency)
@@ -1719,7 +1719,7 @@ public class ContractService {
      * Tính plannedStartAt/plannedDueDate cho toàn bộ milestones dựa trên expectedStartDate (baseline cố định).
      * @param unlockFirstMilestone nếu true, set milestone đầu tiên thành READY_TO_START
      */
-    private void calculatePlannedDatesForAllMilestones(String contractId, Instant contractStartAt, boolean unlockFirstMilestone) {
+    private void calculatePlannedDatesForAllMilestones(String contractId, LocalDateTime contractStartAt, boolean unlockFirstMilestone) {
         List<ContractMilestone> milestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(contractId);
         if (milestones.isEmpty()) {
@@ -1727,7 +1727,7 @@ public class ContractService {
             return;
         }
 
-        LocalDateTime cursor = contractStartAt.atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime cursor = contractStartAt;
         for (ContractMilestone milestone : milestones) {
             Integer slaDays = milestone.getMilestoneSlaDays();
             milestone.setPlannedStartAt(cursor);
@@ -1907,7 +1907,7 @@ public class ContractService {
                         milestoneName, contractLabel, installment.getAmount().toPlainString(), currency))
                     .referenceType("CONTRACT")
                     .actionUrl("/contracts/" + contractId)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
                 
                 JsonNode payload = objectMapper.valueToTree(event);
@@ -1947,7 +1947,7 @@ public class ContractService {
                     .roomType(roomType)  // "REQUEST_CHAT" hoặc "CONTRACT_CHAT"
                     .contextId(contextId)  // requestId hoặc contractId
                     .message(message)
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -2278,7 +2278,7 @@ public class ContractService {
                     .requestId(contract.getRequestId())
                     .fileStatus(FileStatus.uploaded)
                     .deliveredToCustomer(true)  // Contract PDF is delivered to customer
-                    .deliveredAt(Instant.now())
+                    .deliveredAt(LocalDateTime.now())
                     .deliveredBy(currentUserId)
                     .build();
 

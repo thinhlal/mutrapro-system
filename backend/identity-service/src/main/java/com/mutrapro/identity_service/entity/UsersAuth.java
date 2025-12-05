@@ -5,7 +5,7 @@ import com.mutrapro.shared.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users_auth")
@@ -54,7 +54,7 @@ public class UsersAuth extends BaseEntity<String> {
     private String passwordResetTokenHash;
     
     @Column(name = "password_reset_token_expires_at")
-    private Instant passwordResetTokenExpiresAt;
+    private LocalDateTime passwordResetTokenExpiresAt;
     
     // Convenience methods
     public boolean isActive() {

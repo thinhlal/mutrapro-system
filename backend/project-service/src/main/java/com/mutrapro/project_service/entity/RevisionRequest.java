@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Entity lưu thông tin revision request từ customer
@@ -93,24 +93,24 @@ public class RevisionRequest extends BaseEntity<String> {
 
     // Nhóm D - Thời gian & audit
     @Column(name = "requested_at", nullable = false)
-    Instant requestedAt;  // Lúc customer gửi
+    LocalDateTime requestedAt;  // Lúc customer gửi
 
     @Column(name = "manager_reviewed_at")
-    Instant managerReviewedAt;  // Lúc Manager approve/reject
+    LocalDateTime managerReviewedAt;  // Lúc Manager approve/reject
 
     @Column(name = "revision_due_at")
-    Instant revisionDueAt;  // Deadline phải giao xong revision cho request này (managerReviewedAt + revisionDeadlineDays)
+    LocalDateTime revisionDueAt;  // Deadline phải giao xong revision cho request này (managerReviewedAt + revisionDeadlineDays)
 
     @Column(name = "assigned_to_specialist_at")
-    Instant assignedToSpecialistAt;  // Lúc giao cho Specialist
+    LocalDateTime assignedToSpecialistAt;  // Lúc giao cho Specialist
 
     @Column(name = "specialist_submitted_at")
-    Instant specialistSubmittedAt;  // Lúc Specialist hoàn thành bản revised
+    LocalDateTime specialistSubmittedAt;  // Lúc Specialist hoàn thành bản revised
 
     @Column(name = "customer_confirmed_at")
-    Instant customerConfirmedAt;  // Lúc customer confirm xong
+    LocalDateTime customerConfirmedAt;  // Lúc customer confirm xong
 
     @Column(name = "canceled_at")
-    Instant canceledAt;  // Lúc bị hủy (nếu có)
+    LocalDateTime canceledAt;  // Lúc bị hủy (nếu có)
 }
 

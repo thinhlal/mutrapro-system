@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,17 +42,17 @@ public class ContractResponse {
     
     LocalDateTime createdAt;
     
-    Instant sentToCustomerAt;
+    LocalDateTime sentToCustomerAt;
     
-    Instant customerReviewedAt;
+    LocalDateTime customerReviewedAt;
     
-    Instant signedAt;
+    LocalDateTime signedAt;
     
-    Instant depositPaidAt;
+    LocalDateTime depositPaidAt;
     
-    Instant workStartAt;
+    LocalDateTime workStartAt;
     
-    Instant expiresAt;
+    LocalDateTime expiresAt;
     
     String fileId;
     
@@ -67,7 +66,7 @@ public class ContractResponse {
     BigDecimal depositPercent;
     
     // Timeline & SLA
-    Instant expectedStartDate;
+    LocalDateTime expectedStartDate;
     
     Integer slaDays;
     
@@ -86,7 +85,7 @@ public class ContractResponse {
     String emailSnapshot;
     
     // E-Signature fields
-    Instant customerSignedAt;  // When customer actually signed
+    LocalDateTime customerSignedAt;  // When customer actually signed
     
     LocalDateTime updatedAt;
     

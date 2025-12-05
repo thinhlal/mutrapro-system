@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,7 +38,7 @@ public class SubmissionDeliveredEvent implements Serializable {
     String referenceType;
     String actionUrl;
     
-    Instant deliveredAt;
-    Instant timestamp;
+    LocalDateTime deliveredAt;
+    LocalDateTime timestamp;
 }
 

@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -68,7 +68,7 @@ public class EmailVerificationService {
         }
 
         // Find active verification for this user
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         EmailVerification verification = emailVerificationRepository.findActiveByUserId(usersAuth.getUserId(), now)
                 .orElseThrow(() -> {
                     log.warn("No active verification found for user");
@@ -110,7 +110,7 @@ public class EmailVerificationService {
         }
 
         long expiresInSeconds = otpExpirySeconds;
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
 
         // Generate new OTP
         String otp = String.format("%06d", secureRandom.nextInt(1_000_000));
@@ -127,7 +127,7 @@ public class EmailVerificationService {
         
         // Always update OTP and expiry
         verification.setOtpHash(otpHash);
-        verification.setExpiresAt(Instant.now().plus(expiresInSeconds, ChronoUnit.SECONDS));
+        verification.setExpiresAt(LocalDateTime.now().plusSeconds(expiresInSeconds));
         emailVerificationRepository.save(verification);
 
         // Get user full name
@@ -142,7 +142,7 @@ public class EmailVerificationService {
                 .email(usersAuth.getEmail())
                 .otp(otp)
                 .fullName(fullName)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
 
         JsonNode eventPayload = objectMapper.valueToTree(emailEvent);
@@ -152,7 +152,7 @@ public class EmailVerificationService {
                 .aggregateType("user")
                 .eventType("email.verification")
                 .eventPayload(eventPayload)
-                .occurredAt(Instant.now())
+                .occurredAt(LocalDateTime.now())
                 .build();
 
         outboxEventRepository.save(outboxEvent);
@@ -181,12 +181,12 @@ public class EmailVerificationService {
         Long remainingSeconds = 0L;
         
         if (!emailVerified) {
-            Instant now = Instant.now();
+            LocalDateTime now = LocalDateTime.now();
             var activeVerification = emailVerificationRepository.findActiveByUserId(usersAuth.getUserId(), now);
             
             if (activeVerification.isPresent()) {
                 hasActiveCode = true;
-                Instant expiresAt = activeVerification.get().getExpiresAt();
+                LocalDateTime expiresAt = activeVerification.get().getExpiresAt();
                 remainingSeconds = ChronoUnit.SECONDS.between(now, expiresAt);
                 if (remainingSeconds < 0) {
                     remainingSeconds = 0L;

@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -22,10 +22,10 @@ public class FileSubmissionResponse {
     String submissionName;
     String status;  // draft, pending_review, approved, rejected, revision_requested
     String createdBy;
-    Instant createdAt;
-    Instant submittedAt;
+    LocalDateTime createdAt;
+    LocalDateTime submittedAt;
     String reviewedBy;
-    Instant reviewedAt;
+    LocalDateTime reviewedAt;
     String rejectionReason;
     Integer version;
     List<FileInfoResponse> files;  // Danh sách files trong submission

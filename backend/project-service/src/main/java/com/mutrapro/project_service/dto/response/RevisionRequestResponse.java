@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -34,17 +34,17 @@ public class RevisionRequestResponse {
     Boolean isFreeRevision;
     String status;
     
-    Instant requestedAt;
-    Instant managerReviewedAt;
-    Instant revisionDueAt;  // Deadline phải giao xong revision cho request này
+    LocalDateTime requestedAt;
+    LocalDateTime managerReviewedAt;
+    LocalDateTime revisionDueAt;  // Deadline phải giao xong revision cho request này
     Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
-    Instant assignedToSpecialistAt;
-    Instant specialistSubmittedAt;
-    Instant customerConfirmedAt;
-    Instant canceledAt;
+    LocalDateTime assignedToSpecialistAt;
+    LocalDateTime specialistSubmittedAt;
+    LocalDateTime customerConfirmedAt;
+    LocalDateTime canceledAt;
     
-    Instant createdAt;
-    Instant updatedAt;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
     String createdBy;
     String updatedBy;
 }

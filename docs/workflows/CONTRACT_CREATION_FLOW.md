@@ -116,29 +116,29 @@ const handleCreateContract = record => {
   * recording → 7 days
   * bundle → 21 days
 
-- autoDueDate: true (default)
-- expectedStartDate: today
 - freeRevisionsIncluded: 1 (default)
+- expectedStartDate: null (KHÔNG set lúc tạo contract, chỉ set khi start work sau khi deposit thanh toán)
 ```
 
 ### Bước 6: Manager Điều Chỉnh Thông Tin
 Manager có thể chỉnh sửa:
 - Contract Type (nếu muốn thay đổi)
 - Total Price
-- Base Price
 - Currency
 - Deposit Percent
 - SLA Days
-- Expected Start Date
 - Terms and Conditions
 - Special Clauses
 - Notes
 - Expires At (optional)
 
+**Lưu ý quan trọng:**
+- **Expected Start Date**: KHÔNG được set lúc tạo contract. Nó chỉ được set khi manager start work (sau khi deposit đã thanh toán) để đảm bảo tính đúng từ ngày thanh toán.
+- **Due Date**: KHÔNG được tính lúc tạo contract. Nó sẽ được tính khi start work dựa trên `expectedStartDate + SLA Days`.
+
 **Auto-calculated Fields:**
 - Deposit Amount = Total Price × Deposit Percent / 100
 - Final Amount = Total Price - Deposit Amount
-- Due Date = Expected Start Date + SLA Days (nếu autoDueDate = true)
 
 ### Bước 7: Manager Submit Form
 **Frontend:** `handleSubmit(values)`
@@ -153,8 +153,7 @@ Body: {
   currency: "VND",
   depositPercent: 40,
   slaDays: 21,
-  autoDueDate: true,
-  expectedStartDate: "2025-01-20T00:00:00Z",
+  expectedStartDate: null,  // KHÔNG set lúc tạo contract - chỉ set khi start work sau khi deposit thanh toán
   termsAndConditions: "...",
   specialClauses: "...",
   notes: "...",
@@ -244,22 +243,17 @@ BigDecimal depositAmount = totalPrice * depositPercent / 100;
 BigDecimal finalAmount = totalPrice - depositAmount;
 ```
 
-#### 8.8. Tính SLA Days và Due Date
+#### 8.8. Tính SLA Days và Expected Start Date
 ```java
 // SLA Days: từ form hoặc default theo contract type
 Integer slaDays = createRequest.getSlaDays() != null
     ? createRequest.getSlaDays()
     : getDefaultSlaDays(contractType);
 
-// Due Date: tự động tính nếu autoDueDate = true
-Instant expectedStartDate = createRequest.getExpectedStartDate() != null
-    ? createRequest.getExpectedStartDate()
-    : Instant.now();
-
-Instant dueDate = null;
-if (createRequest.getAutoDueDate() == null || createRequest.getAutoDueDate()) {
-    dueDate = expectedStartDate.plusSeconds(slaDays * 24L * 60 * 60);
-}
+// Expected Start Date: KHÔNG set lúc tạo contract
+// Chỉ set khi manager start work (sau khi deposit đã thanh toán) 
+// để đảm bảo tính đúng từ ngày start work hoặc depositPaidAt (tùy cái nào lớn hơn)
+LocalDateTime expectedStartDate = null;
 ```
 
 #### 8.9. Tạo Contract Entity
@@ -278,19 +272,21 @@ Contract contract = Contract.builder()
     .depositAmount(depositAmount)
     .finalAmount(finalAmount)
     .depositPaid(false)                      // Chưa thanh toán
-    .expectedStartDate(expectedStartDate)
-    .dueDate(dueDate)
+    .expectedStartDate(expectedStartDate)    // null lúc tạo, sẽ set khi deposit thanh toán
     .slaDays(slaDays)
-    .autoDueDate(true)
-    .freeRevisionsIncluded(1)                // Default 1 revision
+    .freeRevisionsIncluded(createRequest.getFreeRevisionsIncluded() != null 
+        ? createRequest.getFreeRevisionsIncluded() : 1)
+    .additionalRevisionFeeVnd(createRequest.getAdditionalRevisionFeeVnd())
+    .revisionDeadlineDays(createRequest.getRevisionDeadlineDays())
+    .expiresAt(createRequest.getExpiresAt())
     .termsAndConditions(createRequest.getTermsAndConditions())
     .specialClauses(createRequest.getSpecialClauses())
     .notes(createRequest.getNotes())
     // Snapshot contact info (cho legal purposes)
-    .nameSnapshot(serviceRequest.getContactName())
-    .phoneSnapshot(serviceRequest.getContactPhone())
-    .emailSnapshot(serviceRequest.getContactEmail())
-    .createdAt(Instant.now())
+    .nameSnapshot(serviceRequest.getContactName() != null ? serviceRequest.getContactName() : "N/A")
+    .phoneSnapshot(serviceRequest.getContactPhone() != null ? serviceRequest.getContactPhone() : "N/A")
+    .emailSnapshot(serviceRequest.getContactEmail() != null ? serviceRequest.getContactEmail() : "N/A")
+    // createdAt và updatedAt được tự động set bởi JPA Auditing (@EntityListeners)
     .build();
 ```
 
@@ -413,8 +409,8 @@ const handleContractCreated = contract => {
 2. **Send to customer**: Manager gửi contract cho customer (status = sent)
 3. **Customer review**: Customer xem và review contract (status = reviewed)
 4. **Customer sign**: Customer ký contract (status = signed)
-5. **Payment**: Customer thanh toán deposit
-6. **Start work**: Bắt đầu thực hiện công việc
+5. **Payment**: Customer thanh toán deposit → Contract status chuyển thành `active_pending_assignment`
+6. **Start work**: Manager start work → **LÚC NÀY** `expectedStartDate` mới được set (bằng thời điểm start work hoặc `depositPaidAt`, tùy vào cái nào lớn hơn) → Contract status chuyển thành `active`
 
 ## API Endpoints
 

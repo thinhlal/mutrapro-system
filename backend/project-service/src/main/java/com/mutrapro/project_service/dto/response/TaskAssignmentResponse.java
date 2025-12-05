@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,9 +37,9 @@ public class TaskAssignmentResponse {
 
     String milestoneId;
 
-    Instant assignedDate;
+    LocalDateTime assignedDate;
 
-    Instant completedDate;
+    LocalDateTime completedDate;
 
     String notes;
 
@@ -48,12 +47,12 @@ public class TaskAssignmentResponse {
 
     String specialistResponseReason;
 
-    Instant specialistRespondedAt;
+    LocalDateTime specialistRespondedAt;
 
     // Issue reporting fields
     Boolean hasIssue;
     String issueReason;
-    Instant issueReportedAt;
+    LocalDateTime issueReportedAt;
 
     // Request info (nested) - chỉ các field quan trọng cho specialist
     RequestInfo request;

@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -26,7 +26,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
            "ORDER BY m.sentAt ASC")
     List<ChatMessage> findRecentMessages(
         @Param("roomId") String roomId, 
-        @Param("since") Instant since
+        @Param("since") LocalDateTime since
     );
     
     @Query("SELECT m FROM ChatMessage m " +
@@ -48,7 +48,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
      */
     long countByChatRoom_RoomIdAndSentAtAfterAndSenderIdNotAndSenderIdNot(
             String roomId,
-            Instant after,
+            LocalDateTime after,
             String excludeSenderId1,
             String excludeSenderId2
     );

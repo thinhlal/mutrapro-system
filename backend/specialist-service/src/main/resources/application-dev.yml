@@ -13,10 +13,6 @@ spring:
       ddl-auto: update
     show-sql: false
     open-in-view: false
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
   sql:
     init:
       mode: never

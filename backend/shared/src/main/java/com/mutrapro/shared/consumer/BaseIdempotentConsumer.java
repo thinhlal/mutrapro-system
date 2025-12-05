@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -51,7 +51,7 @@ public abstract class BaseIdempotentConsumer<T> {
         
         try {
             // 1. Thử insert vào consumed_events (idempotent-by-schema)
-            int rowsAffected = getConsumedEventRepository().insert(eventId, consumerName, Instant.now());
+            int rowsAffected = getConsumedEventRepository().insert(eventId, consumerName, LocalDateTime.now());
             
             if (rowsAffected == 0) {
                 // Đã xử lý rồi → bỏ qua
@@ -91,7 +91,7 @@ public abstract class BaseIdempotentConsumer<T> {
          * 
          * @return số rows affected (0 nếu duplicate, 1 nếu success)
          */
-        int insert(UUID eventId, String consumerName, Instant processedAt);
+        int insert(UUID eventId, String consumerName, LocalDateTime processedAt);
     }
 }
 

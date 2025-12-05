@@ -7,7 +7,7 @@ import com.mutrapro.shared.outbox.BaseOutboxPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -75,12 +75,12 @@ public class OutboxPublisher extends BaseOutboxPublisher<OutboxEvent> {
     }
 
     @Override
-    protected void setPublishedAt(OutboxEvent event, Instant publishedAt) {
+    protected void setPublishedAt(OutboxEvent event, LocalDateTime publishedAt) {
         event.setPublishedAt(publishedAt);
     }
 
     @Override
-    protected void setNextRetryAt(OutboxEvent event, Instant nextRetryAt) {
+    protected void setNextRetryAt(OutboxEvent event, LocalDateTime nextRetryAt) {
         event.setNextRetryAt(nextRetryAt);
     }
 

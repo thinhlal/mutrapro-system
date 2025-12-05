@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -27,6 +27,6 @@ public class ContractOtpEmailEvent implements Serializable {
     private String otpCode;
     private Long expiresInMinutes;
     private Integer maxAttempts;
-    private Instant timestamp;
+    private LocalDateTime timestamp;
 }
 

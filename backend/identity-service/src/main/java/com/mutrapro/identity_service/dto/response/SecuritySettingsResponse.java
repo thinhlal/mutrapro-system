@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -15,7 +15,7 @@ public class SecuritySettingsResponse {
 
     private boolean hasLocalPassword;
     private String authProvider;
-    private Instant lastPasswordChange;
+    private LocalDateTime lastPasswordChange;
     private boolean twoFactorEnabled;
-    private Instant lastLoginAt;
+    private LocalDateTime lastLoginAt;
 }

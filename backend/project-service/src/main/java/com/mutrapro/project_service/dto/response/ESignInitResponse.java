@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -15,7 +15,7 @@ public class ESignInitResponse {
     
     private String sessionId;
     private String message;
-    private Instant expireAt;
+    private LocalDateTime expireAt;
     private Integer maxAttempts;
 }
 

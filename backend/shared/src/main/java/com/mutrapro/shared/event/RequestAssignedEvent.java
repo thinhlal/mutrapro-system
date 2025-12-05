@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -31,6 +31,6 @@ public class RequestAssignedEvent implements Serializable {
     String managerId;
     String managerName;
     
-    Instant timestamp;      // Event timestamp
+    LocalDateTime timestamp;      // Event timestamp
 }
 

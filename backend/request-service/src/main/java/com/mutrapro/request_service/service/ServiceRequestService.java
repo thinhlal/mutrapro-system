@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -751,7 +751,7 @@ public class ServiceRequestService {
                     .ownerName(null)  // Chat Service sẽ fetch từ Identity Service nếu cần
                     .managerId(managerId)
                     .managerName(null)  // Chat Service sẽ fetch từ Identity Service nếu cần
-                    .timestamp(Instant.now())
+                    .timestamp(LocalDateTime.now())
                     .build();
             
             // Save to outbox for guaranteed delivery

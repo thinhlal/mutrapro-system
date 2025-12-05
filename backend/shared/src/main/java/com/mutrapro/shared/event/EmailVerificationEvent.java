@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Event để gửi email verification code
@@ -22,6 +22,6 @@ public class EmailVerificationEvent implements Serializable {
     private String email;
     private String otp;
     private String fullName;
-    private Instant timestamp;
+    private LocalDateTime timestamp;
 }
 

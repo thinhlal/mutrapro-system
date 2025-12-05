@@ -51,6 +51,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
@@ -328,7 +329,7 @@ public class AuthenticationService {
                 .userId(userAuthSaved.getUserId())
                 .otpHash(passwordEncoder.encode(otp))
                 .channel(VerificationChannel.EMAIL_OTP)
-                .expiresAt(Instant.now().plus(expiresInSeconds, ChronoUnit.SECONDS))
+                .expiresAt(LocalDateTime.now().plusSeconds(expiresInSeconds))
                 .status(VerificationStatus.PENDING)
                 .build();
         var emailVerification = emailVerificationRepository.save(verification);
@@ -340,7 +341,7 @@ public class AuthenticationService {
                 .email(userAuthSaved.getEmail())
                 .otp(otp)
                 .fullName(request.getFullName())
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
         
         JsonNode eventPayload = objectMapper.valueToTree(emailEvent);
@@ -350,7 +351,7 @@ public class AuthenticationService {
                 .aggregateType("user")
                 .eventType("email.verification")
                 .eventPayload(eventPayload)
-                .occurredAt(Instant.now())
+                .occurredAt(LocalDateTime.now())
                 .build();
         
         outboxEventRepository.save(outboxEvent);

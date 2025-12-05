@@ -9,7 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Entity
@@ -82,6 +82,6 @@ public class WalletTransaction {
 
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
-    Instant createdAt = Instant.now();
+    LocalDateTime createdAt = LocalDateTime.now();
 }
 

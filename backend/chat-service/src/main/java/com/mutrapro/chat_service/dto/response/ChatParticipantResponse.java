@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -17,7 +17,7 @@ public class ChatParticipantResponse {
     String userId;
     String userName;
     ParticipantRole role;
-    Instant joinedAt;
+    LocalDateTime joinedAt;
     Boolean isActive;
 }
 

@@ -26,6 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Slf4j
@@ -48,10 +51,11 @@ public class ChatMessageController {
             @RequestParam(required = false) String contextId) { // Optional: milestoneId, revisionRequestId, etc.
         log.info("Getting messages for room: roomId={}, page={}, size={}, contextType={}, contextId={}",
                 roomId, page, size, contextType, contextId);
-        Page<ChatMessageResponse> responses = chatMessageService.getRoomMessages(roomId, page, size, contextType, contextId);
-        
+        Page<ChatMessageResponse> responses = chatMessageService.getRoomMessages(roomId, page, size, contextType,
+                contextId);
+
         PageResponse<ChatMessageResponse> pageResponse = PageResponse.from(responses);
-        
+
         return ApiResponse.<PageResponse<ChatMessageResponse>>builder()
                 .message("Messages retrieved successfully")
                 .data(pageResponse)
@@ -64,7 +68,11 @@ public class ChatMessageController {
     public ApiResponse<List<ChatMessageResponse>> getRecentMessages(
             @PathVariable String roomId,
             @RequestParam long sinceTimestamp) {
-        Instant since = Instant.ofEpochMilli(sinceTimestamp);
+        // Convert milliseconds to LocalDateTime assuming Asia/Ho_Chi_Minh timezone
+        // (+07:00)
+        LocalDateTime since = Instant.ofEpochMilli(sinceTimestamp)
+                .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .toLocalDateTime();
         log.info("Getting recent messages: roomId={}, since={}", roomId, since);
         List<ChatMessageResponse> responses = chatMessageService.getRecentMessages(roomId, since);
         return ApiResponse.<List<ChatMessageResponse>>builder()
@@ -112,15 +120,13 @@ public class ChatMessageController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload file cho chat (trả về fileKey để download sau này)")
     public ApiResponse<FileUploadResponse> uploadFile(
-            @Parameter(description = "File cần upload")
-            @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Room ID (để verify access)")
-            @RequestParam("roomId") String roomId) {
-        log.info("Uploading file for chat: roomId={}, fileName={}, size={}", 
+            @Parameter(description = "File cần upload") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Room ID (để verify access)") @RequestParam("roomId") String roomId) {
+        log.info("Uploading file for chat: roomId={}, fileName={}, size={}",
                 roomId, file.getOriginalFilename(), file.getSize());
-        
+
         FileUploadResponse response = chatMessageService.uploadFile(file, roomId);
-        
+
         return ApiResponse.<FileUploadResponse>builder()
                 .message("File uploaded successfully")
                 .data(response)
@@ -131,15 +137,13 @@ public class ChatMessageController {
     @GetMapping("/download")
     @Operation(summary = "Download file từ chat (requires authentication và participant access)")
     public ResponseEntity<Resource> downloadFile(
-            @Parameter(description = "S3 file key (từ fileKey trong message metadata)")
-            @RequestParam("fileKey") String fileKey,
-            @Parameter(description = "Chat room ID (để verify participant access)")
-            @RequestParam("roomId") String roomId) {
+            @Parameter(description = "S3 file key (từ fileKey trong message metadata)") @RequestParam("fileKey") String fileKey,
+            @Parameter(description = "Chat room ID (để verify participant access)") @RequestParam("roomId") String roomId) {
         log.info("Downloading file: fileKey={}, roomId={}", fileKey, roomId);
-        
+
         // Download file với authentication check
         byte[] fileContent = chatMessageService.downloadFile(fileKey, roomId);
-        
+
         // Extract file name from fileKey (last part after last /)
         String fileName = fileKey.substring(fileKey.lastIndexOf('/') + 1);
         // Remove UUID prefix if exists (format: name-uuid.ext)
@@ -154,16 +158,16 @@ public class ChatMessageController {
                 fileName = namePart + extPart;
             }
         }
-        
+
         // Create Resource
         ByteArrayResource resource = new ByteArrayResource(fileContent);
-        
+
         // Set headers
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, 
-                String.format("attachment; filename=\"%s\"", 
+        headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                String.format("attachment; filename=\"%s\"",
                         URLEncoder.encode(fileName, StandardCharsets.UTF_8)));
-        
+
         // Determine content type from file extension
         String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
         if (fileName.toLowerCase().endsWith(".pdf")) {
@@ -177,7 +181,7 @@ public class ChatMessageController {
         } else if (fileName.toLowerCase().endsWith(".mp4")) {
             contentType = "video/mp4";
         }
-        
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.parseMediaType(contentType))
@@ -185,4 +189,3 @@ public class ChatMessageController {
                 .body(resource);
     }
 }
-

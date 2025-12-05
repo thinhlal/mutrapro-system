@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -21,9 +21,9 @@ public class MilestonePaidEvent implements Serializable {
     private String contractId;
     private String milestoneId;
     private Integer orderIndex;  // Thứ tự milestone (1, 2, 3...)
-    private Instant paidAt;
+    private LocalDateTime paidAt;
     private BigDecimal amount;
     private String currency;  // VND, USD, etc.
-    private Instant timestamp;
+    private LocalDateTime timestamp;
 }
 

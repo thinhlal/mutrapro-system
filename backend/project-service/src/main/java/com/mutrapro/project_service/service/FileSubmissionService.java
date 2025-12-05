@@ -49,7 +49,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -149,7 +148,7 @@ public class FileSubmissionService {
                 .submissionName(String.format("Submission v%d", nextVersion))
                 .status(SubmissionStatus.draft)
                 .createdBy(userId)
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .version(nextVersion)
                 .build();
 
@@ -169,7 +168,7 @@ public class FileSubmissionService {
 
         // 3. Tự động submit submission for review
         savedSubmission.setStatus(SubmissionStatus.pending_review);
-        savedSubmission.setSubmittedAt(Instant.now());
+        savedSubmission.setSubmittedAt(LocalDateTime.now());
         FileSubmission submittedSubmission = fileSubmissionRepository.save(savedSubmission);
 
         // Lưu status trước khi update để check
@@ -425,7 +424,7 @@ public class FileSubmissionService {
         // Update submission status
         submission.setStatus(SubmissionStatus.approved);
         submission.setReviewedBy(userId);
-        submission.setReviewedAt(Instant.now());
+        submission.setReviewedAt(LocalDateTime.now());
         FileSubmission saved = fileSubmissionRepository.save(submission);
 
         // Update all files to approved
@@ -433,7 +432,7 @@ public class FileSubmissionService {
         files.forEach(file -> {
             file.setFileStatus(FileStatus.approved);
             file.setReviewedBy(userId);
-            file.setReviewedAt(Instant.now());
+            file.setReviewedAt(LocalDateTime.now());
         });
         fileRepository.saveAll(files);
 
@@ -506,7 +505,7 @@ public class FileSubmissionService {
         // Update submission status
         submission.setStatus(SubmissionStatus.rejected);
         submission.setReviewedBy(userId);
-        submission.setReviewedAt(Instant.now());
+        submission.setReviewedAt(LocalDateTime.now());
         submission.setRejectionReason(reason);
         FileSubmission saved = fileSubmissionRepository.save(submission);
 
@@ -515,7 +514,7 @@ public class FileSubmissionService {
         files.forEach(file -> {
             file.setFileStatus(FileStatus.rejected);
             file.setReviewedBy(userId);
-            file.setReviewedAt(Instant.now());
+            file.setReviewedAt(LocalDateTime.now());
             file.setRejectionReason(reason);
         });
         fileRepository.saveAll(files);
@@ -601,7 +600,7 @@ public class FileSubmissionService {
 
         if ("accept".equalsIgnoreCase(action)) {
             // Customer accepts submission
-            Instant now = Instant.now();
+            LocalDateTime now = LocalDateTime.now();
 
             // Check xem có revision request đang WAITING_CUSTOMER_CONFIRM không
             List<RevisionRequest> activeRevisions = revisionRequestRepository.findByTaskAssignmentIdAndStatus(
@@ -632,8 +631,7 @@ public class FileSubmissionService {
                             .orElse(null);
                     if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
                         milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
-                        LocalDateTime completedAt = now.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-                        milestone.setFinalCompletedAt(completedAt);
+                        milestone.setFinalCompletedAt(now);
                         contractMilestoneRepository.save(milestone);
                         log.info(
                                 "Tracked final completion time for milestone (first acceptance, no revision): milestoneId={}, finalCompletedAt={}",
@@ -751,7 +749,7 @@ public class FileSubmissionService {
         }
 
         // Deliver tất cả files trong submission
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         submissionFiles.forEach(file -> {
             file.setDeliveredToCustomer(true);
             file.setDeliveredAt(now);
@@ -817,7 +815,7 @@ public class FileSubmissionService {
                     // Track firstSubmissionAt: chỉ set lần đầu tiên (khi chưa có revision)
                     // Nếu milestone.firstSubmissionAt == null → đây là lần giao đầu tiên
                     if (milestone.getFirstSubmissionAt() == null) {
-                        milestone.setFirstSubmissionAt(now.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+                        milestone.setFirstSubmissionAt(now);
                         log.info("Tracked first submission time for milestone: milestoneId={}, firstSubmissionAt={}",
                                 milestone.getMilestoneId(), milestone.getFirstSubmissionAt());
                     }

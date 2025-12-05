@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +32,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     Page<WalletTransaction> findByWalletIdAndTxTypeAndFromDate(
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
-            @Param("fromDate") Instant fromDate,
+            @Param("fromDate") LocalDateTime fromDate,
             Pageable pageable);
     
     // Query chỉ có toDate
@@ -43,7 +43,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     Page<WalletTransaction> findByWalletIdAndTxTypeAndToDate(
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
-            @Param("toDate") Instant toDate,
+            @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
     
     // Query có cả fromDate và toDate
@@ -54,8 +54,8 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     Page<WalletTransaction> findByWalletIdAndTxTypeAndDateRange(
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
-            @Param("fromDate") Instant fromDate,
-            @Param("toDate") Instant toDate,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
 
     // Query với search (walletTxId, contractId, milestoneId, bookingId)
@@ -85,7 +85,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
             @Param("search") String search,
-            @Param("fromDate") Instant fromDate,
+            @Param("fromDate") LocalDateTime fromDate,
             Pageable pageable);
 
     // Query với search và toDate
@@ -101,7 +101,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
             @Param("search") String search,
-            @Param("toDate") Instant toDate,
+            @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
 
     // Query với search và date range
@@ -117,8 +117,8 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
             @Param("walletId") String walletId,
             @Param("txType") WalletTxType txType,
             @Param("search") String search,
-            @Param("fromDate") Instant fromDate,
-            @Param("toDate") Instant toDate,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
 
     List<WalletTransaction> findByContractId(String contractId);

@@ -8,8 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +47,7 @@ public abstract class BaseOutboxPublisher<T> {
     @Scheduled(fixedDelay = 5000) // Every 5 seconds
     @Transactional
     public void publishPendingEvents() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         List<T> pendingEvents = getOutboxEventRepository().findPendingEvents(now);
 
         if (pendingEvents.isEmpty()) {
@@ -102,17 +101,17 @@ public abstract class BaseOutboxPublisher<T> {
     protected abstract Integer getRetryCount(T event);
     protected abstract void setRetryCount(T event, Integer retryCount);
     protected abstract void setLastError(T event, String error);
-    protected abstract void setPublishedAt(T event, Instant publishedAt);
-    protected abstract void setNextRetryAt(T event, Instant nextRetryAt);
+    protected abstract void setPublishedAt(T event, LocalDateTime publishedAt);
+    protected abstract void setNextRetryAt(T event, LocalDateTime nextRetryAt);
     protected abstract void saveEvent(T event);
 
     private void markAsPublished(T event) {
-        setPublishedAt(event, Instant.now());
+        setPublishedAt(event, LocalDateTime.now());
         saveEvent(event);
     }
 
     private void markAsSkipped(T event, String error) {
-        setPublishedAt(event, Instant.now()); // Mark as published to skip
+        setPublishedAt(event, LocalDateTime.now()); // Mark as published to skip
         setLastError(event, error);
         saveEvent(event);
     }
@@ -126,11 +125,11 @@ public abstract class BaseOutboxPublisher<T> {
                     getOutboxId(event), getEventType(event));
             // Mark as published để không retry nữa
             // TODO: Có thể đẩy vào Dead Letter Queue (DLQ) ở đây
-            setPublishedAt(event, Instant.now());
+            setPublishedAt(event, LocalDateTime.now());
         } else {
             // Exponential backoff: 1s, 2s, 4s, ...
             long delaySeconds = (long) Math.pow(2, getRetryCount(event) - 1);
-            setNextRetryAt(event, Instant.now().plus(delaySeconds, ChronoUnit.SECONDS));
+            setNextRetryAt(event, LocalDateTime.now().plusSeconds(delaySeconds));
         }
 
         saveEvent(event);
@@ -140,7 +139,7 @@ public abstract class BaseOutboxPublisher<T> {
      * Interface cho OutboxEventRepository - generic
      */
     public interface OutboxEventRepository<T> {
-        List<T> findPendingEvents(Instant now);
+        List<T> findPendingEvents(LocalDateTime now);
     }
 }
 

@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -82,7 +82,7 @@ public class ChatMessageService {
                 .contextType(request.getContextType())
                 .contextId(request.getContextId())
                 .status(MessageStatus.SENT)
-                .sentAt(Instant.now())
+                .sentAt(LocalDateTime.now())
                 .build();
         
         ChatMessage savedMessage = chatMessageRepository.save(message);
@@ -115,7 +115,7 @@ public class ChatMessageService {
                 .contextType(request.getContextType())
                 .contextId(request.getContextId())
                 .status(MessageStatus.SENT)
-                .sentAt(Instant.now())
+                .sentAt(LocalDateTime.now())
                 .build();
         
         ChatMessage savedMessage = chatMessageRepository.save(message);
@@ -195,7 +195,7 @@ public class ChatMessageService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> getRecentMessages(String roomId, Instant since) {
+    public List<ChatMessageResponse> getRecentMessages(String roomId, LocalDateTime since) {
         String userId = getCurrentUserId();
         
         verifyParticipantAccess(roomId, userId);

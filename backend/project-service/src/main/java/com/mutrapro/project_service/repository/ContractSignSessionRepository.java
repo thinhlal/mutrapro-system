@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,14 +29,14 @@ public interface ContractSignSessionRepository extends JpaRepository<ContractSig
     @Query("SELECT s FROM ContractSignSession s WHERE s.status = :status AND s.expireAt < :cutoff")
     List<ContractSignSession> findByStatusAndExpireAtBefore(
             @Param("status") SignSessionStatus status,
-            @Param("cutoff") Instant cutoff
+            @Param("cutoff") LocalDateTime cutoff
     );
 
     @Modifying
     @Query("DELETE FROM ContractSignSession s WHERE s.status = :status AND s.expireAt < :cutoff")
     int deleteByStatusAndExpireAtBefore(
             @Param("status") SignSessionStatus status,
-            @Param("cutoff") Instant cutoff
+            @Param("cutoff") LocalDateTime cutoff
     );
 }
 

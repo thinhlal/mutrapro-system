@@ -2,7 +2,7 @@ package com.mutrapro.project_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -30,6 +30,6 @@ public class ConsumedEvent {
 
     @Column(name = "processed_at", nullable = false, updatable = false)
     @Builder.Default
-    private Instant processedAt = Instant.now();
+    private LocalDateTime processedAt = LocalDateTime.now();
 }
 

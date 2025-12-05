@@ -40,7 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -168,7 +168,7 @@ public class WalletService {
                 .balanceBefore(balanceBefore)
                 .balanceAfter(balanceAfter)
                 .metadata(metadata)
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
@@ -237,14 +237,14 @@ public class WalletService {
                 .balanceAfter(balanceAfter)
                 .metadata(metadata)
                 .contractId(request.getContractId())
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
         // Gửi DepositPaidEvent cho DEPOSIT
         try {
-            Instant paidAt = Instant.now();
+            LocalDateTime paidAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
             DepositPaidEvent event = DepositPaidEvent.builder()
@@ -254,7 +254,7 @@ public class WalletService {
                 .paidAt(paidAt)
                 .amount(request.getAmount())
                 .currency(currency.name())
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -338,14 +338,14 @@ public class WalletService {
                 .metadata(metadata)
                 .contractId(request.getContractId())
                 .milestoneId(request.getMilestoneId())
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
         // Gửi MilestonePaidEvent cho milestone payment
         try {
-            Instant paidAt = Instant.now();
+            LocalDateTime paidAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
             MilestonePaidEvent event = MilestonePaidEvent.builder()
@@ -356,7 +356,7 @@ public class WalletService {
                 .paidAt(paidAt)
                 .amount(request.getAmount())
                 .currency(currency.name())
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -450,14 +450,14 @@ public class WalletService {
                 .contractId(request.getContractId())
                 .milestoneId(request.getMilestoneId())
                 .submissionId(request.getSubmissionId())
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
 
         // Gửi RevisionFeePaidEvent cho revision fee payment
         try {
-            Instant paidAt = Instant.now();
+            LocalDateTime paidAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
             RevisionFeePaidEvent event = RevisionFeePaidEvent.builder()
@@ -475,7 +475,7 @@ public class WalletService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .paidAt(paidAt)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -509,8 +509,8 @@ public class WalletService {
     public Page<WalletTransactionResponse> getWalletTransactions(
             String walletId,
             WalletTxType txType,
-            Instant fromDate,
-            Instant toDate,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
             Pageable pageable) {
         String userId = getCurrentUserId();
 
@@ -556,8 +556,8 @@ public class WalletService {
     @Transactional(readOnly = true)
     public Page<WalletTransactionResponse> getMyWalletTransactions(
             WalletTxType txType,
-            Instant fromDate,
-            Instant toDate,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
             Pageable pageable) {
         String userId = getCurrentUserId();
 
@@ -598,8 +598,8 @@ public class WalletService {
     public Page<WalletTransactionResponse> getWalletTransactionsForAdmin(
             String walletId,
             WalletTxType txType,
-            Instant fromDate,
-            Instant toDate,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
             String search,
             Pageable pageable) {
         // Kiểm tra wallet tồn tại
@@ -714,7 +714,7 @@ public class WalletService {
                 .contractId(originalTx.getContractId())
                 .milestoneId(originalTx.getMilestoneId())
                 .submissionId(originalTx.getSubmissionId())
-                .createdAt(Instant.now())
+                .createdAt(LocalDateTime.now())
                 .build();
         
         WalletTransaction savedRefundTx = walletTransactionRepository.save(refundTx);
@@ -739,7 +739,7 @@ public class WalletService {
         
         // Publish event với đầy đủ thông tin sau khi refund thành công
         try {
-            Instant refundedAt = Instant.now();
+            LocalDateTime refundedAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
             RevisionFeeRefundedEvent event = RevisionFeeRefundedEvent.builder()

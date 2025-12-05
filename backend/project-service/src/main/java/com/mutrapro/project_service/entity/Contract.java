@@ -9,7 +9,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "contracts", indexes = {
@@ -63,22 +63,22 @@ public class Contract extends BaseEntity<String> {
     ContractStatus status = ContractStatus.draft;
 
     @Column(name = "sent_to_customer_at")
-    Instant sentToCustomerAt;
+    LocalDateTime sentToCustomerAt;
 
     @Column(name = "customer_reviewed_at")
-    Instant customerReviewedAt;
+    LocalDateTime customerReviewedAt;
 
     @Column(name = "signed_at")
-    Instant signedAt;
+    LocalDateTime signedAt;
 
     @Column(name = "deposit_paid_at")
-    Instant depositPaidAt;
+    LocalDateTime depositPaidAt;
 
     @Column(name = "work_start_at")
-    Instant workStartAt;
+    LocalDateTime workStartAt;
 
     @Column(name = "expires_at")
-    Instant expiresAt;
+    LocalDateTime expiresAt;
 
     @Column(name = "file_id", length = 36)
     String fileId;  // Reference to files.file_id (Contract PDF file)
@@ -99,7 +99,7 @@ public class Contract extends BaseEntity<String> {
 
     // Timeline & SLA
     @Column(name = "expected_start_date")
-    Instant expectedStartDate;
+    LocalDateTime expectedStartDate;
 
     @Column(name = "sla_days")
     Integer slaDays;
@@ -138,6 +138,6 @@ public class Contract extends BaseEntity<String> {
     String customerSignatureS3Key;  // Customer signature image S3 object key (e.g., "contracts/signatures/signature-123.png"), not URL
     
     @Column(name = "customer_signed_at")
-    Instant customerSignedAt;  // When customer actually signed (different from signedAt which is when approved)
+    LocalDateTime customerSignedAt;  // When customer actually signed (different from signedAt which is when approved)
 }
 

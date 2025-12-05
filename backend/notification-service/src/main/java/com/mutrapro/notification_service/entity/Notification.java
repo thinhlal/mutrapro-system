@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Notification entity - Lưu trữ thông báo trong hệ thống
@@ -61,7 +61,7 @@ public class Notification extends BaseEntity<String> {
     Boolean isRead = false;
     
     @Column(name = "read_at")
-    Instant readAt;
+    LocalDateTime readAt;
     
     public String getId() {
         return notificationId;

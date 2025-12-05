@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -88,7 +88,7 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "AND c.status != com.mutrapro.project_service.enums.ContractStatus.active " +
            "AND c.status != com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment " +
            "AND c.signedAt IS NULL")
-    List<Contract> findExpiredContracts(@Param("now") Instant now);
+    List<Contract> findExpiredContracts(@Param("now") LocalDateTime now);
     
     /**
      * Lấy requestId từ contractId (projection query - chỉ lấy requestId, không fetch toàn bộ contract)

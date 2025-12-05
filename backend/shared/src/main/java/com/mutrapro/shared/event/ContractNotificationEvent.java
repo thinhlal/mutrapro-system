@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -32,6 +32,6 @@ public class ContractNotificationEvent implements Serializable {
     
     String reason;  // Optional: lý do (cho revision, cancellation, etc.)
     
-    Instant timestamp;
+    LocalDateTime timestamp;
 }
 

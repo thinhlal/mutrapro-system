@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -71,7 +71,7 @@ public class ChatMessage extends BaseEntity<String> {
     String contextId; // milestoneId / submissionId / revisionRequestId
 
     @Column(name = "sent_at", nullable = false)
-    Instant sentAt;
+    LocalDateTime sentAt;
 
     public String getId() {
         return messageId;

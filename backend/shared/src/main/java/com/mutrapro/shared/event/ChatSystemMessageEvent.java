@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -23,6 +23,6 @@ public class ChatSystemMessageEvent implements Serializable {
     String roomType;        // "REQUEST_CHAT" hoặc "CONTRACT_CHAT"
     String contextId;       // requestId (nếu REQUEST_CHAT) hoặc contractId (nếu CONTRACT_CHAT)
     String message;         // Nội dung system message
-    Instant timestamp;      // Event timestamp
+    LocalDateTime timestamp;      // Event timestamp
 }
 

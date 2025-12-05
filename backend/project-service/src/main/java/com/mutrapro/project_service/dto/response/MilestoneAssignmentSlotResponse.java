@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -42,7 +41,7 @@ public class MilestoneAssignmentSlotResponse {
     String assignmentStatus;
     String specialistId;
     String specialistName;
-    Instant assignedDate;
+    LocalDateTime assignedDate;
 
     Boolean hasIssue;
 

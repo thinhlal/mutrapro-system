@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -45,6 +45,6 @@ public class WalletTransactionResponse {
     
     String refundOfWalletTxId;
     
-    Instant createdAt;
+    LocalDateTime createdAt;
 }
 

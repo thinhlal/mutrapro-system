@@ -335,8 +335,7 @@ public class UserService {
         return SecuritySettingsResponse.builder()
             .hasLocalPassword(userAuth.isHasLocalPassword())
             .authProvider(userAuth.getAuthProvider())
-            .lastPasswordChange(userAuth.getUpdatedAt() != null ?
-                userAuth.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant() : null)
+            .lastPasswordChange(userAuth.getUpdatedAt())
             .twoFactorEnabled(false) // TODO: Implement 2FA
             .lastLoginAt(null) // TODO: Track last login
             .build();
