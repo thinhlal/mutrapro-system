@@ -21,14 +21,10 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 newgrp docker
 
-# Cài Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-  -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Kiểm tra
+# Docker Compose plugin đã được tích hợp sẵn trong Docker Desktop và Docker Engine mới
+# Không cần cài riêng nữa, chỉ cần kiểm tra:
 docker --version
-docker-compose --version
+docker compose version
 ```
 
 ---
@@ -185,10 +181,10 @@ Trong thư mục có file compose:
 
 ```bash
 # Pull toàn bộ images từ Docker Hub
-docker-compose -f docker-compose.prod.hub.yml pull
+docker compose -f docker-compose.prod.hub.yml pull
 
 # Chạy toàn bộ services ở chế độ background
-docker-compose -f docker-compose.prod.hub.yml up -d
+docker compose -f docker-compose.prod.hub.yml up -d
 ```
 
 Compose sẽ:
@@ -202,7 +198,7 @@ Compose sẽ:
 
 ```bash
 # Xem status tất cả containers
-docker-compose -f docker-compose.prod.hub.yml ps
+docker compose -f docker-compose.prod.hub.yml ps
 
 # Hoặc
 docker ps
@@ -261,17 +257,17 @@ Trên EC2:
 
 ```bash
 # Pull image mới
-docker-compose -f docker-compose.prod.hub.yml pull project-service
+docker compose -f docker-compose.prod.hub.yml pull project-service
 
 # Restart service với image mới
-docker-compose -f docker-compose.prod.hub.yml up -d project-service
+docker compose -f docker-compose.prod.hub.yml up -d project-service
 ```
 
 Hoặc update tất cả:
 
 ```bash
-docker-compose -f docker-compose.prod.hub.yml pull
-docker-compose -f docker-compose.prod.hub.yml up -d
+docker compose -f docker-compose.prod.hub.yml pull
+docker compose -f docker-compose.prod.hub.yml up -d
 ```
 
 ---
@@ -282,30 +278,30 @@ docker-compose -f docker-compose.prod.hub.yml up -d
 
 ```bash
 # Tất cả services
-docker-compose -f docker-compose.prod.hub.yml logs -f
+docker compose -f docker-compose.prod.hub.yml logs -f
 
 # Một service cụ thể
-docker-compose -f docker-compose.prod.hub.yml logs -f api-gateway
+docker compose -f docker-compose.prod.hub.yml logs -f api-gateway
 ```
 
 ### Restart services
 
 ```bash
 # Restart tất cả
-docker-compose -f docker-compose.prod.hub.yml restart
+docker compose -f docker-compose.prod.hub.yml restart
 
 # Restart một service
-docker-compose -f docker-compose.prod.hub.yml restart api-gateway
+docker compose -f docker-compose.prod.hub.yml restart api-gateway
 ```
 
 ### Stop services
 
 ```bash
 # Stop (giữ containers)
-docker-compose -f docker-compose.prod.hub.yml stop
+docker compose -f docker-compose.prod.hub.yml stop
 
 # Stop và xóa containers
-docker-compose -f docker-compose.prod.hub.yml down
+docker compose -f docker-compose.prod.hub.yml down
 ```
 
 ### Kiểm tra resource usage
@@ -326,10 +322,10 @@ docker system df
 
 ```bash
 # Xem logs để tìm lỗi
-docker-compose -f docker-compose.prod.hub.yml logs service-name
+docker compose -f docker-compose.prod.hub.yml logs service-name
 
 # Xem status
-docker-compose -f docker-compose.prod.hub.yml ps
+docker compose -f docker-compose.prod.hub.yml ps
 
 # Inspect container
 docker inspect mutrapro-api-gateway
@@ -349,7 +345,7 @@ docker inspect mutrapro-api-gateway
 
 ```bash
 # Xem logs
-docker-compose -f docker-compose.prod.hub.yml logs service-name
+docker compose -f docker-compose.prod.hub.yml logs service-name
 
 # Xem events
 docker events
@@ -361,10 +357,10 @@ docker events
 
 Sau khi deploy, kiểm tra:
 
-- [ ] Tất cả containers đang chạy (`docker-compose ps`)
+- [ ] Tất cả containers đang chạy (`docker compose ps`)
 - [ ] Health checks đều pass (`curl http://localhost/actuator/health`)
 - [ ] Có thể truy cập từ bên ngoài (`curl http://your-ec2-ip/actuator/health`)
-- [ ] Logs không có lỗi (`docker-compose logs`)
+- [ ] Logs không có lỗi (`docker compose logs`)
 - [ ] Database connections OK (kiểm tra logs)
 - [ ] Redis connections OK (kiểm tra logs)
 - [ ] Kafka connections OK (kiểm tra logs)

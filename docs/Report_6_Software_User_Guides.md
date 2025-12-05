@@ -167,10 +167,10 @@ KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
 ```bash
 # Khởi động PostgreSQL, Redis, Kafka
-docker-compose up -d postgres redis kafka
+docker compose up -d postgres redis kafka
 
 # Kiểm tra services đang chạy
-docker-compose ps
+docker compose ps
 ```
 
 ###### **Bước 4: Chạy Backend Services**
@@ -197,7 +197,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ```bash
 # Build và chạy tất cả services
-docker-compose up --build
+docker compose up --build
 ```
 
 ###### **Bước 5: Cấu hình và Chạy Frontend**

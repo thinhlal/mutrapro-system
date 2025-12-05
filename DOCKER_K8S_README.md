@@ -39,10 +39,10 @@ docker build -f backend/project-service/Dockerfile -t mutrapro/project-service:l
 #### Build với Docker Compose:
 ```bash
 # Build tất cả services
-docker-compose build
+docker compose build
 
 # Build và chạy
-docker-compose up --build
+docker compose up --build
 ```
 
 ### 3. Port Mapping

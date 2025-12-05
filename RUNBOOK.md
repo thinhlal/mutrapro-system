@@ -1,7 +1,7 @@
 # MutraPro - Runbook nhanh (Local Dev)
 
 ## Kafka (Redpanda) local
-- Khởi chạy broker (đã cấu hình trong `docker-compose.yml`):
+- Khởi chạy broker (đã cấu hình trong `docker-compose.yml` - tên file giữ nguyên):
 ```bash
 docker compose up -d kafka
 ```

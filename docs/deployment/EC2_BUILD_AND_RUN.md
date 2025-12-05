@@ -104,6 +104,20 @@ docker push thinhlal273/chat-service:latest
 ```
 
 ---
+## Fix
+
+## Giải pháp nhanh (All-in-one)
+
+```bash
+# Stop và xóa tất cả containers
+sudo docker compose -f docker-compose.prod.hub.yml down
+
+# Pull lại images
+sudo docker compose -f docker-compose.prod.hub.yml pull
+
+# Start lại
+sudo docker compose -f docker-compose.prod.hub.yml up -d
+
 
 ## 🌐 PHẦN 2: DEPLOY VÀ CHẠY TRÊN EC2
 
@@ -128,7 +142,7 @@ cd <your-repo>
 ```bash
 # Kiểm tra Docker đã cài chưa
 docker --version
-docker-compose --version
+docker compose version
 
 # Nếu chưa có, cài đặt:
 sudo apt update && sudo apt upgrade -y
@@ -137,10 +151,9 @@ sudo sh get-docker.sh
 sudo usermod -aG docker $USER
 newgrp docker
 
-# Cài Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
-  -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# Docker Compose plugin đã được tích hợp sẵn trong Docker Desktop và Docker Engine mới
+# Không cần cài riêng nữa, chỉ cần kiểm tra:
+docker compose version
 ```
 
 ### Bước 3: Cấu hình file .env
