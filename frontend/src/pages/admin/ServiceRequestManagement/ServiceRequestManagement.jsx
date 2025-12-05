@@ -14,7 +14,6 @@ import {
   Tooltip,
 } from 'antd';
 import {
-  EyeOutlined,
   CheckCircleOutlined,
   ReloadOutlined,
   FileTextOutlined,
@@ -24,11 +23,9 @@ import {
   getAllServiceRequests,
   getMyAssignedRequests,
   assignServiceRequest,
-  getServiceRequestById,
 } from '../../../services/serviceRequestService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import ServiceRequestDetailModal from '../../../components/modal/ServiceRequestDetailModal/ServiceRequestDetailModal';
 import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestManagement.module.css';
 
@@ -82,8 +79,6 @@ export default function ServiceRequestManagement() {
   const [loadingAll, setLoadingAll] = useState(false);
   const [loadingMy, setLoadingMy] = useState(false);
   const [assigning, setAssigning] = useState({});
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
 
   // Pagination state
   const [allPagination, setAllPagination] = useState({
@@ -210,33 +205,6 @@ export default function ServiceRequestManagement() {
     }
   };
 
-  // Xem chi tiết request
-  const handleViewDetail = async record => {
-    const requestId = record.requestId || record.id;
-    try {
-      // Fetch lại request detail với đầy đủ thông tin (bao gồm files)
-      const response = await getServiceRequestById(requestId);
-      if (response?.status === 'success' && response?.data) {
-        // Map field names để tương thích với modal
-        const requestData = {
-          ...response.data,
-          id: response.data.requestId || response.data.id,
-        };
-        setSelectedRequest(requestData);
-        setDetailModalVisible(true);
-      } else {
-        // Fallback to record if API fails
-        setSelectedRequest(record);
-        setDetailModalVisible(true);
-      }
-    } catch (error) {
-      console.error('Error fetching request detail:', error);
-      // Fallback to record if API fails
-      setSelectedRequest(record);
-      setDetailModalVisible(true);
-    }
-  };
-
   // Navigate đến Contract Builder với requestId
   const handleCreateContract = record => {
     const requestId = record.requestId || record.id;
@@ -358,25 +326,6 @@ export default function ServiceRequestManagement() {
       ),
     },
     {
-      title: 'Service Price',
-      dataIndex: 'servicePrice',
-      key: 'servicePrice',
-      width: 140,
-      render: (_, record) => {
-        // Dùng servicePrice từ backend (đã được tính đúng)
-        const servicePrice = record.servicePrice || 0;
-        
-        return (
-          <span style={{ fontWeight: 500, color: '#1890ff' }}>
-            {servicePrice > 0
-              ? formatPrice(servicePrice, record.currency || 'VND')
-              : 'N/A'}
-          </span>
-        );
-      },
-      sorter: (a, b) => (a.servicePrice || 0) - (b.servicePrice || 0),
-    },
-    {
       title: 'Tổng giá',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
@@ -461,20 +410,11 @@ export default function ServiceRequestManagement() {
             <Button
               type="default"
               size="small"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetail(record)}
-              block
-            >
-              View
-            </Button>
-            <Button
-              type="default"
-              size="small"
               icon={<FileSearchOutlined />}
               onClick={() => handleViewContracts(record)}
               block
             >
-              Contracts
+              Details
             </Button>
           </Space>
         );
@@ -631,20 +571,6 @@ export default function ServiceRequestManagement() {
           </TabPane>
         </Tabs>
       </Card>
-
-      {/* Detail Modal */}
-      <ServiceRequestDetailModal
-        visible={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
-        request={selectedRequest}
-        currentUserId={user?.id}
-        onAssign={requestId => {
-          handleAssign(requestId);
-          setDetailModalVisible(false);
-        }}
-        isAssigning={assigning[selectedRequest?.id]}
-        onCreateContract={handleCreateContract}
-      />
     </div>
   );
 }

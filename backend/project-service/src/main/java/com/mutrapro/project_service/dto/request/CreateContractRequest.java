@@ -48,7 +48,7 @@ public class CreateContractRequest {
     
     BigDecimal additionalRevisionFeeVnd;
     
-    Integer revisionDeadlineDays;  // Default based on contract type (30/45/60 days)
+    Integer revisionDeadlineDays;  // Số ngày SLA để team hoàn thành revision sau khi manager approve (14/21/30 days based on contract type)
     
     // Expiration
     Instant expiresAt;

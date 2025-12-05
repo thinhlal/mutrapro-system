@@ -23,8 +23,11 @@ import {
 import dayjs from 'dayjs';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractsByRequestId } from '../../../services/contractService';
+import { getFilesByRequestId } from '../../../services/fileService';
 import FileList from '../../../components/common/FileList/FileList';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestContracts.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -119,7 +122,10 @@ export default function ServiceRequestContracts() {
   const [contracts, setContracts] = useState([]);
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [loadingContracts, setLoadingContracts] = useState(false);
-
+  const [files, setFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  console.log('files', files);
+  
   const basePath = location.pathname.startsWith('/admin')
     ? '/admin'
     : '/manager';
@@ -142,6 +148,28 @@ export default function ServiceRequestContracts() {
       message.error(error?.message || 'Không thể tải thông tin request');
     } finally {
       setLoadingRequest(false);
+    }
+  };
+
+  const fetchFiles = async () => {
+    if (!requestId) return;
+    try {
+      setLoadingFiles(true);
+      const response = await getFilesByRequestId(requestId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Filter chỉ lấy customer_upload files
+        const customerFiles = response.data.filter(
+          file => file.fileSource === 'customer_upload'
+        );
+        setFiles(customerFiles);
+      } else {
+        setFiles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      setFiles([]);
+    } finally {
+      setLoadingFiles(false);
     }
   };
 
@@ -168,11 +196,13 @@ export default function ServiceRequestContracts() {
   useEffect(() => {
     fetchRequest();
     fetchContracts();
+    fetchFiles();
   }, [requestId]);
 
   const handleRefresh = () => {
     fetchRequest();
     fetchContracts();
+    fetchFiles();
   };
 
   const handleBack = () => {
@@ -424,7 +454,7 @@ export default function ServiceRequestContracts() {
         </Button>
         <div className={styles.headerInfo}>
           <Title level={3} style={{ margin: 0 }}>
-            Contracts cho Request {requestId}
+            Detail Request
           </Title>
           <Text type="secondary">
             {request?.title || 'Đang tải tiêu đề request...'}
@@ -466,39 +496,113 @@ export default function ServiceRequestContracts() {
                     request.requestType ||
                     'N/A'}
                 </Descriptions.Item>
+                
+                {/* Duration và Tempo chỉ cho transcription */}
                 {request.requestType?.toLowerCase() === 'transcription' && (
-                  <Descriptions.Item label="Tempo Reference">
-                    {request.tempoPercentage
-                      ? `${request.tempoPercentage}%`
-                      : 'N/A'}
-                  </Descriptions.Item>
+                  <>
+                    {request.durationMinutes && (
+                      <Descriptions.Item label="Duration">
+                        {request.durationMinutes} phút
+                      </Descriptions.Item>
+                    )}
+                    {request.tempoPercentage && (
+                      <Descriptions.Item label="Tempo Reference">
+                        {request.tempoPercentage}%
+                      </Descriptions.Item>
+                    )}
+                  </>
                 )}
-                {request.requestType?.toLowerCase() === 'arrangement' && (
+
+                {/* Vocalist chỉ cho arrangement_with_recording */}
+                {request.requestType?.toLowerCase() === 'arrangement_with_recording' && (
                   <Descriptions.Item label="Has Vocalist">
                     {request.hasVocalist ? 'Có' : 'Không'}
                   </Descriptions.Item>
                 )}
+
+                {/* External Guests chỉ cho recording */}
                 {request.requestType?.toLowerCase() === 'recording' && (
                   <Descriptions.Item label="External Guests">
                     {request.externalGuestCount ?? 0}
                   </Descriptions.Item>
                 )}
-                <Descriptions.Item label="Manager phụ trách">
-                  {request.managerUserId ? (
-                    <Tag color="blue">{request.managerUserId}</Tag>
-                  ) : (
-                    <Text type="secondary">Chưa có</Text>
-                  )}
-                </Descriptions.Item>
+
+                {/* Genres và Purpose cho arrangement và arrangement_with_recording */}
+                {(request.requestType === 'arrangement' ||
+                  request.requestType === 'arrangement_with_recording') && (
+                  <>
+                    <Descriptions.Item label="Genres">
+                      {request.genres && request.genres.length > 0 ? (
+                        <Space wrap>
+                          {request.genres.map((genre, idx) => (
+                            <Tag key={idx} color="purple">
+                              {getGenreLabel(genre)}
+                            </Tag>
+                          ))}
+                        </Space>
+                      ) : (
+                        <Text type="secondary">Not specified</Text>
+                      )}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Purpose">
+                      {request.purpose ? (
+                        getPurposeLabel(request.purpose)
+                      ) : (
+                        <Text type="secondary">Not specified</Text>
+                      )}
+                    </Descriptions.Item>
+                  </>
+                )}
+
+                {/* Instruments cho tất cả request types có instruments */}
+                {((request.instruments && request.instruments.length > 0) ||
+                  (request.instrumentIds && request.instrumentIds.length > 0)) && (
+                  <Descriptions.Item label="Instruments">
+                    <Space wrap>
+                      {request.instruments && request.instruments.length > 0
+                        ? request.instruments.map((inst, idx) => (
+                            <Tag key={inst.instrumentId || idx} color="purple">
+                              {inst.instrumentName || inst.name || inst}
+                            </Tag>
+                          ))
+                        : request.instrumentIds?.map((id, idx) => (
+                            <Tag key={id || idx} color="purple">
+                              {id}
+                            </Tag>
+                          ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                {/* Pricing Information */}
+                {request.servicePrice && (
+                  <Descriptions.Item label="Service Price">
+                    <Text strong>{formatPrice(request.servicePrice, request.currency || 'VND')}</Text>
+                  </Descriptions.Item>
+                )}
+                {request.instrumentPrice && request.instrumentPrice > 0 && (
+                  <Descriptions.Item label="Instruments Price">
+                    <Text strong>{formatPrice(request.instrumentPrice, request.currency || 'VND')}</Text>
+                  </Descriptions.Item>
+                )}
+                {request.totalPrice && (
+                  <Descriptions.Item label="Total Price">
+                    <Text strong style={{ fontSize: 16, fontWeight: 600 }}>
+                      {formatPrice(request.totalPrice, request.currency || 'VND')}
+                    </Text>
+                  </Descriptions.Item>
+                )}
+
                 <Descriptions.Item label="Ngày tạo">
                   {formatDateTime(request.createdAt)}
                 </Descriptions.Item>
                 <Descriptions.Item label="Cập nhật gần nhất">
                   {formatDateTime(request.updatedAt)}
                 </Descriptions.Item>
-                {request.files && request.files.length > 0 && (
+                {(files.length > 0 || (request.files && request.files.length > 0)) && (
                   <Descriptions.Item label="Uploaded Files">
-                    <FileList files={request.files} />
+                    <Spin spinning={loadingFiles}>
+                      <FileList files={files.length > 0 ? files : (request.files || [])} />
+                    </Spin>
                   </Descriptions.Item>
                 )}
               </Descriptions>

@@ -110,6 +110,34 @@ export default function TranscriptionQuotePageSimplified() {
     fetchPricingData();
   }, [serviceType, formData.durationMinutes]);
 
+  // Tính tổng giá instruments và combine với priceData
+  const finalPriceData = priceData ? (() => {
+    // Tính tổng giá của instruments
+    const instrumentTotal = (formData.instrumentIds || []).reduce((sum, id) => {
+      const inst = instrumentsData.find(i => i.instrumentId === id);
+      return sum + (inst?.basePrice || 0);
+    }, 0);
+
+    // Cộng vào totalPrice từ API
+    const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
+
+    // Tạo breakdown mới với instruments
+    const breakdown = [...(priceData.breakdown || [])];
+    if (instrumentTotal > 0) {
+      breakdown.push({
+        label: 'Instruments',
+        amount: instrumentTotal,
+        description: `${(formData.instrumentIds || []).length} instrument(s)`,
+      });
+    }
+
+    return {
+      ...priceData,
+      totalPrice: finalTotal,
+      breakdown: breakdown,
+    };
+  })() : null;
+
   const handleSubmit = async () => {
     // 1. Validate trước
     if (serviceType === 'transcription') {
@@ -383,7 +411,7 @@ export default function TranscriptionQuotePageSimplified() {
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <Spin tip="Calculating price..." />
                 </div>
-              ) : priceData ? (
+              ) : finalPriceData ? (
                 <Space direction="vertical" style={{ width: '100%' }} size={16}>
                   <Alert
                     message="Estimated Total"
@@ -395,7 +423,7 @@ export default function TranscriptionQuotePageSimplified() {
                           color: '#52c41a',
                         }}
                       >
-                        {formatPrice(priceData.totalPrice, priceData.currency)}
+                        {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
                       </div>
                     }
                     type="success"
@@ -410,26 +438,48 @@ export default function TranscriptionQuotePageSimplified() {
                     <div style={{ marginTop: 8 }}>
                       <Descriptions column={1} size="small">
                         <Descriptions.Item label="Base Rate">
-                          {formatPrice(priceData.basePrice, priceData.currency)}{' '}
+                          {formatPrice(finalPriceData.basePrice, finalPriceData.currency)}{' '}
                           / minute
                         </Descriptions.Item>
                         <Descriptions.Item label="Duration">
                           {formatDurationMMSS(formData.durationMinutes)}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Subtotal">
+                        <Descriptions.Item label="Service Subtotal">
                           {formatPrice(
-                            priceData.totalPrice,
-                            priceData.currency
+                            priceData?.totalPrice || 0,
+                            finalPriceData.currency
                           )}
+                        </Descriptions.Item>
+                        {(formData.instrumentIds || []).length > 0 && (
+                          <Descriptions.Item label="Instruments">
+                            {formatPrice(
+                              (formData.instrumentIds || []).reduce((sum, id) => {
+                                const inst = instrumentsData.find(i => i.instrumentId === id);
+                                return sum + (inst?.basePrice || 0);
+                              }, 0),
+                              finalPriceData.currency
+                            )}
+                            <Text type="secondary" style={{ marginLeft: 8 }}>
+                              ({(formData.instrumentIds || []).length} instrument(s))
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        <Descriptions.Item label="Total">
+                          <Text strong style={{ fontSize: 16, color: '#52c41a' }}>
+                            {formatPrice(
+                              finalPriceData.totalPrice,
+                              finalPriceData.currency
+                            )}
+                          </Text>
                         </Descriptions.Item>
                       </Descriptions>
                     </div>
                   </div>
 
-                  {priceData.notes && (
+                  {finalPriceData.notes && (
                     <Alert
                       message="Note"
-                      description={priceData.notes}
+                      description={finalPriceData.notes}
                       type="info"
                       showIcon
                     />
@@ -453,7 +503,7 @@ export default function TranscriptionQuotePageSimplified() {
             icon={<CheckCircleOutlined />}
             onClick={handleSubmit}
             loading={submitting}
-            disabled={loading || !priceData}
+            disabled={loading || !finalPriceData}
             style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
           >
             Confirm & Submit Request

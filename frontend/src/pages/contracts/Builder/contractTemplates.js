@@ -272,7 +272,7 @@ export const replaceTemplateVariables = (text, formValues) => {
     )
     .replace(
       /\{revision_deadline_days\}/g,
-      formValues?.revision_deadline_days || 30
+      formValues?.revision_deadline_days || 14
     )
     .replace(
       /\{additional_revision_fee_vnd\}/g,

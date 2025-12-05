@@ -47,6 +47,7 @@ import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import { API_CONFIG } from '../../../config/apiConfig';
 import ViewCancellationReasonModal from '../../../components/modal/ViewCancellationReasonModal/ViewCancellationReasonModal';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
@@ -1993,6 +1994,24 @@ const ManagerContractDetailPage = () => {
                         {requestDetails.description}
                       </p>
                     )}
+                    
+                    {/* Arrangement-specific fields */}
+                    {(requestDetails.requestType === 'arrangement' ||
+                      requestDetails.requestType === 'arrangement_with_recording') && (
+                      <>
+                        {requestDetails.genres && requestDetails.genres.length > 0 && (
+                          <p>
+                            <strong>Genres:</strong>{' '}
+                            {requestDetails.genres.map(genre => getGenreLabel(genre)).join(', ')}
+                          </p>
+                        )}
+                        {requestDetails.purpose && (
+                          <p>
+                            <strong>Purpose:</strong> {getPurposeLabel(requestDetails.purpose)}
+                          </p>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
 
@@ -2000,7 +2019,10 @@ const ManagerContractDetailPage = () => {
 
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
-                pricingBreakdown.instruments.length > 0) && (
+                pricingBreakdown.instruments.length > 0 ||
+                (requestDetails?.servicePrice && 
+                 (requestDetails.requestType === 'arrangement' || 
+                  requestDetails.requestType === 'arrangement_with_recording'))) && (
                 <div
                   style={{
                     marginBottom: '16px',
@@ -2084,6 +2106,35 @@ const ManagerContractDetailPage = () => {
                             </td>
                           </tr>
                         )
+                      )}
+
+                      {/* Service Price for Arrangement */}
+                      {requestDetails?.servicePrice && 
+                       (requestDetails.requestType === 'arrangement' || 
+                        requestDetails.requestType === 'arrangement_with_recording') && (
+                        <tr>
+                          <td
+                            style={{
+                              border: '1px solid #000',
+                              padding: '8px',
+                              fontWeight: 'bold',
+                              backgroundColor: '#fff',
+                            }}
+                          >
+                            Arrangement Service
+                          </td>
+                          <td
+                            style={{
+                              border: '1px solid #000',
+                              padding: '8px',
+                              textAlign: 'right',
+                              fontWeight: 'bold',
+                              backgroundColor: '#fff',
+                            }}
+                          >
+                            {Number(requestDetails.servicePrice)?.toLocaleString?.() ?? requestDetails.servicePrice}
+                          </td>
+                        </tr>
                       )}
 
                       {/* Instruments */}

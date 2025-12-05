@@ -97,7 +97,8 @@ public class FileService {
             }
             
             // Nếu không có contract, vẫn cần trả về files customer_upload nếu có
-            // Verify ownership qua file.createdBy === userId
+            // Verify ownership qua file.createdBy === userId (cho customer)
+            // Manager/SYSTEM_ADMIN có thể xem tất cả files (vì đã có quyền vào trang detail request)
             if (contract == null) {
                 // Lấy files customer_upload (chỉ files mà customer đã upload)
                 List<File> files = fileRepository.findByRequestIdAndFileSourceIn(
@@ -105,13 +106,25 @@ public class FileService {
                         List.of(FileSourceType.customer_upload)
                 );
                 
-                // Filter files theo userId (verify ownership via createdBy)
-                List<File> filteredFiles = files.stream()
-                        .filter(file -> file.getCreatedBy() != null && file.getCreatedBy().equals(userId))
-                        .collect(Collectors.toList());
+                // Check nếu là MANAGER hoặc SYSTEM_ADMIN → cho phép xem tất cả files
+                boolean isManagerOrAdmin = userRoles.stream().anyMatch(role -> 
+                    role.equalsIgnoreCase("MANAGER") || role.equalsIgnoreCase("SYSTEM_ADMIN")
+                );
                 
-                log.debug("No contract found for requestId: {}, returning {} customer_upload files (verified via createdBy)", 
-                        requestId, filteredFiles.size());
+                List<File> filteredFiles;
+                if (isManagerOrAdmin) {
+                    // Manager/Admin: trả về tất cả files (vì đã có quyền vào trang detail request)
+                    filteredFiles = files;
+                    log.debug("No contract found for requestId: {}, MANAGER/ADMIN {} returning {} customer_upload files", 
+                            requestId, userId, filteredFiles.size());
+                } else {
+                    // Customer: chỉ trả về files mà customer đã upload (verify ownership via createdBy)
+                    filteredFiles = files.stream()
+                            .filter(file -> file.getCreatedBy() != null && file.getCreatedBy().equals(userId))
+                            .collect(Collectors.toList());
+                    log.debug("No contract found for requestId: {}, CUSTOMER {} returning {} customer_upload files (verified via createdBy)", 
+                            requestId, userId, filteredFiles.size());
+                }
                 
                 return filteredFiles.stream()
                         .map(f -> FileInfoResponse.builder()

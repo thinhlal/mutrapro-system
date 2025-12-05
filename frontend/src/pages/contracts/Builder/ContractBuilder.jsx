@@ -50,6 +50,7 @@ import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
+import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import styles from './ContractBuilder.module.css';
 
 const { Title } = Typography;
@@ -235,14 +236,14 @@ const getDefaultSlaDays = contractType => {
   return 7;
 };
 
-// Get default revision deadline days based on contract type
+// Get default revision SLA days based on contract type (SLA để team hoàn thành revision sau khi manager approve)
 const getDefaultRevisionDeadlineDays = contractType => {
-  if (contractType === 'transcription') return 30;
-  if (contractType === 'arrangement') return 45;
-  if (contractType === 'arrangement_with_recording') return 60;
-  if (contractType === 'recording') return 30;
-  if (contractType === 'bundle') return 60;
-  return 30;
+  if (contractType === 'transcription') return 14;
+  if (contractType === 'arrangement') return 21;
+  if (contractType === 'arrangement_with_recording') return 30;
+  if (contractType === 'recording') return 14;
+  if (contractType === 'bundle') return 30;
+  return 14;
 };
 
 // Get default additional revision fee (VND) - can be modified
@@ -331,7 +332,7 @@ const ContractBuilder = () => {
     const currentFormValues = formValues || form.getFieldsValue();
     const termsParams = {
       freeRevisionsIncluded: currentFormValues.free_revisions_included ?? 1,
-      revisionDeadlineDays: currentFormValues.revision_deadline_days ?? 30,
+      revisionDeadlineDays: currentFormValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
       additionalRevisionFeeVnd:
         currentFormValues.additional_revision_fee_vnd ?? 500000,
       depositPercent: currentFormValues.deposit_percent ?? 40,
@@ -540,7 +541,7 @@ const ContractBuilder = () => {
           const updatedValues = form.getFieldsValue();
           const termsParams = {
             freeRevisionsIncluded: updatedValues.free_revisions_included ?? 1,
-            revisionDeadlineDays: updatedValues.revision_deadline_days ?? 30,
+            revisionDeadlineDays: updatedValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
             additionalRevisionFeeVnd:
               updatedValues.additional_revision_fee_vnd ?? 500000,
             depositPercent: updatedValues.deposit_percent ?? 40,
@@ -700,7 +701,7 @@ const ContractBuilder = () => {
                 ? Number(currentFormValues.additional_revision_fee_vnd)
                 : null,
             revision_deadline_days: Number(
-              currentFormValues.revision_deadline_days || 30
+              currentFormValues.revision_deadline_days || getDefaultRevisionDeadlineDays(currentFormValues.contract_type)
             ),
 
             // Milestones - use from form values or contract
@@ -813,7 +814,7 @@ const ContractBuilder = () => {
     ) {
       const termsParams = {
         freeRevisionsIncluded: formValues.free_revisions_included ?? 1,
-        revisionDeadlineDays: formValues.revision_deadline_days ?? 30,
+        revisionDeadlineDays: formValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
         additionalRevisionFeeVnd:
           formValues.additional_revision_fee_vnd ?? 500000,
         depositPercent: formValues.deposit_percent ?? 40,
@@ -1519,8 +1520,8 @@ const ContractBuilder = () => {
                     name="revision_deadline_days"
                     label={
                       <span>
-                        Revision Deadline Days{' '}
-                        <Tooltip title="Number of days after delivery for which free revisions are eligible (automatically set based on contract type, but can be modified)">
+                        Revision SLA Days{' '}
+                        <Tooltip title="Số ngày SLA để team hoàn thành revision sau khi manager approve (tự động set theo contract type, có thể chỉnh sửa)">
                           <QuestionCircleOutlined
                             style={{ color: '#1890ff', cursor: 'help' }}
                           />
@@ -1533,7 +1534,7 @@ const ContractBuilder = () => {
                           if (value === 0) {
                             return Promise.reject(
                               new Error(
-                                'Warning: Setting revision deadline to 0 means no deadline period for free revisions. Please confirm this is intentional.'
+                                'Warning: Setting revision SLA to 0 means no SLA deadline for completing revisions. Please confirm this is intentional.'
                               )
                             );
                           }
@@ -1549,7 +1550,7 @@ const ContractBuilder = () => {
                           if (value === 0) {
                             return (
                               <Alert
-                                message="Warning: No deadline period for free revisions"
+                                message="Warning: No SLA deadline for completing revisions"
                                 type="warning"
                                 showIcon
                                 style={{ marginTop: 8 }}
@@ -1894,6 +1895,24 @@ const ContractBuilder = () => {
                           {serviceRequest.description}
                         </p>
                       )}
+                      
+                      {/* Arrangement-specific fields */}
+                      {(serviceRequest.requestType === 'arrangement' ||
+                        serviceRequest.requestType === 'arrangement_with_recording') && (
+                        <>
+                          {serviceRequest.genres && serviceRequest.genres.length > 0 && (
+                            <p>
+                              <strong>Genres:</strong>{' '}
+                              {serviceRequest.genres.map(genre => getGenreLabel(genre)).join(', ')}
+                            </p>
+                          )}
+                          {serviceRequest.purpose && (
+                            <p>
+                              <strong>Purpose:</strong> {getPurposeLabel(serviceRequest.purpose)}
+                            </p>
+                          )}
+                        </>
+                      )}
                     </>
                   )}
 
@@ -1901,7 +1920,10 @@ const ContractBuilder = () => {
 
                 {/* Pricing Breakdown */}
                 {(pricingBreakdown.transcriptionDetails ||
-                  pricingBreakdown.instruments.length > 0) && (
+                  pricingBreakdown.instruments.length > 0 ||
+                  (serviceRequest?.servicePrice && 
+                   (serviceRequest.requestType === 'arrangement' || 
+                    serviceRequest.requestType === 'arrangement_with_recording'))) && (
                   <div
                     style={{
                       marginBottom: '16px',
@@ -1988,6 +2010,35 @@ const ContractBuilder = () => {
                               </td>
                             </tr>
                           )
+                        )}
+
+                        {/* Service Price for Arrangement */}
+                        {serviceRequest?.servicePrice && 
+                         (serviceRequest.requestType === 'arrangement' || 
+                          serviceRequest.requestType === 'arrangement_with_recording') && (
+                          <tr>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              Arrangement Service
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                textAlign: 'right',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              {Number(serviceRequest.servicePrice)?.toLocaleString?.() ?? serviceRequest.servicePrice}
+                            </td>
+                          </tr>
                         )}
 
                         {/* Instruments */}

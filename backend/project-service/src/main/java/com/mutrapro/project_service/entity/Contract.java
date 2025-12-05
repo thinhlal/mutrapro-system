@@ -117,7 +117,7 @@ public class Contract extends BaseEntity<String> {
     BigDecimal additionalRevisionFeeVnd;
 
     @Column(name = "revision_deadline_days")
-    Integer revisionDeadlineDays;  // Number of days after delivery for free revisions (30/45/60 based on contract type)
+    Integer revisionDeadlineDays;  // Số ngày SLA để team hoàn thành revision sau khi manager approve (14/21/30 based on contract type)
 
     // Snapshot contact info (for legal purposes)
     @Column(name = "name_snapshot", nullable = false, length = 255)

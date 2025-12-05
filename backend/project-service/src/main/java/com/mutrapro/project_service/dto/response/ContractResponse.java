@@ -76,7 +76,7 @@ public class ContractResponse {
     
     BigDecimal additionalRevisionFeeVnd;
     
-    Integer revisionDeadlineDays;  // Number of days after delivery for free revisions
+    Integer revisionDeadlineDays;  // Số ngày SLA để team hoàn thành revision sau khi manager approve
     
     // Snapshot contact info
     String nameSnapshot;
