@@ -193,7 +193,7 @@ const ContractSignedSuccessPage = () => {
                 style={{ width: '100%' }}
               >
                 <div className={styles.paymentInfo}>
-                  <DollarOutlined className={styles.paymentIcon} />
+                  {/* <DollarOutlined className={styles.paymentIcon} /> */}
                   <div>
                     <Text strong className={styles.paymentLabel}>
                       Deposit Payment Required
