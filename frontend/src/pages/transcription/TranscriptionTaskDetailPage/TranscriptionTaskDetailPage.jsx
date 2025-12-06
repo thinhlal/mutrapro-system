@@ -1456,9 +1456,14 @@ const TranscriptionTaskDetailPage = () => {
                 // Chỉ cho phép báo issue khi task đang in_progress (đang làm việc)
                 // Không cho phép khi đã submit (ready_for_review), đã hoàn thành (completed), 
                 // đang chờ deliver (delivery_pending), hoặc các trạng thái khác
+                // Không cho phép khi có submission đang pending_review
+                const hasPendingReviewSubmission = submissions.some(
+                  sub => sub.status?.toLowerCase() === 'pending_review'
+                );
                 const hasIssueButton =
                   status === 'in_progress' && 
                   !task.hasIssue &&
+                  !hasPendingReviewSubmission &&
                   status !== 'ready_for_review' &&
                   status !== 'delivery_pending' &&
                   status !== 'waiting_customer_review' &&

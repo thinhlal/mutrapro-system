@@ -653,10 +653,15 @@ export default function TaskProgressManagement() {
         }
 
         const now = dayjs();
-        // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+        // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
         const hasFirstSubmission = record.milestone?.firstSubmissionAt;
+        const submissions = taskSubmissionsMap[record.assignmentId] || [];
+        const hasPendingReview = submissions.some(
+          s => s.status?.toLowerCase() === 'pending_review'
+        );
+        const shouldHideDeadlineWarning = hasFirstSubmission || hasPendingReview;
         const isOverdue =
-          !hasFirstSubmission &&
+          !shouldHideDeadlineWarning &&
           actualDeadline &&
           actualDeadline.isBefore(now) &&
           record.status !== 'completed';
@@ -664,7 +669,7 @@ export default function TaskProgressManagement() {
           ? actualDeadline.diff(now, 'day')
           : null;
         const isNearDeadline =
-          !hasFirstSubmission &&
+          !shouldHideDeadlineWarning &&
           diffDays !== null &&
           diffDays <= 3 &&
           diffDays >= 0 &&

@@ -18,12 +18,14 @@ import com.mutrapro.project_service.exception.RevisionRequestNotFoundException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.ValidationException;
+import com.mutrapro.project_service.repository.ContractInstallmentRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.project_service.entity.ContractInstallment;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.shared.event.RevisionRequestedEvent;
 import com.mutrapro.shared.event.RevisionDeliveredEvent;
@@ -44,6 +46,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -58,6 +61,7 @@ public class RevisionRequestService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
+    ContractInstallmentRepository contractInstallmentRepository;
     FileSubmissionRepository fileSubmissionRepository;
     OutboxEventRepository outboxEventRepository;
     ContractService contractService;
@@ -838,31 +842,50 @@ public class RevisionRequestService {
         assignment.setCompletedDate(now);
         taskAssignmentRepository.save(assignment);
         
-        // Update milestone work status: WAITING_CUSTOMER → READY_FOR_PAYMENT
+        // Update milestone work status: WAITING_CUSTOMER → READY_FOR_PAYMENT hoặc COMPLETED
         if (revisionRequest.getMilestoneId() != null && revisionRequest.getContractId() != null) {
             ContractMilestone milestone = contractMilestoneRepository
                     .findByMilestoneIdAndContractId(revisionRequest.getMilestoneId(), revisionRequest.getContractId())
                     .orElse(null);
             if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
-                milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
+                // Kiểm tra xem milestone có payment (installment) không
+                // Nếu không có payment → set COMPLETED luôn
+                // Nếu có payment → set READY_FOR_PAYMENT
+                Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
+                        .findByContractIdAndMilestoneId(revisionRequest.getContractId(), milestone.getMilestoneId());
+                boolean hasPayment = installmentOpt.isPresent();
                 
-                // Track finalCompletedAt: lúc customer chấp nhận bản cuối cùng (sau mọi revision)
-                milestone.setFinalCompletedAt(now);
-                log.info("Tracked final completion time for milestone: milestoneId={}, finalCompletedAt={}", 
-                        milestone.getMilestoneId(), milestone.getFinalCompletedAt());
-                
-                contractMilestoneRepository.save(milestone);
-                log.info("Milestone work status updated to READY_FOR_PAYMENT after customer accepted revision: milestoneId={}, contractId={}", 
-                        milestone.getMilestoneId(), revisionRequest.getContractId());
-                
-                // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
-                try {
-                    contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
-                    log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
-                } catch (Exception e) {
-                    // Log error nhưng không fail transaction
-                    log.error("Failed to open installment for milestone: milestoneId={}, error={}",
-                            milestone.getMilestoneId(), e.getMessage(), e);
+                if (hasPayment) {
+                    milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
+                    milestone.setFinalCompletedAt(now);
+                    contractMilestoneRepository.save(milestone);
+                    log.info("Tracked final completion time for milestone: milestoneId={}, finalCompletedAt={}, workStatus=READY_FOR_PAYMENT", 
+                            milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                    log.info("Milestone work status updated to READY_FOR_PAYMENT after customer accepted revision: milestoneId={}, contractId={}", 
+                            milestone.getMilestoneId(), revisionRequest.getContractId());
+                    
+                    // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
+                    try {
+                        contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
+                        log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
+                    } catch (Exception e) {
+                        // Log error nhưng không fail transaction
+                        log.error("Failed to open installment for milestone: milestoneId={}, error={}",
+                                milestone.getMilestoneId(), e.getMessage(), e);
+                    }
+                } else {
+                    milestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+                    milestone.setFinalCompletedAt(now);
+                    contractMilestoneRepository.save(milestone);
+                    log.info("Tracked final completion time for milestone (no payment): milestoneId={}, finalCompletedAt={}, workStatus=COMPLETED", 
+                            milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                    log.info("Milestone work status updated to COMPLETED after customer accepted revision (no payment): milestoneId={}, contractId={}", 
+                            milestone.getMilestoneId(), revisionRequest.getContractId());
+                    
+                    // Unlock milestone tiếp theo khi milestone này được hoàn thành (không có payment)
+                    if (milestone.getOrderIndex() != null) {
+                        contractService.unlockNextMilestone(revisionRequest.getContractId(), milestone.getOrderIndex());
+                    }
                 }
             }
         }

@@ -400,10 +400,12 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isCompleted =
             record.status?.toLowerCase() === 'completed' ||
             record.status?.toLowerCase() === 'cancelled';
-          // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+          // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc đã pending review manager (ready_for_review) thì không hiện cảnh báo deadline nữa
           const hasFirstSubmission = record?.milestone?.firstSubmissionAt;
+          const isPendingReview = status === 'ready_for_review' || status === 'waiting_customer_review';
+          const shouldHideDeadlineWarning = hasFirstSubmission || isPendingReview;
           const isOverdue =
-            !hasFirstSubmission &&
+            !shouldHideDeadlineWarning &&
             !isCompleted &&
             displayDeadline &&
             displayDeadline.getTime() < now.getTime();
@@ -414,7 +416,7 @@ const MyTasksPage = ({ onOpenTask }) => {
               )
             : null;
           const isNearDeadline =
-            !hasFirstSubmission &&
+            !shouldHideDeadlineWarning &&
             !isOverdue &&
             daysDiff !== null &&
             daysDiff <= 3 &&

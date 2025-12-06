@@ -630,21 +630,42 @@ public class FileSubmissionService {
                             .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
                             .orElse(null);
                     if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_CUSTOMER) {
-                        milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
-                        milestone.setFinalCompletedAt(now);
-                        contractMilestoneRepository.save(milestone);
-                        log.info(
-                                "Tracked final completion time for milestone (first acceptance, no revision): milestoneId={}, finalCompletedAt={}",
-                                milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                        // Kiểm tra xem milestone có payment (installment) không
+                        // Nếu không có payment → set COMPLETED luôn
+                        // Nếu có payment → set READY_FOR_PAYMENT
+                        Optional<ContractInstallment> installmentOpt = contractInstallmentRepository
+                                .findByContractIdAndMilestoneId(assignment.getContractId(), milestone.getMilestoneId());
+                        boolean hasPayment = installmentOpt.isPresent();
                         
-                        // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
-                        try {
-                            contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
-                            log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
-                        } catch (Exception e) {
-                            // Log error nhưng không fail transaction
-                            log.error("Failed to open installment for milestone: milestoneId={}, error={}",
-                                    milestone.getMilestoneId(), e.getMessage(), e);
+                        if (hasPayment) {
+                            milestone.setWorkStatus(MilestoneWorkStatus.READY_FOR_PAYMENT);
+                            milestone.setFinalCompletedAt(now);
+                            contractMilestoneRepository.save(milestone);
+                            log.info(
+                                    "Tracked final completion time for milestone (first acceptance, no revision): milestoneId={}, finalCompletedAt={}, workStatus=READY_FOR_PAYMENT",
+                                    milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                            
+                            // Mở installment DUE cho milestone khi milestone chuyển sang READY_FOR_PAYMENT
+                            try {
+                                contractService.openInstallmentForMilestoneIfReady(milestone.getMilestoneId());
+                                log.info("Opened installment DUE for milestone: milestoneId={}", milestone.getMilestoneId());
+                            } catch (Exception e) {
+                                // Log error nhưng không fail transaction
+                                log.error("Failed to open installment for milestone: milestoneId={}, error={}",
+                                        milestone.getMilestoneId(), e.getMessage(), e);
+                            }
+                        } else {
+                            milestone.setWorkStatus(MilestoneWorkStatus.COMPLETED);
+                            milestone.setFinalCompletedAt(now);
+                            contractMilestoneRepository.save(milestone);
+                            log.info(
+                                    "Tracked final completion time for milestone (first acceptance, no revision, no payment): milestoneId={}, finalCompletedAt={}, workStatus=COMPLETED",
+                                    milestone.getMilestoneId(), milestone.getFinalCompletedAt());
+                            
+                            // Unlock milestone tiếp theo khi milestone này được hoàn thành (không có payment)
+                            if (milestone.getOrderIndex() != null) {
+                                contractService.unlockNextMilestone(assignment.getContractId(), milestone.getOrderIndex());
+                            }
                         }
                     }
                 }

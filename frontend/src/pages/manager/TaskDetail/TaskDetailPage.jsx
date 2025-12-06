@@ -1036,15 +1036,19 @@ const TaskDetailPage = () => {
                     : plannedDaysDiff !== null
                       ? plannedDaysDiff
                       : estimatedDaysDiff;
-                // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) thì không hiện cảnh báo deadline nữa
+                // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
                 const hasFirstSubmission = task.milestone?.firstSubmissionAt;
+                const hasPendingReview = submissions.some(
+                  s => s.status?.toLowerCase() === 'pending_review'
+                );
+                const shouldHideDeadlineWarning = hasFirstSubmission || hasPendingReview;
                 const isOverdue =
-                  !hasFirstSubmission &&
+                  !shouldHideDeadlineWarning &&
                   daysDiff !== null &&
                   daysDiff < 0 &&
                   task.status !== 'completed';
                 const isNearDeadline =
-                  !hasFirstSubmission &&
+                  !shouldHideDeadlineWarning &&
                   daysDiff !== null &&
                   daysDiff <= 3 &&
                   daysDiff >= 0 &&

@@ -1511,28 +1511,7 @@ public class ContractService {
         publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), systemMessage);
         
         // Tự động unlock milestone tiếp theo: Khi milestone N được thanh toán → milestone N+1 READY_TO_START
-        if (orderIndex > 0) {
-            Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
-                .findByContractIdAndOrderIndex(contractId, orderIndex + 1);
-            
-            if (nextMilestoneOpt.isPresent()) {
-                ContractMilestone nextMilestone = nextMilestoneOpt.get();
-                
-                // Milestone tiếp theo chuyển sang READY_TO_START để chờ manager/specialist bắt đầu thực tế
-                if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-                    nextMilestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
-                    contractMilestoneRepository.save(nextMilestone);
-                    log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}", 
-                        contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
-                }
-
-                taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
-                
-                // Nếu milestone tiếp theo đã có task accepted/completed (nhưng chưa có actualStartAt vì milestone trước đó chưa paid),
-                // thì set actualStartAt ngay khi milestone trước đó được thanh toán
-                milestoneProgressService.evaluateActualStart(contractId, nextMilestone.getMilestoneId());
-            }
-        }
+        unlockNextMilestone(contractId, orderIndex);
         
         // Kiểm tra xem tất cả installments đã được thanh toán chưa
         List<ContractInstallment> allInstallments = contractInstallmentRepository
@@ -1849,6 +1828,39 @@ public class ContractService {
             .createdAt(installment.getCreatedAt())
             .updatedAt(installment.getUpdatedAt())
             .build();
+    }
+    
+    /**
+     * Unlock milestone tiếp theo khi milestone hiện tại được hoàn thành (COMPLETED hoặc thanh toán)
+     * 
+     * @param contractId ID của contract
+     * @param currentOrderIndex Order index của milestone hiện tại đã hoàn thành
+     */
+    public void unlockNextMilestone(String contractId, Integer currentOrderIndex) {
+        if (currentOrderIndex == null || currentOrderIndex <= 0) {
+            return;
+        }
+        
+        Optional<ContractMilestone> nextMilestoneOpt = contractMilestoneRepository
+            .findByContractIdAndOrderIndex(contractId, currentOrderIndex + 1);
+        
+        if (nextMilestoneOpt.isPresent()) {
+            ContractMilestone nextMilestone = nextMilestoneOpt.get();
+            
+            // Milestone tiếp theo chuyển sang READY_TO_START để chờ manager/specialist bắt đầu thực tế
+            if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
+                nextMilestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
+                contractMilestoneRepository.save(nextMilestone);
+                log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}", 
+                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+            }
+
+            taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
+            
+            // Nếu milestone tiếp theo đã có task accepted/completed (nhưng chưa có actualStartAt vì milestone trước đó chưa completed),
+            // thì set actualStartAt ngay khi milestone trước đó được hoàn thành
+            milestoneProgressService.evaluateActualStart(contractId, nextMilestone.getMilestoneId());
+        }
     }
     
     /**
