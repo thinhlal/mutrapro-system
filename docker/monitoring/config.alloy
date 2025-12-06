@@ -1,0 +1,78 @@
+// Gửi metrics lên Grafana Cloud Hosted Prometheus
+prometheus.remote_write "metrics_hosted_prometheus" {
+   endpoint {
+      name = "hosted-prometheus"
+      url  = "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
+  
+      basic_auth {
+        username = "2845931"
+        password = "glc_eyJvIjoiMTYwOTkwNiIsIm4iOiJzdGFjay0xNDYwODQ5LWFsbG95LW11dHJhcHJvLWFsbG95LW1ldHJpY3MiLCJrIjoiN0FMNjFsdWdWem9ROEIwODQ2OTFrV1dxIiwibSI6eyJyIjoicHJvZC1hcC1zb3V0aGVhc3QtMSJ9fQ=="
+      }
+   }
+}
+
+// Scrape metrics từ các service Spring Boot trong Docker network mutrapro-network
+// API Gateway
+prometheus.scrape "api_gateway" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "api-gateway:8080", "job" = "api-gateway"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Identity Service
+prometheus.scrape "identity_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "identity-service:8081", "job" = "identity-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Project Service
+prometheus.scrape "project_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "project-service:8082", "job" = "project-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Billing Service
+prometheus.scrape "billing_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "billing-service:8083", "job" = "billing-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Request Service
+prometheus.scrape "request_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "request-service:8084", "job" = "request-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Notification Service
+prometheus.scrape "notification_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "notification-service:8085", "job" = "notification-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Specialist Service
+prometheus.scrape "specialist_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "specialist-service:8086", "job" = "specialist-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// Chat Service
+prometheus.scrape "chat_service" {
+  scrape_interval = "15s"
+  metrics_path    = "/actuator/prometheus"
+  targets         = [{"__address__" = "chat-service:8088", "job" = "chat-service"}]
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+

@@ -420,6 +420,18 @@ services:
       timeout: 10s
       retries: 3
 
+  # Grafana Alloy - Metrics collection và gửi lên Grafana Cloud Hosted Prometheus
+  grafana-alloy:
+    image: grafana/alloy:latest
+    container_name: mutrapro-grafana-alloy
+    command: ["run", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./docker/monitoring/config.alloy:/etc/alloy/config.alloy:ro
+    networks:
+      - mutrapro-network
+    restart: unless-stopped
+    # Không expose port ra ngoài, chỉ chạy internal
+
 networks:
   mutrapro-network:
     driver: bridge

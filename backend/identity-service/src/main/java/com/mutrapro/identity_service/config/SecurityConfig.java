@@ -32,6 +32,7 @@ public class SecurityConfig {
             "/health",
             "/health/**",
             "/actuator/health",
+            "/actuator/prometheus",  // Metrics endpoint for Prometheus scraping
             // Swagger UI endpoints
             "/v3/api-docs/**",
             "/swagger-ui/**",
