@@ -1,15 +1,20 @@
 package com.mutrapro.billing_service.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.billing_service.dto.request.CreateSePayOrderRequest;
 import com.mutrapro.billing_service.dto.request.SePayCallbackRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
+import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.PaymentOrder;
 import com.mutrapro.billing_service.entity.Wallet;
 import com.mutrapro.billing_service.enums.CurrencyType;
 import com.mutrapro.billing_service.enums.PaymentOrderStatus;
+import com.mutrapro.billing_service.repository.OutboxEventRepository;
 import com.mutrapro.billing_service.repository.PaymentOrderRepository;
 import com.mutrapro.billing_service.repository.WalletRepository;
+import com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -37,7 +42,7 @@ public class SePayService {
     final WalletRepository walletRepository;
     final WalletService walletService;
     final ObjectMapper objectMapper;
-    final com.mutrapro.billing_service.repository.OutboxEventRepository outboxEventRepository;
+    final OutboxEventRepository outboxEventRepository;
 
     @Value("${sepay.api.key:}")
     String sepayApiKey;
@@ -273,8 +278,8 @@ public class SePayService {
      */
     private void publishPaymentCompletedNotification(PaymentOrder paymentOrder, LocalDateTime completedAt) {
         try {
-            com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent event = 
-                    com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent.builder()
+            PaymentOrderCompletedNotificationEvent event = 
+                    PaymentOrderCompletedNotificationEvent.builder()
                             .eventId(UUID.randomUUID())
                             .paymentOrderId(paymentOrder.getPaymentOrderId())
                             .walletId(paymentOrder.getWallet().getWalletId())
@@ -293,7 +298,7 @@ public class SePayService {
                             .timestamp(LocalDateTime.now())
                             .build();
             
-            com.fasterxml.jackson.databind.JsonNode payload = objectMapper.valueToTree(event);
+            JsonNode payload = objectMapper.valueToTree(event);
             UUID aggregateId;
             try {
                 aggregateId = UUID.fromString(paymentOrder.getPaymentOrderId());
@@ -301,8 +306,8 @@ public class SePayService {
                 aggregateId = UUID.randomUUID();
             }
             
-            com.mutrapro.billing_service.entity.OutboxEvent outboxEvent = 
-                    com.mutrapro.billing_service.entity.OutboxEvent.builder()
+            OutboxEvent outboxEvent = 
+                    OutboxEvent.builder()
                             .aggregateId(aggregateId)
                             .aggregateType("PaymentOrder")
                             .eventType("payment.order.completed.notification")

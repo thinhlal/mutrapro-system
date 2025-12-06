@@ -28,6 +28,7 @@ public enum NotificationType {
     REVISION_REQUEST_APPROVED,  // Manager đã duyệt revision request, specialist bắt đầu làm
     REVISION_REQUEST_REJECTED,   // Manager từ chối yêu cầu revision
     REVISION_FEE_REFUNDED,       // Revision fee đã được refund vào wallet
+    PAYMENT_ORDER_COMPLETED,     // Payment order đã được thanh toán thành công (topup)
     SYSTEM_ANNOUNCEMENT         // Thông báo hệ thống
 }
 
