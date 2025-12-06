@@ -27,10 +27,12 @@ import {
 import Header from '../../../components/common/Header/Header';
 import styles from './PayDepositPage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const PayDepositPage = () => {
+  useDocumentTitle('Pay Deposit');
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);

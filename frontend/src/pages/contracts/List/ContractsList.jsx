@@ -35,6 +35,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
+import { useDocumentTitle } from '../../../hooks';
 
 // ===== Enums (phù hợp với ContractBuilder) =====
 const CONTRACT_TYPES = [
@@ -185,6 +186,8 @@ const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
 export default function ContractsList() {
+  useDocumentTitle('My Contracts');
+  
   const [search, setSearch] = useState('');
   const [type, setType] = useState();
   const [status, setStatus] = useState();

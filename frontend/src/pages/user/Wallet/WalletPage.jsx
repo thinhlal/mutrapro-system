@@ -43,6 +43,7 @@ import {
 } from '../../../services/contractService';
 import Header from '../../../components/common/Header/Header';
 import WalletPageStyles from './WalletPage.module.css';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -1017,6 +1018,8 @@ const WalletContent = () => {
 };
 
 const WalletPage = () => {
+  useDocumentTitle('Wallet');
+  
   return (
     <>
       <Header />

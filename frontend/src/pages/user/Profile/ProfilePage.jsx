@@ -11,10 +11,12 @@ import ProfileLayout from '../../../layouts/ProfileLayout/ProfileLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUserStore } from '../../../stores/useUserStore';
 import * as authService from '../../../services/authService';
+import { useDocumentTitle } from '../../../hooks';
 
 const { TextArea } = Input;
 
 const ProfileContent = () => {
+  useDocumentTitle('Profile');
   const { user: authUser } = useAuth();
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');

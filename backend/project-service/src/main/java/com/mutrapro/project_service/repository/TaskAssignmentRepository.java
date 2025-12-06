@@ -29,6 +29,20 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Find all task assignments by contract ID and milestone ID
     List<TaskAssignment> findByContractIdAndMilestoneId(String contractId, String milestoneId);
 
+    // Find cancelled task assignments by contract ID and milestone ID
+    List<TaskAssignment> findByContractIdAndMilestoneIdAndStatus(String contractId, String milestoneId, AssignmentStatus status);
+
+    // Find distinct specialist IDs who cancelled task for milestone
+    @Query("SELECT DISTINCT ta.specialistId FROM TaskAssignment ta " +
+           "WHERE ta.contractId = :contractId " +
+           "AND ta.milestoneId = :milestoneId " +
+           "AND ta.status = :status")
+    List<String> findDistinctSpecialistIdsByContractIdAndMilestoneIdAndStatus(
+        @Param("contractId") String contractId,
+        @Param("milestoneId") String milestoneId,
+        @Param("status") AssignmentStatus status
+    );
+
     // Find all task assignments by specialist ID
     List<TaskAssignment> findBySpecialistId(String specialistId);
 

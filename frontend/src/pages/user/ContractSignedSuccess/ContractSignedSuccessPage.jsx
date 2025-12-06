@@ -21,10 +21,12 @@ import { getContractById } from '../../../services/contractService';
 import Header from '../../../components/common/Header/Header';
 import styles from './ContractSignedSuccessPage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const ContractSignedSuccessPage = () => {
+  useDocumentTitle('Contract Signed');
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);

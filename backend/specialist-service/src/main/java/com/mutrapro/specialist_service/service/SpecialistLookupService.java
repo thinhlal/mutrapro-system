@@ -9,6 +9,7 @@ import com.mutrapro.specialist_service.client.ProjectServiceFeignClient;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
+import com.mutrapro.shared.dto.TaskStatsResponse;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,12 +61,28 @@ public class SpecialistLookupService {
         }
         List<SpecialistResponse> responses = specialistMapper.toSpecialistResponseList(specialists);
 
-        Map<String, SpecialistTaskStats> statsBySpecialist = fetchTaskStats(
+        // Fetch task stats và cancelled specialist IDs trong 1 API call
+        TaskStatsResponse statsResponse = fetchTaskStats(
             responses.stream().map(SpecialistResponse::getSpecialistId).collect(Collectors.toList()),
             milestoneId,
             contractId
         );
 
+        // Nếu có cancelled specialist IDs, loại bỏ chúng khỏi danh sách
+        if (statsResponse != null && statsResponse.getCancelledSpecialistIds() != null 
+            && !statsResponse.getCancelledSpecialistIds().isEmpty()) {
+            responses = responses.stream()
+                .filter(response -> !statsResponse.getCancelledSpecialistIds().contains(response.getSpecialistId()))
+                .collect(Collectors.toList());
+            log.debug("Filtered out {} cancelled specialists for milestone: milestoneId={}, contractId={}", 
+                statsResponse.getCancelledSpecialistIds().size(), milestoneId, contractId);
+        }
+
+        // Set stats cho từng specialist
+        Map<String, SpecialistTaskStats> statsBySpecialist = 
+            statsResponse != null && statsResponse.getStatsBySpecialist() != null 
+                ? statsResponse.getStatsBySpecialist() 
+                : new java.util.HashMap<>();
         responses.forEach(response -> {
             SpecialistTaskStats stats = statsBySpecialist.get(response.getSpecialistId());
             response.setTotalOpenTasks(stats != null ? stats.getTotalOpenTasks() : 0);
@@ -118,14 +135,17 @@ public class SpecialistLookupService {
 
 
     /**
-     * Fetch task stats từ project-service
+     * Fetch task stats và cancelled specialist IDs từ project-service trong 1 API call
      */
-    private Map<String, SpecialistTaskStats> fetchTaskStats(
+    private TaskStatsResponse fetchTaskStats(
             List<String> specialistIds,
             String milestoneId,
             String contractId) {
         if (specialistIds == null || specialistIds.isEmpty()) {
-            return new HashMap<>();
+            return TaskStatsResponse.builder()
+                .statsBySpecialist(new HashMap<>())
+                .cancelledSpecialistIds(List.of())
+                .build();
         }
 
         try {
@@ -135,7 +155,7 @@ public class SpecialistLookupService {
                 .milestoneId(milestoneId)
                 .build();
 
-            ApiResponse<Map<String, SpecialistTaskStats>> response =
+            ApiResponse<com.mutrapro.shared.dto.TaskStatsResponse> response =
                 projectServiceFeignClient.getTaskStats(request);
 
             if (response != null && "success".equalsIgnoreCase(response.getStatus())
@@ -147,7 +167,10 @@ public class SpecialistLookupService {
                 specialistIds.size(), ex.getMessage());
         }
 
-        return new HashMap<>();
+        return TaskStatsResponse.builder()
+            .statsBySpecialist(new HashMap<>())
+            .cancelledSpecialistIds(List.of())
+            .build();
     }
 
 
@@ -158,8 +181,10 @@ public class SpecialistLookupService {
         Specialist specialist = specialistRepository.findById(specialistId)
             .orElseThrow(() -> SpecialistNotFoundException.byId(specialistId));
         SpecialistResponse response = specialistMapper.toSpecialistResponse(specialist);
-        Map<String, SpecialistTaskStats> stats = fetchTaskStats(List.of(specialistId), null, null);
-        SpecialistTaskStats stat = stats.get(specialistId);
+        TaskStatsResponse statsResponse = fetchTaskStats(List.of(specialistId), null, null);
+        SpecialistTaskStats stat = statsResponse != null && statsResponse.getStatsBySpecialist() != null
+            ? statsResponse.getStatsBySpecialist().get(specialistId) 
+            : null;
         response.setTotalOpenTasks(stat != null ? stat.getTotalOpenTasks() : 0);
         response.setTasksInSlaWindow(stat != null ? stat.getTasksInSlaWindow() : 0);
         

@@ -25,6 +25,7 @@ import { getMyRequests } from '../../../services/serviceRequestService';
 import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import { formatPrice } from '../../../services/pricingMatrixService';
 import { Space } from 'antd';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Option } = Select;
 
@@ -471,6 +472,8 @@ const MyRequestsContent = () => {
 };
 
 const MyRequestsPage = () => {
+  useDocumentTitle('My Requests');
+  
   return (
     <>
       <Header />

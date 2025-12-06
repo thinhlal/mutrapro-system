@@ -21,10 +21,12 @@ import { getOrCreateMyWallet } from '../../../services/walletService';
 import Header from '../../../components/common/Header/Header';
 import styles from './PaymentSuccessPage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const PaymentSuccessPage = () => {
+  useDocumentTitle('Payment Success');
   const { orderId } = useParams();
   const navigate = useNavigate();
   

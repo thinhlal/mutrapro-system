@@ -8,8 +8,9 @@ import com.mutrapro.project_service.service.TaskAssignmentService;
 import jakarta.validation.Valid;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.PageResponse;
-import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
+import com.mutrapro.shared.dto.TaskStatsResponse;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -255,15 +256,15 @@ public class TaskAssignmentController {
 
     @PostMapping("/stats")
     @PreAuthorize("hasAnyRole('MANAGER','SYSTEM_ADMIN')")
-    @Operation(summary = "Lấy thống kê task (totalOpenTasks, tasksInSlaWindow) cho nhiều specialists cùng lúc")
-    public ApiResponse<Map<String, SpecialistTaskStats>> getTaskStats(
+    @Operation(summary = "Lấy thống kê task (totalOpenTasks, tasksInSlaWindow) cho nhiều specialists cùng lúc, và danh sách specialist đã cancelled task cho milestone")
+    public ApiResponse<TaskStatsResponse> getTaskStats(
             @Valid @RequestBody TaskStatsRequest request) {
         log.info("Getting task stats for {} specialists", request != null && request.getSpecialistIds() != null
             ? request.getSpecialistIds().size() : 0);
-        Map<String, SpecialistTaskStats> stats = taskAssignmentService.getTaskStats(request);
-        return ApiResponse.<Map<String, SpecialistTaskStats>>builder()
+        TaskStatsResponse response = taskAssignmentService.getTaskStats(request);
+        return ApiResponse.<TaskStatsResponse>builder()
                 .message("Task stats retrieved successfully")
-                .data(stats)
+                .data(response)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

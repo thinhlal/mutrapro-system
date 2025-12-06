@@ -29,10 +29,12 @@ import { getItem } from '../../../services/localStorageService';
 import Header from '../../../components/common/Header/Header';
 import styles from './TopupPaymentPage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const TopupPaymentPage = () => {
+  useDocumentTitle('Top-up Wallet');
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

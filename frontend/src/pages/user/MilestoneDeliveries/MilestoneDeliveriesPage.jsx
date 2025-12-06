@@ -39,6 +39,7 @@ import axiosInstance from '../../../utils/axiosInstance';
 import Header from '../../../components/common/Header/Header';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './MilestoneDeliveriesPage.module.css';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -58,6 +59,7 @@ const SUBMISSION_STATUS_LABELS = {
 };
 
 const MilestoneDeliveriesPage = () => {
+  useDocumentTitle('Milestone Deliveries');
   const { contractId, milestoneId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();

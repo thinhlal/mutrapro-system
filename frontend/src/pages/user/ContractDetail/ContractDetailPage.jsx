@@ -67,6 +67,7 @@ import OTPVerificationModal from '../../../components/modal/OTPVerificationModal
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './ContractDetailPage.module.css';
 import Header from '../../../components/common/Header/Header';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
@@ -106,6 +107,7 @@ const getContractTitle = contractType => {
 };
 
 const ContractDetailPage = () => {
+  useDocumentTitle('Contract Details');
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();

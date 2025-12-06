@@ -1,4 +1,5 @@
 // src/pages/HomePage/HomePage.jsx
+import { useDocumentTitle } from '../../../hooks';
 import Header from '../../../components/common/Header/Header';
 import HeroSection from './components/HeroSection/HeroSection';
 import HowItWorks from './components/HowItWorksSection/HowItWorks';
@@ -13,6 +14,8 @@ import Footer from '../../../components/common/Footer/Footer';
 import BackToTop from '../../../components/common/BackToTop/BackToTop';
 
 const HomePage = () => {
+  useDocumentTitle('Home');
+  
   return (
     <div className={styles.pageContainer}>
       {/* Header */}

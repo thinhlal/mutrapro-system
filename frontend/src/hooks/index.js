@@ -3,3 +3,4 @@
 
 export { default as useScrollActiveIndex } from './useScrollActiveIndex';
 export { default as useClientSide } from './useClientSide';
+export { default as useDocumentTitle } from './useDocumentTitle';

@@ -29,10 +29,12 @@ import {
 import Header from '../../../components/common/Header/Header';
 import styles from './PayRevisionFeePage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const PayRevisionFeePage = () => {
+  useDocumentTitle('Pay Revision Fee');
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();

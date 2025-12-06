@@ -25,6 +25,7 @@ import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
+import com.mutrapro.shared.dto.TaskStatsResponse;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
@@ -231,10 +232,14 @@ public class TaskAssignmentService {
 
     /**
      * Tính thống kê task (totalOpenTasks, tasksInSlaWindow) cho nhiều specialists cùng lúc
+     * Đồng thời trả về danh sách specialist IDs đã cancelled task cho milestone (nếu có milestoneId)
      */
-    public Map<String, SpecialistTaskStats> getTaskStats(TaskStatsRequest request) {
+    public TaskStatsResponse getTaskStats(TaskStatsRequest request) {
         if (request == null || request.getSpecialistIds() == null || request.getSpecialistIds().isEmpty()) {
-            return new HashMap<>();
+            return TaskStatsResponse.builder()
+                .statsBySpecialist(new HashMap<>())
+                .cancelledSpecialistIds(List.of())
+                .build();
         }
 
         List<String> specialistIds = request.getSpecialistIds().stream()
@@ -245,7 +250,10 @@ public class TaskAssignmentService {
             .toList();
 
         if (specialistIds.isEmpty()) {
-            return new HashMap<>();
+            return TaskStatsResponse.builder()
+                .statsBySpecialist(new HashMap<>())
+                .cancelledSpecialistIds(List.of())
+                .build();
         }
 
         // Tính SLA window start (chung cho tất cả specialists)
@@ -312,7 +320,22 @@ public class TaskAssignmentService {
                 .build()
         ));
 
-        return result;
+        // Nếu có milestoneId và contractId, lấy danh sách specialist đã cancelled task cho milestone này
+        List<String> cancelledSpecialistIds = List.of();
+        if (request.getMilestoneId() != null && !request.getMilestoneId().isBlank()
+            && request.getContractId() != null && !request.getContractId().isBlank()) {
+            cancelledSpecialistIds = taskAssignmentRepository
+                .findDistinctSpecialistIdsByContractIdAndMilestoneIdAndStatus(
+                    request.getContractId(), 
+                    request.getMilestoneId(), 
+                    AssignmentStatus.cancelled
+                );
+        }
+
+        return TaskStatsResponse.builder()
+            .statsBySpecialist(result)
+            .cancelledSpecialistIds(cancelledSpecialistIds)
+            .build();
     }
 
     private boolean isOpenStatus(AssignmentStatus status) {

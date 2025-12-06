@@ -39,10 +39,12 @@ import RequestContractList from '../../../components/contract/RequestContractLis
 import FileList from '../../../components/common/FileList/FileList';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import styles from './RequestDetailPage.module.css';
+import { useDocumentTitle } from '../../../hooks';
 
 const { TextArea } = Input;
 
 const RequestDetailPage = () => {
+  useDocumentTitle('Request Details');
   const { requestId } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);

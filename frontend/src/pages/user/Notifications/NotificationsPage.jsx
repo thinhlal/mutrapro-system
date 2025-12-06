@@ -26,6 +26,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import styles from './NotificationsPage.module.css';
+import { useDocumentTitle } from '../../../hooks';
 
 // Configure dayjs
 dayjs.extend(relativeTime);
@@ -38,6 +39,7 @@ const { Title, Text } = Typography;
  * Hiển thị danh sách tất cả notifications với pagination
  */
 const NotificationsPage = () => {
+  useDocumentTitle('Notifications');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [notifications, setNotifications] = useState([]);

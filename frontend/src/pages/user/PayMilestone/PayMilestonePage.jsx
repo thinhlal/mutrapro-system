@@ -29,10 +29,12 @@ import {
 import Header from '../../../components/common/Header/Header';
 import styles from './PayMilestonePage.module.css';
 import dayjs from 'dayjs';
+import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
 
 const PayMilestonePage = () => {
+  useDocumentTitle('Pay Milestone');
   const { contractId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
