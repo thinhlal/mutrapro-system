@@ -484,7 +484,7 @@ const WalletContent = () => {
 
       <Row gutter={[24, 24]}>
         {/* Left Column: Balance & Statistics */}
-        <Col xs={24} lg={4}>
+        <Col xs={24} lg={5}>
           {/* Wallet Balance Card */}
           <Card className={WalletPageStyles.walletCard} loading={loading}>
             <div className={WalletPageStyles.balanceSection}>
@@ -499,9 +499,9 @@ const WalletContent = () => {
                   )}
                 </Text>
               </div>
-              <Tag className={WalletPageStyles.currencyTag}>
+              {/* <Tag className={WalletPageStyles.currencyTag}>
                 {wallet?.currency || 'VND'}
-              </Tag>
+              </Tag> */}
             </div>
 
             <Space
@@ -565,7 +565,7 @@ const WalletContent = () => {
         </Col>
 
         {/* Right Column: Transaction History */}
-        <Col xs={24} lg={20}>
+        <Col xs={24} lg={19}>
           <Card
             title={
               <Space>

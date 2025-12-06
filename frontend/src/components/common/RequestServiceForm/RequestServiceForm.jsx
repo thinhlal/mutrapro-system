@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState, useRef } from 'react';
-import { Form, Input, Tag, InputNumber, Button, Space, Select } from 'antd';
+import { Form, Input, Tag, InputNumber, Button, Space, Select, Row, Col } from 'antd';
 import { SelectOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
@@ -279,26 +279,31 @@ export default function RequestServiceForm({
             />
           </Form.Item>
 
-          <Form.Item
-            label="Contact Name"
-            name="contactName"
-            rules={[requiredMsg]}
-          >
-            <Input size="large" placeholder="Your full name" />
-          </Form.Item>
-
-          <Form.Item
-            label="Contact Email"
-            name="contactEmail"
-            rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
-          >
-            <Input
-              size="large"
-              placeholder="you@example.com"
-              readOnly
-              disabled
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col xs={24} sm={24} md={12}>
+              <Form.Item
+                label="Contact Name"
+                name="contactName"
+                rules={[requiredMsg]}
+              >
+                <Input size="large" placeholder="Your full name" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={24} md={12}>
+              <Form.Item
+                label="Contact Email"
+                name="contactEmail"
+                rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
+              >
+                <Input
+                  size="large"
+                  placeholder="you@example.com"
+                  readOnly
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             label="Contact Phone"
@@ -378,23 +383,34 @@ export default function RequestServiceForm({
               }
               required
             >
-              <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                <Button
-                  type="primary"
-                  icon={<SelectOutlined />}
-                  onClick={() => setInstrumentModalVisible(true)}
-                  size="large"
-                  block
-                  loading={instrumentsLoading}
-                >
-                  {selectedInstruments.length > 0
-                    ? `${selectedInstruments.length} instrument(s) selected`
-                    : 'Select Instruments'}
-                </Button>
-
+              <Row gutter={16} align="middle">
+                <Col xs={24} sm={24} md={12}>
+                  <Button
+                    type="primary"
+                    icon={<SelectOutlined />}
+                    onClick={() => setInstrumentModalVisible(true)}
+                    size="large"
+                    block
+                    loading={instrumentsLoading}
+                  >
+                    {selectedInstruments.length > 0
+                      ? `${selectedInstruments.length} instrument(s) selected`
+                      : 'Select Instruments'}
+                  </Button>
+                </Col>
                 {selectedInstruments.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <Space wrap>
+                  <Col xs={24} sm={24} md={12}>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        textAlign: "center",
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                      }}
+                    >
                       {selectedInstruments.map(id => {
                         const inst = instrumentsData.find(
                           i => i.instrumentId === id
@@ -403,16 +419,27 @@ export default function RequestServiceForm({
                           <Tag
                             key={id}
                             color="blue"
-                            style={{ fontSize: 14, padding: '4px 12px' }}
+                            style={{
+                              fontSize: 14,
+                              padding: '4px 12px',
+                              height: '40px',
+                              width: '100%',
+                              display: 'flex',
+                              textAlign: "center",
+                              justifyContent: "center",
+                              alignItems: 'center',
+                              margin: 0,
+                              lineHeight: '32px',
+                            }}
                           >
                             {inst.instrumentName}
                           </Tag>
                         ) : null;
                       })}
-                    </Space>
-                  </div>
+                    </div>
+                  </Col>
                 )}
-              </Space>
+              </Row>
             </Form.Item>
           )}
         </Form>
