@@ -267,7 +267,11 @@ html {
   max-width: 1440px;
   margin: 60px auto 40px;
   padding: 0 var(--pad-x);
-  align-items: start;
+  align-items: stretch;
+}
+
+.contentGrid > * {
+  height: 100%;
 }
 
 /* Responsive: mobile stack lại */

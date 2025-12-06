@@ -1,7 +1,7 @@
 /* Manager Chat Page - Embedded in ManagerLayout */
 .managerChatPage {
-  width: 100%;
-  height: calc(100vh - 64px - 32px);
+  /* width: 100%; */
+  height: calc(100vh - 34px - 32px);
   margin: -16px;
   display: flex;
   flex-direction: column;

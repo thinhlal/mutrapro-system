@@ -1,6 +1,7 @@
 .wrapper {
   display: flex;
   justify-content: center;
+  align-items: stretch;
   margin: 0;
   scroll-margin-top: 150px;
   z-index: 0;
@@ -77,6 +78,8 @@
 .dragger :global(.ant-upload-drag) {
   position: static;
   z-index: auto;
+  min-height: 270px;
+  padding: 57px 20px;
 }
 
 .actionRow {

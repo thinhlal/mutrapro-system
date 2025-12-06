@@ -78,7 +78,7 @@
 }
 
 .chatPopup.maximized {
-  width: 400px;
+  width: 450px;
   height: 650px;
   animation: slideUp 0.3s ease-out;
 }
@@ -145,7 +145,7 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  border: 2px solid white;
+  /* border: 2px solid white; */
   border-radius: 50%;
 }
 
@@ -372,7 +372,7 @@
   position: absolute;
   bottom: 2px;
   right: 2px;
-  border: 2px solid white;
+  /* border: 2px solid white; */
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

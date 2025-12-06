@@ -347,48 +347,147 @@ const RequestDetailPage = () => {
 
           <Divider />
 
-          <Descriptions bordered column={1} size="middle">
+          {/* Phần đầu: 2 cột - 6 mục trái, 6 mục phải */}
+          <Descriptions bordered column={2} size="middle">
+            {/* Cột trái - 6 mục đầu tiên */}
             <Descriptions.Item label="Request ID">
               <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
                 {request.requestId}
               </span>
             </Descriptions.Item>
 
+            {/* Cột phải - Duration */}
+            {request.requestType === 'transcription' && request.durationMinutes ? (
+              <Descriptions.Item label="Duration">
+                
+                  {formatDurationMMSS(request.durationMinutes)}
+                
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Duration">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
+            )}
+
             <Descriptions.Item label="Title">
               {request.title || 'N/A'}
             </Descriptions.Item>
+
+            {/* Cột phải - Tempo */}
+            {request.tempoPercentage && request.requestType === 'transcription' ? (
+              <Descriptions.Item label="Tempo">
+                <Tag>{request.tempoPercentage}%</Tag>
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Tempo">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
+            )}
 
             <Descriptions.Item label="Description">
               {request.description || 'No description'}
             </Descriptions.Item>
 
+            {/* Cột phải - Instruments */}
+            {((request.instruments && request.instruments.length > 0) ||
+              (request.instrumentIds && request.instrumentIds.length > 0)) ? (
+              <Descriptions.Item label="Instruments">
+                <Space wrap>
+                  {request.instruments && request.instruments.length > 0
+                    ? request.instruments.map((inst, idx) => (
+                        <Tag
+                          key={inst.instrumentId || idx}
+                         
+                        >
+                          {inst.instrumentName || inst.name || inst}
+                        </Tag>
+                      ))
+                    : request.instrumentIds.map(id => {
+                        const inst = instrumentsData.find(
+                          i => i.instrumentId === id
+                        );
+                        return inst ? (
+                          <Tag key={id} color="purple">
+                            {inst.instrumentName}
+                          </Tag>
+                        ) : (
+                          <Tag key={id} color="default">
+                            {id}
+                          </Tag>
+                        );
+                      })}
+                </Space>
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Instruments">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
+            )}
+
             <Descriptions.Item label="Contact Name">
               {request.contactName || 'N/A'}
             </Descriptions.Item>
+
+            {/* Cột phải - Service Price */}
+            {request.servicePrice ? (
+              <Descriptions.Item label="Service Price">
+                
+                  {formatPrice(
+                    request.servicePrice,
+                    request.currency || 'VND'
+                  )}
+               
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Service Price">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
+            )}
 
             <Descriptions.Item label="Contact Email">
               {request.contactEmail || 'N/A'}
             </Descriptions.Item>
 
+            {/* Cột phải - Instruments Price */}
+            {request.instrumentPrice && request.instrumentPrice > 0 ? (
+              <Descriptions.Item label="Instruments Price">
+               
+                  {formatPrice(
+                    request.instrumentPrice,
+                    request.currency || 'VND'
+                  )}
+                
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Instruments Price">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
+            )}
+
             <Descriptions.Item label="Phone Number">
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
-            {request.requestType === 'transcription' && request.durationMinutes && (
-              <Descriptions.Item label="Duration">
+            {/* Cột phải - Total Price */}
+            {request.totalPrice ? (
+              <Descriptions.Item label="Total Price">
                 <Tag color="green">
-                  {formatDurationMMSS(request.durationMinutes)}
+                  {formatPrice(
+                    request.totalPrice,
+                    request.currency || 'VND'
+                  )}
                 </Tag>
               </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Total Price">
+                <span style={{ color: '#999' }}>N/A</span>
+              </Descriptions.Item>
             )}
+          </Descriptions>
 
-            {request.tempoPercentage &&
-              request.requestType === 'transcription' && (
-                <Descriptions.Item label="Tempo">
-                  <Tag>{request.tempoPercentage}%</Tag>
-                </Descriptions.Item>
-              )}
-
+          {/* Phần sau: 1 cột - các mục còn lại */}
+          <Descriptions bordered column={1} size="middle" style={{ marginTop: 16 }}>
+            {/* Các mục có điều kiện cho arrangement/recording */}
             {request.hasVocalist !== undefined &&
               request.requestType === 'arrangement_with_recording' && (
                 <Descriptions.Item label="Vocalist">
@@ -437,37 +536,6 @@ const RequestDetailPage = () => {
                 </>
               )}
 
-            {((request.instruments && request.instruments.length > 0) ||
-              (request.instrumentIds && request.instrumentIds.length > 0)) && (
-              <Descriptions.Item label="Instruments">
-                <Space wrap>
-                  {request.instruments && request.instruments.length > 0
-                    ? request.instruments.map((inst, idx) => (
-                        <Tag
-                          key={inst.instrumentId || idx}
-                          color="purple"
-                        >
-                          {inst.instrumentName || inst.name || inst}
-                        </Tag>
-                      ))
-                    : request.instrumentIds.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        return inst ? (
-                          <Tag key={id} color="purple">
-                            {inst.instrumentName}
-                          </Tag>
-                        ) : (
-                          <Tag key={id} color="default">
-                            {id}
-                          </Tag>
-                        );
-                      })}
-                </Space>
-              </Descriptions.Item>
-            )}
-
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
                 <div>
@@ -512,39 +580,6 @@ const RequestDetailPage = () => {
               </Descriptions.Item>
             )}
 
-            {/* Pricing Information */}
-            {request.servicePrice && (
-              <Descriptions.Item label="Service Price">
-                <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
-                  {formatPrice(
-                    request.servicePrice,
-                    request.currency || 'VND'
-                  )}
-                </Tag>
-              </Descriptions.Item>
-            )}
-            {request.instrumentPrice &&
-              request.instrumentPrice > 0 && (
-                <Descriptions.Item label="Instruments Price">
-                  <Tag color="orange" style={{ fontSize: 14, padding: '4px 12px' }}>
-                    {formatPrice(
-                      request.instrumentPrice,
-                      request.currency || 'VND'
-                    )}
-                  </Tag>
-                </Descriptions.Item>
-              )}
-            {request.totalPrice && (
-              <Descriptions.Item label="Total Price">
-                <Tag color="green" style={{ fontSize: 16, padding: '6px 16px', fontWeight: 600 }}>
-                  {formatPrice(
-                    request.totalPrice,
-                    request.currency || 'VND'
-                  )}
-                </Tag>
-              </Descriptions.Item>
-            )}
-
             {request.files && request.files.length > 0 && (
               <Descriptions.Item label="Uploaded Files">
                 <FileList files={request.files} />
@@ -552,7 +587,7 @@ const RequestDetailPage = () => {
             )}
 
             <Descriptions.Item label="Created At">
-              <ClockCircleOutlined style={{ marginRight: 8 }} />
+              {/* <ClockCircleOutlined style={{ marginRight: 8 }} /> */}
               {formatDate(request.createdAt)}
             </Descriptions.Item>
 
