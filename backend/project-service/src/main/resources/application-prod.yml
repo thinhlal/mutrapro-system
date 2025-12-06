@@ -4,6 +4,8 @@ server:
     context-path: ${SERVER_CONTEXT_PATH:}
 
 spring:
+  application:
+    name: project-service
   servlet:
     multipart:
       max-file-size: 100MB
@@ -113,9 +115,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when-authorized
       probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
         enabled: true

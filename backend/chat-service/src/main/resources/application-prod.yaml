@@ -5,6 +5,8 @@ server:
     include-binding-errors: always
 
 spring:
+  application:
+    name: chat-service
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
@@ -104,6 +106,8 @@ management:
     health:
       show-details: when-authorized
   metrics:
+    tags:
+      application: ${spring.application.name}
     export:
       prometheus:
         enabled: true
