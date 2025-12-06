@@ -68,6 +68,7 @@ app:
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded}
       milestone.paid.notification: ${KAFKA_TOPIC_MILESTONE_PAID_NOTIFICATION:milestone-paid-notification}
       milestone.ready.for.payment.notification: ${KAFKA_TOPIC_MILESTONE_READY_FOR_PAYMENT_NOTIFICATION:milestone-ready-for-payment-notification}
+      payment.order.completed.notification: ${KAFKA_TOPIC_PAYMENT_ORDER_COMPLETED_NOTIFICATION:payment-order-completed-notification}
 
 logging:
   level:

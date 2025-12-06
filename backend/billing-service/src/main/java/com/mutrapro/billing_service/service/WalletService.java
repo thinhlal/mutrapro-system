@@ -220,6 +220,9 @@ public class WalletService {
         if (request.getTransactionId() != null && !request.getTransactionId().isBlank()) {
             metadata.put("transaction_id", request.getTransactionId());
         }
+        if (request.getPaymentOrderId() != null && !request.getPaymentOrderId().isBlank()) {
+            metadata.put("payment_order_id", request.getPaymentOrderId());
+        }
         if (request.getGatewayResponse() != null && !request.getGatewayResponse().isBlank()) {
             metadata.put("gateway_response", request.getGatewayResponse());
         }

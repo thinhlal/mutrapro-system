@@ -23,6 +23,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +37,7 @@ public class SePayService {
     final WalletRepository walletRepository;
     final WalletService walletService;
     final ObjectMapper objectMapper;
+    final com.mutrapro.billing_service.repository.OutboxEventRepository outboxEventRepository;
 
     @Value("${sepay.api.key:}")
     String sepayApiKey;
@@ -96,11 +98,14 @@ public class SePayService {
         // Format: https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG
         // Bỏ dấu "-" vì khi quét QR code, dấu "-" bị mất
         // Format: MTPTOPUP{paymentOrderId} (không có dấu phân cách)
-        String transferContent = orderPrefix.replace("-", "") + savedOrder.getPaymentOrderId();
+        // Bỏ dấu gạch ngang khỏi paymentOrderId (UUID format: 550e8400-e29b-41d4-a716-446655440000)
+        String paymentOrderIdWithoutDash = savedOrder.getPaymentOrderId().replace("-", "");
+        String transferContent = orderPrefix.replace("-", "") + paymentOrderIdWithoutDash;
         String qrCodeUrl = generateQrCodeUrl(virtualAccount, bankName, request.getAmount(), transferContent);
         
-        // Update QR Code URL vào entity (sẽ được persist khi transaction commit)
+        // Update QR Code URL vào entity và save lại để đảm bảo được persist
         savedOrder.setQrCodeUrl(qrCodeUrl);
+        savedOrder = paymentOrderRepository.save(savedOrder);
         
         log.info("✅ Payment order created with QR Code: paymentOrderId={}, virtualAccount={}, bankName={}, amount={}, transferContent={}, qrCodeUrl={}", 
                 savedOrder.getPaymentOrderId(), virtualAccount, bankName, request.getAmount(), transferContent, qrCodeUrl);
@@ -234,14 +239,19 @@ public class SePayService {
                                 .paymentMethod("sepay")
                                 .transactionId(transactionId)
                                 .gatewayResponse(objectMapper.writeValueAsString(callbackData))
+                                .paymentOrderId(lockedOrder.getPaymentOrderId()) // Thêm payment order ID
                                 .build();
 
                 walletService.topupWalletFromPayment(lockedOrder.getWallet().getWalletId(), topupRequest);
 
                 // Cập nhật trạng thái đơn hàng
+                LocalDateTime completedAt = LocalDateTime.now();
                 lockedOrder.setStatus(PaymentOrderStatus.COMPLETED);
-                lockedOrder.setCompletedAt(LocalDateTime.now());
+                lockedOrder.setCompletedAt(completedAt);
                 paymentOrderRepository.save(lockedOrder);
+
+                // Gửi notification event qua Kafka
+                publishPaymentCompletedNotification(lockedOrder, completedAt);
 
                 log.info("✅ Payment order completed: paymentOrderId={}, sepayTransactionId={}", 
                         lockedOrder.getPaymentOrderId(), transactionId);
@@ -258,6 +268,56 @@ public class SePayService {
         }
     }
 
+    /**
+     * Publish payment completed notification event
+     */
+    private void publishPaymentCompletedNotification(PaymentOrder paymentOrder, LocalDateTime completedAt) {
+        try {
+            com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent event = 
+                    com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent.builder()
+                            .eventId(UUID.randomUUID())
+                            .paymentOrderId(paymentOrder.getPaymentOrderId())
+                            .walletId(paymentOrder.getWallet().getWalletId())
+                            .userId(paymentOrder.getWallet().getUserId())
+                            .amount(paymentOrder.getAmount())
+                            .currency(paymentOrder.getCurrency() != null ? paymentOrder.getCurrency().toString() : "VND")
+                            .title("Thanh toán thành công")
+                            .content(String.format("Bạn đã nạp thành công %s %s vào ví. Mã đơn hàng: %s", 
+                                    paymentOrder.getAmount().toPlainString(),
+                                    paymentOrder.getCurrency() != null ? paymentOrder.getCurrency().toString() : "VND",
+                                    paymentOrder.getPaymentOrderId()))
+                            .referenceType("PAYMENT")
+                            .referenceId(paymentOrder.getPaymentOrderId())
+                            .actionUrl("/payments/success/" + paymentOrder.getPaymentOrderId())
+                            .completedAt(completedAt)
+                            .timestamp(LocalDateTime.now())
+                            .build();
+            
+            com.fasterxml.jackson.databind.JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(paymentOrder.getPaymentOrderId());
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            com.mutrapro.billing_service.entity.OutboxEvent outboxEvent = 
+                    com.mutrapro.billing_service.entity.OutboxEvent.builder()
+                            .aggregateId(aggregateId)
+                            .aggregateType("PaymentOrder")
+                            .eventType("payment.order.completed.notification")
+                            .eventPayload(payload)
+                            .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued PaymentOrderCompletedNotificationEvent in outbox: eventId={}, paymentOrderId={}, userId={}", 
+                    event.getEventId(), paymentOrder.getPaymentOrderId(), paymentOrder.getWallet().getUserId());
+        } catch (Exception e) {
+            log.error("Failed to enqueue PaymentOrderCompletedNotificationEvent: paymentOrderId={}, error={}", 
+                    paymentOrder.getPaymentOrderId(), e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
 
     /**
      * Verify API Key từ SePay webhook

@@ -30,5 +30,6 @@ public class TopupWalletRequest {
     String paymentMethod;  // "sepay_qr", "banking", etc.
     String transactionId;  // Transaction ID từ payment gateway
     String gatewayResponse;  // Response từ payment gateway (JSON string)
+    String paymentOrderId;  // Payment Order ID (để link với payment order)
 }
 

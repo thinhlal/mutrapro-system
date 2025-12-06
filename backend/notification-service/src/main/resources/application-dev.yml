@@ -67,6 +67,7 @@ app:
       billing.revision.fee.refunded: billing-revision-fee-refunded
       milestone.paid.notification: milestone-paid-notification
       milestone.ready.for.payment.notification: milestone-ready-for-payment-notification
+      payment.order.completed.notification: payment-order-completed-notification
 
 logging:
   level:

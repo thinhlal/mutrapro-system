@@ -35,7 +35,6 @@ import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import {
   getOrCreateMyWallet,
-  topupWallet,
   getMyWalletTransactions,
 } from '../../../services/walletService';
 import {
@@ -128,25 +127,35 @@ const WalletContent = () => {
     loadWallet();
   }, []);
 
+  // Refresh wallet when coming from payment success page
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const state = window.history.state;
+      if (state?.refresh) {
+        loadWallet();
+        loadTransactions();
+        // Clear the refresh flag
+        window.history.replaceState({ ...state, refresh: false }, '');
+      }
+    };
+    
+    handleLocationChange();
+  }, []);
+
   useEffect(() => {
     loadTransactions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // Handle topup
+  // Handle topup - Redirect to payment page
   const handleTopup = async values => {
     try {
-      const response = await topupWallet(wallet.walletId, {
-        amount: values.amount,
-        currency: 'VND',
-      });
-      if (response.status === 'success') {
-        message.success('Deposit successful!');
-        setTopupModalVisible(false);
-        topupForm.resetFields();
-        loadWallet();
-        loadTransactions();
-      }
+      // Redirect to payment page with amount
+      const amount = values.amount;
+      const description = `Nạp tiền vào ví - ${new Intl.NumberFormat('vi-VN').format(amount)} VND`;
+      navigate(`/payments/topup?amount=${amount}&description=${encodeURIComponent(description)}`);
+      setTopupModalVisible(false);
+      topupForm.resetFields();
     } catch (error) {
       message.error(
         error.message || error.details?.message || 'Error processing deposit'
@@ -869,9 +878,76 @@ const WalletContent = () => {
                     <>
                       {selectedTransaction.metadata.payment_method && (
                         <Descriptions.Item label="Phương thức thanh toán">
-                          <Text>
-                            {selectedTransaction.metadata.payment_method}
+                          <Tag color={selectedTransaction.metadata.payment_method === 'sepay' ? 'blue' : 'default'}>
+                            {selectedTransaction.metadata.payment_method === 'sepay' 
+                              ? 'SePay (Chuyển khoản ngân hàng)' 
+                              : selectedTransaction.metadata.payment_method.toUpperCase()}
+                          </Tag>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.transaction_id && (
+                        <Descriptions.Item label="Mã giao dịch SePay">
+                          <Text code copyable>
+                            {selectedTransaction.metadata.transaction_id}
                           </Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.payment_order_id && (
+                        <Descriptions.Item label="Mã đơn hàng thanh toán">
+                          <Text code copyable>
+                            {selectedTransaction.metadata.payment_order_id}
+                          </Text>
+                        </Descriptions.Item>
+                      )}
+                      {selectedTransaction.metadata.gateway_response && (
+                        <Descriptions.Item label="Thông tin từ SePay">
+                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {(() => {
+                              try {
+                                const gatewayData = typeof selectedTransaction.metadata.gateway_response === 'string'
+                                  ? JSON.parse(selectedTransaction.metadata.gateway_response)
+                                  : selectedTransaction.metadata.gateway_response;
+                                
+                                return (
+                                  <Descriptions bordered column={1} size="small">
+                                    {gatewayData.gateway && (
+                                      <Descriptions.Item label="Ngân hàng">
+                                        <Text>{gatewayData.gateway}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                    {gatewayData.transactionDate && (
+                                      <Descriptions.Item label="Thời gian giao dịch">
+                                        <Text>{gatewayData.transactionDate}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                    {gatewayData.accountNumber && (
+                                      <Descriptions.Item label="Số tài khoản">
+                                        <Text code>{gatewayData.accountNumber}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                    {gatewayData.referenceCode && (
+                                      <Descriptions.Item label="Mã tham chiếu">
+                                        <Text code>{gatewayData.referenceCode}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                    {gatewayData.content && (
+                                      <Descriptions.Item label="Nội dung chuyển khoản">
+                                        <Text>{gatewayData.content}</Text>
+                                      </Descriptions.Item>
+                                    )}
+                                  </Descriptions>
+                                );
+                              } catch (e) {
+                                return (
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    {typeof selectedTransaction.metadata.gateway_response === 'string'
+                                      ? selectedTransaction.metadata.gateway_response.substring(0, 100) + '...'
+                                      : JSON.stringify(selectedTransaction.metadata.gateway_response).substring(0, 100) + '...'}
+                                  </Text>
+                                );
+                              }
+                            })()}
+                          </div>
                         </Descriptions.Item>
                       )}
                       {selectedTransaction.metadata.installment_id && (

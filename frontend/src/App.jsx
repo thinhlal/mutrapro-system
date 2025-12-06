@@ -45,6 +45,8 @@ import PayMilestonePage from './pages/user/PayMilestone/PayMilestonePage';
 import PayDepositPage from './pages/user/PayDeposit/PayDepositPage';
 import PayRevisionFeePage from './pages/user/PayRevisionFee/PayRevisionFeePage';
 import WalletPage from './pages/user/Wallet/WalletPage';
+import TopupPaymentPage from './pages/user/TopupPayment/TopupPaymentPage';
+import PaymentSuccessPage from './pages/user/PaymentSuccess/PaymentSuccessPage';
 import WalletManagement from './pages/admin/WalletManagement/WalletManagement';
 
 // Professionals Pages
@@ -310,6 +312,26 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER', 'SYSTEM_ADMIN']}>
                 <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments/topup/:orderId?"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <TopupPaymentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payments/success/:orderId"
+            element={
+              <ProtectedRoute
+                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
+              >
+                <PaymentSuccessPage />
               </ProtectedRoute>
             }
           />

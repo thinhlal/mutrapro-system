@@ -221,6 +221,7 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     CREATE_ORDER: `${BILLING_PATH}/payments/orders`,
     GET_ORDER: orderId => `${BILLING_PATH}/payments/orders/${orderId}`,
+    GET_ORDER_QR: orderId => `${BILLING_PATH}/payments/orders/${orderId}/qr`,
     GET_PENDING_ORDER: `${BILLING_PATH}/payments/orders/pending`,
     CANCEL_ORDER: orderId => `${BILLING_PATH}/payments/orders/${orderId}`,
     REFRESH_STATUS: orderId =>

@@ -15,6 +15,7 @@ import com.mutrapro.shared.event.RevisionRejectedEvent;
 import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
+import com.mutrapro.shared.event.PaymentOrderCompletedNotificationEvent;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
@@ -778,6 +779,45 @@ public class NotificationService {
 
         log.info("Milestone ready for payment notification created: contractId={}, milestoneId={}, customerUserId={}",
                 event.getContractId(), event.getMilestoneId(), event.getCustomerUserId());
+    }
+
+    /**
+     * Tạo notification cho user khi payment order được thanh toán thành công
+     */
+    @Transactional
+    public void createPaymentOrderCompletedNotification(PaymentOrderCompletedNotificationEvent event) {
+        if (event.getUserId() == null || event.getUserId().isBlank()) {
+            log.warn("Cannot create payment order completed notification, userId missing: paymentOrderId={}",
+                    event.getPaymentOrderId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Thanh toán thành công";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Bạn đã nạp thành công %s %s vào ví. Mã đơn hàng: %s",
+                        event.getAmount() != null ? event.getAmount().toPlainString() : "0",
+                        event.getCurrency() != null ? event.getCurrency() : "VND",
+                        event.getPaymentOrderId() != null ? event.getPaymentOrderId() : "");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/payments/success/" + event.getPaymentOrderId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "PAYMENT";
+        String referenceId = event.getReferenceId() != null ? event.getReferenceId() : event.getPaymentOrderId();
+
+        Notification notification = Notification.builder()
+                .userId(event.getUserId())
+                .type(NotificationType.PAYMENT_ORDER_COMPLETED)
+                .title(title)
+                .content(content)
+                .referenceId(referenceId)
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getUserId(), saved);
+
+        log.info("Payment order completed notification created: paymentOrderId={}, userId={}, amount={}, currency={}",
+                event.getPaymentOrderId(), event.getUserId(), event.getAmount(), event.getCurrency());
     }
 
     /**
