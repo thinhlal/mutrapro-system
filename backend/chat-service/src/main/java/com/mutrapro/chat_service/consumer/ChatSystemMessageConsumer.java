@@ -1,6 +1,7 @@
 package com.mutrapro.chat_service.consumer;
 
 import com.mutrapro.chat_service.dto.request.SendMessageRequest;
+import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageType;
 import com.mutrapro.chat_service.enums.RoomType;
 import com.mutrapro.chat_service.repository.ChatRoomRepository;
@@ -91,11 +92,12 @@ public class ChatSystemMessageConsumer extends BaseIdempotentConsumer<ChatSystem
             String roomId = room.getRoomId();
             
             // 2. Gửi system message vào chat room
-            // System messages trong contract chat room mặc định là GENERAL (chat chung về contract)
+            // System messages mặc định là GENERAL (chat chung về contract/request)
             SendMessageRequest messageRequest = SendMessageRequest.builder()
                     .roomId(roomId)
                     .messageType(MessageType.SYSTEM)
                     .content(event.getMessage())
+                    .contextType(MessageContextType.GENERAL)  // Set mặc định là GENERAL
                     .build();
             
             chatMessageService.sendSystemMessage(messageRequest);

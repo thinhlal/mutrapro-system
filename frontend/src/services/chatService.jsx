@@ -9,9 +9,14 @@ import { API_ENDPOINTS } from '../config/apiConfig';
 
 /**
  * Get all chat rooms for current user
+ * @param {string} roomType - Optional: Filter by room type (CONTRACT_CHAT, REQUEST_CHAT, etc.)
  */
-export const getChatRooms = async () => {
-  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ALL_ROOMS);
+export const getChatRooms = async (roomType = null) => {
+  const params = {};
+  if (roomType) {
+    params.roomType = roomType;
+  }
+  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ALL_ROOMS, { params });
   return response.data;
 };
 

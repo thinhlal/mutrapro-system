@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Spin, Empty, Badge, Avatar } from 'antd';
-import { SearchOutlined, MessageOutlined } from '@ant-design/icons';
+import { Input, Spin, Empty, Badge, Tag, Select } from 'antd';
+import {
+  SearchOutlined,
+  LockOutlined,
+} from '@ant-design/icons';
 import { useChatRooms } from '../../../hooks/useChat';
 import ChatConversationPage from '../../chat/ChatConversation/ChatConversationPage';
 import styles from './ManagerChatPage.module.css';
+
+const { Option } = Select;
 
 /**
  * Manager Chat Page
@@ -14,13 +19,14 @@ import styles from './ManagerChatPage.module.css';
 const ManagerChatPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { rooms, loading } = useChatRooms();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState(null);
+  const { rooms, loading } = useChatRooms(selectedRoomType);
   const [filteredRooms, setFilteredRooms] = useState([]);
 
-  // Filter rooms based on search query
+  // Filter rooms based on search query (rooms đã được filter theo type từ backend)
   useEffect(() => {
-    if (!rooms) {
+    if (loading || !rooms) {
       setFilteredRooms([]);
       return;
     }
@@ -39,23 +45,11 @@ const ManagerChatPage = () => {
     );
 
     setFilteredRooms(filtered);
-  }, [rooms, searchQuery]);
+  }, [rooms, loading, searchQuery]);
 
   // Calculate total unread messages
   const totalUnread =
     rooms?.reduce((sum, room) => sum + (room.unreadCount || 0), 0) || 0;
-
-  // Get room type color
-  const getRoomTypeColor = type => {
-    const colors = {
-      REQUEST_CHAT: '#1890ff',
-      PROJECT_CHAT: '#52c41a',
-      REVISION_CHAT: '#faad14',
-      SUPPORT_CHAT: '#722ed1',
-      DIRECT_MESSAGE: '#eb2f96',
-    };
-    return colors[type] || '#1890ff';
-  };
 
   // Format date
   const formatDate = dateString => {
@@ -106,6 +100,19 @@ const ManagerChatPage = () => {
                 className={styles.searchInput}
               />
             </div>
+            <div style={{ marginTop: '12px' }}>
+              <Select
+                placeholder="Filter by type"
+                allowClear
+                value={selectedRoomType}
+                onChange={setSelectedRoomType}
+                style={{ width: '100%' }}
+                size="small"
+              >
+                <Option value="REQUEST_CHAT">Request</Option>
+                <Option value="CONTRACT_CHAT">Contract</Option>
+              </Select>
+            </div>
           </div>
 
           <div className={styles.roomsList}>
@@ -125,58 +132,88 @@ const ManagerChatPage = () => {
                 />
               </div>
             ) : (
-              filteredRooms.map(room => (
-                <div
-                  key={room.roomId}
-                  className={`${styles.roomItem} ${roomId === room.roomId ? styles.active : ''}`}
-                  onClick={() => handleRoomClick(room)}
-                >
-                  <div className={styles.roomAvatar}>
-                    <Avatar
-                      size={56}
-                      icon={<MessageOutlined />}
-                      style={{
-                        backgroundColor: getRoomTypeColor(room.roomType),
-                      }}
-                    />
-                    {room.unreadCount > 0 && (
-                      <span className={styles.unreadDot}></span>
-                    )}
-                  </div>
+              filteredRooms.map(room => {
+                const isInactive = room.isActive === false;
+                return (
+                  <div
+                    key={room.roomId}
+                    className={`${styles.roomItem} ${roomId === room.roomId ? styles.active : ''} ${isInactive ? styles.inactive : ''}`}
+                    onClick={() => handleRoomClick(room)}
+                    title={isInactive ? 'Phòng chat này đã được đóng' : ''}
+                  >
+                    <div className={styles.roomInfo}>
+                      <div className={styles.roomTop}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            flex: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <h4
+                            className={styles.roomName}
+                            style={{
+                              margin: 0,
+                              flex: 1,
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {room.roomName || 'Chat Room'}
+                          </h4>
+                          {isInactive && (
+                            <Tag
+                              icon={<LockOutlined />}
+                              color="default"
+                              style={{
+                                margin: 0,
+                                fontSize: '10px',
+                                padding: '0 4px',
+                                height: '18px',
+                                lineHeight: '18px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Closed
+                            </Tag>
+                          )}
+                        </div>
+                        <span className={styles.roomTime}>
+                          {formatDate(room.updatedAt)}
+                        </span>
+                      </div>
 
-                  <div className={styles.roomInfo}>
-                    <div className={styles.roomTop}>
-                      <h4 className={styles.roomName}>
-                        {room.roomName || 'Chat Room'}
-                      </h4>
-                      <span className={styles.roomTime}>
-                        {formatDate(room.updatedAt)}
-                      </span>
-                    </div>
-
-                    <div className={styles.roomBottom}>
-                      <p className={styles.lastMessage}>
-                        {room.lastMessage ? (
-                          <>
-                            <span className={styles.senderName}>
-                              {room.lastMessage.senderName}:
-                            </span>{' '}
-                            {room.lastMessage.content}
-                          </>
-                        ) : (
-                          room.description || 'No messages yet'
+                      <div className={styles.roomBottom}>
+                        <p
+                          className={styles.lastMessage}
+                          style={{ opacity: isInactive ? 0.6 : 1 }}
+                        >
+                          {room.lastMessage ? (
+                            <>
+                              <span className={styles.senderName}>
+                                {room.lastMessage.senderName}:
+                              </span>{' '}
+                              {room.lastMessage.content}
+                            </>
+                          ) : (
+                            room.description || 'No messages yet'
+                          )}
+                        </p>
+                        {room.unreadCount > 0 && !isInactive && (
+                          <Badge
+                            count={room.unreadCount}
+                            className={styles.unreadBadge}
+                          />
                         )}
-                      </p>
-                      {room.unreadCount > 0 && (
-                        <Badge
-                          count={room.unreadCount}
-                          className={styles.unreadBadge}
-                        />
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

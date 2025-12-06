@@ -25,6 +25,16 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     
     @Query("SELECT r FROM ChatRoom r " +
            "JOIN r.participants p " +
+           "WHERE p.userId = :userId AND p.isActive = true " +
+           "AND (:roomType IS NULL OR r.roomType = :roomType) " +
+           "ORDER BY r.createdAt DESC")
+    List<ChatRoom> findAllByParticipantUserIdAndRoomType(
+        @Param("userId") String userId,
+        @Param("roomType") RoomType roomType
+    );
+    
+    @Query("SELECT r FROM ChatRoom r " +
+           "JOIN r.participants p " +
            "WHERE r.roomId = :roomId AND p.userId = :userId AND p.isActive = true")
     Optional<ChatRoom> findByRoomIdAndParticipantUserId(
         @Param("roomId") String roomId, 

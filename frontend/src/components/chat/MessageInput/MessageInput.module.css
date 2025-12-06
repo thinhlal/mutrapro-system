@@ -1,7 +1,11 @@
 .messageInput {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid #e8eaed;
   background: white;
-  padding: 12px 16px;
+  padding: 16px 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .inputWrapper {
@@ -13,18 +17,22 @@
 .textarea {
   flex: 1;
   resize: none;
-  border-radius: 24px;
-  border: 1px solid #e0e0e0;
-  transition: all 0.2s ease;
+  border-radius: 28px;
+  border: 2px solid #e8eaed;
+  background: #f8f9fa;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .textarea:hover {
-  border-color: #d0d0d0;
+  border-color: #d0d3d6;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .textarea:focus-within {
   border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.1);
 }
 
 .textarea textarea {
@@ -67,25 +75,30 @@
 }
 
 .sendButton {
-  border-radius: 20px;
+  border-radius: 24px;
   flex-shrink: 0;
-  height: 36px;
-  padding: 0 20px;
-  font-weight: 500;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #1890ff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
 }
 
 .sendButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+  transform: translateY(-2px);
+  background: #40a9ff;
+  box-shadow: 0 6px 20px rgba(24, 144, 255, 0.35);
 }
 
 .sendButton:active:not(:disabled) {
   transform: translateY(0);
+  background: #096dd9;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.25);
 }
 
 .sendButton:disabled {

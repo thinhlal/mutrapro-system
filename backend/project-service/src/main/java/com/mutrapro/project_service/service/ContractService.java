@@ -12,6 +12,8 @@ import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractInstallment;
 import com.mutrapro.project_service.entity.ContractMilestone;
+import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.CurrencyType;
@@ -105,6 +107,7 @@ public class ContractService {
     TaskAssignmentService taskAssignmentService;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
+    com.mutrapro.project_service.repository.TaskAssignmentRepository taskAssignmentRepository;
     
     @Autowired(required = false)
     S3Service s3Service;
@@ -182,7 +185,8 @@ public class ContractService {
         }
         
         // Kiểm tra xem đã có contract ACTIVE cho request này chưa
-        // Cho phép tạo contract mới nếu contract cũ đã bị cancel/reject/need_revision/expired
+        // Cho phép tạo contract mới khi contract cũ đã bị cancel/reject/need_revision/expired
+        // need_revision không phải active, manager cần tạo contract mới dựa trên revision request
         List<Contract> existingContracts = contractRepository.findByRequestId(requestId);
         if (!existingContracts.isEmpty()) {
             // Kiểm tra xem có contract nào đang ở trạng thái ACTIVE không
@@ -194,13 +198,14 @@ public class ContractService {
                         || status == ContractStatus.approved 
                         || status == ContractStatus.signed
                         || status == ContractStatus.active
-                        || status == ContractStatus.active_pending_assignment;
+                        || status == ContractStatus.active_pending_assignment
+                        || status == ContractStatus.completed;  // Không cho phép tạo mới khi đã hoàn thành
                 });
             
             if (hasActiveContract) {
                 throw ContractAlreadyExistsException.forRequest(requestId);
             }
-            // Nếu chỉ có contract đã bị cancel/reject/need_revision/expired, cho phép tạo mới
+            // Cho phép tạo mới khi contract đã bị cancel/reject/need_revision/expired
             log.info("Request {} has inactive contracts (canceled/rejected/need_revision/expired), allowing new contract creation", requestId);
         }
         
@@ -748,6 +753,8 @@ public class ContractService {
         for (String requestId : requestIds) {
             Contract contract = contractMap.get(requestId);
             
+            // Contract được coi là "active" nếu đang trong quá trình hoặc đã completed
+            // need_revision KHÔNG được coi là active (cho phép tạo contract mới)
             boolean hasActiveContract = contract != null && (
                 contract.getStatus() == ContractStatus.draft 
                 || contract.getStatus() == ContractStatus.sent 
@@ -755,6 +762,7 @@ public class ContractService {
                 || contract.getStatus() == ContractStatus.signed
                 || contract.getStatus() == ContractStatus.active
                 || contract.getStatus() == ContractStatus.active_pending_assignment
+                || contract.getStatus() == ContractStatus.completed  // Đã hoàn thành, không cho tạo mới
             );
             
             Contract displayContract = contract;
@@ -1283,6 +1291,72 @@ public class ContractService {
             );
         }
 
+        // Kiểm tra tất cả milestone phải được assign task và có ít nhất 1 task đã được accept
+        // Điều này đảm bảo deadline không bị lùi khi start contract
+        List<ContractMilestone> allMilestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(contractId);
+        
+        if (allMilestones.isEmpty()) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                "Cannot start contract work: Contract must have at least one milestone."
+            );
+        }
+        
+        List<AssignmentStatus> acceptedStatuses = List.of(
+            AssignmentStatus.accepted_waiting,
+            AssignmentStatus.ready_to_start,
+            AssignmentStatus.in_progress,
+            AssignmentStatus.completed
+        );
+        
+        for (ContractMilestone milestone : allMilestones) {
+            String milestoneId = milestone.getMilestoneId();
+            
+            // Kiểm tra milestone này có task assignment active không
+            // Logic: Mỗi milestone có thể có nhiều task assignments nhưng chỉ có 1 active (không cancelled)
+            Optional<TaskAssignment> activeTaskOpt = taskAssignmentRepository
+                .findByMilestoneIdAndStatusNot(milestoneId, AssignmentStatus.cancelled);
+            
+            // Tất cả milestone phải có task assignment active
+            if (activeTaskOpt.isEmpty()) {
+                throw InvalidContractStatusException.cannotUpdate(
+                    contractId,
+                    contract.getStatus(),
+                    String.format(
+                        "Cannot start contract work: Milestone '%s' (order %d) has no active task assignment. " +
+                        "All milestones must have at least one active task assignment before starting contract.",
+                        milestone.getName(),
+                        milestone.getOrderIndex()
+                    )
+                );
+            }
+            
+            TaskAssignment activeTask = activeTaskOpt.get();
+            
+            // Kiểm tra task active có được accept không
+            if (!acceptedStatuses.contains(activeTask.getStatus())) {
+                throw InvalidContractStatusException.cannotUpdate(
+                    contractId,
+                    contract.getStatus(),
+                    String.format(
+                        "Cannot start contract work: Milestone '%s' (order %d) has an active task assignment but it is not accepted. " +
+                        "The task assignment must be accepted before starting contract.",
+                        milestone.getName(),
+                        milestone.getOrderIndex()
+                    )
+                );
+            }
+        }
+        
+        // Lấy milestone 1 để dùng sau
+        String firstMilestoneId = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == 1)
+            .map(ContractMilestone::getMilestoneId)
+            .findFirst()
+            .orElse(null);
+
         LocalDateTime startAt = requestedStartAt != null ? requestedStartAt : LocalDateTime.now();
         if (startAt.isBefore(contract.getDepositPaidAt())) {
             startAt = contract.getDepositPaidAt();
@@ -1291,11 +1365,6 @@ public class ContractService {
         contract.setWorkStartAt(startAt);
         contract.setExpectedStartDate(startAt);
 
-        // Lấy milestone 1 trước để activate task assignments sau
-        String firstMilestoneId = contractMilestoneRepository
-            .findByContractIdAndOrderIndex(contractId, 1)
-            .map(ContractMilestone::getMilestoneId)
-            .orElse(null);
 
         calculatePlannedDatesForAllMilestones(contractId, startAt, true); // true = unlock milestone 1
         
@@ -1759,25 +1828,6 @@ public class ContractService {
             contractId, milestones.size(), unlockFirstMilestone);
     }
 
-    private void unlockMilestoneForStart(String contractId, int orderIndex) {
-        Optional<ContractMilestone> milestoneOpt = contractMilestoneRepository
-            .findByContractIdAndOrderIndex(contractId, orderIndex);
-
-        if (milestoneOpt.isEmpty()) {
-            log.warn("Cannot unlock milestone: contractId={}, orderIndex={}", contractId, orderIndex);
-            return;
-        }
-
-        ContractMilestone milestone = milestoneOpt.get();
-        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-            milestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
-            contractMilestoneRepository.save(milestone);
-            log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}",
-                contractId, milestone.getMilestoneId(), orderIndex);
-        }
-
-        taskAssignmentService.activateAssignmentsForMilestone(contractId, milestone.getMilestoneId());
-    }
     
     /**
      * Map ContractInstallment entity sang ContractInstallmentResponse

@@ -71,13 +71,12 @@ public class TaskAssignmentController {
     public ApiResponse<PageResponse<com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotResponse>> getMilestoneSlots(
             @RequestParam(required = false) String contractId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String taskType,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean onlyUnassigned,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         MilestoneAssignmentSlotsResult result = taskAssignmentService
-            .getMilestoneAssignmentSlots(contractId, status, taskType, keyword, onlyUnassigned, page, size);
+            .getMilestoneAssignmentSlots(contractId, status, keyword, onlyUnassigned, page, size);
         return ApiResponse.<PageResponse<com.mutrapro.project_service.dto.response.MilestoneAssignmentSlotResponse>>builder()
                 .message("Milestone slots retrieved successfully")
                 .data(result.getPage())

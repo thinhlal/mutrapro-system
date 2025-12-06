@@ -22,6 +22,7 @@ public class MilestoneAssignmentSlotResponse {
     String contractNumber;
     String contractType;
     String customerName;
+    LocalDateTime contractCreatedAt;  // Thời điểm tạo contract để sort mới nhất lên trước
 
     String milestoneId;
     Integer milestoneOrderIndex;

@@ -30,6 +30,7 @@ import {
   getAllContracts,
   cancelContract,
   sendContractToCustomer,
+  getContractsByRequestId,
 } from '../../../services/contractService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -197,6 +198,8 @@ export default function ContractsList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [revisionContract, setRevisionContract] = useState(null);
+  const [hasActiveContract, setHasActiveContract] = useState(false);
+  const [checkingActiveContract, setCheckingActiveContract] = useState(false);
   const [cancelReasonModalVisible, setCancelReasonModalVisible] =
     useState(false);
   const [canceledContract, setCanceledContract] = useState(null);
@@ -223,6 +226,41 @@ export default function ContractsList() {
 
     fetchContracts();
   }, []);
+
+  // Check xem request đã có contract active khác chưa khi mở revision modal
+  useEffect(() => {
+    const checkActiveContract = async () => {
+      if (!revisionModalVisible || !revisionContract?.requestId) {
+        return;
+      }
+
+      setCheckingActiveContract(true);
+      try {
+        const response = await getContractsByRequestId(revisionContract.requestId);
+        if (response?.status === 'success' && Array.isArray(response.data)) {
+          // Check xem có contract nào active (không phải need_revision) không
+          const hasActive = response.data.some(contract => {
+            const status = (contract.status || '').toLowerCase();
+            return status !== 'need_revision' &&
+                   status !== 'canceled_by_customer' &&
+                   status !== 'canceled_by_manager' &&
+                   status !== 'rejected_by_customer' &&
+                   status !== 'expired';
+          });
+          setHasActiveContract(hasActive);
+        } else {
+          setHasActiveContract(false);
+        }
+      } catch (error) {
+        console.error('Error checking active contracts:', error);
+        setHasActiveContract(false);
+      } finally {
+        setCheckingActiveContract(false);
+      }
+    };
+
+    checkActiveContract();
+  }, [revisionModalVisible, revisionContract]);
 
   const data = useMemo(() => {
     return contracts.filter(c => {
@@ -604,6 +642,7 @@ export default function ContractsList() {
         onCancel={() => {
           setRevisionModalVisible(false);
           setRevisionContract(null);
+          setHasActiveContract(false);
         }}
         footer={[
           <Button
@@ -611,10 +650,12 @@ export default function ContractsList() {
             onClick={() => {
               setRevisionModalVisible(false);
               setRevisionContract(null);
+              setHasActiveContract(false);
             }}
           >
             Đóng
           </Button>,
+          !hasActiveContract && !checkingActiveContract && (
           <Button
             key="create"
             type="primary"
@@ -648,18 +689,37 @@ export default function ContractsList() {
             }}
           >
             Tạo Contract Mới
-          </Button>,
-        ]}
+            </Button>
+          ),
+        ].filter(Boolean)}
         width={700}
       >
         {revisionContract && (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            {checkingActiveContract && (
+              <Alert
+                message="Đang kiểm tra..."
+                description="Đang kiểm tra xem request đã có contract mới chưa."
+                type="info"
+                showIcon
+              />
+            )}
+            {hasActiveContract && (
+              <Alert
+                message="Đã có contract mới"
+                description="Request này đã có contract mới được tạo. Bạn không thể tạo contract mới từ modal này nữa."
+                type="info"
+                showIcon
+              />
+            )}
+            {!hasActiveContract && !checkingActiveContract && (
             <Alert
               message="Customer đã yêu cầu chỉnh sửa contract này"
               description="Vui lòng xem lý do bên dưới và tạo contract mới với nội dung đã điều chỉnh."
               type="warning"
               showIcon
             />
+            )}
 
             <div>
               <Typography.Title level={5}>Thông tin Contract:</Typography.Title>

@@ -142,84 +142,6 @@ function getActualDeadline(milestone) {
   return null;
 }
 
-// Cache để tránh tính lại fallback deadline nhiều lần
-const fallbackDeadlineCache = new Map();
-
-// Tính deadline fallback từ slaDays khi chưa có actual/planned
-// Dựa trên danh sách tasks cùng contract để lần ra milestone trước đó
-function getFallbackDeadline(milestone, allTasks = []) {
-  if (!milestone) return null;
-  const slaDays = milestone.milestoneSlaDays;
-  if (slaDays == null || slaDays <= 0) return null;
-
-  // Ưu tiên: dùng plannedStartAt nếu có
-  const plannedStart = getPlannedStartDate(milestone);
-  if (plannedStart) {
-    const dueDate = new Date(plannedStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-
-  // Cache key: milestoneId
-  const cacheKey = milestone.milestoneId;
-  if (fallbackDeadlineCache.has(cacheKey)) {
-    return fallbackDeadlineCache.get(cacheKey);
-  }
-
-  // Nếu milestone orderIndex = 1, tính từ now
-  const orderIndex = milestone.orderIndex;
-  if (orderIndex == null || orderIndex === 1) {
-    const now = new Date();
-    const dueDate = new Date(now);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    fallbackDeadlineCache.set(cacheKey, dueDate);
-    return dueDate;
-  }
-
-  // Nếu milestone orderIndex > 1, tính từ deadline của milestone trước đó
-  const contractId =
-    milestone.contractId ||
-    allTasks.find(t => t.milestone?.milestoneId === milestone.milestoneId)
-      ?.contractId;
-  if (contractId && allTasks.length > 0) {
-    // Tìm milestone trước đó (orderIndex - 1) trong cùng contract
-    const previousTask = allTasks.find(
-      t =>
-        t.contractId === contractId &&
-        t.milestone?.orderIndex === orderIndex - 1
-    );
-
-    if (previousTask?.milestone) {
-      const previousMilestone = previousTask.milestone;
-      // Tính deadline của milestone trước đó (actual > planned > fallback đệ quy)
-      const previousActualDeadline = getActualDeadline(previousMilestone);
-      const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
-      const previousFallbackDeadline = getFallbackDeadline(
-        previousMilestone,
-        allTasks
-      );
-      const previousDeadline =
-        previousActualDeadline ||
-        previousPlannedDeadline ||
-        previousFallbackDeadline;
-
-      if (previousDeadline) {
-        // Start date của milestone hiện tại = deadline của milestone trước đó
-        const dueDate = new Date(previousDeadline);
-        dueDate.setDate(dueDate.getDate() + Number(slaDays));
-        fallbackDeadlineCache.set(cacheKey, dueDate);
-        return dueDate;
-      }
-    }
-  }
-
-  // Fallback cuối cùng: tính từ now (nếu không tìm thấy milestone trước đó)
-  const now = new Date();
-  const dueDate = new Date(now);
-  dueDate.setDate(dueDate.getDate() + Number(slaDays));
-  fallbackDeadlineCache.set(cacheKey, dueDate);
-  return dueDate;
-}
 
 // -------- Component --------
 /**
@@ -248,11 +170,8 @@ const MyTasksPage = ({ onOpenTask }) => {
       if (response?.status === 'success' && response?.data) {
         // Dùng trực tiếp data từ API, không map
         setTasks(response.data);
-        // Clear cache khi load lại tasks
-        fallbackDeadlineCache.clear();
       } else {
         setTasks([]);
-        fallbackDeadlineCache.clear();
       }
     } catch (e) {
       console.error('Error loading tasks:', e);
@@ -459,19 +378,18 @@ const MyTasksPage = ({ onOpenTask }) => {
         render: (_, record) => {
           const actualDeadline = getActualDeadline(record?.milestone);
           const plannedDeadline = getPlannedDeadline(record?.milestone);
-          // Pass record và filteredTasks để tính fallback deadline dựa trên milestone trước đó
-          const fallbackDeadline = getFallbackDeadline(
-            record?.milestone,
-            filteredTasks
-          );
+          // Dùng estimatedDeadline từ backend khi không có actual và planned
+          const estimatedDeadline = record?.milestone?.estimatedDeadline
+            ? new Date(record.milestone.estimatedDeadline)
+            : null;
           const actualStart = getActualStartDate(record?.milestone);
           const plannedStart = getPlannedStartDate(record?.milestone);
 
-          // Dùng deadline để hiển thị (ưu tiên actual > planned > fallback)
+          // Dùng deadline để hiển thị (ưu tiên actual > planned > estimated)
           const displayDeadline =
-            actualDeadline || plannedDeadline || fallbackDeadline;
-          const isFallback =
-            !actualDeadline && !plannedDeadline && fallbackDeadline;
+            actualDeadline || plannedDeadline || estimatedDeadline;
+          const isEstimated =
+            !actualDeadline && !plannedDeadline && estimatedDeadline;
 
           if (!displayDeadline) {
             return <Text type="secondary">Chưa có</Text>;
@@ -526,20 +444,20 @@ const MyTasksPage = ({ onOpenTask }) => {
                 </>
               )}
               <Text strong type={showActual ? 'secondary' : undefined}>
-                {isFallback ? 'Estimated' : 'Planned'}
+                {isEstimated ? 'Estimated' : 'Planned'}
               </Text>
               {plannedDeadline ? (
                 <Text type="secondary">
                   Deadline: {formatDateTime(plannedDeadline)}
                 </Text>
-              ) : fallbackDeadline ? (
+              ) : estimatedDeadline ? (
                 <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                  Deadline: {formatDateTime(fallbackDeadline)} (ước tính)
+                  Deadline: {formatDateTime(estimatedDeadline)} (ước tính)
                 </Text>
               ) : (
                 <Text type="secondary">-</Text>
               )}
-              {isFallback && (
+              {isEstimated && (
                 <Tag color="default" size="small">
                   Dựa trên SLA {record?.milestone?.milestoneSlaDays || 0} ngày
                 </Tag>

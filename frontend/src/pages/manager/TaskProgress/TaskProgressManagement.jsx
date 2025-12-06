@@ -130,47 +130,6 @@ const getActualDeadlineDayjs = milestone => {
   );
 };
 
-const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
-  if (!milestone) return null;
-  const slaDays = Number(milestone.milestoneSlaDays || 0);
-  if (!slaDays) return null;
-
-  const plannedStart = getPlannedStartDayjs(milestone);
-  if (plannedStart) {
-    return plannedStart.add(slaDays, 'day');
-  }
-
-  const orderIndex = milestone.orderIndex;
-  if (!orderIndex || orderIndex <= 1) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousMilestone =
-    contractMilestones.find(
-      item =>
-        item &&
-        item.orderIndex === orderIndex - 1 &&
-        (item.contractId
-          ? item.contractId === (milestone.contractId || item.contractId)
-          : true)
-    ) || null;
-
-  if (!previousMilestone) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousDeadline =
-    getActualDeadlineDayjs(previousMilestone) ||
-    getPlannedDeadlineDayjs(previousMilestone) ||
-    getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
-
-  if (!previousDeadline) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  return previousDeadline.add(slaDays, 'day');
-};
-
 const getTaskCompletionDate = task =>
   task?.completedDate || task?.milestone?.finalCompletedAt || null;
 
@@ -681,11 +640,10 @@ export default function TaskProgressManagement() {
       render: (_, record) => {
         const actualDeadline = getActualDeadlineDayjs(record.milestone);
         const plannedDeadline = getPlannedDeadlineDayjs(record.milestone);
-        const contract = getContractInfo(record.contractId);
-        const estimatedDeadline = getEstimatedDeadlineDayjs(
-          record.milestone,
-          contract?.milestones || []
-        );
+        // Dùng estimatedDeadline từ backend thay vì tính ở frontend
+        const estimatedDeadline = record.milestone?.estimatedDeadline 
+          ? dayjs(record.milestone.estimatedDeadline) 
+          : null;
         const actualStart = getActualStartDayjs(record.milestone);
         const plannedStart = getPlannedStartDayjs(record.milestone);
 
@@ -1045,11 +1003,10 @@ export default function TaskProgressManagement() {
                   const plannedDeadline = getPlannedDeadlineDayjs(
                     selectedTask.milestone
                   );
-                  const contract = getContractInfo(selectedTask.contractId);
-                  const estimatedDeadline = getEstimatedDeadlineDayjs(
-                    selectedTask.milestone,
-                    contract?.milestones || []
-                  );
+                  // Dùng estimatedDeadline từ backend thay vì tính ở frontend
+                  const estimatedDeadline = selectedTask.milestone?.estimatedDeadline 
+                    ? dayjs(selectedTask.milestone.estimatedDeadline) 
+                    : null;
                   return (
                     <Space direction="vertical" size="small">
                       <div>
@@ -1113,8 +1070,8 @@ export default function TaskProgressManagement() {
                   <Descriptions.Item label="First Submission">
                     {selectedTask.milestone.firstSubmissionAt
                       ? dayjs(selectedTask.milestone.firstSubmissionAt).format(
-                          'HH:mm DD/MM/YYYY'
-                        )
+                        'HH:mm DD/MM/YYYY'
+                      )
                       : '—'}
                     {selectedTask.milestone.firstSubmissionAt && (
                       <Text
@@ -1128,8 +1085,8 @@ export default function TaskProgressManagement() {
                   <Descriptions.Item label="Work Completed">
                     {selectedTask.milestone.finalCompletedAt
                       ? dayjs(selectedTask.milestone.finalCompletedAt).format(
-                          'HH:mm DD/MM/YYYY'
-                        )
+                        'HH:mm DD/MM/YYYY'
+                      )
                       : '—'}
                     {selectedTask.milestone.finalCompletedAt && (
                       <Text
@@ -1143,8 +1100,8 @@ export default function TaskProgressManagement() {
                   <Descriptions.Item label="Payment Completed">
                     {selectedTask.milestone.actualEndAt
                       ? dayjs(selectedTask.milestone.actualEndAt).format(
-                          'HH:mm DD/MM/YYYY'
-                        )
+                        'HH:mm DD/MM/YYYY'
+                      )
                       : '—'}
                     {selectedTask.milestone.actualEndAt && (
                       <Text
@@ -1179,8 +1136,8 @@ export default function TaskProgressManagement() {
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {selectedTask.assignedDate
                             ? dayjs(selectedTask.assignedDate).format(
-                                'HH:mm DD/MM/YYYY'
-                              )
+                              'HH:mm DD/MM/YYYY'
+                            )
                             : 'Chưa có'}
                         </Text>
                       </Space>
@@ -1201,8 +1158,8 @@ export default function TaskProgressManagement() {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.specialistRespondedAt
                               ? dayjs(
-                                  selectedTask.specialistRespondedAt
-                                ).format('HH:mm DD/MM/YYYY')
+                                selectedTask.specialistRespondedAt
+                              ).format('HH:mm DD/MM/YYYY')
                               : 'Đã bắt đầu'}
                           </Text>
                         </Space>
@@ -1270,12 +1227,12 @@ export default function TaskProgressManagement() {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {latestApproved.reviewedAt
                               ? dayjs(latestApproved.reviewedAt).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )
+                                'HH:mm DD/MM/YYYY'
+                              )
                               : latestApproved.uploadDate
                                 ? dayjs(latestApproved.uploadDate).format(
-                                    'HH:mm DD/MM/YYYY'
-                                  )
+                                  'HH:mm DD/MM/YYYY'
+                                )
                                 : 'N/A'}
                           </Text>
                           {latestApproved.fileName && (
@@ -1311,12 +1268,12 @@ export default function TaskProgressManagement() {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {latestDelivered.deliveredAt
                               ? dayjs(latestDelivered.deliveredAt).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )
+                                'HH:mm DD/MM/YYYY'
+                              )
                               : latestDelivered.uploadDate
                                 ? dayjs(latestDelivered.uploadDate).format(
-                                    'HH:mm DD/MM/YYYY'
-                                  )
+                                  'HH:mm DD/MM/YYYY'
+                                )
                                 : 'N/A'}
                           </Text>
                           {latestDelivered.fileName && (
@@ -1340,8 +1297,8 @@ export default function TaskProgressManagement() {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
                               ? dayjs(selectedTask.completedDate).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )
+                                'HH:mm DD/MM/YYYY'
+                              )
                               : 'Đã hoàn thành'}
                           </Text>
                         </Space>
@@ -1359,8 +1316,8 @@ export default function TaskProgressManagement() {
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {selectedTask.completedDate
                               ? dayjs(selectedTask.completedDate).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )
+                                'HH:mm DD/MM/YYYY'
+                              )
                               : 'Đã hủy'}
                           </Text>
                         </Space>
@@ -1396,7 +1353,7 @@ export default function TaskProgressManagement() {
                             <Tag
                               color={
                                 FILE_STATUS_COLORS[
-                                  file.fileStatus?.toLowerCase()
+                                file.fileStatus?.toLowerCase()
                                 ] || 'default'
                               }
                             >
@@ -1531,8 +1488,8 @@ export default function TaskProgressManagement() {
               <strong>Assigned Date:</strong>{' '}
               {selectedIssueTask.assignedDate
                 ? dayjs(selectedIssueTask.assignedDate).format(
-                    'YYYY-MM-DD HH:mm'
-                  )
+                  'YYYY-MM-DD HH:mm'
+                )
                 : 'N/A'}
             </p>
 

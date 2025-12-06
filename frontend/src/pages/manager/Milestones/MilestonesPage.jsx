@@ -36,13 +36,6 @@ const STATUS_OPTIONS = [
   { label: 'Hoàn thành', value: 'completed' },
 ];
 
-const TASK_TYPE_OPTIONS = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Transcription', value: 'TRANSCRIPTION' },
-  { label: 'Arrangement', value: 'ARRANGEMENT' },
-  { label: 'Recording', value: 'RECORDING' },
-];
-
 const STATUS_COLORS = {
   unassigned: 'orange',
   assigned: 'blue',
@@ -76,13 +69,28 @@ const MILESTONE_WORK_STATUS_LABELS = {
   cancelled: 'Đã hủy',
 };
 
+const CONTRACT_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement + Recording',
+  recording: 'Recording',
+  bundle: 'Bundle (T+A+R)',
+};
+
+const CONTRACT_TYPE_COLORS = {
+  transcription: 'blue',
+  arrangement: 'green',
+  arrangement_with_recording: 'purple',
+  recording: 'orange',
+  bundle: 'gold',
+};
+
 const MilestonesPage = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
-    taskType: 'all',
     onlyUnassigned: false,
   });
   const [pagination, setPagination] = useState({
@@ -108,9 +116,6 @@ const MilestonesPage = () => {
       if (currentFilters.status !== 'all') {
         params.status = currentFilters.status;
       }
-      if (currentFilters.taskType !== 'all') {
-        params.taskType = currentFilters.taskType;
-      }
       if (currentFilters.onlyUnassigned) {
         params.onlyUnassigned = true;
       }
@@ -120,21 +125,9 @@ const MilestonesPage = () => {
       const response = await getMilestoneAssignmentSlots(params);
       if (response?.status === 'success' && response.data) {
         const pageData = response.data;
-        // Sort: milestone chưa có task (unassigned) lên trên
-        const sortedSlots = (pageData.content || []).sort((a, b) => {
-          const aStatus = a.assignmentStatus?.toLowerCase() || 'unassigned';
-          const bStatus = b.assignmentStatus?.toLowerCase() || 'unassigned';
-
-          // Ưu tiên unassigned lên đầu
-          if (aStatus === 'unassigned' && bStatus !== 'unassigned') return -1;
-          if (aStatus !== 'unassigned' && bStatus === 'unassigned') return 1;
-
-          // Nếu cùng trạng thái, sort theo milestone order index
-          const aOrder = a.milestoneOrderIndex ?? 999;
-          const bOrder = b.milestoneOrderIndex ?? 999;
-          return aOrder - bOrder;
-        });
-        setSlots(sortedSlots);
+        // Backend đã sort theo contractCreatedAt DESC, contractNumber, và milestoneOrderIndex
+        // Không cần sort lại ở frontend để giữ nguyên thứ tự group theo contract
+        setSlots(pageData.content || []);
         const metadata = response.metadata || {};
         setSummary({
           total: pageData.totalElements ?? 0,
@@ -188,7 +181,6 @@ const MilestonesPage = () => {
     fetchSlots(filters, pagination);
   }, [
     filters.status,
-    filters.taskType,
     filters.onlyUnassigned,
     filters.search,
     pagination.page,
@@ -213,10 +205,6 @@ const MilestonesPage = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  const handleTaskTypeChange = value => {
-    setFilters(prev => ({ ...prev, taskType: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
 
   const handleOnlyUnassignedChange = e => {
     setFilters(prev => ({ ...prev, onlyUnassigned: e.target.checked }));
@@ -242,13 +230,23 @@ const MilestonesPage = () => {
       dataIndex: 'contractNumber',
       key: 'contractNumber',
       width: 220,
-      render: (_, record) => (
+      render: (_, record) => {
+        const contractType = record.contractType?.toLowerCase();
+        const typeLabel = contractType
+          ? CONTRACT_TYPE_LABELS[contractType] || record.contractType
+          : 'N/A';
+        const typeColor = contractType
+          ? CONTRACT_TYPE_COLORS[contractType] || 'default'
+          : 'default';
+
+        return (
         <Space direction="vertical" size={0}>
           <Text strong>{record.contractNumber}</Text>
           <Text type="secondary">{record.customerName || '-'}</Text>
-          <Tag>{record.contractType || 'N/A'}</Tag>
+            <Tag color={typeColor}>{typeLabel}</Tag>
         </Space>
-      ),
+        );
+      },
     },
     {
       title: 'Milestone',
@@ -284,33 +282,6 @@ const MilestonesPage = () => {
             .toDate();
         }
         return display ? dayjs(display).format('DD/MM/YYYY') : '—';
-      },
-    },
-    {
-      title: 'Task Type',
-      dataIndex: 'taskType',
-      key: 'taskType',
-      width: 140,
-      render: (type, record) => {
-        // Ưu tiên taskType từ assignment; nếu chưa có task thì fallback contractType
-        const rawType = type || record.contractType;
-        if (!rawType) {
-          return <Tag color="default">N/A</Tag>;
-        }
-        const lower = String(rawType).toLowerCase();
-        const label =
-          lower === 'transcription'
-            ? 'Transcription'
-            : lower === 'arrangement'
-              ? 'Arrangement'
-              : lower === 'arrangement_with_recording'
-                ? 'Arrangement + Recording'
-                : lower === 'recording'
-                  ? 'Recording'
-                  : lower === 'bundle'
-                    ? 'Bundle (T+A+R)'
-                    : rawType;
-        return <Tag color="cyan">{label}</Tag>;
       },
     },
     {
@@ -439,14 +410,6 @@ const MilestonesPage = () => {
               value={filters.status}
               options={STATUS_OPTIONS}
               onChange={handleStatusChange}
-              style={{ width: '100%' }}
-            />
-          </Col>
-          <Col xs={24} md={6}>
-            <Select
-              value={filters.taskType}
-              options={TASK_TYPE_OPTIONS}
-              onChange={handleTaskTypeChange}
               style={{ width: '100%' }}
             />
           </Col>

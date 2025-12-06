@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Avatar, message as antMessage } from 'antd';
-import { UserOutlined, DownloadOutlined } from '@ant-design/icons';
+import { message as antMessage } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import styles from './MessageBubble.module.css';
 import chatService from '../../../services/chatService';
 
@@ -315,15 +315,6 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
     <div
       className={`${styles.messageBubble} ${isOwnMessage ? styles.ownMessage : styles.otherMessage}`}
     >
-      {!isOwnMessage && (
-        <Avatar
-          size={32}
-          icon={<UserOutlined />}
-          src={message.senderAvatar}
-          className={styles.avatar}
-        />
-      )}
-
       <div className={styles.messageContent}>
         {!isOwnMessage && (
           <span className={styles.senderName}>
@@ -348,15 +339,6 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
           )}
         </div>
       </div>
-
-      {isOwnMessage && (
-        <Avatar
-          size={32}
-          icon={<UserOutlined />}
-          src={message.senderAvatar}
-          className={styles.avatar}
-        />
-      )}
     </div>
   );
 };

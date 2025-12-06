@@ -12,38 +12,33 @@ const { Option } = Select;
  * Displays all chat rooms for the current user
  */
 const ChatRoomsPage = () => {
-  const { rooms, loading, refreshRooms } = useChatRooms();
+  const [selectedRoomType, setSelectedRoomType] = useState(null); // null = all
+  const { rooms, loading, refreshRooms } = useChatRooms(selectedRoomType);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRoomType, setSelectedRoomType] = useState(null);
   const [filteredRooms, setFilteredRooms] = useState([]);
 
-  // Filter rooms based on search query and room type
+  // Filter rooms based on search query (rooms đã được filter theo type từ backend)
   useEffect(() => {
-    if (!rooms) {
+    if (loading || !rooms) {
       setFilteredRooms([]);
       return;
     }
 
-    let filtered = rooms;
-
-    // Filter by room type
-    if (selectedRoomType) {
-      filtered = filtered.filter(room => room.roomType === selectedRoomType);
+    if (!searchQuery.trim()) {
+      setFilteredRooms(rooms);
+      return;
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        room =>
-          room.roomName?.toLowerCase().includes(query) ||
-          room.description?.toLowerCase().includes(query) ||
-          room.contextId?.toLowerCase().includes(query)
-      );
-    }
+    const query = searchQuery.toLowerCase();
+    const filtered = rooms.filter(
+      room =>
+        room.roomName?.toLowerCase().includes(query) ||
+        room.description?.toLowerCase().includes(query) ||
+        room.contextId?.toLowerCase().includes(query)
+    );
 
     setFilteredRooms(filtered);
-  }, [rooms, searchQuery, selectedRoomType]);
+  }, [rooms, loading, searchQuery]);
 
   // Calculate total unread messages
   const totalUnread =

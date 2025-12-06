@@ -10,6 +10,7 @@ import com.mutrapro.chat_service.dto.response.ChatRoomResponse;
 import com.mutrapro.chat_service.entity.ChatParticipant;
 import com.mutrapro.chat_service.entity.ChatRoom;
 import com.mutrapro.chat_service.entity.OutboxEvent;
+import com.mutrapro.chat_service.enums.MessageContextType;
 import com.mutrapro.chat_service.enums.MessageType;
 import com.mutrapro.chat_service.enums.ParticipantRole;
 import com.mutrapro.chat_service.enums.RoomType;
@@ -231,6 +232,7 @@ public class ChatRoomService {
                             .roomId(contractRoom.getRoomId())
                             .messageType(MessageType.SYSTEM)
                             .content(systemMessage)
+                            .contextType(MessageContextType.GENERAL)
                             .build()
             );
             
@@ -323,10 +325,15 @@ public class ChatRoomService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatRoomResponse> getUserChatRooms() {
+    public List<ChatRoomResponse> getUserChatRooms(RoomType roomType) {
         String userId = getCurrentUserId();
         
-        List<ChatRoom> rooms = chatRoomRepository.findAllByParticipantUserId(userId);
+        List<ChatRoom> rooms;
+        if (roomType != null) {
+            rooms = chatRoomRepository.findAllByParticipantUserIdAndRoomType(userId, roomType);
+        } else {
+            rooms = chatRoomRepository.findAllByParticipantUserId(userId);
+        }
         
         return rooms.stream()
                 .map(chatRoomMapper::toResponse)

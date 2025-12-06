@@ -7,8 +7,9 @@ import toast from 'react-hot-toast';
 /**
  * Custom hook for managing chat functionality
  * @param {string} roomId - Chat room ID
+ * @param {boolean} autoLoad - Whether to auto-load messages on mount (default: true)
  */
-export const useChat = roomId => {
+export const useChat = (roomId, autoLoad = true) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -33,10 +34,20 @@ export const useChat = roomId => {
    */
   const loadMessages = useCallback(
     async (pageNum = 0, contextType = null, contextId = null) => {
-      if (!roomId) return;
+      if (!roomId) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
+        
+        // Clear messages ngay lập tức khi bắt đầu load (pageNum = 0) để tránh flash messages cũ
+        if (pageNum === 0) {
+          setMessages([]);
+        }
+        
         const response = await chatService.getMessages(
           roomId,
           pageNum,
@@ -63,6 +74,10 @@ export const useChat = roomId => {
       } catch (error) {
         console.error('Failed to load messages:', error);
         toast.error('Không thể tải tin nhắn');
+        // Clear messages nếu load thất bại
+        if (pageNum === 0) {
+          setMessages([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -159,6 +174,20 @@ export const useChat = roomId => {
   );
 
   /**
+   * Clear messages when roomId changes
+   */
+  useEffect(() => {
+    if (roomId) {
+      // Clear messages và reset state khi chuyển sang room mới
+      setMessages([]);
+      setLoading(true);
+      setHasMore(true);
+      setPage(0);
+      isInitialLoad.current = true;
+    }
+  }, [roomId]);
+
+  /**
    * Connect to WebSocket and subscribe to room
    */
   useEffect(() => {
@@ -185,6 +214,8 @@ export const useChat = roomId => {
           );
         }
 
+        // Unsubscribe from previous room if any
+        // Note: websocketService should handle this internally, but we do it explicitly here
         // Subscribe to room
         websocketService.subscribeToRoom(roomId, handleIncomingMessage);
         subscribed = true;
@@ -209,13 +240,13 @@ export const useChat = roomId => {
   }, [roomId, handleIncomingMessage]);
 
   /**
-   * Load initial messages
+   * Load initial messages (only if autoLoad is true)
    */
   useEffect(() => {
-    if (roomId) {
+    if (roomId && autoLoad) {
       loadMessages(0);
     }
-  }, [roomId, loadMessages]);
+  }, [roomId, autoLoad, loadMessages]);
 
   return {
     messages,
@@ -233,15 +264,16 @@ export const useChat = roomId => {
 
 /**
  * Custom hook for managing chat rooms list
+ * @param {string} roomType - Optional: Filter by room type (CONTRACT_CHAT, REQUEST_CHAT, etc.)
  */
-export const useChatRooms = () => {
+export const useChatRooms = (roomType = null) => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadRooms = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await chatService.getChatRooms();
+      const response = await chatService.getChatRooms(roomType);
       setRooms(response.data || []);
     } catch (error) {
       console.error('Failed to load chat rooms:', error);
@@ -249,7 +281,7 @@ export const useChatRooms = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [roomType]);
 
   useEffect(() => {
     loadRooms();

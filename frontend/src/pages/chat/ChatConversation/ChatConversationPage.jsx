@@ -23,6 +23,7 @@ const ChatConversationPage = () => {
   const [selectedContextId, setSelectedContextId] = useState(null);
   const messagesContainerRef = useRef(null);
 
+  // Không auto-load trong useChat, chỉ load từ đây với filter
   const {
     messages,
     loading,
@@ -33,9 +34,9 @@ const ChatConversationPage = () => {
     loadMoreMessages,
     loadMessages,
     messagesEndRef,
-  } = useChat(roomId);
+  } = useChat(roomId, false); // false = không auto-load
 
-  // Reload messages when filter changes
+  // Load messages với filter ngay từ đầu
   useEffect(() => {
     if (roomId && !loadingRoom) {
       loadMessages(0, selectedContextType, selectedContextId);

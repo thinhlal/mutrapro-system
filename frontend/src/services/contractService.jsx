@@ -296,6 +296,26 @@ export const cancelContract = async (contractId, reason) => {
 };
 
 /**
+ * Cancel contract by manager
+ * POST /contracts/{contractId}/cancel-by-manager
+ *
+ * @param {string} contractId - ID của contract
+ * @param {string} reason - Lý do hủy contract
+ * @returns {Promise} ApiResponse với contract đã hủy
+ */
+export const cancelContractByManager = async (contractId, reason) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.CONTRACTS.CANCEL_BY_MANAGER(contractId),
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi hủy contract' };
+  }
+};
+
+/**
  * Get contract signature image as base64 (proxy from S3 to avoid CORS)
  * GET /contracts/{contractId}/signature-image
  *

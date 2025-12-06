@@ -87,6 +87,7 @@ public class TaskAssignmentResponse {
         String contractNumber;
         String nameSnapshot;  // Customer name
         Integer revisionDeadlineDays;  // Số ngày SLA để hoàn thành revision (từ khi manager approve)
+        LocalDateTime contractCreatedAt;  // Thời điểm tạo contract để sort mới nhất lên trước
     }
 
     @Data
@@ -123,6 +124,7 @@ public class TaskAssignmentResponse {
         LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
         LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
         Integer milestoneSlaDays;
+        LocalDateTime estimatedDeadline;  // Deadline ước tính khi chưa có actual/planned (tính từ deadline milestone trước đó + slaDays)
     }
 }
 

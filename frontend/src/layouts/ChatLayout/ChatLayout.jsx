@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Spin, Empty, Badge, Avatar, Tag, Select } from 'antd';
+import { Input, Spin, Empty, Badge, Tag, Select } from 'antd';
 import {
   SearchOutlined,
-  MessageOutlined,
   LockOutlined,
 } from '@ant-design/icons';
 import { useChatRooms } from '../../hooks/useChat';
@@ -21,38 +20,33 @@ const { Option } = Select;
 const ChatLayout = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { rooms, loading } = useChatRooms();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoomType, setSelectedRoomType] = useState(null);
+  const { rooms, loading } = useChatRooms(selectedRoomType);
   const [filteredRooms, setFilteredRooms] = useState([]);
 
-  // Filter rooms based on search query and room type
+  // Filter rooms based on search query (rooms đã được filter theo type từ backend)
   useEffect(() => {
-    if (!rooms) {
+    if (loading || !rooms) {
       setFilteredRooms([]);
       return;
     }
 
-    let filtered = rooms;
-
-    // Filter by room type
-    if (selectedRoomType) {
-      filtered = filtered.filter(room => room.roomType === selectedRoomType);
+    if (!searchQuery.trim()) {
+      setFilteredRooms(rooms);
+      return;
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        room =>
-          room.roomName?.toLowerCase().includes(query) ||
-          room.description?.toLowerCase().includes(query) ||
-          room.contextId?.toLowerCase().includes(query)
-      );
-    }
+    const query = searchQuery.toLowerCase();
+    const filtered = rooms.filter(
+      room =>
+        room.roomName?.toLowerCase().includes(query) ||
+        room.description?.toLowerCase().includes(query) ||
+        room.contextId?.toLowerCase().includes(query)
+    );
 
     setFilteredRooms(filtered);
-  }, [rooms, searchQuery, selectedRoomType]);
+  }, [rooms, loading, searchQuery]);
 
   // Calculate total unread messages
   const totalUnread =
@@ -163,22 +157,6 @@ const ChatLayout = () => {
                       onClick={() => handleRoomClick(room)}
                       title={isInactive ? 'Phòng chat này đã được đóng' : ''}
                     >
-                      <div className={styles.roomAvatar}>
-                        <Avatar
-                          size={56}
-                          icon={<MessageOutlined />}
-                          style={{
-                            backgroundColor: isInactive
-                              ? '#d9d9d9'
-                              : getRoomTypeColor(room.roomType),
-                            opacity: isInactive ? 0.6 : 1,
-                          }}
-                        />
-                        {room.unreadCount > 0 && !isInactive && (
-                          <span className={styles.unreadDot}></span>
-                        )}
-                      </div>
-
                       <div className={styles.roomInfo}>
                         <div className={styles.roomTop}>
                           <div

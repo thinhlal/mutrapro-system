@@ -28,10 +28,11 @@ import dayjs from 'dayjs';
 import styles from './ContractsManagement.module.css';
 import {
   getAllContracts,
-  cancelContract,
+  cancelContractByManager,
   sendContractToCustomer,
   startContractWork,
   getContractById,
+  getContractsByRequestId,
 } from '../../../services/contractService';
 import { getTaskAssignmentsByContract } from '../../../services/taskAssignmentService';
 import { useNavigate } from 'react-router-dom';
@@ -188,6 +189,8 @@ export default function ContractsManagement() {
   const [actionLoading, setActionLoading] = useState(false);
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [revisionContract, setRevisionContract] = useState(null);
+  const [hasActiveContract, setHasActiveContract] = useState(false);
+  const [checkingActiveContract, setCheckingActiveContract] = useState(false);
   const [cancelReasonModalVisible, setCancelReasonModalVisible] =
     useState(false);
   const [canceledContract, setCanceledContract] = useState(null);
@@ -218,6 +221,41 @@ export default function ContractsManagement() {
 
     fetchContracts();
   }, []);
+
+  // Check xem request đã có contract active khác chưa khi mở revision modal
+  useEffect(() => {
+    const checkActiveContract = async () => {
+      if (!revisionModalVisible || !revisionContract?.requestId) {
+        return;
+      }
+
+      setCheckingActiveContract(true);
+      try {
+        const response = await getContractsByRequestId(revisionContract.requestId);
+        if (response?.status === 'success' && Array.isArray(response.data)) {
+          // Check xem có contract nào active (không phải need_revision) không
+          const hasActive = response.data.some(contract => {
+            const status = (contract.status || '').toLowerCase();
+            return status !== 'need_revision' &&
+                   status !== 'canceled_by_customer' &&
+                   status !== 'canceled_by_manager' &&
+                   status !== 'rejected_by_customer' &&
+                   status !== 'expired';
+          });
+          setHasActiveContract(hasActive);
+        } else {
+          setHasActiveContract(false);
+        }
+      } catch (error) {
+        console.error('Error checking active contracts:', error);
+        setHasActiveContract(false);
+      } finally {
+        setCheckingActiveContract(false);
+      }
+    };
+
+    checkActiveContract();
+  }, [revisionModalVisible, revisionContract]);
 
   const data = useMemo(() => {
     return contracts.filter(c => {
@@ -272,7 +310,7 @@ export default function ContractsManagement() {
     if (!selectedContract) return;
     try {
       setActionLoading(true);
-      await cancelContract(selectedContract.contractId, reason);
+      await cancelContractByManager(selectedContract.contractId, reason);
       message.success('Contract cancelled successfully');
       setCancelModalVisible(false);
       setSelectedContract(null);
@@ -445,23 +483,32 @@ export default function ContractsManagement() {
               ? resp.data
               : resp?.data?.content || [];
 
-            const activeStatuses = new Set([
-              'assigned',
+            // Accepted statuses (khớp với backend): assigned chưa được accept, nên không tính
+            const acceptedStatuses = new Set([
               'accepted_waiting',
               'ready_to_start',
               'in_progress',
+              'completed',
             ]);
 
-            const byMilestone = assignments.reduce((acc, a) => {
+            // Lọc task không bị cancelled (chỉ lấy task active)
+            const activeAssignments = assignments.filter(
+              a => (a.status || '').toLowerCase() !== 'cancelled'
+            );
+
+            // Chỉ tính task active (không cancelled) cho mỗi milestone
+            const byMilestone = activeAssignments.reduce((acc, a) => {
               if (!a.milestoneId) return acc;
               const mId = a.milestoneId;
               if (!acc[mId]) {
-                acc[mId] = { total: 0, active: 0 };
+                acc[mId] = { hasActiveTask: false, isAccepted: false };
               }
-              acc[mId].total += 1;
+              // Milestone có task active
+              acc[mId].hasActiveTask = true;
               const st = (a.status || '').toLowerCase();
-              if (activeStatuses.has(st)) {
-                acc[mId].active += 1;
+              // Task active có được accept không
+              if (acceptedStatuses.has(st)) {
+                acc[mId].isAccepted = true;
               }
               return acc;
             }, {});
@@ -475,8 +522,8 @@ export default function ContractsManagement() {
               : [];
             const milestoneSummaries = milestones.map(m => {
               const stats = byMilestone[m.milestoneId] || {
-                total: 0,
-                active: 0,
+                hasActiveTask: false,
+                isAccepted: false,
               };
               return {
                 id: m.milestoneId,
@@ -485,11 +532,11 @@ export default function ContractsManagement() {
               };
             });
 
-            // Milestone nào chưa có task active
+            // Milestone chưa có task assignment active hoặc task chưa được accept
             const missingMilestones = milestoneSummaries.filter(
-              m => m.active === 0
+              m => !m.hasActiveTask || !m.isAccepted
             );
-            // Nếu KHÔNG có milestone nào (chưa sync milestones) HOẶC còn milestone chưa có task active
+            // Nếu KHÔNG có milestone nào (chưa sync milestones) HOẶC còn milestone chưa có task accepted
             const hasBlockingMissing =
               milestoneSummaries.length === 0 || missingMilestones.length > 0;
 
@@ -549,9 +596,35 @@ export default function ContractsManagement() {
                 <Button
                   type="primary"
                   icon={<InfoCircleOutlined />}
-                  onClick={() => {
+                  onClick={async () => {
                     setRevisionContract(r);
                     setRevisionModalVisible(true);
+                    // Check xem request đã có contract active khác chưa
+                    if (r.requestId) {
+                      setCheckingActiveContract(true);
+                      try {
+                        const response = await getContractsByRequestId(r.requestId);
+                        if (response?.status === 'success' && Array.isArray(response.data)) {
+                          // Check xem có contract nào active (không phải need_revision) không
+                          const hasActive = response.data.some(contract => {
+                            const status = (contract.status || '').toLowerCase();
+                            return status !== 'need_revision' &&
+                                   status !== 'canceled_by_customer' &&
+                                   status !== 'canceled_by_manager' &&
+                                   status !== 'rejected_by_customer' &&
+                                   status !== 'expired';
+                          });
+                          setHasActiveContract(hasActive);
+                        } else {
+                          setHasActiveContract(false);
+                        }
+                      } catch (error) {
+                        console.error('Error checking active contracts:', error);
+                        setHasActiveContract(false);
+                      } finally {
+                        setCheckingActiveContract(false);
+                      }
+                    }
                   }}
                   style={{
                     backgroundColor: '#fa8c16',
@@ -761,6 +834,7 @@ export default function ContractsManagement() {
         onCancel={() => {
           setRevisionModalVisible(false);
           setRevisionContract(null);
+          setHasActiveContract(false);
         }}
         footer={[
           <Button
@@ -768,10 +842,12 @@ export default function ContractsManagement() {
             onClick={() => {
               setRevisionModalVisible(false);
               setRevisionContract(null);
+              setHasActiveContract(false);
             }}
           >
             Đóng
           </Button>,
+          !hasActiveContract && !checkingActiveContract && (
           <Button
             key="create"
             type="primary"
@@ -804,8 +880,9 @@ export default function ContractsManagement() {
             }}
           >
             Create New Contract
-          </Button>,
-        ]}
+            </Button>
+          ),
+        ].filter(Boolean)}
         width={1000}
       >
         {revisionContract && (
@@ -1090,29 +1167,29 @@ export default function ContractsManagement() {
             ) : (
               <>
                 <p>
-                  Tình trạng task theo từng milestone (active = assigned /
-                  accepted_waiting / ready_to_start / in_progress):
+                  Tình trạng task theo từng milestone (accepted = accepted_waiting /
+                  ready_to_start / in_progress / completed):
                 </p>
                 <ul style={{ paddingLeft: 20 }}>
                   {startWorkContext.milestoneSummaries.map(m => (
                     <li key={m.id || m.name}>
                       <strong>{m.name}:</strong>{' '}
-                      {m.total === 0
-                        ? 'Chưa có task'
-                        : m.active > 0
-                          ? `${m.active}/${m.total} task active`
-                          : `${m.total} task (tấtả đã completed/cancelled)`}
+                      {!m.hasActiveTask
+                        ? 'Chưa có task assignment active'
+                        : m.isAccepted
+                          ? 'Task đã được accept ✓'
+                          : 'Task chưa được accept (đang ở trạng thái assigned)'}
                     </li>
                   ))}
                 </ul>
                 {startWorkContext.hasBlockingMissing ? (
                   <p style={{ marginTop: 8 }}>
-                    Có milestone chưa có task active, nên chưa thể Start Work.
-                    Vui lòng vào Milestones / Task Progress để gán task trước.
+                    Có milestone chưa có task assignment active hoặc task chưa được accept, nên chưa thể Start Work.
+                    Vui lòng vào Milestones / Task Progress để gán và đảm bảo task đã được accept trước.
                   </p>
                 ) : (
                   <p style={{ marginTop: 8 }}>
-                    Tất cả milestones đã có ít nhất một task active. Bạn có chắc
+                    Tất cả milestones đã có task assignment và đã được accept. Bạn có chắc
                     chắn muốn Start Work cho contract này không?
                   </p>
                 )}

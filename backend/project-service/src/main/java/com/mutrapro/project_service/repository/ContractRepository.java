@@ -50,7 +50,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
            "com.mutrapro.project_service.enums.ContractStatus.active, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment) " +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment, " +
+           "com.mutrapro.project_service.enums.ContractStatus.completed) " +
            "  OR (c.createdAt = (" +
            "    SELECT MAX(c2.createdAt) FROM Contract c2 " +
            "    WHERE c2.requestId = c.requestId " +
@@ -64,7 +65,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
            "com.mutrapro.project_service.enums.ContractStatus.active, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment)" +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment, " +
+           "com.mutrapro.project_service.enums.ContractStatus.completed)" +
            "  ))" +
            ") " +
            "ORDER BY c.requestId, " +
@@ -73,7 +75,8 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
            "com.mutrapro.project_service.enums.ContractStatus.approved, " +
            "com.mutrapro.project_service.enums.ContractStatus.signed, " +
            "com.mutrapro.project_service.enums.ContractStatus.active, " +
-           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment) THEN 0 ELSE 1 END, " +
+           "com.mutrapro.project_service.enums.ContractStatus.active_pending_assignment, " +
+           "com.mutrapro.project_service.enums.ContractStatus.completed) THEN 0 ELSE 1 END, " +
            "c.createdAt DESC")
     List<Contract> findActiveOrLatestContractsByRequestIds(@Param("requestIds") List<String> requestIds);
     

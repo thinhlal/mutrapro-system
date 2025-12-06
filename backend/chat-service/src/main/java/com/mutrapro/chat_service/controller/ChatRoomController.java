@@ -78,9 +78,18 @@ public class ChatRoomController {
 
     @GetMapping
     @Operation(summary = "Lấy danh sách phòng chat của user hiện tại")
-    public ApiResponse<List<ChatRoomResponse>> getUserChatRooms() {
-        log.info("Getting user chat rooms");
-        List<ChatRoomResponse> responses = chatRoomService.getUserChatRooms();
+    public ApiResponse<List<ChatRoomResponse>> getUserChatRooms(
+            @RequestParam(required = false) String roomType) {
+        log.info("Getting user chat rooms: roomType={}", roomType);
+        com.mutrapro.chat_service.enums.RoomType type = null;
+        if (roomType != null && !roomType.isBlank()) {
+            try {
+                type = com.mutrapro.chat_service.enums.RoomType.valueOf(roomType);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid roomType: {}, returning all rooms", roomType);
+            }
+        }
+        List<ChatRoomResponse> responses = chatRoomService.getUserChatRooms(type);
         return ApiResponse.<List<ChatRoomResponse>>builder()
                 .message("Chat rooms retrieved successfully")
                 .data(responses)

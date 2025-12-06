@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Badge, Tag } from 'antd';
-import { MessageOutlined, UserOutlined, LockOutlined } from '@ant-design/icons';
+import { Badge, Tag } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import styles from './ChatRoomCard.module.css';
 
 /**
@@ -64,21 +64,6 @@ const ChatRoomCard = ({ room }) => {
       onClick={handleClick}
       title={isInactive ? 'Phòng chat này đã được đóng' : ''}
     >
-      <div className={styles.roomAvatar}>
-        <Badge dot={room.unreadCount > 0 && !isInactive} offset={[-5, 5]}>
-          <Avatar
-            size={50}
-            icon={<MessageOutlined />}
-            style={{
-              backgroundColor: isInactive
-                ? '#d9d9d9'
-                : getRoomTypeColor(room.roomType),
-              opacity: isInactive ? 0.6 : 1,
-            }}
-          />
-        </Badge>
-      </div>
-
       <div className={styles.roomContent}>
         <div className={styles.roomHeader}>
           <div

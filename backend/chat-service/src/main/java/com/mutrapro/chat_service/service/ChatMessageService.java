@@ -105,6 +105,11 @@ public class ChatMessageService {
                 .orElseThrow(() -> ChatRoomNotFoundException.byId(request.getRoomId()));
         
         // Create system message (không cần senderId/userName vì là system message)
+        // Nếu contextType không được set, mặc định là GENERAL
+        MessageContextType contextType = request.getContextType() != null 
+                ? request.getContextType() 
+                : MessageContextType.GENERAL;
+        
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(chatRoom)
                 .senderId("SYSTEM")  // System message
@@ -112,7 +117,7 @@ public class ChatMessageService {
                 .messageType(request.getMessageType())
                 .content(request.getContent())
                 .metadata(request.getMetadata())
-                .contextType(request.getContextType())
+                .contextType(contextType)
                 .contextId(request.getContextId())
                 .status(MessageStatus.SENT)
                 .sentAt(LocalDateTime.now())

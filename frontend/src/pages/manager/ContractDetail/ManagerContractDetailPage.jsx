@@ -180,23 +180,32 @@ const ManagerContractDetailPage = () => {
         ? resp.data
         : resp?.data?.content || [];
 
-      const activeStatuses = new Set([
-        'assigned',
+      // Accepted statuses (khớp với backend): assigned chưa được accept, nên không tính
+      const acceptedStatuses = new Set([
         'accepted_waiting',
         'ready_to_start',
         'in_progress',
+        'completed',
       ]);
 
-      const byMilestone = assignments.reduce((acc, a) => {
+      // Lọc task không bị cancelled (chỉ lấy task active)
+      const activeAssignments = assignments.filter(
+        a => (a.status || '').toLowerCase() !== 'cancelled'
+      );
+
+      // Chỉ tính task active (không cancelled) cho mỗi milestone
+      const byMilestone = activeAssignments.reduce((acc, a) => {
         if (!a.milestoneId) return acc;
         const mId = a.milestoneId;
         if (!acc[mId]) {
-          acc[mId] = { total: 0, active: 0 };
+          acc[mId] = { hasActiveTask: false, isAccepted: false };
         }
-        acc[mId].total += 1;
+        // Milestone có task active
+        acc[mId].hasActiveTask = true;
         const st = (a.status || '').toLowerCase();
-        if (activeStatuses.has(st)) {
-          acc[mId].active += 1;
+        // Task active có được accept không
+        if (acceptedStatuses.has(st)) {
+          acc[mId].isAccepted = true;
         }
         return acc;
       }, {});
@@ -205,7 +214,10 @@ const ManagerContractDetailPage = () => {
         ? contract.milestones
         : [];
       const milestoneSummaries = milestones.map(m => {
-        const stats = byMilestone[m.milestoneId] || { total: 0, active: 0 };
+        const stats = byMilestone[m.milestoneId] || {
+          hasActiveTask: false,
+          isAccepted: false,
+        };
         return {
           id: m.milestoneId,
           name: m.name || `Milestone ${m.orderIndex || ''}`.trim(),
@@ -213,7 +225,10 @@ const ManagerContractDetailPage = () => {
         };
       });
 
-      const missingMilestones = milestoneSummaries.filter(m => m.active === 0);
+      // Milestone chưa có task assignment active hoặc task chưa được accept
+      const missingMilestones = milestoneSummaries.filter(
+        m => !m.hasActiveTask || !m.isAccepted
+      );
       const hasBlockingMissing = missingMilestones.length > 0;
 
       // Lưu context và mở modal riêng thay vì dùng Modal.confirm
@@ -2669,29 +2684,29 @@ const ManagerContractDetailPage = () => {
           ) : (
             <>
               <p>
-                Tình trạng task theo từng milestone (active = assigned /
-                accepted_waiting / ready_to_start / in_progress):
+                Tình trạng task theo từng milestone (accepted = accepted_waiting /
+                ready_to_start / in_progress / completed):
               </p>
               <ul style={{ paddingLeft: 20 }}>
                 {startWorkContext.milestoneSummaries.map(m => (
                   <li key={m.id || m.name}>
                     <strong>{m.name}:</strong>{' '}
-                    {m.total === 0
-                      ? 'Chưa có task'
-                      : m.active > 0
-                        ? `${m.active}/${m.total} task active`
-                        : `${m.total} task (tất cả đã completed/cancelled)`}
+                    {!m.hasActiveTask
+                      ? 'Chưa có task assignment active'
+                      : m.isAccepted
+                        ? 'Task đã được accept ✓'
+                        : 'Task chưa được accept (đang ở trạng thái assigned)'}
                   </li>
                 ))}
               </ul>
               {startWorkContext.hasBlockingMissing ? (
                 <p style={{ marginTop: 8 }}>
-                  Có milestone chưa có task active, nên chưa thể Start Work. Vui
-                  lòng vào Milestones / Task Progress để gán task trước.
+                  Có milestone chưa có task assignment active hoặc task chưa được accept, nên chưa thể Start Work.
+                  Vui lòng vào Milestones / Task Progress để gán và đảm bảo task đã được accept trước.
                 </p>
               ) : (
                 <p style={{ marginTop: 8 }}>
-                  Tất cả milestones đã có ít nhất một task active. Bạn có chắc
+                  Tất cả milestones đã có task assignment và đã được accept. Bạn có chắc
                   chắn muốn Start Work cho contract này không?
                 </p>
               )}
