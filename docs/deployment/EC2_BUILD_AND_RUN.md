@@ -38,38 +38,57 @@ DOCKER_HUB_USERNAME=your-dockerhub-username
 powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1
 ```
 
-**Linux/Mac:**
-```bash
-chmod +x scripts/build-and-push.sh
-./scripts/build-and-push.sh
-```
-
-**Hoặc dùng Makefile (nếu có):**
-```bash
-make docker-build
-```
-
-Script sẽ tự động build và push 8 services:
-- ✅ api-gateway
-- ✅ identity-service
-- ✅ project-service
-- ✅ billing-service
-- ✅ request-service
-- ✅ notification-service
-- ✅ specialist-service
-- ✅ chat-service
-
 ### Bước 3: Build và Push TỪNG Service (Tùy chọn)
 
-**Windows PowerShell:**
+**Windows PowerShell - Build trên Local:**
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api-gateway
-powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service identity-service
-# ... các service khác
+# Billing Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service billing-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull billing-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d billing-service
 
-#Pull image ec2 start
-sudo docker compose -f docker-compose.prod.hub.yml pull api-gateway
-sudo docker compose -f docker-compose.prod.hub.yml up -d api-gateway
+# Identity Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service identity-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull identity-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d identity-service
+
+# Project Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service project-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull project-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d project-service
+
+# Request Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service request-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull request-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d request-service
+
+# Notification Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service notification-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull notification-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d notification-service
+
+# Specialist Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service specialist-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull specialist-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d specialist-service
+
+# Chat Service
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service chat-service
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull chat-service
+# sudo docker compose -f docker-compose.prod.hub.yml up -d chat-service
+
+# API Gateway
+powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api-gateway
+# Trên EC2:
+# sudo docker compose -f docker-compose.prod.hub.yml pull api-gateway
+# sudo docker compose -f docker-compose.prod.hub.yml up -d api-gateway
 ```
 
 **Linux/Mac - Build từng service thủ công:**
@@ -126,20 +145,8 @@ sudo docker compose -f docker-compose.prod.hub.yml up -d
 ## 🌐 PHẦN 2: DEPLOY VÀ CHẠY TRÊN EC2
 
 ### Bước 1: SSH vào EC2 và chuẩn bị môi trường
-
-```bash
-# SSH vào EC2
-ssh -i your-key.pem ubuntu@your-ec2-ip
-
 # Di chuyển đến thư mục project
-cd ~/mutrapro
-
-# Hoặc clone từ GitHub (nếu chưa có)
-mkdir -p ~/projects
 cd ~/projects
-git clone https://github.com/<your-org>/<your-repo>.git
-cd <your-repo>
-```
 
 ### Bước 2: Kiểm tra Docker và Docker Compose
 
@@ -147,13 +154,6 @@ cd <your-repo>
 # Kiểm tra Docker đã cài chưa
 docker --version
 docker compose version
-
-# Nếu chưa có, cài đặt:
-sudo apt update && sudo apt upgrade -y
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-newgrp docker
 
 # Docker Compose plugin đã được tích hợp sẵn trong Docker Desktop và Docker Engine mới
 # Không cần cài riêng nữa, chỉ cần kiểm tra:
@@ -163,11 +163,6 @@ docker compose version
 ### Bước 3: Cấu hình file .env
 
 Đảm bảo file `.env` đã được tạo và điền đầy đủ thông tin:
-
-```bash
-nano .env
-```
-
 **Nội dung tối thiểu cần có:**
 ```env
 # Docker Hub
@@ -440,7 +435,7 @@ sudo docker compose -f docker-compose.prod.hub.yml stop
 sudo docker compose -f docker-compose.prod.hub.yml stop api-gateway
 
 # Dừng và xóa containers (⚠️ Mất data nếu không có volumes)
-sudo docker compose -f docker-compose.prod.hub.yml down
+sudo docker compose -f docker-compose.prod.hub.yml billing-service down
 
 # Dừng và xóa containers + volumes (⚠️ Mất tất cả data)
 sudo docker compose -f docker-compose.prod.hub.yml down -v

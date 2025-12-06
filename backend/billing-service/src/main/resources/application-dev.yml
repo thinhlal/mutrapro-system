@@ -67,7 +67,7 @@ management:
 # SePay Configuration
 sepay:
   api:
-    key: 7CJ7XQ0EVOJUFVLZ4ROGJZ6DBEVVFHFY2NWYKBMR894XPBF11UOELCGM5XIYACKR  # API Key để xác thực webhook
+    key: GVZVPDB8TMD93TN5UEAUECWCCB6L7M4JLNTRLZII2FGAUMWHGKOYQRB7VMCVX3DS  # API Key để xác thực webhook
   account:
     number: VQRQACQGL7610  # Virtual Account (VA) nhận tiền từ SePay
     bank: MBBank  # Mã ngân hàng
