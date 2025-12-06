@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Modal, Button, Space, Alert } from 'antd';
 import { ClearOutlined, CheckOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
@@ -19,6 +19,35 @@ const SignaturePadModal = ({
 }) => {
   const sigPadRef = useRef(null);
   const [isEmpty, setIsEmpty] = useState(true);
+
+  // Initialize canvas when modal opens
+  useEffect(() => {
+    if (visible && sigPadRef.current) {
+      // Delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        try {
+          const canvas = sigPadRef.current?.getCanvas();
+          if (canvas) {
+            // Force canvas to be interactive
+            canvas.style.pointerEvents = 'auto';
+            canvas.style.touchAction = 'none';
+            
+            // Ensure canvas context is ready
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              // Reset canvas state
+              sigPadRef.current.clear();
+              setIsEmpty(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error initializing signature canvas:', error);
+        }
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
 
   const handleClear = () => {
     sigPadRef.current?.clear();
@@ -55,6 +84,7 @@ const SignaturePadModal = ({
       maskClosable={!loading}
       keyboard={!loading}
       closable={!loading}
+      destroyOnClose={true}
     >
       <div className={styles.container}>
         <Alert
@@ -70,10 +100,15 @@ const SignaturePadModal = ({
             ref={sigPadRef}
             canvasProps={{
               className: styles.signatureCanvas,
+              width: 556,
+              height: 250,
             }}
             onEnd={handleEnd}
             backgroundColor="#ffffff"
             penColor="#000000"
+            minWidth={2}
+            maxWidth={3}
+            velocityFilterWeight={0.7}
           />
         </div>
 

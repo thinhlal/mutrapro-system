@@ -324,7 +324,14 @@ public class ESignService {
             // Remove data URI prefix if present (e.g., "data:image/png;base64,")
             String base64Data = signatureBase64;
             if (signatureBase64.contains(",")) {
-                base64Data = signatureBase64.split(",")[1];
+                String[] parts = signatureBase64.split(",", 2); // Limit to 2 parts
+                if (parts.length > 1 && !parts[1].isEmpty()) {
+                    base64Data = parts[1]; // Get the base64 data after comma
+                } else {
+                    // If no data after comma, use the whole string (might already be pure base64)
+                    base64Data = signatureBase64;
+                    log.warn("Signature data appears to have comma but no data after it, using full string");
+                }
             }
 
             // Decode base64 to bytes

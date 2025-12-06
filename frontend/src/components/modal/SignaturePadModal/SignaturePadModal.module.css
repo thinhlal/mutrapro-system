@@ -10,6 +10,9 @@
   background-color: #ffffff;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  position: relative;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .canvasWrapper:hover {
@@ -17,10 +20,16 @@
 }
 
 .signatureCanvas {
-  width: 100%;
-  height: 250px;
-  cursor: crosshair;
-  display: block;
+  width: 100% !important;
+  height: 250px !important;
+  cursor: crosshair !important;
+  display: block !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  position: relative;
+  z-index: 1;
 }
 
 .hint {
