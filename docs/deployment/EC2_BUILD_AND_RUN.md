@@ -66,6 +66,10 @@ Script sẽ tự động build và push 8 services:
 powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service api-gateway
 powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1 -Service identity-service
 # ... các service khác
+
+#Pull image ec2 start
+sudo docker compose -f docker-compose.prod.hub.yml pull api-gateway
+sudo docker compose -f docker-compose.prod.hub.yml up -d api-gateway
 ```
 
 **Linux/Mac - Build từng service thủ công:**

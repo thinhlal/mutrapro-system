@@ -105,15 +105,18 @@ public class SecurityConfig {
      * Hỗ trợ cả list YAML và comma-separated string (từ env variable)
      */
     private List<String> getAllowedOrigins() {
+        
         if (allowedOriginsConfig == null || allowedOriginsConfig.trim().isEmpty()) {
-            return List.of("http://localhost:5173");
+            return List.of("https://www.mutrapro.top", "https://mutrapro.top", "http://localhost:5173", "http://127.0.0.1:5173");
         }
         // Nếu là comma-separated string (từ env variable), split nó
         // Spring Boot sẽ tự động convert YAML list thành comma-separated string khi dùng @Value
-        return Arrays.stream(allowedOriginsConfig.split(","))
+        List<String> origins = Arrays.stream(allowedOriginsConfig.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
+        
+        return origins;
     }
 
     // CORS REACTIVE
@@ -136,6 +139,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // chú ý: đây là bản reactive
         source.registerCorsConfiguration("/**", config);
+        
         return source;
     }
 
@@ -164,6 +168,9 @@ public class SecurityConfig {
             headers.set("Access-Control-Allow-Origin", origin);
             headers.set("Access-Control-Allow-Credentials", "true");
             headers.add("Vary", "Origin");
+            System.out.println("🔒 CORS Headers set: Access-Control-Allow-Origin=" + origin);
+        } else {
+            System.out.println("🔒 CORS Headers NOT set - Origin not in allowed list");
         }
     }
 

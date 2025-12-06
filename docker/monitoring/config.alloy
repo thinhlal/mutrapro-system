@@ -1,22 +1,25 @@
+// ===================== PROMETHEUS → GRAFANA CLOUD =====================
+
 // Gửi metrics lên Grafana Cloud Hosted Prometheus
 prometheus.remote_write "metrics_hosted_prometheus" {
-   endpoint {
-      name = "hosted-prometheus"
-      url  = "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
-  
-      basic_auth {
-        username = "2845931"
-        password = "glc_eyJvIjoiMTYwOTkwNiIsIm4iOiJzdGFjay0xNDYwODQ5LWFsbG95LW11dHJhcHJvLWFsbG95LW1ldHJpY3MiLCJrIjoiN0FMNjFsdWdWem9ROEIwODQ2OTFrV1dxIiwibSI6eyJyIjoicHJvZC1hcC1zb3V0aGVhc3QtMSJ9fQ=="
-      }
-   }
+  endpoint {
+    name = "hosted-prometheus"
+    url  = "https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push"
+
+    basic_auth {
+      // 2845931 – stack ID, lấy từ env cho an toàn
+      username = sys.env("GRAFANA_STACK_ID")
+      // glc_... – API token, lấy từ env
+      password = sys.env("GRAFANA_API_TOKEN")
+    }
+  }
 }
 
-// Scrape metrics từ các service Spring Boot trong Docker network mutrapro-network
 // API Gateway
 prometheus.scrape "api_gateway" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "api-gateway:8080", "job" = "api-gateway"}]
+  targets         = [{ "__address__" = "api-gateway:8080", "job" = "api-gateway" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -24,7 +27,7 @@ prometheus.scrape "api_gateway" {
 prometheus.scrape "identity_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "identity-service:8081", "job" = "identity-service"}]
+  targets         = [{ "__address__" = "identity-service:8081", "job" = "identity-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -32,7 +35,7 @@ prometheus.scrape "identity_service" {
 prometheus.scrape "project_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "project-service:8082", "job" = "project-service"}]
+  targets         = [{ "__address__" = "project-service:8082", "job" = "project-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -40,7 +43,7 @@ prometheus.scrape "project_service" {
 prometheus.scrape "billing_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "billing-service:8083", "job" = "billing-service"}]
+  targets         = [{ "__address__" = "billing-service:8083", "job" = "billing-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -48,7 +51,7 @@ prometheus.scrape "billing_service" {
 prometheus.scrape "request_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "request-service:8084", "job" = "request-service"}]
+  targets         = [{ "__address__" = "request-service:8084", "job" = "request-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -56,7 +59,7 @@ prometheus.scrape "request_service" {
 prometheus.scrape "notification_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "notification-service:8085", "job" = "notification-service"}]
+  targets         = [{ "__address__" = "notification-service:8085", "job" = "notification-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -64,7 +67,7 @@ prometheus.scrape "notification_service" {
 prometheus.scrape "specialist_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "specialist-service:8086", "job" = "specialist-service"}]
+  targets         = [{ "__address__" = "specialist-service:8086", "job" = "specialist-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
@@ -72,7 +75,49 @@ prometheus.scrape "specialist_service" {
 prometheus.scrape "chat_service" {
   scrape_interval = "15s"
   metrics_path    = "/actuator/prometheus"
-  targets         = [{"__address__" = "chat-service:8088", "job" = "chat-service"}]
+  targets         = [{ "__address__" = "chat-service:8088", "job" = "chat-service" }]
   forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
 }
 
+// ===================== LOKI LOGS → GRAFANA CLOUD =====================
+
+// Discover containers từ Docker
+discovery.docker "linux" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Chuẩn hóa label service_name từ container name
+discovery.relabel "logs_docker" {
+  targets = discovery.docker.linux.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+// Endpoint Loki trên Grafana Cloud
+loki.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_LOGS_ID")
+      password = sys.env("GRAFANA_API_TOKEN")
+    }
+  }
+}
+
+// Đọc log từ Docker và gửi lên Loki
+loki.source.docker "mutrapro" {
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.logs_docker.output
+
+  labels = {
+    platform = "docker",
+    env      = "prod",
+  }
+
+  forward_to = [loki.write.cloud.receiver]
+}

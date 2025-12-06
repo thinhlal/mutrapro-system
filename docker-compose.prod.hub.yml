@@ -39,7 +39,7 @@ services:
       - JWT_SIGNER_KEY=${JWT_SECRET}
       # API Gateway configuration (match với application-prod.yml)
       - API_PREFIX=${API_PREFIX:-/api/v1}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://www.mutrapro.top,https://mutrapro.top,http://localhost:5173,http://127.0.0.1:5173}
       # Service URIs (match với application-prod.yml routes)
       - IDENTITY_URI=${IDENTITY_URI:-http://identity-service:8081}
       - PROJECT_URI=${PROJECT_URI:-http://project-service:8082}
@@ -425,14 +425,27 @@ services:
     image: grafana/alloy:latest
     container_name: mutrapro-grafana-alloy
     command: ["run", "/etc/alloy/config.alloy"]
+    environment:
+      - GRAFANA_STACK_ID=${GRAFANA_STACK_ID}
+      - GRAFANA_LOGS_ID=${GRAFANA_LOGS_ID}
+      - GRAFANA_API_TOKEN=${GRAFANA_API_TOKEN}
+      - GRAFANA_REGION=${GRAFANA_REGION}
+      - GRAFANA_LOKI_URL=${GRAFANA_LOKI_URL}
+      - GRAFANA_PROMETHEUS_URL=${GRAFANA_PROMETHEUS_URL}
     volumes:
-      - ./docker/monitoring/config.alloy:/etc/alloy/config.alloy:ro
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - alloy_data:/var/lib/alloy
     networks:
       - mutrapro-network
     restart: unless-stopped
-    # Không expose port ra ngoài, chỉ chạy internal
 
 networks:
   mutrapro-network:
     driver: bridge
+
+volumes:
+  alloy_data:
+    driver: local
 
