@@ -31,8 +31,7 @@ spring:
 
 logging:
   level:
-    root: WARN
-
+    root: INFO
 # JWT Configuration - Must match auth-service signerKey
 jwt:
   signerKey: ${JWT_SIGNER_KEY:QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn}

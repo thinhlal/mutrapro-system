@@ -118,7 +118,11 @@ notification:
 
 logging:
   level:
-    root: WARN
+    root: INFO
     com.mutrapro.chat_service: INFO
+    org.springframework: INFO
+    org.springframework.boot: INFO
+    org.springframework.web: INFO
     org.springframework.messaging: INFO
-
+    org.hibernate: WARN
+    org.apache.kafka: WARN
