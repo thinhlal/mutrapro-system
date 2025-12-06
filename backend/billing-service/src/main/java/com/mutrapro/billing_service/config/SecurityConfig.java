@@ -28,7 +28,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/swagger-resources/**",
-            "/webjars/**"
+            "/webjars/**",
+            "/payments/sepay/webhook"  // SePay webhook callback (không cần authentication)
     };
 
     @Bean

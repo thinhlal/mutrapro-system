@@ -49,7 +49,8 @@ public class SecurityConfig {
             "/chat/ws/**",  // WebSocket for chat service (path BEFORE StripPrefix)
             "/chat/ws/info",  // SockJS info endpoint
             "/notifications/notifications-ws/**",  // WebSocket for notification service
-            "/notifications/notifications-ws/info"  // SockJS info endpoint
+            "/notifications/notifications-ws/info",  // SockJS info endpoint
+            "/billing/payments/sepay/webhook"  // SePay webhook callback (không cần authentication, xác thực bằng API Key trong header)
     };
 
     @Bean

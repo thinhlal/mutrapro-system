@@ -405,8 +405,8 @@ sudo docker compose -f docker-compose.prod.hub.yml pull
 sudo docker compose -f docker-compose.prod.hub.yml up -d
 
 # Hoặc restart một service cụ thể
-sudo docker compose -f docker-compose.prod.hub.yml pull api-gateway
-sudo docker compose -f docker-compose.prod.hub.yml up -d api-gateway
+sudo docker compose -f docker-compose.prod.hub.yml pull billing-service
+sudo docker compose -f docker-compose.prod.hub.yml up -d billing-service
 ```
 
 ---

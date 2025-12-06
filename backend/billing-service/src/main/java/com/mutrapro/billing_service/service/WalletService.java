@@ -180,6 +180,70 @@ public class WalletService {
     }
 
     /**
+     * Nạp tiền vào ví từ payment gateway (webhook callback) - không cần authentication
+     * Method này được gọi từ SePayService khi xử lý webhook callback
+     */
+    @Transactional
+    public WalletTransactionResponse topupWalletFromPayment(String walletId, TopupWalletRequest request) {
+        // Lấy wallet với lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Validate amount
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw InvalidAmountException.forTopup(request.getAmount());
+        }
+
+        // Validate currency
+        CurrencyType currency = request.getCurrency() != null ? request.getCurrency() : CurrencyType.VND;
+        if (!wallet.getCurrency().equals(currency)) {
+            throw CurrencyMismatchException.create(wallet.getCurrency(), currency);
+        }
+
+        // Tính toán số dư mới
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.add(request.getAmount());
+
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        walletRepository.save(wallet);
+
+        // Tạo transaction record
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("topup_amount", request.getAmount().toString());
+        metadata.put("currency", currency.name());
+        
+        // Lưu thông tin payment method và gateway (nếu có)
+        if (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank()) {
+            metadata.put("payment_method", request.getPaymentMethod());
+        }
+        if (request.getTransactionId() != null && !request.getTransactionId().isBlank()) {
+            metadata.put("transaction_id", request.getTransactionId());
+        }
+        if (request.getGatewayResponse() != null && !request.getGatewayResponse().isBlank()) {
+            metadata.put("gateway_response", request.getGatewayResponse());
+        }
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.topup)
+                .amount(request.getAmount())
+                .currency(currency)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        log.info("Topup wallet from payment gateway: walletId={}, userId={}, amount={}, balanceBefore={}, balanceAfter={}",
+                walletId, wallet.getUserId(), request.getAmount(), balanceBefore, balanceAfter);
+
+        return walletMapper.toResponse(savedTransaction);
+    }
+
+    /**
      * Thanh toán DEPOSIT
      */
     @Transactional
