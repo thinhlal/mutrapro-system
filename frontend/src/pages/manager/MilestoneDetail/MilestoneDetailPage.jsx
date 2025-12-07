@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   Button,
@@ -213,51 +213,7 @@ const MilestoneDetailPage = () => {
     fetchInstruments();
   }, [fetchInstruments]);
 
-  useEffect(() => {
-    fetchInstruments();
-  }, [fetchInstruments]);
-
-  useEffect(() => {
-    if (contractId && milestoneId) {
-      loadData();
-    }
-  }, [contractId, milestoneId]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [milestoneResponse, contractResponse] = await Promise.all([
-        getMilestoneById(contractId, milestoneId),
-        getContractById(contractId).catch(error => {
-          console.warn('Failed to fetch contract info:', error);
-          return null;
-        }),
-      ]);
-
-      if (milestoneResponse?.status === 'success' && milestoneResponse?.data) {
-        setMilestone(milestoneResponse.data);
-        await fetchMilestoneTasks(contractId, milestoneId);
-      } else {
-        throw new Error(milestoneResponse?.message || 'Milestone not found');
-      }
-
-      if (contractResponse?.status === 'success' && contractResponse?.data) {
-        setContract(contractResponse.data);
-        // Load request info nếu có requestId
-        if (contractResponse.data.requestId) {
-          await fetchRequestInfo(contractResponse.data.requestId);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching milestone detail:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết milestone');
-      navigate(-1);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRequestInfo = async requestId => {
+  const fetchRequestInfo = useCallback(async requestId => {
     if (!requestId) return;
     try {
       setRequestLoading(true);
@@ -271,9 +227,9 @@ const MilestoneDetailPage = () => {
     } finally {
       setRequestLoading(false);
     }
-  };
+  }, []);
 
-  const fetchMilestoneTasks = async (contractIdValue, milestoneIdValue) => {
+  const fetchMilestoneTasks = useCallback(async (contractIdValue, milestoneIdValue) => {
     if (!contractIdValue || !milestoneIdValue) {
       setMilestoneTasks([]);
       return;
@@ -303,7 +259,56 @@ const MilestoneDetailPage = () => {
     } finally {
       setMilestoneTasksLoading(false);
     }
-  };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    if (!contractId || !milestoneId) return;
+    
+    try {
+      setLoading(true);
+      const [milestoneResponse, contractResponse] = await Promise.all([
+        getMilestoneById(contractId, milestoneId),
+        getContractById(contractId).catch(error => {
+          console.warn('Failed to fetch contract info:', error);
+          return null;
+        }),
+      ]);
+
+      if (milestoneResponse?.status === 'success' && milestoneResponse?.data) {
+        setMilestone(milestoneResponse.data);
+      } else {
+        throw new Error(milestoneResponse?.message || 'Milestone not found');
+      }
+
+      if (contractResponse?.status === 'success' && contractResponse?.data) {
+        setContract(contractResponse.data);
+      }
+
+      // Load tất cả dữ liệu song song để tối ưu performance
+      const promises = [
+        fetchMilestoneTasks(contractId, milestoneId),
+      ];
+
+      // Chỉ load request info nếu có requestId
+      if (contractResponse?.status === 'success' && contractResponse?.data?.requestId) {
+        promises.push(fetchRequestInfo(contractResponse.data.requestId));
+      }
+
+      await Promise.all(promises);
+    } catch (error) {
+      console.error('Error fetching milestone detail:', error);
+      message.error(error?.message || 'Lỗi khi tải chi tiết milestone');
+      navigate(-1);
+    } finally {
+      setLoading(false);
+    }
+  }, [contractId, milestoneId, fetchMilestoneTasks, fetchRequestInfo, navigate]);
+
+  useEffect(() => {
+    if (contractId && milestoneId) {
+      loadData();
+    }
+  }, [contractId, milestoneId, loadData]);
 
   const openTaskDetailModal = async record => {
     setSelectedTask(record);
