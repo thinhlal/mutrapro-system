@@ -1,10 +1,14 @@
 package com.mutrapro.specialist_service.entity;
 
 import com.mutrapro.shared.entity.BaseEntity;
+import com.mutrapro.specialist_service.enums.Gender;
+import com.mutrapro.specialist_service.enums.RecordingRole;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,7 +22,8 @@ import java.util.List;
 @Table(name = "specialists", indexes = {
     @Index(name = "idx_specialists_user_id", columnList = "user_id", unique = true),
     @Index(name = "idx_specialists_specialization", columnList = "specialization"),
-    @Index(name = "idx_specialists_status", columnList = "status")
+    @Index(name = "idx_specialists_status", columnList = "status"),
+    @Index(name = "idx_specialists_gender", columnList = "gender"),
 })
 @Getter
 @Setter
@@ -72,6 +77,35 @@ public class Specialist extends BaseEntity<String> {
     @Builder.Default
     private Integer totalProjects = 0;
 
+    // ===== RECORDING ARTIST SPECIFIC FIELDS =====
+    
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl; // URL to profile image
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender; // MALE, FEMALE, OTHER
+    
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "recording_roles", columnDefinition = "TEXT[]")
+    @Builder.Default
+    private List<RecordingRole> recordingRoles = new ArrayList<>(); // Array of roles: [VOCALIST], [INSTRUMENT_PLAYER], hoặc [VOCALIST, INSTRUMENT_PLAYER] (chỉ dùng khi specialization = RECORDING_ARTIST)
+    
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "genres", columnDefinition = "TEXT[]")
+    @Builder.Default
+    private List<String> genres = new ArrayList<>(); // Array of music genres: ['Pop', 'Rock', 'Jazz', 'Classical', 'R&B', 'Hip-Hop', 'Electronic', etc.]
+    
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "credits", columnDefinition = "TEXT[]")
+    @Builder.Default
+    private List<String> credits = new ArrayList<>(); // Array of credits: ['One Seven Music', 'Future House Cloud']
+    
+    @Column(name = "reviews")
+    @Builder.Default
+    private Integer reviews = 0; // Number of reviews (separate from total_projects)
+
     // ===== RELATIONSHIPS =====
     
     /**
@@ -87,5 +121,34 @@ public class Specialist extends BaseEntity<String> {
     @OneToMany(mappedBy = "specialist", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ArtistDemo> artistDemos = new ArrayList<>();
+    
+    // ===== HELPER METHODS =====
+    
+    /**
+     * Kiểm tra xem specialist có phải là RECORDING_ARTIST không
+     */
+    public boolean isRecordingArtist() {
+        return this.specialization == SpecialistType.RECORDING_ARTIST;
+    }
+    
+    /**
+     * Kiểm tra xem specialist có phải là vocalist không
+     * (RECORDING_ARTIST với recordingRoles chứa VOCALIST)
+     */
+    public boolean isVocalist() {
+        return isRecordingArtist()
+            && recordingRoles != null
+            && recordingRoles.contains(RecordingRole.VOCALIST);
+    }
+    
+    /**
+     * Kiểm tra xem specialist có phải là instrument player không
+     * (RECORDING_ARTIST với recordingRoles chứa INSTRUMENT_PLAYER)
+     */
+    public boolean isInstrumentPlayer() {
+        return isRecordingArtist()
+            && recordingRoles != null
+            && recordingRoles.contains(RecordingRole.INSTRUMENT_PLAYER);
+    }
 }
 

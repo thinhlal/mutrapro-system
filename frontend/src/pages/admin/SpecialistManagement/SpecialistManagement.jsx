@@ -13,6 +13,7 @@ import {
   Card,
   Typography,
   Descriptions,
+  Checkbox,
 } from 'antd';
 import {
   EditOutlined,
@@ -83,11 +84,23 @@ const SpecialistManagement = () => {
   const handleCreate = async values => {
     setCreateLoading(true);
     try {
-      await createSpecialist({
+      const payload = {
         email: values.email,
         specialization: values.specialization,
         maxConcurrentTasks: values.maxConcurrentTasks || 5,
-      });
+      };
+      
+      // Chỉ thêm recordingRoles nếu là RECORDING_ARTIST
+      if (values.specialization === 'RECORDING_ARTIST') {
+        if (!values.recordingRoles || values.recordingRoles.length === 0) {
+          message.error('Vui lòng chọn ít nhất một recording role');
+          setCreateLoading(false);
+          return;
+        }
+        payload.recordingRoles = values.recordingRoles;
+      }
+      
+      await createSpecialist(payload);
       message.success('Tạo specialist thành công');
       setCreateModalVisible(false);
       createForm.resetFields();
@@ -395,6 +408,42 @@ const SpecialistManagement = () => {
               <Option value="RECORDING_ARTIST">Recording Artist</Option>
             </Select>
           </Form.Item>
+          
+          {/* Recording Roles - chỉ hiển thị khi specialization = RECORDING_ARTIST */}
+          <Form.Item
+            noStyle
+            shouldUpdate={(prevValues, currentValues) =>
+              prevValues.specialization !== currentValues.specialization
+            }
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('specialization') === 'RECORDING_ARTIST' ? (
+                <Form.Item
+                  name="recordingRoles"
+                  label="Recording Roles"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Vui lòng chọn ít nhất một recording role',
+                    },
+                    {
+                      type: 'array',
+                      min: 1,
+                      message: 'Vui lòng chọn ít nhất một recording role',
+                    },
+                  ]}
+                >
+                  <Checkbox.Group>
+                    <Space direction="vertical">
+                      <Checkbox value="VOCALIST">Vocalist</Checkbox>
+                      <Checkbox value="INSTRUMENT_PLAYER">Instrument Player</Checkbox>
+                    </Space>
+                  </Checkbox.Group>
+                </Form.Item>
+              ) : null
+            }
+          </Form.Item>
+          
           <Form.Item
             name="maxConcurrentTasks"
             label="Max Concurrent Tasks"

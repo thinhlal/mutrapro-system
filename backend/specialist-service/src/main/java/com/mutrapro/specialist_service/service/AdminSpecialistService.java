@@ -11,6 +11,9 @@ import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.SpecialistAlreadyExistsException;
 import com.mutrapro.specialist_service.exception.SpecialistNotFoundException;
+import com.mutrapro.specialist_service.exception.UserNotFoundException;
+import com.mutrapro.specialist_service.exception.InvalidSpecialistRequestException;
+import com.mutrapro.specialist_service.exception.UserRoleUpdateException;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +53,7 @@ public class AdminSpecialistService {
         try {
             var userResponse = identityServiceFeignClient.getUserByEmail(email);
             if (userResponse.getData() == null || userResponse.getData().getUserId() == null) {
-                throw new RuntimeException("User not found with email: " + email);
+                throw UserNotFoundException.byEmail(email);
             }
             userId = userResponse.getData().getUserId();
             if (userResponse.getData().getEmail() != null) {
@@ -58,14 +61,23 @@ public class AdminSpecialistService {
             }
             fullNameSnapshot = userResponse.getData().getFullName();
             log.info("Found user ID: {} for email: {}", userId, email);
+        } catch (UserNotFoundException e) {
+            throw e; // Re-throw nếu đã là UserNotFoundException
         } catch (Exception e) {
             log.error("Failed to find user by email: {}", email, e);
-            throw new RuntimeException("User not found with email: " + email, e);
+            throw UserNotFoundException.byEmail(email, e);
         }
         
         // Kiểm tra xem user đã có specialist chưa
         if (specialistRepository.existsByUserId(userId)) {
             throw SpecialistAlreadyExistsException.byUserId(userId);
+        }
+        
+        // Validate: Nếu là RECORDING_ARTIST thì recordingRoles là bắt buộc
+        if (request.getSpecialization() == SpecialistType.RECORDING_ARTIST) {
+            if (request.getRecordingRoles() == null || request.getRecordingRoles().isEmpty()) {
+                throw InvalidSpecialistRequestException.recordingRolesRequired();
+            }
         }
         
         // Tạo specialist entity
@@ -75,6 +87,11 @@ public class AdminSpecialistService {
         specialist.setFullNameSnapshot(fullNameSnapshot);
         specialist.setEmailSnapshot(normalizedEmail);
         
+        // recordingRoles là bắt buộc cho RECORDING_ARTIST, được validate ở trên
+        if (request.getRecordingRoles() != null) {
+            specialist.setRecordingRoles(request.getRecordingRoles());
+        }
+
         Specialist saved = specialistRepository.save(specialist);
         
         // Gán role tương ứng trong identity-service
@@ -86,7 +103,7 @@ public class AdminSpecialistService {
             log.error("Failed to update user role for user ID: {}", userId, e);
             // Rollback specialist creation if role update fails
             specialistRepository.delete(saved);
-            throw new RuntimeException("Failed to update user role: " + e.getMessage(), e);
+            throw UserRoleUpdateException.failed(userId, e);
         }
         
         log.info("Specialist created successfully with ID: {}", saved.getSpecialistId());

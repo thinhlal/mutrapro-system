@@ -50,6 +50,44 @@ public enum SpecialistServiceErrorCodes implements ErrorCode {
     DEMO_NOT_FOUND("SPECIALIST_8100", 404,
         "https://docs.mutrapro.com/errors/SPECIALIST_8100",
         "Demo not found",
+        Retryable.NON_TRANSIENT),
+    
+    // Validation Errors (8150-8199)
+    INVALID_SPECIALIST_REQUEST("SPECIALIST_8150", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8150",
+        "Invalid specialist request",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_SPECIALIST_TYPE("SPECIALIST_8151", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8151",
+        "Invalid specialist type",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_RECORDING_ROLE("SPECIALIST_8152", 400,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8152",
+        "Invalid recording role configuration",
+        Retryable.NON_TRANSIENT),
+    
+    // External Service Errors (8200-8249)
+    USER_NOT_FOUND("SPECIALIST_8200", 404,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8200",
+        "User not found",
+        Retryable.NON_TRANSIENT),
+    
+    USER_ROLE_UPDATE_FAILED("SPECIALIST_8201", 500,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8201",
+        "Failed to update user role",
+        Retryable.TRANSIENT),
+    
+    // Authentication Errors (8250-8299)
+    USER_NOT_AUTHENTICATED("SPECIALIST_8250", 401,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8250",
+        "User not authenticated",
+        Retryable.NON_TRANSIENT),
+    
+    USER_ID_NOT_FOUND("SPECIALIST_8251", 401,
+        "https://docs.mutrapro.com/errors/SPECIALIST_8251",
+        "User ID not found in JWT token",
         Retryable.NON_TRANSIENT);
 
     private final String code;

@@ -3,6 +3,7 @@ package com.mutrapro.specialist_service.service;
 import com.mutrapro.specialist_service.dto.request.*;
 import com.mutrapro.specialist_service.dto.response.*;
 import com.mutrapro.specialist_service.entity.*;
+import com.mutrapro.specialist_service.enums.RecordingCategory;
 import com.mutrapro.specialist_service.enums.SkillType;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.*;
@@ -93,7 +94,7 @@ public class SpecialistProfileService {
      */
     private SkillType mapSpecialistTypeToSkillType(SpecialistType specialistType) {
         if (specialistType == null) {
-            throw new IllegalArgumentException("SpecialistType cannot be null");
+            throw InvalidSpecialistTypeException.cannotBeNull();
         }
         switch (specialistType) {
             case TRANSCRIPTION:
@@ -103,7 +104,7 @@ public class SpecialistProfileService {
             case RECORDING_ARTIST:
                 return SkillType.RECORDING_ARTIST;
             default:
-                throw new IllegalArgumentException("Unknown SpecialistType: " + specialistType);
+                throw InvalidSpecialistTypeException.unknown(specialistType.name());
         }
     }
     
@@ -138,6 +139,34 @@ public class SpecialistProfileService {
         // Kiểm tra xem skill đã tồn tại chưa
         if (specialistSkillRepository.existsBySpecialistAndSkill(specialist, skill)) {
             throw SkillAlreadyExistsException.create(specialist.getSpecialistId(), request.getSkillId());
+        }
+        
+        // Validate: Nếu là RECORDING_ARTIST, skill phải match với recordingRoles
+        if (specialist.isRecordingArtist()) {
+            if (specialist.getRecordingRoles() == null || specialist.getRecordingRoles().isEmpty()) {
+                throw InvalidSpecialistRequestException.recordingRolesRequiredForSkills();
+            }
+            
+            // Kiểm tra skill có recording_category không (chỉ skills RECORDING_ARTIST mới có)
+            if (skill.getSkillType() == SkillType.RECORDING_ARTIST && skill.getRecordingCategory() != null) {
+                RecordingCategory skillCategory = skill.getRecordingCategory();
+                boolean isAllowed = false;
+                
+                // Check xem skill category có match với recordingRoles không
+                if (skillCategory == RecordingCategory.VOCAL && specialist.isVocalist()) {
+                    isAllowed = true;
+                } else if (skillCategory == RecordingCategory.INSTRUMENT && specialist.isInstrumentPlayer()) {
+                    isAllowed = true;
+                }
+                
+                if (!isAllowed) {
+                    throw InvalidSpecialistRequestException.skillCategoryMismatch(
+                        skill.getSkillName(),
+                        skillCategory != null ? skillCategory.name() : "unknown",
+                        specialist.getRecordingRoles() != null ? specialist.getRecordingRoles().toString() : "unknown"
+                    );
+                }
+            }
         }
         
         SpecialistSkill specialistSkill = specialistSkillMapper.toSpecialistSkill(request);

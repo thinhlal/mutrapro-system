@@ -1,5 +1,7 @@
 package com.mutrapro.specialist_service.dto.response;
 
+import com.mutrapro.specialist_service.enums.Gender;
+import com.mutrapro.specialist_service.enums.RecordingRole;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import lombok.AllArgsConstructor;
@@ -9,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Response DTO cho Specialist
@@ -50,5 +53,19 @@ public class SpecialistResponse {
     private String fullName;
     
     private String email;
+    
+    // ===== RECORDING ARTIST SPECIFIC FIELDS =====
+    
+    private String avatarUrl;
+    
+    private Gender gender;
+    
+    private List<RecordingRole> recordingRoles; // Array of roles: [VOCALIST], [INSTRUMENT_PLAYER], hoặc cả 2
+    
+    private List<String> genres; // Array of music genres: ['Pop', 'Rock', 'Jazz', etc.]
+    
+    private List<String> credits;
+    
+    private Integer reviews;
 }
 

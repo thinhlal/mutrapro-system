@@ -1,5 +1,7 @@
 package com.mutrapro.specialist_service.util;
 
+import com.mutrapro.specialist_service.exception.UserNotAuthenticatedException;
+import com.mutrapro.specialist_service.exception.UserIdNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,7 +14,7 @@ public class SecurityUtils {
     public static String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User not authenticated");
+            throw UserNotAuthenticatedException.create();
         }
         return authentication.getName();
     }
@@ -25,7 +27,7 @@ public class SecurityUtils {
     public static String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User not authenticated");
+            throw UserNotAuthenticatedException.create();
         }
         
         // Try to extract userId from JWT claims
@@ -42,7 +44,7 @@ public class SecurityUtils {
         
         // Fallback to email if userId not found in JWT
         // This might require a lookup in identity-service
-        throw new RuntimeException("User ID not found in JWT token. Please ensure JWT contains 'userId' or 'sub' claim.");
+        throw UserIdNotFoundException.create();
     }
 }
 
