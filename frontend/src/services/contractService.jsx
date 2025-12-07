@@ -133,12 +133,28 @@ export const getMyManagedContracts = async () => {
  * Lấy tất cả contracts (dùng endpoint my-managed-contracts cho manager/admin)
  * GET /contracts/my-managed-contracts
  *
+ * @param {Object} filters - Filter parameters
+ * @param {string} filters.search - Search by contract number or customer name
+ * @param {string} filters.contractType - Filter by contract type
+ * @param {string} filters.status - Filter by status
+ * @param {string} filters.currency - Filter by currency
+ * @param {string} filters.startDate - Start date (ISO string)
+ * @param {string} filters.endDate - End date (ISO string)
  * @returns {Promise} ApiResponse với danh sách contracts
  */
-export const getAllContracts = async () => {
+export const getAllContracts = async (filters = {}) => {
   try {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.contractType) params.contractType = filters.contractType;
+    if (filters.status) params.status = filters.status;
+    if (filters.currency) params.currency = filters.currency;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    
     const response = await axiosInstance.get(
-      API_ENDPOINTS.CONTRACTS.MY_MANAGED_CONTRACTS
+      API_ENDPOINTS.CONTRACTS.MY_MANAGED_CONTRACTS,
+      { params }
     );
     return response.data;
   } catch (error) {

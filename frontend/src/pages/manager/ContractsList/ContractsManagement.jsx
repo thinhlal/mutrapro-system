@@ -202,13 +202,28 @@ export default function ContractsManagement() {
   });
   const navigate = useNavigate();
 
-  // Fetch contracts từ API
+  // Helper function để build filter params
+  const buildFilterParams = () => {
+    const filters = {};
+    if (search) filters.search = search;
+    if (type) filters.contractType = type;
+    if (status) filters.status = status;
+    if (currency) filters.currency = currency;
+    if (dateRange && dateRange.length === 2) {
+      filters.startDate = dateRange[0].startOf('day').toISOString();
+      filters.endDate = dateRange[1].endOf('day').toISOString();
+    }
+    return filters;
+  };
+
+  // Fetch contracts từ API với filter
   useEffect(() => {
     const fetchContracts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getAllContracts();
+        const filters = buildFilterParams();
+        const response = await getAllContracts(filters);
         setContracts(response.data || []);
       } catch (err) {
         console.error('Error fetching contracts:', err);
@@ -220,7 +235,7 @@ export default function ContractsManagement() {
     };
 
     fetchContracts();
-  }, []);
+  }, [search, type, status, currency, dateRange]);
 
   // Check xem request đã có contract active khác chưa khi mở revision modal
   useEffect(() => {
@@ -257,42 +272,19 @@ export default function ContractsManagement() {
     checkActiveContract();
   }, [revisionModalVisible, revisionContract]);
 
-  const data = useMemo(() => {
-    return contracts.filter(c => {
-      const contractType = c.contractType?.toLowerCase() || '';
-      const statusLower = c.status?.toLowerCase() || '';
-      const q =
-        (c.contractNumber || '').toLowerCase() +
-        ' ' +
-        (c.nameSnapshot || '').toLowerCase() +
-        ' ' +
-        getServiceName(c.contractType).toLowerCase();
-      const passSearch = q.includes((search || '').toLowerCase().trim());
-      const passType = type ? contractType === type.toLowerCase() : true;
-      const passStatus = status ? statusLower === status.toLowerCase() : true;
-      const passCur = currency ? c.currency === currency : true;
-      const passDate =
-        dateRange?.length === 2
-          ? dayjs(c.createdAt).isBetween(
-              dateRange[0],
-              dateRange[1],
-              'day',
-              '[]'
-            )
-          : true;
-      return passSearch && passType && passStatus && passCur && passDate;
-    });
-  }, [contracts, search, type, status, currency, dateRange]);
+  // Data đã được filter ở backend, chỉ cần dùng trực tiếp
+  const data = contracts;
 
   const handleSendContract = async contractId => {
     try {
       setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await sendContractToCustomer(contractId, 7); // 7 days expiry
       message.success('Contract sent to customer successfully');
-      // Reload contracts
+      // Reload contracts với filter hiện tại
       try {
         setLoading(true);
-        const response = await getAllContracts();
+        const filters = buildFilterParams();
+        const response = await getAllContracts(filters);
         setContracts(response.data || []);
       } catch (err) {
         console.error('Error reloading contracts:', err);
@@ -315,10 +307,11 @@ export default function ContractsManagement() {
       message.success('Contract cancelled successfully');
       setCancelModalVisible(false);
       setSelectedContract(null);
-      // Reload contracts
+      // Reload contracts với filter hiện tại
       try {
         setLoading(true);
-        const response = await getAllContracts();
+        const filters = buildFilterParams();
+        const response = await getAllContracts(filters);
         setContracts(response.data || []);
       } catch (err) {
         console.error('Error reloading contracts:', err);
@@ -754,10 +747,10 @@ export default function ContractsManagement() {
             setStatus();
             setCurrency();
             setDateRange([]);
-            // Reload data
+            // Reload data (không có filter sau khi reset)
             try {
               setLoading(true);
-              const response = await getAllContracts();
+              const response = await getAllContracts({});
               setContracts(response.data || []);
               message.success('List refreshed successfully');
             } catch (err) {
@@ -783,7 +776,8 @@ export default function ContractsManagement() {
                 try {
                   setLoading(true);
                   setError(null);
-                  const response = await getAllContracts();
+                  const filters = buildFilterParams();
+                  const response = await getAllContracts(filters);
                   setContracts(response.data || []);
                 } catch (err) {
                   setError(err.message || 'Lỗi khi tải danh sách contracts');
@@ -1133,7 +1127,8 @@ export default function ContractsManagement() {
             setActionLoading(prev => ({ ...prev, [contractId]: true }));
             await startContractWork(contractId);
             message.success('Đã bắt đầu work cho contract');
-            const response = await getAllContracts();
+            const filters = buildFilterParams();
+            const response = await getAllContracts(filters);
             setContracts(response.data || []);
             setStartWorkModalVisible(false);
             setStartWorkContext({

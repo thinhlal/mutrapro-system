@@ -2,6 +2,8 @@ package com.mutrapro.project_service.repository;
 
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
+import com.mutrapro.project_service.enums.ContractType;
+import com.mutrapro.project_service.enums.CurrencyType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +23,28 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     List<Contract> findByUserId(String userId);
     
     List<Contract> findByManagerUserId(String managerUserId);
+    
+    @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId ORDER BY c.createdAt DESC")
+    List<Contract> findByManagerUserIdOrderByCreatedAtDesc(@Param("managerUserId") String managerUserId);
+    
+    @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId " +
+           "AND (:search IS NULL OR :search = '' OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "     LOWER(c.nameSnapshot) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:contractType IS NULL OR c.contractType = :contractType) " +
+           "AND (:status IS NULL OR c.status = :status) " +
+           "AND (:currency IS NULL OR c.currency = :currency) " +
+           "AND (:startDate IS NULL OR c.createdAt >= :startDate) " +
+           "AND (:endDate IS NULL OR c.createdAt <= :endDate) " +
+           "ORDER BY c.createdAt DESC")
+    List<Contract> findMyManagedContractsWithFilters(
+            @Param("managerUserId") String managerUserId,
+            @Param("search") String search,
+            @Param("contractType") ContractType contractType,
+            @Param("status") ContractStatus status,
+            @Param("currency") CurrencyType currency,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
     
     List<Contract> findByStatus(ContractStatus status);
     

@@ -693,11 +693,32 @@ public class ContractService {
     
     /**
      * Lấy danh sách contracts được quản lý bởi manager hiện tại
+     * Sắp xếp theo ngày tạo mới nhất lên đầu
      */
     @Transactional(readOnly = true)
     public List<ContractResponse> getMyManagedContracts() {
         String managerId = getCurrentUserId();
-        List<Contract> contracts = contractRepository.findByManagerUserId(managerId);
+        List<Contract> contracts = contractRepository.findByManagerUserIdOrderByCreatedAtDesc(managerId);
+        return contracts.stream()
+            .map(contractMapper::toResponse)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy danh sách contracts được quản lý bởi manager hiện tại với filter
+     * Sắp xếp theo ngày tạo mới nhất lên đầu
+     */
+    @Transactional(readOnly = true)
+    public List<ContractResponse> getMyManagedContractsWithFilters(
+            String search,
+            ContractType contractType,
+            ContractStatus status,
+            CurrencyType currency,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+        String managerId = getCurrentUserId();
+        List<Contract> contracts = contractRepository.findMyManagedContractsWithFilters(
+                managerId, search, contractType, status, currency, startDate, endDate);
         return contracts.stream()
             .map(contractMapper::toResponse)
             .collect(Collectors.toList());

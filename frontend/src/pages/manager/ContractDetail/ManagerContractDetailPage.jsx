@@ -1794,10 +1794,17 @@ const ManagerContractDetailPage = () => {
                             }}
                           >
                             <div style={{ flex: 1 }}>
-                              <Text strong style={{ fontSize: 16 }}>
-                                {milestone.name ||
-                                  `Milestone ${milestone.orderIndex || index + 1}`}
-                              </Text>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <Text strong style={{ fontSize: 16 }}>
+                                  {milestone.name ||
+                                    `Milestone ${milestone.orderIndex || index + 1}`}
+                                </Text>
+                                {(milestone.milestoneSlaDays || milestone.slaDays) && (
+                                  <Tag color="blue" style={{ margin: 0 }}>
+                                    SLA: {milestone.milestoneSlaDays || milestone.slaDays} days
+                                  </Tag>
+                                )}
+                              </div>
                               {milestone.description && (
                                 <div style={{ marginTop: 8, marginBottom: 8 }}>
                                   <Text
