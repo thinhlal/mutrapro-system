@@ -406,6 +406,8 @@ export const API_ENDPOINTS = {
       GET_MY_PROFILE_DETAIL: `${SPECIALIST_PATH}/specialists/me/detail`,
       // PUT /specialists/me
       UPDATE_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,
+      // POST /specialists/me/avatar
+      UPLOAD_AVATAR: `${SPECIALIST_PATH}/specialists/me/avatar`,
       // GET /specialists/me/skills/available
       GET_AVAILABLE_SKILLS: `${SPECIALIST_PATH}/specialists/me/skills/available`,
       // GET /specialists/me/skills

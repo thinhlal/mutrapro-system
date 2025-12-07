@@ -4,18 +4,23 @@ import com.mutrapro.specialist_service.dto.request.*;
 import com.mutrapro.specialist_service.dto.response.*;
 import com.mutrapro.specialist_service.entity.*;
 import com.mutrapro.specialist_service.enums.RecordingCategory;
+import com.mutrapro.specialist_service.enums.RecordingRole;
 import com.mutrapro.specialist_service.enums.SkillType;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.*;
 import com.mutrapro.specialist_service.mapper.*;
 import com.mutrapro.specialist_service.repository.*;
 import com.mutrapro.specialist_service.util.SecurityUtils;
+import com.mutrapro.shared.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service cho Specialist tự quản lý profile của mình
@@ -34,6 +39,7 @@ public class SpecialistProfileService {
     private final SkillMapper skillMapper;
     private final SpecialistSkillMapper specialistSkillMapper;
     private final ArtistDemoMapper artistDemoMapper;
+    private final S3Service s3Service;
     
     /**
      * Lấy profile của specialist hiện tại
@@ -68,7 +74,58 @@ public class SpecialistProfileService {
     }
     
     /**
+     * Upload avatar cho specialist hiện tại
+     */
+    @Transactional
+    public String uploadAvatar(MultipartFile file) {
+        String currentUserId = getCurrentUserId();
+        log.info("Uploading avatar for specialist with user ID: {}", currentUserId);
+        
+        // Validate file
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File is required");
+        }
+        
+        // Validate file type (only images)
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Only image files are allowed");
+        }
+        
+        // Validate file size (max 5MB)
+        long maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("File size must be less than 5MB");
+        }
+        
+        try {
+            // Upload to S3 public folder and get URL
+            String avatarUrl = s3Service.uploadPublicFileAndReturnUrl(
+                file.getInputStream(),
+                file.getOriginalFilename(),
+                contentType,
+                file.getSize(),
+                "avatars" // folder prefix: public/avatars/
+            );
+            
+            // Update specialist avatarUrl
+            Specialist specialist = specialistRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> SpecialistNotFoundException.byUserId(currentUserId));
+            
+            specialist.setAvatarUrl(avatarUrl);
+            specialistRepository.save(specialist);
+            
+            log.info("Avatar uploaded successfully for specialist with user ID: {}, URL: {}", currentUserId, avatarUrl);
+            return avatarUrl;
+        } catch (Exception e) {
+            log.error("Failed to upload avatar for specialist with user ID: {}", currentUserId, e);
+            throw new RuntimeException("Failed to upload avatar: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Lấy danh sách skills có sẵn phù hợp với specialization của specialist hiện tại
+     * Nếu là RECORDING_ARTIST, chỉ lấy skills match với recordingRoles
      */
     public List<SkillResponse> getAllSkills() {
         String currentUserId = getCurrentUserId();
@@ -81,9 +138,38 @@ public class SpecialistProfileService {
         // Map SpecialistType sang SkillType (chúng có cùng giá trị)
         SkillType skillType = mapSpecialistTypeToSkillType(specialist.getSpecialization());
         
-        // Lấy skills phù hợp với specialization của specialist
-        List<Skill> skills = skillRepository.findBySkillTypeAndIsActiveTrue(skillType);
-        log.info("Found {} skills for specialization: {}", skills.size(), specialist.getSpecialization());
+        List<Skill> skills;
+        
+        // Nếu là RECORDING_ARTIST, filter theo recordingRoles
+        if (specialist.isRecordingArtist() && specialist.getRecordingRoles() != null && !specialist.getRecordingRoles().isEmpty()) {
+            List<Skill> filteredSkills = new ArrayList<>();
+            
+            // Lấy skills cho từng recordingRole
+            for (RecordingRole role : specialist.getRecordingRoles()) {
+                RecordingCategory category = null;
+                if (role == RecordingRole.VOCALIST) {
+                    category = RecordingCategory.VOCAL;
+                } else if (role == RecordingRole.INSTRUMENT_PLAYER) {
+                    category = RecordingCategory.INSTRUMENT;
+                }
+                
+                if (category != null) {
+                    List<Skill> roleSkills = skillRepository.findBySkillTypeAndRecordingCategoryAndIsActiveTrue(skillType, category);
+                    filteredSkills.addAll(roleSkills);
+                }
+            }
+            
+            // Remove duplicates (nếu có skill match cả 2 roles)
+            skills = filteredSkills.stream()
+                .distinct()
+                .collect(Collectors.toList());
+            
+            log.info("Found {} skills for RECORDING_ARTIST with roles: {}", skills.size(), specialist.getRecordingRoles());
+        } else {
+            // Không phải RECORDING_ARTIST hoặc chưa có recordingRoles, lấy tất cả skills của specialization
+            skills = skillRepository.findBySkillTypeAndIsActiveTrue(skillType);
+            log.info("Found {} skills for specialization: {}", skills.size(), specialist.getSpecialization());
+        }
         
         return skillMapper.toSkillResponseList(skills);
     }

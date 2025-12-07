@@ -314,6 +314,29 @@ export const updateMyProfile = async profileData => {
 };
 
 /**
+ * Upload avatar cho specialist hiện tại
+ */
+export const uploadAvatar = async file => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPLOAD_AVATAR,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi upload avatar' };
+  }
+};
+
+/**
  * Lấy danh sách skills có sẵn
  */
 export const getAvailableSkills = async () => {

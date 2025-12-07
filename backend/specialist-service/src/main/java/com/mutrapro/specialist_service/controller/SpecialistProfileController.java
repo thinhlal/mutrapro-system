@@ -1,14 +1,24 @@
 package com.mutrapro.specialist_service.controller;
 
 import com.mutrapro.shared.dto.ApiResponse;
-import com.mutrapro.specialist_service.dto.request.*;
-import com.mutrapro.specialist_service.dto.response.*;
+import com.mutrapro.specialist_service.dto.request.AddSkillRequest;
+import com.mutrapro.specialist_service.dto.request.CreateDemoRequest;
+import com.mutrapro.specialist_service.dto.request.UpdateDemoRequest;
+import com.mutrapro.specialist_service.dto.request.UpdateProfileRequest;
+import com.mutrapro.specialist_service.dto.request.UpdateSkillRequest;
+import com.mutrapro.specialist_service.dto.response.ArtistDemoResponse;
+import com.mutrapro.specialist_service.dto.response.SkillResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistDetailResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistSkillResponse;
 import com.mutrapro.specialist_service.service.SpecialistProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -59,6 +69,21 @@ public class SpecialistProfileController {
         return ApiResponse.<SpecialistResponse>builder()
             .message("Profile updated successfully")
             .data(response)
+            .build();
+    }
+    
+    /**
+     * Upload avatar cho specialist hiện tại
+     */
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        log.info("POST /specialists/me/avatar - Uploading avatar");
+        String avatarUrl = specialistProfileService.uploadAvatar(file);
+        return ApiResponse.<String>builder()
+            .message("Avatar uploaded successfully")
+            .data(avatarUrl)
+            .statusCode(201)
             .build();
     }
     

@@ -1,6 +1,7 @@
 package com.mutrapro.specialist_service.repository;
 
 import com.mutrapro.specialist_service.entity.Skill;
+import com.mutrapro.specialist_service.enums.RecordingCategory;
 import com.mutrapro.specialist_service.enums.SkillType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -17,6 +18,8 @@ public interface SkillRepository extends JpaRepository<Skill, String>, JpaSpecif
     List<Skill> findByIsActiveTrue();
     
     List<Skill> findBySkillTypeAndIsActiveTrue(SkillType skillType);
+    
+    List<Skill> findBySkillTypeAndRecordingCategoryAndIsActiveTrue(SkillType skillType, RecordingCategory recordingCategory);
     
     boolean existsBySkillName(String skillName);
 }

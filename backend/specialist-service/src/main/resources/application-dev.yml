@@ -36,6 +36,15 @@ feign:
         connectTimeout: 5000
         readTimeout: 60000  # 60 seconds for batch API calls
 
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    region: ap-southeast-1
+    access-key: AKIAZ24ITCMNFIY2Z3VX
+    secret-key: 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
+    bucket-name: mutrapro-dev-files
+
 # Management & Actuator
 management:
   endpoints:

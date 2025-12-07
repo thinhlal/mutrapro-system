@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Tabs,
@@ -21,6 +21,10 @@ import {
   Rate,
   Divider,
   Spin,
+  Radio,
+  Upload,
+  Row,
+  Col,
 } from 'antd';
 import {
   EditOutlined,
@@ -30,10 +34,12 @@ import {
   StarOutlined,
   InfoCircleOutlined,
   PlayCircleOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import {
   getMyProfileDetail,
   updateMyProfile,
+  uploadAvatar,
   getAvailableSkills,
   getMySkills,
   addSkill,
@@ -45,6 +51,7 @@ import {
   deleteMyDemo,
 } from '../../../services/specialistService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { MUSIC_GENRES } from '../../../constants/musicOptionsConstants';
 import dayjs from 'dayjs';
 import styles from './SpecialistProfile.module.css';
 
@@ -75,6 +82,9 @@ const SpecialistProfile = () => {
   const [demoModalVisible, setDemoModalVisible] = useState(false);
   const [editingDemo, setEditingDemo] = useState(null);
   const [demoLoading, setDemoLoading] = useState(false);
+  
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchProfile();
@@ -96,10 +106,16 @@ const SpecialistProfile = () => {
       const response = await getMyProfileDetail();
       if (response.data) {
         setProfileDetail(response.data);
+        const specialist = response.data.specialist;
         profileForm.setFieldsValue({
-          portfolioUrl: response.data.specialist?.portfolioUrl,
-          bio: response.data.specialist?.bio,
-          experienceYears: response.data.specialist?.experienceYears,
+          portfolioUrl: specialist?.portfolioUrl,
+          bio: specialist?.bio,
+          experienceYears: specialist?.experienceYears,
+          // RECORDING_ARTIST specific fields
+          avatarUrl: specialist?.avatarUrl,
+          gender: specialist?.gender,
+          genres: specialist?.genres || [],
+          credits: specialist?.credits || [],
         });
       }
     } catch (error) {
@@ -161,6 +177,70 @@ const SpecialistProfile = () => {
       message.error(error.message || 'Không thể cập nhật profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    console.log('File selected:', file);
+    setAvatarUploading(true);
+    try {
+      // Validate file type
+      const isImage = file.type?.startsWith('image/');
+      if (!isImage) {
+        message.error('Chỉ chấp nhận file ảnh');
+        setAvatarUploading(false);
+        return;
+      }
+
+      // Validate file size (5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        message.error('Kích thước file phải nhỏ hơn 5MB');
+        setAvatarUploading(false);
+        return;
+      }
+
+      console.log('Calling uploadAvatar API...');
+      const response = await uploadAvatar(file);
+      console.log('Upload response:', response);
+      const avatarUrl = response.data;
+      
+      // Update form field
+      profileForm.setFieldsValue({ avatarUrl });
+      
+      // Update profile detail to reflect new avatar
+      setProfileDetail(prev => ({
+        ...prev,
+        specialist: {
+          ...prev?.specialist,
+          avatarUrl,
+        },
+      }));
+      
+      message.success('Upload avatar thành công');
+      
+      // Refresh profile to get latest data from backend
+      await fetchProfile();
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      const errorMessage = error.message || error.response?.data?.message || 'Không thể upload avatar';
+      message.error(errorMessage);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (fileInputRef.current && !avatarUploading) {
+      fileInputRef.current.click();
     }
   };
 
@@ -418,12 +498,85 @@ const SpecialistProfile = () => {
               children: (
                 <Spin spinning={loading}>
                   <div className={styles.profileHeader}>
-                    <Avatar
-                      size={100}
-                      src={user?.avatarUrl}
-                      icon={<UserOutlined />}
-                      className={styles.avatar}
-                    />
+                    {isRecordingArtist ? (
+                      <>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={handleAvatarFileChange}
+                        />
+                        <div 
+                          style={{ 
+                            position: 'relative', 
+                            cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                            display: 'inline-block'
+                          }}
+                          onClick={handleAvatarClick}
+                        >
+                          <Avatar
+                            size={100}
+                            src={profileDetail?.specialist?.avatarUrl}
+                            icon={<UserOutlined />}
+                            className={styles.avatar}
+                            style={{
+                              border: '2px solid #d9d9d9',
+                              transition: 'all 0.3s',
+                              cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                            }}
+                          />
+                          {avatarUploading && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'rgba(0,0,0,0.5)',
+                                borderRadius: '50%',
+                                pointerEvents: 'none',
+                              }}
+                            >
+                              <Spin size="small" />
+                            </div>
+                          )}
+                          {!avatarUploading && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                right: 0,
+                                background: '#1890ff',
+                                borderRadius: '50%',
+                                width: 32,
+                                height: 32,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '2px solid white',
+                                cursor: 'pointer',
+                                pointerEvents: 'none',
+                              }}
+                              title="Click to upload avatar"
+                            >
+                              <UploadOutlined style={{ color: 'white' }} />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <Avatar
+                        size={100}
+                        src={user?.avatarUrl}
+                        icon={<UserOutlined />}
+                        className={styles.avatar}
+                      />
+                    )}
                     <div className={styles.profileInfo}>
                       <Title level={3} style={{ margin: 0 }}>
                         {user?.fullName || 'Specialist'}
@@ -431,6 +584,12 @@ const SpecialistProfile = () => {
                       <p style={{ color: '#666', margin: '8px 0 0 0' }}>
                         {user?.email}
                       </p>
+                      {isRecordingArtist &&
+                        profileDetail?.specialist?.gender && (
+                          <p style={{ color: '#999', margin: '4px 0 0 0' }}>
+                            {profileDetail.specialist.gender}
+                          </p>
+                        )}
                     </div>
                   </div>
 
@@ -478,11 +637,26 @@ const SpecialistProfile = () => {
                     <Form.Item
                       name="portfolioUrl"
                       label="Portfolio URL"
+                      tooltip="Link đến trang portfolio/website của bạn để showcase công việc (ví dụ: Behance, SoundCloud, website cá nhân)"
                       rules={[
-                        { type: 'url', message: 'Please enter a valid URL' },
+                        { type: 'url', message: 'Vui lòng nhập URL hợp lệ' },
                       ]}
                     >
-                      <Input placeholder="https://your-portfolio.com" />
+                      <Input 
+                        placeholder="https://your-portfolio.com hoặc https://soundcloud.com/yourname" 
+                        addonAfter={
+                          profileForm.getFieldValue('portfolioUrl') ? (
+                            <a 
+                              href={profileForm.getFieldValue('portfolioUrl')} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Mở
+                            </a>
+                          ) : null
+                        }
+                      />
                     </Form.Item>
 
                     <Form.Item name="bio" label="Short Bio">
@@ -493,6 +667,48 @@ const SpecialistProfile = () => {
                         showCount
                       />
                     </Form.Item>
+
+                    {/* RECORDING ARTIST SPECIFIC FIELDS */}
+                    {isRecordingArtist && (
+                      <>
+                        <Divider orientation="left">Recording Artist Information</Divider>
+
+                        <Form.Item name="gender" label="Gender">
+                          <Radio.Group>
+                            <Radio value="MALE">Male</Radio>
+                            <Radio value="FEMALE">Female</Radio>
+                            <Radio value="OTHER">Other</Radio>
+                          </Radio.Group>
+                        </Form.Item>
+
+                        <Form.Item
+                          name="genres"
+                          label="Music Genres"
+                          tooltip="Select the music genres you specialize in"
+                        >
+                          <Select
+                            mode="multiple"
+                            placeholder="Select genres"
+                            allowClear
+                            style={{ width: '100%' }}
+                            options={MUSIC_GENRES}
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name="credits"
+                          label="Credits"
+                          tooltip="List your notable credits or past work (e.g., One Seven Music, Future House Cloud)"
+                        >
+                          <Select
+                            mode="tags"
+                            placeholder="Enter credits (press Enter to add)"
+                            style={{ width: '100%' }}
+                            tokenSeparators={[',']}
+                          />
+                        </Form.Item>
+                      </>
+                    )}
 
                     <Form.Item>
                       <Button
@@ -554,6 +770,65 @@ const SpecialistProfile = () => {
                           ? `${(profileDetail.specialist.onTimeRate * 100).toFixed(1)}%`
                           : 'N/A'}
                       </Descriptions.Item>
+                      
+                      {/* RECORDING ARTIST SPECIFIC INFO */}
+                      {isRecordingArtist && (
+                        <>
+                          <Descriptions.Item label="Gender">
+                            {profileDetail?.specialist?.gender
+                              ? profileDetail.specialist.gender
+                              : 'N/A'}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Recording Roles">
+                            {profileDetail?.specialist?.recordingRoles &&
+                            profileDetail.specialist.recordingRoles.length > 0 ? (
+                              <Space>
+                                {profileDetail.specialist.recordingRoles.map(
+                                  (role) => (
+                                    <Tag key={role} color="purple">
+                                      {role}
+                                    </Tag>
+                                  )
+                                )}
+                              </Space>
+                            ) : (
+                              'N/A'
+                            )}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Genres">
+                            {profileDetail?.specialist?.genres &&
+                            profileDetail.specialist.genres.length > 0 ? (
+                              <Space wrap>
+                                {profileDetail.specialist.genres.map(
+                                  (genre) => (
+                                    <Tag key={genre} color="blue">
+                                      {genre}
+                                    </Tag>
+                                  )
+                                )}
+                              </Space>
+                            ) : (
+                              'N/A'
+                            )}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Credits">
+                            {profileDetail?.specialist?.credits &&
+                            profileDetail.specialist.credits.length > 0 ? (
+                              <Space wrap>
+                                {profileDetail.specialist.credits.map(
+                                  (credit) => (
+                                    <Tag key={credit} color="green">
+                                      {credit}
+                                    </Tag>
+                                  )
+                                )}
+                              </Space>
+                            ) : (
+                              'N/A'
+                            )}
+                          </Descriptions.Item>
+                        </>
+                      )}
                     </Descriptions>
                   </Card>
                 </Spin>
