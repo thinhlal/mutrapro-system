@@ -12,6 +12,7 @@ export default function VocalistSelectionCard({
   onSelect,
   onViewDetail,
   selectedId,
+  disabled = false,
 }) {
   const navigate = useNavigate();
 
@@ -20,8 +21,8 @@ export default function VocalistSelectionCard({
     if (e.target.closest('button') || e.target.closest('a')) {
       return;
     }
-    // Select on card click
-    if (onSelect) {
+    // Select on card click (if not disabled)
+    if (onSelect && !disabled) {
       onSelect(singer.id);
     }
   };
@@ -50,7 +51,7 @@ export default function VocalistSelectionCard({
 
   const handleSelect = e => {
     e.stopPropagation();
-    if (onSelect) {
+    if (onSelect && !disabled) {
       onSelect(singer.id);
     }
   };
@@ -58,8 +59,8 @@ export default function VocalistSelectionCard({
   return (
     <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
       <Card
-        hoverable
-        className={`${styles.card} ${isSelected ? styles.selected : ''}`}
+        hoverable={!disabled}
+        className={`${styles.card} ${isSelected ? styles.selected : ''} ${disabled ? styles.disabled : ''}`}
         onClick={handleCardClick}
         styles={{ body: { padding: 0 } }}
       >
@@ -126,8 +127,9 @@ export default function VocalistSelectionCard({
                 onClick={handleSelect}
                 size="small"
                 style={{ flex: 1 }}
+                disabled={disabled && !isSelected}
               >
-                {isSelected ? 'Selected' : 'Select'}
+                {isSelected ? 'Selected' : disabled ? 'Đã đủ' : 'Select'}
               </Button>
             </Space>
           </div>

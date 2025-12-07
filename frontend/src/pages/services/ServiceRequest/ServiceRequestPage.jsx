@@ -8,6 +8,7 @@ import Wave from '../../../assets/images/FromSoundToSheet/MusicLines.svg';
 import Header from '../../../components/common/Header/Header';
 import TranscriptionUploader from './components/TranscriptionUploader/TranscriptionUploader'; // dùng cho Transcription
 import ArrangementUploader from './components/ArrangementUploader/ArrangementUploader';
+import ArrangementWithRecordingUploader from './components/ArrangementWithRecordingUploader/ArrangementWithRecordingUploader';
 import RecordingUploader from './components/RecordingUploader/RecordingUploader';
 import RequestServiceForm from '../../../components/common/RequestServiceForm/RequestServiceForm';
 import BackToTop from '../../../components/common/BackToTop/BackToTop';
@@ -127,8 +128,7 @@ export default function ServiceRequestPage() {
             />
           )}
           {selectedType === 'arrangement_with_recording' && (
-            <ArrangementUploader
-              variant="with_recording"
+            <ArrangementWithRecordingUploader
               serviceType={selectedType}
               formData={formData}
               onFormDataChange={handleFormComplete}
