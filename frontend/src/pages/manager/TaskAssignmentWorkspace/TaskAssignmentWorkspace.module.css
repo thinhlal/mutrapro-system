@@ -49,20 +49,23 @@
 }
 
 .milestoneItem {
-  border: 1px solid #e5e7eb;
+  border: 2px solid #e5e7eb !important;
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 12px 14px !important;
   margin-bottom: 12px;
   cursor: pointer;
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-width 0.2s ease;
   background: #fff;
+  position: relative;
 }
 
 .milestoneItemActive {
-  border-color: #1890ff;
+  border: 2px solid #1890ff !important;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  z-index: 1;
 }
 
 .milestoneItemDisabled {
@@ -110,9 +113,9 @@
 }
 
 .specialistItem {
-  border: 1px solid #f0f0f0;
+  border: 2px solid #f0f0f0 !important;
   border-radius: 8px;
-  padding: 12px;
+  padding: 12px 14px !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -121,8 +124,9 @@
 }
 
 .specialistItemActive {
-  border-color: #52c41a;
-  background: #f6ffed;
+  border: 2px solid #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  z-index: 1;
 }
 
 .specialistMeta {

@@ -55,7 +55,7 @@ const RequestDetailPage = () => {
   const [requestChangeModalVisible, setRequestChangeModalVisible] =
     useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState({}); // Track loading per contractId
   const [changeReason, setChangeReason] = useState('');
   const { instruments: instrumentsData, fetchInstruments } =
     useInstrumentStore();
@@ -226,7 +226,7 @@ const RequestDetailPage = () => {
 
   const handleApproveContract = async contractId => {
     try {
-      setActionLoading(true);
+      setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await approveContract(contractId);
       message.success('Đã duyệt contract thành công');
       // Reload contracts
@@ -237,7 +237,7 @@ const RequestDetailPage = () => {
     } catch (error) {
       message.error(error.message || 'Lỗi khi duyệt contract');
     } finally {
-      setActionLoading(false);
+      setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
   };
 
@@ -246,9 +246,10 @@ const RequestDetailPage = () => {
       message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
       return;
     }
+    const contractId = selectedContract.contractId;
     try {
-      setActionLoading(true);
-      await requestChangeContract(selectedContract.contractId, changeReason);
+      setActionLoading(prev => ({ ...prev, [contractId]: true }));
+      await requestChangeContract(contractId, changeReason);
       message.success('Đã gửi yêu cầu chỉnh sửa contract');
       setRequestChangeModalVisible(false);
       setChangeReason('');
@@ -261,15 +262,16 @@ const RequestDetailPage = () => {
     } catch (error) {
       message.error(error.message || 'Lỗi khi yêu cầu chỉnh sửa contract');
     } finally {
-      setActionLoading(false);
+      setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
   };
 
   const handleCancelContract = async reason => {
     if (!selectedContract) return;
+    const contractId = selectedContract.contractId;
     try {
-      setActionLoading(true);
-      await cancelContract(selectedContract.contractId, reason);
+      setActionLoading(prev => ({ ...prev, [contractId]: true }));
+      await cancelContract(contractId, reason);
       message.success('Đã hủy contract thành công');
       setCancelModalVisible(false);
       setSelectedContract(null);
@@ -281,7 +283,7 @@ const RequestDetailPage = () => {
     } catch (error) {
       message.error(error.message || 'Lỗi khi hủy contract');
     } finally {
-      setActionLoading(false);
+      setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
   };
 
@@ -358,33 +360,35 @@ const RequestDetailPage = () => {
               </span>
             </Descriptions.Item>
 
-            {/* Cột phải - Duration */}
-            {request.requestType === 'transcription' && request.durationMinutes ? (
-              <Descriptions.Item label="Duration">
-                
+            {/* Cột phải - Duration - Chỉ hiển thị cho transcription */}
+            {request.requestType === 'transcription' ? (
+              request.durationMinutes ? (
+                <Descriptions.Item label="Duration">
                   {formatDurationMMSS(request.durationMinutes)}
-                
-              </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Duration">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
-            )}
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Duration">
+                  <span style={{ color: '#999' }}>N/A</span>
+                </Descriptions.Item>
+              )
+            ) : null}
 
             <Descriptions.Item label="Title">
               {request.title || 'N/A'}
             </Descriptions.Item>
 
-            {/* Cột phải - Tempo */}
-            {request.tempoPercentage && request.requestType === 'transcription' ? (
-              <Descriptions.Item label="Tempo">
-                <Tag>{request.tempoPercentage}%</Tag>
-              </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Tempo">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
-            )}
+            {/* Cột phải - Tempo - Chỉ hiển thị cho transcription */}
+            {request.requestType === 'transcription' ? (
+              request.tempoPercentage ? (
+                <Descriptions.Item label="Tempo">
+                  <Tag>{request.tempoPercentage}%</Tag>
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Tempo">
+                  <span style={{ color: '#999' }}>N/A</span>
+                </Descriptions.Item>
+              )
+            ) : null}
 
             <Descriptions.Item label="Description">
               {request.description || 'No description'}
@@ -618,7 +622,7 @@ const RequestDetailPage = () => {
             setSelectedContract(null);
           }}
           onConfirm={handleCancelContract}
-          loading={actionLoading}
+          loading={selectedContract ? actionLoading[selectedContract.contractId] : false}
           isManager={false}
         />
 
@@ -632,7 +636,7 @@ const RequestDetailPage = () => {
             setChangeReason('');
             setSelectedContract(null);
           }}
-          confirmLoading={actionLoading}
+          confirmLoading={selectedContract ? actionLoading[selectedContract.contractId] : false}
           okText="Send Request"
           cancelText="Close"
           width={600}

@@ -475,137 +475,235 @@ export default function ServiceRequestContracts() {
             bordered
           >
             {request ? (
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Request ID">
-                  <Text code>{request.requestId || request.id}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái">
-                  <Tag
-                    color={
-                      REQUEST_STATUS_COLORS[request.status?.toLowerCase()] ||
-                      'default'
-                    }
-                  >
-                    {REQUEST_STATUS_TEXT[request.status?.toLowerCase()] ||
-                      request.status?.toUpperCase() ||
-                      'N/A'}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Loại dịch vụ">
-                  {REQUEST_TYPE_LABELS[request.requestType?.toLowerCase()] ||
-                    request.requestType ||
-                    'N/A'}
-                </Descriptions.Item>
-                
-                {/* Duration và Tempo chỉ cho transcription */}
-                {request.requestType?.toLowerCase() === 'transcription' && (
-                  <>
-                    {request.durationMinutes && (
-                      <Descriptions.Item label="Duration">
-                        {request.durationMinutes} phút
-                      </Descriptions.Item>
-                    )}
-                    {request.tempoPercentage && (
-                      <Descriptions.Item label="Tempo Reference">
-                        {request.tempoPercentage}%
-                      </Descriptions.Item>
-                    )}
-                  </>
-                )}
-
-                {/* Vocalist chỉ cho arrangement_with_recording */}
-                {request.requestType?.toLowerCase() === 'arrangement_with_recording' && (
-                  <Descriptions.Item label="Has Vocalist">
-                    {request.hasVocalist ? 'Có' : 'Không'}
-                  </Descriptions.Item>
-                )}
-
-                {/* External Guests chỉ cho recording */}
-                {request.requestType?.toLowerCase() === 'recording' && (
-                  <Descriptions.Item label="External Guests">
-                    {request.externalGuestCount ?? 0}
-                  </Descriptions.Item>
-                )}
-
-                {/* Genres và Purpose cho arrangement và arrangement_with_recording */}
-                {(request.requestType === 'arrangement' ||
-                  request.requestType === 'arrangement_with_recording') && (
-                  <>
-                    <Descriptions.Item label="Genres">
-                      {request.genres && request.genres.length > 0 ? (
-                        <Space wrap>
-                          {request.genres.map((genre, idx) => (
-                            <Tag key={idx} color="purple">
-                              {getGenreLabel(genre)}
-                            </Tag>
-                          ))}
-                        </Space>
-                      ) : (
-                        <Text type="secondary">Not specified</Text>
-                      )}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Purpose">
-                      {request.purpose ? (
-                        getPurposeLabel(request.purpose)
-                      ) : (
-                        <Text type="secondary">Not specified</Text>
-                      )}
-                    </Descriptions.Item>
-                  </>
-                )}
-
-                {/* Instruments cho tất cả request types có instruments */}
-                {((request.instruments && request.instruments.length > 0) ||
-                  (request.instrumentIds && request.instrumentIds.length > 0)) && (
-                  <Descriptions.Item label="Instruments">
-                    <Space wrap>
-                      {request.instruments && request.instruments.length > 0
-                        ? request.instruments.map((inst, idx) => (
-                            <Tag key={inst.instrumentId || idx} color="purple">
-                              {inst.instrumentName || inst.name || inst}
-                            </Tag>
-                          ))
-                        : request.instrumentIds?.map((id, idx) => (
-                            <Tag key={id || idx} color="purple">
-                              {id}
-                            </Tag>
-                          ))}
-                    </Space>
-                  </Descriptions.Item>
-                )}
-                {/* Pricing Information */}
-                {request.servicePrice && (
-                  <Descriptions.Item label="Service Price">
-                    <Text strong>{formatPrice(request.servicePrice, request.currency || 'VND')}</Text>
-                  </Descriptions.Item>
-                )}
-                {request.instrumentPrice && request.instrumentPrice > 0 && (
-                  <Descriptions.Item label="Instruments Price">
-                    <Text strong>{formatPrice(request.instrumentPrice, request.currency || 'VND')}</Text>
-                  </Descriptions.Item>
-                )}
-                {request.totalPrice && (
-                  <Descriptions.Item label="Total Price">
-                    <Text strong style={{ fontSize: 16, fontWeight: 600 }}>
-                      {formatPrice(request.totalPrice, request.currency || 'VND')}
-                    </Text>
-                  </Descriptions.Item>
-                )}
-
-                <Descriptions.Item label="Ngày tạo">
-                  {formatDateTime(request.createdAt)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Cập nhật gần nhất">
-                  {formatDateTime(request.updatedAt)}
-                </Descriptions.Item>
-                {(files.length > 0 || (request.files && request.files.length > 0)) && (
-                  <Descriptions.Item label="Uploaded Files">
-                    <Spin spinning={loadingFiles}>
-                      <FileList files={files.length > 0 ? files : (request.files || [])} />
-                    </Spin>
-                  </Descriptions.Item>
-                )}
-              </Descriptions>
+              <Table
+                dataSource={[
+                  {
+                    key: 'requestId',
+                    label: 'Request ID',
+                    value: <Text code>{request.requestId || request.id}</Text>,
+                  },
+                  {
+                    key: 'status',
+                    label: 'Trạng thái',
+                    value: (
+                      <Tag
+                        color={
+                          REQUEST_STATUS_COLORS[request.status?.toLowerCase()] ||
+                          'default'
+                        }
+                      >
+                        {REQUEST_STATUS_TEXT[request.status?.toLowerCase()] ||
+                          request.status?.toUpperCase() ||
+                          'N/A'}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    key: 'requestType',
+                    label: 'Loại dịch vụ',
+                    value:
+                      REQUEST_TYPE_LABELS[request.requestType?.toLowerCase()] ||
+                      request.requestType ||
+                      'N/A',
+                  },
+                  ...(request.requestType?.toLowerCase() === 'transcription'
+                    ? [
+                        ...(request.durationMinutes
+                          ? [
+                              {
+                                key: 'duration',
+                                label: 'Duration',
+                                value: `${request.durationMinutes} phút`,
+                              },
+                            ]
+                          : []),
+                        ...(request.tempoPercentage
+                          ? [
+                              {
+                                key: 'tempo',
+                                label: 'Tempo Reference',
+                                value: `${request.tempoPercentage}%`,
+                              },
+                            ]
+                          : []),
+                      ]
+                    : []),
+                  ...(request.requestType?.toLowerCase() ===
+                  'arrangement_with_recording'
+                    ? [
+                        {
+                          key: 'hasVocalist',
+                          label: 'Has Vocalist',
+                          value: request.hasVocalist ? 'Có' : 'Không',
+                        },
+                      ]
+                    : []),
+                  ...(request.requestType?.toLowerCase() === 'recording'
+                    ? [
+                        {
+                          key: 'externalGuests',
+                          label: 'External Guests',
+                          value: request.externalGuestCount ?? 0,
+                        },
+                      ]
+                    : []),
+                  ...(request.requestType === 'arrangement' ||
+                  request.requestType === 'arrangement_with_recording'
+                    ? [
+                        {
+                          key: 'genres',
+                          label: 'Genres',
+                          value:
+                            request.genres && request.genres.length > 0 ? (
+                              <Space wrap>
+                                {request.genres.map((genre, idx) => (
+                                  <Tag key={idx} color="purple">
+                                    {getGenreLabel(genre)}
+                                  </Tag>
+                                ))}
+                              </Space>
+                            ) : (
+                              <Text type="secondary">Not specified</Text>
+                            ),
+                        },
+                        {
+                          key: 'purpose',
+                          label: 'Purpose',
+                          value: request.purpose ? (
+                            getPurposeLabel(request.purpose)
+                          ) : (
+                            <Text type="secondary">Not specified</Text>
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(((request.instruments && request.instruments.length > 0) ||
+                    (request.instrumentIds &&
+                      request.instrumentIds.length > 0))
+                    ? [
+                        {
+                          key: 'instruments',
+                          label: 'Instruments',
+                          value: (
+                            <Space wrap>
+                              {request.instruments && request.instruments.length > 0
+                                ? request.instruments.map((inst, idx) => (
+                                    <Tag
+                                      key={inst.instrumentId || idx}
+                                      color="purple"
+                                    >
+                                      {inst.instrumentName || inst.name || inst}
+                                    </Tag>
+                                  ))
+                                : request.instrumentIds?.map((id, idx) => (
+                                    <Tag key={id || idx} color="purple">
+                                      {id}
+                                    </Tag>
+                                  ))}
+                            </Space>
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(request.servicePrice
+                    ? [
+                        {
+                          key: 'servicePrice',
+                          label: 'Service Price',
+                          value: (
+                            <Text strong>
+                              {formatPrice(
+                                request.servicePrice,
+                                request.currency || 'VND'
+                              )}
+                            </Text>
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(request.instrumentPrice && request.instrumentPrice > 0
+                    ? [
+                        {
+                          key: 'instrumentPrice',
+                          label: 'Instruments Price',
+                          value: (
+                            <Text strong>
+                              {formatPrice(
+                                request.instrumentPrice,
+                                request.currency || 'VND'
+                              )}
+                            </Text>
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(request.totalPrice
+                    ? [
+                        {
+                          key: 'totalPrice',
+                          label: 'Total Price',
+                          value: (
+                            <Text strong style={{ fontSize: 16, fontWeight: 600 }}>
+                              {formatPrice(
+                                request.totalPrice,
+                                request.currency || 'VND'
+                              )}
+                            </Text>
+                          ),
+                        },
+                      ]
+                    : []),
+                  {
+                    key: 'createdAt',
+                    label: 'Ngày tạo',
+                    value: formatDateTime(request.createdAt),
+                  },
+                  {
+                    key: 'updatedAt',
+                    label: 'Cập nhật gần nhất',
+                    value: formatDateTime(request.updatedAt),
+                  },
+                  ...(files.length > 0 ||
+                  (request.files && request.files.length > 0)
+                    ? [
+                        {
+                          key: 'files',
+                          label: 'Uploaded Files',
+                          value: (
+                            <Spin spinning={loadingFiles}>
+                              <FileList
+                                files={
+                                  files.length > 0
+                                    ? files
+                                    : request.files || []
+                                }
+                              />
+                            </Spin>
+                          ),
+                        },
+                      ]
+                    : []),
+                ]}
+                columns={[
+                  {
+                    title: 'Thông tin',
+                    dataIndex: 'label',
+                    key: 'label',
+                    width: '40%',
+                    render: (text) => <Text strong>{text}</Text>,
+                  },
+                  {
+                    title: 'Giá trị',
+                    dataIndex: 'value',
+                    key: 'value',
+                    width: '60%',
+                  },
+                ]}
+                pagination={false}
+                showHeader={true}
+                size="small"
+                bordered
+              />
             ) : (
               <Empty description="Không tìm thấy request" />
             )}

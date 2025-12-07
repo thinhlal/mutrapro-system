@@ -205,17 +205,6 @@ function UserMenu() {
           )}
 
           <ul className={styles.dropdownMenu}>
-            {/* Profile */}
-            <li>
-              <Link
-                to="/profile"
-                className={styles.dropdownItem}
-                onClick={handleMenuItemClick}
-              >
-                <UserOutlined className={styles.dropdownIcon} />
-                <span>My Profile</span>
-              </Link>
-            </li>
 
             {/* Manager Dashboard */}
             {user?.role === 'MANAGER' && (
@@ -290,6 +279,18 @@ function UserMenu() {
               >
                 <MessageOutlined className={styles.dropdownIcon} />
                 <span>Chat</span>
+              </Link>
+            </li>
+
+             {/* Profile */}
+             <li>
+              <Link
+                to="/profile"
+                className={styles.dropdownItem}
+                onClick={handleMenuItemClick}
+              >
+                <UserOutlined className={styles.dropdownIcon} />
+                <span>My Profile</span>
               </Link>
             </li>
           </ul>
