@@ -769,6 +769,10 @@ const ManagerContractDetailPage = () => {
                       >
                         <PdfText style={{ fontSize: 11 }}>
                           • {instr.instrumentName}
+                          {instr.isMain && 
+                            (contract?.contractType === 'arrangement' || 
+                             contract?.contractType === 'arrangement_with_recording') && 
+                            ' (Main)'}
                         </PdfText>
                       </View>
                       <View
@@ -2186,6 +2190,10 @@ const ManagerContractDetailPage = () => {
                                 }}
                               >
                                 • {instr.instrumentName}
+                                {instr.isMain && 
+                                  (contract?.contractType === 'arrangement' || 
+                                   contract?.contractType === 'arrangement_with_recording') && 
+                                  ' (Main)'}
                               </td>
                               <td
                                 style={{

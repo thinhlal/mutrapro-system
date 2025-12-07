@@ -19,6 +19,7 @@ import {
   MailOutlined,
   PhoneOutlined,
   UserOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
@@ -587,14 +588,22 @@ export default function ServiceRequestContracts() {
                           value: (
                             <Space wrap>
                               {request.instruments && request.instruments.length > 0
-                                ? request.instruments.map((inst, idx) => (
-                                    <Tag
-                                      key={inst.instrumentId || idx}
-                                      color="purple"
-                                    >
-                                      {inst.instrumentName || inst.name || inst}
-                                    </Tag>
-                                  ))
+                                ? request.instruments.map((inst, idx) => {
+                                    const isMain = inst.isMain === true;
+                                    const isArrangement =
+                                      request.requestType === 'arrangement' ||
+                                      request.requestType === 'arrangement_with_recording';
+                                    return (
+                                      <Tag
+                                        key={inst.instrumentId || idx}
+                                        color={isMain && isArrangement ? 'gold' : 'purple'}
+                                        icon={isMain && isArrangement ? <StarFilled /> : null}
+                                      >
+                                        {inst.instrumentName || inst.name || inst}
+                                        {isMain && isArrangement && ' (Main)'}
+                                      </Tag>
+                                    );
+                                  })
                                 : request.instrumentIds?.map((id, idx) => (
                                     <Tag key={id || idx} color="purple">
                                       {id}

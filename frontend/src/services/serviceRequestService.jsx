@@ -69,6 +69,11 @@ export const createServiceRequest = async requestData => {
       });
     }
 
+    // Thêm mainInstrumentId (cho arrangement)
+    if (requestData.mainInstrumentId) {
+      formData.append('mainInstrumentId', requestData.mainInstrumentId);
+    }
+
     // Recording-specific fields
     if (requestData.requestType === 'recording') {
       if (requestData.bookingDate) {

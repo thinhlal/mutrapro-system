@@ -354,6 +354,7 @@ const ContractDetailPage = () => {
           instrumentId: instr.instrumentId,
           instrumentName: instr.instrumentName,
           basePrice: instr.basePrice || 0,
+          isMain: instr.isMain === true, // Include isMain field
         }));
         breakdown.instruments = selectedInstruments;
       }
@@ -1109,6 +1110,10 @@ const ContractDetailPage = () => {
                       >
                         <PdfText style={{ fontSize: 11 }}>
                           • {instr.instrumentName}
+                          {instr.isMain && 
+                            (contract?.contractType === 'arrangement' || 
+                             contract?.contractType === 'arrangement_with_recording') && 
+                            ' (Main)'}
                         </PdfText>
                       </View>
                       <View
@@ -2661,6 +2666,10 @@ const ContractDetailPage = () => {
                                 }}
                               >
                                 • {instr.instrumentName}
+                                {instr.isMain && 
+                                  (contract?.contractType === 'arrangement' || 
+                                   contract?.contractType === 'arrangement_with_recording') && 
+                                  ' (Main)'}
                               </td>
                               <td
                                 style={{

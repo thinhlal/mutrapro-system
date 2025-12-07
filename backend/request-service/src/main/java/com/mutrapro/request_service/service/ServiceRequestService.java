@@ -255,11 +255,19 @@ public class ServiceRequestService {
             }
             
             // Create RequestNotationInstrument records with JPA relationships
+            String mainInstrumentId = request.getMainInstrumentId();
             List<RequestNotationInstrument> requestInstruments = instruments.stream()
-                    .map(instrument -> RequestNotationInstrument.builder()
-                            .serviceRequest(saved)
-                            .notationInstrument(instrument)
-                            .build())
+                    .map(instrument -> {
+                        // Set isMain = true nếu đây là main instrument
+                        boolean isMain = mainInstrumentId != null 
+                            && !mainInstrumentId.isBlank() 
+                            && instrument.getInstrumentId().equals(mainInstrumentId);
+                        return RequestNotationInstrument.builder()
+                                .serviceRequest(saved)
+                                .notationInstrument(instrument)
+                                .isMain(isMain)
+                                .build();
+                    })
                     .collect(Collectors.toList());
             
             // Add to ServiceRequest's collection (bidirectional relationship)
@@ -537,6 +545,7 @@ public class ServiceRequestService {
                             NotationInstrument notationInstrument = reqInst.getNotationInstrument();
                             if (notationInstrument != null) {
                                 // Map to NotationInstrumentResponse with full info
+                                // Include isMain field từ RequestNotationInstrument
                                 NotationInstrumentResponse instrumentResponse = NotationInstrumentResponse.builder()
                                         .instrumentId(notationInstrument.getInstrumentId())
                                         .instrumentName(notationInstrument.getInstrumentName())
@@ -544,6 +553,7 @@ public class ServiceRequestService {
                                         .basePrice(notationInstrument.getBasePrice())
                                         .isActive(notationInstrument.isActive())
                                         .image(notationInstrument.getImage())
+                                        .isMain(reqInst.getIsMain() != null ? reqInst.getIsMain() : false)
                                         .build();
                                 instruments.add(instrumentResponse);
                                 

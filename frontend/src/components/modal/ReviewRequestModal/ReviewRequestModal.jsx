@@ -1,5 +1,5 @@
 import { Modal, Button, Descriptions, Tag, Space } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined, StarFilled } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 
 export default function ReviewRequestModal({
@@ -83,6 +83,7 @@ export default function ReviewRequestModal({
             <Space wrap direction="vertical" size={4}>
               {selectedInstruments.map(id => {
                 const inst = getInstrumentData(id);
+                const isMain = formData?.mainInstrumentId === id;
                 return inst ? (
                   <div
                     key={id}
@@ -93,7 +94,11 @@ export default function ReviewRequestModal({
                       minWidth: 300,
                     }}
                   >
-                    <span>{inst.instrumentName}</span>
+                    <span>
+                      {isMain && <StarFilled style={{ color: '#faad14', marginRight: 4 }} />}
+                      {inst.instrumentName}
+                      {isMain && ' (Main)'}
+                    </span>
                     <Tag color="green">
                       ${Number(inst.basePrice || 0).toFixed(2)}
                     </Tag>

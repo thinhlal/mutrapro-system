@@ -20,7 +20,7 @@ export const createSpecialist = async specialistData => {
 
 /**
  * Lấy tất cả specialists cho Manager (có thể filter)
- * @param {Object} filters - Filters: specialization, skillNames, milestoneId, contractId
+ * @param {Object} filters - Filters: specialization, skillNames, milestoneId, contractId, mainInstrumentName
  */
 export const getAllSpecialists = async (filters = {}) => {
   try {
@@ -46,6 +46,11 @@ export const getAllSpecialists = async (filters = {}) => {
     }
     if (filters.contractId) {
       params.append('contractId', filters.contractId);
+    }
+    
+    // Thêm mainInstrumentName để filter specialist phải match với main instrument
+    if (filters.mainInstrumentName) {
+      params.append('mainInstrumentName', filters.mainInstrumentName);
     }
 
     const queryString = params.toString();

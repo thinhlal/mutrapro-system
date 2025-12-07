@@ -13,59 +13,31 @@ import RequestServiceForm from '../../../components/common/RequestServiceForm/Re
 import BackToTop from '../../../components/common/BackToTop/BackToTop';
 import Footer from '../../../components/common/Footer/Footer';
 
-const STORAGE_KEY = 'serviceRequestFormData';
-const STORAGE_KEY_TYPE = 'serviceRequestType';
-
 export default function ServiceRequestPage() {
   const location = useLocation();
   const serviceTypeFromNav = location?.state?.serviceType;
 
-  // Khôi phục từ sessionStorage hoặc dùng giá trị từ navigation
+  // Không lưu vào sessionStorage nữa - form luôn bắt đầu từ trạng thái trống
   const [selectedType, setSelectedType] = useState(() => {
-    const storedType = sessionStorage.getItem(STORAGE_KEY_TYPE);
-    return serviceTypeFromNav || storedType || null;
+    return serviceTypeFromNav || null;
   });
-  const [formData, setFormData] = useState(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [formData, setFormData] = useState(null);
   const uploadRef = useRef(null);
   const formRef = useRef(null);
 
   useEffect(() => {
     if (serviceTypeFromNav) {
       setSelectedType(serviceTypeFromNav);
-      sessionStorage.setItem(STORAGE_KEY_TYPE, serviceTypeFromNav);
     } else {
-      // Nếu không có serviceTypeFromNav (vào từ home), clear form data
-      // để tránh hiển thị data cũ
+      // Nếu không có serviceTypeFromNav (vào từ home), reset về null
       setFormData(null);
-      sessionStorage.removeItem(STORAGE_KEY);
+      setSelectedType(null);
     }
   }, [serviceTypeFromNav]);
-
-  // Lưu selectedType vào sessionStorage khi thay đổi
-  useEffect(() => {
-    if (selectedType) {
-      sessionStorage.setItem(STORAGE_KEY_TYPE, selectedType);
-    } else {
-      sessionStorage.removeItem(STORAGE_KEY_TYPE);
-    }
-  }, [selectedType]);
 
   // Nhận form data từ RequestServiceForm (không submit API)
   const handleFormComplete = useCallback(data => {
     setFormData(data);
-    // Lưu vào sessionStorage
-    if (data) {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } else {
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
   }, []);
 
   return (

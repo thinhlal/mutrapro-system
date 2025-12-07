@@ -21,6 +21,7 @@ import {
   SyncOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
@@ -400,14 +401,20 @@ const RequestDetailPage = () => {
               <Descriptions.Item label="Instruments">
                 <Space wrap>
                   {request.instruments && request.instruments.length > 0
-                    ? request.instruments.map((inst, idx) => (
-                        <Tag
-                          key={inst.instrumentId || idx}
-                         
-                        >
-                          {inst.instrumentName || inst.name || inst}
-                        </Tag>
-                      ))
+                    ? request.instruments.map((inst, idx) => {
+                        const isMain = inst.isMain === true;
+                        const isArrangement = request.requestType === 'arrangement' || request.requestType === 'arrangement_with_recording';
+                        return (
+                          <Tag
+                            key={inst.instrumentId || idx}
+                            color={isMain && isArrangement ? 'gold' : 'purple'}
+                            icon={isMain && isArrangement ? <StarFilled /> : null}
+                          >
+                            {inst.instrumentName || inst.name || inst}
+                            {isMain && isArrangement && ' (Main)'}
+                          </Tag>
+                        );
+                      })
                     : request.instrumentIds.map(id => {
                         const inst = instrumentsData.find(
                           i => i.instrumentId === id

@@ -31,6 +31,7 @@ import {
   ClockCircleOutlined,
   PlayCircleOutlined,
   ExclamationCircleOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -841,21 +842,42 @@ const TaskDetailPage = () => {
                         request?.instruments ||
                         task?.request?.instruments ||
                         []
-                      ).map((inst, idx) => (
-                        <Tag key={idx} color="purple">
-                          {inst.instrumentName || inst.name || inst}
-                        </Tag>
-                      ))}
+                      ).map((inst, idx) => {
+                        const isMain = inst.isMain === true;
+                        const requestType = request?.requestType || task?.request?.requestType;
+                        const isArrangement = requestType === 'arrangement' || requestType === 'arrangement_with_recording';
+                        return (
+                          <Tag 
+                            key={idx} 
+                            color={isMain && isArrangement ? 'gold' : 'purple'}
+                            icon={isMain && isArrangement ? <StarFilled /> : null}
+                          >
+                            {inst.instrumentName || inst.name || inst}
+                            {isMain && isArrangement && ' (Main)'}
+                          </Tag>
+                        );
+                      })}
                     </Space>
                   </Descriptions.Item>
                 )}
 
-                {/* Hiển thị genres và purpose cho arrangement requests */}
+                {/* Hiển thị main instrument name cho arrangement requests */}
                 {((request?.requestType === 'arrangement' ||
                     request?.requestType === 'arrangement_with_recording') ||
                   (task?.request?.requestType === 'arrangement' ||
                     task?.request?.requestType === 'arrangement_with_recording')) && (
                   <>
+                    {(() => {
+                      const instruments = request?.instruments || task?.request?.instruments || [];
+                      const mainInstrument = instruments.find(inst => inst.isMain === true);
+                      return mainInstrument ? (
+                        <Descriptions.Item label="Main Instrument" span={2}>
+                          <Tag color="gold" icon={<StarFilled />}>
+                            {mainInstrument.instrumentName || mainInstrument.name || 'N/A'}
+                          </Tag>
+                        </Descriptions.Item>
+                      ) : null;
+                    })()}
                     {((request?.genres && request.genres.length > 0) ||
                       (task?.request?.genres &&
                         Array.isArray(task.request.genres) &&

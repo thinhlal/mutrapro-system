@@ -26,6 +26,7 @@ import {
   ArrowLeftOutlined,
   CheckCircleOutlined,
   SearchOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -158,7 +159,13 @@ export default function TaskAssignmentWorkspace() {
   const [instrumentDetails, setInstrumentDetails] = useState([]);
   const [instrumentFiltersReady, setInstrumentFiltersReady] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState(null);
-  const lastFetchParamsRef = useRef({ specialization: null, instruments: [] });
+  const lastFetchParamsRef = useRef({ 
+    specialization: null, 
+    instruments: [], 
+    milestoneId: null,
+    contractId: null,
+    mainInstrumentName: null 
+  });
 
   const fetchContractDetail = useCallback(async () => {
     try {
@@ -216,6 +223,7 @@ export default function TaskAssignmentWorkspace() {
             id: inst.instrumentId || inst.id,
             name: inst.instrumentName || inst.name,
             usage: inst.usage,
+            isMain: inst.isMain === true, // Include isMain field
           }))
           .filter(inst => inst.name);
         if (instrumentList.length > 0) {
@@ -239,13 +247,14 @@ export default function TaskAssignmentWorkspace() {
   };
 
   const fetchSpecialists = useCallback(
-    async (specializationFilter, requiredInstrumentNames = []) => {
+    async (specializationFilter, requiredInstrumentNames = [], mainInstrumentName = null) => {
       try {
         const response = await getAllSpecialists({
           specialization: specializationFilter,
           skillNames: requiredInstrumentNames,
           milestoneId: selectedMilestoneId, // Truyền milestoneId để tính tasksInSlaWindow
           contractId: contractId, // Truyền contractId để tính tasksInSlaWindow
+          mainInstrumentName: mainInstrumentName, // Truyền main instrument name để filter
         });
         if (response?.status === 'success' && response?.data) {
           const activeSpecialists = response.data.filter(
@@ -407,7 +416,8 @@ export default function TaskAssignmentWorkspace() {
           if (!effectiveTaskType) return true;
           return (
             effectiveTaskType === 'transcription' ||
-            effectiveTaskType === 'arrangement'
+            effectiveTaskType === 'arrangement' ||
+            effectiveTaskType === 'arrangement_with_recording'
           );
         }
         if (!effectiveTaskType) return true;
@@ -415,12 +425,22 @@ export default function TaskAssignmentWorkspace() {
       })
       .map(item => item.name);
 
+    // Tìm main instrument name (chỉ cho arrangement)
+    const mainInstrument = instrumentDetails.find(
+      inst => inst.isMain === true
+    );
+    const mainInstrumentName =
+      mainInstrument && (effectiveTaskType === 'arrangement' || effectiveTaskType === 'arrangement_with_recording')
+        ? mainInstrument.name
+        : null;
+
     // Kiểm tra xem params có thay đổi không để tránh fetch duplicate
     const currentParams = {
       specialization: specializationFilter,
       instruments: JSON.stringify(requiredNames.sort()),
       milestoneId: selectedMilestoneId || 'none',
       contractId: contractId || 'none',
+      mainInstrumentName: mainInstrumentName || 'none',
     };
     const lastParams = lastFetchParamsRef.current;
 
@@ -428,7 +448,8 @@ export default function TaskAssignmentWorkspace() {
       lastParams.specialization === currentParams.specialization &&
       lastParams.instruments === currentParams.instruments &&
       lastParams.milestoneId === currentParams.milestoneId &&
-      lastParams.contractId === currentParams.contractId
+      lastParams.contractId === currentParams.contractId &&
+      lastParams.mainInstrumentName === currentParams.mainInstrumentName
     ) {
       // Params không thay đổi, không cần fetch lại
       return;
@@ -439,8 +460,9 @@ export default function TaskAssignmentWorkspace() {
     console.log('Fetching specialists with filter:', {
       specializationFilter,
       requiredNames,
+      mainInstrumentName,
     });
-    fetchSpecialists(specializationFilter, requiredNames);
+    fetchSpecialists(specializationFilter, requiredNames, mainInstrumentName);
   }, [
     contract,
     allowedTaskTypes,
@@ -656,9 +678,22 @@ export default function TaskAssignmentWorkspace() {
                     <div>
                       <Text strong>Required Instruments:</Text>
                       <Space wrap style={{ marginTop: 4 }}>
-                        {instrumentDetails.map(inst => (
-                          <Tag key={inst.id || inst.name}>{inst.name}</Tag>
-                        ))}
+                        {instrumentDetails.map(inst => {
+                          const isMain = inst.isMain === true;
+                          const isArrangement =
+                            requestData?.requestType === 'arrangement' ||
+                            requestData?.requestType === 'arrangement_with_recording';
+                          return (
+                            <Tag
+                              key={inst.id || inst.name}
+                              color={isMain && isArrangement ? 'gold' : 'default'}
+                              icon={isMain && isArrangement ? <StarFilled /> : null}
+                            >
+                              {inst.name}
+                              {isMain && isArrangement && ' (Main)'}
+                            </Tag>
+                          );
+                        })}
                       </Space>
                     </div>
                   )}

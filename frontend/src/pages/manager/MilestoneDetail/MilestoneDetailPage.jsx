@@ -19,6 +19,7 @@ import {
   CopyOutlined,
   UserAddOutlined,
   ExclamationCircleOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -370,9 +371,11 @@ const MilestoneDetailPage = () => {
         status === 'accepted_waiting' ||
         status === 'ready_to_start' ||
         status === 'in_progress' ||
+        status === 'ready_for_review' ||
+        status === 'revision_requested' ||
         status === 'in_revision' ||
-        status === 'waiting_customer_review' ||
-        status === 'revision_requested'
+        status === 'delivery_pending' ||
+        status === 'waiting_customer_review'
       );
     });
   }, [milestoneTasks]);
@@ -529,24 +532,49 @@ const MilestoneDetailPage = () => {
                     </Text>
                   </div>
                 )}
-              {request.instrumentIds &&
-                request.instrumentIds.length > 0 &&
-                instrumentsData.length > 0 && (
+              {((request.instruments && request.instruments.length > 0) ||
+                (request.instrumentIds &&
+                  request.instrumentIds.length > 0 &&
+                  instrumentsData.length > 0)) && (
                   <div>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
                       Instruments:{' '}
                     </Text>
                     <Space wrap size={[4, 4]}>
-                      {request.instrumentIds.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        return (
-                          <Tag key={id} color="purple" style={{ margin: 0 }}>
-                            {inst ? inst.instrumentName : id}
-                          </Tag>
-                        );
-                      })}
+                      {request.instruments && request.instruments.length > 0
+                        ? request.instruments.map((inst, idx) => {
+                            const isMain = inst.isMain === true;
+                            const isArrangement =
+                              request.requestType === 'arrangement' ||
+                              request.requestType === 'arrangement_with_recording';
+                            return (
+                              <Tag
+                                key={inst.instrumentId || idx}
+                                color={
+                                  isMain && isArrangement ? 'gold' : 'purple'
+                                }
+                                icon={
+                                  isMain && isArrangement ? (
+                                    <StarFilled />
+                                  ) : null
+                                }
+                                style={{ margin: 0 }}
+                              >
+                                {inst.instrumentName || inst.name || inst}
+                                {isMain && isArrangement && ' (Main)'}
+                              </Tag>
+                            );
+                          })
+                        : request.instrumentIds.map(id => {
+                            const inst = instrumentsData.find(
+                              i => i.instrumentId === id
+                            );
+                            return (
+                              <Tag key={id} color="purple" style={{ margin: 0 }}>
+                                {inst ? inst.instrumentName : id}
+                              </Tag>
+                            );
+                          })}
                     </Space>
                   </div>
                 )}

@@ -73,7 +73,7 @@ import Tasks from './pages/work/Tasks/Task';
 // Transcription Pages
 import SpecialistProfile from './pages/transcription/Profile/SpecialistProfile';
 import MyTasksPage from './pages/transcription/MyTasksPage/MyTasksPage';
-import TranscriptionTaskDetailPage from './pages/transcription/TranscriptionTaskDetailPage/TranscriptionTaskDetailPage';
+import SpecialistTaskDetailPage from './pages/specialist/TaskDetailPage/SpecialistTaskDetailPage';
 
 // Chat Pages (not used directly anymore, used in ChatLayout)
 // import ChatRoomsPage from './pages/chat/ChatRooms/ChatRoomsPage';
@@ -529,7 +529,7 @@ function App() {
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route
               path="my-tasks/:taskId"
-              element={<TranscriptionTaskDetailPage />}
+              element={<SpecialistTaskDetailPage />}
             />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
@@ -547,7 +547,7 @@ function App() {
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route
               path="my-tasks/:taskId"
-              element={<TranscriptionTaskDetailPage />}
+              element={<SpecialistTaskDetailPage />}
             />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>

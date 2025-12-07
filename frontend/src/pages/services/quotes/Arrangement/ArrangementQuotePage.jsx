@@ -17,6 +17,7 @@ import {
 import {
   DollarOutlined,
   CheckCircleOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { toast } from 'react-hot-toast';
 import Header from '../../../../components/common/Header/Header';
@@ -150,6 +151,7 @@ export default function ArrangementQuotePage() {
       contactPhone: formData.contactPhone,
       contactEmail: formData.contactEmail,
       instrumentIds: formData.instrumentIds || [],
+      mainInstrumentId: formData.mainInstrumentId || null, // Main instrument ID (cho arrangement)
       hasVocalist: formData.hasVocalist || false,
       externalGuestCount: formData.externalGuestCount || 0,
       genres: formData.genres || null,
@@ -227,9 +229,15 @@ export default function ArrangementQuotePage() {
                           const inst = instrumentsData.find(
                             i => i.instrumentId === id
                           );
+                          const isMain = id === formData.mainInstrumentId;
                           return inst ? (
-                            <Tag key={id} color="orange">
+                            <Tag 
+                              key={id} 
+                              color={isMain ? 'gold' : 'orange'}
+                              icon={isMain ? <StarFilled /> : null}
+                            >
                               {inst.instrumentName}
+                              {isMain && ' (Main)'}
                             </Tag>
                           ) : null;
                         })}
@@ -339,6 +347,7 @@ export default function ArrangementQuotePage() {
                               const inst = instrumentsData.find(
                                 i => i.instrumentId === id
                               );
+                              const isMain = id === formData.mainInstrumentId;
                               return inst
                                 ? {
                                     key: id,
@@ -346,6 +355,7 @@ export default function ArrangementQuotePage() {
                                     instrumentName: inst.instrumentName,
                                     basePrice: inst.basePrice || 0,
                                     usage: inst.usage,
+                                    isMain: isMain,
                                   }
                                 : null;
                             })
@@ -355,8 +365,13 @@ export default function ArrangementQuotePage() {
                               title: 'Instrument Name',
                               dataIndex: 'instrumentName',
                               key: 'instrumentName',
-                              render: text => (
+                              render: (text, record) => (
                                 <Space>
+                                  {record.isMain && (
+                                    <Tag color="gold" icon={<StarFilled />}>
+                                      Main
+                                    </Tag>
+                                  )}
                                   <Text strong>{text}</Text>
                                 </Space>
                               ),

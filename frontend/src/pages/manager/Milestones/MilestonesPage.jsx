@@ -344,9 +344,11 @@ const MilestonesPage = () => {
           assignmentStatus === 'accepted_waiting' ||
           assignmentStatus === 'ready_to_start' ||
           assignmentStatus === 'in_progress' ||
+          assignmentStatus === 'ready_for_review' ||
+          assignmentStatus === 'revision_requested' ||
           assignmentStatus === 'in_revision' ||
-          assignmentStatus === 'waiting_customer_review' ||
-          assignmentStatus === 'revision_requested';
+          assignmentStatus === 'delivery_pending' ||
+          assignmentStatus === 'waiting_customer_review';
 
         const canShowAssignButton = !isTaskCompleted && !isMilestoneCompleted && !hasActiveTask;
 

@@ -16,6 +16,7 @@ public class NotationInstrumentResponse {
     Long basePrice;
     boolean isActive;
     String image;  // Public S3 URL (e.g., "https://bucket.s3.amazonaws.com/instruments/file-uuid.png")
+    Boolean isMain;  // true nếu đây là main instrument (cho arrangement) - chỉ có khi lấy từ service request
 }
 
 

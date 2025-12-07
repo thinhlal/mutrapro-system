@@ -761,6 +761,7 @@ const ContractBuilder = () => {
           instrumentId: instr.instrumentId,
           instrumentName: instr.instrumentName,
           basePrice: instr.basePrice || 0,
+          isMain: instr.isMain === true, // Include isMain field
         }));
         breakdown.instruments = selectedInstruments;
       }
@@ -2069,6 +2070,10 @@ const ContractBuilder = () => {
                                     }}
                                   >
                                     • {instr.instrumentName}
+                                    {instr.isMain && 
+                                      (serviceRequest?.requestType === 'arrangement' || 
+                                       serviceRequest?.requestType === 'arrangement_with_recording') && 
+                                      ' (Main)'}
                                   </td>
                                   <td
                                     style={{

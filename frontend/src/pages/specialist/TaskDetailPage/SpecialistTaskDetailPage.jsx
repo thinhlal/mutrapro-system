@@ -32,6 +32,7 @@ import {
   InboxOutlined,
   DownloadOutlined,
   DeleteOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import FileList from '../../../components/common/FileList/FileList';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -52,7 +53,7 @@ import { submitFilesForReview } from '../../../services/taskAssignmentService';
 import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
 import { getRevisionRequestsByAssignment } from '../../../services/revisionRequestService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
-import styles from './TranscriptionTaskDetailPage.module.css';
+import styles from './SpecialistTaskDetailPage.module.css';
 
 const { Title, Text } = Typography;
 
@@ -135,12 +136,14 @@ const SUBMISSION_STATUS_COLORS = {
 
 function getTaskTypeLabel(taskType) {
   if (!taskType) return 'N/A';
+  const normalizedType = taskType.toLowerCase();
   const labels = {
     transcription: 'Transcription',
     arrangement: 'Arrangement',
+    arrangement_with_recording: 'Arrangement with Recording',
     recording: 'Recording',
   };
-  return labels[taskType.toLowerCase()] || taskType;
+  return labels[normalizedType] || taskType;
 }
 
 function getActualDeadline(milestone) {
@@ -240,7 +243,7 @@ function getFallbackDeadline(milestone, allTasks = []) {
 }
 
 // ---------------- Component ----------------
-const TranscriptionTaskDetailPage = () => {
+const SpecialistTaskDetailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { taskId } = useParams(); // taskId thực chất là assignmentId
@@ -1142,14 +1145,14 @@ const TranscriptionTaskDetailPage = () => {
             Task Detail
           </Title>
           <Text className={styles.headerSubtitle}>
-            Work on your transcription assignment
+            Work on your task assignment
           </Text>
         </div>
         <div className={styles.headerActions}>
           <Button
             type="default"
             icon={<LeftOutlined />}
-            onClick={() => navigate('/transcription/my-tasks')}
+            onClick={() => navigate(`${basePath}/my-tasks`)}
           >
             Back to My Tasks
           </Button>
@@ -1370,11 +1373,22 @@ const TranscriptionTaskDetailPage = () => {
                     {request.instruments && request.instruments.length > 0 && (
                       <Descriptions.Item label="Instruments" span={2}>
                         <Space wrap>
-                          {request.instruments.map((inst, idx) => (
-                            <Tag key={idx}>
-                              {inst.instrumentName || inst.name || inst}
-                            </Tag>
-                          ))}
+                          {request.instruments.map((inst, idx) => {
+                            const isMain = inst.isMain === true;
+                            const isArrangement =
+                              request.serviceType === 'arrangement' ||
+                              request.serviceType === 'arrangement_with_recording';
+                            return (
+                              <Tag
+                                key={idx}
+                                color={isMain && isArrangement ? 'gold' : 'default'}
+                                icon={isMain && isArrangement ? <StarFilled /> : null}
+                              >
+                                {inst.instrumentName || inst.name || inst}
+                                {isMain && isArrangement && ' (Main)'}
+                              </Tag>
+                            );
+                          })}
                         </Space>
                       </Descriptions.Item>
                     )}
@@ -1570,42 +1584,77 @@ const TranscriptionTaskDetailPage = () => {
                         hasStartButton ||
                         hasSubmitButton ||
                         hasIssueButton) && (
-                        <Space wrap>
-                          {hasAcceptButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleAcceptTask}
-                              loading={acceptingTask}
-                            >
-                              Accept Task
-                            </Button>
-                          )}
-                          {hasSubmitButton && (
-                            <Button
-                              onClick={handleSubmitForReview}
-                              disabled={!hasFilesToSubmit}
-                              loading={submittingForReview}
-                            >
-                              Submit for Review
-                            </Button>
-                          )}
-                          {hasStartButton && (
-                            <Button
-                              type="primary"
-                              onClick={handleStartTask}
-                              loading={startingTask}
-                            >
-                              Start Task
-                            </Button>
-                          )}
-                          {hasIssueButton && (
-                            <Button
-                              danger
-                              icon={<ExclamationCircleOutlined />}
-                              onClick={handleOpenIssueModal}
-                            >
-                              Báo không kịp deadline
-                            </Button>
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          <Space wrap>
+                            {hasAcceptButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleAcceptTask}
+                                loading={acceptingTask}
+                              >
+                                Accept Task
+                              </Button>
+                            )}
+                            {hasSubmitButton && (
+                              <Button
+                                onClick={handleSubmitForReview}
+                                disabled={!hasFilesToSubmit}
+                                loading={submittingForReview}
+                              >
+                                Submit for Review
+                              </Button>
+                            )}
+                            {hasStartButton && (
+                              <Button
+                                type="primary"
+                                onClick={handleStartTask}
+                                loading={startingTask}
+                              >
+                                Start Task
+                              </Button>
+                            )}
+                            {hasIssueButton && (
+                              <Button
+                                danger
+                                icon={<ExclamationCircleOutlined />}
+                                onClick={handleOpenIssueModal}
+                              >
+                                Báo không kịp deadline
+                              </Button>
+                            )}
+                          </Space>
+                          {hasSubmitButton && task?.taskType && (
+                            <Alert
+                              message="File types allowed for submission"
+                              description={
+                                (() => {
+                                  const taskType = task.taskType?.toLowerCase();
+                                  if (taskType === 'transcription') {
+                                    return (
+                                      <Text type="secondary">
+                                        Notation files only: MusicXML, XML, MIDI, PDF
+                                      </Text>
+                                    );
+                                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                                    return (
+                                      <Text type="secondary">
+                                        Notation files (MusicXML, XML, MIDI, PDF) or Audio files (MP3, WAV, FLAC, AAC, OGG, M4A, WMA)
+                                      </Text>
+                                    );
+                                  } else if (taskType === 'recording') {
+                                    return (
+                                      <Text type="secondary">
+                                        Audio files only: MP3, WAV, FLAC, AAC, OGG, M4A, WMA
+                                      </Text>
+                                    );
+                                  }
+                                  return null;
+                                })()
+                              }
+                              type="info"
+                              showIcon
+                              style={{ marginTop: 8 }}
+                            />
                           )}
                         </Space>
                       )}
@@ -2101,7 +2150,7 @@ const TranscriptionTaskDetailPage = () => {
                   if (taskType === 'transcription') {
                     allowedExts = notationExts;
                     allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
-                  } else if (taskType === 'arrangement') {
+                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
                     allowedExts = [...notationExts, ...audioExts];
                     allowedTypes = 'notation or audio files';
                   } else if (taskType === 'recording') {
@@ -2130,13 +2179,72 @@ const TranscriptionTaskDetailPage = () => {
           >
             <Upload.Dragger
               maxCount={1}
-              beforeUpload={() => false} // Prevent auto upload
+              beforeUpload={(file) => {
+                // Validate file type ngay khi chọn file
+                const fileName = file.name?.toLowerCase() || '';
+                const taskType = task?.taskType?.toLowerCase();
+
+                // Define allowed extensions for each task type
+                const notationExts = [
+                  '.musicxml',
+                  '.xml',
+                  '.mid',
+                  '.midi',
+                  '.pdf',
+                ];
+                const audioExts = [
+                  '.mp3',
+                  '.wav',
+                  '.flac',
+                  '.aac',
+                  '.ogg',
+                  '.m4a',
+                  '.wma',
+                ];
+
+                let allowedExts = [];
+                let allowedTypes = '';
+
+                if (taskType === 'transcription') {
+                  allowedExts = notationExts;
+                  allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
+                } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                  allowedExts = [...notationExts, ...audioExts];
+                  allowedTypes = 'notation or audio files';
+                } else if (taskType === 'recording') {
+                  allowedExts = audioExts;
+                  allowedTypes = 'audio files (MP3, WAV, FLAC, etc.)';
+                } else {
+                  // Unknown task type, let backend validate
+                  return false; // Prevent auto upload
+                }
+
+                const hasValidExt = allowedExts.some(ext =>
+                  fileName.endsWith(ext)
+                );
+
+                if (!hasValidExt) {
+                  message.error(
+                    `File type not allowed for ${taskType} task. Only ${allowedTypes} are allowed.`
+                  );
+                  return false; // Reject file - will not be added to fileList
+                }
+
+                return false; // Prevent auto upload, we'll handle it manually
+              }}
               accept={
-                task?.taskType?.toLowerCase() === 'transcription'
-                  ? '.musicxml,.xml,.mid,.midi,.pdf'
-                  : task?.taskType?.toLowerCase() === 'recording'
-                    ? '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
-                    : '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma'
+                (() => {
+                  const taskType = task?.taskType?.toLowerCase();
+                  if (taskType === 'transcription') {
+                    return '.musicxml,.xml,.mid,.midi,.pdf';
+                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                    return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
+                  } else if (taskType === 'recording') {
+                    return '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
+                  }
+                  // Default: allow all for unknown task types
+                  return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
+                })()
               }
               onChange={info => {
                 // Khi user chọn file, lưu vào state để hiển thị
@@ -2160,11 +2268,17 @@ const TranscriptionTaskDetailPage = () => {
                     Click or drag file to upload
                   </p>
                   <p className="ant-upload-hint">
-                    {task?.taskType?.toLowerCase() === 'transcription'
-                      ? 'Only notation files allowed: MusicXML, XML, MIDI, PDF'
-                      : task?.taskType?.toLowerCase() === 'recording'
-                        ? 'Only audio files allowed: MP3, WAV, FLAC, etc.'
-                        : 'Support: Notation (MusicXML, MIDI, PDF) or Audio files'}
+                    {(() => {
+                      const taskType = task?.taskType?.toLowerCase();
+                      if (taskType === 'transcription') {
+                        return 'Only notation files allowed: MusicXML, XML, MIDI, PDF';
+                      } else if (taskType === 'recording') {
+                        return 'Only audio files allowed: MP3, WAV, FLAC, etc.';
+                      } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                        return 'Support: Notation (MusicXML, MIDI, PDF) or Audio files';
+                      }
+                      return 'Support: Notation (MusicXML, MIDI, PDF) or Audio files';
+                    })()}
                   </p>
                 </>
               ) : (
@@ -2284,4 +2398,4 @@ const TranscriptionTaskDetailPage = () => {
   );
 };
 
-export default TranscriptionTaskDetailPage;
+export default SpecialistTaskDetailPage;

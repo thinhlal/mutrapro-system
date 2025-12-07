@@ -37,11 +37,12 @@ public class ManagerSpecialistController {
             @RequestParam(required = false) String specialization,
             @RequestParam(required = false, name = "skillNames") List<String> skillNames,
             @RequestParam(required = false) String milestoneId,
-            @RequestParam(required = false) String contractId) {
-        log.info("GET /manager/specialists - specialization: {}, skillNames: {}, milestoneId: {}, contractId: {}", 
-            specialization, skillNames, milestoneId, contractId);
+            @RequestParam(required = false) String contractId,
+            @RequestParam(required = false) String mainInstrumentName) {
+        log.info("GET /manager/specialists - specialization: {}, skillNames: {}, milestoneId: {}, contractId: {}, mainInstrumentName: {}", 
+            specialization, skillNames, milestoneId, contractId, mainInstrumentName);
         List<SpecialistResponse> specialists = specialistLookupService.getAvailableSpecialists(
-            specialization, skillNames, milestoneId, contractId);
+            specialization, skillNames, milestoneId, contractId, mainInstrumentName);
         return ApiResponse.<List<SpecialistResponse>>builder()
                 .message("Available specialists retrieved successfully")
                 .data(specialists)

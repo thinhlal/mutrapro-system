@@ -89,13 +89,7 @@ export default function RequestServiceForm({
       };
       form.setFieldsValue(formValues);
 
-      // Khôi phục selectedInstruments
-      if (
-        initialFormData.instrumentIds &&
-        initialFormData.instrumentIds.length > 0
-      ) {
-        setSelectedInstruments(initialFormData.instrumentIds);
-      }
+      setSelectedInstruments([]);
 
       hasInitializedRef.current = true;
     }

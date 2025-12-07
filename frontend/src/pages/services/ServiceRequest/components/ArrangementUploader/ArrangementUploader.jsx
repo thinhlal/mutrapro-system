@@ -7,6 +7,7 @@ import {
   DeleteOutlined,
   ArrowRightOutlined,
   SelectOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './ArrangementUploader.module.css';
@@ -40,6 +41,9 @@ export default function ArrangementUploader({
   // Instrument selection
   const [selectedInstruments, setSelectedInstruments] = useState(() => {
     return formData?.instrumentIds || [];
+  });
+  const [mainInstrumentId, setMainInstrumentId] = useState(() => {
+    return formData?.mainInstrumentId || null;
   });
   const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
 
@@ -93,13 +97,9 @@ export default function ArrangementUploader({
         prevGenresRef.current = formData.genres || [];
         prevPurposeRef.current = formData.purpose || null;
         
-        if (formData.instrumentIds && formData.instrumentIds.length > 0) {
-          setSelectedInstruments(formData.instrumentIds);
-          prevInstrumentsRef.current = formData.instrumentIds;
-        } else {
-          setSelectedInstruments([]);
-          prevInstrumentsRef.current = [];
-        }
+        setSelectedInstruments([]);
+        prevInstrumentsRef.current = [];
+        setMainInstrumentId(null);
         hasInitializedRef.current = true;
       }
     } else if (!formData) {
@@ -135,6 +135,7 @@ export default function ArrangementUploader({
           genres: newGenres,
           purpose: newPurpose,
           instrumentIds: selectedInstruments,
+          mainInstrumentId: mainInstrumentId,
         });
       }
     }
@@ -154,6 +155,7 @@ export default function ArrangementUploader({
           genres: currentGenres,
           purpose: currentPurpose,
           instrumentIds: selectedInstruments,
+          mainInstrumentId: mainInstrumentId,
         });
       }
     }
@@ -161,6 +163,26 @@ export default function ArrangementUploader({
 
   const handleInstrumentSelect = instrumentIds => {
     setSelectedInstruments(instrumentIds);
+    // Nếu mainInstrumentId không còn trong danh sách, reset nó
+    if (mainInstrumentId && !instrumentIds.includes(mainInstrumentId)) {
+      setMainInstrumentId(null);
+    }
+  };
+
+  const handleMainInstrumentChange = mainId => {
+    setMainInstrumentId(mainId);
+    // Cập nhật formData ngay lập tức
+    if (onFormDataChange && formData) {
+      const currentGenres = form.getFieldValue('musicGenres') || [];
+      const currentPurpose = form.getFieldValue('musicPurpose') || null;
+      onFormDataChange({
+        ...formData,
+        genres: currentGenres,
+        purpose: currentPurpose,
+        instrumentIds: selectedInstruments,
+        mainInstrumentId: mainId,
+      });
+    }
   };
 
   const beforeUpload = useCallback(() => false, []);
@@ -195,6 +217,12 @@ export default function ArrangementUploader({
     // Validate instruments
     if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
       message.warning('Please select at least one instrument.');
+      return;
+    }
+
+    // Validate main instrument (required for arrangement)
+    if (!formData.mainInstrumentId || !mainInstrumentId) {
+      message.warning('Please select a main instrument for your arrangement.');
       return;
     }
 
@@ -313,16 +341,19 @@ export default function ArrangementUploader({
                         const inst = instrumentsData.find(
                           i => i.instrumentId === id
                         );
+                        const isMain = id === mainInstrumentId;
                         return inst ? (
                           <Tag
                             key={id}
-                            color="blue"
+                            color={isMain ? 'gold' : 'blue'}
+                            icon={isMain ? <StarFilled /> : null}
                             style={{
                               fontSize: 14,
                               padding: '4px 12px',
                             }}
                           >
                             {inst.instrumentName}
+                            {isMain && ' (Main)'}
                           </Tag>
                         ) : null;
                       })}
@@ -399,7 +430,9 @@ export default function ArrangementUploader({
         instruments={availableInstruments}
         loading={instrumentsLoading}
         selectedInstruments={selectedInstruments}
+        mainInstrumentId={mainInstrumentId}
         onSelect={handleInstrumentSelect}
+        onMainInstrumentChange={handleMainInstrumentChange}
         multipleSelection={true}
         title="Select Instruments (Multiple)"
       />

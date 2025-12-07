@@ -32,5 +32,9 @@ public class RequestNotationInstrument {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrument_id", nullable = false)
     NotationInstrument notationInstrument;
+
+    @Builder.Default
+    @Column(name = "is_main", nullable = false)
+    Boolean isMain = false;  // true nếu đây là main instrument (cho arrangement)
 }
 

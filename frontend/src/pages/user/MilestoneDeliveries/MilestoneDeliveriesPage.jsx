@@ -26,6 +26,7 @@ import {
   FileOutlined,
   ReloadOutlined,
   DollarOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -480,13 +481,24 @@ const MilestoneDeliveriesPage = () => {
                     requestInfo.instruments.length > 0 && (
                       <Descriptions.Item label="Instruments" span={2}>
                         <Space wrap>
-                          {requestInfo.instruments.map((instrument, index) => (
-                            <Tag key={index} color="blue">
-                              {instrument.instrumentName ||
-                                instrument.name ||
-                                instrument}
-                            </Tag>
-                          ))}
+                          {requestInfo.instruments.map((instrument, index) => {
+                            const isMain = instrument.isMain === true;
+                            const isArrangement =
+                              requestInfo.requestType === 'arrangement' ||
+                              requestInfo.requestType === 'arrangement_with_recording';
+                            return (
+                              <Tag
+                                key={index}
+                                color={isMain && isArrangement ? 'gold' : 'blue'}
+                                icon={isMain && isArrangement ? <StarFilled /> : null}
+                              >
+                                {instrument.instrumentName ||
+                                  instrument.name ||
+                                  instrument}
+                                {isMain && isArrangement && ' (Main)'}
+                              </Tag>
+                            );
+                          })}
                         </Space>
                       </Descriptions.Item>
                     )}

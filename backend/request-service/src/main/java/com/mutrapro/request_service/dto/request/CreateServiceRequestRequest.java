@@ -52,5 +52,7 @@ public class CreateServiceRequestRequest {
     
     List<String> instrumentIds;  // Optional - Danh sách instrument IDs mà customer chọn
     
+    String mainInstrumentId;  // Optional - Main instrument ID (cho arrangement)
+    
     List<MultipartFile> files;  // Optional - Files: audio cho transcription, PDF/MusicXML/MIDI cho arrangement
 }
