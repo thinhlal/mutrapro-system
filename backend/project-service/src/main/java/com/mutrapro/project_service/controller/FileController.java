@@ -93,9 +93,10 @@ public class FileController {
         log.info("Uploading file for assignmentId: {}, fileName: {}, size: {}", 
                 assignmentId, file.getOriginalFilename(), file.getSize());
         
-        String userId = authentication != null ? authentication.getName() : null;
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
         FileInfoResponse response = fileService.uploadTaskFile(
-                file, assignmentId, description, contentType, userId);
+                file, assignmentId, description, contentType, userContext.getUserId());
 
         return ApiResponse.<FileInfoResponse>builder()
                 .message("File uploaded successfully")

@@ -237,11 +237,21 @@ public class FileAccessService {
 
     /**
      * Kiểm tra xem customer có phải là owner của file không
-     * Dựa vào requestId hoặc contractId
+     * Dựa vào requestId, contractId, hoặc createdBy (cho customer_upload)
+     * @param file File entity
+     * @param userId UserId từ JWT (UUID)
      */
     private boolean isCustomerOwner(File file, String userId) {
-        // Nếu file có requestId, cần gọi request-service để check
-        // Hiện tại chưa có Feign client, nên check qua Contract
+        // Đối với file customer_upload, nếu customer là người upload (createdBy),
+        // thì họ có quyền truy cập ngay cả khi chưa có contract
+        if (file.getFileSource() == FileSourceType.customer_upload) {
+            String createdBy = file.getCreatedBy();
+            if (userId != null && userId.equals(createdBy)) {
+                log.debug("Customer {} is owner of customer_upload file {} (via createdBy userId)", 
+                    userId, file.getFileId());
+                return true;
+            }
+        }
         
         // Nếu file có assignmentId, lấy contract từ assignment
         if (file.getAssignmentId() != null) {
