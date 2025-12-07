@@ -10,8 +10,6 @@ import {
   Descriptions,
   Empty,
   Table,
-  Modal,
-  List,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -32,7 +30,6 @@ import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
-import axiosInstance from '../../../utils/axiosInstance';
 import styles from './MilestoneDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -177,19 +174,8 @@ const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
   return previousDeadline.add(slaDays, 'day');
 };
 
-const getTaskCompletionDate = task =>
-  task?.completedDate || task?.milestone?.finalCompletedAt || null;
-
 const formatDateTime = value =>
   value ? dayjs(value).format('HH:mm DD/MM/YYYY') : '—';
-
-const formatFileSize = bytes => {
-  if (!bytes) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-};
 
 const MilestoneDetailPage = () => {
   const { contractId, milestoneId } = useParams();
@@ -203,11 +189,6 @@ const MilestoneDetailPage = () => {
   const [requestLoading, setRequestLoading] = useState(false);
   const [milestoneTasks, setMilestoneTasks] = useState([]);
   const [milestoneTasksLoading, setMilestoneTasksLoading] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [taskDetailModalVisible, setTaskDetailModalVisible] = useState(false);
-  const [selectedTaskFiles, setSelectedTaskFiles] = useState([]);
-  const [selectedTaskFilesLoading, setSelectedTaskFilesLoading] =
-    useState(false);
 
   useEffect(() => {
     fetchInstruments();
@@ -310,39 +291,6 @@ const MilestoneDetailPage = () => {
     }
   }, [contractId, milestoneId, loadData]);
 
-  const openTaskDetailModal = async record => {
-    setSelectedTask(record);
-    setTaskDetailModalVisible(true);
-    if (!record?.assignmentId) {
-      setSelectedTaskFiles([]);
-      return;
-    }
-    try {
-      setSelectedTaskFilesLoading(true);
-      const response = await axiosInstance.get(
-        `/api/v1/projects/files/by-assignment/${record.assignmentId}`
-      );
-      if (
-        response?.data?.status === 'success' &&
-        Array.isArray(response.data?.data)
-      ) {
-        setSelectedTaskFiles(response.data.data);
-      } else {
-        setSelectedTaskFiles([]);
-      }
-    } catch (error) {
-      console.error('Error loading files:', error);
-      setSelectedTaskFiles([]);
-    } finally {
-      setSelectedTaskFilesLoading(false);
-    }
-  };
-
-  const closeTaskDetailModal = () => {
-    setTaskDetailModalVisible(false);
-    setSelectedTask(null);
-    setSelectedTaskFiles([]);
-  };
 
   const milestoneOrder = useMemo(() => {
     if (!milestone) return null;
@@ -911,7 +859,11 @@ const MilestoneDetailPage = () => {
                     <Space size="small">
                       <Button
                         size="small"
-                        onClick={() => openTaskDetailModal(record)}
+                        onClick={() =>
+                          navigate(
+                            `/manager/tasks/${contractId}/${record.assignmentId}`
+                          )
+                        }
                       >
                         Xem
                       </Button>
@@ -938,126 +890,6 @@ const MilestoneDetailPage = () => {
           )}
         </Card>
       </div>
-
-      <Modal
-        title="Chi tiết task"
-        open={taskDetailModalVisible}
-        onCancel={closeTaskDetailModal}
-        footer={[
-          <Button key="close" onClick={closeTaskDetailModal}>
-            Đóng
-          </Button>,
-        ]}
-        width={800}
-      >
-        {selectedTask ? (
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="Task Type">
-                <Tag color="cyan">
-                  {TASK_TYPE_LABELS[selectedTask.taskType?.toLowerCase()] ||
-                    selectedTask.taskType ||
-                    'N/A'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                <Tag
-                  color={
-                    STATUS_COLORS[selectedTask.status?.toLowerCase()] ||
-                    'default'
-                  }
-                >
-                  {STATUS_LABELS[selectedTask.status?.toLowerCase()] ||
-                    selectedTask.status ||
-                    'N/A'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Specialist" span={2}>
-                <Space direction="vertical" size={0}>
-                  <Text strong>
-                    {selectedTask.specialistName ||
-                      selectedTask.specialistId ||
-                      'Chưa gán'}
-                  </Text>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Assigned">
-                {formatDateTime(selectedTask.assignedDate)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Accepted">
-                {formatDateTime(selectedTask.specialistRespondedAt)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Completed" span={2}>
-                {formatDateTime(getTaskCompletionDate(selectedTask))}
-              </Descriptions.Item>
-              {selectedTask.notes && (
-                <Descriptions.Item label="Notes" span={2}>
-                  {selectedTask.notes}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            <Card title="Files đã upload" size="small">
-              <Spin spinning={selectedTaskFilesLoading}>
-                {selectedTaskFiles.length > 0 ? (
-                  <List
-                    dataSource={selectedTaskFiles}
-                    renderItem={file => (
-                      <List.Item>
-                        <Space
-                          style={{
-                            width: '100%',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <Space wrap>
-                            <Tag
-                              color={
-                                FILE_STATUS_COLORS[
-                                  file.fileStatus?.toLowerCase()
-                                ] || 'default'
-                              }
-                            >
-                              {FILE_STATUS_LABELS[
-                                file.fileStatus?.toLowerCase()
-                              ] ||
-                                file.fileStatus ||
-                                'N/A'}
-                            </Tag>
-                            <Text strong>{file.fileName}</Text>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              ({formatFileSize(file.fileSize)})
-                            </Text>
-                          </Space>
-                          <Space>
-                            {file.uploadDate && (
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {dayjs(file.uploadDate).format(
-                                  'HH:mm DD/MM/YYYY'
-                                )}
-                              </Text>
-                            )}
-                          </Space>
-                        </Space>
-                      </List.Item>
-                    )}
-                  />
-                ) : (
-                  <Empty
-                    description="Chưa có file nào được upload"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
-                )}
-              </Spin>
-            </Card>
-          </Space>
-        ) : (
-          <Empty
-            description="Không có dữ liệu task"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        )}
-      </Modal>
     </div>
   );
 };
