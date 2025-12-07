@@ -25,7 +25,7 @@ import {
   CheckOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getMyTaskAssignments,
   acceptTaskAssignment,
@@ -149,6 +149,9 @@ function getActualDeadline(milestone) {
  */
 const MyTasksPage = ({ onOpenTask }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Detect base path from current location (e.g., /transcription, /arrangement, /recording-artist)
+  const basePath = location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -321,7 +324,7 @@ const MyTasksPage = ({ onOpenTask }) => {
       if (typeof onOpenTask === 'function') {
         onOpenTask(task.assignmentId);
       } else {
-        navigate(`/transcription/my-tasks/${task.assignmentId}`);
+        navigate(`${basePath}/my-tasks/${task.assignmentId}`);
       }
     },
     [navigate, onOpenTask]

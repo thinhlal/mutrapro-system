@@ -33,9 +33,16 @@ const ProtectedRoute = ({
   }
 
   // Authenticated but doesn't have required role
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    // Redirect to unauthorized page or home
-    return <Navigate to="/unauthorized" replace />;
+  // Compare roles case-insensitively
+  if (allowedRoles.length > 0) {
+    const userRoleUpper = user.role?.toUpperCase();
+    const hasAllowedRole = allowedRoles.some(
+      allowedRole => allowedRole.toUpperCase() === userRoleUpper
+    );
+    if (!hasAllowedRole) {
+      // Redirect to unauthorized page or home
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   // Authenticated and authorized

@@ -5,13 +5,20 @@
  * @returns {string} The redirect path
  */
 export const getRoleBasedRedirectPath = (role, fallback = '/') => {
-  switch (role) {
+  // Normalize role to uppercase for case-insensitive comparison
+  const roleUpper = role?.toUpperCase();
+  
+  switch (roleUpper) {
     case 'SYSTEM_ADMIN':
       return '/admin/dashboard';
     case 'MANAGER':
       return '/manager/dashboard';
     case 'TRANSCRIPTION':
       return '/transcription/my-tasks';
+    case 'ARRANGEMENT':
+      return '/arrangement/my-tasks';
+    case 'RECORDING_ARTIST':
+      return '/recording-artist/profile';
     case 'CUSTOMER':
       return '/';
     default:

@@ -34,7 +34,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import FileList from '../../../components/common/FileList/FileList';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getMyTaskAssignmentById,
@@ -242,7 +242,10 @@ function getFallbackDeadline(milestone, allTasks = []) {
 // ---------------- Component ----------------
 const TranscriptionTaskDetailPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { taskId } = useParams(); // taskId thực chất là assignmentId
+  // Detect base path from current location (e.g., /transcription, /arrangement, /recording-artist)
+  const basePath = location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
 
   const [task, setTask] = useState(null);
   const [request, setRequest] = useState(null);
@@ -1120,7 +1123,7 @@ const TranscriptionTaskDetailPage = () => {
             <Button
               type="default"
               icon={<LeftOutlined />}
-              onClick={() => navigate('/transcription/my-tasks')}
+              onClick={() => navigate(`${basePath}/my-tasks`)}
             >
               Back to My Tasks
             </Button>
@@ -2031,7 +2034,7 @@ const TranscriptionTaskDetailPage = () => {
           <Button
             type="primary"
             icon={<EditOutlined />}
-            onClick={() => navigate(`/transcription/editor/${task.id}`)}
+            onClick={() => navigate(`${basePath}/edit-tool`)}
           >
             Open Editor
           </Button>

@@ -344,6 +344,7 @@ function App() {
                   'MANAGER',
                   'SYSTEM_ADMIN',
                   'TRANSCRIPTION',
+                  'ARRANGEMENT',
                 ]}
               >
                 <NotationEditor />
@@ -542,7 +543,12 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="profile" replace />} />
+            <Route index element={<Navigate to="my-tasks" replace />} />
+            <Route path="my-tasks" element={<MyTasksPage />} />
+            <Route
+              path="my-tasks/:taskId"
+              element={<TranscriptionTaskDetailPage />}
+            />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 

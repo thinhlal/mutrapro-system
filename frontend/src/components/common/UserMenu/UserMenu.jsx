@@ -206,8 +206,50 @@ function UserMenu() {
 
           <ul className={styles.dropdownMenu}>
 
+            {/* Transcription Dashboard */}
+            {(user?.role?.toUpperCase() === 'TRANSCRIPTION' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+              <li>
+                <Link
+                  to="/transcription/my-tasks"
+                  className={styles.dropdownItem}
+                  onClick={handleMenuItemClick}
+                >
+                  <DashboardOutlined className={styles.dropdownIcon} />
+                  <span>Transcription Dashboard</span>
+                </Link>
+              </li>
+            )}
+
+            {/* Arrangement Dashboard */}
+            {(user?.role?.toUpperCase() === 'ARRANGEMENT' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+              <li>
+                <Link
+                  to="/arrangement/my-tasks"
+                  className={styles.dropdownItem}
+                  onClick={handleMenuItemClick}
+                >
+                  <DashboardOutlined className={styles.dropdownIcon} />
+                  <span>Arrangement Dashboard</span>
+                </Link>
+              </li>
+            )}
+
+            {/* Recording Artist Dashboard */}
+            {(user?.role?.toUpperCase() === 'RECORDING_ARTIST' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+              <li>
+                <Link
+                  to="/recording-artist/profile"
+                  className={styles.dropdownItem}
+                  onClick={handleMenuItemClick}
+                >
+                  <DashboardOutlined className={styles.dropdownIcon} />
+                  <span>Recording Artist Dashboard</span>
+                </Link>
+              </li>
+            )}
+
             {/* Manager Dashboard */}
-            {user?.role === 'MANAGER' && (
+            {(user?.role?.toUpperCase() === 'MANAGER' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
               <li>
                 <Link
                   to="/manager/dashboard"
@@ -220,30 +262,18 @@ function UserMenu() {
               </li>
             )}
 
-            {/* Admin Dashboard + Manager */}
-            {user?.role === 'SYSTEM_ADMIN' && (
-              <>
-                <li>
-                  <Link
-                    to="/admin/dashboard"
-                    className={styles.dropdownItem}
-                    onClick={handleMenuItemClick}
-                  >
-                    <DashboardOutlined className={styles.dropdownIcon} />
-                    <span>Admin Dashboard</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/manager/dashboard"
-                    className={styles.dropdownItem}
-                    onClick={handleMenuItemClick}
-                  >
-                    <DashboardOutlined className={styles.dropdownIcon} />
-                    <span>Manager Dashboard</span>
-                  </Link>
-                </li>
-              </>
+            {/* Admin Dashboard */}
+            {user?.role?.toUpperCase() === 'SYSTEM_ADMIN' && (
+              <li>
+                <Link
+                  to="/admin/dashboard"
+                  className={styles.dropdownItem}
+                  onClick={handleMenuItemClick}
+                >
+                  <DashboardOutlined className={styles.dropdownIcon} />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </li>
             )}
 
             {/* My requests */}
