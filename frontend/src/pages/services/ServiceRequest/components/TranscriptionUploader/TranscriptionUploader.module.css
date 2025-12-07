@@ -71,15 +71,13 @@
 
 .dragger {
   background: #faf5ff;
-  border: 1px dashed #c084fc !important;
+  border: 1px dashed #ec8a1c !important;
   z-index: 0 !important;
 }
 
 .dragger :global(.ant-upload-drag) {
   position: static;
   z-index: auto;
-  min-height: 270px;
-  padding: 57px 20px;
 }
 
 .actionRow {

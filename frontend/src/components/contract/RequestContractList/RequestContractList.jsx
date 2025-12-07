@@ -171,33 +171,33 @@ const RequestContractList = ({
             }
             extra={
               <Space
-                direction="vertical"
+                direction="horizontal"
                 size="small"
-                style={{ width: '100%' }}
+                wrap
+                style={{ display: 'flex', alignItems: 'center' }}
               >
                 {/* View Details Button - Always visible */}
                 <Button
                   icon={<EyeOutlined />}
                   onClick={() => navigate(`/contracts/${contract.contractId}`)}
-                  style={{ marginBottom: canCustomerAction || canSign ? 8 : 0 }}
                 >
                   View Details
                 </Button>
 
                 {canCustomerAction && (
-                  <Space wrap>
+                  <>
                     <Button
                       type="primary"
                       icon={<CheckOutlined />}
                       onClick={() => onApprove(contract.contractId)}
-                      loading={actionLoading}
+                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
                     >
                       Duyệt
                     </Button>
                     <Button
                       icon={<EditOutlined />}
                       onClick={() => onRequestChange(contract)}
-                      loading={actionLoading}
+                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
                     >
                       Yêu cầu chỉnh sửa
                     </Button>
@@ -205,19 +205,19 @@ const RequestContractList = ({
                       danger
                       icon={<StopOutlined />}
                       onClick={() => onCancel(contract)}
-                      loading={actionLoading}
+                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
                     >
                       Hủy
                     </Button>
-                  </Space>
+                  </>
                 )}
                 {canSign && (
-                  <Space wrap>
+                  <>
                     <Alert
                       message="Bạn đã duyệt contract này. Vui lòng vào chi tiết contract để ký qua OTP."
                       type="success"
                       showIcon
-                      style={{ marginBottom: 8 }}
+                      style={{ marginBottom: 0 }}
                     />
                     <Button
                       type="primary"
@@ -229,7 +229,7 @@ const RequestContractList = ({
                     >
                       Vào chi tiết để ký
                     </Button>
-                  </Space>
+                  </>
                 )}
                 {isCanceledByManager && (
                   <div style={{ fontSize: '12px', color: '#ff4d4f' }}>
@@ -459,7 +459,7 @@ const RequestContractList = ({
 RequestContractList.propTypes = {
   contracts: PropTypes.array,
   loading: PropTypes.bool,
-  actionLoading: PropTypes.bool,
+  actionLoading: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
   onApprove: PropTypes.func.isRequired,
   onRequestChange: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
@@ -469,7 +469,7 @@ RequestContractList.propTypes = {
 RequestContractList.defaultProps = {
   contracts: [],
   loading: false,
-  actionLoading: false,
+  actionLoading: {},
 };
 
 export default RequestContractList;

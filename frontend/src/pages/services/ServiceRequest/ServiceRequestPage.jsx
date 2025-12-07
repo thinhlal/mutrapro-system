@@ -81,7 +81,15 @@ export default function ServiceRequestPage() {
         />
         <div className={styles.container}>
           <h1 id="fst-title" className={styles.title}>
-            From Sound to Sheet
+            {(() => {
+              const titleMap = {
+                transcription: 'From Sound to Sheet',
+                arrangement: 'Arrangement Service',
+                arrangement_with_recording: 'Arrangement + Recording',
+                recording: 'Recording Service',
+              };
+              return titleMap[selectedType] || 'From Sound to Sheet';
+            })()}
           </h1>
           <p className={styles.subtitle}>Fast. Accurate. Human.</p>
 
@@ -135,6 +143,7 @@ export default function ServiceRequestPage() {
             <TranscriptionUploader
               serviceType={selectedType}
               formData={formData}
+              onFormDataChange={handleFormComplete}
             />
           )}
           {selectedType === 'arrangement' && (
@@ -142,6 +151,7 @@ export default function ServiceRequestPage() {
               variant="pure"
               serviceType={selectedType}
               formData={formData}
+              onFormDataChange={handleFormComplete}
             />
           )}
           {selectedType === 'arrangement_with_recording' && (
@@ -149,6 +159,7 @@ export default function ServiceRequestPage() {
               variant="with_recording"
               serviceType={selectedType}
               formData={formData}
+              onFormDataChange={handleFormComplete}
             />
           )}
           {/* Recording service is now handled in RequestServiceForm */}
@@ -156,6 +167,7 @@ export default function ServiceRequestPage() {
             <TranscriptionUploader
               serviceType={selectedType}
               formData={formData}
+              onFormDataChange={handleFormComplete}
             />
           )}
         </div>

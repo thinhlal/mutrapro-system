@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Upload, Button, Tooltip, Tag, Space, InputNumber, Alert } from 'antd';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Upload, Button, Tooltip, Tag, Space, InputNumber, Alert, Form, Row, Col } from 'antd';
 import {
   InboxOutlined,
   ArrowRightOutlined,
@@ -8,18 +8,29 @@ import {
   ClockCircleOutlined,
   PlusOutlined,
   MinusOutlined,
+  SelectOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './TranscriptionUploader.module.css';
 import { getMediaDurationSec } from '../../../../../utils/getMediaDuration';
 import { createServiceRequest } from '../../../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../../../utils/timeUtils';
+import { useInstrumentStore } from '../../../../../stores/useInstrumentStore';
+import InstrumentSelectionModal from '../../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
 
 const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
-export default function TranscriptionUploader({ serviceType, formData }) {
+const SERVICE_LABELS = {
+  transcription: 'Transcription (Sound → Sheet)',
+  arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement + Recording (with Vocalist)',
+  recording: 'Recording (Studio Booking)',
+};
+
+export default function TranscriptionUploader({ serviceType, formData, onFormDataChange }) {
+  const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
   const [detectedDurationMinutes, setDetectedDurationMinutes] = useState(0);
@@ -27,6 +38,114 @@ export default function TranscriptionUploader({ serviceType, formData }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const navigate = useNavigate();
+
+  // Instrument selection
+  const [selectedInstruments, setSelectedInstruments] = useState(() => {
+    return formData?.instrumentIds || [];
+  });
+  const [instrumentModalVisible, setInstrumentModalVisible] = useState(false);
+
+  const {
+    instruments: instrumentsData,
+    loading: instrumentsLoading,
+    fetchInstruments,
+    getInstrumentsByUsage,
+  } = useInstrumentStore();
+
+  // Fetch instruments when component mounts
+  useEffect(() => {
+    fetchInstruments();
+  }, [fetchInstruments]);
+
+  // Get instruments for transcription
+  const availableInstruments = useMemo(() => {
+    if (serviceType === 'transcription') {
+      return getInstrumentsByUsage('transcription');
+    }
+    return [];
+  }, [serviceType, getInstrumentsByUsage, instrumentsData]);
+
+  // Track previous values to avoid unnecessary updates
+  const prevTempoRef = useRef(null);
+  const prevInstrumentsRef = useRef(null);
+
+  // Initialize form values from formData
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (formData && form) {
+      // Reset flag if formData was cleared
+      if (!formData.title && !formData.description) {
+        hasInitializedRef.current = false;
+        prevTempoRef.current = null;
+        prevInstrumentsRef.current = null;
+      }
+      
+      if (!hasInitializedRef.current) {
+        const tempoValue = formData.tempoPercentage || 100;
+        form.setFieldsValue({
+          tempoPercentage: tempoValue,
+        });
+        prevTempoRef.current = tempoValue;
+        
+        if (formData.instrumentIds && formData.instrumentIds.length > 0) {
+          setSelectedInstruments(formData.instrumentIds);
+          prevInstrumentsRef.current = formData.instrumentIds;
+        } else {
+          setSelectedInstruments([]);
+          prevInstrumentsRef.current = [];
+        }
+        hasInitializedRef.current = true;
+      }
+    } else if (!formData) {
+      // Reset when formData is null
+      hasInitializedRef.current = false;
+      prevTempoRef.current = null;
+      prevInstrumentsRef.current = null;
+      setSelectedInstruments([]);
+      form.setFieldsValue({
+        tempoPercentage: 100,
+      });
+    }
+  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail, form]); // Only sync when other fields change
+
+  // Handle form values change - only when user actually changes the value
+  const handleFormValuesChange = useCallback((changedValues, allValues) => {
+    // Only process if tempoPercentage was changed by user
+    if (changedValues.tempoPercentage !== undefined && onFormDataChange && formData && hasInitializedRef.current) {
+      const newTempo = allValues.tempoPercentage || 100;
+      // Only update if value actually changed
+      if (newTempo !== prevTempoRef.current) {
+        prevTempoRef.current = newTempo;
+        onFormDataChange({
+          ...formData,
+          tempoPercentage: newTempo,
+          instrumentIds: selectedInstruments,
+        });
+      }
+    }
+  }, [onFormDataChange, formData, selectedInstruments]);
+
+  // Update formData when instruments change
+  useEffect(() => {
+    if (onFormDataChange && formData && hasInitializedRef.current) {
+      // Only update if instruments actually changed
+      const instrumentsChanged = JSON.stringify(selectedInstruments) !== JSON.stringify(prevInstrumentsRef.current);
+      if (instrumentsChanged) {
+        prevInstrumentsRef.current = selectedInstruments;
+        const currentTempo = form.getFieldValue('tempoPercentage') || 100;
+        onFormDataChange({
+          ...formData,
+          tempoPercentage: currentTempo,
+          instrumentIds: selectedInstruments,
+        });
+      }
+    }
+  }, [selectedInstruments]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleInstrumentSelect = instrumentIds => {
+    setSelectedInstruments([instrumentIds]);
+    setInstrumentModalVisible(false);
+  };
 
   const beforeUpload = useCallback(() => false, []);
 
@@ -157,6 +276,95 @@ export default function TranscriptionUploader({ serviceType, formData }) {
           We support multiple platforms like Soundcloud, Spotify, YouTube, etc.
         </p>
 
+        {/* Tempo Percentage, Service Type, and Instrument Selection - Only for transcription */}
+        {serviceType === 'transcription' && (
+          <div style={{ marginTop: 24, marginBottom: 16 }}>
+            <Form form={form} layout="vertical" onValuesChange={handleFormValuesChange}>
+              <Form.Item
+                label="Tempo Percentage"
+                name="tempoPercentage"
+                tooltip="Adjust playback speed (100 = normal speed)"
+              >
+                <InputNumber
+                  size="large"
+                  min={50}
+                  max={200}
+                  step={5}
+                  style={{ width: '100%' }}
+                  formatter={value => `${value}%`}
+                  parser={value => value.replace('%', '')}
+                />
+              </Form.Item>
+
+              <Form.Item label="Service Type">
+                <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
+                  {SERVICE_LABELS[serviceType] || serviceType}
+                </Tag>
+              </Form.Item>
+
+              <Form.Item label="Select Instrument" required>
+                <Row gutter={16} align="middle">
+                  <Col xs={24} sm={24} md={12}>
+                    <Button
+                      type="primary"
+                      icon={<SelectOutlined />}
+                      onClick={() => setInstrumentModalVisible(true)}
+                      size="large"
+                      block
+                      loading={instrumentsLoading}
+                    >
+                      {selectedInstruments.length > 0
+                        ? `${selectedInstruments.length} instrument(s) selected`
+                        : 'Select Instruments'}
+                    </Button>
+                  </Col>
+                  {selectedInstruments.length > 0 && (
+                    <Col xs={24} sm={24} md={12}>
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          textAlign: 'center',
+                          justifyContent: 'flex-start',
+                          gap: '8px',
+                        }}
+                      >
+                        {selectedInstruments.map(id => {
+                          const inst = instrumentsData.find(
+                            i => i.instrumentId === id
+                          );
+                          return inst ? (
+                            <Tag
+                              key={id}
+                              color="blue"
+                              style={{
+                                fontSize: 14,
+                                padding: '4px 12px',
+                                height: '40px',
+                                width: '100%',
+                                display: 'flex',
+                                textAlign: 'center',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                margin: 0,
+                                lineHeight: '32px',
+                              }}
+                            >
+                              {inst.instrumentName}
+                            </Tag>
+                          ) : null;
+                        })}
+                      </div>
+                    </Col>
+                  )}
+                </Row>
+              </Form.Item>
+            </Form>
+          </div>
+        )}
+
         {/* <Input
           size="large"
           value={linkValue}
@@ -262,6 +470,20 @@ export default function TranscriptionUploader({ serviceType, formData }) {
           </Tooltip>
         </div>
       </div>
+
+      {/* Instrument Selection Modal */}
+      {serviceType === 'transcription' && (
+        <InstrumentSelectionModal
+          visible={instrumentModalVisible}
+          onCancel={() => setInstrumentModalVisible(false)}
+          instruments={availableInstruments}
+          loading={instrumentsLoading}
+          selectedInstruments={selectedInstruments[0]}
+          onSelect={handleInstrumentSelect}
+          multipleSelection={false}
+          title="Select One Instrument"
+        />
+      )}
     </section>
   );
 }

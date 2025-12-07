@@ -186,7 +186,7 @@ export default function ContractsManagement() {
   const [error, setError] = useState(null);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState({}); // Track loading per contractId
   const [revisionModalVisible, setRevisionModalVisible] = useState(false);
   const [revisionContract, setRevisionContract] = useState(null);
   const [hasActiveContract, setHasActiveContract] = useState(false);
@@ -286,7 +286,7 @@ export default function ContractsManagement() {
 
   const handleSendContract = async contractId => {
     try {
-      setActionLoading(true);
+      setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await sendContractToCustomer(contractId, 7); // 7 days expiry
       message.success('Contract sent to customer successfully');
       // Reload contracts
@@ -302,15 +302,16 @@ export default function ContractsManagement() {
     } catch (error) {
       message.error(error.message || 'Error sending contract');
     } finally {
-      setActionLoading(false);
+      setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
   };
 
   const handleCancelContract = async reason => {
     if (!selectedContract) return;
+    const contractId = selectedContract.contractId;
     try {
-      setActionLoading(true);
-      await cancelContractByManager(selectedContract.contractId, reason);
+      setActionLoading(prev => ({ ...prev, [contractId]: true }));
+      await cancelContractByManager(contractId, reason);
       message.success('Contract cancelled successfully');
       setCancelModalVisible(false);
       setSelectedContract(null);
@@ -327,7 +328,7 @@ export default function ContractsManagement() {
     } catch (error) {
       message.error(error.message || 'Error cancelling contract');
     } finally {
-      setActionLoading(false);
+      setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
   };
 
@@ -363,7 +364,7 @@ export default function ContractsManagement() {
       title: 'Type',
       dataIndex: 'contractType',
       key: 'contractType',
-      width: 220,
+      width: 170,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
       onFilter: (val, rec) =>
         (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
@@ -373,7 +374,7 @@ export default function ContractsManagement() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 180,
+      width: 230,
       render: v => {
         const statusLower = v?.toLowerCase() || 'draft';
         return (
@@ -475,7 +476,7 @@ export default function ContractsManagement() {
 
         const handleStartWorkFromList = async () => {
           try {
-            setActionLoading(true);
+            setActionLoading(prev => ({ ...prev, [r.contractId]: true }));
 
             // Lấy danh sách task assignments để kiểm tra milestone nào chưa có task
             const resp = await getTaskAssignmentsByContract(r.contractId);
@@ -556,7 +557,7 @@ export default function ContractsManagement() {
                 'Có lỗi khi gọi API task-assignments. Vui lòng kiểm tra lại hoặc thử lại sau.',
             });
           } finally {
-            setActionLoading(false);
+            setActionLoading(prev => ({ ...prev, [r.contractId]: false }));
           }
         };
 
@@ -583,7 +584,7 @@ export default function ContractsManagement() {
                   <Button
                     type="primary"
                     icon={<SendOutlined />}
-                    loading={actionLoading}
+                    loading={actionLoading[r.contractId]}
                     block
                   >
                     Send
@@ -680,7 +681,7 @@ export default function ContractsManagement() {
                     setSelectedContract(r);
                     setCancelModalVisible(true);
                   }}
-                  loading={actionLoading}
+                  loading={actionLoading[r.contractId]}
                   block
                 >
                   {isDraft ? 'Cancel' : 'Recall'}
@@ -692,7 +693,7 @@ export default function ContractsManagement() {
                 <Button
                   type="primary"
                   size="small"
-                  loading={actionLoading}
+                  loading={actionLoading[r.contractId]}
                   style={{ width: '100%' }}
                   onClick={handleStartWorkFromList}
                 >
@@ -817,7 +818,7 @@ export default function ContractsManagement() {
           setSelectedContract(null);
         }}
         onConfirm={handleCancelContract}
-        loading={actionLoading}
+        loading={selectedContract ? actionLoading[selectedContract.contractId] : false}
         isManager={true}
         isDraft={selectedContract?.status?.toLowerCase() === 'draft'}
       />
@@ -1117,7 +1118,7 @@ export default function ContractsManagement() {
         }
         okButtonProps={{
           disabled: startWorkContext.hasBlockingMissing,
-          loading: actionLoading,
+          loading: startWorkContext.contract ? actionLoading[startWorkContext.contract.contractId] : false,
         }}
         cancelText="Đóng"
         onOk={async () => {
@@ -1128,8 +1129,9 @@ export default function ContractsManagement() {
             return;
           }
           try {
-            setActionLoading(true);
-            await startContractWork(startWorkContext.contract.contractId);
+            const contractId = startWorkContext.contract.contractId;
+            setActionLoading(prev => ({ ...prev, [contractId]: true }));
+            await startContractWork(contractId);
             message.success('Đã bắt đầu work cho contract');
             const response = await getAllContracts();
             setContracts(response.data || []);
@@ -1145,7 +1147,10 @@ export default function ContractsManagement() {
               err?.message || 'Không thể Start Work từ danh sách contracts'
             );
           } finally {
-            setActionLoading(false);
+            const contractId = startWorkContext.contract?.contractId;
+            if (contractId) {
+              setActionLoading(prev => ({ ...prev, [contractId]: false }));
+            }
           }
         }}
         width={700}

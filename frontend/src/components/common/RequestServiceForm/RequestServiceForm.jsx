@@ -279,31 +279,25 @@ export default function RequestServiceForm({
             />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col xs={24} sm={24} md={12}>
-              <Form.Item
-                label="Contact Name"
-                name="contactName"
-                rules={[requiredMsg]}
-              >
-                <Input size="large" placeholder="Your full name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={24} md={12}>
-              <Form.Item
-                label="Contact Email"
-                name="contactEmail"
-                rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
-              >
-                <Input
-                  size="large"
-                  placeholder="you@example.com"
-                  readOnly
-                  disabled
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            label="Contact Name"
+            name="contactName"
+            rules={[requiredMsg]}
+          >
+            <Input size="large" placeholder="Your full name" />
+          </Form.Item>
+          <Form.Item
+            label="Contact Email"
+            name="contactEmail"
+            rules={[requiredMsg, { type: 'email', message: 'Invalid email' }]}
+          >
+            <Input
+              size="large"
+              placeholder="you@example.com"
+              readOnly
+              disabled
+            />
+          </Form.Item>
 
           <Form.Item
             label="Contact Phone"
@@ -313,135 +307,6 @@ export default function RequestServiceForm({
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
 
-          {/* Tempo Percentage - Only for transcription */}
-          {serviceType === 'transcription' && (
-            <Form.Item
-              label="Tempo Percentage"
-              name="tempoPercentage"
-              tooltip="Adjust playback speed (100 = normal speed)"
-            >
-              <InputNumber
-                size="large"
-                min={50}
-                max={200}
-                step={5}
-                style={{ width: '100%' }}
-                formatter={value => `${value}%`}
-                parser={value => value.replace('%', '')}
-              />
-            </Form.Item>
-          )}
-
-          {serviceType && (
-            <Form.Item label="Service Type">
-              <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
-                {SERVICE_LABELS[serviceType] || serviceType}
-              </Tag>
-            </Form.Item>
-          )}
-
-          {/* Music Options - Only for arrangement, arrangement_with_recording */}
-          {(serviceType === 'arrangement' ||
-            serviceType === 'arrangement_with_recording') && (
-            <>
-              <Form.Item
-                label="Music Genres"
-                name="musicGenres"
-                tooltip="Select one or more music genres for your arrangement"
-              >
-                <Select
-                  mode="multiple"
-                  size="large"
-                  placeholder="Select genres (e.g., Pop, Rock, Jazz...)"
-                  style={{ width: '100%' }}
-                  options={MUSIC_GENRES}
-                />
-              </Form.Item>
-
-              <Form.Item
-                label="Purpose"
-                name="musicPurpose"
-                tooltip="What is the purpose of this arrangement?"
-              >
-                <Select
-                  size="large"
-                  placeholder="Select purpose"
-                  style={{ width: '100%' }}
-                  options={MUSIC_PURPOSES}
-                />
-              </Form.Item>
-            </>
-          )}
-
-          {/* Instrument Selection - Only for transcription, arrangement, arrangement_with_recording */}
-          {needsInstruments && (
-            <Form.Item
-              label={
-                multipleInstruments
-                  ? 'Select Instruments (Multiple)'
-                  : 'Select Instrument'
-              }
-              required
-            >
-              <Row gutter={16} align="middle">
-                <Col xs={24} sm={24} md={12}>
-                  <Button
-                    type="primary"
-                    icon={<SelectOutlined />}
-                    onClick={() => setInstrumentModalVisible(true)}
-                    size="large"
-                    block
-                    loading={instrumentsLoading}
-                  >
-                    {selectedInstruments.length > 0
-                      ? `${selectedInstruments.length} instrument(s) selected`
-                      : 'Select Instruments'}
-                  </Button>
-                </Col>
-                {selectedInstruments.length > 0 && (
-                  <Col xs={24} sm={24} md={12}>
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '40px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        textAlign: "center",
-                        justifyContent: 'flex-start',
-                        gap: '8px',
-                      }}
-                    >
-                      {selectedInstruments.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        return inst ? (
-                          <Tag
-                            key={id}
-                            color="blue"
-                            style={{
-                              fontSize: 14,
-                              padding: '4px 12px',
-                              height: '40px',
-                              width: '100%',
-                              display: 'flex',
-                              textAlign: "center",
-                              justifyContent: "center",
-                              alignItems: 'center',
-                              margin: 0,
-                              lineHeight: '32px',
-                            }}
-                          >
-                            {inst.instrumentName}
-                          </Tag>
-                        ) : null;
-                      })}
-                    </div>
-                  </Col>
-                )}
-              </Row>
-            </Form.Item>
-          )}
         </Form>
         <p
           className={styles.nextStep}
@@ -451,25 +316,7 @@ export default function RequestServiceForm({
         </p>
       </div>
 
-      {/* Instrument Selection Modal */}
-      {needsInstruments && (
-        <InstrumentSelectionModal
-          visible={instrumentModalVisible}
-          onCancel={() => setInstrumentModalVisible(false)}
-          instruments={availableInstruments}
-          loading={instrumentsLoading}
-          selectedInstruments={
-            multipleInstruments ? selectedInstruments : selectedInstruments[0]
-          }
-          onSelect={handleInstrumentSelect}
-          multipleSelection={multipleInstruments}
-          title={
-            multipleInstruments
-              ? 'Select Instruments (Multiple)'
-              : 'Select One Instrument'
-          }
-        />
-      )}
+      {/* Instrument Selection Modal - Removed for arrangement services (moved to uploader) */}
     </section>
   );
 }
