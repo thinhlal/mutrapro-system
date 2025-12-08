@@ -8,6 +8,8 @@ import {
   Platform,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, STORAGE_KEYS } from "../../config/constants";
@@ -23,6 +25,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [room, setRoom] = useState(roomParam); // Initialize with roomParam if available
   const [loadingRoom, setLoadingRoom] = useState(!roomParam); // If no room, need to load
+  const [selectedContextType, setSelectedContextType] = useState('GENERAL'); // Default: GENERAL (chat chung)
+  const [selectedContextId, setSelectedContextId] = useState(null);
 
   // IMPORTANT: Use roomIdParam directly if available to prevent re-subscription
   // when room state changes after fetching room data
@@ -36,7 +40,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
     hasMore,
     sendMessage,
     loadMoreMessages,
-  } = useChat(roomId);
+    loadMessages,
+  } = useChat(roomId, false); // false = không auto-load, load từ đây với filter
 
   // Get current user ID
   useEffect(() => {
@@ -84,6 +89,19 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
     fetchRoomData();
   }, [roomIdParam, room, navigation]);
+
+  // Load messages với filter ngay từ đầu
+  useEffect(() => {
+    if (roomId && !loadingRoom) {
+      loadMessages(0, selectedContextType, selectedContextId);
+    }
+  }, [
+    roomId,
+    selectedContextType,
+    selectedContextId,
+    loadingRoom,
+    loadMessages,
+  ]);
 
   useEffect(() => {
     // Set header title - only update if room is available
@@ -143,16 +161,54 @@ const ChatRoomScreen = ({ route, navigation }) => {
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
+    // Check if room is active
+    if (room?.isActive === false) {
+      Alert.alert("Warning", "Không thể gửi tin nhắn. Phòng chat này đã được đóng.");
+      return;
+    }
+
     try {
-      await sendMessage(text);
+      await sendMessage(text, 'TEXT', null, selectedContextType, selectedContextId);
     } catch (error) {
       console.error('[Mobile] Error sending message:', error);
     }
   };
 
+  const handleFileUpload = async (fileKey, fileName, fileType, metadata) => {
+    // Check if room is active
+    if (room?.isActive === false) {
+      Alert.alert("Warning", "Không thể gửi file. Phòng chat này đã được đóng.");
+      return;
+    }
+
+    try {
+      // Determine message type based on file type
+      let messageType = 'FILE';
+      if (fileType === 'image') {
+        messageType = 'IMAGE';
+      } else if (fileType === 'audio') {
+        messageType = 'AUDIO';
+      } else if (fileType === 'video') {
+        messageType = 'VIDEO';
+      }
+
+      // Send file message via WebSocket
+      await sendMessage(
+        fileKey, // content = fileKey để download sau này
+        messageType,
+        metadata, // metadata = file info (bao gồm fileKey)
+        selectedContextType, // contextType
+        selectedContextId  // contextId
+      );
+    } catch (error) {
+      console.error('[Mobile] Failed to send file message:', error);
+      Alert.alert("Error", "Không thể gửi file");
+    }
+  };
+
   const handleLoadMore = () => {
     if (hasMore && !loading) {
-      loadMoreMessages();
+      loadMoreMessages(selectedContextType, selectedContextId);
     }
   };
 
@@ -185,6 +241,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
         isFromMe={isFromMe}
         showAvatar={showAvatar}
         userAvatar={`https://ui-avatars.com/api/?name=${item.senderName || 'User'}`}
+        roomId={room?.roomId}
       />
     );
   };
@@ -256,6 +313,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
     );
   }
 
+  // Check if this is CONTRACT_CHAT to show context type selector
+  const isContractChat = room?.roomType === 'CONTRACT_CHAT';
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -269,6 +329,62 @@ const ChatRoomScreen = ({ route, navigation }) => {
           <Text style={styles.connectionBannerText}>
             Connecting...
           </Text>
+        </View>
+      )}
+
+      {/* Context Type Selector - Only for CONTRACT_CHAT */}
+      {isContractChat && (
+        <View style={styles.contextTypeSelector}>
+          <TouchableOpacity
+            style={[
+              styles.contextTypeButton,
+              selectedContextType === 'GENERAL' && styles.contextTypeButtonActive,
+            ]}
+            onPress={() => {
+              setSelectedContextType('GENERAL');
+              setSelectedContextId(null);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="chatbubbles-outline"
+              size={16}
+              color={selectedContextType === 'GENERAL' ? COLORS.white : COLORS.textSecondary}
+            />
+            <Text
+              style={[
+                styles.contextTypeButtonText,
+                selectedContextType === 'GENERAL' && styles.contextTypeButtonTextActive,
+              ]}
+            >
+              Chat chung
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.contextTypeButton,
+              selectedContextType === 'MILESTONE' && styles.contextTypeButtonActive,
+            ]}
+            onPress={() => {
+              setSelectedContextType('MILESTONE');
+              setSelectedContextId(null);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="flag-outline"
+              size={16}
+              color={selectedContextType === 'MILESTONE' ? COLORS.white : COLORS.textSecondary}
+            />
+            <Text
+              style={[
+                styles.contextTypeButtonText,
+                selectedContextType === 'MILESTONE' && styles.contextTypeButtonTextActive,
+              ]}
+            >
+              Milestone
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -292,7 +408,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
 
       <ChatInput
         onSendMessage={handleSendMessage}
-        disabled={!connected || sending}
+        onFileUpload={handleFileUpload}
+        roomId={room?.roomId}
+        sending={sending}
+        disabled={!connected || !room || room?.isActive === false}
       />
     </KeyboardAvoidingView>
   );
@@ -446,6 +565,39 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.primary,
     fontWeight: "600",
+  },
+
+  // Context Type Selector
+  contextTypeSelector: {
+    flexDirection: "row",
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: SPACING.xs,
+  },
+  contextTypeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.background,
+    gap: SPACING.xs,
+  },
+  contextTypeButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  contextTypeButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
+  contextTypeButtonTextActive: {
+    color: COLORS.white,
   },
 });
 
