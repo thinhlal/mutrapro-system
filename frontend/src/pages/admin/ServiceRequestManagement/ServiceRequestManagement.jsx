@@ -70,6 +70,8 @@ const STATUS_LABELS = {
 const REQUEST_TYPE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
+  arrangement_with_recording: 'Arrangement with Recording',
+  recording: 'Recording',
 };
 
 export default function ServiceRequestManagement() {
@@ -96,18 +98,26 @@ export default function ServiceRequestManagement() {
   const [allSort, setAllSort] = useState('createdAt,desc');
   const [mySort, setMySort] = useState('createdAt,desc');
 
+  // Filter state
+  const [allRequestTypeFilter, setAllRequestTypeFilter] = useState(null);
+  const [allStatusFilter, setAllStatusFilter] = useState(null);
+  const [myRequestTypeFilter, setMyRequestTypeFilter] = useState(null);
+  const [myStatusFilter, setMyStatusFilter] = useState(null);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Fetch tất cả requests với phân trang
-  const fetchAllRequests = async (page = 0, size = 10, sort = allSort) => {
+  const fetchAllRequests = async (page = 0, size = 10, sort = allSort, requestType = allRequestTypeFilter, status = allStatusFilter) => {
     try {
       setLoadingAll(true);
       const response = await getAllServiceRequests({
         page: page,
         size: size,
         sort: sort,
+        requestType: requestType,
+        status: status,
       });
 
       if (response?.status === 'success') {
@@ -140,13 +150,15 @@ export default function ServiceRequestManagement() {
   };
 
   // Fetch requests đã được assign cho user hiện tại với phân trang
-  const fetchMyRequests = async (page = 0, size = 10, sort = mySort) => {
+  const fetchMyRequests = async (page = 0, size = 10, sort = mySort, requestType = myRequestTypeFilter, status = myStatusFilter) => {
     try {
       setLoadingMy(true);
       const response = await getMyAssignedRequests(user?.id, {
         page: page,
         size: size,
         sort: sort,
+        requestType: requestType,
+        status: status,
       });
 
       if (response?.status === 'success') {
@@ -222,7 +234,7 @@ export default function ServiceRequestManagement() {
     const basePath = location.pathname.startsWith('/admin')
       ? '/admin'
       : '/manager';
-    navigate(`${basePath}/service-requests/${requestId}/contracts`, {
+    navigate(`${basePath}/service-requests/${requestId}`, {
       state: { requestSnapshot: record },
     });
   };
@@ -257,8 +269,8 @@ export default function ServiceRequestManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Columns cho bảng
-  const columns = [
+  // Base columns (dùng chung)
+  const baseColumns = [
     {
       title: 'Request ID',
       dataIndex: 'id',
@@ -282,7 +294,7 @@ export default function ServiceRequestManagement() {
       title: 'Type',
       dataIndex: 'requestType',
       key: 'requestType',
-      width: 120,
+      width: 220,
       render: type => (
         <Tag color="cyan">{REQUEST_TYPE_LABELS[type] || type}</Tag>
       ),
@@ -344,83 +356,93 @@ export default function ServiceRequestManagement() {
       width: 150,
       render: date => new Date(date).toLocaleDateString('vi-VN'),
     },
-    {
-      title: 'Assigned To',
-      dataIndex: 'managerUserId',
-      key: 'managerUserId',
-      width: 130,
-      render: (managerId, record) => {
-        if (managerId) {
-          // Nếu có manager ID, hiển thị badge
-          const isCurrentUser = managerId === user?.id;
-          return (
-            <Tag color={isCurrentUser ? 'green' : 'blue'}>
-              {isCurrentUser ? 'You' : 'Assigned'}
-            </Tag>
-          );
-        }
-        return <Tag color="default">Unassigned</Tag>;
-      },
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 140,
-      fixed: 'right',
-      render: (_, record) => {
-        const isAssignedToMe = record.managerUserId === user?.id;
-        const hasManager = !!record.managerUserId;
-        // Sử dụng field hasContract từ response (đã được enrich từ backend)
-        const hasContract = record.hasContract === true;
-        const status = (record.status || '').toLowerCase();
+  ];
 
-        // Các trạng thái mà contract đã đi vào flow thực thi / chờ task,
-        // không cho tạo contract mới từ màn này nữa
-        const isContractFlowLocked =
-          status === 'awaiting_assignment' ||
-          status === 'in_progress' ||
-          status === 'completed' ||
-          status === 'cancelled' ||
-          status === 'rejected';
-
+  // Column "Assigned To" chỉ hiển thị ở tab "All Requests"
+  const assignedToColumn = {
+    title: 'Assigned To',
+    dataIndex: 'managerUserId',
+    key: 'managerUserId',
+    width: 130,
+    render: (managerId, record) => {
+      if (managerId) {
+        // Nếu có manager ID, hiển thị badge
+        const isCurrentUser = managerId === user?.id;
         return (
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-            {!hasManager && (
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckCircleOutlined />}
-                loading={assigning[record.id]}
-                onClick={() => handleAssign(record.id)}
-                block
-              >
-                Assign to Me
-              </Button>
-            )}
-            {isAssignedToMe && !hasContract && !isContractFlowLocked && (
-              <Button
-                type="default"
-                size="small"
-                icon={<FileTextOutlined />}
-                onClick={() => handleCreateContract(record)}
-              >
-                Create Contract
-              </Button>
-            )}
+          <Tag color={isCurrentUser ? 'green' : 'blue'}>
+            {isCurrentUser ? 'You' : 'Assigned'}
+          </Tag>
+        );
+      }
+      return <Tag color="default">Unassigned</Tag>;
+    },
+  };
+
+  // Actions column (dùng chung)
+  const actionsColumn = {
+    title: 'Actions',
+    key: 'actions',
+    width: 140,
+    fixed: 'right',
+    render: (_, record) => {
+      const isAssignedToMe = record.managerUserId === user?.id;
+      const hasManager = !!record.managerUserId;
+      // Sử dụng field hasContract từ response (đã được enrich từ backend)
+      const hasContract = record.hasContract === true;
+      const status = (record.status || '').toLowerCase();
+
+      // Các trạng thái mà contract đã đi vào flow thực thi / chờ task,
+      // không cho tạo contract mới từ màn này nữa
+      const isContractFlowLocked =
+        status === 'awaiting_assignment' ||
+        status === 'in_progress' ||
+        status === 'completed' ||
+        status === 'cancelled' ||
+        status === 'rejected';
+
+      return (
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          {!hasManager && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              loading={assigning[record.id]}
+              onClick={() => handleAssign(record.id)}
+              block
+            >
+              Assign to Me
+            </Button>
+          )}
+          {isAssignedToMe && !hasContract && !isContractFlowLocked && (
             <Button
               type="default"
               size="small"
-              icon={<FileSearchOutlined />}
-              onClick={() => handleViewContracts(record)}
-              block
+              icon={<FileTextOutlined />}
+              onClick={() => handleCreateContract(record)}
             >
-              Details
+              Create Contract
             </Button>
-          </Space>
-        );
-      },
+          )}
+          <Button
+            type="default"
+            size="small"
+            icon={<FileSearchOutlined />}
+            onClick={() => handleViewContracts(record)}
+            block
+          >
+            Details
+          </Button>
+        </Space>
+      );
     },
-  ];
+  };
+
+  // Columns cho tab "All Requests" (có cột "Assigned To")
+  const allColumns = [...baseColumns, assignedToColumn, actionsColumn];
+
+  // Columns cho tab "My Assigned Requests" (không có cột "Assigned To")
+  const myColumns = [...baseColumns, actionsColumn];
 
   const sortOptions = [
     { value: 'createdAt,desc', label: 'Created Date (Newest)' },
@@ -433,14 +455,55 @@ export default function ServiceRequestManagement() {
     { value: 'title,desc', label: 'Title (Z-A)' },
   ];
 
+  const requestTypeOptions = [
+    { value: null, label: 'All Types' },
+    { value: 'transcription', label: 'Transcription' },
+    { value: 'arrangement', label: 'Arrangement' },
+    { value: 'arrangement_with_recording', label: 'Arrangement with Recording' },
+    { value: 'recording', label: 'Recording' },
+  ];
+
+  const statusOptions = [
+    { value: null, label: 'All Statuses' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'contract_sent', label: 'Contract Sent' },
+    { value: 'contract_approved', label: 'Contract Approved' },
+    { value: 'contract_signed', label: 'Contract Signed' },
+    { value: 'awaiting_assignment', label: 'Awaiting Assignment' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'rejected', label: 'Rejected' },
+  ];
+
   const handleAllSortChange = value => {
     setAllSort(value);
-    fetchAllRequests(0, allPagination.pageSize, value);
+    fetchAllRequests(0, allPagination.pageSize, value, allRequestTypeFilter, allStatusFilter);
   };
 
   const handleMySortChange = value => {
     setMySort(value);
-    fetchMyRequests(0, myPagination.pageSize, value);
+    fetchMyRequests(0, myPagination.pageSize, value, myRequestTypeFilter, myStatusFilter);
+  };
+
+  const handleAllRequestTypeFilterChange = value => {
+    setAllRequestTypeFilter(value);
+    fetchAllRequests(0, allPagination.pageSize, allSort, value, allStatusFilter);
+  };
+
+  const handleAllStatusFilterChange = value => {
+    setAllStatusFilter(value);
+    fetchAllRequests(0, allPagination.pageSize, allSort, allRequestTypeFilter, value);
+  };
+
+  const handleMyRequestTypeFilterChange = value => {
+    setMyRequestTypeFilter(value);
+    fetchMyRequests(0, myPagination.pageSize, mySort, value, myStatusFilter);
+  };
+
+  const handleMyStatusFilterChange = value => {
+    setMyStatusFilter(value);
+    fetchMyRequests(0, myPagination.pageSize, mySort, myRequestTypeFilter, value);
   };
 
   return (
@@ -454,12 +517,16 @@ export default function ServiceRequestManagement() {
               fetchAllRequests(
                 allPagination.current - 1,
                 allPagination.pageSize,
-                allSort
+                allSort,
+                allRequestTypeFilter,
+                allStatusFilter
               );
               fetchMyRequests(
                 myPagination.current - 1,
                 myPagination.pageSize,
-                mySort
+                mySort,
+                myRequestTypeFilter,
+                myStatusFilter
               );
             }}
           >
@@ -488,18 +555,41 @@ export default function ServiceRequestManagement() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 8,
               }}
             >
-              <span style={{ fontWeight: 500 }}>Sort by:</span>
-              <Select
-                value={allSort}
-                onChange={handleAllSortChange}
-                style={{ width: 200 }}
-                options={sortOptions}
-              />
+              <Space size="middle">
+                <span style={{ fontWeight: 500 }}>Filter:</span>
+                <Select
+                  value={allRequestTypeFilter}
+                  onChange={handleAllRequestTypeFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Request Type"
+                  allowClear
+                  options={requestTypeOptions}
+                />
+                <Select
+                  value={allStatusFilter}
+                  onChange={handleAllStatusFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Status"
+                  allowClear
+                  options={statusOptions}
+                />
+              </Space>
+              <Space>
+                <span style={{ fontWeight: 500 }}>Sort by:</span>
+                <Select
+                  value={allSort}
+                  onChange={handleAllSortChange}
+                  style={{ width: 200 }}
+                  options={sortOptions}
+                />
+              </Space>
             </div>
             <Table
-              columns={columns}
+              columns={allColumns}
               dataSource={allRequests}
               rowKey="id"
               loading={loadingAll}
@@ -511,10 +601,10 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} requests`,
                 onChange: (page, pageSize) => {
-                  fetchAllRequests(page - 1, pageSize, allSort); // Spring Data page starts from 0
+                  fetchAllRequests(page - 1, pageSize, allSort, allRequestTypeFilter, allStatusFilter); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchAllRequests(0, size, allSort);
+                  fetchAllRequests(0, size, allSort, allRequestTypeFilter, allStatusFilter);
                 },
               }}
             />
@@ -538,18 +628,41 @@ export default function ServiceRequestManagement() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 8,
               }}
             >
-              <span style={{ fontWeight: 500 }}>Sort by:</span>
-              <Select
-                value={mySort}
-                onChange={handleMySortChange}
-                style={{ width: 200 }}
-                options={sortOptions}
-              />
+              <Space size="middle">
+                <span style={{ fontWeight: 500 }}>Filter:</span>
+                <Select
+                  value={myRequestTypeFilter}
+                  onChange={handleMyRequestTypeFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Request Type"
+                  allowClear
+                  options={requestTypeOptions}
+                />
+                <Select
+                  value={myStatusFilter}
+                  onChange={handleMyStatusFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Status"
+                  allowClear
+                  options={statusOptions}
+                />
+              </Space>
+              <Space>
+                <span style={{ fontWeight: 500 }}>Sort by:</span>
+                <Select
+                  value={mySort}
+                  onChange={handleMySortChange}
+                  style={{ width: 200 }}
+                  options={sortOptions}
+                />
+              </Space>
             </div>
             <Table
-              columns={columns}
+              columns={myColumns}
               dataSource={myRequests}
               rowKey="id"
               loading={loadingMy}
@@ -561,10 +674,10 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} assigned requests`,
                 onChange: (page, pageSize) => {
-                  fetchMyRequests(page - 1, pageSize, mySort); // Spring Data page starts from 0
+                  fetchMyRequests(page - 1, pageSize, mySort, myRequestTypeFilter, myStatusFilter); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchMyRequests(0, size, mySort);
+                  fetchMyRequests(0, size, mySort, myRequestTypeFilter, myStatusFilter);
                 },
               }}
             />

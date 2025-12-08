@@ -1392,6 +1392,19 @@ const SpecialistTaskDetailPage = () => {
                         </Space>
                       </Descriptions.Item>
                     )}
+                    {request.serviceType === 'arrangement_with_recording' &&
+                      request.preferredSpecialists &&
+                      request.preferredSpecialists.length > 0 && (
+                        <Descriptions.Item label="Preferred Vocalists" span={2}>
+                          <Space wrap>
+                            {request.preferredSpecialists.map((specialist, idx) => (
+                              <Tag key={idx} color="pink">
+                                {specialist.name || `Vocalist ${specialist.specialistId}`}
+                              </Tag>
+                            ))}
+                          </Space>
+                        </Descriptions.Item>
+                      )}
                     {request.files &&
                       Array.isArray(request.files) &&
                       (() => {

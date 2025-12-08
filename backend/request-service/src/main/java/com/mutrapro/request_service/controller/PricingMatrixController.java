@@ -92,15 +92,15 @@ public class PricingMatrixController {
     }
 
     /**
-     * Tính giá cho arrangement_with_recording (theo bài + giá ca sĩ)
+     * Tính giá cho arrangement_with_recording (theo bài)
+     * Không tính phí ca sĩ vì đây là hệ thống
      */
     @GetMapping("/calculate/arrangement-with-recording")
     public ApiResponse<PriceCalculationResponse> calculateArrangementWithRecordingPrice(
-            @RequestParam(required = false, defaultValue = "1") Integer numberOfSongs,
-            @RequestParam(required = false) BigDecimal artistFee) {
+            @RequestParam(required = false, defaultValue = "1") Integer numberOfSongs) {
         
         PriceCalculationResponse result = pricingMatrixService.calculateArrangementWithRecordingPrice(
-                numberOfSongs, artistFee);
+                numberOfSongs);
         
         return ApiResponse.<PriceCalculationResponse>builder()
                 .data(result)

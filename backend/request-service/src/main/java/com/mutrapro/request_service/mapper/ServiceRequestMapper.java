@@ -24,6 +24,7 @@ public interface ServiceRequestMapper {
      * Map ServiceRequest entity sang ServiceRequestResponse DTO
      * MapStruct sẽ tự động map các field có cùng tên
      * Field instruments được set manually trong service layer
+     * preferredSpecialists sẽ được map tự động vì cùng type PreferredSpecialistInfo
      */
     @Mapping(target = "instruments", ignore = true)
     ServiceRequestResponse toServiceRequestResponse(ServiceRequest serviceRequest);

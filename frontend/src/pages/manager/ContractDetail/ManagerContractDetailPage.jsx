@@ -2036,6 +2036,15 @@ const ManagerContractDetailPage = () => {
                             <strong>Purpose:</strong> {getPurposeLabel(requestDetails.purpose)}
                           </p>
                         )}
+                        {requestDetails.preferredSpecialists &&
+                          requestDetails.preferredSpecialists.length > 0 && (
+                            <p>
+                              <strong>Preferred Vocalists:</strong>{' '}
+                              {requestDetails.preferredSpecialists
+                                .map(s => s.name || `Vocalist ${s.specialistId}`)
+                                .join(', ')}
+                            </p>
+                          )}
                       </>
                     )}
                   </>

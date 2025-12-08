@@ -81,9 +81,8 @@ export default function ArrangementQuotePage() {
         setLoading(true);
 
         // Fetch calculated price - arrangement mặc định 1 bài
-        const priceResponse = await calculatePricing(serviceType, {
-          ...(serviceType === 'arrangement_with_recording' && formData.artistFee ? { artistFee: formData.artistFee } : {}),
-        });
+        // Không tính phí ca sĩ vì đây là hệ thống
+        const priceResponse = await calculatePricing(serviceType, {});
         if (priceResponse.status === 'success' && priceResponse.data) {
           setPriceData(priceResponse.data);
         }
@@ -105,7 +104,7 @@ export default function ArrangementQuotePage() {
     };
 
     fetchPricingData();
-  }, [serviceType, formData.artistFee]);
+  }, [serviceType]);
 
   // Tính tổng giá instruments và combine với priceData
   const finalPriceData = priceData ? (() => {
@@ -136,13 +135,34 @@ export default function ArrangementQuotePage() {
   })() : null;
 
   const handleSubmit = async () => {
+    console.log('=== handleSubmit function called ===');
+    console.log('uploadedFile:', uploadedFile);
+    console.log('formData:', formData);
+    
     // 1. Validate trước
     if (!uploadedFile) {
       toast.error('File notation là bắt buộc cho arrangement.');
       return;
     }
+    
+    console.log('Validation passed, preparing data...'); // Debug
 
     // 2. Chuẩn bị payload gửi lên backend
+    // Chuẩn bị preferredSpecialists với format {specialistId, name, role}
+    const preferredSpecialists = formData.preferredSpecialistNames 
+      ? formData.preferredSpecialistNames.map(item => ({
+          specialistId: typeof item === 'object' ? item.id : item,
+          name: typeof item === 'object' ? item.name : `Vocalist ${item}`,
+          role: 'VOCALIST' // Mặc định là VOCALIST cho arrangement_with_recording
+        }))
+      : (formData.preferredSpecialistIds && formData.preferredSpecialistIds.length > 0
+          ? formData.preferredSpecialistIds.map(id => ({
+              specialistId: typeof id === 'object' ? id.id : id,
+              name: typeof id === 'object' ? id.name : `Vocalist ${id}`,
+              role: 'VOCALIST'
+            }))
+          : null);
+    
     const requestData = {
       requestType: serviceType,
       title: formData.title,
@@ -152,7 +172,8 @@ export default function ArrangementQuotePage() {
       contactEmail: formData.contactEmail,
       instrumentIds: formData.instrumentIds || [],
       mainInstrumentId: formData.mainInstrumentId || null, // Main instrument ID (cho arrangement)
-      hasVocalist: formData.hasVocalist || false,
+      hasVocalist: preferredSpecialists != null && preferredSpecialists.length > 0, // Tự động set dựa trên preferredSpecialists
+      preferredSpecialists: preferredSpecialists, // Gửi cả specialistId, name, role
       externalGuestCount: formData.externalGuestCount || 0,
       genres: formData.genres || null,
       purpose: formData.purpose || null,
@@ -161,6 +182,12 @@ export default function ArrangementQuotePage() {
 
     try {
       setSubmitting(true);
+
+      // Debug: Log request data
+      console.log('Submitting request data:', {
+        ...requestData,
+        files: requestData.files?.map(f => ({ name: f.name, size: f.size, type: f.type }))
+      });
 
       // 3. Gọi API – nếu lỗi, createServiceRequest sẽ throw
       await createServiceRequest(requestData);
@@ -244,6 +271,17 @@ export default function ArrangementQuotePage() {
                       </Space>
                     </Descriptions.Item>
                   )}
+                {formData.preferredSpecialists && formData.preferredSpecialists.length > 0 && (
+                  <Descriptions.Item label="Preferred Vocalists">
+                    <Space wrap>
+                      {formData.preferredSpecialists.map((specialist, idx) => (
+                        <Tag key={idx} color="pink">
+                          {specialist.name || `Vocalist ${specialist.specialistId}`}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
               </Descriptions>
             </Card>
 
@@ -482,10 +520,31 @@ export default function ArrangementQuotePage() {
             type="primary"
             size="large"
             icon={<CheckCircleOutlined />}
-            onClick={handleSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('=== Button onClick triggered ===');
+              console.log('Event:', e);
+              console.log('loading:', loading);
+              console.log('finalPriceData:', finalPriceData);
+              console.log('submitting:', submitting);
+              console.log('handleSubmit:', handleSubmit);
+              try {
+                if (typeof handleSubmit === 'function') {
+                  handleSubmit();
+                } else {
+                  console.error('handleSubmit is not a function!', handleSubmit);
+                  toast.error('Lỗi: handleSubmit không phải là function');
+                }
+              } catch (error) {
+                console.error('Error in onClick:', error);
+                toast.error('Lỗi: ' + error.message);
+              }
+            }}
             loading={submitting}
             disabled={loading || !finalPriceData}
             style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
+            title={loading ? 'Loading pricing...' : !finalPriceData ? 'Waiting for price calculation...' : 'Submit request'}
           >
             Confirm & Submit Request
           </Button>

@@ -611,6 +611,28 @@ const RequestDetailScreen = ({ navigation, route }) => {
             />
           )}
 
+          {/* Preferred Vocalists for arrangement_with_recording */}
+          {request.requestType === "arrangement_with_recording" &&
+            request.preferredSpecialists &&
+            Array.isArray(request.preferredSpecialists) &&
+            request.preferredSpecialists.length > 0 && (
+              <View style={styles.infoRow}>
+                <Ionicons name="people-outline" size={18} color={COLORS.textSecondary} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Preferred Vocalists</Text>
+                  <View style={styles.genresContainer}>
+                    {request.preferredSpecialists.map((specialist, idx) => (
+                      <View key={idx} style={[styles.genreTag, { backgroundColor: COLORS.pink || '#ff69b4' }]}>
+                        <Text style={styles.genreTagText}>
+                          {specialist.name || `Vocalist ${specialist.specialistId}`}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+
           {request.externalGuestCount > 0 && (
             <InfoRow
               icon="people-outline"

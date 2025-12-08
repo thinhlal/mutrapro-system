@@ -151,6 +151,19 @@ export default function ServiceRequestDetailModal({
               </Tag>
             </Descriptions.Item>
           )}
+        {request.requestType === 'arrangement_with_recording' &&
+          request.preferredSpecialists &&
+          request.preferredSpecialists.length > 0 && (
+            <Descriptions.Item label="Preferred Vocalists">
+              <Space wrap>
+                {request.preferredSpecialists.map((specialist, idx) => (
+                  <Tag key={idx} color="pink">
+                    {specialist.name || `Vocalist ${specialist.specialistId}`}
+                  </Tag>
+                ))}
+              </Space>
+            </Descriptions.Item>
+          )}
         {request.requestType === 'recording' && (
           <Descriptions.Item label="External Guest Count">
             {request.externalGuestCount || 0}

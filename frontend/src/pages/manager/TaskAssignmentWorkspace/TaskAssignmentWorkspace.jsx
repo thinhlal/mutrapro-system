@@ -704,6 +704,22 @@ export default function TaskAssignmentWorkspace() {
                     </Text>
                   </div>
 
+                  {/* Preferred Vocalists for arrangement_with_recording */}
+                  {requestData?.requestType === 'arrangement_with_recording' &&
+                    requestData.preferredSpecialists &&
+                    requestData.preferredSpecialists.length > 0 && (
+                      <div>
+                        <Text strong>Preferred Vocalists: </Text>
+                        <Space wrap style={{ marginTop: 4 }}>
+                          {requestData.preferredSpecialists.map((specialist, idx) => (
+                            <Tag key={idx} color="pink">
+                              {specialist.name || `Vocalist ${specialist.specialistId}`}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    )}
+
                   {/* Contract Files */}
                   {(() => {
                     const files = (requestData.files || []).filter(

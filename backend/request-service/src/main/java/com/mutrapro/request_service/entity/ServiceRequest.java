@@ -70,6 +70,11 @@ public class ServiceRequest extends BaseEntity<String> {
     @Column(name = "has_vocalist", nullable = false)
     Boolean hasVocalist = false;  // Customer có chọn ca sĩ cho arrangement_with_recording
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "preferred_specialists", columnDefinition = "jsonb")
+    @Builder.Default
+    List<PreferredSpecialistInfo> preferredSpecialists = new ArrayList<>();  // Optional - Danh sách specialist info mà customer chọn (cho arrangement_with_recording)
+
     @Builder.Default
     @Column(name = "external_guest_count", nullable = false)
     Integer externalGuestCount = 0;  // Số người customer mang theo cho studio booking

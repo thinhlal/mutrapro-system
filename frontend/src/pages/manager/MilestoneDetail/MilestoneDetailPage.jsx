@@ -442,7 +442,7 @@ const MilestoneDetailPage = () => {
                 icon={<EyeOutlined />}
                 onClick={() =>
                   navigate(
-                    `/manager/service-requests/${request.requestId}/contracts`
+                    `/manager/service-requests/${request.requestId}`
                   )
                 }
               >

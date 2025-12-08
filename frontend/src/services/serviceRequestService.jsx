@@ -74,6 +74,11 @@ export const createServiceRequest = async requestData => {
       formData.append('mainInstrumentId', requestData.mainInstrumentId);
     }
 
+    if (requestData.preferredSpecialists && requestData.preferredSpecialists.length > 0) {
+      // Convert array of objects to JSON string
+      formData.append('preferredSpecialists', JSON.stringify(requestData.preferredSpecialists));
+    }
+
     // Recording-specific fields
     if (requestData.requestType === 'recording') {
       if (requestData.bookingDate) {
@@ -327,13 +332,12 @@ export const getNotationInstrumentsByIds = async instrumentIds => {
  * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording
  * @param {Object} params - Tham số tính giá
  * @param {number} params.durationMinutes - Thời lượng (phút) - chỉ cho transcription
- * @param {number} params.artistFee - Phí ca sĩ - chỉ cho arrangement_with_recording
  *
  * @returns {Promise} ApiResponse với PriceCalculationResponse
  */
 export const calculatePricing = async (serviceType, params = {}) => {
   try {
-    const { durationMinutes, artistFee } = params;
+    const { durationMinutes } = params;
     let url;
     const urlParams = new URLSearchParams();
 
@@ -356,9 +360,6 @@ export const calculatePricing = async (serviceType, params = {}) => {
       serviceType === 'arrangement-with-recording'
     ) {
       url = `${requestPath}/pricing-matrix/calculate/arrangement-with-recording`;
-      if (artistFee !== undefined && artistFee !== null) {
-        urlParams.append('artistFee', artistFee);
-      }
     } else {
       throw new Error(
         `Invalid service type for pricing calculation: ${serviceType}`

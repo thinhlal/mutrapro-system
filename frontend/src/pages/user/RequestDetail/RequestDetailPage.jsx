@@ -512,6 +512,20 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
+            {request.requestType === 'arrangement_with_recording' &&
+              request.preferredSpecialists &&
+              request.preferredSpecialists.length > 0 && (
+                <Descriptions.Item label="Preferred Vocalists">
+                  <Space wrap>
+                    {request.preferredSpecialists.map((specialist, idx) => (
+                      <Tag key={idx} color="pink">
+                        {specialist.name || `Vocalist ${specialist.specialistId}`}
+                      </Tag>
+                    ))}
+                  </Space>
+                </Descriptions.Item>
+              )}
+
             {request.externalGuestCount > 0 && request.requestType === 'recording' && (
               <Descriptions.Item label="Guests">
                 <Tag>

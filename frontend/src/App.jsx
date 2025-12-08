@@ -437,11 +437,7 @@ function App() {
               element={<ServiceRequestManagement />}
             />
             <Route
-              path="service-requests/:requestId/contracts"
-              element={<ServiceRequestContracts />}
-            />
-            <Route
-              path="service-requests/:requestId/contracts"
+              path="service-requests/:requestId"
               element={<ServiceRequestContracts />}
             />
             <Route path="contract-builder" element={<ContractBuilder />} />

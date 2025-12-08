@@ -1,5 +1,8 @@
 package com.mutrapro.request_service.dto.request;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mutrapro.request_service.entity.PreferredSpecialistInfo;
 import com.mutrapro.request_service.enums.ServiceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,9 +11,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -54,5 +59,19 @@ public class CreateServiceRequestRequest {
     
     String mainInstrumentId;  // Optional - Main instrument ID (cho arrangement)
     
+    List<PreferredSpecialistInfo> preferredSpecialists;  // Optional - Danh sách specialist info (id, name, role) mà customer chọn (cho arrangement_with_recording)
+    
     List<MultipartFile> files;  // Optional - Files: audio cho transcription, PDF/MusicXML/MIDI cho arrangement
+    
+    // Setter để parse JSON string từ FormData
+    // Jackson sẽ tự động map {specialistId, name, role} từ JSON thành PreferredSpecialistInfo
+    @SneakyThrows
+    public void setPreferredSpecialists(String jsonString) {
+        if (jsonString == null || jsonString.isEmpty()) {
+            this.preferredSpecialists = new ArrayList<>();
+            return;
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        this.preferredSpecialists = mapper.readValue(jsonString, new TypeReference<List<PreferredSpecialistInfo>>() {});
+    }
 }

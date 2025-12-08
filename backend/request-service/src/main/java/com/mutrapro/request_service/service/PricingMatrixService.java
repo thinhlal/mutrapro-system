@@ -160,11 +160,11 @@ public class PricingMatrixService {
     }
 
     /**
-     * Tính giá cho arrangement_with_recording (theo bài + giá ca sĩ)
+     * Tính giá cho arrangement_with_recording (theo bài)
+     * Không tính phí ca sĩ vì đây là hệ thống
      */
     public PriceCalculationResponse calculateArrangementWithRecordingPrice(
-            Integer numberOfSongs, 
-            BigDecimal artistFee) {
+            Integer numberOfSongs) {
         
         // Lấy giá arrangement theo bài
         PricingMatrix arrangementPricing = pricingMatrixRepository
@@ -176,35 +176,20 @@ public class PricingMatrixService {
             ? BigDecimal.valueOf(numberOfSongs) 
             : BigDecimal.ONE;
         
-        BigDecimal arrangementPrice = arrangementPricing.getBasePrice().multiply(quantity).setScale(2, RoundingMode.HALF_UP);
-        
-        // Phí ca sĩ (nếu có)
-        BigDecimal artistFeeAmount = artistFee != null && artistFee.compareTo(BigDecimal.ZERO) > 0 
-            ? artistFee 
-            : BigDecimal.ZERO;
-        
-        BigDecimal totalPrice = arrangementPrice.add(artistFeeAmount).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalPrice = arrangementPricing.getBasePrice().multiply(quantity).setScale(2, RoundingMode.HALF_UP);
         
         List<PriceCalculationResponse.PriceBreakdownItem> breakdown = new ArrayList<>();
         breakdown.add(PriceCalculationResponse.PriceBreakdownItem.builder()
                 .label("Arrangement + Recording")
                 .description(String.format("%s VND/bài × %d bài", arrangementPricing.getBasePrice(), quantity.intValue()))
-                .amount(arrangementPrice)
+                .amount(totalPrice)
                 .build());
-        
-        if (artistFeeAmount.compareTo(BigDecimal.ZERO) > 0) {
-            breakdown.add(PriceCalculationResponse.PriceBreakdownItem.builder()
-                    .label("Phí ca sĩ")
-                    .description("Phí thuê ca sĩ")
-                    .amount(artistFeeAmount)
-                    .build());
-        }
         
         return PriceCalculationResponse.builder()
                 .basePrice(arrangementPricing.getBasePrice())
                 .quantity(quantity)
                 .unitPrice(arrangementPricing.getBasePrice())
-                .additionalFee(artistFeeAmount)
+                .additionalFee(BigDecimal.ZERO)
                 .totalPrice(totalPrice)
                 .currency(arrangementPricing.getCurrency())
                 .breakdown(breakdown)

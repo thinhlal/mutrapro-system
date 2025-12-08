@@ -901,6 +901,22 @@ const TaskDetailPage = () => {
                         )}
                       </Descriptions.Item>
                     )}
+                    {((request?.requestType === 'arrangement_with_recording') ||
+                      (task?.request?.requestType === 'arrangement_with_recording')) &&
+                      ((request?.preferredSpecialists && request.preferredSpecialists.length > 0) ||
+                       (task?.request?.preferredSpecialists && task.request.preferredSpecialists.length > 0)) && (
+                        <Descriptions.Item label="Preferred Vocalists" span={2}>
+                          <Space wrap>
+                            {(request?.preferredSpecialists || task?.request?.preferredSpecialists || []).map(
+                              (specialist, idx) => (
+                                <Tag key={idx} color="pink">
+                                  {specialist.name || `Vocalist ${specialist.specialistId}`}
+                                </Tag>
+                              )
+                            )}
+                          </Space>
+                        </Descriptions.Item>
+                      )}
                   </>
                 )}
 

@@ -127,7 +127,10 @@ public class ServiceRequestService {
                 .purpose(request.getPurpose())
                 .tempoPercentage(request.getTempoPercentage())
                 .durationMinutes(request.getDurationMinutes())  // Lưu độ dài audio (phút)
-                .hasVocalist(request.getHasVocalist() != null ? request.getHasVocalist() : false)
+                .hasVocalist(request.getPreferredSpecialists() != null && !request.getPreferredSpecialists().isEmpty() 
+                    ? true 
+                    : (request.getHasVocalist() != null ? request.getHasVocalist() : false))  // Tự động set dựa trên preferredSpecialists
+                .preferredSpecialists(request.getPreferredSpecialists() != null ? request.getPreferredSpecialists() : new ArrayList<>())
                 .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -151,7 +154,7 @@ public class ServiceRequestService {
                     serviceRequest.setCurrency(calc.getCurrency());
                 }
             } else if (requestType == ServiceType.arrangement_with_recording) {
-                PriceCalculationResponse calc = pricingMatrixService.calculateArrangementWithRecordingPrice(1, null);
+                PriceCalculationResponse calc = pricingMatrixService.calculateArrangementWithRecordingPrice(1);
                 if (calc != null && calc.getTotalPrice() != null) {
                     serviceRequest.setServicePrice(calc.getTotalPrice());
                     serviceRequest.setCurrency(calc.getCurrency());

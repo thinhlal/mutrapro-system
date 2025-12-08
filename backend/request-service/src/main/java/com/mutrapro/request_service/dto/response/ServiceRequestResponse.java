@@ -1,6 +1,7 @@
 package com.mutrapro.request_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.mutrapro.request_service.entity.PreferredSpecialistInfo;
 import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.RequestStatus;
 import com.mutrapro.request_service.enums.ServiceType;
@@ -36,6 +37,7 @@ public class ServiceRequestResponse {
     BigDecimal tempoPercentage;
     BigDecimal durationMinutes;  // Độ dài audio file (phút)
     Boolean hasVocalist;
+    List<PreferredSpecialistInfo> preferredSpecialists;  // Optional - Danh sách specialist info (id, name, role) mà customer chọn (cho arrangement_with_recording)
     Integer externalGuestCount;
     String title;
     String description;

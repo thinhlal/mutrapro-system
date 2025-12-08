@@ -537,6 +537,27 @@ export default function ServiceRequestContracts() {
                           label: 'Has Vocalist',
                           value: request.hasVocalist ? 'Có' : 'Không',
                         },
+                        ...(request.preferredSpecialists &&
+                        request.preferredSpecialists.length > 0
+                          ? [
+                              {
+                                key: 'preferredSpecialists',
+                                label: 'Preferred Vocalists',
+                                value: (
+                                  <Space wrap>
+                                    {request.preferredSpecialists.map(
+                                      (specialist, idx) => (
+                                        <Tag key={idx} color="pink">
+                                          {specialist.name ||
+                                            `Vocalist ${specialist.specialistId}`}
+                                        </Tag>
+                                      )
+                                    )}
+                                  </Space>
+                                ),
+                              },
+                            ]
+                          : []),
                       ]
                     : []),
                   ...(request.requestType?.toLowerCase() === 'recording'
