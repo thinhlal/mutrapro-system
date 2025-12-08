@@ -40,6 +40,12 @@ const TASK_TYPE_LABELS = {
   recording: 'Recording',
 };
 
+const MILESTONE_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+};
+
 const STATUS_COLORS = {
   assigned: 'blue',
   accepted_waiting: 'gold',
@@ -600,6 +606,15 @@ const MilestoneDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Thứ tự">
                 {milestoneOrder !== null ? `#${milestoneOrder}` : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Milestone Type">
+                {milestone.milestoneType ? (
+                  <Tag color="blue">
+                    {MILESTONE_TYPE_LABELS[milestone.milestoneType] || milestone.milestoneType}
+                  </Tag>
+                ) : (
+                  '—'
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Tên milestone" span={2}>
                 <Space direction="vertical" size={0}>

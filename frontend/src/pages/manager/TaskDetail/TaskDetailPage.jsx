@@ -1007,7 +1007,17 @@ const TaskDetailPage = () => {
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Milestone">
-              {task.milestone?.name || task.milestoneId || 'N/A'}
+              <Space>
+                <Text>{task.milestone?.name || task.milestoneId || 'N/A'}</Text>
+                {task.milestone?.milestoneType && (
+                  <Tag color="blue">
+                    {task.milestone.milestoneType === 'transcription' ? 'Transcription' :
+                     task.milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                     task.milestone.milestoneType === 'recording' ? 'Recording' :
+                     task.milestone.milestoneType}
+                  </Tag>
+                )}
+              </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Assigned Date">
               {task.assignedDate

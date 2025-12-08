@@ -954,6 +954,14 @@ const ManagerContractDetailPage = () => {
                       >
                         <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
                           {milestone.name || `Milestone ${index + 1}`}
+                          {milestone.milestoneType && (
+                            <PdfText style={{ fontSize: 9, color: '#1890ff', marginLeft: 4 }}>
+                              {' '}({milestone.milestoneType === 'transcription' ? 'Transcription' :
+                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                                     milestone.milestoneType === 'recording' ? 'Recording' :
+                                     milestone.milestoneType})
+                            </PdfText>
+                          )}
                         </PdfText>
                       </View>
                       <View
@@ -1803,6 +1811,14 @@ const ManagerContractDetailPage = () => {
                                   {milestone.name ||
                                     `Milestone ${milestone.orderIndex || index + 1}`}
                                 </Text>
+                                {milestone.milestoneType && (
+                                  <Tag color="blue" style={{ margin: 0 }}>
+                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
+                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                                     milestone.milestoneType === 'recording' ? 'Recording' :
+                                     milestone.milestoneType}
+                                  </Tag>
+                                )}
                                 {(milestone.milestoneSlaDays || milestone.slaDays) && (
                                   <Tag color="blue" style={{ margin: 0 }}>
                                     SLA: {milestone.milestoneSlaDays || milestone.slaDays} days
@@ -2429,9 +2445,19 @@ const ManagerContractDetailPage = () => {
                                 padding: '10px',
                               }}
                             >
-                              <strong>
-                                {milestone.name || `Milestone ${index + 1}`}
-                              </strong>
+                              <div>
+                                <strong>
+                                  {milestone.name || `Milestone ${index + 1}`}
+                                </strong>
+                                {milestone.milestoneType && (
+                                  <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
+                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
+                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                                     milestone.milestoneType === 'recording' ? 'Recording' :
+                                     milestone.milestoneType}
+                                  </Tag>
+                                )}
+                              </div>
                             </td>
                             <td
                               style={{

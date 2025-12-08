@@ -1176,7 +1176,17 @@ const SpecialistTaskDetailPage = () => {
               <Descriptions.Item label="Milestone">
                 {task.milestone ? (
                   <div>
-                    <Text strong>{task.milestone.name}</Text>
+                    <Space>
+                      <Text strong>{task.milestone.name}</Text>
+                      {task.milestone.milestoneType && (
+                        <Tag color="blue" size="small">
+                          {task.milestone.milestoneType === 'transcription' ? 'Transcription' :
+                           task.milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                           task.milestone.milestoneType === 'recording' ? 'Recording' :
+                           task.milestone.milestoneType}
+                        </Tag>
+                      )}
+                    </Space>
                     {task.milestone.description && (
                       <div style={{ marginTop: 4 }}>
                         <Text type="secondary" style={{ fontSize: '12px' }}>

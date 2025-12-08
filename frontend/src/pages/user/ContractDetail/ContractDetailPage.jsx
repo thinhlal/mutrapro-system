@@ -2183,6 +2183,14 @@ const ContractDetailPage = () => {
                                   {milestone.name ||
                                     `Milestone ${milestone.orderIndex || index + 1}`}
                                 </Text>
+                                {milestone.milestoneType && (
+                                  <Tag color="blue" style={{ margin: 0 }}>
+                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
+                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
+                                     milestone.milestoneType === 'recording' ? 'Recording' :
+                                     milestone.milestoneType}
+                                  </Tag>
+                                )}
                                 {(milestone.milestoneSlaDays || milestone.slaDays) && (
                                   <Tag color="blue" style={{ margin: 0 }}>
                                     SLA: {milestone.milestoneSlaDays || milestone.slaDays} days

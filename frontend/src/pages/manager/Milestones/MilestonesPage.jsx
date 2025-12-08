@@ -85,6 +85,12 @@ const CONTRACT_TYPE_COLORS = {
   bundle: 'gold',
 };
 
+const MILESTONE_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+};
+
 const MilestonesPage = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -255,11 +261,18 @@ const MilestonesPage = () => {
       width: 260,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>
-            {record.milestoneOrderIndex
-              ? `Milestone ${record.milestoneOrderIndex}: ${record.milestoneName}`
-              : record.milestoneName}
-          </Text>
+          <Space>
+            <Text strong>
+              {record.milestoneOrderIndex
+                ? `Milestone ${record.milestoneOrderIndex}: ${record.milestoneName}`
+                : record.milestoneName}
+            </Text>
+            {record.milestoneType && (
+              <Tag color="blue" size="small">
+                {MILESTONE_TYPE_LABELS[record.milestoneType] || record.milestoneType}
+              </Tag>
+            )}
+          </Space>
           {record.milestoneDescription && (
             <Text type="secondary" style={{ fontSize: 12 }}>
               {record.milestoneDescription}

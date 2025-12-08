@@ -2283,7 +2283,9 @@ const ContractBuilder = () => {
                                 backgroundColor: '#fff',
                               }}
                             >
-                              Arrangement Service
+                              {serviceRequest.requestType === 'arrangement_with_recording' 
+                                ? 'Arrangement with Recording' 
+                                : 'Arrangement Service'}
                             </td>
                             <td
                               style={{

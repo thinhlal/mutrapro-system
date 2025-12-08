@@ -75,7 +75,7 @@ const REQUEST_TYPE_LABELS = {
 };
 
 export default function ServiceRequestManagement() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('my');
   const [allRequests, setAllRequests] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [loadingAll, setLoadingAll] = useState(false);
@@ -540,79 +540,6 @@ export default function ServiceRequestManagement() {
           <TabPane
             tab={
               <span>
-                All Requests
-                <Badge
-                  count={allPagination.total}
-                  style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
-                />
-              </span>
-            }
-            key="all"
-          >
-            <div
-              style={{
-                marginBottom: 16,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <Space size="middle">
-                <span style={{ fontWeight: 500 }}>Filter:</span>
-                <Select
-                  value={allRequestTypeFilter}
-                  onChange={handleAllRequestTypeFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Request Type"
-                  allowClear
-                  options={requestTypeOptions}
-                />
-                <Select
-                  value={allStatusFilter}
-                  onChange={handleAllStatusFilterChange}
-                  style={{ width: 200 }}
-                  placeholder="Status"
-                  allowClear
-                  options={statusOptions}
-                />
-              </Space>
-              <Space>
-                <span style={{ fontWeight: 500 }}>Sort by:</span>
-                <Select
-                  value={allSort}
-                  onChange={handleAllSortChange}
-                  style={{ width: 200 }}
-                  options={sortOptions}
-                />
-              </Space>
-            </div>
-            <Table
-              columns={allColumns}
-              dataSource={allRequests}
-              rowKey="id"
-              loading={loadingAll}
-              scroll={{ x: 1200 }}
-              pagination={{
-                current: allPagination.current,
-                pageSize: allPagination.pageSize,
-                total: allPagination.total,
-                showSizeChanger: true,
-                showTotal: total => `Total ${total} requests`,
-                onChange: (page, pageSize) => {
-                  fetchAllRequests(page - 1, pageSize, allSort, allRequestTypeFilter, allStatusFilter); // Spring Data page starts from 0
-                },
-                onShowSizeChange: (current, size) => {
-                  fetchAllRequests(0, size, allSort, allRequestTypeFilter, allStatusFilter);
-                },
-              }}
-            />
-          </TabPane>
-
-          <TabPane
-            tab={
-              <span>
                 My Assigned Requests
                 <Badge
                   count={myPagination.total}
@@ -678,6 +605,79 @@ export default function ServiceRequestManagement() {
                 },
                 onShowSizeChange: (current, size) => {
                   fetchMyRequests(0, size, mySort, myRequestTypeFilter, myStatusFilter);
+                },
+              }}
+            />
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                All Requests
+                <Badge
+                  count={allPagination.total}
+                  style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
+                />
+              </span>
+            }
+            key="all"
+          >
+            <div
+              style={{
+                marginBottom: 16,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              <Space size="middle">
+                <span style={{ fontWeight: 500 }}>Filter:</span>
+                <Select
+                  value={allRequestTypeFilter}
+                  onChange={handleAllRequestTypeFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Request Type"
+                  allowClear
+                  options={requestTypeOptions}
+                />
+                <Select
+                  value={allStatusFilter}
+                  onChange={handleAllStatusFilterChange}
+                  style={{ width: 200 }}
+                  placeholder="Status"
+                  allowClear
+                  options={statusOptions}
+                />
+              </Space>
+              <Space>
+                <span style={{ fontWeight: 500 }}>Sort by:</span>
+                <Select
+                  value={allSort}
+                  onChange={handleAllSortChange}
+                  style={{ width: 200 }}
+                  options={sortOptions}
+                />
+              </Space>
+            </div>
+            <Table
+              columns={allColumns}
+              dataSource={allRequests}
+              rowKey="id"
+              loading={loadingAll}
+              scroll={{ x: 1200 }}
+              pagination={{
+                current: allPagination.current,
+                pageSize: allPagination.pageSize,
+                total: allPagination.total,
+                showSizeChanger: true,
+                showTotal: total => `Total ${total} requests`,
+                onChange: (page, pageSize) => {
+                  fetchAllRequests(page - 1, pageSize, allSort, allRequestTypeFilter, allStatusFilter); // Spring Data page starts from 0
+                },
+                onShowSizeChange: (current, size) => {
+                  fetchAllRequests(0, size, allSort, allRequestTypeFilter, allStatusFilter);
                 },
               }}
             />
