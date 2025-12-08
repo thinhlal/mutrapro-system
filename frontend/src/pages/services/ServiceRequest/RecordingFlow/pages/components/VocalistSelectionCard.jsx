@@ -1,13 +1,13 @@
 // VocalistSelectionCard.jsx - Card cho vocalist selection trong flow
-import { Card, Typography, Rate, Button, Space } from 'antd';
+import { Card, Typography, Rate, Button, Space, Tag, Avatar } from 'antd';
 import { EyeOutlined, CheckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styles from './VocalistSelectionCard.module.css';
 
 const { Title, Text, Paragraph } = Typography;
 
-export default function VocalistSelectionCard({
-  singer,
+function VocalistSelectionCard({
+  specialist,
   isSelected,
   onSelect,
   onViewDetail,
@@ -23,7 +23,7 @@ export default function VocalistSelectionCard({
     }
     // Select on card click (if not disabled)
     if (onSelect && !disabled) {
-      onSelect(singer.id);
+      onSelect(specialist.specialistId);
     }
   };
 
@@ -31,12 +31,12 @@ export default function VocalistSelectionCard({
     e.stopPropagation();
     e.preventDefault();
     if (onViewDetail) {
-      onViewDetail(singer.id);
+      onViewDetail(specialist.specialistId);
     } else {
       // Default: navigate to detail page with flow context
-      navigate(`/pros/singer/${singer.id}`, {
+      navigate(`/pros/singer/${specialist.specialistId}`, {
         state: {
-          singerData: singer,
+          specialistData: specialist,
           fromFlow: true,
           returnTo: '/recording-flow/vocalist-selection',
           returnState: {
@@ -52,9 +52,19 @@ export default function VocalistSelectionCard({
   const handleSelect = e => {
     e.stopPropagation();
     if (onSelect && !disabled) {
-      onSelect(singer.id);
+      onSelect(specialist.specialistId);
     }
   };
+
+  // Format data từ backend
+  const avatarUrl = specialist?.avatarUrl || 'https://via.placeholder.com/300';
+  const fullName = specialist?.fullName || 'Unknown';
+  const bio = specialist?.bio || '';
+  const rating = specialist?.rating ? parseFloat(specialist.rating) : 0;
+  const reviews = specialist?.reviews || 0;
+  const genres = specialist?.genres || [];
+  const credits = specialist?.credits || [];
+  const experienceYears = specialist?.experienceYears || 0;
 
   return (
     <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
@@ -65,12 +75,36 @@ export default function VocalistSelectionCard({
         styles={{ body: { padding: 0 } }}
       >
         <div className={styles.imageContainer}>
-          <img
-            src={singer.image}
-            alt={singer.name}
+          <Avatar
+            src={avatarUrl}
+            alt={fullName}
+            size={200}
+            style={{ width: '100%', height: '200px', objectFit: 'cover' }}
             className={styles.singerImage}
-          />
-          {singer.isOnline && <div className={styles.onlineBadge}>ONLINE</div>}
+          >
+            {fullName.charAt(0).toUpperCase()}
+          </Avatar>
+          {specialist?.mainDemoPreviewUrl && (
+            <div style={{
+              position: 'absolute',
+              bottom: 8,
+              left: 8,
+              right: 8,
+              background: 'rgba(0, 0, 0, 0.7)',
+              borderRadius: 4,
+              padding: '4px 8px',
+              zIndex: 3
+            }}>
+              <audio 
+                controls 
+                style={{ width: '100%', height: '24px' }}
+                onClick={(e) => e.stopPropagation()}
+                onPlay={(e) => e.stopPropagation()}
+              >
+                <source src={specialist.mainDemoPreviewUrl} type="audio/mpeg" />
+              </audio>
+            </div>
+          )}
           {isSelected && (
             <div className={styles.selectedOverlay}>
               <CheckOutlined className={styles.checkIcon} />
@@ -78,38 +112,57 @@ export default function VocalistSelectionCard({
           )}
         </div>
         <div className={styles.cardBody}>
-          <Text strong className={styles.roles}>
-            {Array.isArray(singer.roles)
-              ? singer.roles.join(' • ')
-              : singer.roles}
-          </Text>
           <Title level={5} className={styles.name}>
-            {singer.name}
+            {fullName}
           </Title>
-          <Text type="secondary" className={styles.location}>
-            {singer.location}
-          </Text>
+          {experienceYears > 0 && (
+            <Text type="secondary" className={styles.location}>
+              {experienceYears} năm kinh nghiệm
+            </Text>
+          )}
           <div className={styles.rating}>
             <Rate
               disabled
-              defaultValue={singer.rating}
+              value={rating}
               style={{ fontSize: 14 }}
             />
             <Text type="secondary" className={styles.reviews}>
-              ({singer.reviews})
+              ({reviews} reviews)
             </Text>
           </div>
-          <Paragraph className={styles.description} ellipsis={{ rows: 2 }}>
-            {singer.description}
-          </Paragraph>
-          <div className={styles.credits}>
-            <Text strong className={styles.creditsTitle}>
-              CREDITS
-            </Text>
-            <Text type="secondary" className={styles.creditsList} ellipsis>
-              {singer.credits.join(', ')}
-            </Text>
-          </div>
+          {bio && (
+            <Paragraph className={styles.description} ellipsis={{ rows: 2 }}>
+              {bio}
+            </Paragraph>
+          )}
+          {genres.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                GENRES
+              </Text>
+              <div>
+                {genres.slice(0, 3).map(genre => (
+                  <Tag key={genre} color="blue" style={{ marginBottom: 4 }}>
+                    {genre}
+                  </Tag>
+                ))}
+                {genres.length > 3 && (
+                  <Tag color="default">+{genres.length - 3}</Tag>
+                )}
+              </div>
+            </div>
+          )}
+          {credits.length > 0 && (
+            <div className={styles.credits}>
+              <Text strong className={styles.creditsTitle}>
+                CREDITS
+              </Text>
+              <Text type="secondary" className={styles.creditsList} ellipsis>
+                {credits.slice(0, 2).join(', ')}
+                {credits.length > 2 && ` +${credits.length - 2} more`}
+              </Text>
+            </div>
+          )}
           <div className={styles.actionButtons}>
             <Space size="small" style={{ width: '100%' }}>
               <Button
@@ -138,3 +191,5 @@ export default function VocalistSelectionCard({
     </div>
   );
 }
+
+export default VocalistSelectionCard;

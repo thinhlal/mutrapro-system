@@ -21,22 +21,12 @@ public interface ArtistDemoMapper {
     @Mapping(target = "demoId", ignore = true)
     @Mapping(target = "specialist", ignore = true)
     @Mapping(target = "skill", ignore = true)
-    @Mapping(target = "isPublic", ignore = true)
-    @Mapping(target = "isFeatured", ignore = true)
-    @Mapping(target = "viewCount", ignore = true)
-    @Mapping(target = "customerRating", ignore = true)
-    @Mapping(target = "lastPlayedAt", ignore = true)
+    @Mapping(source = "previewUrl", target = "previewUrl")
     ArtistDemo toArtistDemo(CreateDemoRequest request);
     
     @Mapping(target = "demoId", ignore = true)
     @Mapping(target = "specialist", ignore = true)
     @Mapping(target = "skill", ignore = true)
-    @Mapping(target = "fileId", ignore = true)
-    @Mapping(target = "isPublic", ignore = true)
-    @Mapping(target = "isFeatured", ignore = true)
-    @Mapping(target = "viewCount", ignore = true)
-    @Mapping(target = "customerRating", ignore = true)
-    @Mapping(target = "lastPlayedAt", ignore = true)
     void updateDemoFromRequest(@MappingTarget ArtistDemo artistDemo, UpdateDemoRequest request);
     
     @Mapping(target = "demoId", ignore = true)
@@ -44,12 +34,7 @@ public interface ArtistDemoMapper {
     @Mapping(target = "title", ignore = true)
     @Mapping(target = "description", ignore = true)
     @Mapping(target = "skill", ignore = true)
-    @Mapping(target = "fileId", ignore = true)
     @Mapping(target = "previewUrl", ignore = true)
-    @Mapping(target = "demoOrder", ignore = true)
-    @Mapping(target = "viewCount", ignore = true)
-    @Mapping(target = "customerRating", ignore = true)
-    @Mapping(target = "lastPlayedAt", ignore = true)
     void updateVisibilityFromRequest(@MappingTarget ArtistDemo artistDemo, UpdateDemoVisibilityRequest request);
 }
 

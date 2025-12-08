@@ -66,7 +66,6 @@ const DemoManagement = () => {
     setSelectedDemo(demo);
     visibilityForm.setFieldsValue({
       isPublic: demo.isPublic,
-      isFeatured: demo.isFeatured,
     });
     setVisibilityModalVisible(true);
   };
@@ -76,7 +75,6 @@ const DemoManagement = () => {
     try {
       await updateDemoVisibility(selectedDemo.demoId, {
         isPublic: values.isPublic,
-        isFeatured: values.isFeatured,
       });
       message.success('Cập nhật visibility thành công');
       setVisibilityModalVisible(false);
@@ -132,36 +130,6 @@ const DemoManagement = () => {
         { text: 'Private', value: false },
       ],
       onFilter: (value, record) => record.isPublic === value,
-    },
-    {
-      title: 'Featured',
-      dataIndex: 'isFeatured',
-      key: 'isFeatured',
-      align: 'center',
-      render: isFeatured => (
-        <Tag color={isFeatured ? 'gold' : 'default'}>
-          {isFeatured ? 'Featured' : 'Normal'}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Featured', value: true },
-        { text: 'Normal', value: false },
-      ],
-      onFilter: (value, record) => record.isFeatured === value,
-    },
-    {
-      title: 'View Count',
-      dataIndex: 'viewCount',
-      key: 'viewCount',
-      align: 'center',
-      render: count => count || 0,
-    },
-    {
-      title: 'Rating',
-      dataIndex: 'customerRating',
-      key: 'customerRating',
-      align: 'center',
-      render: rating => (rating ? rating.toFixed(2) : 'N/A'),
     },
     {
       title: 'Actions',
@@ -271,27 +239,6 @@ const DemoManagement = () => {
                 {selectedDemo.isPublic ? 'Public' : 'Private'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Featured">
-              <Tag color={selectedDemo.isFeatured ? 'gold' : 'default'}>
-                {selectedDemo.isFeatured ? 'Featured' : 'Normal'}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="View Count">
-              {selectedDemo.viewCount || 0}
-            </Descriptions.Item>
-            <Descriptions.Item label="Rating">
-              {selectedDemo.customerRating
-                ? selectedDemo.customerRating.toFixed(2)
-                : 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Demo Order">
-              {selectedDemo.demoOrder || 1}
-            </Descriptions.Item>
-            <Descriptions.Item label="Last Played At">
-              {selectedDemo.lastPlayedAt
-                ? new Date(selectedDemo.lastPlayedAt).toLocaleString()
-                : 'N/A'}
-            </Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
@@ -315,9 +262,6 @@ const DemoManagement = () => {
         >
           <Form.Item name="isPublic" label="Public" valuePropName="checked">
             <Switch checkedChildren="Public" unCheckedChildren="Private" />
-          </Form.Item>
-          <Form.Item name="isFeatured" label="Featured" valuePropName="checked">
-            <Switch checkedChildren="Featured" unCheckedChildren="Normal" />
           </Form.Item>
         </Form>
       </Modal>

@@ -87,6 +87,22 @@ public class SpecialistProfileController {
             .build();
     }
     
+    /**
+     * Upload file demo cho specialist hiện tại
+     * Trả về public URL để lưu vào demo.previewUrl
+     */
+    @PostMapping(value = "/demos/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<String> uploadDemoFile(@RequestParam("file") MultipartFile file) {
+        log.info("POST /specialists/me/demos/upload-file - Uploading demo file");
+        String fileKey = specialistProfileService.uploadDemoFile(file);
+        return ApiResponse.<String>builder()
+            .message("Demo file uploaded successfully")
+            .data(fileKey)
+            .statusCode(201)
+            .build();
+    }
+    
     // ===== SKILLS =====
     
     /**

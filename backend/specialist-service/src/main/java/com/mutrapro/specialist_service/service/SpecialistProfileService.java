@@ -124,6 +124,65 @@ public class SpecialistProfileService {
     }
     
     /**
+     * Upload file demo cho specialist hiện tại
+     * Upload lên S3 public folder và trả về public URL để customer có thể xem/nghe trực tiếp
+     * URL được lưu vào demo.previewUrl
+     */
+    @Transactional
+    public String uploadDemoFile(MultipartFile file) {
+        String currentUserId = getCurrentUserId();
+        log.info("Uploading demo file for specialist with user ID: {}", currentUserId);
+        
+        // Validate file
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File is required");
+        }
+        
+        // Validate file type (audio files: mp3, wav, m4a, etc.)
+        String contentType = file.getContentType();
+        String fileName = file.getOriginalFilename();
+        if (contentType == null || fileName == null) {
+            throw new IllegalArgumentException("Invalid file");
+        }
+        
+        // Allow audio files
+        boolean isAudio = contentType.startsWith("audio/") || 
+                         fileName.toLowerCase().endsWith(".mp3") ||
+                         fileName.toLowerCase().endsWith(".wav") ||
+                         fileName.toLowerCase().endsWith(".m4a") ||
+                         fileName.toLowerCase().endsWith(".flac") ||
+                         fileName.toLowerCase().endsWith(".aac");
+        
+        if (!isAudio) {
+            throw new IllegalArgumentException("Only audio files are allowed (mp3, wav, m4a, flac, aac)");
+        }
+        
+        // Validate file size (max 50MB)
+        long maxSize = 50 * 1024 * 1024; // 50MB
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("File size must be less than 50MB");
+        }
+        
+        try {
+            // Upload to S3 public folder and get public URL
+            // Customer có thể xem/nghe trực tiếp mà không cần authentication
+            String publicUrl = s3Service.uploadPublicFileAndReturnUrl(
+                file.getInputStream(),
+                fileName,
+                contentType,
+                file.getSize(),
+                "demos" // folder prefix: public/demos/
+            );
+            
+            log.info("Demo file uploaded successfully for specialist with user ID: {}, public URL: {}", currentUserId, publicUrl);
+            return publicUrl; // Return public URL để lưu vào demo.previewUrl
+        } catch (Exception e) {
+            log.error("Failed to upload demo file for specialist with user ID: {}", currentUserId, e);
+            throw new RuntimeException("Failed to upload demo file: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
      * Lấy danh sách skills có sẵn phù hợp với specialization của specialist hiện tại
      * Nếu là RECORDING_ARTIST, chỉ lấy skills match với recordingRoles
      */
@@ -352,15 +411,99 @@ public class SpecialistProfileService {
             throw AccessDeniedException.cannotAccessDemos();
         }
         
+        // Validate: recordingRole phải match với specialist's recordingRoles
+        if (request.getRecordingRole() == null) {
+            throw InvalidSpecialistRequestException.recordingRoleRequiredForDemo();
+        }
+        
+        if (!specialist.getRecordingRoles().contains(request.getRecordingRole())) {
+            throw InvalidSpecialistRequestException.demoRecordingRoleMismatch(
+                request.getRecordingRole().name(),
+                specialist.getRecordingRoles().toString()
+            );
+        }
+        
+        // Validate: demo genres phải nằm trong specialist genres
+        if (request.getGenres() == null || request.getGenres().isEmpty()) {
+            throw InvalidSpecialistRequestException.genresRequiredForDemo();
+        }
+        
+        if (specialist.getGenres() == null || specialist.getGenres().isEmpty()) {
+            throw InvalidSpecialistRequestException.specialistGenresRequiredForDemos();
+        }
+        
+        // Kiểm tra tất cả demo genres phải có trong specialist genres
+        for (String demoGenre : request.getGenres()) {
+            if (!specialist.getGenres().contains(demoGenre)) {
+                throw InvalidSpecialistRequestException.demoGenreMismatch(
+                    demoGenre,
+                    specialist.getGenres().toString()
+                );
+            }
+        }
+        
         ArtistDemo demo = artistDemoMapper.toArtistDemo(request);
         demo.setSpecialist(specialist);
-        demo.setIsPublic(false); // Default false, chỉ admin mới được bật
+        // isPublic được set từ request, nếu null thì default false
+        if (request.getIsPublic() == null) {
+            demo.setIsPublic(false);
+        }
         
-        // Set skill nếu có
-        if (request.getSkillId() != null && !request.getSkillId().isEmpty()) {
+        // previewUrl đã được mapper tự động map từ request.previewUrl
+        
+        // Validate và set skill theo recordingRole
+        if (request.getRecordingRole() == RecordingRole.INSTRUMENT_PLAYER) {
+            // INSTRUMENT_PLAYER: skill là bắt buộc và phải là INSTRUMENT skill
+            if (request.getSkillId() == null || request.getSkillId().isEmpty()) {
+                throw InvalidSpecialistRequestException.skillRequiredForInstrumentDemo();
+            }
+            
             Skill skill = skillRepository.findById(request.getSkillId())
                 .orElseThrow(() -> SkillNotFoundException.byId(request.getSkillId()));
+            
+            // Validate: skill phải là INSTRUMENT skill
+            if (skill.getSkillType() != SkillType.RECORDING_ARTIST || 
+                skill.getRecordingCategory() != RecordingCategory.INSTRUMENT) {
+                throw InvalidSpecialistRequestException.instrumentSkillRequiredForInstrumentDemo(
+                    skill.getSkillName()
+                );
+            }
+            
             demo.setSkill(skill);
+        } else if (request.getRecordingRole() == RecordingRole.VOCALIST) {
+            // VOCALIST: skill là optional, nhưng nếu có thì phải là VOCAL skill
+            if (request.getSkillId() != null && !request.getSkillId().isEmpty()) {
+                Skill skill = skillRepository.findById(request.getSkillId())
+                    .orElseThrow(() -> SkillNotFoundException.byId(request.getSkillId()));
+                
+                // Validate: skill phải là VOCAL skill
+                if (skill.getSkillType() != SkillType.RECORDING_ARTIST || 
+                    skill.getRecordingCategory() != RecordingCategory.VOCAL) {
+                    throw InvalidSpecialistRequestException.vocalSkillRequiredForVocalDemo(
+                        skill.getSkillName()
+                    );
+                }
+                
+                demo.setSkill(skill);
+            } else {
+                // Nếu không có skillId hoặc skillId là null/empty, set skill = null (OK cho vocalist)
+                demo.setSkill(null);
+            }
+        }
+        
+        // Xử lý isMainDemo: nếu set true, set tất cả demo khác = false
+        if (request.getIsMainDemo() != null && request.getIsMainDemo()) {
+            // Set tất cả demo khác của specialist = false
+            List<ArtistDemo> otherDemos = artistDemoRepository.findBySpecialist(specialist);
+            for (ArtistDemo otherDemo : otherDemos) {
+                otherDemo.setIsMainDemo(false);
+            }
+            if (!otherDemos.isEmpty()) {
+                artistDemoRepository.saveAll(otherDemos);
+            }
+            demo.setIsMainDemo(true);
+        } else {
+            demo.setIsMainDemo(request.getIsMainDemo() != null ? request.getIsMainDemo() : false);
         }
         
         ArtistDemo saved = artistDemoRepository.save(demo);
@@ -394,13 +537,97 @@ public class SpecialistProfileService {
             throw AccessDeniedException.cannotUpdateDemo(demoId);
         }
         
+        // Validate: recordingRole (nếu có update)
+        RecordingRole newRecordingRole = request.getRecordingRole() != null 
+            ? request.getRecordingRole() 
+            : demo.getRecordingRole();
+        
+        if (newRecordingRole == null) {
+            throw InvalidSpecialistRequestException.recordingRoleRequiredForDemo();
+        }
+        
+        if (!specialist.getRecordingRoles().contains(newRecordingRole)) {
+            throw InvalidSpecialistRequestException.demoRecordingRoleMismatch(
+                newRecordingRole.name(),
+                specialist.getRecordingRoles().toString()
+            );
+        }
+        
+        // Validate: demo genres phải nằm trong specialist genres (nếu có update)
+        if (request.getGenres() != null && !request.getGenres().isEmpty()) {
+            if (specialist.getGenres() == null || specialist.getGenres().isEmpty()) {
+                throw InvalidSpecialistRequestException.specialistGenresRequiredForDemos();
+            }
+            
+            // Kiểm tra tất cả demo genres phải có trong specialist genres
+            for (String demoGenre : request.getGenres()) {
+                if (!specialist.getGenres().contains(demoGenre)) {
+                    throw InvalidSpecialistRequestException.demoGenreMismatch(
+                        demoGenre,
+                        specialist.getGenres().toString()
+                    );
+                }
+            }
+        }
+        
         artistDemoMapper.updateDemoFromRequest(demo, request);
         
-        // Update skill nếu có
-        if (request.getSkillId() != null && !request.getSkillId().isEmpty()) {
-            Skill skill = skillRepository.findById(request.getSkillId())
-                .orElseThrow(() -> SkillNotFoundException.byId(request.getSkillId()));
+        // Xử lý isMainDemo: nếu set true, set tất cả demo khác = false
+        if (request.getIsMainDemo() != null && request.getIsMainDemo()) {
+            List<ArtistDemo> otherDemos = artistDemoRepository.findBySpecialist(specialist);
+            for (ArtistDemo otherDemo : otherDemos) {
+                if (!otherDemo.getDemoId().equals(demo.getDemoId())) {
+                    otherDemo.setIsMainDemo(false);
+                }
+            }
+            artistDemoRepository.saveAll(otherDemos);
+            demo.setIsMainDemo(true);
+        } else if (request.getIsMainDemo() != null && !request.getIsMainDemo()) {
+            demo.setIsMainDemo(false);
+        }
+        
+        // Validate và update skill theo recordingRole
+        if (newRecordingRole == RecordingRole.INSTRUMENT_PLAYER) {
+            // INSTRUMENT_PLAYER: skill là bắt buộc và phải là INSTRUMENT skill
+            String skillIdToUse = request.getSkillId() != null ? request.getSkillId() : 
+                (demo.getSkill() != null ? demo.getSkill().getSkillId() : null);
+            
+            if (skillIdToUse == null || skillIdToUse.isEmpty()) {
+                throw InvalidSpecialistRequestException.skillRequiredForInstrumentDemo();
+            }
+            
+            Skill skill = skillRepository.findById(skillIdToUse)
+                .orElseThrow(() -> SkillNotFoundException.byId(skillIdToUse));
+            
+            // Validate: skill phải là INSTRUMENT skill
+            if (skill.getSkillType() != SkillType.RECORDING_ARTIST || 
+                skill.getRecordingCategory() != RecordingCategory.INSTRUMENT) {
+                throw InvalidSpecialistRequestException.instrumentSkillRequiredForInstrumentDemo(
+                    skill.getSkillName()
+                );
+            }
+            
             demo.setSkill(skill);
+        } else if (newRecordingRole == RecordingRole.VOCALIST) {
+            // VOCALIST: skill là optional, nhưng nếu có thì phải là VOCAL skill
+            if (request.getSkillId() != null && !request.getSkillId().isEmpty()) {
+                Skill skill = skillRepository.findById(request.getSkillId())
+                    .orElseThrow(() -> SkillNotFoundException.byId(request.getSkillId()));
+                
+                // Validate: skill phải là VOCAL skill
+                if (skill.getSkillType() != SkillType.RECORDING_ARTIST || 
+                    skill.getRecordingCategory() != RecordingCategory.VOCAL) {
+                    throw InvalidSpecialistRequestException.vocalSkillRequiredForVocalDemo(
+                        skill.getSkillName()
+                    );
+                }
+                
+                demo.setSkill(skill);
+            } else if (request.getSkillId() != null && request.getSkillId().isEmpty()) {
+                // Nếu gửi empty string, set skill = null
+                demo.setSkill(null);
+            }
+            // Nếu không có skillId trong request, giữ nguyên skill hiện tại
         }
         
         ArtistDemo saved = artistDemoRepository.save(demo);

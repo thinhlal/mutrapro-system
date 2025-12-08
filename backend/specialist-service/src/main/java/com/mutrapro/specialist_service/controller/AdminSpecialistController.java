@@ -1,7 +1,9 @@
 package com.mutrapro.specialist_service.controller;
 
 import com.mutrapro.shared.dto.ApiResponse;
-import com.mutrapro.specialist_service.dto.request.*;
+import com.mutrapro.specialist_service.dto.request.CreateSpecialistRequest;
+import com.mutrapro.specialist_service.dto.request.UpdateSpecialistStatusRequest;
+import com.mutrapro.specialist_service.dto.request.UpdateSpecialistSettingsRequest;
 import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;

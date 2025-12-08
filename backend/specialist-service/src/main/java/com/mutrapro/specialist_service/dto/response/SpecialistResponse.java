@@ -67,5 +67,11 @@ public class SpecialistResponse {
     private List<String> credits;
     
     private Integer reviews;
+    
+    /**
+     * URL của main demo (demo được đánh dấu là demo chính)
+     * Được hiển thị ở avatar trong trang list specialists
+     */
+    private String mainDemoPreviewUrl;
 }
 

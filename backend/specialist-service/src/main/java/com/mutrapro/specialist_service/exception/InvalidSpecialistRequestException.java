@@ -54,5 +54,99 @@ public class InvalidSpecialistRequestException extends BusinessException {
             )
         );
     }
+    
+    /**
+     * Khi specialist phải có genres để tạo demos
+     */
+    public static InvalidSpecialistRequestException specialistGenresRequiredForDemos() {
+        return new InvalidSpecialistRequestException(
+            "Specialist must have genres to create demos. Please update your profile with your music genres first."
+        );
+    }
+    
+    /**
+     * Khi demo genre không match với specialist's genres
+     */
+    public static InvalidSpecialistRequestException demoGenreMismatch(
+            String demoGenre, String specialistGenres) {
+        return new InvalidSpecialistRequestException(
+            String.format("Cannot create demo with genre '%s'. " +
+                        "Specialist genres: %s. " +
+                        "Demo genres must be within the specialist's genres. Please update your profile genres first.",
+                demoGenre, specialistGenres),
+            Map.of(
+                "demoGenre", demoGenre != null ? demoGenre : "unknown",
+                "specialistGenres", specialistGenres != null ? specialistGenres : "unknown"
+            )
+        );
+    }
+    
+    /**
+     * Khi demo thiếu recordingRole
+     */
+    public static InvalidSpecialistRequestException recordingRoleRequiredForDemo() {
+        return new InvalidSpecialistRequestException(
+            "Recording role is required for demo. Must specify VOCALIST or INSTRUMENT_PLAYER."
+        );
+    }
+    
+    /**
+     * Khi demo recordingRole không match với specialist's recordingRoles
+     */
+    public static InvalidSpecialistRequestException demoRecordingRoleMismatch(
+            String demoRole, String specialistRecordingRoles) {
+        return new InvalidSpecialistRequestException(
+            String.format("Cannot create demo with recording role '%s'. " +
+                        "Specialist recordingRoles: %s. " +
+                        "Demo recording role must match the specialist's recording roles.",
+                demoRole, specialistRecordingRoles),
+            Map.of(
+                "demoRole", demoRole != null ? demoRole : "unknown",
+                "specialistRecordingRoles", specialistRecordingRoles != null ? specialistRecordingRoles : "unknown"
+            )
+        );
+    }
+    
+    /**
+     * Khi demo thiếu genres
+     */
+    public static InvalidSpecialistRequestException genresRequiredForDemo() {
+        return new InvalidSpecialistRequestException(
+            "At least one genre is required for demo."
+        );
+    }
+    
+    /**
+     * Khi INSTRUMENT_PLAYER demo thiếu skill
+     */
+    public static InvalidSpecialistRequestException skillRequiredForInstrumentDemo() {
+        return new InvalidSpecialistRequestException(
+            "Skill is required for INSTRUMENT_PLAYER demo. Please select an instrument skill (e.g., Piano Performance, Guitar Performance)."
+        );
+    }
+    
+    /**
+     * Khi INSTRUMENT_PLAYER demo có skill không phải INSTRUMENT
+     */
+    public static InvalidSpecialistRequestException instrumentSkillRequiredForInstrumentDemo(String skillName) {
+        return new InvalidSpecialistRequestException(
+            String.format("Cannot use skill '%s' for INSTRUMENT_PLAYER demo. " +
+                        "Only instrument skills (Piano Performance, Guitar Performance, etc.) are allowed.",
+                skillName),
+            Map.of("skillName", skillName != null ? skillName : "unknown")
+        );
+    }
+    
+    /**
+     * Khi VOCALIST demo có skill không phải VOCAL
+     */
+    public static InvalidSpecialistRequestException vocalSkillRequiredForVocalDemo(String skillName) {
+        return new InvalidSpecialistRequestException(
+            String.format("Cannot use skill '%s' for VOCALIST demo. " +
+                        "Only vocal skills (Soprano, Alto, Tenor, etc.) are allowed.",
+                skillName),
+            Map.of("skillName", skillName != null ? skillName : "unknown")
+        );
+    }
 }
 

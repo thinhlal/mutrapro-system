@@ -1,17 +1,14 @@
 // VocalistSelectionPage.jsx - Trang chọn vocalist trong flow
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Button, Tabs, Typography, Space } from 'antd';
+import { Card, Button, Typography, Space, Spin, message, Radio, Select } from 'antd';
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
-import {
-  FEMALE_SINGERS_DATA,
-  MALE_SINGERS_DATA,
-} from '../../../../../constants/index';
+import { getVocalists } from '../../../../../services/specialistService';
+import { MUSIC_GENRES } from '../../../../../constants/musicOptionsConstants';
 import VocalistSelectionCard from './components/VocalistSelectionCard';
 import styles from './VocalistSelectionPage.module.css';
 
-const { Title } = Typography;
-const { TabPane } = Tabs;
+const { Title, Text } = Typography;
 
 export default function VocalistSelectionPage() {
   const navigate = useNavigate();
@@ -32,6 +29,11 @@ export default function VocalistSelectionPage() {
     }
     return [];
   });
+  
+  const [vocalists, setVocalists] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [genderFilter, setGenderFilter] = useState('ALL'); // ALL, FEMALE, MALE
+  const [selectedGenres, setSelectedGenres] = useState([]); // Array of selected genres
 
   useEffect(() => {
     if (!fromFlow && !fromArrangement) {
@@ -39,6 +41,33 @@ export default function VocalistSelectionPage() {
       navigate('/pros/singers/female');
     }
   }, [fromFlow, fromArrangement, navigate]);
+
+  // Lấy danh sách genres đầy đủ từ constants
+  const availableGenres = MUSIC_GENRES.map(g => g.value);
+
+  // Fetch vocalists từ backend với filter
+  useEffect(() => {
+    fetchVocalists();
+  }, [genderFilter, selectedGenres]);
+
+  const fetchVocalists = async () => {
+    setLoading(true);
+    try {
+      // Chuẩn bị params
+      const gender = genderFilter !== 'ALL' ? genderFilter : null;
+      const genres = selectedGenres.length > 0 ? selectedGenres : null;
+      
+      // Fetch vocalists với filter từ backend
+      const response = await getVocalists(gender, genres);
+      if (response?.data) {
+        setVocalists(response.data);
+      }
+    } catch (error) {
+      message.error(error.message || 'Không thể tải danh sách vocalists');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelect = singerId => {
     if (allowMultiple) {
@@ -82,10 +111,11 @@ export default function VocalistSelectionPage() {
         
         if (fromArrangement && allowMultiple) {
           // For arrangement with recording - save multiple selections with names
-          const allSingers = [...FEMALE_SINGERS_DATA, ...MALE_SINGERS_DATA];
           const selectedVocalistsWithNames = selectedIds.map(id => {
-            const singer = allSingers.find(s => s.id === id);
-            return singer ? { id: singer.id, name: singer.name } : { id, name: `Vocalist ${id}` };
+            const vocalist = vocalists.find(v => v.specialistId === id);
+            return vocalist 
+              ? { id: vocalist.specialistId, name: vocalist.fullName || `Vocalist ${id}` } 
+              : { id, name: `Vocalist ${id}` };
           });
           
           const flowDataStr = sessionStorage.getItem('recordingFlowData');
@@ -125,18 +155,14 @@ export default function VocalistSelectionPage() {
     }
   };
   
-  const isSelected = (singerId) => {
+  const isSelected = (specialistId) => {
     if (allowMultiple) {
-      return selectedIds.includes(singerId);
+      return selectedIds.includes(specialistId);
     }
-    return selectedId === singerId;
+    return selectedId === specialistId;
   };
   
   const canSelectMore = allowMultiple ? selectedIds.length < maxSelections : true;
-
-  if (!fromFlow) {
-    return null;
-  }
 
   return (
     <div className={styles.container}>
@@ -161,36 +187,63 @@ export default function VocalistSelectionPage() {
       </Card>
 
       <Card className={styles.contentCard}>
-        <Tabs defaultActiveKey="female" size="large">
-          <TabPane tab="Female Singers" key="female">
-            <div className="row">
-              {FEMALE_SINGERS_DATA.map(singer => (
+        <div style={{ marginBottom: 20 }}>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Space wrap>
+              <Text strong>Lọc theo giới tính: </Text>
+              <Radio.Group 
+                value={genderFilter} 
+                onChange={(e) => setGenderFilter(e.target.value)}
+                buttonStyle="solid"
+              >
+                <Radio.Button value="ALL">Tất cả</Radio.Button>
+                <Radio.Button value="FEMALE">Nữ</Radio.Button>
+                <Radio.Button value="MALE">Nam</Radio.Button>
+              </Radio.Group>
+            </Space>
+            <Space wrap>
+              <Text strong>Lọc theo thể loại: </Text>
+              <Select
+                mode="multiple"
+                placeholder="Chọn thể loại (có thể chọn nhiều)"
+                value={selectedGenres}
+                onChange={setSelectedGenres}
+                style={{ minWidth: 300 }}
+                allowClear
+                maxTagCount="responsive"
+              >
+                {availableGenres.map(genre => (
+                  <Select.Option key={genre} value={genre}>
+                    {genre}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Space>
+            <Text type="secondary">
+              ({vocalists.length} vocalist{vocalists.length !== 1 ? 's' : ''})
+            </Text>
+          </Space>
+        </div>
+        <Spin spinning={loading}>
+          <div className="row">
+            {vocalists.length === 0 && !loading ? (
+              <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>
+                <p>Không có vocalist nào</p>
+              </div>
+            ) : (
+              vocalists.map(vocalist => (
                 <VocalistSelectionCard
-                  key={singer.id}
-                  singer={singer}
-                  isSelected={isSelected(singer.id)}
+                  key={vocalist.specialistId}
+                  specialist={vocalist}
+                  isSelected={isSelected(vocalist.specialistId)}
                   selectedId={allowMultiple ? selectedIds : selectedId}
                   onSelect={handleSelect}
-                  disabled={allowMultiple && !canSelectMore && !isSelected(singer.id)}
+                  disabled={allowMultiple && !canSelectMore && !isSelected(vocalist.specialistId)}
                 />
-              ))}
-            </div>
-          </TabPane>
-          <TabPane tab="Male Singers" key="male">
-            <div className="row">
-              {MALE_SINGERS_DATA.map(singer => (
-                <VocalistSelectionCard
-                  key={singer.id}
-                  singer={singer}
-                  isSelected={isSelected(singer.id)}
-                  selectedId={allowMultiple ? selectedIds : selectedId}
-                  onSelect={handleSelect}
-                  disabled={allowMultiple && !canSelectMore && !isSelected(singer.id)}
-                />
-              ))}
-            </div>
-          </TabPane>
-        </Tabs>
+              ))
+            )}
+          </div>
+        </Spin>
       </Card>
 
       {(allowMultiple ? selectedIds.length > 0 : selectedId) && (

@@ -48,7 +48,7 @@ public class AdminDemoService {
     }
     
     /**
-     * Cập nhật visibility của demo (is_public, is_featured) - Admin only
+     * Cập nhật visibility của demo (is_public) - Admin only
      */
     @Transactional
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

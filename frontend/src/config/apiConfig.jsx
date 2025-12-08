@@ -399,6 +399,13 @@ export const API_ENDPOINTS = {
       // GET /manager/specialists?specialization=
       GET_AVAILABLE: `${SPECIALIST_PATH}/manager/specialists`,
     },
+    // Public endpoints (for customers)
+    PUBLIC: {
+      // GET /public/specialists/vocalists
+      GET_VOCALISTS: `${SPECIALIST_PATH}/public/specialists/vocalists`,
+      // GET /public/specialists/{specialistId}
+      GET_SPECIALIST_DETAIL: specialistId => `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
+    },
     PROFILE: {
       // GET /specialists/me
       GET_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,
@@ -408,6 +415,8 @@ export const API_ENDPOINTS = {
       UPDATE_MY_PROFILE: `${SPECIALIST_PATH}/specialists/me`,
       // POST /specialists/me/avatar
       UPLOAD_AVATAR: `${SPECIALIST_PATH}/specialists/me/avatar`,
+      // POST /specialists/me/demos/upload-file
+      UPLOAD_DEMO_FILE: `${SPECIALIST_PATH}/specialists/me/demos/upload-file`,
       // GET /specialists/me/skills/available
       GET_AVAILABLE_SKILLS: `${SPECIALIST_PATH}/specialists/me/skills/available`,
       // GET /specialists/me/skills

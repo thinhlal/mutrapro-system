@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request DTO để Admin cập nhật visibility của demo (is_public, is_featured)
+ * Request DTO để Admin cập nhật visibility của demo (is_public)
  */
 @Data
 @Builder
@@ -15,7 +15,5 @@ import lombok.NoArgsConstructor;
 public class UpdateDemoVisibilityRequest {
     
     private Boolean isPublic;
-    
-    private Boolean isFeatured;
 }
 

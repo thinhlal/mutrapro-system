@@ -17,6 +17,12 @@ spring:
   sql:
     init:
       mode: never
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB  # Maximum size per file (50MB) - cho demo audio files
+      max-request-size: 50MB  # Maximum size per request (50MB)
+      file-size-threshold: 2KB  # Size threshold after which files will be written to disk
 
 logging:
   level:

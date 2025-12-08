@@ -337,6 +337,30 @@ export const uploadAvatar = async file => {
 };
 
 /**
+ * Upload file demo cho specialist hiện tại
+ * Trả về fileKey (S3 key) để lưu vào demo.fileId
+ */
+export const uploadDemoFile = async file => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.SPECIALISTS.PROFILE.UPLOAD_DEMO_FILE,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi upload file demo' };
+  }
+};
+
+/**
  * Lấy danh sách skills có sẵn
  */
 export const getAvailableSkills = async () => {
@@ -463,5 +487,47 @@ export const deleteMyDemo = async demoId => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi xóa demo' };
+  }
+};
+
+// ===== PUBLIC ENDPOINTS (FOR CUSTOMERS) =====
+
+/**
+ * Lấy danh sách vocalists (public - không cần authentication)
+ * @param {string|null} gender - Filter theo giới tính (FEMALE, MALE, hoặc null)
+ * @param {string[]|null} genres - Filter theo thể loại (array of genres, hoặc null)
+ */
+export const getVocalists = async (gender = null, genres = null) => {
+  try {
+    const params = new URLSearchParams();
+    if (gender) {
+      params.append('gender', gender);
+    }
+    if (genres && genres.length > 0) {
+      // Spring Boot sẽ tự động parse multiple params với cùng tên thành List
+      genres.forEach(genre => params.append('genres', genre));
+    }
+    
+    const url = `${API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_VOCALISTS}${params.toString() ? '?' + params.toString() : ''}`;
+    
+    const response = await axiosInstance.get(url);
+
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách vocalists' };
+  }
+};
+
+/**
+ * Lấy chi tiết specialist (public - cho customer xem)
+ */
+export const getSpecialistDetail = async specialistId => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_SPECIALIST_DETAIL(specialistId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' };
   }
 };

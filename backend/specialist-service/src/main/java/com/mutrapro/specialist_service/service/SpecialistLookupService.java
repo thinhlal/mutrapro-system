@@ -1,7 +1,13 @@
 package com.mutrapro.specialist_service.service;
 
+import com.mutrapro.specialist_service.dto.response.ArtistDemoResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistDetailResponse;
 import com.mutrapro.specialist_service.dto.response.SpecialistResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistSkillResponse;
+import com.mutrapro.specialist_service.entity.ArtistDemo;
 import com.mutrapro.specialist_service.entity.Specialist;
+import com.mutrapro.specialist_service.entity.SpecialistSkill;
+import com.mutrapro.specialist_service.enums.RecordingRole;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
 import com.mutrapro.specialist_service.exception.SpecialistNotFoundException;
@@ -10,8 +16,12 @@ import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
 import com.mutrapro.shared.dto.TaskStatsResponse;
+import com.mutrapro.specialist_service.mapper.ArtistDemoMapper;
 import com.mutrapro.specialist_service.mapper.SpecialistMapper;
+import com.mutrapro.specialist_service.mapper.SpecialistSkillMapper;
+import com.mutrapro.specialist_service.repository.ArtistDemoRepository;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
+import com.mutrapro.specialist_service.repository.SpecialistSkillRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +39,10 @@ public class SpecialistLookupService {
     private final SpecialistRepository specialistRepository;
     private final SpecialistMapper specialistMapper;
     private final ProjectServiceFeignClient projectServiceFeignClient;
+    private final SpecialistSkillRepository specialistSkillRepository;
+    private final ArtistDemoRepository artistDemoRepository;
+    private final SpecialistSkillMapper specialistSkillMapper;
+    private final ArtistDemoMapper artistDemoMapper;
 
     /**
      * Lấy danh sách specialists đang active, option filter theo specialization (string)
@@ -305,6 +319,98 @@ public class SpecialistLookupService {
         response.setTasksInSlaWindow(stat != null ? stat.getTasksInSlaWindow() : 0);
         
         return response;
+    }
+
+    /**
+     * Lấy danh sách vocalists (RECORDING_ARTIST với recordingRoles chứa VOCALIST)
+     * Filter theo gender và genres nếu có
+     */
+    public List<SpecialistResponse> getVocalists(String gender, List<String> genres) {
+        SpecialistType specialization = SpecialistType.RECORDING_ARTIST;
+        SpecialistStatus status = SpecialistStatus.ACTIVE;
+        RecordingRole targetRole = RecordingRole.VOCALIST;
+        
+        com.mutrapro.specialist_service.enums.Gender genderEnum = null;
+        if (gender != null && !gender.isBlank()) {
+            try {
+                genderEnum = com.mutrapro.specialist_service.enums.Gender.valueOf(gender.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid gender value: {}", gender);
+            }
+        }
+        
+        // Lấy tất cả RECORDING_ARTIST specialists
+        List<Specialist> recordingArtists = specialistRepository.findRecordingArtists(
+            specialization, status, genderEnum);
+        
+        // Lọc trong service layer: chỉ lấy những specialist có recordingRoles chứa VOCALIST
+        List<Specialist> vocalists = recordingArtists.stream()
+            .filter(s -> s.getRecordingRoles() != null 
+                && s.getRecordingRoles().contains(targetRole))
+            .collect(Collectors.toList());
+        
+        // Filter theo genres nếu có
+        if (genres != null && !genres.isEmpty()) {
+            vocalists = vocalists.stream()
+                .filter(s -> {
+                    if (s.getGenres() == null || s.getGenres().isEmpty()) {
+                        return false;
+                    }
+                    // Specialist phải có ít nhất 1 genre trùng với genres được chọn
+                    return s.getGenres().stream()
+                        .anyMatch(genre -> genres.contains(genre));
+                })
+                .collect(Collectors.toList());
+        }
+        
+        // Map sang response và thêm main demo preview URL
+        return vocalists.stream()
+            .map(specialist -> {
+                SpecialistResponse response = specialistMapper.toSpecialistResponse(specialist);
+                
+                // Tìm main demo của specialist
+                try {
+                    ArtistDemo mainDemo = artistDemoRepository.findMainDemoBySpecialist(specialist);
+                    if (mainDemo != null && mainDemo.getIsPublic() && mainDemo.getPreviewUrl() != null) {
+                        response.setMainDemoPreviewUrl(mainDemo.getPreviewUrl());
+                    }
+                } catch (Exception e) {
+                    log.debug("No main demo found for specialist {}", specialist.getSpecialistId());
+                }
+                
+                return response;
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy chi tiết specialist theo ID (public - cho customer xem)
+     * Bao gồm skills và public demos
+     */
+    public SpecialistDetailResponse getSpecialistDetail(String specialistId) {
+        log.info("Getting specialist detail for ID: {}", specialistId);
+        
+        Specialist specialist = specialistRepository.findById(specialistId)
+            .orElseThrow(() -> SpecialistNotFoundException.byId(specialistId));
+        
+        SpecialistResponse specialistResponse = specialistMapper.toSpecialistResponse(specialist);
+        
+        // Lấy skills với eager loading Skill để tránh LazyInitializationException
+        List<SpecialistSkill> skills = specialistSkillRepository.findBySpecialistWithSkill(specialist);
+        List<SpecialistSkillResponse> skillsResponse = specialistSkillMapper.toSpecialistSkillResponseList(skills);
+        
+        // Lấy public demos (chỉ demos có isPublic = true)
+        List<ArtistDemoResponse> demosResponse = List.of();
+        if (specialist.getSpecialization() == SpecialistType.RECORDING_ARTIST) {
+            List<ArtistDemo> publicDemos = artistDemoRepository.findBySpecialistAndIsPublicTrue(specialist);
+            demosResponse = artistDemoMapper.toArtistDemoResponseList(publicDemos);
+        }
+        
+        return SpecialistDetailResponse.builder()
+            .specialist(specialistResponse)
+            .skills(skillsResponse)
+            .demos(demosResponse)
+            .build();
     }
 }
 

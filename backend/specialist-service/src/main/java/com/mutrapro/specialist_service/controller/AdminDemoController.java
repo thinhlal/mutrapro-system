@@ -54,10 +54,10 @@ public class AdminDemoController {
     }
     
     /**
-     * Cập nhật visibility của demo (is_public, is_featured)
+     * Cập nhật visibility của demo (is_public)
      */
     @PutMapping("/{demoId}/visibility")
-    @Operation(summary = "Update demo visibility", description = "Update demo visibility (is_public, is_featured) (SYSTEM_ADMIN only)")
+    @Operation(summary = "Update demo visibility", description = "Update demo visibility (is_public) (SYSTEM_ADMIN only)")
     public ApiResponse<ArtistDemoResponse> updateDemoVisibility(
             @PathVariable String demoId,
             @Valid @RequestBody UpdateDemoVisibilityRequest request) {
