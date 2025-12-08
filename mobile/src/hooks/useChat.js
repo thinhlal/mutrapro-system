@@ -10,8 +10,9 @@ import * as chatApi from '../services/chatService';
 /**
  * Custom hook for managing chat conversation (Mobile)
  * @param {string} roomId - Chat room ID
+ * @param {boolean} autoLoad - Whether to auto-load messages on mount (default: true)
  */
-export const useChat = (roomId) => {
+export const useChat = (roomId, autoLoad = true) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -22,17 +23,31 @@ export const useChat = (roomId) => {
 
   /**
    * Load messages from server
+   * @param {number} pageNum - Page number
+   * @param {string} contextType - Optional: Filter by context type
+   * @param {string} contextId - Optional: Filter by context ID
    */
   const loadMessages = useCallback(
-    async (pageNum = 0) => {
-      if (!roomId) return;
+    async (pageNum = 0, contextType = null, contextId = null) => {
+      if (!roomId) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
-        // Will call updated API
+        
+        // Clear messages immediately when starting load (pageNum = 0) to avoid flash of old messages
+        if (pageNum === 0) {
+          setMessages([]);
+        }
+        
         const response = await chatApi.getChatMessages(roomId, {
           page: pageNum,
           size: 50,
+          contextType,
+          contextId,
         });
 
         const pageData = response.data || response;
@@ -56,6 +71,10 @@ export const useChat = (roomId) => {
           text1: 'Error',
           text2: 'Could not load messages',
         });
+        // Clear messages if load failed
+        if (pageNum === 0) {
+          setMessages([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -65,12 +84,17 @@ export const useChat = (roomId) => {
 
   /**
    * Load more messages (pagination)
+   * @param {string} contextType - Optional: Filter by context type
+   * @param {string} contextId - Optional: Filter by context ID
    */
-  const loadMoreMessages = useCallback(() => {
-    if (!loading && hasMore) {
-      loadMessages(page + 1);
-    }
-  }, [loading, hasMore, page, loadMessages]);
+  const loadMoreMessages = useCallback(
+    (contextType = null, contextId = null) => {
+      if (!loading && hasMore) {
+        loadMessages(page + 1, contextType, contextId);
+      }
+    },
+    [loading, hasMore, page, loadMessages]
+  );
 
   /**
    * Handle incoming real-time message
@@ -107,9 +131,20 @@ export const useChat = (roomId) => {
 
   /**
    * Send a message via WebSocket
+   * @param {string} content - Message content
+   * @param {string} messageType - Message type (default: 'TEXT')
+   * @param {object} metadata - Optional metadata
+   * @param {string} contextType - Optional: Message context type (e.g., 'GENERAL', 'REVISION_REQUEST')
+   * @param {string} contextId - Optional: Message context ID (e.g., revisionRequestId)
    */
   const sendMessage = useCallback(
-    async (content, messageType = 'TEXT', metadata = null) => {
+    async (
+      content,
+      messageType = 'TEXT',
+      metadata = null,
+      contextType = null,
+      contextId = null
+    ) => {
       if (!roomId || !content.trim()) {
         console.log('⚠️ [Mobile] Cannot send message: roomId or content missing');
         return;
@@ -124,6 +159,15 @@ export const useChat = (roomId) => {
           messageType,
           metadata,
         };
+
+        // Add contextType and contextId if provided
+        // For CONTRACT_CHAT general chat: contextType = 'GENERAL', contextId = null
+        if (contextType) {
+          messageData.contextType = contextType;
+          if (contextId) {
+            messageData.contextId = contextId;
+          }
+        }
 
         console.log('📤 [Mobile] Sending message:', messageData);
 
@@ -200,13 +244,13 @@ export const useChat = (roomId) => {
   }, [roomId]); // Only roomId - handleIncomingMessage is stable with useCallback
 
   /**
-   * Load initial messages
+   * Load initial messages (only if autoLoad is true)
    */
   useEffect(() => {
-    if (roomId) {
+    if (roomId && autoLoad) {
       loadMessages(0);
     }
-  }, [roomId, loadMessages]);
+  }, [roomId, autoLoad, loadMessages]);
 
   return {
     messages,
@@ -215,6 +259,7 @@ export const useChat = (roomId) => {
     connected,
     hasMore,
     sendMessage,
+    loadMessages,
     loadMoreMessages,
   };
 };

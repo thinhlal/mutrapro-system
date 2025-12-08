@@ -147,6 +147,10 @@ export const API_ENDPOINTS = {
     GET_UNREAD_COUNT: (roomId) => `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
     MARK_AS_READ: (roomId) => `${CHAT_PATH}/messages/room/${roomId}/mark-read`,
     
+    // File Upload & Download
+    UPLOAD_FILE: `${CHAT_PATH}/messages/upload`,
+    DOWNLOAD_FILE: `${CHAT_PATH}/messages/download`,
+    
     // WebSocket
     WS_ENDPOINT: `${CHAT_PATH}/ws`,
   },

@@ -36,20 +36,37 @@ const NotificationScreen = ({ navigation }) => {
       const response = await notificationApi.getNotifications({
         filter,
         page: 0,
-        limit: 50,
+        limit: 100, // Increase limit to get all notifications for client-side filtering
       });
       
       // Ensure response.data is array
       const notificationsData = response.data;
+      let notifications = [];
+      
       if (Array.isArray(notificationsData)) {
-        setAllNotifications(notificationsData);
+        notifications = notificationsData;
       } else if (notificationsData && Array.isArray(notificationsData.content)) {
         // Handle paginated response
-        setAllNotifications(notificationsData.content);
+        notifications = notificationsData.content;
       } else {
         console.warn('[Mobile] Invalid notifications response format:', notificationsData);
-        setAllNotifications([]);
+        notifications = [];
       }
+      
+      // Always apply client-side filter to ensure it works correctly
+      // This ensures filter always works even if API doesn't support it properly
+      let filteredNotifications = notifications;
+      if (filter === 'unread') {
+        // Filter for unread: isRead is falsy (false, null, undefined)
+        filteredNotifications = notifications.filter(n => !n.isRead);
+      } else if (filter === 'read') {
+        // Filter for read: isRead is explicitly true
+        filteredNotifications = notifications.filter(n => n.isRead === true);
+      }
+      // filter === 'all' means show all, no filtering needed
+      
+      console.log(`[Mobile] Filter: ${filter}, Total: ${notifications.length}, Filtered: ${filteredNotifications.length}`);
+      setAllNotifications(filteredNotifications);
     } catch (error) {
       console.error('[Mobile] Error fetching notifications:', error);
       setAllNotifications([]); // Ensure it's always an array on error
@@ -83,6 +100,15 @@ const NotificationScreen = ({ navigation }) => {
             )
           : []
       );
+      
+      // If filtering by unread, remove the notification from list after marking as read
+      if (filter === 'unread') {
+        setAllNotifications((prev) =>
+          Array.isArray(prev) 
+            ? prev.filter((n) => n.notificationId !== notification.notificationId)
+            : []
+        );
+      }
     }
 
     // Navigate based on actionUrl
@@ -149,15 +175,21 @@ const NotificationScreen = ({ navigation }) => {
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
-    // Update local list
+    // Update local list - mark all as read
     setAllNotifications((prev) =>
       Array.isArray(prev) ? prev.map((n) => ({ ...n, isRead: true })) : []
     );
+    // Refresh to get updated list
+    await fetchNotifications();
   };
 
-  const unreadCount = Array.isArray(allNotifications) 
-    ? allNotifications.filter((n) => !n.isRead).length 
-    : 0;
+  // Use unreadCount from useNotifications hook (realtime) or calculate from allNotifications
+  // Prefer realtimeUnreadCount if available, otherwise calculate from allNotifications
+  const unreadCount = realtimeUnreadCount > 0 
+    ? realtimeUnreadCount 
+    : (Array.isArray(allNotifications) 
+        ? allNotifications.filter((n) => !n.isRead).length 
+        : 0);
 
   const renderHeader = () => (
     <View style={styles.header}>
