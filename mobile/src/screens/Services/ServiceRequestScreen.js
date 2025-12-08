@@ -15,6 +15,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import FileUploader from "../../components/FileUploader";
 import InstrumentPicker from "../../components/InstrumentPicker";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
+import { MUSIC_GENRES, MUSIC_PURPOSES, getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
 
 const SERVICE_TYPE_LABELS = {
   transcription: "Transcription (Sound → Sheet)",
@@ -37,12 +38,42 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   
   // Instrument selection
   const [selectedInstruments, setSelectedInstruments] = useState([]);
+  const [mainInstrumentId, setMainInstrumentId] = useState(null);
+  const [availableInstruments, setAvailableInstruments] = useState([]);
+  
+  // Arrangement-specific fields
+  const [genres, setGenres] = useState([]);
+  const [purpose, setPurpose] = useState(null);
   
   // File upload
   const [selectedFile, setSelectedFile] = useState(null);
   
   // Validation errors
   const [errors, setErrors] = useState({});
+  
+  // Check if arrangement service
+  const isArrangement = serviceType === "arrangement" || serviceType === "arrangement_with_recording";
+  
+  // Load instruments for main instrument selection
+  useEffect(() => {
+    if (isArrangement && selectedInstruments.length > 0) {
+      // Load instrument details to get names
+      const loadInstrumentDetails = async () => {
+        try {
+          const { getNotationInstrumentsByIds } = require("../../services/instrumentService");
+          const response = await getNotationInstrumentsByIds(selectedInstruments);
+          if (response?.status === "success" && response?.data) {
+            setAvailableInstruments(response.data);
+          }
+        } catch (error) {
+          console.error("Error loading instrument details:", error);
+        }
+      };
+      loadInstrumentDetails();
+    } else {
+      setAvailableInstruments([]);
+    }
+  }, [selectedInstruments, isArrangement]);
 
   // Determine if service needs instruments and multiple selection
   const needsInstruments = serviceType && serviceType !== "recording";
@@ -85,16 +116,23 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         newErrors.instruments = "Please select at least one instrument";
       }
     }
+    
+    // Validate main instrument for arrangement
+    if (isArrangement && !mainInstrumentId) {
+      newErrors.mainInstrument = "Please select a main instrument";
+    }
 
     // Validate file upload
     if (!selectedFile) {
       newErrors.file = "Please upload an audio/video file";
     }
 
-    // Validate tempo
-    const tempo = parseInt(tempoPercentage);
-    if (isNaN(tempo) || tempo < 50 || tempo > 200) {
-      newErrors.tempo = "Tempo must be between 50-200%";
+    // Validate tempo - Only for transcription
+    if (serviceType === "transcription") {
+      const tempo = parseInt(tempoPercentage);
+      if (isNaN(tempo) || tempo < 50 || tempo > 200) {
+        newErrors.tempo = "Tempo must be between 50-200%";
+      }
     }
 
     setErrors(newErrors);
@@ -116,8 +154,11 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         contactName: contactName.trim(),
         contactEmail: contactEmail.trim(),
         contactPhone: contactPhone.trim(),
-        tempoPercentage: parseInt(tempoPercentage),
+        tempoPercentage: serviceType === "transcription" ? parseInt(tempoPercentage) : undefined,
         instrumentIds: selectedInstruments,
+        mainInstrumentId: mainInstrumentId,
+        genres: isArrangement ? genres : null,
+        purpose: isArrangement ? purpose : null,
         durationMinutes: selectedFile?.duration || 0,
       },
       uploadedFile: selectedFile,
@@ -246,47 +287,49 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           {errors.contactPhone && <Text style={styles.errorText}>{errors.contactPhone}</Text>}
         </View>
 
-        {/* Tempo Percentage */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>
-            Tempo Percentage
-          </Text>
-          <View style={styles.tempoContainer}>
-            <TouchableOpacity
-              style={styles.tempoButton}
-              onPress={() => {
-                const newTempo = Math.max(50, parseInt(tempoPercentage) - 5);
-                setTempoPercentage(String(newTempo));
-              }}
-            >
-              <Ionicons name="remove" size={20} color={COLORS.primary} />
-            </TouchableOpacity>
-            <TextInput
-              style={[styles.tempoInput, errors.tempo && styles.inputError]}
-              value={`${tempoPercentage}%`}
-              onChangeText={(text) => {
-                const value = text.replace(/[^0-9]/g, "");
-                setTempoPercentage(value);
-                if (errors.tempo) {
-                  setErrors({ ...errors, tempo: null });
-                }
-              }}
-              keyboardType="number-pad"
-              maxLength={3}
-            />
-            <TouchableOpacity
-              style={styles.tempoButton}
-              onPress={() => {
-                const newTempo = Math.min(200, parseInt(tempoPercentage) + 5);
-                setTempoPercentage(String(newTempo));
-              }}
-            >
-              <Ionicons name="add" size={20} color={COLORS.primary} />
-            </TouchableOpacity>
+        {/* Tempo Percentage - Only for transcription */}
+        {serviceType === "transcription" && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>
+              Tempo Percentage
+            </Text>
+            <View style={styles.tempoContainer}>
+              <TouchableOpacity
+                style={styles.tempoButton}
+                onPress={() => {
+                  const newTempo = Math.max(50, parseInt(tempoPercentage) - 5);
+                  setTempoPercentage(String(newTempo));
+                }}
+              >
+                <Ionicons name="remove" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.tempoInput, errors.tempo && styles.inputError]}
+                value={`${tempoPercentage}%`}
+                onChangeText={(text) => {
+                  const value = text.replace(/[^0-9]/g, "");
+                  setTempoPercentage(value);
+                  if (errors.tempo) {
+                    setErrors({ ...errors, tempo: null });
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={3}
+              />
+              <TouchableOpacity
+                style={styles.tempoButton}
+                onPress={() => {
+                  const newTempo = Math.min(200, parseInt(tempoPercentage) + 5);
+                  setTempoPercentage(String(newTempo));
+                }}
+              >
+                <Ionicons name="add" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.helperText}>Adjust playback speed (100 = normal speed)</Text>
+            {errors.tempo && <Text style={styles.errorText}>{errors.tempo}</Text>}
           </View>
-          <Text style={styles.helperText}>Adjust playback speed (100 = normal speed)</Text>
-          {errors.tempo && <Text style={styles.errorText}>{errors.tempo}</Text>}
-        </View>
+        )}
 
         {/* Instrument Selection */}
         {needsInstruments && (
@@ -299,6 +342,10 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               selectedInstruments={selectedInstruments}
               onSelectInstruments={(instruments) => {
                 setSelectedInstruments(instruments);
+                // Reset mainInstrumentId if it's not in the new selection
+                if (mainInstrumentId && !instruments.includes(mainInstrumentId)) {
+                  setMainInstrumentId(null);
+                }
                 if (errors.instruments) {
                   setErrors({ ...errors, instruments: null });
                 }
@@ -306,6 +353,102 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               multipleSelection={multipleInstruments}
             />
             {errors.instruments && <Text style={styles.errorText}>{errors.instruments}</Text>}
+            
+            {/* Main Instrument Selection - Only for arrangement */}
+            {isArrangement && selectedInstruments.length > 0 && (
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>
+                  Main Instrument <Text style={styles.required}>*</Text>
+                </Text>
+                <View style={styles.mainInstrumentContainer}>
+                  {selectedInstruments.map((instId) => {
+                    const instrument = availableInstruments.find((inst) => inst.instrumentId === instId);
+                    const instrumentName = instrument?.instrumentName || instId.substring(0, 8) + "...";
+                    const isSelected = mainInstrumentId === instId;
+                    return (
+                      <TouchableOpacity
+                        key={instId}
+                        style={[
+                          styles.mainInstrumentButton,
+                          isSelected && styles.mainInstrumentButtonSelected,
+                        ]}
+                        onPress={() => {
+                          setMainInstrumentId(instId);
+                          if (errors.mainInstrument) {
+                            setErrors({ ...errors, mainInstrument: null });
+                          }
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.mainInstrumentButtonText,
+                            isSelected && styles.mainInstrumentButtonTextSelected,
+                          ]}
+                        >
+                          {instrumentName}
+                          {isSelected && " (Main)"}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {errors.mainInstrument && <Text style={styles.errorText}>{errors.mainInstrument}</Text>}
+              </View>
+            )}
+          </View>
+        )}
+        
+        {/* Genres Selection - Only for arrangement */}
+        {isArrangement && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Music Genres (Optional)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genresContainer}>
+              {MUSIC_GENRES.map((genre) => {
+                const isSelected = genres.includes(genre.value);
+                return (
+                  <TouchableOpacity
+                    key={genre.value}
+                    style={[styles.genreTag, isSelected && styles.genreTagSelected]}
+                    onPress={() => {
+                      if (isSelected) {
+                        setGenres(genres.filter((g) => g !== genre.value));
+                      } else {
+                        setGenres([...genres, genre.value]);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.genreTagText, isSelected && styles.genreTagTextSelected]}>
+                      {genre.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+        
+        {/* Purpose Selection - Only for arrangement */}
+        {isArrangement && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Purpose (Optional)</Text>
+            <View style={styles.purposeContainer}>
+              {MUSIC_PURPOSES.map((p) => {
+                const isSelected = purpose === p.value;
+                return (
+                  <TouchableOpacity
+                    key={p.value}
+                    style={[styles.purposeButton, isSelected && styles.purposeButtonSelected]}
+                    onPress={() => {
+                      setPurpose(isSelected ? null : p.value);
+                    }}
+                  >
+                    <Text style={[styles.purposeButtonText, isSelected && styles.purposeButtonTextSelected]}>
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -478,6 +621,85 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.white,
     marginRight: SPACING.sm,
+  },
+  mainInstrumentContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.sm,
+  },
+  mainInstrumentButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+  },
+  mainInstrumentButtonSelected: {
+    backgroundColor: COLORS.warning + "20",
+    borderColor: COLORS.warning,
+    borderWidth: 2,
+  },
+  mainInstrumentButtonText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+  },
+  mainInstrumentButtonTextSelected: {
+    color: COLORS.warning,
+    fontWeight: "600",
+  },
+  genresContainer: {
+    marginTop: SPACING.sm,
+  },
+  genreTag: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    marginRight: SPACING.xs,
+  },
+  genreTagSelected: {
+    backgroundColor: COLORS.primary + "20",
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+  },
+  genreTagText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+  },
+  genreTagTextSelected: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  purposeContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.sm,
+  },
+  purposeButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+  },
+  purposeButtonSelected: {
+    backgroundColor: COLORS.primary + "20",
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+  },
+  purposeButtonText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+  },
+  purposeButtonTextSelected: {
+    color: COLORS.primary,
+    fontWeight: "600",
   },
 });
 

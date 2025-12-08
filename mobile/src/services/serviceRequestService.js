@@ -69,6 +69,11 @@ export const createServiceRequest = async (requestData) => {
       });
     }
 
+    // Thêm mainInstrumentId (cho arrangement)
+    if (requestData.mainInstrumentId) {
+      formData.append('mainInstrumentId', requestData.mainInstrumentId);
+    }
+
     // Thêm files - React Native format
     if (requestData.files && requestData.files.length > 0) {
       requestData.files.forEach((file) => {

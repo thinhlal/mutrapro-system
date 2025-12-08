@@ -25,6 +25,8 @@ import { getNotationInstrumentsByIds } from "../../services/instrumentService";
 import { getChatRoomByContext } from "../../services/chatService";
 import ContractCard from "../../components/ContractCard";
 import FileItem from "../../components/FileItem";
+import { getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
+import { formatPrice } from "../../services/pricingMatrixService";
 
 const RequestDetailScreen = ({ navigation, route }) => {
   const { requestId } = route.params;
@@ -56,9 +58,24 @@ const RequestDetailScreen = ({ navigation, route }) => {
       if (response?.status === "success" && response?.data) {
         setRequest(response.data);
         
-        // Load instruments if available
-        if (response.data.instrumentIds && response.data.instrumentIds.length > 0) {
+        // Check if instruments are already in response (full objects)
+        if (response.data.instruments && Array.isArray(response.data.instruments) && response.data.instruments.length > 0) {
+          // Use instruments from response directly
+          console.log('[Mobile] Using instruments from request payload:', response.data.instruments);
+          const instrumentList = response.data.instruments.map(inst => ({
+            instrumentId: inst.instrumentId || inst.id,
+            instrumentName: inst.instrumentName || inst.name || inst,
+            isMain: inst.isMain === true,
+          })).filter(inst => inst.instrumentName);
+          setInstruments(instrumentList);
+        } 
+        // Otherwise, load instruments by IDs if available
+        else if (response.data.instrumentIds && Array.isArray(response.data.instrumentIds) && response.data.instrumentIds.length > 0) {
+          console.log('[Mobile] Loading instruments by IDs:', response.data.instrumentIds);
           loadInstruments(response.data.instrumentIds);
+        } else {
+          console.log('[Mobile] No instruments found in request data');
+          setInstruments([]);
         }
       } else {
         Alert.alert("Error", "Failed to load request details");
@@ -91,12 +108,24 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
   const loadInstruments = async (instrumentIds) => {
     try {
+      console.log('[Mobile] Loading instruments for IDs:', instrumentIds);
       const response = await getNotationInstrumentsByIds(instrumentIds);
       if (response?.status === "success" && response?.data) {
-        setInstruments(response.data);
+        console.log('[Mobile] Instruments loaded:', response.data);
+        // Map to ensure consistent format
+        const instrumentList = response.data.map(inst => ({
+          instrumentId: inst.instrumentId || inst.id,
+          instrumentName: inst.instrumentName || inst.name || inst,
+          isMain: false, // Will be checked against request.mainInstrumentId
+        })).filter(inst => inst.instrumentName);
+        setInstruments(instrumentList);
+      } else {
+        console.warn('[Mobile] Failed to load instruments:', response);
+        setInstruments([]);
       }
     } catch (error) {
       console.error("Error loading instruments:", error);
+      setInstruments([]);
     }
   };
 
@@ -305,7 +334,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   const getManagerStatusText = () => {
     if (!request) return "";
     const hasManager = !!request.managerUserId;
-    const status = request.status;
+    const status = request.status || "";
     
     if (hasManager) {
       if (status === "completed") return "Completed";
@@ -397,26 +426,23 @@ const RequestDetailScreen = ({ navigation, route }) => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Request Information</Text>
 
+          {/* Request ID */}
           <InfoRow
             icon="finger-print-outline"
             label="Request ID"
             value={request.requestId}
             monospace
           />
-          <InfoRow
-            icon="document-text-outline"
-            label="Description"
-            value={request.description || "No description"}
-          />
-          <InfoRow
-            icon="person-outline"
-            label="Contact Name"
-            value={request.contactName}
-          />
-          <InfoRow icon="mail-outline" label="Email" value={request.contactEmail} />
-          <InfoRow icon="call-outline" label="Phone" value={request.contactPhone} />
 
-          {request.durationMinutes && (
+          {/* Title */}
+          <InfoRow
+            icon="text-outline"
+            label="Title"
+            value={request.title || "N/A"}
+          />
+
+          {/* Duration - Only for transcription */}
+          {request.durationMinutes && request.requestType === "transcription" && (
             <InfoRow
               icon="time-outline"
               label="Duration"
@@ -425,6 +451,69 @@ const RequestDetailScreen = ({ navigation, route }) => {
             />
           )}
 
+          {/* Description */}
+          <InfoRow
+            icon="document-text-outline"
+            label="Description"
+            value={request.description || "No description"}
+          />
+
+          {/* Instruments - Important, show early */}
+          {(() => {
+            // Get instruments from state or request data
+            const instrumentsToShow = instruments.length > 0 
+              ? instruments 
+              : (request.instruments && Array.isArray(request.instruments) ? request.instruments : []);
+            
+            if (instrumentsToShow.length > 0) {
+              return (
+                <View style={styles.infoRow}>
+                  <Ionicons name="musical-notes-outline" size={18} color={COLORS.textSecondary} />
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Instruments</Text>
+                    <View style={styles.instrumentsContainer}>
+                      {instrumentsToShow.map((inst, idx) => {
+                        const instrumentId = inst.instrumentId || inst.id || request.instrumentIds?.[idx];
+                        const instrumentName = inst.instrumentName || inst.name || inst;
+                        const isMain = request.mainInstrumentId === instrumentId || inst.isMain === true;
+                        const isArrangement = request.requestType === "arrangement" || request.requestType === "arrangement_with_recording";
+                        return (
+                          <View 
+                            key={instrumentId || idx} 
+                            style={[
+                              styles.instrumentTag, 
+                              isMain && isArrangement && styles.mainInstrumentTag
+                            ]}
+                          >
+                            {isMain && isArrangement && (
+                              <Ionicons name="star" size={12} color={COLORS.warning} style={styles.mainInstrumentIcon} />
+                            )}
+                            <Text style={[
+                              styles.instrumentTagText,
+                              isMain && isArrangement && styles.mainInstrumentTagText
+                            ]}>
+                              {instrumentName || "Unknown Instrument"}
+                              {isMain && isArrangement ? " (Main)" : ""}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </View>
+              );
+            } else {
+              return (
+                <InfoRow
+                  icon="musical-notes-outline"
+                  label="Instruments"
+                  value="N/A"
+                />
+              );
+            }
+          })()}
+
+          {/* Tempo - Only for transcription */}
           {request.tempoPercentage && request.requestType === "transcription" && (
             <InfoRow
               icon="musical-note-outline"
@@ -433,6 +522,86 @@ const RequestDetailScreen = ({ navigation, route }) => {
             />
           )}
 
+          {/* Contact Name */}
+          <InfoRow
+            icon="person-outline"
+            label="Contact Name"
+            value={request.contactName}
+          />
+
+          {/* Service Price */}
+          {request.servicePrice && (
+            <InfoRow
+              icon="cash-outline"
+              label="Service Price"
+              value={formatPrice(request.servicePrice, request.currency || "VND")}
+              valueColor={COLORS.primary}
+            />
+          )}
+
+          {/* Contact Email */}
+          <InfoRow icon="mail-outline" label="Email" value={request.contactEmail} />
+
+          {/* Instruments Price */}
+          {request.instrumentPrice && request.instrumentPrice > 0 && (
+            <InfoRow
+              icon="musical-notes-outline"
+              label="Instruments Price"
+              value={formatPrice(request.instrumentPrice, request.currency || "VND")}
+              valueColor={COLORS.primary}
+            />
+          )}
+
+          {/* Phone Number */}
+          <InfoRow icon="call-outline" label="Phone Number" value={request.contactPhone} />
+
+          {/* Total Price */}
+          {request.totalPrice && (
+            <InfoRow
+              icon="card-outline"
+              label="Total Price"
+              value={formatPrice(request.totalPrice, request.currency || "VND")}
+              valueColor={COLORS.success}
+            />
+          )}
+
+          {/* Divider before arrangement-specific fields */}
+          {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
+            (request.genres || request.purpose)) && (
+            <View style={styles.divider} />
+          )}
+
+          {/* Genres - Only for arrangement, after prices */}
+          {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
+           request.genres && 
+           Array.isArray(request.genres) && 
+           request.genres.length > 0) ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="musical-note-outline" size={18} color={COLORS.textSecondary} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Genres</Text>
+                <View style={styles.genresContainer}>
+                  {request.genres.filter(g => g).map((genre, idx) => (
+                    <View key={idx} style={styles.genreTag}>
+                      <Text style={styles.genreTagText}>{getGenreLabel(genre)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Purpose - Only for arrangement, after genres */}
+          {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
+           request.purpose) ? (
+            <InfoRow
+              icon="flag-outline"
+              label="Purpose"
+              value={getPurposeLabel(request.purpose)}
+            />
+          ) : null}
+
+          {/* Other fields for recording/arrangement_with_recording */}
           {request.hasVocalist !== undefined && request.requestType !== "transcription" && (
             <InfoRow
               icon="mic-outline"
@@ -448,22 +617,6 @@ const RequestDetailScreen = ({ navigation, route }) => {
               label="Guests"
               value={`${request.externalGuestCount} ${request.externalGuestCount === 1 ? "person" : "people"}`}
             />
-          )}
-
-          {instruments.length > 0 && (
-            <View style={styles.infoRow}>
-              <Ionicons name="musical-notes-outline" size={18} color={COLORS.textSecondary} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Instruments</Text>
-                <View style={styles.instrumentsContainer}>
-                  {instruments.map((inst) => (
-                    <View key={inst.instrumentId} style={styles.instrumentTag}>
-                      <Text style={styles.instrumentTagText}>{inst.instrumentName}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
           )}
 
           {/* Manager Info */}
@@ -898,7 +1051,35 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.sm,
   },
+  mainInstrumentTag: {
+    backgroundColor: COLORS.warning + "20",
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+  },
+  mainInstrumentIcon: {
+    marginRight: SPACING.xs / 2,
+  },
   instrumentTagText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  mainInstrumentTagText: {
+    color: COLORS.warning,
+  },
+  genresContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+    marginTop: SPACING.xs / 2,
+  },
+  genreTag: {
+    backgroundColor: COLORS.primary + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  genreTagText: {
     fontSize: FONT_SIZES.xs,
     fontWeight: "600",
     color: COLORS.primary,

@@ -402,7 +402,7 @@ const WalletScreen = ({ navigation }) => {
           </View>
         ) : transactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="wallet-outline" size={80} color={COLORS.textSecondary} />
+            <Ionicons name="wallet-outline" size={50} color={COLORS.textSecondary} />
             <Text style={styles.emptyStateTitle}>No Transactions Yet</Text>
             <Text style={styles.emptyStateText}>
               Your transaction history will appear here
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   balanceAmount: {
-    fontSize: FONT_SIZES.xxxl + 4,
+    fontSize: FONT_SIZES.xxl + 4,
     textAlign: "center",
     fontWeight: "700",
     color: COLORS.white,
