@@ -27,7 +27,10 @@ import { getContractsByRequestId } from '../../../services/contractService';
 import { getFilesByRequestId } from '../../../services/fileService';
 import FileList from '../../../components/common/FileList/FileList';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { formatPrice } from '../../../services/pricingMatrixService';
 import styles from './ServiceRequestContracts.module.css';
 
@@ -126,7 +129,7 @@ export default function ServiceRequestContracts() {
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   console.log('files', files);
-  
+
   const basePath = location.pathname.startsWith('/admin')
     ? '/admin'
     : '/manager';
@@ -298,7 +301,9 @@ export default function ServiceRequestContracts() {
               totalPriceNumber > 0 &&
               depositPercentNumber > 0
             ) {
-              return Math.round((totalPriceNumber * depositPercentNumber) / 100);
+              return Math.round(
+                (totalPriceNumber * depositPercentNumber) / 100
+              );
             }
           }
 
@@ -328,18 +333,17 @@ export default function ServiceRequestContracts() {
       key: 'timeline',
       width: 220,
       render: (_, record) => {
-
         // Get actual start from first milestone that has actualStartAt
         const getActualStart = () => {
           if (!record?.milestones || record.milestones.length === 0) {
             return null;
           }
-          
+
           // Tìm milestone đầu tiên có actualStartAt (sắp xếp theo orderIndex)
           const sortedMilestones = [...record.milestones].sort(
             (a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)
           );
-          
+
           for (const milestone of sortedMilestones) {
             if (milestone.actualStartAt) {
               return milestone.actualStartAt;
@@ -353,12 +357,12 @@ export default function ServiceRequestContracts() {
           if (!record?.milestones || record.milestones.length === 0) {
             return null;
           }
-          
+
           // Tìm milestone cuối cùng có actualEndAt (sắp xếp theo orderIndex)
           const sortedMilestones = [...record.milestones].sort(
             (a, b) => (b.orderIndex || 0) - (a.orderIndex || 0)
           );
-          
+
           for (const milestone of sortedMilestones) {
             if (milestone.actualEndAt) {
               return milestone.actualEndAt;
@@ -387,7 +391,9 @@ export default function ServiceRequestContracts() {
         const getCompletedDate = () => {
           if (record.status?.toLowerCase() === 'completed') {
             // Ưu tiên: actualEnd > plannedEnd > updatedAt > createdAt
-            return actualEnd || plannedEnd || record.updatedAt || record.createdAt;
+            return (
+              actualEnd || plannedEnd || record.updatedAt || record.createdAt
+            );
           }
           return null;
         };
@@ -403,8 +409,8 @@ export default function ServiceRequestContracts() {
               {actualStart
                 ? dayjs(actualStart).format('DD/MM/YYYY')
                 : record.expectedStartDate
-                ? dayjs(record.expectedStartDate).format('DD/MM/YYYY')
-                : 'Chưa lên lịch'}
+                  ? dayjs(record.expectedStartDate).format('DD/MM/YYYY')
+                  : 'Chưa lên lịch'}
             </div>
             <div>
               <span className={styles.subText}>
@@ -413,10 +419,10 @@ export default function ServiceRequestContracts() {
               {actualEnd
                 ? dayjs(actualEnd).format('DD/MM/YYYY')
                 : completedDate
-                ? dayjs(completedDate).format('DD/MM/YYYY')
-                : plannedEnd
-                ? dayjs(plannedEnd).format('DD/MM/YYYY')
-                : 'N/A'}
+                  ? dayjs(completedDate).format('DD/MM/YYYY')
+                  : plannedEnd
+                    ? dayjs(plannedEnd).format('DD/MM/YYYY')
+                    : 'N/A'}
             </div>
           </div>
         );
@@ -489,8 +495,9 @@ export default function ServiceRequestContracts() {
                     value: (
                       <Tag
                         color={
-                          REQUEST_STATUS_COLORS[request.status?.toLowerCase()] ||
-                          'default'
+                          REQUEST_STATUS_COLORS[
+                            request.status?.toLowerCase()
+                          ] || 'default'
                         }
                       >
                         {REQUEST_STATUS_TEXT[request.status?.toLowerCase()] ||
@@ -599,28 +606,39 @@ export default function ServiceRequestContracts() {
                         },
                       ]
                     : []),
-                  ...(((request.instruments && request.instruments.length > 0) ||
-                    (request.instrumentIds &&
-                      request.instrumentIds.length > 0))
+                  ...((request.instruments && request.instruments.length > 0) ||
+                  (request.instrumentIds && request.instrumentIds.length > 0)
                     ? [
                         {
                           key: 'instruments',
                           label: 'Instruments',
                           value: (
                             <Space wrap>
-                              {request.instruments && request.instruments.length > 0
+                              {request.instruments &&
+                              request.instruments.length > 0
                                 ? request.instruments.map((inst, idx) => {
                                     const isMain = inst.isMain === true;
                                     const isArrangement =
                                       request.requestType === 'arrangement' ||
-                                      request.requestType === 'arrangement_with_recording';
+                                      request.requestType ===
+                                        'arrangement_with_recording';
                                     return (
                                       <Tag
                                         key={inst.instrumentId || idx}
-                                        color={isMain && isArrangement ? 'gold' : 'purple'}
-                                        icon={isMain && isArrangement ? <StarFilled /> : null}
+                                        color={
+                                          isMain && isArrangement
+                                            ? 'gold'
+                                            : 'purple'
+                                        }
+                                        icon={
+                                          isMain && isArrangement ? (
+                                            <StarFilled />
+                                          ) : null
+                                        }
                                       >
-                                        {inst.instrumentName || inst.name || inst}
+                                        {inst.instrumentName ||
+                                          inst.name ||
+                                          inst}
                                         {isMain && isArrangement && ' (Main)'}
                                       </Tag>
                                     );
@@ -673,7 +691,10 @@ export default function ServiceRequestContracts() {
                           key: 'totalPrice',
                           label: 'Total Price',
                           value: (
-                            <Text strong style={{ fontSize: 16, fontWeight: 600 }}>
+                            <Text
+                              strong
+                              style={{ fontSize: 16, fontWeight: 600 }}
+                            >
                               {formatPrice(
                                 request.totalPrice,
                                 request.currency || 'VND'
@@ -703,9 +724,7 @@ export default function ServiceRequestContracts() {
                             <Spin spinning={loadingFiles}>
                               <FileList
                                 files={
-                                  files.length > 0
-                                    ? files
-                                    : request.files || []
+                                  files.length > 0 ? files : request.files || []
                                 }
                               />
                             </Spin>
@@ -720,7 +739,7 @@ export default function ServiceRequestContracts() {
                     dataIndex: 'label',
                     key: 'label',
                     width: '40%',
-                    render: (text) => <Text strong>{text}</Text>,
+                    render: text => <Text strong>{text}</Text>,
                   },
                   {
                     title: 'Giá trị',

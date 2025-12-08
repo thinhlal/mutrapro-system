@@ -109,7 +109,13 @@ export default function ServiceRequestManagement() {
   const location = useLocation();
 
   // Fetch tất cả requests với phân trang
-  const fetchAllRequests = async (page = 0, size = 10, sort = allSort, requestType = allRequestTypeFilter, status = allStatusFilter) => {
+  const fetchAllRequests = async (
+    page = 0,
+    size = 10,
+    sort = allSort,
+    requestType = allRequestTypeFilter,
+    status = allStatusFilter
+  ) => {
     try {
       setLoadingAll(true);
       const response = await getAllServiceRequests({
@@ -150,7 +156,13 @@ export default function ServiceRequestManagement() {
   };
 
   // Fetch requests đã được assign cho user hiện tại với phân trang
-  const fetchMyRequests = async (page = 0, size = 10, sort = mySort, requestType = myRequestTypeFilter, status = myStatusFilter) => {
+  const fetchMyRequests = async (
+    page = 0,
+    size = 10,
+    sort = mySort,
+    requestType = myRequestTypeFilter,
+    status = myStatusFilter
+  ) => {
     try {
       setLoadingMy(true);
       const response = await getMyAssignedRequests(user?.id, {
@@ -459,7 +471,10 @@ export default function ServiceRequestManagement() {
     { value: null, label: 'All Types' },
     { value: 'transcription', label: 'Transcription' },
     { value: 'arrangement', label: 'Arrangement' },
-    { value: 'arrangement_with_recording', label: 'Arrangement with Recording' },
+    {
+      value: 'arrangement_with_recording',
+      label: 'Arrangement with Recording',
+    },
     { value: 'recording', label: 'Recording' },
   ];
 
@@ -478,22 +493,46 @@ export default function ServiceRequestManagement() {
 
   const handleAllSortChange = value => {
     setAllSort(value);
-    fetchAllRequests(0, allPagination.pageSize, value, allRequestTypeFilter, allStatusFilter);
+    fetchAllRequests(
+      0,
+      allPagination.pageSize,
+      value,
+      allRequestTypeFilter,
+      allStatusFilter
+    );
   };
 
   const handleMySortChange = value => {
     setMySort(value);
-    fetchMyRequests(0, myPagination.pageSize, value, myRequestTypeFilter, myStatusFilter);
+    fetchMyRequests(
+      0,
+      myPagination.pageSize,
+      value,
+      myRequestTypeFilter,
+      myStatusFilter
+    );
   };
 
   const handleAllRequestTypeFilterChange = value => {
     setAllRequestTypeFilter(value);
-    fetchAllRequests(0, allPagination.pageSize, allSort, value, allStatusFilter);
+    fetchAllRequests(
+      0,
+      allPagination.pageSize,
+      allSort,
+      value,
+      allStatusFilter
+    );
   };
 
   const handleAllStatusFilterChange = value => {
     setAllStatusFilter(value);
-    fetchAllRequests(0, allPagination.pageSize, allSort, allRequestTypeFilter, value);
+    fetchAllRequests(
+      0,
+      allPagination.pageSize,
+      allSort,
+      allRequestTypeFilter,
+      value
+    );
   };
 
   const handleMyRequestTypeFilterChange = value => {
@@ -503,7 +542,13 @@ export default function ServiceRequestManagement() {
 
   const handleMyStatusFilterChange = value => {
     setMyStatusFilter(value);
-    fetchMyRequests(0, myPagination.pageSize, mySort, myRequestTypeFilter, value);
+    fetchMyRequests(
+      0,
+      myPagination.pageSize,
+      mySort,
+      myRequestTypeFilter,
+      value
+    );
   };
 
   return (
@@ -601,10 +646,22 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} assigned requests`,
                 onChange: (page, pageSize) => {
-                  fetchMyRequests(page - 1, pageSize, mySort, myRequestTypeFilter, myStatusFilter); // Spring Data page starts from 0
+                  fetchMyRequests(
+                    page - 1,
+                    pageSize,
+                    mySort,
+                    myRequestTypeFilter,
+                    myStatusFilter
+                  ); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchMyRequests(0, size, mySort, myRequestTypeFilter, myStatusFilter);
+                  fetchMyRequests(
+                    0,
+                    size,
+                    mySort,
+                    myRequestTypeFilter,
+                    myStatusFilter
+                  );
                 },
               }}
             />
@@ -674,10 +731,22 @@ export default function ServiceRequestManagement() {
                 showSizeChanger: true,
                 showTotal: total => `Total ${total} requests`,
                 onChange: (page, pageSize) => {
-                  fetchAllRequests(page - 1, pageSize, allSort, allRequestTypeFilter, allStatusFilter); // Spring Data page starts from 0
+                  fetchAllRequests(
+                    page - 1,
+                    pageSize,
+                    allSort,
+                    allRequestTypeFilter,
+                    allStatusFilter
+                  ); // Spring Data page starts from 0
                 },
                 onShowSizeChange: (current, size) => {
-                  fetchAllRequests(0, size, allSort, allRequestTypeFilter, allStatusFilter);
+                  fetchAllRequests(
+                    0,
+                    size,
+                    allSort,
+                    allRequestTypeFilter,
+                    allStatusFilter
+                  );
                 },
               }}
             />

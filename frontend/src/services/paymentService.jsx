@@ -15,7 +15,7 @@ import axiosInstance from '../utils/axiosInstance';
  * @param {string} orderData.description - Mô tả đơn hàng - optional
  * @returns {Promise} ApiResponse với thông tin payment order
  */
-export const createPaymentOrder = async (orderData) => {
+export const createPaymentOrder = async orderData => {
   try {
     const response = await axiosInstance.post(
       API_ENDPOINTS.PAYMENT.CREATE_ORDER,
@@ -23,7 +23,9 @@ export const createPaymentOrder = async (orderData) => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi tạo đơn hàng thanh toán' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi tạo đơn hàng thanh toán' }
+    );
   }
 };
 
@@ -34,7 +36,7 @@ export const createPaymentOrder = async (orderData) => {
  * @param {string} orderId - ID của payment order
  * @returns {Promise} ApiResponse với thông tin payment order
  */
-export const getPaymentOrder = async (orderId) => {
+export const getPaymentOrder = async orderId => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.PAYMENT.GET_ORDER(orderId)
@@ -52,7 +54,7 @@ export const getPaymentOrder = async (orderId) => {
  * @param {string} orderId - ID của payment order
  * @returns {Promise} ApiResponse với QR code URL
  */
-export const getPaymentOrderQR = async (orderId) => {
+export const getPaymentOrderQR = async orderId => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.PAYMENT.GET_ORDER_QR(orderId)
@@ -62,4 +64,3 @@ export const getPaymentOrderQR = async (orderId) => {
     throw error.response?.data || { message: 'Lỗi khi lấy QR code' };
   }
 };
-

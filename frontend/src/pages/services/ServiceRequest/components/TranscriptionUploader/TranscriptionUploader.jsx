@@ -1,5 +1,16 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Upload, Button, Tooltip, Tag, Space, InputNumber, Alert, Form, Row, Col } from 'antd';
+import {
+  Upload,
+  Button,
+  Tooltip,
+  Tag,
+  Space,
+  InputNumber,
+  Alert,
+  Form,
+  Row,
+  Col,
+} from 'antd';
 import {
   InboxOutlined,
   ArrowRightOutlined,
@@ -29,7 +40,11 @@ const SERVICE_LABELS = {
   recording: 'Recording (Studio Booking)',
 };
 
-export default function TranscriptionUploader({ serviceType, formData, onFormDataChange }) {
+export default function TranscriptionUploader({
+  serviceType,
+  formData,
+  onFormDataChange,
+}) {
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
@@ -79,14 +94,14 @@ export default function TranscriptionUploader({ serviceType, formData, onFormDat
         prevTempoRef.current = null;
         prevInstrumentsRef.current = null;
       }
-      
+
       if (!hasInitializedRef.current) {
         const tempoValue = formData.tempoPercentage || 100;
         form.setFieldsValue({
           tempoPercentage: tempoValue,
         });
         prevTempoRef.current = tempoValue;
-        
+
         if (formData.instrumentIds && formData.instrumentIds.length > 0) {
           setSelectedInstruments(formData.instrumentIds);
           prevInstrumentsRef.current = formData.instrumentIds;
@@ -106,30 +121,47 @@ export default function TranscriptionUploader({ serviceType, formData, onFormDat
         tempoPercentage: 100,
       });
     }
-  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail, form]); // Only sync when other fields change
+  }, [
+    formData?.title,
+    formData?.description,
+    formData?.contactName,
+    formData?.contactPhone,
+    formData?.contactEmail,
+    form,
+  ]); // Only sync when other fields change
 
   // Handle form values change - only when user actually changes the value
-  const handleFormValuesChange = useCallback((changedValues, allValues) => {
-    // Only process if tempoPercentage was changed by user
-    if (changedValues.tempoPercentage !== undefined && onFormDataChange && formData && hasInitializedRef.current) {
-      const newTempo = allValues.tempoPercentage || 100;
-      // Only update if value actually changed
-      if (newTempo !== prevTempoRef.current) {
-        prevTempoRef.current = newTempo;
-        onFormDataChange({
-          ...formData,
-          tempoPercentage: newTempo,
-          instrumentIds: selectedInstruments,
-        });
+  const handleFormValuesChange = useCallback(
+    (changedValues, allValues) => {
+      // Only process if tempoPercentage was changed by user
+      if (
+        changedValues.tempoPercentage !== undefined &&
+        onFormDataChange &&
+        formData &&
+        hasInitializedRef.current
+      ) {
+        const newTempo = allValues.tempoPercentage || 100;
+        // Only update if value actually changed
+        if (newTempo !== prevTempoRef.current) {
+          prevTempoRef.current = newTempo;
+          onFormDataChange({
+            ...formData,
+            tempoPercentage: newTempo,
+            instrumentIds: selectedInstruments,
+          });
+        }
       }
-    }
-  }, [onFormDataChange, formData, selectedInstruments]);
+    },
+    [onFormDataChange, formData, selectedInstruments]
+  );
 
   // Update formData when instruments change
   useEffect(() => {
     if (onFormDataChange && formData && hasInitializedRef.current) {
       // Only update if instruments actually changed
-      const instrumentsChanged = JSON.stringify(selectedInstruments) !== JSON.stringify(prevInstrumentsRef.current);
+      const instrumentsChanged =
+        JSON.stringify(selectedInstruments) !==
+        JSON.stringify(prevInstrumentsRef.current);
       if (instrumentsChanged) {
         prevInstrumentsRef.current = selectedInstruments;
         const currentTempo = form.getFieldValue('tempoPercentage') || 100;
@@ -279,7 +311,11 @@ export default function TranscriptionUploader({ serviceType, formData, onFormDat
         {/* Tempo Percentage, Service Type, and Instrument Selection - Only for transcription */}
         {serviceType === 'transcription' && (
           <div style={{ marginTop: 24, marginBottom: 16 }}>
-            <Form form={form} layout="vertical" onValuesChange={handleFormValuesChange}>
+            <Form
+              form={form}
+              layout="vertical"
+              onValuesChange={handleFormValuesChange}
+            >
               <Form.Item
                 label="Tempo Percentage"
                 name="tempoPercentage"

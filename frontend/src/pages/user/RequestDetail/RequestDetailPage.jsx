@@ -27,7 +27,10 @@ import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { formatPrice } from '../../../services/pricingMatrixService';
 import {
   getContractsByRequestId,
@@ -396,19 +399,23 @@ const RequestDetailPage = () => {
             </Descriptions.Item>
 
             {/* Cột phải - Instruments */}
-            {((request.instruments && request.instruments.length > 0) ||
-              (request.instrumentIds && request.instrumentIds.length > 0)) ? (
+            {(request.instruments && request.instruments.length > 0) ||
+            (request.instrumentIds && request.instrumentIds.length > 0) ? (
               <Descriptions.Item label="Instruments">
                 <Space wrap>
                   {request.instruments && request.instruments.length > 0
                     ? request.instruments.map((inst, idx) => {
                         const isMain = inst.isMain === true;
-                        const isArrangement = request.requestType === 'arrangement' || request.requestType === 'arrangement_with_recording';
+                        const isArrangement =
+                          request.requestType === 'arrangement' ||
+                          request.requestType === 'arrangement_with_recording';
                         return (
                           <Tag
                             key={inst.instrumentId || idx}
                             color={isMain && isArrangement ? 'gold' : 'purple'}
-                            icon={isMain && isArrangement ? <StarFilled /> : null}
+                            icon={
+                              isMain && isArrangement ? <StarFilled /> : null
+                            }
                           >
                             {inst.instrumentName || inst.name || inst}
                             {isMain && isArrangement && ' (Main)'}
@@ -444,12 +451,7 @@ const RequestDetailPage = () => {
             {/* Cột phải - Service Price */}
             {request.servicePrice ? (
               <Descriptions.Item label="Service Price">
-                
-                  {formatPrice(
-                    request.servicePrice,
-                    request.currency || 'VND'
-                  )}
-               
+                {formatPrice(request.servicePrice, request.currency || 'VND')}
               </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Service Price">
@@ -464,12 +466,10 @@ const RequestDetailPage = () => {
             {/* Cột phải - Instruments Price */}
             {request.instrumentPrice && request.instrumentPrice > 0 ? (
               <Descriptions.Item label="Instruments Price">
-               
-                  {formatPrice(
-                    request.instrumentPrice,
-                    request.currency || 'VND'
-                  )}
-                
+                {formatPrice(
+                  request.instrumentPrice,
+                  request.currency || 'VND'
+                )}
               </Descriptions.Item>
             ) : (
               <Descriptions.Item label="Instruments Price">
@@ -485,10 +485,7 @@ const RequestDetailPage = () => {
             {request.totalPrice ? (
               <Descriptions.Item label="Total Price">
                 <Tag color="green">
-                  {formatPrice(
-                    request.totalPrice,
-                    request.currency || 'VND'
-                  )}
+                  {formatPrice(request.totalPrice, request.currency || 'VND')}
                 </Tag>
               </Descriptions.Item>
             ) : (
@@ -499,7 +496,12 @@ const RequestDetailPage = () => {
           </Descriptions>
 
           {/* Phần sau: 1 cột - các mục còn lại */}
-          <Descriptions bordered column={1} size="middle" style={{ marginTop: 16 }}>
+          <Descriptions
+            bordered
+            column={1}
+            size="middle"
+            style={{ marginTop: 16 }}
+          >
             {/* Các mục có điều kiện cho arrangement/recording */}
             {request.hasVocalist !== undefined &&
               request.requestType === 'arrangement_with_recording' && (
@@ -519,49 +521,51 @@ const RequestDetailPage = () => {
                   <Space wrap>
                     {request.preferredSpecialists.map((specialist, idx) => (
                       <Tag key={idx} color="pink">
-                        {specialist.name || `Vocalist ${specialist.specialistId}`}
+                        {specialist.name ||
+                          `Vocalist ${specialist.specialistId}`}
                       </Tag>
                     ))}
                   </Space>
                 </Descriptions.Item>
               )}
 
-            {request.externalGuestCount > 0 && request.requestType === 'recording' && (
-              <Descriptions.Item label="Guests">
-                <Tag>
-                  {request.externalGuestCount}{' '}
-                  {request.externalGuestCount === 1 ? 'person' : 'people'}
-                </Tag>
-              </Descriptions.Item>
-            )}
+            {request.externalGuestCount > 0 &&
+              request.requestType === 'recording' && (
+                <Descriptions.Item label="Guests">
+                  <Tag>
+                    {request.externalGuestCount}{' '}
+                    {request.externalGuestCount === 1 ? 'person' : 'people'}
+                  </Tag>
+                </Descriptions.Item>
+              )}
 
             {/* Hiển thị genres và purpose cho arrangement requests */}
             {(request.requestType === 'arrangement' ||
               request.requestType === 'arrangement_with_recording') && (
-                <>
-                  <Descriptions.Item label="Genres">
-                    {request.genres && request.genres.length > 0 ? (
-                      <Space wrap>
-                        {request.genres.map((genre, idx) => (
-                          <Tag key={idx} color="purple">
-                            {getGenreLabel(genre)}
-                          </Tag>
-                        ))}
-                      </Space>
-                    ) : (
-                      <span style={{ color: '#999' }}>Not specified</span>
-                    )}
-                  </Descriptions.Item>
+              <>
+                <Descriptions.Item label="Genres">
+                  {request.genres && request.genres.length > 0 ? (
+                    <Space wrap>
+                      {request.genres.map((genre, idx) => (
+                        <Tag key={idx} color="purple">
+                          {getGenreLabel(genre)}
+                        </Tag>
+                      ))}
+                    </Space>
+                  ) : (
+                    <span style={{ color: '#999' }}>Not specified</span>
+                  )}
+                </Descriptions.Item>
 
-                  <Descriptions.Item label="Purpose">
-                    {request.purpose ? (
-                      getPurposeLabel(request.purpose)
-                    ) : (
-                      <span style={{ color: '#999' }}>Not specified</span>
-                    )}
-                  </Descriptions.Item>
-                </>
-              )}
+                <Descriptions.Item label="Purpose">
+                  {request.purpose ? (
+                    getPurposeLabel(request.purpose)
+                  ) : (
+                    <span style={{ color: '#999' }}>Not specified</span>
+                  )}
+                </Descriptions.Item>
+              </>
+            )}
 
             {request.managerInfo ? (
               <Descriptions.Item label="Manager">
@@ -643,7 +647,11 @@ const RequestDetailPage = () => {
             setSelectedContract(null);
           }}
           onConfirm={handleCancelContract}
-          loading={selectedContract ? actionLoading[selectedContract.contractId] : false}
+          loading={
+            selectedContract
+              ? actionLoading[selectedContract.contractId]
+              : false
+          }
           isManager={false}
         />
 
@@ -657,7 +665,11 @@ const RequestDetailPage = () => {
             setChangeReason('');
             setSelectedContract(null);
           }}
-          confirmLoading={selectedContract ? actionLoading[selectedContract.contractId] : false}
+          confirmLoading={
+            selectedContract
+              ? actionLoading[selectedContract.contractId]
+              : false
+          }
           okText="Send Request"
           cancelText="Close"
           width={600}

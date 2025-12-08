@@ -89,7 +89,7 @@ const SpecialistManagement = () => {
         specialization: values.specialization,
         maxConcurrentTasks: values.maxConcurrentTasks || 5,
       };
-      
+
       // Chỉ thêm recordingRoles nếu là RECORDING_ARTIST
       if (values.specialization === 'RECORDING_ARTIST') {
         if (!values.recordingRoles || values.recordingRoles.length === 0) {
@@ -99,7 +99,7 @@ const SpecialistManagement = () => {
         }
         payload.recordingRoles = values.recordingRoles;
       }
-      
+
       await createSpecialist(payload);
       message.success('Tạo specialist thành công');
       setCreateModalVisible(false);
@@ -408,7 +408,7 @@ const SpecialistManagement = () => {
               <Option value="RECORDING_ARTIST">Recording Artist</Option>
             </Select>
           </Form.Item>
-          
+
           {/* Recording Roles - chỉ hiển thị khi specialization = RECORDING_ARTIST */}
           <Form.Item
             noStyle
@@ -436,14 +436,16 @@ const SpecialistManagement = () => {
                   <Checkbox.Group>
                     <Space direction="vertical">
                       <Checkbox value="VOCALIST">Vocalist</Checkbox>
-                      <Checkbox value="INSTRUMENT_PLAYER">Instrument Player</Checkbox>
+                      <Checkbox value="INSTRUMENT_PLAYER">
+                        Instrument Player
+                      </Checkbox>
                     </Space>
                   </Checkbox.Group>
                 </Form.Item>
               ) : null
             }
           </Form.Item>
-          
+
           <Form.Item
             name="maxConcurrentTasks"
             label="Max Concurrent Tasks"

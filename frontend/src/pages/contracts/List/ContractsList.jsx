@@ -187,7 +187,7 @@ const { Text } = Typography;
 
 export default function ContractsList() {
   useDocumentTitle('My Contracts');
-  
+
   const [search, setSearch] = useState('');
   const [type, setType] = useState();
   const [status, setStatus] = useState();
@@ -239,16 +239,20 @@ export default function ContractsList() {
 
       setCheckingActiveContract(true);
       try {
-        const response = await getContractsByRequestId(revisionContract.requestId);
+        const response = await getContractsByRequestId(
+          revisionContract.requestId
+        );
         if (response?.status === 'success' && Array.isArray(response.data)) {
           // Check xem có contract nào active (không phải need_revision) không
           const hasActive = response.data.some(contract => {
             const status = (contract.status || '').toLowerCase();
-            return status !== 'need_revision' &&
-                   status !== 'canceled_by_customer' &&
-                   status !== 'canceled_by_manager' &&
-                   status !== 'rejected_by_customer' &&
-                   status !== 'expired';
+            return (
+              status !== 'need_revision' &&
+              status !== 'canceled_by_customer' &&
+              status !== 'canceled_by_manager' &&
+              status !== 'rejected_by_customer' &&
+              status !== 'expired'
+            );
           });
           setHasActiveContract(hasActive);
         } else {
@@ -659,39 +663,39 @@ export default function ContractsList() {
             Đóng
           </Button>,
           !hasActiveContract && !checkingActiveContract && (
-          <Button
-            key="create"
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => {
-              // Navigate đến ContractBuilder với requestId và pass contract data qua state
-              navigate(
-                `/manager/contract-builder?requestId=${revisionContract.requestId}`,
-                {
-                  state: {
-                    copyFromContract: {
-                      contractId: revisionContract.contractId,
-                      contractType: revisionContract.contractType,
-                      totalPrice: revisionContract.totalPrice,
-                      depositPercent: revisionContract.depositPercent,
-                      slaDays: revisionContract.slaDays,
-                      freeRevisionsIncluded:
-                        revisionContract.freeRevisionsIncluded,
-                      revisionDeadlineDays:
-                        revisionContract.revisionDeadlineDays,
-                      additionalRevisionFeeVnd:
-                        revisionContract.additionalRevisionFeeVnd,
-                      termsAndConditions: revisionContract.termsAndConditions,
-                      specialClauses: revisionContract.specialClauses,
-                      notes: revisionContract.notes,
-                      cancellationReason: revisionContract.cancellationReason,
+            <Button
+              key="create"
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                // Navigate đến ContractBuilder với requestId và pass contract data qua state
+                navigate(
+                  `/manager/contract-builder?requestId=${revisionContract.requestId}`,
+                  {
+                    state: {
+                      copyFromContract: {
+                        contractId: revisionContract.contractId,
+                        contractType: revisionContract.contractType,
+                        totalPrice: revisionContract.totalPrice,
+                        depositPercent: revisionContract.depositPercent,
+                        slaDays: revisionContract.slaDays,
+                        freeRevisionsIncluded:
+                          revisionContract.freeRevisionsIncluded,
+                        revisionDeadlineDays:
+                          revisionContract.revisionDeadlineDays,
+                        additionalRevisionFeeVnd:
+                          revisionContract.additionalRevisionFeeVnd,
+                        termsAndConditions: revisionContract.termsAndConditions,
+                        specialClauses: revisionContract.specialClauses,
+                        notes: revisionContract.notes,
+                        cancellationReason: revisionContract.cancellationReason,
+                      },
                     },
-                  },
-                }
-              );
-            }}
-          >
-            Tạo Contract Mới
+                  }
+                );
+              }}
+            >
+              Tạo Contract Mới
             </Button>
           ),
         ].filter(Boolean)}
@@ -716,12 +720,12 @@ export default function ContractsList() {
               />
             )}
             {!hasActiveContract && !checkingActiveContract && (
-            <Alert
-              message="Customer đã yêu cầu chỉnh sửa contract này"
-              description="Vui lòng xem lý do bên dưới và tạo contract mới với nội dung đã điều chỉnh."
-              type="warning"
-              showIcon
-            />
+              <Alert
+                message="Customer đã yêu cầu chỉnh sửa contract này"
+                description="Vui lòng xem lý do bên dưới và tạo contract mới với nội dung đã điều chỉnh."
+                type="warning"
+                showIcon
+              />
             )}
 
             <div>

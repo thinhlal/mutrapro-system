@@ -151,7 +151,7 @@ export const getAllContracts = async (filters = {}) => {
     if (filters.currency) params.currency = filters.currency;
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
-    
+
     const response = await axiosInstance.get(
       API_ENDPOINTS.CONTRACTS.MY_MANAGED_CONTRACTS,
       { params }

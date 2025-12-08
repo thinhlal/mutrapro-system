@@ -22,7 +22,10 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { formatPrice } from '../../../services/pricingMatrixService';
 import { Space } from 'antd';
 import { useDocumentTitle } from '../../../hooks';
@@ -49,7 +52,12 @@ const MyRequestsContent = () => {
   });
 
   // Load requests với phân trang
-  const loadRequests = async (status = '', requestType = '', page = 0, size = 10) => {
+  const loadRequests = async (
+    status = '',
+    requestType = '',
+    page = 0,
+    size = 10
+  ) => {
     try {
       setLoading(true);
 
@@ -288,7 +296,9 @@ const MyRequestsContent = () => {
               <Option value="">All</Option>
               <Option value="transcription">Transcription</Option>
               <Option value="arrangement">Arrangement</Option>
-              <Option value="arrangement_with_recording">Arrangement + Recording</Option>
+              <Option value="arrangement_with_recording">
+                Arrangement + Recording
+              </Option>
               <Option value="recording">Recording</Option>
             </Select>
           </div>
@@ -320,7 +330,8 @@ const MyRequestsContent = () => {
                     <div className={styles.titleSection}>
                       <h3 className={styles.requestTitle}>{request.title}</h3>
                       <Tag color="blue" className={styles.typeTag}>
-                        {REQUEST_TYPE_LABELS[request.requestType] || request.requestType}
+                        {REQUEST_TYPE_LABELS[request.requestType] ||
+                          request.requestType}
                       </Tag>
                     </div>
                     <Tag
@@ -416,7 +427,11 @@ const MyRequestsContent = () => {
                         <span className={styles.infoLabel}>Total Price:</span>
                         <span
                           className={styles.infoValue}
-                          style={{ fontWeight: 600, color: '#52c41a', fontSize: '16px' }}
+                          style={{
+                            fontWeight: 600,
+                            color: '#52c41a',
+                            fontSize: '16px',
+                          }}
                         >
                           {formatPrice(
                             request.totalPrice,
@@ -473,7 +488,7 @@ const MyRequestsContent = () => {
 
 const MyRequestsPage = () => {
   useDocumentTitle('My Requests');
-  
+
   return (
     <>
       <Header />

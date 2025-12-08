@@ -1,10 +1,23 @@
 import { useMemo, useEffect, useState, useRef } from 'react';
-import { Form, Input, Tag, InputNumber, Button, Space, Select, Row, Col } from 'antd';
+import {
+  Form,
+  Input,
+  Tag,
+  InputNumber,
+  Button,
+  Space,
+  Select,
+  Row,
+  Col,
+} from 'antd';
 import { SelectOutlined } from '@ant-design/icons';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import InstrumentSelectionModal from '../../modal/InstrumentSelectionModal/InstrumentSelectionModal';
-import { MUSIC_GENRES, MUSIC_PURPOSES } from '../../../constants/musicOptionsConstants';
+import {
+  MUSIC_GENRES,
+  MUSIC_PURPOSES,
+} from '../../../constants/musicOptionsConstants';
 import styles from './RequestServiceForm.module.css';
 
 const { TextArea } = Input;
@@ -300,7 +313,6 @@ export default function RequestServiceForm({
           >
             <Input size="large" placeholder="+84 ..." />
           </Form.Item>
-
         </Form>
         <p
           className={styles.nextStep}

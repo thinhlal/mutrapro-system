@@ -74,9 +74,15 @@ export const createServiceRequest = async requestData => {
       formData.append('mainInstrumentId', requestData.mainInstrumentId);
     }
 
-    if (requestData.preferredSpecialists && requestData.preferredSpecialists.length > 0) {
+    if (
+      requestData.preferredSpecialists &&
+      requestData.preferredSpecialists.length > 0
+    ) {
       // Convert array of objects to JSON string
-      formData.append('preferredSpecialists', JSON.stringify(requestData.preferredSpecialists));
+      formData.append(
+        'preferredSpecialists',
+        JSON.stringify(requestData.preferredSpecialists)
+      );
     }
 
     // Recording-specific fields

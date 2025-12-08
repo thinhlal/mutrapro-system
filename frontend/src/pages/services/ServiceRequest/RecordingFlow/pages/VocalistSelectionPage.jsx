@@ -1,7 +1,16 @@
 // VocalistSelectionPage.jsx - Trang chọn vocalist trong flow
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Button, Typography, Space, Spin, message, Radio, Select } from 'antd';
+import {
+  Card,
+  Button,
+  Typography,
+  Space,
+  Spin,
+  message,
+  Radio,
+  Select,
+} from 'antd';
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
 import { getVocalists } from '../../../../../services/specialistService';
 import { MUSIC_GENRES } from '../../../../../constants/musicOptionsConstants';
@@ -13,23 +22,25 @@ const { Title, Text } = Typography;
 export default function VocalistSelectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { 
-    fromFlow, 
-    selectedVocalist, 
+  const {
+    fromFlow,
+    selectedVocalist,
     selectedVocalists,
     allowMultiple = false,
     maxSelections = 1,
-    fromArrangement = false
+    fromArrangement = false,
   } = location.state || {};
-  
+
   const [selectedId, setSelectedId] = useState(selectedVocalist || null);
   const [selectedIds, setSelectedIds] = useState(() => {
     if (allowMultiple && selectedVocalists) {
-      return Array.isArray(selectedVocalists) ? selectedVocalists : [selectedVocalists];
+      return Array.isArray(selectedVocalists)
+        ? selectedVocalists
+        : [selectedVocalists];
     }
     return [];
   });
-  
+
   const [vocalists, setVocalists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [genderFilter, setGenderFilter] = useState('ALL'); // ALL, FEMALE, MALE
@@ -56,7 +67,7 @@ export default function VocalistSelectionPage() {
       // Chuẩn bị params
       const gender = genderFilter !== 'ALL' ? genderFilter : null;
       const genres = selectedGenres.length > 0 ? selectedGenres : null;
-      
+
       // Fetch vocalists với filter từ backend
       const response = await getVocalists(gender, genres);
       if (response?.data) {
@@ -104,20 +115,25 @@ export default function VocalistSelectionPage() {
     // Get callback data from sessionStorage
     try {
       const callbackDataStr = sessionStorage.getItem(
-        fromArrangement ? 'arrangementVocalistCallback' : 'recordingFlowVocalistCallback'
+        fromArrangement
+          ? 'arrangementVocalistCallback'
+          : 'recordingFlowVocalistCallback'
       );
       if (callbackDataStr) {
         const callbackData = JSON.parse(callbackDataStr);
-        
+
         if (fromArrangement && allowMultiple) {
           // For arrangement with recording - save multiple selections with names
           const selectedVocalistsWithNames = selectedIds.map(id => {
             const vocalist = vocalists.find(v => v.specialistId === id);
-            return vocalist 
-              ? { id: vocalist.specialistId, name: vocalist.fullName || `Vocalist ${id}` } 
+            return vocalist
+              ? {
+                  id: vocalist.specialistId,
+                  name: vocalist.fullName || `Vocalist ${id}`,
+                }
               : { id, name: `Vocalist ${id}` };
           });
-          
+
           const flowDataStr = sessionStorage.getItem('recordingFlowData');
           const flowData = flowDataStr ? JSON.parse(flowDataStr) : {};
           flowData.step2 = {
@@ -126,7 +142,7 @@ export default function VocalistSelectionPage() {
           };
           sessionStorage.setItem('recordingFlowData', JSON.stringify(flowData));
           sessionStorage.removeItem('arrangementVocalistCallback');
-          
+
           // Navigate back to arrangement page
           navigate(-1);
         } else {
@@ -154,15 +170,17 @@ export default function VocalistSelectionPage() {
       navigate('/recording-flow', { state: { step: 1 } });
     }
   };
-  
-  const isSelected = (specialistId) => {
+
+  const isSelected = specialistId => {
     if (allowMultiple) {
       return selectedIds.includes(specialistId);
     }
     return selectedId === specialistId;
   };
-  
-  const canSelectMore = allowMultiple ? selectedIds.length < maxSelections : true;
+
+  const canSelectMore = allowMultiple
+    ? selectedIds.length < maxSelections
+    : true;
 
   return (
     <div className={styles.container}>
@@ -179,7 +197,7 @@ export default function VocalistSelectionPage() {
             {allowMultiple ? 'Chọn ca sĩ ưu tiên' : 'Select Vocalist'}
           </Title>
           <p className={styles.description}>
-            {allowMultiple 
+            {allowMultiple
               ? `Chọn ${maxSelections === 2 ? '1-2' : '1'} ca sĩ bạn thích (đã chọn: ${selectedIds.length}/${maxSelections})`
               : 'Choose a vocalist for your recording session'}
           </p>
@@ -191,9 +209,9 @@ export default function VocalistSelectionPage() {
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Space wrap>
               <Text strong>Lọc theo giới tính: </Text>
-              <Radio.Group 
-                value={genderFilter} 
-                onChange={(e) => setGenderFilter(e.target.value)}
+              <Radio.Group
+                value={genderFilter}
+                onChange={e => setGenderFilter(e.target.value)}
                 buttonStyle="solid"
               >
                 <Radio.Button value="ALL">Tất cả</Radio.Button>
@@ -227,7 +245,9 @@ export default function VocalistSelectionPage() {
         <Spin spinning={loading}>
           <div className="row">
             {vocalists.length === 0 && !loading ? (
-              <div style={{ textAlign: 'center', padding: '40px', width: '100%' }}>
+              <div
+                style={{ textAlign: 'center', padding: '40px', width: '100%' }}
+              >
                 <p>Không có vocalist nào</p>
               </div>
             ) : (
@@ -238,7 +258,11 @@ export default function VocalistSelectionPage() {
                   isSelected={isSelected(vocalist.specialistId)}
                   selectedId={allowMultiple ? selectedIds : selectedId}
                   onSelect={handleSelect}
-                  disabled={allowMultiple && !canSelectMore && !isSelected(vocalist.specialistId)}
+                  disabled={
+                    allowMultiple &&
+                    !canSelectMore &&
+                    !isSelected(vocalist.specialistId)
+                  }
                 />
               ))
             )}
@@ -258,7 +282,7 @@ export default function VocalistSelectionPage() {
               icon={<CheckOutlined />}
               onClick={handleConfirm}
             >
-              {allowMultiple 
+              {allowMultiple
                 ? `Xác nhận (${selectedIds.length} ca sĩ)`
                 : 'Confirm Selection'}
             </Button>

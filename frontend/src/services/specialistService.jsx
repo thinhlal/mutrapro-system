@@ -47,7 +47,7 @@ export const getAllSpecialists = async (filters = {}) => {
     if (filters.contractId) {
       params.append('contractId', filters.contractId);
     }
-    
+
     // Thêm mainInstrumentName để filter specialist phải match với main instrument
     if (filters.mainInstrumentName) {
       params.append('mainInstrumentName', filters.mainInstrumentName);
@@ -320,7 +320,7 @@ export const uploadAvatar = async file => {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await axiosInstance.post(
       API_ENDPOINTS.SPECIALISTS.PROFILE.UPLOAD_AVATAR,
       formData,
@@ -344,7 +344,7 @@ export const uploadDemoFile = async file => {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await axiosInstance.post(
       API_ENDPOINTS.SPECIALISTS.PROFILE.UPLOAD_DEMO_FILE,
       formData,
@@ -507,14 +507,16 @@ export const getVocalists = async (gender = null, genres = null) => {
       // Spring Boot sẽ tự động parse multiple params với cùng tên thành List
       genres.forEach(genre => params.append('genres', genre));
     }
-    
+
     const url = `${API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_VOCALISTS}${params.toString() ? '?' + params.toString() : ''}`;
-    
+
     const response = await axiosInstance.get(url);
 
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách vocalists' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy danh sách vocalists' }
+    );
   }
 };
 
@@ -528,6 +530,8 @@ export const getSpecialistDetail = async specialistId => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
+    );
   }
 };

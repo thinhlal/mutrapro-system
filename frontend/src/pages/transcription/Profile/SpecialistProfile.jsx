@@ -87,9 +87,9 @@ const SpecialistProfile = () => {
   const [uploadingDemoFile, setUploadingDemoFile] = useState(false);
   const [selectedDemoFile, setSelectedDemoFile] = useState(null); // File tạm thời chưa upload
   const [previewAudioUrl, setPreviewAudioUrl] = useState(null); // URL tạm thời để preview audio
-  
+
   const [avatarUploading, setAvatarUploading] = useState(false);
-  
+
   // Cleanup preview URL khi component unmount
   useEffect(() => {
     return () => {
@@ -200,7 +200,7 @@ const SpecialistProfile = () => {
     }
   };
 
-  const handleAvatarFileChange = async (event) => {
+  const handleAvatarFileChange = async event => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -224,10 +224,10 @@ const SpecialistProfile = () => {
 
       const response = await uploadAvatar(file);
       const avatarUrl = response.data;
-      
+
       // Update form field
       profileForm.setFieldsValue({ avatarUrl });
-      
+
       // Update profile detail to reflect new avatar
       setProfileDetail(prev => ({
         ...prev,
@@ -236,18 +236,21 @@ const SpecialistProfile = () => {
           avatarUrl,
         },
       }));
-      
+
       message.success('Upload avatar thành công');
-      
+
       // Refresh profile to get latest data from backend
       await fetchProfile();
-      
+
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      const errorMessage = error.message || error.response?.data?.message || 'Không thể upload avatar';
+      const errorMessage =
+        error.message ||
+        error.response?.data?.message ||
+        'Không thể upload avatar';
       message.error(errorMessage);
     } finally {
       setAvatarUploading(false);
@@ -377,7 +380,7 @@ const SpecialistProfile = () => {
     try {
       // Nếu có file mới được chọn (chưa upload), upload trước
       let previewUrl = null;
-      
+
       if (selectedDemoFile && !editingDemo) {
         // Upload file mới trước khi tạo demo
         setUploadingDemoFile(true);
@@ -400,17 +403,17 @@ const SpecialistProfile = () => {
           setUploadingDemoFile(false);
         }
       }
-      
+
       const demoData = {
         ...values,
         previewUrl: previewUrl, // Dùng URL từ upload (nếu có file mới) hoặc giữ nguyên (nếu edit)
       };
-      
+
       // Nếu edit và không có file mới, giữ nguyên previewUrl hiện tại
       if (editingDemo && !selectedDemoFile) {
         demoData.previewUrl = editingDemo.previewUrl;
       }
-      
+
       if (editingDemo) {
         await updateMyDemo(editingDemo.demoId, demoData);
         message.success('Cập nhật demo thành công');
@@ -418,7 +421,7 @@ const SpecialistProfile = () => {
         await createMyDemo(demoData);
         message.success('Tạo demo thành công');
       }
-      
+
       // Cleanup preview URL nếu có
       if (previewAudioUrl) {
         URL.revokeObjectURL(previewAudioUrl);
@@ -516,11 +519,12 @@ const SpecialistProfile = () => {
       title: 'Role',
       key: 'recordingRole',
       render: (_, record) => {
-        const roleLabel = record.recordingRole === 'VOCALIST' 
-          ? 'Vocal' 
-          : record.recordingRole === 'INSTRUMENT_PLAYER' 
-          ? 'Instrument' 
-          : record.recordingRole;
+        const roleLabel =
+          record.recordingRole === 'VOCALIST'
+            ? 'Vocal'
+            : record.recordingRole === 'INSTRUMENT_PLAYER'
+              ? 'Instrument'
+              : record.recordingRole;
         return (
           <Tag color={record.recordingRole === 'VOCALIST' ? 'orange' : 'blue'}>
             {roleLabel}
@@ -648,11 +652,11 @@ const SpecialistProfile = () => {
                           style={{ display: 'none' }}
                           onChange={handleAvatarFileChange}
                         />
-                        <div 
-                          style={{ 
-                            position: 'relative', 
+                        <div
+                          style={{
+                            position: 'relative',
                             cursor: avatarUploading ? 'not-allowed' : 'pointer',
-                            display: 'inline-block'
+                            display: 'inline-block',
                           }}
                           onClick={handleAvatarClick}
                         >
@@ -664,7 +668,9 @@ const SpecialistProfile = () => {
                             style={{
                               border: '2px solid #d9d9d9',
                               transition: 'all 0.3s',
-                              cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                              cursor: avatarUploading
+                                ? 'not-allowed'
+                                : 'pointer',
                             }}
                           />
                           {avatarUploading && (
@@ -783,15 +789,15 @@ const SpecialistProfile = () => {
                         { type: 'url', message: 'Vui lòng nhập URL hợp lệ' },
                       ]}
                     >
-                      <Input 
-                        placeholder="https://your-portfolio.com hoặc https://soundcloud.com/yourname" 
+                      <Input
+                        placeholder="https://your-portfolio.com hoặc https://soundcloud.com/yourname"
                         addonAfter={
                           profileForm.getFieldValue('portfolioUrl') ? (
-                            <a 
-                              href={profileForm.getFieldValue('portfolioUrl')} 
-                              target="_blank" 
+                            <a
+                              href={profileForm.getFieldValue('portfolioUrl')}
+                              target="_blank"
                               rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={e => e.stopPropagation()}
                             >
                               Mở
                             </a>
@@ -812,7 +818,9 @@ const SpecialistProfile = () => {
                     {/* RECORDING ARTIST SPECIFIC FIELDS */}
                     {isRecordingArtist && (
                       <>
-                        <Divider orientation="left">Recording Artist Information</Divider>
+                        <Divider orientation="left">
+                          Recording Artist Information
+                        </Divider>
 
                         <Form.Item name="gender" label="Gender">
                           <Radio.Group>
@@ -911,7 +919,7 @@ const SpecialistProfile = () => {
                           ? `${(profileDetail.specialist.onTimeRate * 100).toFixed(1)}%`
                           : 'N/A'}
                       </Descriptions.Item>
-                      
+
                       {/* RECORDING ARTIST SPECIFIC INFO */}
                       {isRecordingArtist && (
                         <>
@@ -922,17 +930,26 @@ const SpecialistProfile = () => {
                           </Descriptions.Item>
                           <Descriptions.Item label="Recording Roles">
                             {profileDetail?.specialist?.recordingRoles &&
-                            profileDetail.specialist.recordingRoles.length > 0 ? (
+                            profileDetail.specialist.recordingRoles.length >
+                              0 ? (
                               <Space>
                                 {profileDetail.specialist.recordingRoles.map(
-                                  (role) => {
-                                    const roleLabel = role === 'VOCALIST' 
-                                      ? 'Vocal' 
-                                      : role === 'INSTRUMENT_PLAYER' 
-                                      ? 'Instrument' 
-                                      : role;
+                                  role => {
+                                    const roleLabel =
+                                      role === 'VOCALIST'
+                                        ? 'Vocal'
+                                        : role === 'INSTRUMENT_PLAYER'
+                                          ? 'Instrument'
+                                          : role;
                                     return (
-                                      <Tag key={role} color={role === 'VOCALIST' ? 'orange' : 'blue'}>
+                                      <Tag
+                                        key={role}
+                                        color={
+                                          role === 'VOCALIST'
+                                            ? 'orange'
+                                            : 'blue'
+                                        }
+                                      >
                                         {roleLabel}
                                       </Tag>
                                     );
@@ -947,13 +964,11 @@ const SpecialistProfile = () => {
                             {profileDetail?.specialist?.genres &&
                             profileDetail.specialist.genres.length > 0 ? (
                               <Space wrap>
-                                {profileDetail.specialist.genres.map(
-                                  (genre) => (
-                                    <Tag key={genre} color="blue">
-                                      {genre}
-                                    </Tag>
-                                  )
-                                )}
+                                {profileDetail.specialist.genres.map(genre => (
+                                  <Tag key={genre} color="blue">
+                                    {genre}
+                                  </Tag>
+                                ))}
                               </Space>
                             ) : (
                               'N/A'
@@ -964,7 +979,7 @@ const SpecialistProfile = () => {
                             profileDetail.specialist.credits.length > 0 ? (
                               <Space wrap>
                                 {profileDetail.specialist.credits.map(
-                                  (credit) => (
+                                  credit => (
                                     <Tag key={credit} color="green">
                                       {credit}
                                     </Tag>
@@ -1092,90 +1107,105 @@ const SpecialistProfile = () => {
         width={600}
       >
         <Form form={skillForm} layout="vertical" onFinish={handleSkillSubmit}>
-          {!editingSkill && (() => {
-            const recordingRoles = profileDetail?.specialist?.recordingRoles || [];
-            const hasMultipleRoles = recordingRoles.length > 1;
-            const needsCategorySelection = hasMultipleRoles;
-            
-            return (
-              <>
-                {needsCategorySelection && (
+          {!editingSkill &&
+            (() => {
+              const recordingRoles =
+                profileDetail?.specialist?.recordingRoles || [];
+              const hasMultipleRoles = recordingRoles.length > 1;
+              const needsCategorySelection = hasMultipleRoles;
+
+              return (
+                <>
+                  {needsCategorySelection && (
+                    <Form.Item
+                      label="Category"
+                      rules={[
+                        {
+                          required: true,
+                          message: 'Vui lòng chọn category trước',
+                        },
+                      ]}
+                    >
+                      <Select
+                        placeholder="Chọn category (Vocal hoặc Instrument)"
+                        value={selectedSkillCategory}
+                        onChange={value => {
+                          setSelectedSkillCategory(value);
+                          skillForm.setFieldValue('skillId', null); // Reset skill khi đổi category
+                        }}
+                      >
+                        {recordingRoles.includes('VOCALIST') && (
+                          <Option value="VOCAL">Vocal</Option>
+                        )}
+                        {recordingRoles.includes('INSTRUMENT_PLAYER') && (
+                          <Option value="INSTRUMENT">Instrument</Option>
+                        )}
+                      </Select>
+                    </Form.Item>
+                  )}
+
                   <Form.Item
-                    label="Category"
-                    rules={[{ required: true, message: 'Vui lòng chọn category trước' }]}
+                    name="skillId"
+                    label="Skill"
+                    rules={[{ required: true, message: 'Vui lòng chọn skill' }]}
                   >
                     <Select
-                      placeholder="Chọn category (Vocal hoặc Instrument)"
-                      value={selectedSkillCategory}
-                      onChange={value => {
-                        setSelectedSkillCategory(value);
-                        skillForm.setFieldValue('skillId', null); // Reset skill khi đổi category
-                      }}
+                      placeholder={
+                        needsCategorySelection
+                          ? selectedSkillCategory
+                            ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill`
+                            : 'Vui lòng chọn category trước'
+                          : selectedSkillCategory
+                            ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill`
+                            : 'Select skill'
+                      }
+                      disabled={
+                        needsCategorySelection && !selectedSkillCategory
+                      }
+                      loading={availableSkillsLoading}
+                      notFoundContent={
+                        availableSkillsLoading ? (
+                          <div style={{ textAlign: 'center', padding: '20px' }}>
+                            Loading...
+                          </div>
+                        ) : needsCategorySelection && !selectedSkillCategory ? (
+                          'Vui lòng chọn category trước'
+                        ) : (
+                          'No skills available'
+                        )
+                      }
                     >
-                      {recordingRoles.includes('VOCALIST') && (
-                        <Option value="VOCAL">Vocal</Option>
-                      )}
-                      {recordingRoles.includes('INSTRUMENT_PLAYER') && (
-                        <Option value="INSTRUMENT">Instrument</Option>
-                      )}
+                      {availableSkills
+                        .filter(skill => {
+                          // Filter theo category đã chọn (hoặc tự động nếu chỉ có 1 role)
+                          if (!selectedSkillCategory) return false;
+
+                          const categoryStr =
+                            typeof skill.recordingCategory === 'string'
+                              ? skill.recordingCategory
+                              : skill.recordingCategory?.name ||
+                                skill.recordingCategory;
+
+                          return categoryStr === selectedSkillCategory;
+                        })
+                        .filter(
+                          skill =>
+                            !skills.some(
+                              mySkill =>
+                                (mySkill.skill?.skillId || mySkill.skillId) ===
+                                skill.skillId
+                            )
+                        )
+                        .map(skill => (
+                          <Option key={skill.skillId} value={skill.skillId}>
+                            {skill.skillName}
+                          </Option>
+                        ))}
                     </Select>
                   </Form.Item>
-                )}
-
-                <Form.Item
-                  name="skillId"
-                  label="Skill"
-                  rules={[{ required: true, message: 'Vui lòng chọn skill' }]}
-                >
-                  <Select
-                    placeholder={
-                      needsCategorySelection 
-                        ? (selectedSkillCategory ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill` : 'Vui lòng chọn category trước')
-                        : (selectedSkillCategory ? `Select ${selectedSkillCategory === 'VOCAL' ? 'vocal' : 'instrument'} skill` : 'Select skill')
-                    }
-                    disabled={needsCategorySelection && !selectedSkillCategory}
-                    loading={availableSkillsLoading}
-                    notFoundContent={
-                      availableSkillsLoading ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                          Loading...
-                        </div>
-                      ) : needsCategorySelection && !selectedSkillCategory ? (
-                        'Vui lòng chọn category trước'
-                      ) : (
-                        'No skills available'
-                      )
-                    }
-                  >
-                    {availableSkills
-                      .filter(skill => {
-                        // Filter theo category đã chọn (hoặc tự động nếu chỉ có 1 role)
-                        if (!selectedSkillCategory) return false;
-                        
-                        const categoryStr = typeof skill.recordingCategory === 'string'
-                          ? skill.recordingCategory
-                          : skill.recordingCategory?.name || skill.recordingCategory;
-                        
-                        return categoryStr === selectedSkillCategory;
-                      })
-                      .filter(
-                        skill =>
-                          !skills.some(
-                            mySkill =>
-                              (mySkill.skill?.skillId || mySkill.skillId) ===
-                              skill.skillId
-                          )
-                      )
-                      .map(skill => (
-                        <Option key={skill.skillId} value={skill.skillId}>
-                          {skill.skillName}
-                        </Option>
-                      ))}
-                  </Select>
-                </Form.Item>
-              </>
-            );
-          })()}
+                </>
+              );
+            })()}
 
           <Form.Item
             name="proficiencyLevel"
@@ -1286,7 +1316,11 @@ const SpecialistProfile = () => {
             >
               {profileDetail?.specialist?.recordingRoles?.map(role => (
                 <Option key={role} value={role}>
-                  {role === 'VOCALIST' ? 'Vocal' : role === 'INSTRUMENT_PLAYER' ? 'Instrument' : role}
+                  {role === 'VOCALIST'
+                    ? 'Vocal'
+                    : role === 'INSTRUMENT_PLAYER'
+                      ? 'Instrument'
+                      : role}
                 </Option>
               ))}
             </Select>
@@ -1297,51 +1331,56 @@ const SpecialistProfile = () => {
             required={!editingDemo}
             tooltip="Chọn file audio demo (mp3, wav, m4a, flac, aac). Tối đa 50MB. File sẽ được upload khi nhấn OK. File sẽ được lưu public để customer có thể xem/nghe trực tiếp."
             rules={[
-              { 
+              {
                 validator: () => {
                   // Validate: nếu không phải edit mode, phải có file được chọn
                   if (!editingDemo && !selectedDemoFile) {
                     return Promise.reject(new Error('Vui lòng chọn file demo'));
                   }
                   return Promise.resolve();
-                }
+                },
               },
             ]}
           >
             <Upload
               accept="audio/*,.mp3,.wav,.m4a,.flac,.aac"
               maxCount={1}
-              beforeUpload={(file) => {
+              beforeUpload={file => {
                 // Validate file size (50MB)
                 const maxSize = 50 * 1024 * 1024; // 50MB
                 if (file.size > maxSize) {
                   message.error('File không được vượt quá 50MB');
                   return Upload.LIST_IGNORE;
                 }
-                
+
                 // Validate file type
                 const fileName = file.name.toLowerCase();
-                const isAudio = fileName.endsWith('.mp3') ||
-                               fileName.endsWith('.wav') ||
-                               fileName.endsWith('.m4a') ||
-                               fileName.endsWith('.flac') ||
-                               fileName.endsWith('.aac') ||
-                               file.type.startsWith('audio/');
-                
+                const isAudio =
+                  fileName.endsWith('.mp3') ||
+                  fileName.endsWith('.wav') ||
+                  fileName.endsWith('.m4a') ||
+                  fileName.endsWith('.flac') ||
+                  fileName.endsWith('.aac') ||
+                  file.type.startsWith('audio/');
+
                 if (!isAudio) {
-                  message.error('Chỉ chấp nhận file audio (mp3, wav, m4a, flac, aac)');
+                  message.error(
+                    'Chỉ chấp nhận file audio (mp3, wav, m4a, flac, aac)'
+                  );
                   return Upload.LIST_IGNORE;
                 }
-                
+
                 // Lưu file tạm thời, chưa upload
                 setSelectedDemoFile(file);
-                
+
                 // Tạo URL tạm thời để preview audio
                 const objectUrl = URL.createObjectURL(file);
                 setPreviewAudioUrl(objectUrl);
-                
-                message.info('File đã được chọn. Nhấn OK để upload và tạo demo.');
-                
+
+                message.info(
+                  'File đã được chọn. Nhấn OK để upload và tạo demo.'
+                );
+
                 // Prevent default upload - sẽ upload khi submit form
                 return false;
               }}
@@ -1354,27 +1393,40 @@ const SpecialistProfile = () => {
                 setSelectedDemoFile(null);
               }}
               disabled={!!editingDemo}
-              fileList={selectedDemoFile ? [{
-                uid: '-1',
-                name: selectedDemoFile.name,
-                status: 'done',
-              }] : []}
+              fileList={
+                selectedDemoFile
+                  ? [
+                      {
+                        uid: '-1',
+                        name: selectedDemoFile.name,
+                        status: 'done',
+                      },
+                    ]
+                  : []
+              }
             >
-              <Button 
-                icon={<UploadOutlined />} 
-                disabled={!!editingDemo}
-              >
+              <Button icon={<UploadOutlined />} disabled={!!editingDemo}>
                 Chọn file audio
               </Button>
             </Upload>
             {selectedDemoFile && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ color: '#1890ff', fontSize: '12px', marginBottom: 8 }}>
-                  File đã chọn: {selectedDemoFile.name} ({(selectedDemoFile.size / 1024 / 1024).toFixed(2)} MB)
+                <div
+                  style={{
+                    color: '#1890ff',
+                    fontSize: '12px',
+                    marginBottom: 8,
+                  }}
+                >
+                  File đã chọn: {selectedDemoFile.name} (
+                  {(selectedDemoFile.size / 1024 / 1024).toFixed(2)} MB)
                 </div>
                 {previewAudioUrl && (
                   <audio controls style={{ width: '100%', maxWidth: '400px' }}>
-                    <source src={previewAudioUrl} type={selectedDemoFile.type || 'audio/mpeg'} />
+                    <source
+                      src={previewAudioUrl}
+                      type={selectedDemoFile.type || 'audio/mpeg'}
+                    />
                     <source src={previewAudioUrl} type="audio/wav" />
                     <source src={previewAudioUrl} type="audio/m4a" />
                     Your browser does not support the audio element.
@@ -1384,7 +1436,9 @@ const SpecialistProfile = () => {
             )}
             {editingDemo && (
               <div style={{ marginTop: 8 }}>
-                <div style={{ color: '#999', fontSize: '12px', marginBottom: 8 }}>
+                <div
+                  style={{ color: '#999', fontSize: '12px', marginBottom: 8 }}
+                >
                   File hiện tại: {editingDemo.previewUrl || 'N/A'}
                 </div>
                 {editingDemo.previewUrl && (
@@ -1410,12 +1464,16 @@ const SpecialistProfile = () => {
             <Select
               mode="multiple"
               placeholder="Select genres"
-              options={MUSIC_GENRES.filter(genre => 
+              options={MUSIC_GENRES.filter(genre =>
                 profileDetail?.specialist?.genres?.includes(genre.value)
               )}
-              disabled={!profileDetail?.specialist?.genres || profileDetail.specialist.genres.length === 0}
+              disabled={
+                !profileDetail?.specialist?.genres ||
+                profileDetail.specialist.genres.length === 0
+              }
               notFoundContent={
-                !profileDetail?.specialist?.genres || profileDetail.specialist.genres.length === 0
+                !profileDetail?.specialist?.genres ||
+                profileDetail.specialist.genres.length === 0
                   ? 'Vui lòng cập nhật genres trong profile trước'
                   : 'Không có genre nào khả dụng'
               }
@@ -1445,11 +1503,16 @@ const SpecialistProfile = () => {
                 : 'Tùy chọn: Chọn skill giọng hát (ví dụ: Soprano, Alto, Tenor)'
             }
           >
-            <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.recordingRole !== currentValues.recordingRole}>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) =>
+                prevValues.recordingRole !== currentValues.recordingRole
+              }
+            >
               {({ getFieldValue, setFieldValue }) => {
                 const recordingRole = getFieldValue('recordingRole');
                 const skillIdValue = getFieldValue('skillId');
-                
+
                 return (
                   <Select
                     value={skillIdValue}
@@ -1460,8 +1523,8 @@ const SpecialistProfile = () => {
                       !recordingRole
                         ? 'Vui lòng chọn Recording Role trước'
                         : recordingRole === 'INSTRUMENT_PLAYER'
-                        ? 'Chọn skill nhạc cụ (bắt buộc)'
-                        : 'Chọn skill giọng hát (tùy chọn)'
+                          ? 'Chọn skill nhạc cụ (bắt buộc)'
+                          : 'Chọn skill giọng hát (tùy chọn)'
                     }
                     allowClear={recordingRole === 'VOCALIST'}
                     disabled={!recordingRole}
@@ -1484,60 +1547,76 @@ const SpecialistProfile = () => {
                           </Option>
                         );
                       }
-                      
+
                       // Lấy skills từ specialist's skills (đã add vào profile), không phải availableSkills
                       // Vì demo là để showcase skill mà specialist đã có
                       if (!skills || skills.length === 0) {
                         return (
                           <Option disabled value="">
-                            Chưa có skill nào. Vui lòng thêm skill vào profile trước.
+                            Chưa có skill nào. Vui lòng thêm skill vào profile
+                            trước.
                           </Option>
                         );
                       }
-                      
+
                       // Filter skills của specialist theo recordingRole
-                      const filteredSkills = skills.filter(specialistSkill => {
-                        const skill = specialistSkill.skill || specialistSkill;
-                        if (!skill) return false;
-                        
-                        const skillTypeStr = typeof skill.skillType === 'string' 
-                          ? skill.skillType 
-                          : skill.skillType?.name || skill.skillType;
-                        const categoryStr = typeof skill.recordingCategory === 'string'
-                          ? skill.recordingCategory
-                          : skill.recordingCategory?.name || skill.recordingCategory;
-                        
-                        if (recordingRole === 'VOCALIST') {
-                          // Chỉ hiển thị vocal skills
-                          return skillTypeStr === 'RECORDING_ARTIST' && categoryStr === 'VOCAL';
-                        } else if (recordingRole === 'INSTRUMENT_PLAYER') {
-                          // Chỉ hiển thị instrument skills
-                          return skillTypeStr === 'RECORDING_ARTIST' && categoryStr === 'INSTRUMENT';
-                        }
-                        return false;
-                      }).map(specialistSkill => {
-                        // Extract skill object từ specialistSkill
-                        return specialistSkill.skill || specialistSkill;
-                      });
-                      
+                      const filteredSkills = skills
+                        .filter(specialistSkill => {
+                          const skill =
+                            specialistSkill.skill || specialistSkill;
+                          if (!skill) return false;
+
+                          const skillTypeStr =
+                            typeof skill.skillType === 'string'
+                              ? skill.skillType
+                              : skill.skillType?.name || skill.skillType;
+                          const categoryStr =
+                            typeof skill.recordingCategory === 'string'
+                              ? skill.recordingCategory
+                              : skill.recordingCategory?.name ||
+                                skill.recordingCategory;
+
+                          if (recordingRole === 'VOCALIST') {
+                            // Chỉ hiển thị vocal skills
+                            return (
+                              skillTypeStr === 'RECORDING_ARTIST' &&
+                              categoryStr === 'VOCAL'
+                            );
+                          } else if (recordingRole === 'INSTRUMENT_PLAYER') {
+                            // Chỉ hiển thị instrument skills
+                            return (
+                              skillTypeStr === 'RECORDING_ARTIST' &&
+                              categoryStr === 'INSTRUMENT'
+                            );
+                          }
+                          return false;
+                        })
+                        .map(specialistSkill => {
+                          // Extract skill object từ specialistSkill
+                          return specialistSkill.skill || specialistSkill;
+                        });
+
                       if (filteredSkills.length === 0) {
-                        const roleLabel = recordingRole === 'VOCALIST' 
-                          ? 'Vocal' 
-                          : recordingRole === 'INSTRUMENT_PLAYER' 
-                          ? 'Instrument' 
-                          : recordingRole;
+                        const roleLabel =
+                          recordingRole === 'VOCALIST'
+                            ? 'Vocal'
+                            : recordingRole === 'INSTRUMENT_PLAYER'
+                              ? 'Instrument'
+                              : recordingRole;
                         return (
                           <Option disabled value="">
                             Không có skill nào phù hợp với {roleLabel}
                           </Option>
                         );
                       }
-                      
+
                       // Remove duplicates (nếu có)
-                      const uniqueSkills = filteredSkills.filter((skill, index, self) =>
-                        index === self.findIndex(s => s.skillId === skill.skillId)
+                      const uniqueSkills = filteredSkills.filter(
+                        (skill, index, self) =>
+                          index ===
+                          self.findIndex(s => s.skillId === skill.skillId)
                       );
-                      
+
                       return uniqueSkills.map(skill => (
                         <Option key={skill.skillId} value={skill.skillId}>
                           {skill.skillName}
@@ -1550,18 +1629,18 @@ const SpecialistProfile = () => {
             </Form.Item>
           </Form.Item>
 
-          <Form.Item 
-            name="isPublic" 
-            label="Public" 
+          <Form.Item
+            name="isPublic"
+            label="Public"
             valuePropName="checked"
             tooltip="Bật để customer có thể xem demo này, tắt để chỉ bạn xem được"
           >
             <Switch />
           </Form.Item>
 
-          <Form.Item 
-            name="isMainDemo" 
-            label="Demo chính" 
+          <Form.Item
+            name="isMainDemo"
+            label="Demo chính"
             valuePropName="checked"
             tooltip="Đánh dấu demo này là demo chính. Demo chính sẽ được hiển thị ở avatar trong trang list specialists. Chỉ nên có 1 demo chính."
           >

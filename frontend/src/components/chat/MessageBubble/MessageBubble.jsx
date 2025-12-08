@@ -15,9 +15,9 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
   const [fileUrl, setFileUrl] = useState(null);
   const [loadingFile, setLoadingFile] = useState(false);
   const blobUrlRef = useRef(null); // Lưu blob URL để cleanup đúng
-  
+
   // Download file
-  const handleDownloadFile = async (fileKey) => {
+  const handleDownloadFile = async fileKey => {
     if (!roomId || !fileKey) {
       antMessage.error('Không thể tải file');
       return;
@@ -26,10 +26,10 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
     try {
       setLoadingFile(true);
       const blob = await chatService.downloadFile(fileKey, roomId);
-      
+
       // Create blob URL for download only
       const url = URL.createObjectURL(blob);
-      
+
       // Create a link and trigger download
       const link = document.createElement('a');
       link.href = url;
@@ -37,7 +37,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up blob URL immediately after download
       setTimeout(() => {
         URL.revokeObjectURL(url);
@@ -54,7 +54,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
   useEffect(() => {
     // Chỉ load cho IMAGE (AUDIO và VIDEO hiển thị như FILE, không cần preview)
     if (!roomId || !message.content) return;
-    
+
     // Normalize messageType to uppercase for case-insensitive matching
     const messageType = message.messageType?.toUpperCase();
     const needsLoad = messageType === 'IMAGE';
@@ -72,7 +72,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
       try {
         setLoadingFile(true);
         const blob = await chatService.downloadFile(message.content, roomId);
-        
+
         // Only set URL if component is still mounted
         if (isMounted) {
           const url = URL.createObjectURL(blob);
@@ -95,7 +95,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
     };
 
     loadFileUrl();
-    
+
     // Cleanup: revoke blob URL when component unmounts or message changes
     return () => {
       isMounted = false;
@@ -120,7 +120,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
   const renderMessageContent = () => {
     // Normalize messageType to uppercase for case-insensitive matching
     const messageType = message.messageType?.toUpperCase();
-    
+
     switch (messageType) {
       case 'TEXT':
         // Nếu có metadata file nhưng type là TEXT, hiển thị như file
@@ -130,15 +130,15 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
             ? fileSize < 1024
               ? `${fileSize} B`
               : fileSize < 1024 * 1024
-              ? `${(fileSize / 1024).toFixed(1)} KB`
-              : `${(fileSize / (1024 * 1024)).toFixed(1)} MB`
+                ? `${(fileSize / 1024).toFixed(1)} KB`
+                : `${(fileSize / (1024 * 1024)).toFixed(1)} MB`
             : '';
-          
+
           const fileKey = message.content;
-          
+
           return (
             <div className={styles.messageFile}>
-              <div 
+              <div
                 onClick={() => fileKey && handleDownloadFile(fileKey)}
                 className={styles.fileLink}
                 style={{ cursor: fileKey ? 'pointer' : 'default' }}
@@ -161,7 +161,7 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
 
       case 'IMAGE':
         const imageMetadata = message.metadata;
-        
+
         return (
           <div className={styles.messageImage}>
             {loadingFile ? (
@@ -180,15 +180,15 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
           ? fileSize < 1024
             ? `${fileSize} B`
             : fileSize < 1024 * 1024
-            ? `${(fileSize / 1024).toFixed(1)} KB`
-            : `${(fileSize / (1024 * 1024)).toFixed(1)} MB`
+              ? `${(fileSize / 1024).toFixed(1)} KB`
+              : `${(fileSize / (1024 * 1024)).toFixed(1)} MB`
           : '';
-        
+
         const fileKey = message.content; // fileKey thay vì URL
-        
+
         return (
           <div className={styles.messageFile}>
-            <div 
+            <div
               onClick={() => fileKey && handleDownloadFile(fileKey)}
               className={styles.fileLink}
               style={{ cursor: fileKey ? 'pointer' : 'default' }}
@@ -214,15 +214,15 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
           ? audioFileSize < 1024
             ? `${audioFileSize} B`
             : audioFileSize < 1024 * 1024
-            ? `${(audioFileSize / 1024).toFixed(1)} KB`
-            : `${(audioFileSize / (1024 * 1024)).toFixed(1)} MB`
+              ? `${(audioFileSize / 1024).toFixed(1)} KB`
+              : `${(audioFileSize / (1024 * 1024)).toFixed(1)} MB`
           : '';
-        
+
         const audioFileKey = message.content;
-        
+
         return (
           <div className={styles.messageFile}>
-            <div 
+            <div
               onClick={() => audioFileKey && handleDownloadFile(audioFileKey)}
               className={styles.fileLink}
               style={{ cursor: audioFileKey ? 'pointer' : 'default' }}
@@ -248,15 +248,15 @@ const MessageBubble = ({ message, isOwnMessage = false, roomId }) => {
           ? videoFileSize < 1024
             ? `${videoFileSize} B`
             : videoFileSize < 1024 * 1024
-            ? `${(videoFileSize / 1024).toFixed(1)} KB`
-            : `${(videoFileSize / (1024 * 1024)).toFixed(1)} MB`
+              ? `${(videoFileSize / 1024).toFixed(1)} KB`
+              : `${(videoFileSize / (1024 * 1024)).toFixed(1)} MB`
           : '';
-        
+
         const videoFileKey = message.content;
-        
+
         return (
           <div className={styles.messageFile}>
-            <div 
+            <div
               onClick={() => videoFileKey && handleDownloadFile(videoFileKey)}
               className={styles.fileLink}
               style={{ cursor: videoFileKey ? 'pointer' : 'default' }}

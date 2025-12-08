@@ -5,4 +5,9 @@ export { PROS_CATEGORIES } from './discoverProsData';
 export { FEMALE_SINGERS_DATA } from './femaleSingersData';
 export { MALE_SINGERS_DATA } from './maleSingersData';
 export { SINGER_DETAIL_DATA } from './singerDetailData';
-export { MUSIC_GENRES, MUSIC_PURPOSES, getGenreLabel, getPurposeLabel } from './musicOptionsConstants';
+export {
+  MUSIC_GENRES,
+  MUSIC_PURPOSES,
+  getGenreLabel,
+  getPurposeLabel,
+} from './musicOptionsConstants';

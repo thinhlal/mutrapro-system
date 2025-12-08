@@ -311,7 +311,7 @@ export const API_ENDPOINTS = {
     GET_UNREAD_COUNT: roomId =>
       `${CHAT_PATH}/messages/room/${roomId}/unread-count`,
     MARK_AS_READ: roomId => `${CHAT_PATH}/messages/room/${roomId}/mark-read`,
-    
+
     // File Upload & Download
     UPLOAD_FILE: `${CHAT_PATH}/messages/upload`,
     DOWNLOAD_FILE: `${CHAT_PATH}/messages/download`,
@@ -404,7 +404,8 @@ export const API_ENDPOINTS = {
       // GET /public/specialists/vocalists
       GET_VOCALISTS: `${SPECIALIST_PATH}/public/specialists/vocalists`,
       // GET /public/specialists/{specialistId}
-      GET_SPECIALIST_DETAIL: specialistId => `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
+      GET_SPECIALIST_DETAIL: specialistId =>
+        `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
     },
     PROFILE: {
       // GET /specialists/me

@@ -42,12 +42,12 @@ export const useChat = (roomId, autoLoad = true) => {
 
       try {
         setLoading(true);
-        
+
         // Clear messages ngay lập tức khi bắt đầu load (pageNum = 0) để tránh flash messages cũ
         if (pageNum === 0) {
           setMessages([]);
         }
-        
+
         const response = await chatService.getMessages(
           roomId,
           pageNum,

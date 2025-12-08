@@ -47,7 +47,10 @@ import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { API_CONFIG } from '../../../config/apiConfig';
 import ViewCancellationReasonModal from '../../../components/modal/ViewCancellationReasonModal/ViewCancellationReasonModal';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
@@ -769,9 +772,10 @@ const ManagerContractDetailPage = () => {
                       >
                         <PdfText style={{ fontSize: 11 }}>
                           • {instr.instrumentName}
-                          {instr.isMain && 
-                            (contract?.contractType === 'arrangement' || 
-                             contract?.contractType === 'arrangement_with_recording') && 
+                          {instr.isMain &&
+                            (contract?.contractType === 'arrangement' ||
+                              contract?.contractType ===
+                                'arrangement_with_recording') &&
                             ' (Main)'}
                         </PdfText>
                       </View>
@@ -955,11 +959,23 @@ const ManagerContractDetailPage = () => {
                         <PdfText style={{ fontWeight: 'bold', fontSize: 11 }}>
                           {milestone.name || `Milestone ${index + 1}`}
                           {milestone.milestoneType && (
-                            <PdfText style={{ fontSize: 9, color: '#1890ff', marginLeft: 4 }}>
-                              {' '}({milestone.milestoneType === 'transcription' ? 'Transcription' :
-                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                                     milestone.milestoneType === 'recording' ? 'Recording' :
-                                     milestone.milestoneType})
+                            <PdfText
+                              style={{
+                                fontSize: 9,
+                                color: '#1890ff',
+                                marginLeft: 4,
+                              }}
+                            >
+                              {' '}
+                              (
+                              {milestone.milestoneType === 'transcription'
+                                ? 'Transcription'
+                                : milestone.milestoneType === 'arrangement'
+                                  ? 'Arrangement'
+                                  : milestone.milestoneType === 'recording'
+                                    ? 'Recording'
+                                    : milestone.milestoneType}
+                              )
                             </PdfText>
                           )}
                         </PdfText>
@@ -1806,22 +1822,38 @@ const ManagerContractDetailPage = () => {
                             }}
                           >
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  marginBottom: 4,
+                                }}
+                              >
                                 <Text strong style={{ fontSize: 16 }}>
                                   {milestone.name ||
                                     `Milestone ${milestone.orderIndex || index + 1}`}
                                 </Text>
                                 {milestone.milestoneType && (
                                   <Tag color="blue" style={{ margin: 0 }}>
-                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
-                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                                     milestone.milestoneType === 'recording' ? 'Recording' :
-                                     milestone.milestoneType}
+                                    {milestone.milestoneType === 'transcription'
+                                      ? 'Transcription'
+                                      : milestone.milestoneType ===
+                                          'arrangement'
+                                        ? 'Arrangement'
+                                        : milestone.milestoneType ===
+                                            'recording'
+                                          ? 'Recording'
+                                          : milestone.milestoneType}
                                   </Tag>
                                 )}
-                                {(milestone.milestoneSlaDays || milestone.slaDays) && (
+                                {(milestone.milestoneSlaDays ||
+                                  milestone.slaDays) && (
                                   <Tag color="blue" style={{ margin: 0 }}>
-                                    SLA: {milestone.milestoneSlaDays || milestone.slaDays} days
+                                    SLA:{' '}
+                                    {milestone.milestoneSlaDays ||
+                                      milestone.slaDays}{' '}
+                                    days
                                   </Tag>
                                 )}
                               </div>
@@ -2036,20 +2068,25 @@ const ManagerContractDetailPage = () => {
                         {requestDetails.description}
                       </p>
                     )}
-                    
+
                     {/* Arrangement-specific fields */}
                     {(requestDetails.requestType === 'arrangement' ||
-                      requestDetails.requestType === 'arrangement_with_recording') && (
+                      requestDetails.requestType ===
+                        'arrangement_with_recording') && (
                       <>
-                        {requestDetails.genres && requestDetails.genres.length > 0 && (
-                          <p>
-                            <strong>Genres:</strong>{' '}
-                            {requestDetails.genres.map(genre => getGenreLabel(genre)).join(', ')}
-                          </p>
-                        )}
+                        {requestDetails.genres &&
+                          requestDetails.genres.length > 0 && (
+                            <p>
+                              <strong>Genres:</strong>{' '}
+                              {requestDetails.genres
+                                .map(genre => getGenreLabel(genre))
+                                .join(', ')}
+                            </p>
+                          )}
                         {requestDetails.purpose && (
                           <p>
-                            <strong>Purpose:</strong> {getPurposeLabel(requestDetails.purpose)}
+                            <strong>Purpose:</strong>{' '}
+                            {getPurposeLabel(requestDetails.purpose)}
                           </p>
                         )}
                         {requestDetails.preferredSpecialists &&
@@ -2057,7 +2094,9 @@ const ManagerContractDetailPage = () => {
                             <p>
                               <strong>Preferred Vocalists:</strong>{' '}
                               {requestDetails.preferredSpecialists
-                                .map(s => s.name || `Vocalist ${s.specialistId}`)
+                                .map(
+                                  s => s.name || `Vocalist ${s.specialistId}`
+                                )
                                 .join(', ')}
                             </p>
                           )}
@@ -2071,9 +2110,10 @@ const ManagerContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0 ||
-                (requestDetails?.servicePrice && 
-                 (requestDetails.requestType === 'arrangement' || 
-                  requestDetails.requestType === 'arrangement_with_recording'))) && (
+                (requestDetails?.servicePrice &&
+                  (requestDetails.requestType === 'arrangement' ||
+                    requestDetails.requestType ===
+                      'arrangement_with_recording'))) && (
                 <div
                   style={{
                     marginBottom: '16px',
@@ -2160,33 +2200,37 @@ const ManagerContractDetailPage = () => {
                       )}
 
                       {/* Service Price for Arrangement */}
-                      {requestDetails?.servicePrice && 
-                       (requestDetails.requestType === 'arrangement' || 
-                        requestDetails.requestType === 'arrangement_with_recording') && (
-                        <tr>
-                          <td
-                            style={{
-                              border: '1px solid #000',
-                              padding: '8px',
-                              fontWeight: 'bold',
-                              backgroundColor: '#fff',
-                            }}
-                          >
-                            Arrangement Service
-                          </td>
-                          <td
-                            style={{
-                              border: '1px solid #000',
-                              padding: '8px',
-                              textAlign: 'right',
-                              fontWeight: 'bold',
-                              backgroundColor: '#fff',
-                            }}
-                          >
-                            {Number(requestDetails.servicePrice)?.toLocaleString?.() ?? requestDetails.servicePrice}
-                          </td>
-                        </tr>
-                      )}
+                      {requestDetails?.servicePrice &&
+                        (requestDetails.requestType === 'arrangement' ||
+                          requestDetails.requestType ===
+                            'arrangement_with_recording') && (
+                          <tr>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              Arrangement Service
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                textAlign: 'right',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              {Number(
+                                requestDetails.servicePrice
+                              )?.toLocaleString?.() ??
+                                requestDetails.servicePrice}
+                            </td>
+                          </tr>
+                        )}
 
                       {/* Instruments */}
                       {pricingBreakdown.instruments.length > 0 && (
@@ -2215,9 +2259,10 @@ const ManagerContractDetailPage = () => {
                                 }}
                               >
                                 • {instr.instrumentName}
-                                {instr.isMain && 
-                                  (contract?.contractType === 'arrangement' || 
-                                   contract?.contractType === 'arrangement_with_recording') && 
+                                {instr.isMain &&
+                                  (contract?.contractType === 'arrangement' ||
+                                    contract?.contractType ===
+                                      'arrangement_with_recording') &&
                                   ' (Main)'}
                               </td>
                               <td
@@ -2450,11 +2495,20 @@ const ManagerContractDetailPage = () => {
                                   {milestone.name || `Milestone ${index + 1}`}
                                 </strong>
                                 {milestone.milestoneType && (
-                                  <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
-                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
-                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                                     milestone.milestoneType === 'recording' ? 'Recording' :
-                                     milestone.milestoneType}
+                                  <Tag
+                                    color="blue"
+                                    size="small"
+                                    style={{ marginLeft: 8 }}
+                                  >
+                                    {milestone.milestoneType === 'transcription'
+                                      ? 'Transcription'
+                                      : milestone.milestoneType ===
+                                          'arrangement'
+                                        ? 'Arrangement'
+                                        : milestone.milestoneType ===
+                                            'recording'
+                                          ? 'Recording'
+                                          : milestone.milestoneType}
                                   </Tag>
                                 )}
                               </div>
@@ -2734,8 +2788,8 @@ const ManagerContractDetailPage = () => {
           ) : (
             <>
               <p>
-                Tình trạng task theo từng milestone (accepted = accepted_waiting /
-                ready_to_start / in_progress / completed):
+                Tình trạng task theo từng milestone (accepted = accepted_waiting
+                / ready_to_start / in_progress / completed):
               </p>
               <ul style={{ paddingLeft: 20 }}>
                 {startWorkContext.milestoneSummaries.map(m => (
@@ -2751,13 +2805,14 @@ const ManagerContractDetailPage = () => {
               </ul>
               {startWorkContext.hasBlockingMissing ? (
                 <p style={{ marginTop: 8 }}>
-                  Có milestone chưa có task assignment active hoặc task chưa được accept, nên chưa thể Start Work.
-                  Vui lòng vào Milestones / Task Progress để gán và đảm bảo task đã được accept trước.
+                  Có milestone chưa có task assignment active hoặc task chưa
+                  được accept, nên chưa thể Start Work. Vui lòng vào Milestones
+                  / Task Progress để gán và đảm bảo task đã được accept trước.
                 </p>
               ) : (
                 <p style={{ marginTop: 8 }}>
-                  Tất cả milestones đã có task assignment và đã được accept. Bạn có chắc
-                  chắn muốn Start Work cho contract này không?
+                  Tất cả milestones đã có task assignment và đã được accept. Bạn
+                  có chắc chắn muốn Start Work cho contract này không?
                 </p>
               )}
               <p style={{ marginTop: 8 }}>

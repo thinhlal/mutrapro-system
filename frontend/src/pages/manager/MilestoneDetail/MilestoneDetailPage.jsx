@@ -29,7 +29,10 @@ import {
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import styles from './MilestoneDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -216,41 +219,44 @@ const MilestoneDetailPage = () => {
     }
   }, []);
 
-  const fetchMilestoneTasks = useCallback(async (contractIdValue, milestoneIdValue) => {
-    if (!contractIdValue || !milestoneIdValue) {
-      setMilestoneTasks([]);
-      return;
-    }
-    try {
-      setMilestoneTasksLoading(true);
-      const response = await getTaskAssignmentsByMilestone(
-        contractIdValue,
-        milestoneIdValue
-      );
-      if (response?.status === 'success' && Array.isArray(response.data)) {
-        const sorted = [...response.data].sort((a, b) => {
-          const aTime = a.assignedDate || a.createdAt || null;
-          const bTime = b.assignedDate || b.createdAt || null;
-          if (!aTime && !bTime) return 0;
-          if (!aTime) return 1;
-          if (!bTime) return -1;
-          return dayjs(bTime).valueOf() - dayjs(aTime).valueOf();
-        });
-        setMilestoneTasks(sorted);
-      } else {
+  const fetchMilestoneTasks = useCallback(
+    async (contractIdValue, milestoneIdValue) => {
+      if (!contractIdValue || !milestoneIdValue) {
         setMilestoneTasks([]);
+        return;
       }
-    } catch (error) {
-      console.warn('Không thể tải danh sách task của milestone:', error);
-      setMilestoneTasks([]);
-    } finally {
-      setMilestoneTasksLoading(false);
-    }
-  }, []);
+      try {
+        setMilestoneTasksLoading(true);
+        const response = await getTaskAssignmentsByMilestone(
+          contractIdValue,
+          milestoneIdValue
+        );
+        if (response?.status === 'success' && Array.isArray(response.data)) {
+          const sorted = [...response.data].sort((a, b) => {
+            const aTime = a.assignedDate || a.createdAt || null;
+            const bTime = b.assignedDate || b.createdAt || null;
+            if (!aTime && !bTime) return 0;
+            if (!aTime) return 1;
+            if (!bTime) return -1;
+            return dayjs(bTime).valueOf() - dayjs(aTime).valueOf();
+          });
+          setMilestoneTasks(sorted);
+        } else {
+          setMilestoneTasks([]);
+        }
+      } catch (error) {
+        console.warn('Không thể tải danh sách task của milestone:', error);
+        setMilestoneTasks([]);
+      } finally {
+        setMilestoneTasksLoading(false);
+      }
+    },
+    []
+  );
 
   const loadData = useCallback(async () => {
     if (!contractId || !milestoneId) return;
-    
+
     try {
       setLoading(true);
       const [milestoneResponse, contractResponse] = await Promise.all([
@@ -272,12 +278,13 @@ const MilestoneDetailPage = () => {
       }
 
       // Load tất cả dữ liệu song song để tối ưu performance
-      const promises = [
-        fetchMilestoneTasks(contractId, milestoneId),
-      ];
+      const promises = [fetchMilestoneTasks(contractId, milestoneId)];
 
       // Chỉ load request info nếu có requestId
-      if (contractResponse?.status === 'success' && contractResponse?.data?.requestId) {
+      if (
+        contractResponse?.status === 'success' &&
+        contractResponse?.data?.requestId
+      ) {
         promises.push(fetchRequestInfo(contractResponse.data.requestId));
       }
 
@@ -289,14 +296,19 @@ const MilestoneDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [contractId, milestoneId, fetchMilestoneTasks, fetchRequestInfo, navigate]);
+  }, [
+    contractId,
+    milestoneId,
+    fetchMilestoneTasks,
+    fetchRequestInfo,
+    navigate,
+  ]);
 
   useEffect(() => {
     if (contractId && milestoneId) {
       loadData();
     }
   }, [contractId, milestoneId, loadData]);
-
 
   const milestoneOrder = useMemo(() => {
     if (!milestone) return null;
@@ -345,12 +357,12 @@ const MilestoneDetailPage = () => {
     if (workStatus === 'completed' || workStatus === 'cancelled') {
       return false;
     }
-    
+
     // Không hiện nếu có task đang active
     if (hasActiveTask) {
       return false;
     }
-    
+
     // Chỉ chặn nếu có task đã completed (không chặn nếu cancelled vì có thể assign task mới)
     if (milestoneTasks.length > 0) {
       const hasCompletedTask = milestoneTasks.some(task => {
@@ -361,7 +373,7 @@ const MilestoneDetailPage = () => {
         return false;
       }
     }
-    
+
     return true;
   }, [workStatus, hasActiveTask, milestoneTasks]);
 
@@ -447,9 +459,7 @@ const MilestoneDetailPage = () => {
                 size="small"
                 icon={<EyeOutlined />}
                 onClick={() =>
-                  navigate(
-                    `/manager/service-requests/${request.requestId}`
-                  )
+                  navigate(`/manager/service-requests/${request.requestId}`)
                 }
               >
                 View full request
@@ -495,48 +505,47 @@ const MilestoneDetailPage = () => {
                 (request.instrumentIds &&
                   request.instrumentIds.length > 0 &&
                   instrumentsData.length > 0)) && (
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Instruments:{' '}
-                    </Text>
-                    <Space wrap size={[4, 4]}>
-                      {request.instruments && request.instruments.length > 0
-                        ? request.instruments.map((inst, idx) => {
-                            const isMain = inst.isMain === true;
-                            const isArrangement =
-                              request.requestType === 'arrangement' ||
-                              request.requestType === 'arrangement_with_recording';
-                            return (
-                              <Tag
-                                key={inst.instrumentId || idx}
-                                color={
-                                  isMain && isArrangement ? 'gold' : 'purple'
-                                }
-                                icon={
-                                  isMain && isArrangement ? (
-                                    <StarFilled />
-                                  ) : null
-                                }
-                                style={{ margin: 0 }}
-                              >
-                                {inst.instrumentName || inst.name || inst}
-                                {isMain && isArrangement && ' (Main)'}
-                              </Tag>
-                            );
-                          })
-                        : request.instrumentIds.map(id => {
-                            const inst = instrumentsData.find(
-                              i => i.instrumentId === id
-                            );
-                            return (
-                              <Tag key={id} color="purple" style={{ margin: 0 }}>
-                                {inst ? inst.instrumentName : id}
-                              </Tag>
-                            );
-                          })}
-                    </Space>
-                  </div>
-                )}
+                <div>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    Instruments:{' '}
+                  </Text>
+                  <Space wrap size={[4, 4]}>
+                    {request.instruments && request.instruments.length > 0
+                      ? request.instruments.map((inst, idx) => {
+                          const isMain = inst.isMain === true;
+                          const isArrangement =
+                            request.requestType === 'arrangement' ||
+                            request.requestType ===
+                              'arrangement_with_recording';
+                          return (
+                            <Tag
+                              key={inst.instrumentId || idx}
+                              color={
+                                isMain && isArrangement ? 'gold' : 'purple'
+                              }
+                              icon={
+                                isMain && isArrangement ? <StarFilled /> : null
+                              }
+                              style={{ margin: 0 }}
+                            >
+                              {inst.instrumentName || inst.name || inst}
+                              {isMain && isArrangement && ' (Main)'}
+                            </Tag>
+                          );
+                        })
+                      : request.instrumentIds.map(id => {
+                          const inst = instrumentsData.find(
+                            i => i.instrumentId === id
+                          );
+                          return (
+                            <Tag key={id} color="purple" style={{ margin: 0 }}>
+                              {inst ? inst.instrumentName : id}
+                            </Tag>
+                          );
+                        })}
+                  </Space>
+                </div>
+              )}
               {/* Hiển thị genres và purpose cho arrangement requests */}
               {(request.requestType === 'arrangement' ||
                 request.requestType === 'arrangement_with_recording') && (
@@ -610,7 +619,8 @@ const MilestoneDetailPage = () => {
               <Descriptions.Item label="Milestone Type">
                 {milestone.milestoneType ? (
                   <Tag color="blue">
-                    {MILESTONE_TYPE_LABELS[milestone.milestoneType] || milestone.milestoneType}
+                    {MILESTONE_TYPE_LABELS[milestone.milestoneType] ||
+                      milestone.milestoneType}
                   </Tag>
                 ) : (
                   '—'

@@ -151,12 +151,12 @@ export default function TaskAssignmentWorkspace() {
   const [instrumentDetails, setInstrumentDetails] = useState([]);
   const [instrumentFiltersReady, setInstrumentFiltersReady] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState(null);
-  const lastFetchParamsRef = useRef({ 
-    specialization: null, 
-    instruments: [], 
+  const lastFetchParamsRef = useRef({
+    specialization: null,
+    instruments: [],
     milestoneId: null,
     contractId: null,
-    mainInstrumentName: null 
+    mainInstrumentName: null,
   });
 
   const fetchContractDetail = useCallback(async () => {
@@ -239,7 +239,11 @@ export default function TaskAssignmentWorkspace() {
   };
 
   const fetchSpecialists = useCallback(
-    async (specializationFilter, requiredInstrumentNames = [], mainInstrumentName = null) => {
+    async (
+      specializationFilter,
+      requiredInstrumentNames = [],
+      mainInstrumentName = null
+    ) => {
       try {
         const response = await getAllSpecialists({
           specialization: specializationFilter,
@@ -414,11 +418,11 @@ export default function TaskAssignmentWorkspace() {
       .map(item => item.name);
 
     // Tìm main instrument name (chỉ cho arrangement)
-    const mainInstrument = instrumentDetails.find(
-      inst => inst.isMain === true
-    );
+    const mainInstrument = instrumentDetails.find(inst => inst.isMain === true);
     const mainInstrumentName =
-      mainInstrument && (effectiveTaskType === 'arrangement' || effectiveTaskType === 'arrangement_with_recording')
+      mainInstrument &&
+      (effectiveTaskType === 'arrangement' ||
+        effectiveTaskType === 'arrangement_with_recording')
         ? mainInstrument.name
         : null;
 
@@ -665,12 +669,17 @@ export default function TaskAssignmentWorkspace() {
                           const isMain = inst.isMain === true;
                           const isArrangement =
                             requestData?.requestType === 'arrangement' ||
-                            requestData?.requestType === 'arrangement_with_recording';
+                            requestData?.requestType ===
+                              'arrangement_with_recording';
                           return (
                             <Tag
                               key={inst.id || inst.name}
-                              color={isMain && isArrangement ? 'gold' : 'default'}
-                              icon={isMain && isArrangement ? <StarFilled /> : null}
+                              color={
+                                isMain && isArrangement ? 'gold' : 'default'
+                              }
+                              icon={
+                                isMain && isArrangement ? <StarFilled /> : null
+                              }
                             >
                               {inst.name}
                               {isMain && isArrangement && ' (Main)'}
@@ -694,11 +703,14 @@ export default function TaskAssignmentWorkspace() {
                       <div>
                         <Text strong>Preferred Vocalists: </Text>
                         <Space wrap style={{ marginTop: 4 }}>
-                          {requestData.preferredSpecialists.map((specialist, idx) => (
-                            <Tag key={idx} color="pink">
-                              {specialist.name || `Vocalist ${specialist.specialistId}`}
-                            </Tag>
-                          ))}
+                          {requestData.preferredSpecialists.map(
+                            (specialist, idx) => (
+                              <Tag key={idx} color="pink">
+                                {specialist.name ||
+                                  `Vocalist ${specialist.specialistId}`}
+                              </Tag>
+                            )
+                          )}
                         </Space>
                       </div>
                     )}
@@ -827,7 +839,8 @@ export default function TaskAssignmentWorkspace() {
                             {/* Milestone Type */}
                             {item.milestoneType && (
                               <Tag color="blue">
-                                {TASK_TYPE_LABELS[item.milestoneType] || item.milestoneType}
+                                {TASK_TYPE_LABELS[item.milestoneType] ||
+                                  item.milestoneType}
                               </Tag>
                             )}
                             {/* Work Status */}
@@ -844,13 +857,19 @@ export default function TaskAssignmentWorkspace() {
                               {activeTaskCount} task đang hoạt động
                             </Tag>
                             {stats.assigned > 0 && (
-                              <Tag color="orange">Assigned: {stats.assigned}</Tag>
+                              <Tag color="orange">
+                                Assigned: {stats.assigned}
+                              </Tag>
                             )}
                             {stats.inProgress > 0 && (
-                              <Tag color="processing">In Progress: {stats.inProgress}</Tag>
+                              <Tag color="processing">
+                                In Progress: {stats.inProgress}
+                              </Tag>
                             )}
                             {stats.completed > 0 && (
-                              <Tag color="success">Completed: {stats.completed}</Tag>
+                              <Tag color="success">
+                                Completed: {stats.completed}
+                              </Tag>
                             )}
                           </div>
                         )}

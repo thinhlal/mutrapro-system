@@ -108,7 +108,13 @@ const ChatConversationPage = () => {
     }
 
     try {
-      await sendMessage(content, 'TEXT', null, selectedContextType, selectedContextId);
+      await sendMessage(
+        content,
+        'TEXT',
+        null,
+        selectedContextType,
+        selectedContextId
+      );
     } catch (error) {
       console.error('Failed to send message:', error);
       message.error('Không thể gửi tin nhắn');

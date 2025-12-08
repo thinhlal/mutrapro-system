@@ -16,7 +16,9 @@ export const getChatRooms = async (roomType = null) => {
   if (roomType) {
     params.roomType = roomType;
   }
-  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ALL_ROOMS, { params });
+  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.GET_ALL_ROOMS, {
+    params,
+  });
   return response.data;
 };
 
@@ -142,7 +144,7 @@ export const uploadFile = async (file, roomId) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('roomId', roomId);
-  
+
   const response = await axiosInstance.post(
     API_ENDPOINTS.CHAT.UPLOAD_FILE,
     formData,
@@ -162,13 +164,10 @@ export const uploadFile = async (file, roomId) => {
  * @returns {Promise<Blob>} File blob
  */
 export const downloadFile = async (fileKey, roomId) => {
-  const response = await axiosInstance.get(
-    API_ENDPOINTS.CHAT.DOWNLOAD_FILE,
-    {
-      params: { fileKey, roomId },
-      responseType: 'blob', // Important: responseType must be 'blob' for file download
-    }
-  );
+  const response = await axiosInstance.get(API_ENDPOINTS.CHAT.DOWNLOAD_FILE, {
+    params: { fileKey, roomId },
+    responseType: 'blob', // Important: responseType must be 'blob' for file download
+  });
   return response.data;
 };
 

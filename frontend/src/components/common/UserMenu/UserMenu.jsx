@@ -205,9 +205,9 @@ function UserMenu() {
           )}
 
           <ul className={styles.dropdownMenu}>
-
             {/* Transcription Dashboard */}
-            {(user?.role?.toUpperCase() === 'TRANSCRIPTION' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+            {(user?.role?.toUpperCase() === 'TRANSCRIPTION' ||
+              user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
               <li>
                 <Link
                   to="/transcription/my-tasks"
@@ -221,7 +221,8 @@ function UserMenu() {
             )}
 
             {/* Arrangement Dashboard */}
-            {(user?.role?.toUpperCase() === 'ARRANGEMENT' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+            {(user?.role?.toUpperCase() === 'ARRANGEMENT' ||
+              user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
               <li>
                 <Link
                   to="/arrangement/my-tasks"
@@ -235,7 +236,8 @@ function UserMenu() {
             )}
 
             {/* Recording Artist Dashboard */}
-            {(user?.role?.toUpperCase() === 'RECORDING_ARTIST' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+            {(user?.role?.toUpperCase() === 'RECORDING_ARTIST' ||
+              user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
               <li>
                 <Link
                   to="/recording-artist/profile"
@@ -249,7 +251,8 @@ function UserMenu() {
             )}
 
             {/* Manager Dashboard */}
-            {(user?.role?.toUpperCase() === 'MANAGER' || user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
+            {(user?.role?.toUpperCase() === 'MANAGER' ||
+              user?.role?.toUpperCase() === 'SYSTEM_ADMIN') && (
               <li>
                 <Link
                   to="/manager/dashboard"
@@ -312,8 +315,8 @@ function UserMenu() {
               </Link>
             </li>
 
-             {/* Profile */}
-             <li>
+            {/* Profile */}
+            <li>
               <Link
                 to="/profile"
                 className={styles.dropdownItem}

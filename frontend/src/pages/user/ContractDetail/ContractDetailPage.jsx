@@ -57,7 +57,10 @@ import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { API_CONFIG } from '../../../config/apiConfig';
 import CancelContractModal from '../../../components/modal/CancelContractModal/CancelContractModal';
 import RevisionRequestModal from '../../../components/modal/RevisionRequestModal/RevisionRequestModal';
@@ -1110,9 +1113,10 @@ const ContractDetailPage = () => {
                       >
                         <PdfText style={{ fontSize: 11 }}>
                           • {instr.instrumentName}
-                          {instr.isMain && 
-                            (contract?.contractType === 'arrangement' || 
-                             contract?.contractType === 'arrangement_with_recording') && 
+                          {instr.isMain &&
+                            (contract?.contractType === 'arrangement' ||
+                              contract?.contractType ===
+                                'arrangement_with_recording') &&
                             ' (Main)'}
                         </PdfText>
                       </View>
@@ -2178,22 +2182,38 @@ const ContractDetailPage = () => {
                             }}
                           >
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  marginBottom: 4,
+                                }}
+                              >
                                 <Text strong style={{ fontSize: 16 }}>
                                   {milestone.name ||
                                     `Milestone ${milestone.orderIndex || index + 1}`}
                                 </Text>
                                 {milestone.milestoneType && (
                                   <Tag color="blue" style={{ margin: 0 }}>
-                                    {milestone.milestoneType === 'transcription' ? 'Transcription' :
-                                     milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                                     milestone.milestoneType === 'recording' ? 'Recording' :
-                                     milestone.milestoneType}
+                                    {milestone.milestoneType === 'transcription'
+                                      ? 'Transcription'
+                                      : milestone.milestoneType ===
+                                          'arrangement'
+                                        ? 'Arrangement'
+                                        : milestone.milestoneType ===
+                                            'recording'
+                                          ? 'Recording'
+                                          : milestone.milestoneType}
                                   </Tag>
                                 )}
-                                {(milestone.milestoneSlaDays || milestone.slaDays) && (
+                                {(milestone.milestoneSlaDays ||
+                                  milestone.slaDays) && (
                                   <Tag color="blue" style={{ margin: 0 }}>
-                                    SLA: {milestone.milestoneSlaDays || milestone.slaDays} days
+                                    SLA:{' '}
+                                    {milestone.milestoneSlaDays ||
+                                      milestone.slaDays}{' '}
+                                    days
                                   </Tag>
                                 )}
                               </div>
@@ -2504,20 +2524,25 @@ const ContractDetailPage = () => {
                         {requestDetails.description}
                       </p>
                     )}
-                    
+
                     {/* Arrangement-specific fields */}
                     {(requestDetails.requestType === 'arrangement' ||
-                      requestDetails.requestType === 'arrangement_with_recording') && (
+                      requestDetails.requestType ===
+                        'arrangement_with_recording') && (
                       <>
-                        {requestDetails.genres && requestDetails.genres.length > 0 && (
-                          <p>
-                            <strong>Genres:</strong>{' '}
-                            {requestDetails.genres.map(genre => getGenreLabel(genre)).join(', ')}
-                          </p>
-                        )}
+                        {requestDetails.genres &&
+                          requestDetails.genres.length > 0 && (
+                            <p>
+                              <strong>Genres:</strong>{' '}
+                              {requestDetails.genres
+                                .map(genre => getGenreLabel(genre))
+                                .join(', ')}
+                            </p>
+                          )}
                         {requestDetails.purpose && (
                           <p>
-                            <strong>Purpose:</strong> {getPurposeLabel(requestDetails.purpose)}
+                            <strong>Purpose:</strong>{' '}
+                            {getPurposeLabel(requestDetails.purpose)}
                           </p>
                         )}
                         {requestDetails.preferredSpecialists &&
@@ -2525,7 +2550,9 @@ const ContractDetailPage = () => {
                             <p>
                               <strong>Preferred Vocalists:</strong>{' '}
                               {requestDetails.preferredSpecialists
-                                .map(s => s.name || `Vocalist ${s.specialistId}`)
+                                .map(
+                                  s => s.name || `Vocalist ${s.specialistId}`
+                                )
                                 .join(', ')}
                             </p>
                           )}
@@ -2539,9 +2566,10 @@ const ContractDetailPage = () => {
               {/* Pricing Breakdown */}
               {(pricingBreakdown.transcriptionDetails ||
                 pricingBreakdown.instruments.length > 0 ||
-                (requestDetails?.servicePrice && 
-                 (requestDetails.requestType === 'arrangement' || 
-                  requestDetails.requestType === 'arrangement_with_recording'))) && (
+                (requestDetails?.servicePrice &&
+                  (requestDetails.requestType === 'arrangement' ||
+                    requestDetails.requestType ===
+                      'arrangement_with_recording'))) && (
                 <div
                   style={{
                     marginBottom: '16px',
@@ -2628,33 +2656,37 @@ const ContractDetailPage = () => {
                       )}
 
                       {/* Service Price for Arrangement */}
-                      {requestDetails?.servicePrice && 
-                       (requestDetails.requestType === 'arrangement' || 
-                        requestDetails.requestType === 'arrangement_with_recording') && (
-                        <tr>
-                          <td
-                            style={{
-                              border: '1px solid #000',
-                              padding: '8px',
-                              fontWeight: 'bold',
-                              backgroundColor: '#fff',
-                            }}
-                          >
-                            Arrangement Service
-                          </td>
-                          <td
-                            style={{
-                              border: '1px solid #000',
-                              padding: '8px',
-                              textAlign: 'right',
-                              fontWeight: 'bold',
-                              backgroundColor: '#fff',
-                            }}
-                          >
-                            {Number(requestDetails.servicePrice)?.toLocaleString?.() ?? requestDetails.servicePrice}
-                          </td>
-                        </tr>
-                      )}
+                      {requestDetails?.servicePrice &&
+                        (requestDetails.requestType === 'arrangement' ||
+                          requestDetails.requestType ===
+                            'arrangement_with_recording') && (
+                          <tr>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              Arrangement Service
+                            </td>
+                            <td
+                              style={{
+                                border: '1px solid #000',
+                                padding: '8px',
+                                textAlign: 'right',
+                                fontWeight: 'bold',
+                                backgroundColor: '#fff',
+                              }}
+                            >
+                              {Number(
+                                requestDetails.servicePrice
+                              )?.toLocaleString?.() ??
+                                requestDetails.servicePrice}
+                            </td>
+                          </tr>
+                        )}
 
                       {/* Instruments */}
                       {pricingBreakdown.instruments.length > 0 && (
@@ -2683,9 +2715,10 @@ const ContractDetailPage = () => {
                                 }}
                               >
                                 • {instr.instrumentName}
-                                {instr.isMain && 
-                                  (contract?.contractType === 'arrangement' || 
-                                   contract?.contractType === 'arrangement_with_recording') && 
+                                {instr.isMain &&
+                                  (contract?.contractType === 'arrangement' ||
+                                    contract?.contractType ===
+                                      'arrangement_with_recording') &&
                                   ' (Main)'}
                               </td>
                               <td

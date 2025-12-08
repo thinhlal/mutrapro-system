@@ -7,7 +7,7 @@
 export const getRoleBasedRedirectPath = (role, fallback = '/') => {
   // Normalize role to uppercase for case-insensitive comparison
   const roleUpper = role?.toUpperCase();
-  
+
   switch (roleUpper) {
     case 'SYSTEM_ADMIN':
       return '/admin/dashboard';

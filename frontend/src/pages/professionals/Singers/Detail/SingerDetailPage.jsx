@@ -23,71 +23,79 @@ const ProfileTab = ({ specialist, skills, demos }) => (
       </div>
     )}
     {specialist?.genres && specialist.genres.length > 0 && (
-    <div className={styles.section}>
+      <div className={styles.section}>
         <Title level={4} className={styles.sectionTitle}>
           Genres
-      </Title>
+        </Title>
         <div className={styles.tagGroup}>
           {specialist.genres.map(genre => (
             <Tag key={genre}>{genre}</Tag>
           ))}
         </div>
-    </div>
+      </div>
     )}
     {specialist?.credits && specialist.credits.length > 0 && (
-    <div className={styles.section}>
-      <Title level={4} className={styles.sectionTitle}>
-        Credits
-      </Title>
-      <div className={styles.tagGroup}>
+      <div className={styles.section}>
+        <Title level={4} className={styles.sectionTitle}>
+          Credits
+        </Title>
+        <div className={styles.tagGroup}>
           {specialist.credits.map(cred => (
-          <Tag key={cred}>{cred}</Tag>
-        ))}
+            <Tag key={cred}>{cred}</Tag>
+          ))}
+        </div>
       </div>
-    </div>
     )}
-    {skills && skills.length > 0 && (() => {
-      const vocalSkills = skills.filter(s => s.skill?.recordingCategory === 'VOCAL');
-      const instrumentSkills = skills.filter(s => s.skill?.recordingCategory === 'INSTRUMENT');
-      
-      return (
-        <>
-          {vocalSkills.length > 0 && (
-            <div className={styles.section}>
-              <Title level={4} className={styles.sectionTitle}>
-                Vocal Skills
-              </Title>
-              <div className={styles.tagGroup}>
-                {vocalSkills.map(specialistSkill => (
-                  specialistSkill.skill && (
-                    <Tag key={specialistSkill.skill.skillId} color="orange">
-                      {specialistSkill.skill.skillName}
-                    </Tag>
-                  )
-                ))}
+    {skills &&
+      skills.length > 0 &&
+      (() => {
+        const vocalSkills = skills.filter(
+          s => s.skill?.recordingCategory === 'VOCAL'
+        );
+        const instrumentSkills = skills.filter(
+          s => s.skill?.recordingCategory === 'INSTRUMENT'
+        );
+
+        return (
+          <>
+            {vocalSkills.length > 0 && (
+              <div className={styles.section}>
+                <Title level={4} className={styles.sectionTitle}>
+                  Vocal Skills
+                </Title>
+                <div className={styles.tagGroup}>
+                  {vocalSkills.map(
+                    specialistSkill =>
+                      specialistSkill.skill && (
+                        <Tag key={specialistSkill.skill.skillId} color="orange">
+                          {specialistSkill.skill.skillName}
+                        </Tag>
+                      )
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-          {instrumentSkills.length > 0 && (
-    <div className={styles.section}>
-      <Title level={4} className={styles.sectionTitle}>
-                Instrument Skills
-      </Title>
-              <div className={styles.tagGroup}>
-                {instrumentSkills.map(specialistSkill => (
-                  specialistSkill.skill && (
-                    <Tag key={specialistSkill.skill.skillId} color="blue">
-                      {specialistSkill.skill.skillName}
-                    </Tag>
-                  )
-                ))}
+            )}
+            {instrumentSkills.length > 0 && (
+              <div className={styles.section}>
+                <Title level={4} className={styles.sectionTitle}>
+                  Instrument Skills
+                </Title>
+                <div className={styles.tagGroup}>
+                  {instrumentSkills.map(
+                    specialistSkill =>
+                      specialistSkill.skill && (
+                        <Tag key={specialistSkill.skill.skillId} color="blue">
+                          {specialistSkill.skill.skillName}
+                        </Tag>
+                      )
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      );
-    })()}
-    </div>
+            )}
+          </>
+        );
+      })()}
+  </div>
 );
 
 const ReviewsTab = ({ reviewsCount }) => (
@@ -107,26 +115,52 @@ const DemosTab = ({ demos }) => (
     {demos && demos.length > 0 ? (
       <div>
         {demos.map(demo => (
-          <div key={demo.demoId} className={styles.audioTrack} style={{ marginBottom: 20 }}>
+          <div
+            key={demo.demoId}
+            className={styles.audioTrack}
+            style={{ marginBottom: 20 }}
+          >
             <PlayCircleFilled className={styles.playIcon} />
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 4,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <Text strong style={{ fontSize: '1.1rem' }}>
                   {demo.title}
                 </Text>
                 {demo.skill && (
-                  <Tag color={demo.recordingRole === 'VOCALIST' ? 'orange' : 'blue'}>
+                  <Tag
+                    color={
+                      demo.recordingRole === 'VOCALIST' ? 'orange' : 'blue'
+                    }
+                  >
                     {demo.skill.skillName}
                   </Tag>
                 )}
               </div>
               {demo.description && (
-                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                <Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 8 }}
+                >
                   {demo.description}
                 </Text>
               )}
               {demo.genres && demo.genres.length > 0 && (
-                <div style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div
+                  style={{
+                    marginBottom: 12,
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
                   {demo.genres.map(genre => (
                     <Tag key={genre} color="orange">
                       {genre}
@@ -147,7 +181,7 @@ const DemosTab = ({ demos }) => (
             </div>
           </div>
         ))}
-        </div>
+      </div>
     ) : (
       <div style={{ textAlign: 'center', padding: '40px 0' }}>
         <Text type="secondary">Chưa có demo nào</Text>
@@ -169,17 +203,17 @@ export default function SingerDetailPage() {
     const fetchDetail = async () => {
       // Luôn fetch từ API để có đầy đủ thông tin (skills, demos)
       const specialistId = id || specialistData?.specialistId;
-      
+
       if (specialistId) {
         setLoading(true);
         try {
           const response = await getSpecialistDetail(specialistId);
-          
+
           // response từ axios là { data: ApiResponse }
           // ApiResponse có structure: { status, message, data: SpecialistDetailResponse }
           const apiResponse = response?.data || response;
           const detailData = apiResponse?.data || apiResponse;
-          
+
           if (detailData) {
             setDetailData(detailData);
           }
@@ -203,7 +237,9 @@ export default function SingerDetailPage() {
     {
       key: '1',
       label: 'Profile',
-      children: <ProfileTab specialist={specialist} skills={skills} demos={demos} />,
+      children: (
+        <ProfileTab specialist={specialist} skills={skills} demos={demos} />
+      ),
     },
     {
       key: '2',
@@ -254,13 +290,17 @@ export default function SingerDetailPage() {
               </Title>
 
               <Text className={styles.singerRoles}>
-                {Array.isArray(specialist.recordingRoles) && specialist.recordingRoles.length > 0
+                {Array.isArray(specialist.recordingRoles) &&
+                specialist.recordingRoles.length > 0
                   ? specialist.recordingRoles.join(' • ')
                   : 'Vocalist'}
               </Text>
 
               <div className={styles.ratingLocation}>
-                <Rate disabled value={specialist.rating ? parseFloat(specialist.rating) : 0} />
+                <Rate
+                  disabled
+                  value={specialist.rating ? parseFloat(specialist.rating) : 0}
+                />
                 <Text>{specialist.reviews || 0} Verified Reviews</Text>
               </div>
 
@@ -275,16 +315,16 @@ export default function SingerDetailPage() {
 
         <div className={styles.headerImageContainer}>
           {specialist.avatarUrl ? (
-          <img
+            <img
               src={specialist.avatarUrl}
               alt={specialist.fullName || 'Singer'}
-            className={styles.singerImage}
-              onError={(e) => {
+              className={styles.singerImage}
+              onError={e => {
                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(specialist.fullName || 'Singer')}&size=400&background=random`;
               }}
             />
           ) : (
-            <div 
+            <div
               className={styles.singerImage}
               style={{
                 width: '100%',
@@ -296,10 +336,12 @@ export default function SingerDetailPage() {
                 fontSize: '72px',
                 color: '#fff',
                 fontWeight: 'bold',
-                clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0% 100%)'
+                clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0% 100%)',
               }}
             >
-              {specialist.fullName ? specialist.fullName.charAt(0).toUpperCase() : 'S'}
+              {specialist.fullName
+                ? specialist.fullName.charAt(0).toUpperCase()
+                : 'S'}
             </div>
           )}
         </div>
@@ -310,9 +352,9 @@ export default function SingerDetailPage() {
           {/* Cột trái - Nội dung chính */}
           <Col lg={8} className={styles.mainColumn}>
             {specialist.bio && (
-            <Paragraph className={styles.introParagraph}>
+              <Paragraph className={styles.introParagraph}>
                 {specialist.bio}
-            </Paragraph>
+              </Paragraph>
             )}
             <Tabs
               activeKey={activeTab}
@@ -330,75 +372,84 @@ export default function SingerDetailPage() {
                   {demos.slice(0, 3).map(demo => (
                     <div key={demo.demoId} style={{ marginBottom: 16 }}>
                       <div style={{ marginBottom: 8 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                        <Text
+                          strong
+                          style={{ display: 'block', marginBottom: 4 }}
+                        >
                           {demo.title}
                         </Text>
                         {demo.genres && demo.genres.length > 0 && (
-                          <Text type="secondary" style={{ fontSize: '0.85rem' }}>
+                          <Text
+                            type="secondary"
+                            style={{ fontSize: '0.85rem' }}
+                          >
                             {demo.genres.join(', ')}
                           </Text>
                         )}
-              </div>
+                      </div>
                       {demo.previewUrl ? (
-                        <audio 
-                          controls 
+                        <audio
+                          controls
                           style={{ width: '100%', height: '32px' }}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
                         >
                           <source src={demo.previewUrl} type="audio/mpeg" />
                         </audio>
                       ) : (
-                        <Text type="secondary" style={{ fontSize: '0.85rem', fontStyle: 'italic' }}>
+                        <Text
+                          type="secondary"
+                          style={{ fontSize: '0.85rem', fontStyle: 'italic' }}
+                        >
                           No preview available
                         </Text>
                       )}
                       {demos.length > 3 && demo === demos[2] && (
-                        <Text 
-                          type="secondary" 
-                          style={{ 
-                            fontSize: '0.85rem', 
-                            cursor: 'pointer', 
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
                             color: '#ff8c42',
                             marginTop: 8,
-                            display: 'block'
+                            display: 'block',
                           }}
                           onClick={() => setActiveTab('3')}
                         >
                           Xem thêm {demos.length - 3} demo khác →
                         </Text>
                       )}
-                  </div>
-                ))}
+                    </div>
+                  ))}
                   {demos.length <= 3 && (
-                    <Text 
-                      type="secondary" 
-                      style={{ 
-                        fontSize: '0.85rem', 
-                        cursor: 'pointer', 
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
                         color: '#ff8c42',
                         marginTop: 8,
-                        display: 'block'
+                        display: 'block',
                       }}
                       onClick={() => setActiveTab('3')}
                     >
                       Xem tất cả demos →
                     </Text>
                   )}
-              </div>
+                </div>
               )}
 
               {specialist.genres && specialist.genres.length > 0 && (
-              <div className={styles.sidebarSection}>
+                <div className={styles.sidebarSection}>
                   <Title level={5}>Genres</Title>
                   <Text>{specialist.genres.join(', ')}</Text>
-              </div>
+                </div>
               )}
-              
+
               {specialist.credits && specialist.credits.length > 0 && (
-              <div className={styles.sidebarSection}>
+                <div className={styles.sidebarSection}>
                   <Title level={5}>Credits</Title>
                   <Text>{specialist.credits.join(', ')}</Text>
-              </div>
+                </div>
               )}
             </aside>
           </Col>

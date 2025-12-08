@@ -2,7 +2,10 @@ import { Modal, Button, Descriptions, Tag, Space } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import FileList from '../../common/FileList/FileList';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import { formatPrice } from '../../../services/pricingMatrixService';
 
@@ -114,7 +117,9 @@ export default function ServiceRequestDetailModal({
         )}
         {request.requestType === 'transcription' && request.durationMinutes && (
           <Descriptions.Item label="Duration">
-            <Tag color="green">{formatDurationMMSS(request.durationMinutes)}</Tag>
+            <Tag color="green">
+              {formatDurationMMSS(request.durationMinutes)}
+            </Tag>
           </Descriptions.Item>
         )}
         {request.requestType === 'transcription' && request.tempoPercentage && (

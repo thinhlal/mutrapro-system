@@ -16,7 +16,8 @@ const InstrumentSelectionModal = ({
   multipleSelection = false, // true for arrangement, false for transcription
   title = 'Select Instruments',
 }) => {
-  const [localMainInstrumentId, setLocalMainInstrumentId] = useState(mainInstrumentId);
+  const [localMainInstrumentId, setLocalMainInstrumentId] =
+    useState(mainInstrumentId);
 
   // Sync local state với prop khi prop thay đổi
   useEffect(() => {
@@ -30,13 +31,13 @@ const InstrumentSelectionModal = ({
       const newSelection = isSelected
         ? selectedInstruments.filter(id => id !== instrument.instrumentId)
         : [...selectedInstruments, instrument.instrumentId];
-      
+
       // Nếu bỏ chọn main instrument, reset main instrument
       if (isSelected && localMainInstrumentId === instrument.instrumentId) {
         setLocalMainInstrumentId(null);
         onMainInstrumentChange?.(null);
       }
-      
+
       onSelect(newSelection);
     } else {
       // Single selection (transcription)
@@ -134,15 +135,17 @@ const InstrumentSelectionModal = ({
                       title={
                         <div className={styles.cardTitle}>
                           {instrument.instrumentName}
-                          {multipleSelection && localMainInstrumentId === instrument.instrumentId && (
-                            <Tag
-                              color="gold"
-                              icon={<StarFilled />}
-                              style={{ marginLeft: 8 }}
-                            >
-                              Main
-                            </Tag>
-                          )}
+                          {multipleSelection &&
+                            localMainInstrumentId ===
+                              instrument.instrumentId && (
+                              <Tag
+                                color="gold"
+                                icon={<StarFilled />}
+                                style={{ marginLeft: 8 }}
+                              >
+                                Main
+                              </Tag>
+                            )}
                         </div>
                       }
                       description={
@@ -152,18 +155,22 @@ const InstrumentSelectionModal = ({
                               ? 'All Services'
                               : instrument.usage}
                           </Tag>
-                          {multipleSelection && isInstrumentSelected(instrument.instrumentId) && (
-                            <div style={{ marginTop: 8 }}>
-                              <Radio
-                                checked={localMainInstrumentId === instrument.instrumentId}
-                                onChange={handleMainInstrumentChange}
-                                value={instrument.instrumentId}
-                                onClick={e => e.stopPropagation()}
-                              >
-                                Set as Main Instrument
-                              </Radio>
-                            </div>
-                          )}
+                          {multipleSelection &&
+                            isInstrumentSelected(instrument.instrumentId) && (
+                              <div style={{ marginTop: 8 }}>
+                                <Radio
+                                  checked={
+                                    localMainInstrumentId ===
+                                    instrument.instrumentId
+                                  }
+                                  onChange={handleMainInstrumentChange}
+                                  value={instrument.instrumentId}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  Set as Main Instrument
+                                </Radio>
+                              </div>
+                            )}
                         </div>
                       }
                     />
@@ -199,7 +206,8 @@ const InstrumentSelectionModal = ({
           You can select multiple instruments. Click to toggle selection.
           {selectedInstruments.length > 0 && (
             <div style={{ marginTop: 8, color: '#1890ff' }}>
-              Select one instrument as "Main Instrument" by clicking the radio button.
+              Select one instrument as "Main Instrument" by clicking the radio
+              button.
             </div>
           )}
         </div>

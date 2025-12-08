@@ -30,7 +30,12 @@ import {
 import { calculatePricing } from '../../../../services/serviceRequestService';
 import { createServiceRequest } from '../../../../services/serviceRequestService';
 import { useInstrumentStore } from '../../../../stores/useInstrumentStore';
-import { MUSIC_GENRES, MUSIC_PURPOSES, getGenreLabel, getPurposeLabel } from '../../../../constants/musicOptionsConstants';
+import {
+  MUSIC_GENRES,
+  MUSIC_PURPOSES,
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../../constants/musicOptionsConstants';
 import styles from './ArrangementQuotePage.module.css';
 
 const { Title, Text } = Typography;
@@ -51,7 +56,11 @@ export default function ArrangementQuotePage() {
   const formData = navState.formData || {};
   const uploadedFile = navState.uploadedFile;
   const fileName = navState.fileName || 'Untitled';
-  const serviceType = navState.serviceType || (navState.variant === 'with_recording' ? 'arrangement_with_recording' : 'arrangement');
+  const serviceType =
+    navState.serviceType ||
+    (navState.variant === 'with_recording'
+      ? 'arrangement_with_recording'
+      : 'arrangement');
 
   const [priceData, setPriceData] = useState(null);
   const [servicePricing, setServicePricing] = useState(null);
@@ -66,7 +75,10 @@ export default function ArrangementQuotePage() {
       <div className={styles.wrap}>
         <Header />
         <Empty description="Missing data. Please go back and complete the form." />
-        <Button type="primary" onClick={() => navigate('/services/request-service')}>
+        <Button
+          type="primary"
+          onClick={() => navigate('/services/request-service')}
+        >
           Go Back
         </Button>
         <Footer />
@@ -107,62 +119,68 @@ export default function ArrangementQuotePage() {
   }, [serviceType]);
 
   // Tính tổng giá instruments và combine với priceData
-  const finalPriceData = priceData ? (() => {
-    // Tính tổng giá của instruments
-    const instrumentTotal = (formData.instrumentIds || []).reduce((sum, id) => {
-      const inst = instrumentsData.find(i => i.instrumentId === id);
-      return sum + (inst?.basePrice || 0);
-    }, 0);
+  const finalPriceData = priceData
+    ? (() => {
+        // Tính tổng giá của instruments
+        const instrumentTotal = (formData.instrumentIds || []).reduce(
+          (sum, id) => {
+            const inst = instrumentsData.find(i => i.instrumentId === id);
+            return sum + (inst?.basePrice || 0);
+          },
+          0
+        );
 
-    // Cộng vào totalPrice từ API
-    const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
+        // Cộng vào totalPrice từ API
+        const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
 
-    // Tạo breakdown mới với instruments
-    const breakdown = [...(priceData.breakdown || [])];
-    if (instrumentTotal > 0) {
-      breakdown.push({
-        label: 'Instruments',
-        amount: instrumentTotal,
-        description: `${(formData.instrumentIds || []).length} instrument(s)`,
-      });
-    }
+        // Tạo breakdown mới với instruments
+        const breakdown = [...(priceData.breakdown || [])];
+        if (instrumentTotal > 0) {
+          breakdown.push({
+            label: 'Instruments',
+            amount: instrumentTotal,
+            description: `${(formData.instrumentIds || []).length} instrument(s)`,
+          });
+        }
 
-    return {
-      ...priceData,
-      totalPrice: finalTotal,
-      breakdown: breakdown,
-    };
-  })() : null;
+        return {
+          ...priceData,
+          totalPrice: finalTotal,
+          breakdown: breakdown,
+        };
+      })()
+    : null;
 
   const handleSubmit = async () => {
     console.log('=== handleSubmit function called ===');
     console.log('uploadedFile:', uploadedFile);
     console.log('formData:', formData);
-    
+
     // 1. Validate trước
     if (!uploadedFile) {
       toast.error('File notation là bắt buộc cho arrangement.');
       return;
     }
-    
+
     console.log('Validation passed, preparing data...'); // Debug
 
     // 2. Chuẩn bị payload gửi lên backend
     // Chuẩn bị preferredSpecialists với format {specialistId, name, role}
-    const preferredSpecialists = formData.preferredSpecialistNames 
+    const preferredSpecialists = formData.preferredSpecialistNames
       ? formData.preferredSpecialistNames.map(item => ({
           specialistId: typeof item === 'object' ? item.id : item,
           name: typeof item === 'object' ? item.name : `Vocalist ${item}`,
-          role: 'VOCALIST' // Mặc định là VOCALIST cho arrangement_with_recording
+          role: 'VOCALIST', // Mặc định là VOCALIST cho arrangement_with_recording
         }))
-      : (formData.preferredSpecialistIds && formData.preferredSpecialistIds.length > 0
-          ? formData.preferredSpecialistIds.map(id => ({
-              specialistId: typeof id === 'object' ? id.id : id,
-              name: typeof id === 'object' ? id.name : `Vocalist ${id}`,
-              role: 'VOCALIST'
-            }))
-          : null);
-    
+      : formData.preferredSpecialistIds &&
+          formData.preferredSpecialistIds.length > 0
+        ? formData.preferredSpecialistIds.map(id => ({
+            specialistId: typeof id === 'object' ? id.id : id,
+            name: typeof id === 'object' ? id.name : `Vocalist ${id}`,
+            role: 'VOCALIST',
+          }))
+        : null;
+
     const requestData = {
       requestType: serviceType,
       title: formData.title,
@@ -172,7 +190,8 @@ export default function ArrangementQuotePage() {
       contactEmail: formData.contactEmail,
       instrumentIds: formData.instrumentIds || [],
       mainInstrumentId: formData.mainInstrumentId || null, // Main instrument ID (cho arrangement)
-      hasVocalist: preferredSpecialists != null && preferredSpecialists.length > 0, // Tự động set dựa trên preferredSpecialists
+      hasVocalist:
+        preferredSpecialists != null && preferredSpecialists.length > 0, // Tự động set dựa trên preferredSpecialists
       preferredSpecialists: preferredSpecialists, // Gửi cả specialistId, name, role
       externalGuestCount: formData.externalGuestCount || 0,
       genres: formData.genres || null,
@@ -186,7 +205,11 @@ export default function ArrangementQuotePage() {
       // Debug: Log request data
       console.log('Submitting request data:', {
         ...requestData,
-        files: requestData.files?.map(f => ({ name: f.name, size: f.size, type: f.type }))
+        files: requestData.files?.map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+        })),
       });
 
       // 3. Gọi API – nếu lỗi, createServiceRequest sẽ throw
@@ -223,7 +246,9 @@ export default function ArrangementQuotePage() {
             <Card title="Service Details" style={{ marginBottom: 24 }}>
               <Descriptions column={1} bordered>
                 <Descriptions.Item label="Service Type">
-                  <Tag color="orange">{SERVICE_TYPE_LABELS[serviceType] || serviceType}</Tag>
+                  <Tag color="orange">
+                    {SERVICE_TYPE_LABELS[serviceType] || serviceType}
+                  </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Title">
                   {formData.title}
@@ -245,7 +270,9 @@ export default function ArrangementQuotePage() {
                 )}
                 {formData.purpose && (
                   <Descriptions.Item label="Purpose">
-                    <Tag color="purple">{getPurposeLabel(formData.purpose) || formData.purpose}</Tag>
+                    <Tag color="purple">
+                      {getPurposeLabel(formData.purpose) || formData.purpose}
+                    </Tag>
                   </Descriptions.Item>
                 )}
                 {formData.instrumentIds &&
@@ -258,8 +285,8 @@ export default function ArrangementQuotePage() {
                           );
                           const isMain = id === formData.mainInstrumentId;
                           return inst ? (
-                            <Tag 
-                              key={id} 
+                            <Tag
+                              key={id}
                               color={isMain ? 'gold' : 'orange'}
                               icon={isMain ? <StarFilled /> : null}
                             >
@@ -271,17 +298,21 @@ export default function ArrangementQuotePage() {
                       </Space>
                     </Descriptions.Item>
                   )}
-                {formData.preferredSpecialists && formData.preferredSpecialists.length > 0 && (
-                  <Descriptions.Item label="Preferred Vocalists">
-                    <Space wrap>
-                      {formData.preferredSpecialists.map((specialist, idx) => (
-                        <Tag key={idx} color="pink">
-                          {specialist.name || `Vocalist ${specialist.specialistId}`}
-                        </Tag>
-                      ))}
-                    </Space>
-                  </Descriptions.Item>
-                )}
+                {formData.preferredSpecialists &&
+                  formData.preferredSpecialists.length > 0 && (
+                    <Descriptions.Item label="Preferred Vocalists">
+                      <Space wrap>
+                        {formData.preferredSpecialists.map(
+                          (specialist, idx) => (
+                            <Tag key={idx} color="pink">
+                              {specialist.name ||
+                                `Vocalist ${specialist.specialistId}`}
+                            </Tag>
+                          )
+                        )}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
               </Descriptions>
             </Card>
 
@@ -462,7 +493,10 @@ export default function ArrangementQuotePage() {
                           color: '#52c41a',
                         }}
                       >
-                        {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
+                        {formatPrice(
+                          finalPriceData.totalPrice,
+                          finalPriceData.currency
+                        )}
                       </div>
                     }
                     type="success"
@@ -476,19 +510,29 @@ export default function ArrangementQuotePage() {
                     <Text type="secondary">Breakdown:</Text>
                     <div style={{ marginTop: 8 }}>
                       <Descriptions column={1} size="small">
-                        {finalPriceData.breakdown && finalPriceData.breakdown.map((item, idx) => (
-                          <Descriptions.Item key={idx} label={item.label}>
-                            {formatPrice(item.amount, finalPriceData.currency)}
-                            {item.description && (
-                              <Text type="secondary" style={{ marginLeft: 8 }}>
-                                ({item.description})
-                              </Text>
-                            )}
-                          </Descriptions.Item>
-                        ))}
+                        {finalPriceData.breakdown &&
+                          finalPriceData.breakdown.map((item, idx) => (
+                            <Descriptions.Item key={idx} label={item.label}>
+                              {formatPrice(
+                                item.amount,
+                                finalPriceData.currency
+                              )}
+                              {item.description && (
+                                <Text
+                                  type="secondary"
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  ({item.description})
+                                </Text>
+                              )}
+                            </Descriptions.Item>
+                          ))}
                         <Descriptions.Item label="Total">
                           <Text strong>
-                            {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
+                            {formatPrice(
+                              finalPriceData.totalPrice,
+                              finalPriceData.currency
+                            )}
                           </Text>
                         </Descriptions.Item>
                       </Descriptions>
@@ -520,7 +564,7 @@ export default function ArrangementQuotePage() {
             type="primary"
             size="large"
             icon={<CheckCircleOutlined />}
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               e.stopPropagation();
               console.log('=== Button onClick triggered ===');
@@ -533,7 +577,10 @@ export default function ArrangementQuotePage() {
                 if (typeof handleSubmit === 'function') {
                   handleSubmit();
                 } else {
-                  console.error('handleSubmit is not a function!', handleSubmit);
+                  console.error(
+                    'handleSubmit is not a function!',
+                    handleSubmit
+                  );
                   toast.error('Lỗi: handleSubmit không phải là function');
                 }
               } catch (error) {
@@ -544,7 +591,13 @@ export default function ArrangementQuotePage() {
             loading={submitting}
             disabled={loading || !finalPriceData}
             style={{ backgroundColor: '#f97316', borderColor: '#f97316' }}
-            title={loading ? 'Loading pricing...' : !finalPriceData ? 'Waiting for price calculation...' : 'Submit request'}
+            title={
+              loading
+                ? 'Loading pricing...'
+                : !finalPriceData
+                  ? 'Waiting for price calculation...'
+                  : 'Submit request'
+            }
           >
             Confirm & Submit Request
           </Button>

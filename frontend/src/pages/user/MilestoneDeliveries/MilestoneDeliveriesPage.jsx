@@ -323,49 +323,49 @@ const MilestoneDeliveriesPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Milestone Status">
                 <Space>
-                <Tag
-                  color={
-                    milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                      ? 'warning'
+                  <Tag
+                    color={
+                      milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                        ? 'warning'
                         : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
                           ? 'gold'
-                      : milestoneInfo.workStatus === 'COMPLETED'
-                        ? 'success'
-                        : milestoneInfo.workStatus === 'IN_PROGRESS'
-                          ? 'processing'
-                          : 'default'
-                  }
-                >
-                  {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
-                    ? 'Chờ khách hàng phản hồi'
+                          : milestoneInfo.workStatus === 'COMPLETED'
+                            ? 'success'
+                            : milestoneInfo.workStatus === 'IN_PROGRESS'
+                              ? 'processing'
+                              : 'default'
+                    }
+                  >
+                    {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
+                      ? 'Chờ khách hàng phản hồi'
                       : milestoneInfo.workStatus === 'READY_FOR_PAYMENT'
                         ? 'Sẵn sàng thanh toán'
-                    : milestoneInfo.workStatus === 'COMPLETED'
-                      ? 'Hoàn thành'
-                      : milestoneInfo.workStatus === 'IN_PROGRESS'
-                        ? 'Đang thực hiện'
-                        : milestoneInfo.workStatus || 'N/A'}
-                </Tag>
+                        : milestoneInfo.workStatus === 'COMPLETED'
+                          ? 'Hoàn thành'
+                          : milestoneInfo.workStatus === 'IN_PROGRESS'
+                            ? 'Đang thực hiện'
+                            : milestoneInfo.workStatus || 'N/A'}
+                  </Tag>
                   {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
                   {(milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||
                     milestoneInfo.workStatus === 'COMPLETED') &&
                     milestoneInfo.installmentStatus !== 'PAID' && (
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<DollarOutlined />}
-                      onClick={() =>
-                        navigate(`/contracts/${contractId}/pay-milestone`, {
-                          state: {
-                            milestoneId: milestoneInfo.milestoneId,
-                            contractId: contractId,
-                          },
-                        })
-                      }
-                    >
-                      Thanh toán
-                    </Button>
-                  )}
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<DollarOutlined />}
+                        onClick={() =>
+                          navigate(`/contracts/${contractId}/pay-milestone`, {
+                            state: {
+                              milestoneId: milestoneInfo.milestoneId,
+                              contractId: contractId,
+                            },
+                          })
+                        }
+                      >
+                        Thanh toán
+                      </Button>
+                    )}
                   {/* Hiển thị tag "Đã thanh toán" nếu installment đã PAID */}
                   {milestoneInfo.installmentStatus === 'PAID' && (
                     <Tag color="success">Đã thanh toán</Tag>
@@ -393,32 +393,31 @@ const MilestoneDeliveriesPage = () => {
                   )}
                 </Text>
               </Descriptions.Item>
-              {contractInfo.freeRevisionsIncluded != null &&
-                revisionStats && (
-                    <>
-                      <Descriptions.Item label="Free Revisions Included">
-                      <Text strong>{revisionStats.freeRevisionsIncluded}</Text>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Revisions Used">
-                        <Text strong>
-                        {revisionStats.totalRevisionsUsed} /{' '}
-                        {revisionStats.freeRevisionsIncluded} (Free)
-                        </Text>
-                        <Text
-                          type="secondary"
-                          style={{
-                            fontSize: 11,
-                            display: 'block',
-                            marginTop: 4,
-                          }}
-                        >
-                        Đã dùng {revisionStats.freeRevisionsUsed} lần revision
-                        free, {revisionStats.paidRevisionsUsed} lần revision có
-                        phí
-                        </Text>
-                      </Descriptions.Item>
-                    </>
-                )}
+              {contractInfo.freeRevisionsIncluded != null && revisionStats && (
+                <>
+                  <Descriptions.Item label="Free Revisions Included">
+                    <Text strong>{revisionStats.freeRevisionsIncluded}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Revisions Used">
+                    <Text strong>
+                      {revisionStats.totalRevisionsUsed} /{' '}
+                      {revisionStats.freeRevisionsIncluded} (Free)
+                    </Text>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: 11,
+                        display: 'block',
+                        marginTop: 4,
+                      }}
+                    >
+                      Đã dùng {revisionStats.freeRevisionsUsed} lần revision
+                      free, {revisionStats.paidRevisionsUsed} lần revision có
+                      phí
+                    </Text>
+                  </Descriptions.Item>
+                </>
+              )}
             </Descriptions>
           </Card>
         )}
@@ -485,12 +484,19 @@ const MilestoneDeliveriesPage = () => {
                             const isMain = instrument.isMain === true;
                             const isArrangement =
                               requestInfo.requestType === 'arrangement' ||
-                              requestInfo.requestType === 'arrangement_with_recording';
+                              requestInfo.requestType ===
+                                'arrangement_with_recording';
                             return (
                               <Tag
                                 key={index}
-                                color={isMain && isArrangement ? 'gold' : 'blue'}
-                                icon={isMain && isArrangement ? <StarFilled /> : null}
+                                color={
+                                  isMain && isArrangement ? 'gold' : 'blue'
+                                }
+                                icon={
+                                  isMain && isArrangement ? (
+                                    <StarFilled />
+                                  ) : null
+                                }
                               >
                                 {instrument.instrumentName ||
                                   instrument.name ||

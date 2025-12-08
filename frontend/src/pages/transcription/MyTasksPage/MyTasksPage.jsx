@@ -142,7 +142,6 @@ function getActualDeadline(milestone) {
   return null;
 }
 
-
 // -------- Component --------
 /**
  * MyTasksPage: List and manage Specialist Transcription tasks
@@ -151,7 +150,8 @@ const MyTasksPage = ({ onOpenTask }) => {
   const navigate = useNavigate();
   const location = useLocation();
   // Detect base path from current location (e.g., /transcription, /arrangement, /recording-artist)
-  const basePath = location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
+  const basePath =
+    location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -405,8 +405,11 @@ const MyTasksPage = ({ onOpenTask }) => {
             record.status?.toLowerCase() === 'cancelled';
           // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc đã pending review manager (ready_for_review) thì không hiện cảnh báo deadline nữa
           const hasFirstSubmission = record?.milestone?.firstSubmissionAt;
-          const isPendingReview = status === 'ready_for_review' || status === 'waiting_customer_review';
-          const shouldHideDeadlineWarning = hasFirstSubmission || isPendingReview;
+          const isPendingReview =
+            status === 'ready_for_review' ||
+            status === 'waiting_customer_review';
+          const shouldHideDeadlineWarning =
+            hasFirstSubmission || isPendingReview;
           const isOverdue =
             !shouldHideDeadlineWarning &&
             !isCompleted &&

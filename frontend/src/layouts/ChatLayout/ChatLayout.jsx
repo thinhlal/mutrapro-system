@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Input, Spin, Empty, Badge, Tag, Select } from 'antd';
-import {
-  SearchOutlined,
-  LockOutlined,
-} from '@ant-design/icons';
+import { SearchOutlined, LockOutlined } from '@ant-design/icons';
 import { useChatRooms } from '../../hooks/useChat';
 import ChatConversationPage from '../../pages/chat/ChatConversation/ChatConversationPage';
 import Header from '../../components/common/Header/Header';

@@ -31,7 +31,7 @@ const SignaturePadModal = ({
             // Force canvas to be interactive
             canvas.style.pointerEvents = 'auto';
             canvas.style.touchAction = 'none';
-            
+
             // Ensure canvas context is ready
             const ctx = canvas.getContext('2d');
             if (ctx) {

@@ -111,32 +111,37 @@ export default function TranscriptionQuotePageSimplified() {
   }, [serviceType, formData.durationMinutes]);
 
   // Tính tổng giá instruments và combine với priceData
-  const finalPriceData = priceData ? (() => {
-    // Tính tổng giá của instruments
-    const instrumentTotal = (formData.instrumentIds || []).reduce((sum, id) => {
-      const inst = instrumentsData.find(i => i.instrumentId === id);
-      return sum + (inst?.basePrice || 0);
-    }, 0);
+  const finalPriceData = priceData
+    ? (() => {
+        // Tính tổng giá của instruments
+        const instrumentTotal = (formData.instrumentIds || []).reduce(
+          (sum, id) => {
+            const inst = instrumentsData.find(i => i.instrumentId === id);
+            return sum + (inst?.basePrice || 0);
+          },
+          0
+        );
 
-    // Cộng vào totalPrice từ API
-    const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
+        // Cộng vào totalPrice từ API
+        const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
 
-    // Tạo breakdown mới với instruments
-    const breakdown = [...(priceData.breakdown || [])];
-    if (instrumentTotal > 0) {
-      breakdown.push({
-        label: 'Instruments',
-        amount: instrumentTotal,
-        description: `${(formData.instrumentIds || []).length} instrument(s)`,
-      });
-    }
+        // Tạo breakdown mới với instruments
+        const breakdown = [...(priceData.breakdown || [])];
+        if (instrumentTotal > 0) {
+          breakdown.push({
+            label: 'Instruments',
+            amount: instrumentTotal,
+            description: `${(formData.instrumentIds || []).length} instrument(s)`,
+          });
+        }
 
-    return {
-      ...priceData,
-      totalPrice: finalTotal,
-      breakdown: breakdown,
-    };
-  })() : null;
+        return {
+          ...priceData,
+          totalPrice: finalTotal,
+          breakdown: breakdown,
+        };
+      })()
+    : null;
 
   const handleSubmit = async () => {
     // 1. Validate trước
@@ -423,7 +428,10 @@ export default function TranscriptionQuotePageSimplified() {
                           color: '#52c41a',
                         }}
                       >
-                        {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
+                        {formatPrice(
+                          finalPriceData.totalPrice,
+                          finalPriceData.currency
+                        )}
                       </div>
                     }
                     type="success"
@@ -438,7 +446,10 @@ export default function TranscriptionQuotePageSimplified() {
                     <div style={{ marginTop: 8 }}>
                       <Descriptions column={1} size="small">
                         <Descriptions.Item label="Base Rate">
-                          {formatPrice(finalPriceData.basePrice, finalPriceData.currency)}{' '}
+                          {formatPrice(
+                            finalPriceData.basePrice,
+                            finalPriceData.currency
+                          )}{' '}
                           / minute
                         </Descriptions.Item>
                         <Descriptions.Item label="Duration">
@@ -453,19 +464,28 @@ export default function TranscriptionQuotePageSimplified() {
                         {(formData.instrumentIds || []).length > 0 && (
                           <Descriptions.Item label="Instruments">
                             {formatPrice(
-                              (formData.instrumentIds || []).reduce((sum, id) => {
-                                const inst = instrumentsData.find(i => i.instrumentId === id);
-                                return sum + (inst?.basePrice || 0);
-                              }, 0),
+                              (formData.instrumentIds || []).reduce(
+                                (sum, id) => {
+                                  const inst = instrumentsData.find(
+                                    i => i.instrumentId === id
+                                  );
+                                  return sum + (inst?.basePrice || 0);
+                                },
+                                0
+                              ),
                               finalPriceData.currency
                             )}
                             <Text type="secondary" style={{ marginLeft: 8 }}>
-                              ({(formData.instrumentIds || []).length} instrument(s))
+                              ({(formData.instrumentIds || []).length}{' '}
+                              instrument(s))
                             </Text>
                           </Descriptions.Item>
                         )}
                         <Descriptions.Item label="Total">
-                          <Text strong style={{ fontSize: 16, color: '#52c41a' }}>
+                          <Text
+                            strong
+                            style={{ fontSize: 16, color: '#52c41a' }}
+                          >
                             {formatPrice(
                               finalPriceData.totalPrice,
                               finalPriceData.currency

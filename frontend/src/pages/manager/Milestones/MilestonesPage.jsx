@@ -211,7 +211,6 @@ const MilestonesPage = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-
   const handleOnlyUnassignedChange = e => {
     setFilters(prev => ({ ...prev, onlyUnassigned: e.target.checked }));
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -246,11 +245,11 @@ const MilestonesPage = () => {
           : 'default';
 
         return (
-        <Space direction="vertical" size={0}>
-          <Text strong>{record.contractNumber}</Text>
-          <Text type="secondary">{record.customerName || '-'}</Text>
+          <Space direction="vertical" size={0}>
+            <Text strong>{record.contractNumber}</Text>
+            <Text type="secondary">{record.customerName || '-'}</Text>
             <Tag color={typeColor}>{typeLabel}</Tag>
-        </Space>
+          </Space>
         );
       },
     },
@@ -269,7 +268,8 @@ const MilestonesPage = () => {
             </Text>
             {record.milestoneType && (
               <Tag color="blue" size="small">
-                {MILESTONE_TYPE_LABELS[record.milestoneType] || record.milestoneType}
+                {MILESTONE_TYPE_LABELS[record.milestoneType] ||
+                  record.milestoneType}
               </Tag>
             )}
           </Space>
@@ -345,13 +345,15 @@ const MilestonesPage = () => {
       render: (_, record) => {
         const assignmentStatus = record.assignmentStatus?.toLowerCase();
         const milestoneWorkStatus = record.milestoneWorkStatus?.toLowerCase();
-        
+
         // Không hiện nút Assign Task nếu:
         // 1. Task đã completed (không chặn nếu cancelled vì có thể assign task mới)
         // 2. Milestone đã completed hoặc cancelled
         // 3. Có task đang active (assigned, in_progress, etc.)
         const isTaskCompleted = assignmentStatus === 'completed';
-        const isMilestoneCompleted = milestoneWorkStatus === 'completed' || milestoneWorkStatus === 'cancelled';
+        const isMilestoneCompleted =
+          milestoneWorkStatus === 'completed' ||
+          milestoneWorkStatus === 'cancelled';
         const hasActiveTask =
           assignmentStatus === 'assigned' ||
           assignmentStatus === 'accepted_waiting' ||
@@ -363,7 +365,8 @@ const MilestonesPage = () => {
           assignmentStatus === 'delivery_pending' ||
           assignmentStatus === 'waiting_customer_review';
 
-        const canShowAssignButton = !isTaskCompleted && !isMilestoneCompleted && !hasActiveTask;
+        const canShowAssignButton =
+          !isTaskCompleted && !isMilestoneCompleted && !hasActiveTask;
 
         return (
           <Space size="small">

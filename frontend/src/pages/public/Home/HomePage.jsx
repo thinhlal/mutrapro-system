@@ -15,7 +15,7 @@ import BackToTop from '../../../components/common/BackToTop/BackToTop';
 
 const HomePage = () => {
   useDocumentTitle('Home');
-  
+
   return (
     <div className={styles.pageContainer}>
       {/* Header */}

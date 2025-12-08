@@ -246,16 +246,20 @@ export default function ContractsManagement() {
 
       setCheckingActiveContract(true);
       try {
-        const response = await getContractsByRequestId(revisionContract.requestId);
+        const response = await getContractsByRequestId(
+          revisionContract.requestId
+        );
         if (response?.status === 'success' && Array.isArray(response.data)) {
           // Check xem có contract nào active (không phải need_revision) không
           const hasActive = response.data.some(contract => {
             const status = (contract.status || '').toLowerCase();
-            return status !== 'need_revision' &&
-                   status !== 'canceled_by_customer' &&
-                   status !== 'canceled_by_manager' &&
-                   status !== 'rejected_by_customer' &&
-                   status !== 'expired';
+            return (
+              status !== 'need_revision' &&
+              status !== 'canceled_by_customer' &&
+              status !== 'canceled_by_manager' &&
+              status !== 'rejected_by_customer' &&
+              status !== 'expired'
+            );
           });
           setHasActiveContract(hasActive);
         } else {
@@ -597,23 +601,35 @@ export default function ContractsManagement() {
                     if (r.requestId) {
                       setCheckingActiveContract(true);
                       try {
-                        const response = await getContractsByRequestId(r.requestId);
-                        if (response?.status === 'success' && Array.isArray(response.data)) {
+                        const response = await getContractsByRequestId(
+                          r.requestId
+                        );
+                        if (
+                          response?.status === 'success' &&
+                          Array.isArray(response.data)
+                        ) {
                           // Check xem có contract nào active (không phải need_revision) không
                           const hasActive = response.data.some(contract => {
-                            const status = (contract.status || '').toLowerCase();
-                            return status !== 'need_revision' &&
-                                   status !== 'canceled_by_customer' &&
-                                   status !== 'canceled_by_manager' &&
-                                   status !== 'rejected_by_customer' &&
-                                   status !== 'expired';
+                            const status = (
+                              contract.status || ''
+                            ).toLowerCase();
+                            return (
+                              status !== 'need_revision' &&
+                              status !== 'canceled_by_customer' &&
+                              status !== 'canceled_by_manager' &&
+                              status !== 'rejected_by_customer' &&
+                              status !== 'expired'
+                            );
                           });
                           setHasActiveContract(hasActive);
                         } else {
                           setHasActiveContract(false);
                         }
                       } catch (error) {
-                        console.error('Error checking active contracts:', error);
+                        console.error(
+                          'Error checking active contracts:',
+                          error
+                        );
                         setHasActiveContract(false);
                       } finally {
                         setCheckingActiveContract(false);
@@ -812,7 +828,9 @@ export default function ContractsManagement() {
           setSelectedContract(null);
         }}
         onConfirm={handleCancelContract}
-        loading={selectedContract ? actionLoading[selectedContract.contractId] : false}
+        loading={
+          selectedContract ? actionLoading[selectedContract.contractId] : false
+        }
         isManager={true}
         isDraft={selectedContract?.status?.toLowerCase() === 'draft'}
       />
@@ -843,38 +861,38 @@ export default function ContractsManagement() {
             Đóng
           </Button>,
           !hasActiveContract && !checkingActiveContract && (
-          <Button
-            key="create"
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => {
-              navigate(
-                `/manager/contract-builder?requestId=${revisionContract.requestId}`,
-                {
-                  state: {
-                    copyFromContract: {
-                      contractId: revisionContract.contractId,
-                      contractType: revisionContract.contractType,
-                      totalPrice: revisionContract.totalPrice,
-                      depositPercent: revisionContract.depositPercent,
-                      slaDays: revisionContract.slaDays,
-                      freeRevisionsIncluded:
-                        revisionContract.freeRevisionsIncluded,
-                      revisionDeadlineDays:
-                        revisionContract.revisionDeadlineDays,
-                      additionalRevisionFeeVnd:
-                        revisionContract.additionalRevisionFeeVnd,
-                      termsAndConditions: revisionContract.termsAndConditions,
-                      specialClauses: revisionContract.specialClauses,
-                      notes: revisionContract.notes,
-                      cancellationReason: revisionContract.cancellationReason,
+            <Button
+              key="create"
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigate(
+                  `/manager/contract-builder?requestId=${revisionContract.requestId}`,
+                  {
+                    state: {
+                      copyFromContract: {
+                        contractId: revisionContract.contractId,
+                        contractType: revisionContract.contractType,
+                        totalPrice: revisionContract.totalPrice,
+                        depositPercent: revisionContract.depositPercent,
+                        slaDays: revisionContract.slaDays,
+                        freeRevisionsIncluded:
+                          revisionContract.freeRevisionsIncluded,
+                        revisionDeadlineDays:
+                          revisionContract.revisionDeadlineDays,
+                        additionalRevisionFeeVnd:
+                          revisionContract.additionalRevisionFeeVnd,
+                        termsAndConditions: revisionContract.termsAndConditions,
+                        specialClauses: revisionContract.specialClauses,
+                        notes: revisionContract.notes,
+                        cancellationReason: revisionContract.cancellationReason,
+                      },
                     },
-                  },
-                }
-              );
-            }}
-          >
-            Create New Contract
+                  }
+                );
+              }}
+            >
+              Create New Contract
             </Button>
           ),
         ].filter(Boolean)}
@@ -1112,7 +1130,9 @@ export default function ContractsManagement() {
         }
         okButtonProps={{
           disabled: startWorkContext.hasBlockingMissing,
-          loading: startWorkContext.contract ? actionLoading[startWorkContext.contract.contractId] : false,
+          loading: startWorkContext.contract
+            ? actionLoading[startWorkContext.contract.contractId]
+            : false,
         }}
         cancelText="Đóng"
         onOk={async () => {
@@ -1167,8 +1187,8 @@ export default function ContractsManagement() {
             ) : (
               <>
                 <p>
-                  Tình trạng task theo từng milestone (accepted = accepted_waiting /
-                  ready_to_start / in_progress / completed):
+                  Tình trạng task theo từng milestone (accepted =
+                  accepted_waiting / ready_to_start / in_progress / completed):
                 </p>
                 <ul style={{ paddingLeft: 20 }}>
                   {startWorkContext.milestoneSummaries.map(m => (
@@ -1184,13 +1204,15 @@ export default function ContractsManagement() {
                 </ul>
                 {startWorkContext.hasBlockingMissing ? (
                   <p style={{ marginTop: 8 }}>
-                    Có milestone chưa có task assignment active hoặc task chưa được accept, nên chưa thể Start Work.
-                    Vui lòng vào Milestones / Task Progress để gán và đảm bảo task đã được accept trước.
+                    Có milestone chưa có task assignment active hoặc task chưa
+                    được accept, nên chưa thể Start Work. Vui lòng vào
+                    Milestones / Task Progress để gán và đảm bảo task đã được
+                    accept trước.
                   </p>
                 ) : (
                   <p style={{ marginTop: 8 }}>
-                    Tất cả milestones đã có task assignment và đã được accept. Bạn có chắc
-                    chắn muốn Start Work cho contract này không?
+                    Tất cả milestones đã có task assignment và đã được accept.
+                    Bạn có chắc chắn muốn Start Work cho contract này không?
                   </p>
                 )}
                 <p style={{ marginTop: 8 }}>

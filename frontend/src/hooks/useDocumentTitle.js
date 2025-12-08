@@ -4,10 +4,10 @@ import { useEffect } from 'react';
  * Hook để set document title động
  * @param {string} title - Title của trang
  */
-export const useDocumentTitle = (title) => {
+export const useDocumentTitle = title => {
   useEffect(() => {
     const previousTitle = document.title;
-    
+
     // Set title mới
     if (title) {
       document.title = `${title} - MutraPro`;
@@ -23,4 +23,3 @@ export const useDocumentTitle = (title) => {
 };
 
 export default useDocumentTitle;
-

@@ -50,7 +50,10 @@ import {
   formatDurationMMSS,
   formatTempoPercentage,
 } from '../../../utils/timeUtils';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import styles from './ContractBuilder.module.css';
 
 const { Title } = Typography;
@@ -65,11 +68,23 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
   // Tự động set milestoneType dựa trên contractType khi component mount hoặc contractType thay đổi
   useEffect(() => {
     const contractType = form.getFieldValue('contract_type');
-    const currentMilestoneType = form.getFieldValue(['milestones', field.name, 'milestoneType']);
-    
+    const currentMilestoneType = form.getFieldValue([
+      'milestones',
+      field.name,
+      'milestoneType',
+    ]);
+
     // Tự động set milestoneType cho các contract type khác (không phải arrangement_with_recording và bundle)
-    if (contractType && contractType !== 'arrangement_with_recording' && contractType !== 'bundle' && !currentMilestoneType) {
-      form.setFieldValue(['milestones', field.name, 'milestoneType'], contractType);
+    if (
+      contractType &&
+      contractType !== 'arrangement_with_recording' &&
+      contractType !== 'bundle' &&
+      !currentMilestoneType
+    ) {
+      form.setFieldValue(
+        ['milestones', field.name, 'milestoneType'],
+        contractType
+      );
     }
   }, [form, field.name]);
 
@@ -129,14 +144,16 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
         </Form.Item>
 
         {/* Milestone Type - chỉ hiển thị cho arrangement_with_recording */}
-        <Form.Item shouldUpdate={(prev, curr) => {
-          const prevContractType = prev?.contract_type;
-          const currContractType = curr?.contract_type;
-          return prevContractType !== currContractType;
-        }}>
+        <Form.Item
+          shouldUpdate={(prev, curr) => {
+            const prevContractType = prev?.contract_type;
+            const currContractType = curr?.contract_type;
+            return prevContractType !== currContractType;
+          }}
+        >
           {() => {
             const contractType = form.getFieldValue('contract_type');
-            
+
             if (contractType === 'arrangement_with_recording') {
               // Cho arrangement_with_recording: hiển thị và cho phép chọn (required)
               return (
@@ -147,12 +164,15 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
                   rules={[
                     {
                       required: true,
-                      message: 'Milestone type is required for Arrangement with Recording milestones',
+                      message:
+                        'Milestone type is required for Arrangement with Recording milestones',
                     },
                   ]}
                 >
                   <Select placeholder="Select milestone type">
-                    <Select.Option value="arrangement">Arrangement</Select.Option>
+                    <Select.Option value="arrangement">
+                      Arrangement
+                    </Select.Option>
                     <Select.Option value="recording">Recording</Select.Option>
                   </Select>
                 </Form.Item>
@@ -160,13 +180,20 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
             } else if (contractType && contractType !== 'bundle') {
               // Cho các contract type khác: tự động set nhưng ẩn field
               const defaultType = contractType; // transcription, arrangement, recording
-              const currentValue = form.getFieldValue(['milestones', field.name, 'milestoneType']);
-              
+              const currentValue = form.getFieldValue([
+                'milestones',
+                field.name,
+                'milestoneType',
+              ]);
+
               // Tự động set nếu chưa có giá trị
               if (!currentValue) {
-                form.setFieldValue(['milestones', field.name, 'milestoneType'], defaultType);
+                form.setFieldValue(
+                  ['milestones', field.name, 'milestoneType'],
+                  defaultType
+                );
               }
-              
+
               // Render Form.Item ẩn để đảm bảo giá trị được lưu vào form
               return (
                 <Form.Item
@@ -398,7 +425,9 @@ const ContractBuilder = () => {
     const currentFormValues = formValues || form.getFieldsValue();
     const termsParams = {
       freeRevisionsIncluded: currentFormValues.free_revisions_included ?? 1,
-      revisionDeadlineDays: currentFormValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
+      revisionDeadlineDays:
+        currentFormValues.revision_deadline_days ??
+        getDefaultRevisionDeadlineDays(contractType),
       additionalRevisionFeeVnd:
         currentFormValues.additional_revision_fee_vnd ?? 500000,
       depositPercent: currentFormValues.deposit_percent ?? 40,
@@ -521,7 +550,7 @@ const ContractBuilder = () => {
 
         // Auto-fill form with service request data
         // Contract number sẽ được generate ở backend, nhưng set để hiển thị
-        
+
         // Tạo milestones mặc định
         let defaultMilestones = [];
         if (contractType === 'arrangement_with_recording') {
@@ -549,7 +578,7 @@ const ContractBuilder = () => {
         }
         // Note: Các contract type khác (transcription, arrangement, recording) sẽ không có default milestones
         // Manager sẽ tự thêm milestones và milestoneType sẽ được tự động set dựa trên contractType
-        
+
         form.setFieldsValue({
           request_id: request.requestId || request.id,
           customer_id: request.userId,
@@ -636,7 +665,9 @@ const ContractBuilder = () => {
           const updatedValues = form.getFieldsValue();
           const termsParams = {
             freeRevisionsIncluded: updatedValues.free_revisions_included ?? 1,
-            revisionDeadlineDays: updatedValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
+            revisionDeadlineDays:
+              updatedValues.revision_deadline_days ??
+              getDefaultRevisionDeadlineDays(contractType),
             additionalRevisionFeeVnd:
               updatedValues.additional_revision_fee_vnd ?? 500000,
             depositPercent: updatedValues.deposit_percent ?? 40,
@@ -796,7 +827,8 @@ const ContractBuilder = () => {
                 ? Number(currentFormValues.additional_revision_fee_vnd)
                 : null,
             revision_deadline_days: Number(
-              currentFormValues.revision_deadline_days || getDefaultRevisionDeadlineDays(currentFormValues.contract_type)
+              currentFormValues.revision_deadline_days ||
+                getDefaultRevisionDeadlineDays(currentFormValues.contract_type)
             ),
 
             // Milestones - use from form values or contract
@@ -910,7 +942,9 @@ const ContractBuilder = () => {
     ) {
       const termsParams = {
         freeRevisionsIncluded: formValues.free_revisions_included ?? 1,
-        revisionDeadlineDays: formValues.revision_deadline_days ?? getDefaultRevisionDeadlineDays(contractType),
+        revisionDeadlineDays:
+          formValues.revision_deadline_days ??
+          getDefaultRevisionDeadlineDays(contractType),
         additionalRevisionFeeVnd:
           formValues.additional_revision_fee_vnd ?? 500000,
         depositPercent: formValues.deposit_percent ?? 40,
@@ -1085,7 +1119,7 @@ const ContractBuilder = () => {
       // Validate milestones based on contract type
       const milestones = values.milestones || [];
       const contractType = values.contract_type;
-      
+
       if (!isEditMode) {
         // For arrangement_with_recording, require at least 2 milestones
         if (contractType === 'arrangement_with_recording') {
@@ -1093,7 +1127,9 @@ const ContractBuilder = () => {
             form.setFields([
               {
                 name: ['milestones'],
-                errors: ['Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording'],
+                errors: [
+                  'Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording',
+                ],
               },
             ]);
             return;
@@ -1135,29 +1171,35 @@ const ContractBuilder = () => {
             return;
           }
         }
-        
+
         // Validate milestone order for arrangement_with_recording
         if (contractType === 'arrangement_with_recording') {
           // Kiểm tra tất cả milestones đều có milestoneType
-          const milestonesWithoutType = milestones.filter((m, idx) => !m.milestoneType);
+          const milestonesWithoutType = milestones.filter(
+            (m, idx) => !m.milestoneType
+          );
           if (milestonesWithoutType.length > 0) {
-            const firstMissingIndex = milestones.findIndex(m => !m.milestoneType);
+            const firstMissingIndex = milestones.findIndex(
+              m => !m.milestoneType
+            );
             form.setFields([
               {
                 name: ['milestones', firstMissingIndex, 'milestoneType'],
-                errors: ['Milestone type is required for Arrangement with Recording milestones'],
+                errors: [
+                  'Milestone type is required for Arrangement with Recording milestones',
+                ],
               },
             ]);
             return;
           }
-          
+
           const arrangementMilestones = milestones
             .map((m, idx) => ({ ...m, index: idx }))
             .filter(m => m.milestoneType === 'arrangement');
           const recordingMilestones = milestones
             .map((m, idx) => ({ ...m, index: idx }))
             .filter(m => m.milestoneType === 'recording');
-          
+
           // Phải có ít nhất 1 Arrangement và 1 Recording
           if (arrangementMilestones.length === 0) {
             form.setFields([
@@ -1177,7 +1219,7 @@ const ContractBuilder = () => {
             ]);
             return;
           }
-          
+
           // Tất cả Recording milestones phải có orderIndex lớn hơn tất cả Arrangement milestones
           const maxArrangementOrder = Math.max(
             ...arrangementMilestones.map(m => m.orderIndex || m.index + 1)
@@ -1185,18 +1227,20 @@ const ContractBuilder = () => {
           const minRecordingOrder = Math.min(
             ...recordingMilestones.map(m => m.orderIndex || m.index + 1)
           );
-          
+
           if (minRecordingOrder <= maxArrangementOrder) {
             form.setFields([
               {
                 name: ['milestones'],
-                errors: ['Recording milestone(s) must come after Arrangement milestone(s). Please adjust the order.'],
+                errors: [
+                  'Recording milestone(s) must come after Arrangement milestone(s). Please adjust the order.',
+                ],
               },
             ]);
             return;
           }
         }
-        
+
         // Validate payment for each milestone
         for (let i = 0; i < milestones.length; i++) {
           const m = milestones[i];
@@ -1803,7 +1847,8 @@ const ContractBuilder = () => {
                       >
                         <Form.List name="milestones" initialValue={[]}>
                           {(fields, { add, remove }) => {
-                            const contractType = form.getFieldValue('contract_type');
+                            const contractType =
+                              form.getFieldValue('contract_type');
                             return (
                               <>
                                 {fields.map((field, index) => (
@@ -1820,9 +1865,10 @@ const ContractBuilder = () => {
                                   <Button
                                     type="dashed"
                                     onClick={() => {
-                                      const milestones = form.getFieldValue('milestones') || [];
+                                      const milestones =
+                                        form.getFieldValue('milestones') || [];
                                       const newOrderIndex = fields.length + 1;
-                                      
+
                                       const newMilestone = {
                                         name: '',
                                         description: '',
@@ -1831,14 +1877,20 @@ const ContractBuilder = () => {
                                         paymentPercent: null,
                                         milestoneSlaDays: null,
                                       };
-                                      
+
                                       // Tự động set milestoneType dựa trên contractType
-                                      if (contractType && contractType !== 'arrangement_with_recording' && contractType !== 'bundle') {
-                                        newMilestone.milestoneType = contractType; // transcription, arrangement, recording
+                                      if (
+                                        contractType &&
+                                        contractType !==
+                                          'arrangement_with_recording' &&
+                                        contractType !== 'bundle'
+                                      ) {
+                                        newMilestone.milestoneType =
+                                          contractType; // transcription, arrangement, recording
                                       }
                                       // Với arrangement_with_recording, user sẽ tự chọn milestoneType
                                       // và orderIndex sẽ được tự động điều chỉnh khi chọn milestoneType
-                                      
+
                                       add(newMilestone);
                                     }}
                                     block
@@ -1890,7 +1942,8 @@ const ContractBuilder = () => {
 
                           // Build validation messages
                           const messages = [];
-                          const contractType = form.getFieldValue('contract_type');
+                          const contractType =
+                            form.getFieldValue('contract_type');
 
                           // Check milestone requirements based on contract type
                           if (!isEditMode) {
@@ -1906,16 +1959,25 @@ const ContractBuilder = () => {
                                     }}
                                   >
                                     <CloseCircleOutlined
-                                      style={{ marginRight: 4, color: '#ff4d4f' }}
+                                      style={{
+                                        marginRight: 4,
+                                        color: '#ff4d4f',
+                                      }}
                                     />
-                                    Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording
+                                    Arrangement with Recording requires at least
+                                    2 milestones: one for Arrangement and one
+                                    for Recording
                                   </div>
                                 );
                               } else {
                                 // Check if has both arrangement and recording milestones
-                                const hasArrangement = milestones.some(m => m.milestoneType === 'arrangement');
-                                const hasRecording = milestones.some(m => m.milestoneType === 'recording');
-                                
+                                const hasArrangement = milestones.some(
+                                  m => m.milestoneType === 'arrangement'
+                                );
+                                const hasRecording = milestones.some(
+                                  m => m.milestoneType === 'recording'
+                                );
+
                                 if (!hasArrangement || !hasRecording) {
                                   messages.push(
                                     <div
@@ -1927,14 +1989,22 @@ const ContractBuilder = () => {
                                       }}
                                     >
                                       <CloseCircleOutlined
-                                        style={{ marginRight: 4, color: '#ff4d4f' }}
+                                        style={{
+                                          marginRight: 4,
+                                          color: '#ff4d4f',
+                                        }}
                                       />
-                                      Arrangement with Recording requires at least one Arrangement milestone and one Recording milestone
+                                      Arrangement with Recording requires at
+                                      least one Arrangement milestone and one
+                                      Recording milestone
                                     </div>
                                   );
                                 }
                               }
-                            } else if (contractType !== 'arrangement_with_recording' && milestones.length === 0) {
+                            } else if (
+                              contractType !== 'arrangement_with_recording' &&
+                              milestones.length === 0
+                            ) {
                               messages.push(
                                 <div
                                   key="milestone-required"
@@ -2143,29 +2213,37 @@ const ContractBuilder = () => {
                           {serviceRequest.description}
                         </p>
                       )}
-                      
+
                       {/* Arrangement-specific fields */}
                       {(serviceRequest.requestType === 'arrangement' ||
-                        serviceRequest.requestType === 'arrangement_with_recording') && (
+                        serviceRequest.requestType ===
+                          'arrangement_with_recording') && (
                         <>
-                          {serviceRequest.genres && serviceRequest.genres.length > 0 && (
-                            <p>
-                              <strong>Genres:</strong>{' '}
-                              {serviceRequest.genres.map(genre => getGenreLabel(genre)).join(', ')}
-                            </p>
-                          )}
+                          {serviceRequest.genres &&
+                            serviceRequest.genres.length > 0 && (
+                              <p>
+                                <strong>Genres:</strong>{' '}
+                                {serviceRequest.genres
+                                  .map(genre => getGenreLabel(genre))
+                                  .join(', ')}
+                              </p>
+                            )}
                           {serviceRequest.purpose && (
                             <p>
-                              <strong>Purpose:</strong> {getPurposeLabel(serviceRequest.purpose)}
+                              <strong>Purpose:</strong>{' '}
+                              {getPurposeLabel(serviceRequest.purpose)}
                             </p>
                           )}
-                          {serviceRequest.requestType === 'arrangement_with_recording' &&
+                          {serviceRequest.requestType ===
+                            'arrangement_with_recording' &&
                             serviceRequest.preferredSpecialists &&
                             serviceRequest.preferredSpecialists.length > 0 && (
                               <p>
                                 <strong>Preferred Vocalists:</strong>{' '}
                                 {serviceRequest.preferredSpecialists
-                                  .map(s => s.name || `Vocalist ${s.specialistId}`)
+                                  .map(
+                                    s => s.name || `Vocalist ${s.specialistId}`
+                                  )
                                   .join(', ')}
                               </p>
                             )}
@@ -2179,9 +2257,10 @@ const ContractBuilder = () => {
                 {/* Pricing Breakdown */}
                 {(pricingBreakdown.transcriptionDetails ||
                   pricingBreakdown.instruments.length > 0 ||
-                  (serviceRequest?.servicePrice && 
-                   (serviceRequest.requestType === 'arrangement' || 
-                    serviceRequest.requestType === 'arrangement_with_recording'))) && (
+                  (serviceRequest?.servicePrice &&
+                    (serviceRequest.requestType === 'arrangement' ||
+                      serviceRequest.requestType ===
+                        'arrangement_with_recording'))) && (
                   <div
                     style={{
                       marginBottom: '16px',
@@ -2271,35 +2350,40 @@ const ContractBuilder = () => {
                         )}
 
                         {/* Service Price for Arrangement */}
-                        {serviceRequest?.servicePrice && 
-                         (serviceRequest.requestType === 'arrangement' || 
-                          serviceRequest.requestType === 'arrangement_with_recording') && (
-                          <tr>
-                            <td
-                              style={{
-                                border: '1px solid #000',
-                                padding: '8px',
-                                fontWeight: 'bold',
-                                backgroundColor: '#fff',
-                              }}
-                            >
-                              {serviceRequest.requestType === 'arrangement_with_recording' 
-                                ? 'Arrangement with Recording' 
-                                : 'Arrangement Service'}
-                            </td>
-                            <td
-                              style={{
-                                border: '1px solid #000',
-                                padding: '8px',
-                                textAlign: 'right',
-                                fontWeight: 'bold',
-                                backgroundColor: '#fff',
-                              }}
-                            >
-                              {Number(serviceRequest.servicePrice)?.toLocaleString?.() ?? serviceRequest.servicePrice}
-                            </td>
-                          </tr>
-                        )}
+                        {serviceRequest?.servicePrice &&
+                          (serviceRequest.requestType === 'arrangement' ||
+                            serviceRequest.requestType ===
+                              'arrangement_with_recording') && (
+                            <tr>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {serviceRequest.requestType ===
+                                'arrangement_with_recording'
+                                  ? 'Arrangement with Recording'
+                                  : 'Arrangement Service'}
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#fff',
+                                }}
+                              >
+                                {Number(
+                                  serviceRequest.servicePrice
+                                )?.toLocaleString?.() ??
+                                  serviceRequest.servicePrice}
+                              </td>
+                            </tr>
+                          )}
 
                         {/* Instruments */}
                         {pricingBreakdown.instruments.length > 0 && (
@@ -2329,9 +2413,11 @@ const ContractBuilder = () => {
                                     }}
                                   >
                                     • {instr.instrumentName}
-                                    {instr.isMain && 
-                                      (serviceRequest?.requestType === 'arrangement' || 
-                                       serviceRequest?.requestType === 'arrangement_with_recording') && 
+                                    {instr.isMain &&
+                                      (serviceRequest?.requestType ===
+                                        'arrangement' ||
+                                        serviceRequest?.requestType ===
+                                          'arrangement_with_recording') &&
                                       ' (Main)'}
                                   </td>
                                   <td

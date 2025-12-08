@@ -85,21 +85,23 @@ function VocalistSelectionCard({
             {fullName.charAt(0).toUpperCase()}
           </Avatar>
           {specialist?.mainDemoPreviewUrl && (
-            <div style={{
-              position: 'absolute',
-              bottom: 8,
-              left: 8,
-              right: 8,
-              background: 'rgba(0, 0, 0, 0.7)',
-              borderRadius: 4,
-              padding: '4px 8px',
-              zIndex: 3
-            }}>
-              <audio 
-                controls 
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                left: 8,
+                right: 8,
+                background: 'rgba(0, 0, 0, 0.7)',
+                borderRadius: 4,
+                padding: '4px 8px',
+                zIndex: 3,
+              }}
+            >
+              <audio
+                controls
                 style={{ width: '100%', height: '24px' }}
-                onClick={(e) => e.stopPropagation()}
-                onPlay={(e) => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
+                onPlay={e => e.stopPropagation()}
               >
                 <source src={specialist.mainDemoPreviewUrl} type="audio/mpeg" />
               </audio>
@@ -121,11 +123,7 @@ function VocalistSelectionCard({
             </Text>
           )}
           <div className={styles.rating}>
-            <Rate
-              disabled
-              value={rating}
-              style={{ fontSize: 14 }}
-            />
+            <Rate disabled value={rating} style={{ fontSize: 14 }} />
             <Text type="secondary" className={styles.reviews}>
               ({reviews} reviews)
             </Text>
@@ -137,7 +135,10 @@ function VocalistSelectionCard({
           )}
           {genres.length > 0 && (
             <div style={{ marginBottom: 8 }}>
-              <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+              <Text
+                strong
+                style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+              >
                 GENRES
               </Text>
               <div>

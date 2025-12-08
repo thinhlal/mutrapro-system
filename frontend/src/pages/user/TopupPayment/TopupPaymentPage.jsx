@@ -22,7 +22,11 @@ import {
   ReloadOutlined,
   QrcodeOutlined,
 } from '@ant-design/icons';
-import { createPaymentOrder, getPaymentOrder, getPaymentOrderQR } from '../../../services/paymentService';
+import {
+  createPaymentOrder,
+  getPaymentOrder,
+  getPaymentOrderQR,
+} from '../../../services/paymentService';
 import { getOrCreateMyWallet } from '../../../services/walletService';
 import notificationWebSocketService from '../../../services/notificationWebSocketService';
 import { getItem } from '../../../services/localStorageService';
@@ -38,10 +42,10 @@ const TopupPaymentPage = () => {
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const amount = searchParams.get('amount');
   const description = searchParams.get('description') || 'Nạp tiền vào ví';
-  
+
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +112,7 @@ const TopupPaymentPage = () => {
   const createNewOrder = async () => {
     try {
       setCreating(true);
-      
+
       // Load wallet first
       const walletResponse = await getOrCreateMyWallet();
       if (walletResponse?.status === 'success' && walletResponse?.data) {
@@ -125,7 +129,7 @@ const TopupPaymentPage = () => {
       if (orderResponse?.status === 'success' && orderResponse?.data) {
         const newOrder = orderResponse.data;
         setPaymentOrder(newOrder);
-        
+
         // Sử dụng qrCodeUrl trực tiếp từ response
         if (newOrder.qrCodeUrl) {
           setQrCodeUrl(newOrder.qrCodeUrl);
@@ -133,12 +137,16 @@ const TopupPaymentPage = () => {
           // Fallback: Load QR code nếu không có trong response
           await loadQRCode(newOrder.paymentOrderId);
         }
-        
+
         // Start polling
         startPolling(newOrder.paymentOrderId);
-        
+
         // Update URL without reload
-        window.history.replaceState({}, '', `/payments/topup/${newOrder.paymentOrderId}`);
+        window.history.replaceState(
+          {},
+          '',
+          `/payments/topup/${newOrder.paymentOrderId}`
+        );
       }
     } catch (error) {
       message.error(error.message || 'Lỗi khi tạo đơn hàng thanh toán');
@@ -148,11 +156,11 @@ const TopupPaymentPage = () => {
     }
   };
   console.log(qrCodeUrl);
-  
+
   const loadPaymentOrder = async () => {
     try {
       setLoading(true);
-      
+
       // Load wallet
       const walletResponse = await getOrCreateMyWallet();
       if (walletResponse?.status === 'success' && walletResponse?.data) {
@@ -165,7 +173,7 @@ const TopupPaymentPage = () => {
         const order = orderResponse.data;
         setPaymentOrder(order);
         console.log(order);
-        
+
         // Sử dụng qrCodeUrl trực tiếp từ response
         if (order.qrCodeUrl) {
           setQrCodeUrl(order.qrCodeUrl);
@@ -173,7 +181,7 @@ const TopupPaymentPage = () => {
           // Fallback: Load QR code nếu không có trong response
           await loadQRCode(order.paymentOrderId);
         }
-        
+
         // If order is still pending, start polling
         if (order.status === 'PENDING') {
           startPolling(order.paymentOrderId);
@@ -190,7 +198,7 @@ const TopupPaymentPage = () => {
     }
   };
 
-  const loadQRCode = async (orderId) => {
+  const loadQRCode = async orderId => {
     try {
       const qrResponse = await getPaymentOrderQR(orderId);
       if (qrResponse?.status === 'success' && qrResponse?.data?.qr_code_url) {
@@ -201,7 +209,7 @@ const TopupPaymentPage = () => {
     }
   };
 
-  const startPolling = (orderId) => {
+  const startPolling = orderId => {
     // Clear existing interval
     if (pollingInterval) {
       clearInterval(pollingInterval);
@@ -214,11 +222,14 @@ const TopupPaymentPage = () => {
         if (orderResponse?.status === 'success' && orderResponse?.data) {
           const order = orderResponse.data;
           setPaymentOrder(order);
-          
+
           if (order.status === 'COMPLETED') {
             clearInterval(interval);
             navigateToSuccess(orderId);
-          } else if (order.status === 'EXPIRED' || order.status === 'CANCELLED') {
+          } else if (
+            order.status === 'EXPIRED' ||
+            order.status === 'CANCELLED'
+          ) {
             clearInterval(interval);
             message.warning('Đơn hàng đã hết hạn hoặc bị hủy');
           }
@@ -240,11 +251,14 @@ const TopupPaymentPage = () => {
 
     // Connect if not connected
     if (!notificationWebSocketService.isConnected()) {
-      notificationWebSocketService.connect(token).then(() => {
-        subscribeToPaymentNotifications();
-      }).catch(error => {
-        console.error('WebSocket connection failed:', error);
-      });
+      notificationWebSocketService
+        .connect(token)
+        .then(() => {
+          subscribeToPaymentNotifications();
+        })
+        .catch(error => {
+          console.error('WebSocket connection failed:', error);
+        });
     } else {
       subscribeToPaymentNotifications();
     }
@@ -252,37 +266,44 @@ const TopupPaymentPage = () => {
 
   const subscribeToPaymentNotifications = () => {
     // Subscribe to notifications
-    const subscription = notificationWebSocketService.subscribeToNotifications((notification) => {
-      // Check if this is a payment-related notification
-      if (notification?.referenceType === 'PAYMENT' || 
+    const subscription = notificationWebSocketService.subscribeToNotifications(
+      notification => {
+        // Check if this is a payment-related notification
+        if (
+          notification?.referenceType === 'PAYMENT' ||
           notification?.type === 'PAYMENT_ORDER_COMPLETED' ||
           notification?.title?.toLowerCase().includes('thanh toán') ||
-          notification?.title?.toLowerCase().includes('nạp tiền')) {
-        
-        // Check if it's for our payment order
-        const currentOrderId = paymentOrder?.paymentOrderId || orderId;
-        if (currentOrderId && (
-          notification?.referenceId === currentOrderId ||
-          notification?.content?.includes(currentOrderId)
-        )) {
-          // Payment completed - navigate to success page immediately
-          console.log('Payment completed notification received via WebSocket:', notification);
-          navigateToSuccess(currentOrderId);
+          notification?.title?.toLowerCase().includes('nạp tiền')
+        ) {
+          // Check if it's for our payment order
+          const currentOrderId = paymentOrder?.paymentOrderId || orderId;
+          if (
+            currentOrderId &&
+            (notification?.referenceId === currentOrderId ||
+              notification?.content?.includes(currentOrderId))
+          ) {
+            // Payment completed - navigate to success page immediately
+            console.log(
+              'Payment completed notification received via WebSocket:',
+              notification
+            );
+            navigateToSuccess(currentOrderId);
+          }
         }
       }
-    });
+    );
 
     wsSubscriptionRef.current = subscription;
   };
 
-  const navigateToSuccess = (orderId) => {
+  const navigateToSuccess = orderId => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
-    
+
     if (pollingInterval) {
       clearInterval(pollingInterval);
     }
-    
+
     navigate(`/payments/success/${orderId}`);
   };
 
@@ -354,7 +375,10 @@ const TopupPaymentPage = () => {
                 description={
                   <Space>
                     <ClockCircleOutlined />
-                    <span>Vui lòng quét mã QR và hoàn tất thanh toán trong app ngân hàng</span>
+                    <span>
+                      Vui lòng quét mã QR và hoàn tất thanh toán trong app ngân
+                      hàng
+                    </span>
                   </Space>
                 }
                 type="info"
@@ -397,8 +421,12 @@ const TopupPaymentPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 <Space>
-                  {isPending && <ClockCircleOutlined style={{ color: '#faad14' }} />}
-                  {isCompleted && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                  {isPending && (
+                    <ClockCircleOutlined style={{ color: '#faad14' }} />
+                  )}
+                  {isCompleted && (
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  )}
                   <Text strong={isPending}>
                     {paymentOrder.status === 'PENDING' && 'Đang chờ thanh toán'}
                     {paymentOrder.status === 'COMPLETED' && 'Đã thanh toán'}
@@ -434,12 +462,19 @@ const TopupPaymentPage = () => {
                       padding: 16,
                       background: '#fff',
                     }}
-                    onError={(e) => {
+                    onError={e => {
                       console.error('Failed to load QR code image:', qrCodeUrl);
                       e.target.style.display = 'none';
                     }}
                   />
-                  <Text type="secondary" style={{ marginTop: 16, display: 'block', textAlign: 'center' }}>
+                  <Text
+                    type="secondary"
+                    style={{
+                      marginTop: 16,
+                      display: 'block',
+                      textAlign: 'center',
+                    }}
+                  >
                     Mở app ngân hàng và quét mã QR này
                   </Text>
                 </div>
@@ -447,7 +482,10 @@ const TopupPaymentPage = () => {
             )}
 
             {/* Actions */}
-            <Space size="middle" style={{ width: '100%', justifyContent: 'center' }}>
+            <Space
+              size="middle"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
               {isPending && (
                 <Button
                   icon={<ReloadOutlined />}
@@ -486,7 +524,9 @@ const TopupPaymentPage = () => {
                   <li>Chọn tính năng quét QR code</li>
                   <li>Quét mã QR ở trên</li>
                   <li>Kiểm tra thông tin và xác nhận thanh toán</li>
-                  <li>Hệ thống sẽ tự động cập nhật sau khi nhận được thanh toán</li>
+                  <li>
+                    Hệ thống sẽ tự động cập nhật sau khi nhận được thanh toán
+                  </li>
                 </ol>
               </Card>
             )}
@@ -498,4 +538,3 @@ const TopupPaymentPage = () => {
 };
 
 export default TopupPaymentPage;
-

@@ -248,7 +248,8 @@ const SpecialistTaskDetailPage = () => {
   const location = useLocation();
   const { taskId } = useParams(); // taskId thực chất là assignmentId
   // Detect base path from current location (e.g., /transcription, /arrangement, /recording-artist)
-  const basePath = location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
+  const basePath =
+    location.pathname.split('/').slice(0, 2).join('/') || '/transcription';
 
   const [task, setTask] = useState(null);
   const [request, setRequest] = useState(null);
@@ -1180,10 +1181,13 @@ const SpecialistTaskDetailPage = () => {
                       <Text strong>{task.milestone.name}</Text>
                       {task.milestone.milestoneType && (
                         <Tag color="blue" size="small">
-                          {task.milestone.milestoneType === 'transcription' ? 'Transcription' :
-                           task.milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                           task.milestone.milestoneType === 'recording' ? 'Recording' :
-                           task.milestone.milestoneType}
+                          {task.milestone.milestoneType === 'transcription'
+                            ? 'Transcription'
+                            : task.milestone.milestoneType === 'arrangement'
+                              ? 'Arrangement'
+                              : task.milestone.milestoneType === 'recording'
+                                ? 'Recording'
+                                : task.milestone.milestoneType}
                         </Tag>
                       )}
                     </Space>
@@ -1387,12 +1391,19 @@ const SpecialistTaskDetailPage = () => {
                             const isMain = inst.isMain === true;
                             const isArrangement =
                               request.serviceType === 'arrangement' ||
-                              request.serviceType === 'arrangement_with_recording';
+                              request.serviceType ===
+                                'arrangement_with_recording';
                             return (
                               <Tag
                                 key={idx}
-                                color={isMain && isArrangement ? 'gold' : 'default'}
-                                icon={isMain && isArrangement ? <StarFilled /> : null}
+                                color={
+                                  isMain && isArrangement ? 'gold' : 'default'
+                                }
+                                icon={
+                                  isMain && isArrangement ? (
+                                    <StarFilled />
+                                  ) : null
+                                }
                               >
                                 {inst.instrumentName || inst.name || inst}
                                 {isMain && isArrangement && ' (Main)'}
@@ -1407,11 +1418,14 @@ const SpecialistTaskDetailPage = () => {
                       request.preferredSpecialists.length > 0 && (
                         <Descriptions.Item label="Preferred Vocalists" span={2}>
                           <Space wrap>
-                            {request.preferredSpecialists.map((specialist, idx) => (
-                              <Tag key={idx} color="pink">
-                                {specialist.name || `Vocalist ${specialist.specialistId}`}
-                              </Tag>
-                            ))}
+                            {request.preferredSpecialists.map(
+                              (specialist, idx) => (
+                                <Tag key={idx} color="pink">
+                                  {specialist.name ||
+                                    `Vocalist ${specialist.specialistId}`}
+                                </Tag>
+                              )
+                            )}
                           </Space>
                         </Descriptions.Item>
                       )}
@@ -1477,15 +1491,15 @@ const SpecialistTaskDetailPage = () => {
                 const awaitingAlert = status === 'accepted_waiting';
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
                 // VÀ không có submission nào đang active (pending_review, approved, delivered, customer_accepted)
-                const hasActiveSubmission = submissions.some(
-                  sub => {
-                    const subStatus = sub.status?.toLowerCase();
-                    return subStatus === 'pending_review' ||
-                           subStatus === 'approved' ||
-                           subStatus === 'delivered' ||
-                           subStatus === 'customer_accepted';
-                  }
-                );
+                const hasActiveSubmission = submissions.some(sub => {
+                  const subStatus = sub.status?.toLowerCase();
+                  return (
+                    subStatus === 'pending_review' ||
+                    subStatus === 'approved' ||
+                    subStatus === 'delivered' ||
+                    subStatus === 'customer_accepted'
+                  );
+                });
                 const hasSubmitButton =
                   !hasActiveSubmission &&
                   (status === 'in_progress' ||
@@ -1494,14 +1508,14 @@ const SpecialistTaskDetailPage = () => {
                   status !== 'ready_for_review' &&
                   status !== 'completed';
                 // Chỉ cho phép báo issue khi task đang in_progress (đang làm việc)
-                // Không cho phép khi đã submit (ready_for_review), đã hoàn thành (completed), 
+                // Không cho phép khi đã submit (ready_for_review), đã hoàn thành (completed),
                 // đang chờ deliver (delivery_pending), hoặc các trạng thái khác
                 // Không cho phép khi có submission đang pending_review
                 const hasPendingReviewSubmission = submissions.some(
                   sub => sub.status?.toLowerCase() === 'pending_review'
                 );
                 const hasIssueButton =
-                  status === 'in_progress' && 
+                  status === 'in_progress' &&
                   !task.hasIssue &&
                   !hasPendingReviewSubmission &&
                   status !== 'ready_for_review' &&
@@ -1649,31 +1663,36 @@ const SpecialistTaskDetailPage = () => {
                           {hasSubmitButton && task?.taskType && (
                             <Alert
                               message="File types allowed for submission"
-                              description={
-                                (() => {
-                                  const taskType = task.taskType?.toLowerCase();
-                                  if (taskType === 'transcription') {
-                                    return (
-                                      <Text type="secondary">
-                                        Notation files only: MusicXML, XML, MIDI, PDF
-                                      </Text>
-                                    );
-                                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
-                                    return (
-                                      <Text type="secondary">
-                                        Notation files (MusicXML, XML, MIDI, PDF) or Audio files (MP3, WAV, FLAC, AAC, OGG, M4A, WMA)
-                                      </Text>
-                                    );
-                                  } else if (taskType === 'recording') {
-                                    return (
-                                      <Text type="secondary">
-                                        Audio files only: MP3, WAV, FLAC, AAC, OGG, M4A, WMA
-                                      </Text>
-                                    );
-                                  }
-                                  return null;
-                                })()
-                              }
+                              description={(() => {
+                                const taskType = task.taskType?.toLowerCase();
+                                if (taskType === 'transcription') {
+                                  return (
+                                    <Text type="secondary">
+                                      Notation files only: MusicXML, XML, MIDI,
+                                      PDF
+                                    </Text>
+                                  );
+                                } else if (
+                                  taskType === 'arrangement' ||
+                                  taskType === 'arrangement_with_recording'
+                                ) {
+                                  return (
+                                    <Text type="secondary">
+                                      Notation files (MusicXML, XML, MIDI, PDF)
+                                      or Audio files (MP3, WAV, FLAC, AAC, OGG,
+                                      M4A, WMA)
+                                    </Text>
+                                  );
+                                } else if (taskType === 'recording') {
+                                  return (
+                                    <Text type="secondary">
+                                      Audio files only: MP3, WAV, FLAC, AAC,
+                                      OGG, M4A, WMA
+                                    </Text>
+                                  );
+                                }
+                                return null;
+                              })()}
                               type="info"
                               showIcon
                               style={{ marginTop: 8 }}
@@ -2173,7 +2192,10 @@ const SpecialistTaskDetailPage = () => {
                   if (taskType === 'transcription') {
                     allowedExts = notationExts;
                     allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
-                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                  } else if (
+                    taskType === 'arrangement' ||
+                    taskType === 'arrangement_with_recording'
+                  ) {
                     allowedExts = [...notationExts, ...audioExts];
                     allowedTypes = 'notation or audio files';
                   } else if (taskType === 'recording') {
@@ -2202,7 +2224,7 @@ const SpecialistTaskDetailPage = () => {
           >
             <Upload.Dragger
               maxCount={1}
-              beforeUpload={(file) => {
+              beforeUpload={file => {
                 // Validate file type ngay khi chọn file
                 const fileName = file.name?.toLowerCase() || '';
                 const taskType = task?.taskType?.toLowerCase();
@@ -2231,7 +2253,10 @@ const SpecialistTaskDetailPage = () => {
                 if (taskType === 'transcription') {
                   allowedExts = notationExts;
                   allowedTypes = 'notation files (MusicXML, XML, MIDI, PDF)';
-                } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                } else if (
+                  taskType === 'arrangement' ||
+                  taskType === 'arrangement_with_recording'
+                ) {
                   allowedExts = [...notationExts, ...audioExts];
                   allowedTypes = 'notation or audio files';
                 } else if (taskType === 'recording') {
@@ -2255,20 +2280,21 @@ const SpecialistTaskDetailPage = () => {
 
                 return false; // Prevent auto upload, we'll handle it manually
               }}
-              accept={
-                (() => {
-                  const taskType = task?.taskType?.toLowerCase();
-                  if (taskType === 'transcription') {
-                    return '.musicxml,.xml,.mid,.midi,.pdf';
-                  } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
-                    return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
-                  } else if (taskType === 'recording') {
-                    return '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
-                  }
-                  // Default: allow all for unknown task types
+              accept={(() => {
+                const taskType = task?.taskType?.toLowerCase();
+                if (taskType === 'transcription') {
+                  return '.musicxml,.xml,.mid,.midi,.pdf';
+                } else if (
+                  taskType === 'arrangement' ||
+                  taskType === 'arrangement_with_recording'
+                ) {
                   return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
-                })()
-              }
+                } else if (taskType === 'recording') {
+                  return '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
+                }
+                // Default: allow all for unknown task types
+                return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
+              })()}
               onChange={info => {
                 // Khi user chọn file, lưu vào state để hiển thị
                 const file =
@@ -2297,7 +2323,10 @@ const SpecialistTaskDetailPage = () => {
                         return 'Only notation files allowed: MusicXML, XML, MIDI, PDF';
                       } else if (taskType === 'recording') {
                         return 'Only audio files allowed: MP3, WAV, FLAC, etc.';
-                      } else if (taskType === 'arrangement' || taskType === 'arrangement_with_recording') {
+                      } else if (
+                        taskType === 'arrangement' ||
+                        taskType === 'arrangement_with_recording'
+                      ) {
                         return 'Support: Notation (MusicXML, MIDI, PDF) or Audio files';
                       }
                       return 'Support: Notation (MusicXML, MIDI, PDF) or Audio files';

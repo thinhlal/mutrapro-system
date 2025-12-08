@@ -29,7 +29,7 @@ const PaymentSuccessPage = () => {
   useDocumentTitle('Payment Success');
   const { orderId } = useParams();
   const navigate = useNavigate();
-  
+
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ const PaymentSuccessPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load payment order
       const orderResponse = await getPaymentOrder(orderId);
       if (orderResponse?.status === 'success' && orderResponse?.data) {
@@ -93,7 +93,9 @@ const PaymentSuccessPage = () => {
         <Card className={styles.successCard}>
           <Result
             status="success"
-            icon={<CheckCircleOutlined style={{ fontSize: 72, color: '#52c41a' }} />}
+            icon={
+              <CheckCircleOutlined style={{ fontSize: 72, color: '#52c41a' }} />
+            }
             title="Thanh toán thành công!"
             subTitle={
               <Space direction="vertical" size="small">
@@ -149,7 +151,9 @@ const PaymentSuccessPage = () => {
               </Descriptions.Item>
               {paymentOrder.completedAt && (
                 <Descriptions.Item label="Thời gian hoàn thành">
-                  {dayjs(paymentOrder.completedAt).format('DD/MM/YYYY HH:mm:ss')}
+                  {dayjs(paymentOrder.completedAt).format(
+                    'DD/MM/YYYY HH:mm:ss'
+                  )}
                 </Descriptions.Item>
               )}
               {wallet && (
@@ -168,4 +172,3 @@ const PaymentSuccessPage = () => {
 };
 
 export default PaymentSuccessPage;
-

@@ -44,4 +44,3 @@ const PageTitle = ({ title, routeTitleMap }) => {
 };
 
 export default PageTitle;
-

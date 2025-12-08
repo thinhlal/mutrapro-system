@@ -190,14 +190,22 @@ const RequestContractList = ({
                       type="primary"
                       icon={<CheckOutlined />}
                       onClick={() => onApprove(contract.contractId)}
-                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
+                      loading={
+                        typeof actionLoading === 'object'
+                          ? actionLoading[contract.contractId]
+                          : actionLoading
+                      }
                     >
                       Duyệt
                     </Button>
                     <Button
                       icon={<EditOutlined />}
                       onClick={() => onRequestChange(contract)}
-                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
+                      loading={
+                        typeof actionLoading === 'object'
+                          ? actionLoading[contract.contractId]
+                          : actionLoading
+                      }
                     >
                       Yêu cầu chỉnh sửa
                     </Button>
@@ -205,7 +213,11 @@ const RequestContractList = ({
                       danger
                       icon={<StopOutlined />}
                       onClick={() => onCancel(contract)}
-                      loading={typeof actionLoading === 'object' ? actionLoading[contract.contractId] : actionLoading}
+                      loading={
+                        typeof actionLoading === 'object'
+                          ? actionLoading[contract.contractId]
+                          : actionLoading
+                      }
                     >
                       Hủy
                     </Button>

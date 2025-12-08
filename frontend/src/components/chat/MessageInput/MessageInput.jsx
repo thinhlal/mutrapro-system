@@ -15,12 +15,12 @@ const { TextArea } = Input;
  * @param {boolean} sending - Đang gửi message
  * @param {boolean} disabled - Disable input
  */
-const MessageInput = ({ 
-  onSend, 
-  onFileUpload, 
-  roomId, 
-  sending = false, 
-  disabled = false 
+const MessageInput = ({
+  onSend,
+  onFileUpload,
+  roomId,
+  sending = false,
+  disabled = false,
 }) => {
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -57,13 +57,14 @@ const MessageInput = ({
 
     try {
       setUploading(true);
-      
+
       // Upload file to backend
       const response = await chatService.uploadFile(file, roomId);
-      
+
       if (response?.status === 'success' && response?.data) {
-        const { fileKey, fileName, fileType, mimeType, fileSize } = response.data;
-        
+        const { fileKey, fileName, fileType, mimeType, fileSize } =
+          response.data;
+
         // Create metadata object (bao gồm fileKey)
         const metadata = {
           fileName,
@@ -72,23 +73,27 @@ const MessageInput = ({
           fileType,
           fileKey, // Lưu fileKey để download sau này
         };
-        
+
         // Call callback with file info (fileKey thay vì fileUrl)
         if (onFileUpload) {
           onFileUpload(fileKey, fileName, fileType, metadata);
         }
-        
+
         antMessage.success('Upload file thành công');
       } else {
         throw new Error(response?.message || 'Upload file thất bại');
       }
     } catch (error) {
       console.error('Failed to upload file:', error);
-      antMessage.error(error?.response?.data?.message || error?.message || 'Upload file thất bại');
+      antMessage.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Upload file thất bại'
+      );
     } finally {
       setUploading(false);
     }
-    
+
     return false; // Prevent default upload
   };
 

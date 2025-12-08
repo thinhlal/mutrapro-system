@@ -95,7 +95,11 @@ export default function ReviewRequestModal({
                     }}
                   >
                     <span>
-                      {isMain && <StarFilled style={{ color: '#faad14', marginRight: 4 }} />}
+                      {isMain && (
+                        <StarFilled
+                          style={{ color: '#faad14', marginRight: 4 }}
+                        />
+                      )}
                       {inst.instrumentName}
                       {isMain && ' (Main)'}
                     </span>

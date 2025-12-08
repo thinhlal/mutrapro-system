@@ -1,6 +1,16 @@
 // src/pages/ServiceRequest/components/ArrangementUploader/ArrangementUploader.jsx
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Upload, Space, Tag, Button, message, Form, Select, Row, Col } from 'antd';
+import {
+  Upload,
+  Space,
+  Tag,
+  Button,
+  message,
+  Form,
+  Select,
+  Row,
+  Col,
+} from 'antd';
 import {
   InboxOutlined,
   FileTextOutlined,
@@ -13,7 +23,10 @@ import { useNavigate } from 'react-router-dom';
 import styles from './ArrangementUploader.module.css';
 import { useInstrumentStore } from '../../../../../stores/useInstrumentStore';
 import InstrumentSelectionModal from '../../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
-import { MUSIC_GENRES, MUSIC_PURPOSES } from '../../../../../constants/musicOptionsConstants';
+import {
+  MUSIC_GENRES,
+  MUSIC_PURPOSES,
+} from '../../../../../constants/musicOptionsConstants';
 
 const { Dragger } = Upload;
 
@@ -66,7 +79,10 @@ export default function ArrangementUploader({
       (variant === 'with_recording'
         ? 'arrangement_with_recording'
         : 'arrangement');
-    if (actualServiceType === 'arrangement' || actualServiceType === 'arrangement_with_recording') {
+    if (
+      actualServiceType === 'arrangement' ||
+      actualServiceType === 'arrangement_with_recording'
+    ) {
       return getInstrumentsByUsage('arrangement');
     }
     return [];
@@ -88,7 +104,7 @@ export default function ArrangementUploader({
         prevPurposeRef.current = null;
         prevInstrumentsRef.current = null;
       }
-      
+
       if (!hasInitializedRef.current) {
         form.setFieldsValue({
           musicGenres: formData.genres || [],
@@ -96,7 +112,7 @@ export default function ArrangementUploader({
         });
         prevGenresRef.current = formData.genres || [];
         prevPurposeRef.current = formData.purpose || null;
-        
+
         setSelectedInstruments([]);
         prevInstrumentsRef.current = [];
         setMainInstrumentId(null);
@@ -114,38 +130,51 @@ export default function ArrangementUploader({
         musicPurpose: null,
       });
     }
-  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail, form]);
+  }, [
+    formData?.title,
+    formData?.description,
+    formData?.contactName,
+    formData?.contactPhone,
+    formData?.contactEmail,
+    form,
+  ]);
 
   // Handle form values change
-  const handleFormValuesChange = useCallback((changedValues, allValues) => {
-    if (onFormDataChange && formData && hasInitializedRef.current) {
-      const newGenres = allValues.musicGenres || [];
-      const newPurpose = allValues.musicPurpose || null;
-      
-      // Only update if values actually changed
-      const genresChanged = JSON.stringify(newGenres) !== JSON.stringify(prevGenresRef.current);
-      const purposeChanged = newPurpose !== prevPurposeRef.current;
-      
-      if (genresChanged || purposeChanged) {
-        if (genresChanged) prevGenresRef.current = newGenres;
-        if (purposeChanged) prevPurposeRef.current = newPurpose;
-        
-        onFormDataChange({
-          ...formData,
-          genres: newGenres,
-          purpose: newPurpose,
-          instrumentIds: selectedInstruments,
-          mainInstrumentId: mainInstrumentId,
-        });
+  const handleFormValuesChange = useCallback(
+    (changedValues, allValues) => {
+      if (onFormDataChange && formData && hasInitializedRef.current) {
+        const newGenres = allValues.musicGenres || [];
+        const newPurpose = allValues.musicPurpose || null;
+
+        // Only update if values actually changed
+        const genresChanged =
+          JSON.stringify(newGenres) !== JSON.stringify(prevGenresRef.current);
+        const purposeChanged = newPurpose !== prevPurposeRef.current;
+
+        if (genresChanged || purposeChanged) {
+          if (genresChanged) prevGenresRef.current = newGenres;
+          if (purposeChanged) prevPurposeRef.current = newPurpose;
+
+          onFormDataChange({
+            ...formData,
+            genres: newGenres,
+            purpose: newPurpose,
+            instrumentIds: selectedInstruments,
+            mainInstrumentId: mainInstrumentId,
+          });
+        }
       }
-    }
-  }, [onFormDataChange, formData, selectedInstruments]);
+    },
+    [onFormDataChange, formData, selectedInstruments]
+  );
 
   // Update formData when instruments change
   useEffect(() => {
     if (onFormDataChange && formData && hasInitializedRef.current) {
       // Only update if instruments actually changed
-      const instrumentsChanged = JSON.stringify(selectedInstruments) !== JSON.stringify(prevInstrumentsRef.current);
+      const instrumentsChanged =
+        JSON.stringify(selectedInstruments) !==
+        JSON.stringify(prevInstrumentsRef.current);
       if (instrumentsChanged) {
         prevInstrumentsRef.current = selectedInstruments;
         const currentGenres = form.getFieldValue('musicGenres') || [];
@@ -276,10 +305,19 @@ export default function ArrangementUploader({
 
         {/* Service Type, Music Genres, Purpose, and Instrument Selection */}
         <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <Form form={form} layout="vertical" onValuesChange={handleFormValuesChange}>
+          <Form
+            form={form}
+            layout="vertical"
+            onValuesChange={handleFormValuesChange}
+          >
             <Form.Item label="Service Type">
               <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
-                {SERVICE_LABELS[serviceType || (variant === 'with_recording' ? 'arrangement_with_recording' : 'arrangement')] || serviceType}
+                {SERVICE_LABELS[
+                  serviceType ||
+                    (variant === 'with_recording'
+                      ? 'arrangement_with_recording'
+                      : 'arrangement')
+                ] || serviceType}
               </Tag>
             </Form.Item>
 

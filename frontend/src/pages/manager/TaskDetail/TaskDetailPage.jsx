@@ -58,7 +58,10 @@ import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import FileList from '../../../components/common/FileList/FileList';
 import axiosInstance from '../../../utils/axiosInstance';
-import { getGenreLabel, getPurposeLabel } from '../../../constants/musicOptionsConstants';
+import {
+  getGenreLabel,
+  getPurposeLabel,
+} from '../../../constants/musicOptionsConstants';
 import styles from './TaskDetailPage.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -844,13 +847,18 @@ const TaskDetailPage = () => {
                         []
                       ).map((inst, idx) => {
                         const isMain = inst.isMain === true;
-                        const requestType = request?.requestType || task?.request?.requestType;
-                        const isArrangement = requestType === 'arrangement' || requestType === 'arrangement_with_recording';
+                        const requestType =
+                          request?.requestType || task?.request?.requestType;
+                        const isArrangement =
+                          requestType === 'arrangement' ||
+                          requestType === 'arrangement_with_recording';
                         return (
-                          <Tag 
-                            key={idx} 
+                          <Tag
+                            key={idx}
                             color={isMain && isArrangement ? 'gold' : 'purple'}
-                            icon={isMain && isArrangement ? <StarFilled /> : null}
+                            icon={
+                              isMain && isArrangement ? <StarFilled /> : null
+                            }
                           >
                             {inst.instrumentName || inst.name || inst}
                             {isMain && isArrangement && ' (Main)'}
@@ -862,18 +870,26 @@ const TaskDetailPage = () => {
                 )}
 
                 {/* Hiển thị main instrument name cho arrangement requests */}
-                {((request?.requestType === 'arrangement' ||
-                    request?.requestType === 'arrangement_with_recording') ||
-                  (task?.request?.requestType === 'arrangement' ||
-                    task?.request?.requestType === 'arrangement_with_recording')) && (
+                {(request?.requestType === 'arrangement' ||
+                  request?.requestType === 'arrangement_with_recording' ||
+                  task?.request?.requestType === 'arrangement' ||
+                  task?.request?.requestType ===
+                    'arrangement_with_recording') && (
                   <>
                     {(() => {
-                      const instruments = request?.instruments || task?.request?.instruments || [];
-                      const mainInstrument = instruments.find(inst => inst.isMain === true);
+                      const instruments =
+                        request?.instruments ||
+                        task?.request?.instruments ||
+                        [];
+                      const mainInstrument = instruments.find(
+                        inst => inst.isMain === true
+                      );
                       return mainInstrument ? (
                         <Descriptions.Item label="Main Instrument" span={2}>
                           <Tag color="gold" icon={<StarFilled />}>
-                            {mainInstrument.instrumentName || mainInstrument.name || 'N/A'}
+                            {mainInstrument.instrumentName ||
+                              mainInstrument.name ||
+                              'N/A'}
                           </Tag>
                         </Descriptions.Item>
                       ) : null;
@@ -901,19 +917,25 @@ const TaskDetailPage = () => {
                         )}
                       </Descriptions.Item>
                     )}
-                    {((request?.requestType === 'arrangement_with_recording') ||
-                      (task?.request?.requestType === 'arrangement_with_recording')) &&
-                      ((request?.preferredSpecialists && request.preferredSpecialists.length > 0) ||
-                       (task?.request?.preferredSpecialists && task.request.preferredSpecialists.length > 0)) && (
+                    {(request?.requestType === 'arrangement_with_recording' ||
+                      task?.request?.requestType ===
+                        'arrangement_with_recording') &&
+                      ((request?.preferredSpecialists &&
+                        request.preferredSpecialists.length > 0) ||
+                        (task?.request?.preferredSpecialists &&
+                          task.request.preferredSpecialists.length > 0)) && (
                         <Descriptions.Item label="Preferred Vocalists" span={2}>
                           <Space wrap>
-                            {(request?.preferredSpecialists || task?.request?.preferredSpecialists || []).map(
-                              (specialist, idx) => (
-                                <Tag key={idx} color="pink">
-                                  {specialist.name || `Vocalist ${specialist.specialistId}`}
-                                </Tag>
-                              )
-                            )}
+                            {(
+                              request?.preferredSpecialists ||
+                              task?.request?.preferredSpecialists ||
+                              []
+                            ).map((specialist, idx) => (
+                              <Tag key={idx} color="pink">
+                                {specialist.name ||
+                                  `Vocalist ${specialist.specialistId}`}
+                              </Tag>
+                            ))}
                           </Space>
                         </Descriptions.Item>
                       )}
@@ -1011,10 +1033,13 @@ const TaskDetailPage = () => {
                 <Text>{task.milestone?.name || task.milestoneId || 'N/A'}</Text>
                 {task.milestone?.milestoneType && (
                   <Tag color="blue">
-                    {task.milestone.milestoneType === 'transcription' ? 'Transcription' :
-                     task.milestone.milestoneType === 'arrangement' ? 'Arrangement' :
-                     task.milestone.milestoneType === 'recording' ? 'Recording' :
-                     task.milestone.milestoneType}
+                    {task.milestone.milestoneType === 'transcription'
+                      ? 'Transcription'
+                      : task.milestone.milestoneType === 'arrangement'
+                        ? 'Arrangement'
+                        : task.milestone.milestoneType === 'recording'
+                          ? 'Recording'
+                          : task.milestone.milestoneType}
                   </Tag>
                 )}
               </Space>
@@ -1089,7 +1114,8 @@ const TaskDetailPage = () => {
                 const hasPendingReview = submissions.some(
                   s => s.status?.toLowerCase() === 'pending_review'
                 );
-                const shouldHideDeadlineWarning = hasFirstSubmission || hasPendingReview;
+                const shouldHideDeadlineWarning =
+                  hasFirstSubmission || hasPendingReview;
                 const isOverdue =
                   !shouldHideDeadlineWarning &&
                   daysDiff !== null &&

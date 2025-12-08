@@ -1,6 +1,17 @@
 // src/pages/ServiceRequest/components/ArrangementWithRecordingUploader/ArrangementWithRecordingUploader.jsx
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Upload, Space, Tag, Button, message, Form, Select, Row, Col, Radio } from 'antd';
+import {
+  Upload,
+  Space,
+  Tag,
+  Button,
+  message,
+  Form,
+  Select,
+  Row,
+  Col,
+  Radio,
+} from 'antd';
 import {
   InboxOutlined,
   FileTextOutlined,
@@ -14,8 +25,14 @@ import { useNavigate } from 'react-router-dom';
 import styles from '../ArrangementUploader/ArrangementUploader.module.css';
 import { useInstrumentStore } from '../../../../../stores/useInstrumentStore';
 import InstrumentSelectionModal from '../../../../../components/modal/InstrumentSelectionModal/InstrumentSelectionModal';
-import { MUSIC_GENRES, MUSIC_PURPOSES } from '../../../../../constants/musicOptionsConstants';
-import { FEMALE_SINGERS_DATA, MALE_SINGERS_DATA } from '../../../../../constants/index';
+import {
+  MUSIC_GENRES,
+  MUSIC_PURPOSES,
+} from '../../../../../constants/musicOptionsConstants';
+import {
+  FEMALE_SINGERS_DATA,
+  MALE_SINGERS_DATA,
+} from '../../../../../constants/index';
 
 const { Dragger } = Upload;
 
@@ -50,10 +67,18 @@ export default function ArrangementWithRecordingUploader({
       const flowDataStr = sessionStorage.getItem('recordingFlowData');
       if (flowDataStr) {
         const flowData = JSON.parse(flowDataStr);
-        if (flowData.step2?.vocalistIds && Array.isArray(flowData.step2.vocalistIds)) {
+        if (
+          flowData.step2?.vocalistIds &&
+          Array.isArray(flowData.step2.vocalistIds)
+        ) {
           // Multiple selections - return objects with id and name
           const vocalists = flowData.step2.vocalistIds.map(item => {
-            if (typeof item === 'object' && item !== null && item.id && item.name) {
+            if (
+              typeof item === 'object' &&
+              item !== null &&
+              item.id &&
+              item.name
+            ) {
               return item;
             }
             if (typeof item === 'object' && item !== null && item.id) {
@@ -67,7 +92,10 @@ export default function ArrangementWithRecordingUploader({
               onFormDataChange({
                 ...formData,
                 preferredSpecialistIds: vocalists.map(v => v.id),
-                preferredSpecialistNames: vocalists.map(v => ({ id: v.id, name: v.name })),
+                preferredSpecialistNames: vocalists.map(v => ({
+                  id: v.id,
+                  name: v.name,
+                })),
                 hasVocalist: vocalists.length > 0,
               });
             }, 0);
@@ -76,24 +104,36 @@ export default function ArrangementWithRecordingUploader({
         }
       }
     } catch (error) {
-      console.error('Error loading vocalists from sessionStorage in initial state:', error);
+      console.error(
+        'Error loading vocalists from sessionStorage in initial state:',
+        error
+      );
     }
-    
+
     // Nếu không có trong sessionStorage, dùng formData
     // formData có thể có preferredSpecialistNames (mới) hoặc preferredSpecialistIds (cũ)
-    if (formData?.preferredSpecialistNames && Array.isArray(formData.preferredSpecialistNames)) {
+    if (
+      formData?.preferredSpecialistNames &&
+      Array.isArray(formData.preferredSpecialistNames)
+    ) {
       // Format mới: array of objects với id và name
       return formData.preferredSpecialistNames;
     }
-    
+
     if (formData?.preferredSpecialistIds) {
-      if (Array.isArray(formData.preferredSpecialistIds) && formData.preferredSpecialistIds.length > 0) {
+      if (
+        Array.isArray(formData.preferredSpecialistIds) &&
+        formData.preferredSpecialistIds.length > 0
+      ) {
         // Check if first item is object or string
         if (typeof formData.preferredSpecialistIds[0] === 'object') {
           return formData.preferredSpecialistIds;
         } else {
           // Convert array of IDs to array of objects
-          return formData.preferredSpecialistIds.map(id => ({ id, name: `Vocalist ${id}` }));
+          return formData.preferredSpecialistIds.map(id => ({
+            id,
+            name: `Vocalist ${id}`,
+          }));
         }
       }
     }
@@ -133,7 +173,7 @@ export default function ArrangementWithRecordingUploader({
         prevPurposeRef.current = null;
         prevInstrumentsRef.current = null;
       }
-      
+
       if (!hasInitializedRef.current) {
         form.setFieldsValue({
           musicGenres: formData.genres || [],
@@ -141,7 +181,7 @@ export default function ArrangementWithRecordingUploader({
         });
         prevGenresRef.current = formData.genres || [];
         prevPurposeRef.current = formData.purpose || null;
-        
+
         setSelectedInstruments(formData.instrumentIds || []);
         prevInstrumentsRef.current = formData.instrumentIds || [];
         setMainInstrumentId(formData.mainInstrumentId || null);
@@ -159,40 +199,61 @@ export default function ArrangementWithRecordingUploader({
         musicPurpose: null,
       });
     }
-  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail, form]);
+  }, [
+    formData?.title,
+    formData?.description,
+    formData?.contactName,
+    formData?.contactPhone,
+    formData?.contactEmail,
+    form,
+  ]);
 
   // Handle form values change
-  const handleFormValuesChange = useCallback((changedValues, allValues) => {
-    if (onFormDataChange && formData && hasInitializedRef.current) {
-      const newGenres = allValues.musicGenres || [];
-      const newPurpose = allValues.musicPurpose || null;
-      
-      // Only update if values actually changed
-      const genresChanged = JSON.stringify(newGenres) !== JSON.stringify(prevGenresRef.current);
-      const purposeChanged = newPurpose !== prevPurposeRef.current;
-      
-      if (genresChanged || purposeChanged) {
-        if (genresChanged) prevGenresRef.current = newGenres;
-        if (purposeChanged) prevPurposeRef.current = newPurpose;
-        
-        onFormDataChange({
-          ...formData,
-          genres: newGenres,
-          purpose: newPurpose,
-          instrumentIds: selectedInstruments,
-          mainInstrumentId: mainInstrumentId,
-          preferredSpecialistIds: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
-          hasVocalist: preferredVocalists.length > 0,
-        });
+  const handleFormValuesChange = useCallback(
+    (changedValues, allValues) => {
+      if (onFormDataChange && formData && hasInitializedRef.current) {
+        const newGenres = allValues.musicGenres || [];
+        const newPurpose = allValues.musicPurpose || null;
+
+        // Only update if values actually changed
+        const genresChanged =
+          JSON.stringify(newGenres) !== JSON.stringify(prevGenresRef.current);
+        const purposeChanged = newPurpose !== prevPurposeRef.current;
+
+        if (genresChanged || purposeChanged) {
+          if (genresChanged) prevGenresRef.current = newGenres;
+          if (purposeChanged) prevPurposeRef.current = newPurpose;
+
+          onFormDataChange({
+            ...formData,
+            genres: newGenres,
+            purpose: newPurpose,
+            instrumentIds: selectedInstruments,
+            mainInstrumentId: mainInstrumentId,
+            preferredSpecialistIds: preferredVocalists.map(v =>
+              typeof v === 'object' ? v.id : v
+            ),
+            hasVocalist: preferredVocalists.length > 0,
+          });
+        }
       }
-    }
-  }, [onFormDataChange, formData, selectedInstruments, mainInstrumentId, preferredVocalists]);
+    },
+    [
+      onFormDataChange,
+      formData,
+      selectedInstruments,
+      mainInstrumentId,
+      preferredVocalists,
+    ]
+  );
 
   // Update formData when instruments change
   useEffect(() => {
     if (onFormDataChange && formData && hasInitializedRef.current) {
       // Only update if instruments actually changed
-      const instrumentsChanged = JSON.stringify(selectedInstruments) !== JSON.stringify(prevInstrumentsRef.current);
+      const instrumentsChanged =
+        JSON.stringify(selectedInstruments) !==
+        JSON.stringify(prevInstrumentsRef.current);
       if (instrumentsChanged) {
         prevInstrumentsRef.current = selectedInstruments;
         const currentGenres = form.getFieldValue('musicGenres') || [];
@@ -203,9 +264,13 @@ export default function ArrangementWithRecordingUploader({
           purpose: currentPurpose,
           instrumentIds: selectedInstruments,
           mainInstrumentId: mainInstrumentId,
-          preferredSpecialistIds: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
-          preferredSpecialistNames: preferredVocalists.map(v => 
-            typeof v === 'object' ? { id: v.id, name: v.name } : { id: v, name: `Vocalist ${v}` }
+          preferredSpecialistIds: preferredVocalists.map(v =>
+            typeof v === 'object' ? v.id : v
+          ),
+          preferredSpecialistNames: preferredVocalists.map(v =>
+            typeof v === 'object'
+              ? { id: v.id, name: v.name }
+              : { id: v, name: `Vocalist ${v}` }
           ),
           hasVocalist: preferredVocalists.length > 0,
         });
@@ -224,9 +289,13 @@ export default function ArrangementWithRecordingUploader({
         purpose: currentPurpose,
         instrumentIds: selectedInstruments,
         mainInstrumentId: mainInstrumentId,
-        preferredSpecialistIds: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
-        preferredSpecialistNames: preferredVocalists.map(v => 
-          typeof v === 'object' ? { id: v.id, name: v.name } : { id: v, name: `Vocalist ${v}` }
+        preferredSpecialistIds: preferredVocalists.map(v =>
+          typeof v === 'object' ? v.id : v
+        ),
+        preferredSpecialistNames: preferredVocalists.map(v =>
+          typeof v === 'object'
+            ? { id: v.id, name: v.name }
+            : { id: v, name: `Vocalist ${v}` }
         ),
         hasVocalist: preferredVocalists.length > 0,
       });
@@ -253,7 +322,9 @@ export default function ArrangementWithRecordingUploader({
         purpose: currentPurpose,
         instrumentIds: selectedInstruments,
         mainInstrumentId: mainId,
-        preferredSpecialistIds: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
+        preferredSpecialistIds: preferredVocalists.map(v =>
+          typeof v === 'object' ? v.id : v
+        ),
         hasVocalist: preferredVocalists.length > 0,
       });
     }
@@ -267,10 +338,15 @@ export default function ArrangementWithRecordingUploader({
       formData: formData,
       allowMultiple: true, // Allow selecting multiple vocalists
       maxSelections: 2, // Max 2 vocalists
-      currentSelections: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
+      currentSelections: preferredVocalists.map(v =>
+        typeof v === 'object' ? v.id : v
+      ),
     };
-    sessionStorage.setItem('arrangementVocalistCallback', JSON.stringify(callbackData));
-    
+    sessionStorage.setItem(
+      'arrangementVocalistCallback',
+      JSON.stringify(callbackData)
+    );
+
     // Navigate to vocalist selection page
     navigate('/recording-flow/vocalist-selection', {
       state: {
@@ -278,16 +354,20 @@ export default function ArrangementWithRecordingUploader({
         fromArrangement: true,
         allowMultiple: true,
         maxSelections: 2,
-        selectedVocalists: preferredVocalists.map(v => typeof v === 'object' ? v.id : v),
+        selectedVocalists: preferredVocalists.map(v =>
+          typeof v === 'object' ? v.id : v
+        ),
       },
     });
   };
 
-  const handleRemoveVocalist = (vocalistId) => {
-    setPreferredVocalists(prev => prev.filter(v => {
-      const id = typeof v === 'object' ? v.id : v;
-      return id !== vocalistId;
-    }));
+  const handleRemoveVocalist = vocalistId => {
+    setPreferredVocalists(prev =>
+      prev.filter(v => {
+        const id = typeof v === 'object' ? v.id : v;
+        return id !== vocalistId;
+      })
+    );
   };
 
   // Check if returning from vocalist selection page
@@ -295,16 +375,20 @@ export default function ArrangementWithRecordingUploader({
     // Nếu đã có vocalists trong state, không cần load lại từ sessionStorage
     if (preferredVocalists.length > 0) {
       // Chỉ clear sessionStorage nếu có callback data
-      const callbackDataStr = sessionStorage.getItem('arrangementVocalistCallback');
+      const callbackDataStr = sessionStorage.getItem(
+        'arrangementVocalistCallback'
+      );
       if (callbackDataStr) {
         sessionStorage.removeItem('arrangementVocalistCallback');
         sessionStorage.removeItem('recordingFlowData');
       }
       return;
     }
-    
+
     try {
-      const callbackDataStr = sessionStorage.getItem('arrangementVocalistCallback');
+      const callbackDataStr = sessionStorage.getItem(
+        'arrangementVocalistCallback'
+      );
       if (callbackDataStr) {
         const callbackData = JSON.parse(callbackDataStr);
         if (callbackData.fromArrangement && callbackData.allowMultiple) {
@@ -314,27 +398,46 @@ export default function ArrangementWithRecordingUploader({
             const flowData = JSON.parse(flowDataStr);
             console.log('FlowData from sessionStorage in useEffect:', flowData);
             // Support both single and multiple selections
-            if (flowData.step2?.vocalistIds && Array.isArray(flowData.step2.vocalistIds)) {
+            if (
+              flowData.step2?.vocalistIds &&
+              Array.isArray(flowData.step2.vocalistIds)
+            ) {
               console.log('Found vocalistIds:', flowData.step2.vocalistIds);
               // Multiple selections - check if it's array of objects or IDs
               const vocalists = flowData.step2.vocalistIds.map(item => {
                 // Nếu đã là object với id và name, return luôn
-                if (typeof item === 'object' && item !== null && item.id && item.name) {
+                if (
+                  typeof item === 'object' &&
+                  item !== null &&
+                  item.id &&
+                  item.name
+                ) {
                   console.log('Using object with id and name:', item);
                   return item;
                 }
                 // Nếu là object nhưng thiếu name, thử tìm từ constants
                 if (typeof item === 'object' && item !== null && item.id) {
-                  const allSingers = [...FEMALE_SINGERS_DATA, ...MALE_SINGERS_DATA];
+                  const allSingers = [
+                    ...FEMALE_SINGERS_DATA,
+                    ...MALE_SINGERS_DATA,
+                  ];
                   const singer = allSingers.find(s => s.id === item.id);
-                  const result = { id: item.id, name: item.name || singer?.name || `Vocalist ${item.id}` };
+                  const result = {
+                    id: item.id,
+                    name: item.name || singer?.name || `Vocalist ${item.id}`,
+                  };
                   console.log('Object without name, using:', result);
                   return result;
                 }
                 // Nếu là string ID, tìm từ constants
-                const allSingers = [...FEMALE_SINGERS_DATA, ...MALE_SINGERS_DATA];
+                const allSingers = [
+                  ...FEMALE_SINGERS_DATA,
+                  ...MALE_SINGERS_DATA,
+                ];
                 const singer = allSingers.find(s => s.id === item);
-                const result = singer ? { id: singer.id, name: singer.name } : { id: item, name: `Vocalist ${item}` };
+                const result = singer
+                  ? { id: singer.id, name: singer.name }
+                  : { id: item, name: `Vocalist ${item}` };
                 console.log('String ID, using:', result);
                 return result;
               });
@@ -343,8 +446,19 @@ export default function ArrangementWithRecordingUploader({
             } else if (flowData.step2?.vocalistId) {
               // Single selection - convert to array
               const allSingers = [...FEMALE_SINGERS_DATA, ...MALE_SINGERS_DATA];
-              const singer = allSingers.find(s => s.id === flowData.step2.vocalistId);
-              setPreferredVocalists(singer ? [{ id: singer.id, name: singer.name }] : [{ id: flowData.step2.vocalistId, name: `Vocalist ${flowData.step2.vocalistId}` }]);
+              const singer = allSingers.find(
+                s => s.id === flowData.step2.vocalistId
+              );
+              setPreferredVocalists(
+                singer
+                  ? [{ id: singer.id, name: singer.name }]
+                  : [
+                      {
+                        id: flowData.step2.vocalistId,
+                        name: `Vocalist ${flowData.step2.vocalistId}`,
+                      },
+                    ]
+              );
             }
             // Clear sessionStorage sau khi đã load xong
             sessionStorage.removeItem('arrangementVocalistCallback');
@@ -397,17 +511,23 @@ export default function ArrangementWithRecordingUploader({
     // Ưu tiên dùng formData.mainInstrumentId, nếu không có thì dùng mainInstrumentId state
     // Nếu vẫn null và chỉ có 1 instrument, tự động set làm main
     let finalMainInstrumentId = formData.mainInstrumentId || mainInstrumentId;
-    if (!finalMainInstrumentId && formData.instrumentIds && formData.instrumentIds.length === 1) {
+    if (
+      !finalMainInstrumentId &&
+      formData.instrumentIds &&
+      formData.instrumentIds.length === 1
+    ) {
       finalMainInstrumentId = formData.instrumentIds[0];
-      console.log('Auto-setting main instrument (only 1 selected):', finalMainInstrumentId);
+      console.log(
+        'Auto-setting main instrument (only 1 selected):',
+        finalMainInstrumentId
+      );
     }
-    
+
     if (!finalMainInstrumentId) {
       message.warning('Vui lòng chọn nhạc cụ chính cho arrangement.');
       return;
     }
 
-    
     // Navigate to quote page with state
     const navigationState = {
       formData: {
@@ -416,7 +536,7 @@ export default function ArrangementWithRecordingUploader({
         preferredSpecialists: preferredVocalists.map(v => ({
           specialistId: typeof v === 'object' ? v.id : v,
           name: typeof v === 'object' ? v.name : `Vocalist ${v}`,
-          role: 'VOCALIST' // Mặc định là VOCALIST cho arrangement_with_recording
+          role: 'VOCALIST', // Mặc định là VOCALIST cho arrangement_with_recording
         })),
         hasVocalist: preferredVocalists.length > 0,
       },
@@ -426,7 +546,7 @@ export default function ArrangementWithRecordingUploader({
       size: file.size || 0,
       serviceType: serviceType,
     };
-    
+
     navigate('/services/quotes/arrangement', {
       state: navigationState,
     });
@@ -448,14 +568,19 @@ export default function ArrangementWithRecordingUploader({
               Arrangement + Recording
             </h2>
             <p className={styles.desc}>
-              Upload file notation gốc (MusicXML/MIDI/PDF). Chúng tôi sẽ arrangement và recording cho bạn.
+              Upload file notation gốc (MusicXML/MIDI/PDF). Chúng tôi sẽ
+              arrangement và recording cho bạn.
             </p>
           </div>
         </div>
 
         {/* Service Type, Music Genres, Purpose, and Instrument Selection */}
         <div style={{ marginTop: 24, marginBottom: 16 }}>
-          <Form form={form} layout="vertical" onValuesChange={handleFormValuesChange}>
+          <Form
+            form={form}
+            layout="vertical"
+            onValuesChange={handleFormValuesChange}
+          >
             <Form.Item label="Service Type">
               <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
                 Arrangement + Recording (with Vocalist)
@@ -547,20 +672,30 @@ export default function ArrangementWithRecordingUploader({
               label="Ca sĩ ưu tiên (Tùy chọn)"
               tooltip="Bạn có thể chọn 1-2 ca sĩ mình thích, hoặc để manager đề xuất"
             >
-              <Space direction="vertical" style={{ width: '100%' }} size="small">
-                <div style={{ 
-                  padding: '12px', 
-                  backgroundColor: '#f0f2f5', 
-                  borderRadius: '4px',
-                  fontSize: '13px',
-                  color: '#666'
-                }}>
-                  <strong>Lưu ý:</strong> Đây là gợi ý ưu tiên, không phải cam kết. 
-                  Chúng tôi sẽ cố gắng book ca sĩ bạn chọn. Nếu họ không có sẵn, 
-                  manager sẽ đề xuất lựa chọn tương tự.
+              <Space
+                direction="vertical"
+                style={{ width: '100%' }}
+                size="small"
+              >
+                <div
+                  style={{
+                    padding: '12px',
+                    backgroundColor: '#f0f2f5',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    color: '#666',
+                  }}
+                >
+                  <strong>Lưu ý:</strong> Đây là gợi ý ưu tiên, không phải cam
+                  kết. Chúng tôi sẽ cố gắng book ca sĩ bạn chọn. Nếu họ không có
+                  sẵn, manager sẽ đề xuất lựa chọn tương tự.
                 </div>
-                
-                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+
+                <Space
+                  direction="vertical"
+                  style={{ width: '100%' }}
+                  size="middle"
+                >
                   <Button
                     type="default"
                     onClick={handleSelectPreferredVocalists}
@@ -570,16 +705,22 @@ export default function ArrangementWithRecordingUploader({
                     {preferredVocalists.length === 0
                       ? 'Chọn ca sĩ ưu tiên (1-2 người)'
                       : preferredVocalists.length === 1
-                      ? 'Thêm ca sĩ ưu tiên (tối đa 2)'
-                      : 'Đã chọn đủ 2 ca sĩ'}
+                        ? 'Thêm ca sĩ ưu tiên (tối đa 2)'
+                        : 'Đã chọn đủ 2 ca sĩ'}
                   </Button>
 
                   {preferredVocalists.length > 0 && (
                     <div style={{ marginTop: 8 }}>
                       <Space wrap>
                         {preferredVocalists.map((vocalist, index) => {
-                          const vocalistId = typeof vocalist === 'object' ? vocalist.id : vocalist;
-                          const vocalistName = typeof vocalist === 'object' ? vocalist.name : `Vocalist ${vocalist}`;
+                          const vocalistId =
+                            typeof vocalist === 'object'
+                              ? vocalist.id
+                              : vocalist;
+                          const vocalistName =
+                            typeof vocalist === 'object'
+                              ? vocalist.name
+                              : `Vocalist ${vocalist}`;
                           return (
                             <Tag
                               key={vocalistId}
@@ -596,12 +737,14 @@ export default function ArrangementWithRecordingUploader({
                     </div>
                   )}
 
-                  <div style={{ 
-                    fontSize: '12px', 
-                    color: '#999',
-                    fontStyle: 'italic',
-                    marginTop: 4
-                  }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: '#999',
+                      fontStyle: 'italic',
+                      marginTop: 4,
+                    }}
+                  >
                     Hoặc để trống để manager tự đề xuất ca sĩ phù hợp
                   </div>
                 </Space>
@@ -659,10 +802,12 @@ export default function ArrangementWithRecordingUploader({
             type="primary"
             size="large"
             className={styles.ctaBtn}
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('=== Button clicked in ArrangementWithRecordingUploader ===');
+              console.log(
+                '=== Button clicked in ArrangementWithRecordingUploader ==='
+              );
               console.log('handleSubmit function:', handleSubmit);
               console.log('file:', file);
               console.log('formData:', formData);
@@ -697,4 +842,3 @@ export default function ArrangementWithRecordingUploader({
     </section>
   );
 }
-

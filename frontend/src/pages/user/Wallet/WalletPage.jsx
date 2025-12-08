@@ -139,7 +139,7 @@ const WalletContent = () => {
         window.history.replaceState({ ...state, refresh: false }, '');
       }
     };
-    
+
     handleLocationChange();
   }, []);
 
@@ -154,7 +154,9 @@ const WalletContent = () => {
       // Redirect to payment page with amount
       const amount = values.amount;
       const description = `Nạp tiền vào ví - ${new Intl.NumberFormat('vi-VN').format(amount)} VND`;
-      navigate(`/payments/topup?amount=${amount}&description=${encodeURIComponent(description)}`);
+      navigate(
+        `/payments/topup?amount=${amount}&description=${encodeURIComponent(description)}`
+      );
       setTopupModalVisible(false);
       topupForm.resetFields();
     } catch (error) {
@@ -288,14 +290,18 @@ const WalletContent = () => {
   const stats = calculateStats();
 
   // Get transaction description
-  const getTransactionDescription = (record, contractInfo = null, milestoneInfo = null) => {
+  const getTransactionDescription = (
+    record,
+    contractInfo = null,
+    milestoneInfo = null
+  ) => {
     const { txType, metadata, contractId, milestoneId } = record;
-    
+
     // Nếu có description trong metadata
     if (metadata?.description) {
       return metadata.description;
     }
-    
+
     // Tạo description dựa trên txType và các thông tin khác
     switch (txType) {
       case 'contract_deposit_payment':
@@ -305,7 +311,7 @@ const WalletContent = () => {
         return contractId
           ? `Thanh toán cọc cho hợp đồng ${contractId.substring(0, 8)}...`
           : 'Thanh toán cọc hợp đồng';
-      
+
       case 'milestone_payment':
         if (contractInfo?.contractNumber && milestoneInfo?.name) {
           return `Thanh toán milestone "${milestoneInfo.name}" cho hợp đồng ${contractInfo.contractNumber}`;
@@ -322,18 +328,18 @@ const WalletContent = () => {
         return contractId
           ? `Thanh toán milestone cho hợp đồng ${contractId.substring(0, 8)}...`
           : 'Thanh toán milestone';
-      
+
       case 'revision_fee':
         if (metadata?.revisionRound) {
           return `Phí chỉnh sửa lần ${metadata.revisionRound}`;
         }
         return 'Phí chỉnh sửa';
-      
+
       case 'recording_booking_payment':
         return record.bookingId
           ? `Thanh toán đặt phòng thu âm ${record.bookingId.substring(0, 8)}...`
           : 'Thanh toán đặt phòng thu âm';
-      
+
       case 'refund':
         if (metadata?.refund_reason) {
           return `Hoàn tiền: ${metadata.refund_reason}`;
@@ -342,22 +348,22 @@ const WalletContent = () => {
           return 'Hoàn tiền phí chỉnh sửa (yêu cầu bị từ chối)';
         }
         return 'Hoàn tiền';
-      
+
       case 'topup':
         if (metadata?.payment_method) {
           return `Nạp tiền qua ${metadata.payment_method}`;
         }
         return 'Nạp tiền vào ví';
-      
+
       case 'withdrawal':
         return 'Rút tiền';
-      
+
       case 'adjustment':
         if (metadata?.reason) {
           return `Điều chỉnh: ${metadata.reason}`;
         }
         return 'Điều chỉnh số dư';
-      
+
       default:
         return getTxTypeLabel(txType);
     }
@@ -440,15 +446,20 @@ const WalletContent = () => {
             setContractInfo(null);
             setMilestoneInfo(null);
             setDetailModalVisible(true);
-            
+
             // Load contract info nếu có contractId
             if (record.contractId) {
               setDetailLoading(true);
               try {
-                const contractResponse = await getContractById(record.contractId);
-                if (contractResponse?.status === 'success' && contractResponse?.data) {
+                const contractResponse = await getContractById(
+                  record.contractId
+                );
+                if (
+                  contractResponse?.status === 'success' &&
+                  contractResponse?.data
+                ) {
                   setContractInfo(contractResponse.data);
-                  
+
                   // Load milestone info nếu có milestoneId
                   if (record.milestoneId) {
                     try {
@@ -609,7 +620,9 @@ const WalletContent = () => {
                   <Option value="contract_deposit_payment">
                     Thanh toán cọc hợp đồng
                   </Option>
-                  <Option value="milestone_payment">Thanh toán milestone</Option>
+                  <Option value="milestone_payment">
+                    Thanh toán milestone
+                  </Option>
                   <Option value="recording_booking_payment">
                     Thanh toán đặt phòng thu âm
                   </Option>
@@ -740,275 +753,329 @@ const WalletContent = () => {
         {selectedTransaction && (
           <Spin spinning={detailLoading}>
             <div>
-            <Descriptions bordered column={1} size="small">
-              <Descriptions.Item label="Loại giao dịch">
-                <Space>
-                  {getTxIcon(selectedTransaction.txType)}
-                  <Tag color={getTxTypeColor(selectedTransaction.txType)}>
-                    {getTxTypeLabel(selectedTransaction.txType)}
-                  </Tag>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Mô tả">
-                <Text>
-                  {getTransactionDescription(
-                    selectedTransaction,
-                    contractInfo,
-                    milestoneInfo
-                  )}
-                </Text>
-              </Descriptions.Item>
-              {contractInfo && (
-                <Descriptions.Item label="Contract Number">
-                  <Text strong>{contractInfo.contractNumber || 'N/A'}</Text>
+              <Descriptions bordered column={1} size="small">
+                <Descriptions.Item label="Loại giao dịch">
+                  <Space>
+                    {getTxIcon(selectedTransaction.txType)}
+                    <Tag color={getTxTypeColor(selectedTransaction.txType)}>
+                      {getTxTypeLabel(selectedTransaction.txType)}
+                    </Tag>
+                  </Space>
                 </Descriptions.Item>
-              )}
-              {milestoneInfo && (
-                <Descriptions.Item label="Milestone Name">
-                  <Text strong>{milestoneInfo.name || 'N/A'}</Text>
+                <Descriptions.Item label="Mô tả">
+                  <Text>
+                    {getTransactionDescription(
+                      selectedTransaction,
+                      contractInfo,
+                      milestoneInfo
+                    )}
+                  </Text>
                 </Descriptions.Item>
-              )}
-              <Descriptions.Item label="Số tiền">
-                <Text
-                  strong
-                  style={{
-                    color:
-                      selectedTransaction.txType === 'topup' ||
-                      selectedTransaction.txType === 'refund'
-                        ? '#52c41a'
-                        : '#ff4d4f',
-                    fontSize: '16px',
-                  }}
-                >
-                  {selectedTransaction.txType === 'topup' ||
-                  selectedTransaction.txType === 'refund'
-                    ? '+'
-                    : '-'}
-                  {formatCurrency(
-                    selectedTransaction.amount,
-                    selectedTransaction.currency
-                  )}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số dư trước">
-                <Text>
-                  {formatCurrency(
-                    selectedTransaction.balanceBefore,
-                    selectedTransaction.currency
-                  )}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số dư sau">
-                <Text strong>
-                  {formatCurrency(
-                    selectedTransaction.balanceAfter,
-                    selectedTransaction.currency
-                  )}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời gian">
-                <Text>
-                  {dayjs(selectedTransaction.createdAt).format(
-                    'DD/MM/YYYY HH:mm:ss'
-                  )}
-                </Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Transaction ID">
-                <Text code>{selectedTransaction.walletTxId}</Text>
-              </Descriptions.Item>
-            </Descriptions>
+                {contractInfo && (
+                  <Descriptions.Item label="Contract Number">
+                    <Text strong>{contractInfo.contractNumber || 'N/A'}</Text>
+                  </Descriptions.Item>
+                )}
+                {milestoneInfo && (
+                  <Descriptions.Item label="Milestone Name">
+                    <Text strong>{milestoneInfo.name || 'N/A'}</Text>
+                  </Descriptions.Item>
+                )}
+                <Descriptions.Item label="Số tiền">
+                  <Text
+                    strong
+                    style={{
+                      color:
+                        selectedTransaction.txType === 'topup' ||
+                        selectedTransaction.txType === 'refund'
+                          ? '#52c41a'
+                          : '#ff4d4f',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {selectedTransaction.txType === 'topup' ||
+                    selectedTransaction.txType === 'refund'
+                      ? '+'
+                      : '-'}
+                    {formatCurrency(
+                      selectedTransaction.amount,
+                      selectedTransaction.currency
+                    )}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Số dư trước">
+                  <Text>
+                    {formatCurrency(
+                      selectedTransaction.balanceBefore,
+                      selectedTransaction.currency
+                    )}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Số dư sau">
+                  <Text strong>
+                    {formatCurrency(
+                      selectedTransaction.balanceAfter,
+                      selectedTransaction.currency
+                    )}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Thời gian">
+                  <Text>
+                    {dayjs(selectedTransaction.createdAt).format(
+                      'DD/MM/YYYY HH:mm:ss'
+                    )}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Transaction ID">
+                  <Text code>{selectedTransaction.walletTxId}</Text>
+                </Descriptions.Item>
+              </Descriptions>
 
-            {/* Thông tin liên quan dựa trên txType */}
-            {(selectedTransaction.contractId ||
-              selectedTransaction.milestoneId ||
-              selectedTransaction.bookingId ||
-              selectedTransaction.metadata) && (
-              <>
-                <Divider orientation="left">Thông tin liên quan</Divider>
-                <Descriptions bordered column={1} size="small">
-                  {selectedTransaction.contractId && (
-                    <Descriptions.Item label="Contract">
-                      <Space>
-                        {contractInfo ? (
-                          <>
-                            <Text strong>{contractInfo.contractNumber}</Text>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              ({selectedTransaction.contractId.substring(0, 8)}...)
-                            </Text>
-                          </>
-                        ) : (
-                          <Text code>{selectedTransaction.contractId}</Text>
-                        )}
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => {
-                            navigate(
-                              `/contracts/${selectedTransaction.contractId}`
-                            );
-                            setDetailModalVisible(false);
-                          }}
-                        >
-                          Xem hợp đồng
-                        </Button>
-                      </Space>
-                    </Descriptions.Item>
-                  )}
-                  {selectedTransaction.milestoneId && (
-                    <Descriptions.Item label="Milestone">
-                      <Space>
-                        {milestoneInfo ? (
-                          <>
-                            <Text strong>{milestoneInfo.name}</Text>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              ({selectedTransaction.milestoneId.substring(0, 8)}...)
-                            </Text>
-                          </>
-                        ) : (
-                          <Text code>{selectedTransaction.milestoneId}</Text>
-                        )}
-                      </Space>
-                    </Descriptions.Item>
-                  )}
-                  {selectedTransaction.bookingId && (
-                    <Descriptions.Item label="Booking ID">
-                      <Text code>{selectedTransaction.bookingId}</Text>
-                    </Descriptions.Item>
-                  )}
-                  {selectedTransaction.metadata && (
-                    <>
-                      {selectedTransaction.metadata.payment_method && (
-                        <Descriptions.Item label="Phương thức thanh toán">
-                          <Tag color={selectedTransaction.metadata.payment_method === 'sepay' ? 'blue' : 'default'}>
-                            {selectedTransaction.metadata.payment_method === 'sepay' 
-                              ? 'SePay (Chuyển khoản ngân hàng)' 
-                              : selectedTransaction.metadata.payment_method.toUpperCase()}
-                          </Tag>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.transaction_id && (
-                        <Descriptions.Item label="Mã giao dịch SePay">
-                          <Text code copyable>
-                            {selectedTransaction.metadata.transaction_id}
-                          </Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.payment_order_id && (
-                        <Descriptions.Item label="Mã đơn hàng thanh toán">
-                          <Text code copyable>
-                            {selectedTransaction.metadata.payment_order_id}
-                          </Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.gateway_response && (
-                        <Descriptions.Item label="Thông tin từ SePay">
-                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                            {(() => {
-                              try {
-                                const gatewayData = typeof selectedTransaction.metadata.gateway_response === 'string'
-                                  ? JSON.parse(selectedTransaction.metadata.gateway_response)
-                                  : selectedTransaction.metadata.gateway_response;
-                                
-                                return (
-                                  <Descriptions bordered column={1} size="small">
-                                    {gatewayData.gateway && (
-                                      <Descriptions.Item label="Ngân hàng">
-                                        <Text>{gatewayData.gateway}</Text>
-                                      </Descriptions.Item>
-                                    )}
-                                    {gatewayData.transactionDate && (
-                                      <Descriptions.Item label="Thời gian giao dịch">
-                                        <Text>{gatewayData.transactionDate}</Text>
-                                      </Descriptions.Item>
-                                    )}
-                                    {gatewayData.accountNumber && (
-                                      <Descriptions.Item label="Số tài khoản">
-                                        <Text code>{gatewayData.accountNumber}</Text>
-                                      </Descriptions.Item>
-                                    )}
-                                    {gatewayData.referenceCode && (
-                                      <Descriptions.Item label="Mã tham chiếu">
-                                        <Text code>{gatewayData.referenceCode}</Text>
-                                      </Descriptions.Item>
-                                    )}
-                                    {gatewayData.content && (
-                                      <Descriptions.Item label="Nội dung chuyển khoản">
-                                        <Text>{gatewayData.content}</Text>
-                                      </Descriptions.Item>
-                                    )}
-                                  </Descriptions>
-                                );
-                              } catch (e) {
-                                return (
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    {typeof selectedTransaction.metadata.gateway_response === 'string'
-                                      ? selectedTransaction.metadata.gateway_response.substring(0, 100) + '...'
-                                      : JSON.stringify(selectedTransaction.metadata.gateway_response).substring(0, 100) + '...'}
-                                  </Text>
-                                );
+              {/* Thông tin liên quan dựa trên txType */}
+              {(selectedTransaction.contractId ||
+                selectedTransaction.milestoneId ||
+                selectedTransaction.bookingId ||
+                selectedTransaction.metadata) && (
+                <>
+                  <Divider orientation="left">Thông tin liên quan</Divider>
+                  <Descriptions bordered column={1} size="small">
+                    {selectedTransaction.contractId && (
+                      <Descriptions.Item label="Contract">
+                        <Space>
+                          {contractInfo ? (
+                            <>
+                              <Text strong>{contractInfo.contractNumber}</Text>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: '12px' }}
+                              >
+                                (
+                                {selectedTransaction.contractId.substring(0, 8)}
+                                ...)
+                              </Text>
+                            </>
+                          ) : (
+                            <Text code>{selectedTransaction.contractId}</Text>
+                          )}
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => {
+                              navigate(
+                                `/contracts/${selectedTransaction.contractId}`
+                              );
+                              setDetailModalVisible(false);
+                            }}
+                          >
+                            Xem hợp đồng
+                          </Button>
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {selectedTransaction.milestoneId && (
+                      <Descriptions.Item label="Milestone">
+                        <Space>
+                          {milestoneInfo ? (
+                            <>
+                              <Text strong>{milestoneInfo.name}</Text>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: '12px' }}
+                              >
+                                (
+                                {selectedTransaction.milestoneId.substring(
+                                  0,
+                                  8
+                                )}
+                                ...)
+                              </Text>
+                            </>
+                          ) : (
+                            <Text code>{selectedTransaction.milestoneId}</Text>
+                          )}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {selectedTransaction.bookingId && (
+                      <Descriptions.Item label="Booking ID">
+                        <Text code>{selectedTransaction.bookingId}</Text>
+                      </Descriptions.Item>
+                    )}
+                    {selectedTransaction.metadata && (
+                      <>
+                        {selectedTransaction.metadata.payment_method && (
+                          <Descriptions.Item label="Phương thức thanh toán">
+                            <Tag
+                              color={
+                                selectedTransaction.metadata.payment_method ===
+                                'sepay'
+                                  ? 'blue'
+                                  : 'default'
                               }
-                            })()}
-                          </div>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.installment_id && (
-                        <Descriptions.Item label="Installment ID">
-                          <Text code>
-                            {selectedTransaction.metadata.installment_id}
-                          </Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.payment_type && (
-                        <Descriptions.Item label="Loại thanh toán">
-                          <Tag>
-                            {selectedTransaction.metadata.payment_type ===
-                            'DEPOSIT'
-                              ? 'Cọc hợp đồng'
-                              : selectedTransaction.metadata.payment_type ===
-                                'MILESTONE'
-                              ? 'Thanh toán milestone'
-                              : selectedTransaction.metadata.payment_type}
-                          </Tag>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.txType ===
-                        'contract_deposit_payment' &&
-                        selectedTransaction.metadata?.installment_id && (
-                          <Descriptions.Item label="Installment (Cọc)">
+                            >
+                              {selectedTransaction.metadata.payment_method ===
+                              'sepay'
+                                ? 'SePay (Chuyển khoản ngân hàng)'
+                                : selectedTransaction.metadata.payment_method.toUpperCase()}
+                            </Tag>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.transaction_id && (
+                          <Descriptions.Item label="Mã giao dịch SePay">
+                            <Text code copyable>
+                              {selectedTransaction.metadata.transaction_id}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.payment_order_id && (
+                          <Descriptions.Item label="Mã đơn hàng thanh toán">
+                            <Text code copyable>
+                              {selectedTransaction.metadata.payment_order_id}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.gateway_response && (
+                          <Descriptions.Item label="Thông tin từ SePay">
+                            <div
+                              style={{ maxHeight: '200px', overflowY: 'auto' }}
+                            >
+                              {(() => {
+                                try {
+                                  const gatewayData =
+                                    typeof selectedTransaction.metadata
+                                      .gateway_response === 'string'
+                                      ? JSON.parse(
+                                          selectedTransaction.metadata
+                                            .gateway_response
+                                        )
+                                      : selectedTransaction.metadata
+                                          .gateway_response;
+
+                                  return (
+                                    <Descriptions
+                                      bordered
+                                      column={1}
+                                      size="small"
+                                    >
+                                      {gatewayData.gateway && (
+                                        <Descriptions.Item label="Ngân hàng">
+                                          <Text>{gatewayData.gateway}</Text>
+                                        </Descriptions.Item>
+                                      )}
+                                      {gatewayData.transactionDate && (
+                                        <Descriptions.Item label="Thời gian giao dịch">
+                                          <Text>
+                                            {gatewayData.transactionDate}
+                                          </Text>
+                                        </Descriptions.Item>
+                                      )}
+                                      {gatewayData.accountNumber && (
+                                        <Descriptions.Item label="Số tài khoản">
+                                          <Text code>
+                                            {gatewayData.accountNumber}
+                                          </Text>
+                                        </Descriptions.Item>
+                                      )}
+                                      {gatewayData.referenceCode && (
+                                        <Descriptions.Item label="Mã tham chiếu">
+                                          <Text code>
+                                            {gatewayData.referenceCode}
+                                          </Text>
+                                        </Descriptions.Item>
+                                      )}
+                                      {gatewayData.content && (
+                                        <Descriptions.Item label="Nội dung chuyển khoản">
+                                          <Text>{gatewayData.content}</Text>
+                                        </Descriptions.Item>
+                                      )}
+                                    </Descriptions>
+                                  );
+                                } catch (e) {
+                                  return (
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: '12px' }}
+                                    >
+                                      {typeof selectedTransaction.metadata
+                                        .gateway_response === 'string'
+                                        ? selectedTransaction.metadata.gateway_response.substring(
+                                            0,
+                                            100
+                                          ) + '...'
+                                        : JSON.stringify(
+                                            selectedTransaction.metadata
+                                              .gateway_response
+                                          ).substring(0, 100) + '...'}
+                                    </Text>
+                                  );
+                                }
+                              })()}
+                            </div>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.installment_id && (
+                          <Descriptions.Item label="Installment ID">
                             <Text code>
                               {selectedTransaction.metadata.installment_id}
                             </Text>
                           </Descriptions.Item>
                         )}
-                      {selectedTransaction.metadata.revisionRound && (
-                        <Descriptions.Item label="Lần chỉnh sửa">
-                          <Text>Lần {selectedTransaction.metadata.revisionRound}</Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.reason && (
-                        <Descriptions.Item label="Lý do">
-                          <Text>{selectedTransaction.metadata.reason}</Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.refund_reason && (
-                        <Descriptions.Item label="Lý do hoàn tiền">
-                          <Text>
-                            {selectedTransaction.metadata.refund_reason}
-                          </Text>
-                        </Descriptions.Item>
-                      )}
-                      {selectedTransaction.metadata.original_wallet_tx_id && (
-                        <Descriptions.Item label="Giao dịch gốc">
-                          <Text code>
-                            {selectedTransaction.metadata.original_wallet_tx_id}
-                          </Text>
-                        </Descriptions.Item>
-                      )}
-                    </>
-                  )}
-                </Descriptions>
-              </>
-            )}
+                        {selectedTransaction.metadata.payment_type && (
+                          <Descriptions.Item label="Loại thanh toán">
+                            <Tag>
+                              {selectedTransaction.metadata.payment_type ===
+                              'DEPOSIT'
+                                ? 'Cọc hợp đồng'
+                                : selectedTransaction.metadata.payment_type ===
+                                    'MILESTONE'
+                                  ? 'Thanh toán milestone'
+                                  : selectedTransaction.metadata.payment_type}
+                            </Tag>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.txType ===
+                          'contract_deposit_payment' &&
+                          selectedTransaction.metadata?.installment_id && (
+                            <Descriptions.Item label="Installment (Cọc)">
+                              <Text code>
+                                {selectedTransaction.metadata.installment_id}
+                              </Text>
+                            </Descriptions.Item>
+                          )}
+                        {selectedTransaction.metadata.revisionRound && (
+                          <Descriptions.Item label="Lần chỉnh sửa">
+                            <Text>
+                              Lần {selectedTransaction.metadata.revisionRound}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.reason && (
+                          <Descriptions.Item label="Lý do">
+                            <Text>{selectedTransaction.metadata.reason}</Text>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.refund_reason && (
+                          <Descriptions.Item label="Lý do hoàn tiền">
+                            <Text>
+                              {selectedTransaction.metadata.refund_reason}
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                        {selectedTransaction.metadata.original_wallet_tx_id && (
+                          <Descriptions.Item label="Giao dịch gốc">
+                            <Text code>
+                              {
+                                selectedTransaction.metadata
+                                  .original_wallet_tx_id
+                              }
+                            </Text>
+                          </Descriptions.Item>
+                        )}
+                      </>
+                    )}
+                  </Descriptions>
+                </>
+              )}
             </div>
           </Spin>
         )}
@@ -1019,7 +1086,7 @@ const WalletContent = () => {
 
 const WalletPage = () => {
   useDocumentTitle('Wallet');
-  
+
   return (
     <>
       <Header />
