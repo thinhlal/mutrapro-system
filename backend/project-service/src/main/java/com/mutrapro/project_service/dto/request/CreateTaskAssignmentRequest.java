@@ -22,7 +22,7 @@ public class CreateTaskAssignmentRequest {
     String specialistId;
 
     @NotNull(message = "Task type is required")
-    TaskType taskType;
+    TaskType taskType;  // Frontend sẽ set từ milestone.milestoneType
 
     @NotBlank(message = "Milestone ID is required")
     String milestoneId;

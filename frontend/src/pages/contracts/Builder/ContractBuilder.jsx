@@ -62,6 +62,17 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
     form
   );
 
+  // Tự động set milestoneType dựa trên contractType khi component mount hoặc contractType thay đổi
+  useEffect(() => {
+    const contractType = form.getFieldValue('contract_type');
+    const currentMilestoneType = form.getFieldValue(['milestones', field.name, 'milestoneType']);
+    
+    // Tự động set milestoneType cho các contract type khác (không phải arrangement_with_recording và bundle)
+    if (contractType && contractType !== 'arrangement_with_recording' && contractType !== 'bundle' && !currentMilestoneType) {
+      form.setFieldValue(['milestones', field.name, 'milestoneType'], contractType);
+    }
+  }, [form, field.name]);
+
   // Tách key ra khỏi field để tránh lỗi React key prop
   const { key, ...restField } = field;
 
@@ -115,6 +126,61 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
             rows={2}
             placeholder="Mô tả công việc trong milestone này"
           />
+        </Form.Item>
+
+        {/* Milestone Type - chỉ hiển thị cho arrangement_with_recording */}
+        <Form.Item shouldUpdate={(prev, curr) => {
+          const prevContractType = prev?.contract_type;
+          const currContractType = curr?.contract_type;
+          return prevContractType !== currContractType;
+        }}>
+          {() => {
+            const contractType = form.getFieldValue('contract_type');
+            
+            if (contractType === 'arrangement_with_recording') {
+              // Cho arrangement_with_recording: hiển thị và cho phép chọn (required)
+              return (
+                <Form.Item
+                  {...restField}
+                  name={[field.name, 'milestoneType']}
+                  label="Milestone Type"
+                  rules={[
+                    {
+                      required: true,
+                      message: 'Milestone type is required for Arrangement with Recording milestones',
+                    },
+                  ]}
+                >
+                  <Select placeholder="Select milestone type">
+                    <Select.Option value="arrangement">Arrangement</Select.Option>
+                    <Select.Option value="recording">Recording</Select.Option>
+                  </Select>
+                </Form.Item>
+              );
+            } else if (contractType && contractType !== 'bundle') {
+              // Cho các contract type khác: tự động set nhưng ẩn field
+              const defaultType = contractType; // transcription, arrangement, recording
+              const currentValue = form.getFieldValue(['milestones', field.name, 'milestoneType']);
+              
+              // Tự động set nếu chưa có giá trị
+              if (!currentValue) {
+                form.setFieldValue(['milestones', field.name, 'milestoneType'], defaultType);
+              }
+              
+              // Render Form.Item ẩn để đảm bảo giá trị được lưu vào form
+              return (
+                <Form.Item
+                  {...restField}
+                  name={[field.name, 'milestoneType']}
+                  hidden
+                  initialValue={defaultType}
+                >
+                  <Input type="hidden" />
+                </Form.Item>
+              );
+            }
+            return null;
+          }}
         </Form.Item>
 
         <Form.Item
@@ -455,6 +521,35 @@ const ContractBuilder = () => {
 
         // Auto-fill form with service request data
         // Contract number sẽ được generate ở backend, nhưng set để hiển thị
+        
+        // Tạo milestones mặc định
+        let defaultMilestones = [];
+        if (contractType === 'arrangement_with_recording') {
+          // Tạo 2 milestones: 1 cho Arrangement, 1 cho Recording
+          defaultMilestones = [
+            {
+              name: 'Arrangement',
+              description: 'Complete arrangement service',
+              orderIndex: 1,
+              milestoneType: 'arrangement', // Phân biệt milestone này là Arrangement
+              hasPayment: false,
+              paymentPercent: null,
+              milestoneSlaDays: Math.floor(defaultSlaDays * 0.6), // 60% của tổng SLA
+            },
+            {
+              name: 'Recording',
+              description: 'Complete recording service',
+              orderIndex: 2,
+              milestoneType: 'recording', // Phân biệt milestone này là Recording
+              hasPayment: false,
+              paymentPercent: null,
+              milestoneSlaDays: Math.floor(defaultSlaDays * 0.4), // 40% của tổng SLA
+            },
+          ];
+        }
+        // Note: Các contract type khác (transcription, arrangement, recording) sẽ không có default milestones
+        // Manager sẽ tự thêm milestones và milestoneType sẽ được tự động set dựa trên contractType
+        
         form.setFieldsValue({
           request_id: request.requestId || request.id,
           customer_id: request.userId,
@@ -467,7 +562,7 @@ const ContractBuilder = () => {
           free_revisions_included: 1,
           revision_deadline_days: defaultRevisionDeadlineDays,
           additional_revision_fee_vnd: getDefaultAdditionalRevisionFeeVnd(),
-          milestones: [], // Empty milestones array - manager will add milestones
+          milestones: defaultMilestones, // Default milestones cho arrangement_with_recording, empty cho các loại khác
           // Auto-fill terms and clauses with default values for this contract type
           // Pass values directly to getDefaultTermsAndConditions
           terms_and_conditions: getDefaultTermsAndConditions(contractType, {
@@ -940,6 +1035,7 @@ const ContractBuilder = () => {
       name: m.name || `Milestone ${index + 1}`,
       description: m.description || '',
       orderIndex: m.orderIndex || index + 1,
+      milestoneType: m.milestoneType || null, // Optional: chỉ cần cho arrangement_with_recording
       hasPayment: m.hasPayment || false,
       paymentPercent: m.hasPayment ? Number(m.paymentPercent || 0) : null,
       milestoneSlaDays: m.milestoneSlaDays ? Number(m.milestoneSlaDays) : null,
@@ -986,17 +1082,34 @@ const ContractBuilder = () => {
       await form.validateFields();
       const values = form.getFieldsValue();
 
-      // Validate at least one milestone is required
+      // Validate milestones based on contract type
       const milestones = values.milestones || [];
-      if (!isEditMode && (!milestones || milestones.length === 0)) {
-        // Set field error to highlight the milestones field
-        form.setFields([
-          {
-            name: ['milestones'],
-            errors: ['At least one milestone is required'],
-          },
-        ]);
-        return;
+      const contractType = values.contract_type;
+      
+      if (!isEditMode) {
+        // For arrangement_with_recording, require at least 2 milestones
+        if (contractType === 'arrangement_with_recording') {
+          if (!milestones || milestones.length < 2) {
+            form.setFields([
+              {
+                name: ['milestones'],
+                errors: ['Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording'],
+              },
+            ]);
+            return;
+          }
+        } else {
+          // For other contract types, require at least 1 milestone
+          if (!milestones || milestones.length === 0) {
+            form.setFields([
+              {
+                name: ['milestones'],
+                errors: ['At least one milestone is required'],
+              },
+            ]);
+            return;
+          }
+        }
       }
 
       // Validate milestone data is complete
@@ -1021,6 +1134,72 @@ const ContractBuilder = () => {
             ]);
             return;
           }
+        }
+        
+        // Validate milestone order for arrangement_with_recording
+        if (contractType === 'arrangement_with_recording') {
+          // Kiểm tra tất cả milestones đều có milestoneType
+          const milestonesWithoutType = milestones.filter((m, idx) => !m.milestoneType);
+          if (milestonesWithoutType.length > 0) {
+            const firstMissingIndex = milestones.findIndex(m => !m.milestoneType);
+            form.setFields([
+              {
+                name: ['milestones', firstMissingIndex, 'milestoneType'],
+                errors: ['Milestone type is required for Arrangement with Recording milestones'],
+              },
+            ]);
+            return;
+          }
+          
+          const arrangementMilestones = milestones
+            .map((m, idx) => ({ ...m, index: idx }))
+            .filter(m => m.milestoneType === 'arrangement');
+          const recordingMilestones = milestones
+            .map((m, idx) => ({ ...m, index: idx }))
+            .filter(m => m.milestoneType === 'recording');
+          
+          // Phải có ít nhất 1 Arrangement và 1 Recording
+          if (arrangementMilestones.length === 0) {
+            form.setFields([
+              {
+                name: ['milestones'],
+                errors: ['At least one Arrangement milestone is required'],
+              },
+            ]);
+            return;
+          }
+          if (recordingMilestones.length === 0) {
+            form.setFields([
+              {
+                name: ['milestones'],
+                errors: ['At least one Recording milestone is required'],
+              },
+            ]);
+            return;
+          }
+          
+          // Tất cả Recording milestones phải có orderIndex lớn hơn tất cả Arrangement milestones
+          const maxArrangementOrder = Math.max(
+            ...arrangementMilestones.map(m => m.orderIndex || m.index + 1)
+          );
+          const minRecordingOrder = Math.min(
+            ...recordingMilestones.map(m => m.orderIndex || m.index + 1)
+          );
+          
+          if (minRecordingOrder <= maxArrangementOrder) {
+            form.setFields([
+              {
+                name: ['milestones'],
+                errors: ['Recording milestone(s) must come after Arrangement milestone(s). Please adjust the order.'],
+              },
+            ]);
+            return;
+          }
+        }
+        
+        // Validate payment for each milestone
+        for (let i = 0; i < milestones.length; i++) {
+          const m = milestones[i];
           if (
             m.hasPayment &&
             (!m.paymentPercent || Number(m.paymentPercent) <= 0)
@@ -1100,6 +1279,7 @@ const ContractBuilder = () => {
             name: m.name.trim(),
             description: (m.description || '').trim(),
             orderIndex: m.orderIndex || index + 1,
+            milestoneType: m.milestoneType || null, // Optional: chỉ cần cho arrangement_with_recording
             hasPayment: m.hasPayment || false,
             paymentPercent:
               m.hasPayment && m.paymentPercent
@@ -1622,30 +1802,54 @@ const ContractBuilder = () => {
                         ]}
                       >
                         <Form.List name="milestones" initialValue={[]}>
-                          {(fields, { add, remove }) => (
-                            <>
-                              {fields.map((field, index) => (
-                                <MilestoneItem
-                                  key={field.key}
-                                  field={field}
-                                  form={form}
-                                  onRemove={remove}
-                                  index={index}
-                                />
-                              ))}
+                          {(fields, { add, remove }) => {
+                            const contractType = form.getFieldValue('contract_type');
+                            return (
+                              <>
+                                {fields.map((field, index) => (
+                                  <MilestoneItem
+                                    key={field.key}
+                                    field={field}
+                                    form={form}
+                                    onRemove={remove}
+                                    index={index}
+                                  />
+                                ))}
 
-                              <Form.Item>
-                                <Button
-                                  type="dashed"
-                                  onClick={() => add()}
-                                  block
-                                  icon={<PlusOutlined />}
-                                >
-                                  Add Milestone
-                                </Button>
-                              </Form.Item>
-                            </>
-                          )}
+                                <Form.Item>
+                                  <Button
+                                    type="dashed"
+                                    onClick={() => {
+                                      const milestones = form.getFieldValue('milestones') || [];
+                                      const newOrderIndex = fields.length + 1;
+                                      
+                                      const newMilestone = {
+                                        name: '',
+                                        description: '',
+                                        orderIndex: newOrderIndex,
+                                        hasPayment: false,
+                                        paymentPercent: null,
+                                        milestoneSlaDays: null,
+                                      };
+                                      
+                                      // Tự động set milestoneType dựa trên contractType
+                                      if (contractType && contractType !== 'arrangement_with_recording' && contractType !== 'bundle') {
+                                        newMilestone.milestoneType = contractType; // transcription, arrangement, recording
+                                      }
+                                      // Với arrangement_with_recording, user sẽ tự chọn milestoneType
+                                      // và orderIndex sẽ được tự động điều chỉnh khi chọn milestoneType
+                                      
+                                      add(newMilestone);
+                                    }}
+                                    block
+                                    icon={<PlusOutlined />}
+                                  >
+                                    Add Milestone
+                                  </Button>
+                                </Form.Item>
+                              </>
+                            );
+                          }}
                         </Form.List>
                       </Form.Item>
 
@@ -1686,24 +1890,67 @@ const ContractBuilder = () => {
 
                           // Build validation messages
                           const messages = [];
+                          const contractType = form.getFieldValue('contract_type');
 
-                          // Check if at least one milestone is required
-                          if (!isEditMode && milestones.length === 0) {
-                            messages.push(
-                              <div
-                                key="milestone-required"
-                                style={{
-                                  fontSize: '12px',
-                                  color: '#ff4d4f',
-                                  marginTop: 4,
-                                }}
-                              >
-                                <CloseCircleOutlined
-                                  style={{ marginRight: 4, color: '#ff4d4f' }}
-                                />
-                                At least one milestone is required
-                              </div>
-                            );
+                          // Check milestone requirements based on contract type
+                          if (!isEditMode) {
+                            if (contractType === 'arrangement_with_recording') {
+                              if (milestones.length < 2) {
+                                messages.push(
+                                  <div
+                                    key="milestone-arrangement-recording-count"
+                                    style={{
+                                      fontSize: '12px',
+                                      color: '#ff4d4f',
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    <CloseCircleOutlined
+                                      style={{ marginRight: 4, color: '#ff4d4f' }}
+                                    />
+                                    Arrangement with Recording requires at least 2 milestones: one for Arrangement and one for Recording
+                                  </div>
+                                );
+                              } else {
+                                // Check if has both arrangement and recording milestones
+                                const hasArrangement = milestones.some(m => m.milestoneType === 'arrangement');
+                                const hasRecording = milestones.some(m => m.milestoneType === 'recording');
+                                
+                                if (!hasArrangement || !hasRecording) {
+                                  messages.push(
+                                    <div
+                                      key="milestone-arrangement-recording-types"
+                                      style={{
+                                        fontSize: '12px',
+                                        color: '#ff4d4f',
+                                        marginTop: 4,
+                                      }}
+                                    >
+                                      <CloseCircleOutlined
+                                        style={{ marginRight: 4, color: '#ff4d4f' }}
+                                      />
+                                      Arrangement with Recording requires at least one Arrangement milestone and one Recording milestone
+                                    </div>
+                                  );
+                                }
+                              }
+                            } else if (contractType !== 'arrangement_with_recording' && milestones.length === 0) {
+                              messages.push(
+                                <div
+                                  key="milestone-required"
+                                  style={{
+                                    fontSize: '12px',
+                                    color: '#ff4d4f',
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  <CloseCircleOutlined
+                                    style={{ marginRight: 4, color: '#ff4d4f' }}
+                                  />
+                                  At least one milestone is required
+                                </div>
+                              );
+                            }
                           }
 
                           if (milestones.length > 0) {
@@ -1912,6 +2159,16 @@ const ContractBuilder = () => {
                               <strong>Purpose:</strong> {getPurposeLabel(serviceRequest.purpose)}
                             </p>
                           )}
+                          {serviceRequest.requestType === 'arrangement_with_recording' &&
+                            serviceRequest.preferredSpecialists &&
+                            serviceRequest.preferredSpecialists.length > 0 && (
+                              <p>
+                                <strong>Preferred Vocalists:</strong>{' '}
+                                {serviceRequest.preferredSpecialists
+                                  .map(s => s.name || `Vocalist ${s.specialistId}`)
+                                  .join(', ')}
+                              </p>
+                            )}
                         </>
                       )}
                     </>

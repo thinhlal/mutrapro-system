@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.dto.request;
 
+import com.mutrapro.project_service.enums.MilestoneType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -28,6 +29,8 @@ public class CreateMilestoneRequest {
     @NotNull(message = "Order index is required")
     @Positive(message = "Order index must be positive")
     Integer orderIndex;
+
+    MilestoneType milestoneType;  // Optional: transcription, arrangement, recording - để phân biệt milestone cho arrangement_with_recording
 
     // Payment configuration
     @NotNull(message = "Has payment is required")

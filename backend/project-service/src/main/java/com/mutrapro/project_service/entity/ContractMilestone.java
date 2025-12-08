@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.entity;
 
+import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -12,7 +13,8 @@ import java.time.LocalDateTime;
 @Table(name = "contract_milestones", indexes = {
     @Index(name = "idx_milestones_contract_id", columnList = "contract_id"),
     @Index(name = "idx_milestones_order_index", columnList = "contract_id, order_index"),
-    @Index(name = "idx_milestones_work_status", columnList = "work_status")
+    @Index(name = "idx_milestones_work_status", columnList = "work_status"),
+    @Index(name = "idx_milestones_milestone_type", columnList = "milestone_type")
 })
 @Getter
 @Setter
@@ -38,6 +40,11 @@ public class ContractMilestone extends BaseEntity<String> {
 
     @Column(name = "order_index", nullable = false)
     Integer orderIndex;  // 1, 2, 3... thứ tự milestone
+
+    // Milestone type: để phân biệt milestone là Arrangement hay Recording (cho arrangement_with_recording)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "milestone_type", length = 20)
+    MilestoneType milestoneType;  // transcription, arrangement, recording - NULL nếu không áp dụng
 
     // Phần WORK
     @Builder.Default

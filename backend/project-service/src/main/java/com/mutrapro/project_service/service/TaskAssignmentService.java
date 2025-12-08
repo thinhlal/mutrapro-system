@@ -1419,16 +1419,41 @@ public class TaskAssignmentService {
             );
         }
         
-        // Verify task type matches contract type
-        TaskType taskType = request.getTaskType();
-        if (!isTaskTypeValidForContract(taskType, contract.getContractType())) {
-            throw InvalidTaskTypeException.create(taskType, contract.getContractType().toString());
-        }
-        
         // Milestone is mandatory and must exist
         ContractMilestone milestone = contractMilestoneRepository
             .findByMilestoneIdAndContractId(request.getMilestoneId(), contractId)
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(request.getMilestoneId(), contractId));
+        
+        // Dùng taskType từ request (frontend đã set từ milestone.milestoneType)
+        TaskType taskType = request.getTaskType();
+        if (taskType == null) {
+            throw InvalidTaskTypeException.create(
+                null, 
+                "Task type is required. Frontend should set taskType from milestone.milestoneType."
+            );
+        }
+        
+        // Verify task type matches contract type
+        if (!isTaskTypeValidForContract(taskType, contract.getContractType())) {
+            throw InvalidTaskTypeException.create(taskType, contract.getContractType().toString());
+        }
+        
+        // Verify task type matches milestone type (milestoneType luôn được set)
+        if (milestone.getMilestoneType() == null) {
+            throw InvalidTaskTypeException.create(
+                taskType, 
+                String.format("Milestone '%s' (ID: %s) does not have milestoneType. All milestones must have milestoneType set.", 
+                    milestone.getName(), milestone.getMilestoneId())
+            );
+        }
+        TaskType expectedTaskType = TaskType.valueOf(milestone.getMilestoneType().name());
+        if (taskType != expectedTaskType) {
+            throw InvalidTaskTypeException.create(
+                taskType, 
+                String.format("Task type must match milestone type. Expected: %s, Got: %s", 
+                    expectedTaskType, taskType)
+            );
+        }
         
         // Verify milestone work status allows task assignment creation
         // Chỉ cho phép tạo task khi milestone ở PLANNED/READY_TO_START/IN_PROGRESS

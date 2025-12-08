@@ -55,14 +55,6 @@ const TASK_TYPE_LABELS = {
   recording: 'Recording',
 };
 
-const CONTRACT_TASK_MAP = {
-  transcription: ['transcription'],
-  arrangement: ['arrangement'],
-  recording: ['recording'],
-  arrangement_with_recording: ['arrangement', 'recording'],
-  bundle: ['transcription', 'arrangement', 'recording'],
-};
-
 const defaultStats = {
   total: 0,
   assigned: 0,
@@ -365,14 +357,16 @@ export default function TaskAssignmentWorkspace() {
       }
     }
 
-    if (contract.contractType && !taskType) {
-      const allowed =
-        CONTRACT_TASK_MAP[contract.contractType.toLowerCase()] || [];
-      if (allowed.length > 0) {
-        setTaskType(allowed[0]);
+    // Tự động set taskType từ milestone.milestoneType (milestoneType luôn được set)
+    if (selectedMilestoneId && contract?.milestones) {
+      const selectedMilestone = contract.milestones.find(
+        m => m.milestoneId === selectedMilestoneId
+      );
+      if (selectedMilestone?.milestoneType) {
+        setTaskType(selectedMilestone.milestoneType);
       }
     }
-  }, [contract, milestoneStats, selectedMilestoneId, taskType, isEditMode]);
+  }, [contract, milestoneStats, selectedMilestoneId, isEditMode]);
 
   // Set selected specialist when specialists are loaded and we have assignment data
   useEffect(() => {
@@ -391,18 +385,12 @@ export default function TaskAssignmentWorkspace() {
     }
   }, [isEditMode, currentAssignment, specialists, selectedSpecialist]);
 
-  const allowedTaskTypes = useMemo(() => {
-    if (!contract?.contractType) return [];
-    return CONTRACT_TASK_MAP[contract.contractType.toLowerCase()] || [];
-  }, [contract]);
-
   useEffect(() => {
     // Chỉ fetch khi contract và milestone đã load xong
     if (!contract || !selectedMilestoneId || !instrumentFiltersReady) return;
 
-    const effectiveTaskType =
-      taskType ||
-      (allowedTaskTypes.length === 1 ? allowedTaskTypes[0] : undefined);
+    // taskType luôn được set từ milestone.milestoneType
+    const effectiveTaskType = taskType;
 
     const specializationFilter = effectiveTaskType
       ? TASK_TYPE_TO_SPECIALIST[effectiveTaskType]
@@ -465,7 +453,6 @@ export default function TaskAssignmentWorkspace() {
     fetchSpecialists(specializationFilter, requiredNames, mainInstrumentName);
   }, [
     contract,
-    allowedTaskTypes,
     taskType,
     fetchSpecialists,
     instrumentDetails,
@@ -524,10 +511,6 @@ export default function TaskAssignmentWorkspace() {
       message.warning('Vui lòng chọn specialist');
       return;
     }
-    if (!taskType) {
-      message.warning('Vui lòng chọn task type');
-      return;
-    }
 
     // Validate milestone work status
     if (selectedMilestone) {
@@ -544,7 +527,7 @@ export default function TaskAssignmentWorkspace() {
       setAssigning(true);
       const assignmentData = {
         specialistId: selectedSpecialist.specialistId,
-        taskType,
+        taskType: taskType, // Luôn có giá trị từ milestone.milestoneType
         milestoneId: selectedMilestoneId,
         notes: notes || null,
       };
@@ -840,15 +823,36 @@ export default function TaskAssignmentWorkspace() {
                               `Milestone ${item.orderIndex}: `}
                             {item.name}
                           </Text>
-                          <Tag color={getWorkStatusColor()}>
-                            {MILESTONE_WORK_STATUS_LABELS[workStatus] ||
-                              workStatus}
-                          </Tag>
+                          <Space>
+                            {/* Milestone Type */}
+                            {item.milestoneType && (
+                              <Tag color="blue">
+                                {TASK_TYPE_LABELS[item.milestoneType] || item.milestoneType}
+                              </Tag>
+                            )}
+                            {/* Work Status */}
+                            <Tag color={getWorkStatusColor()}>
+                              {MILESTONE_WORK_STATUS_LABELS[workStatus] ||
+                                workStatus}
+                            </Tag>
+                          </Space>
                         </div>
+                        {/* Task Status */}
                         {hasActiveTask && (
-                          <Tag color="magenta">
-                            {activeTaskCount} task đang hoạt động
-                          </Tag>
+                          <div style={{ marginTop: 8 }}>
+                            <Tag color="magenta">
+                              {activeTaskCount} task đang hoạt động
+                            </Tag>
+                            {stats.assigned > 0 && (
+                              <Tag color="orange">Assigned: {stats.assigned}</Tag>
+                            )}
+                            {stats.inProgress > 0 && (
+                              <Tag color="processing">In Progress: {stats.inProgress}</Tag>
+                            )}
+                            {stats.completed > 0 && (
+                              <Tag color="success">Completed: {stats.completed}</Tag>
+                            )}
+                          </div>
                         )}
                         {item.description && (
                           <Paragraph
@@ -1024,20 +1028,6 @@ export default function TaskAssignmentWorkspace() {
             <Row gutter={16}>
               <Col xs={24} md={10}>
                 <Form layout="vertical">
-                  <Form.Item label="Task Type" required>
-                    <Select
-                      value={taskType}
-                      onChange={value => setTaskType(value)}
-                      placeholder="Chọn task type"
-                      disabled={isEditMode}
-                    >
-                      {allowedTaskTypes.map(type => (
-                        <Option key={type} value={type}>
-                          {TASK_TYPE_LABELS[type]}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
                   <Form.Item label="Ghi chú (optional)">
                     <TextArea
                       rows={4}

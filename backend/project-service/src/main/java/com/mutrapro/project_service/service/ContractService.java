@@ -61,7 +61,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 import com.mutrapro.project_service.exception.SignatureImageNotFoundException;
 import com.mutrapro.shared.service.S3Service;
@@ -78,7 +77,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -1767,6 +1765,7 @@ public class ContractService {
                 .orderIndex(milestoneRequest.getOrderIndex())
                 .name(milestoneRequest.getName())
                 .description(milestoneRequest.getDescription())
+                .milestoneType(milestoneRequest.getMilestoneType())  // Set milestoneType từ request
                 .workStatus(MilestoneWorkStatus.PLANNED)
                 .hasPayment(milestoneRequest.getHasPayment() != null ? milestoneRequest.getHasPayment() : false)
                 .milestoneSlaDays(milestoneRequest.getMilestoneSlaDays())

@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.dto.response;
 
+import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,6 +28,8 @@ public class ContractMilestoneResponse {
     String description;
     
     Integer orderIndex;
+    
+    MilestoneType milestoneType;  // transcription, arrangement, recording - NULL nếu không áp dụng
     
     MilestoneWorkStatus workStatus;
     
