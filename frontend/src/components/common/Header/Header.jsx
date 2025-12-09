@@ -122,7 +122,7 @@ function Header() {
           <div className={styles.desktopNav}>
             <Nav className={styles.navLinks}>
               {navLink('/', 'home', 'Home')}
-              {navLink('/introduction', 'audio', 'Introduciton')}
+              {navLink('/introduction', 'audio', 'Introduction')}
               {navLink('/request-service', 'request', 'Request Service')}
               {navLink(
                 '/ai-transcription',
