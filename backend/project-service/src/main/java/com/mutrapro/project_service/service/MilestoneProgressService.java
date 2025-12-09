@@ -84,8 +84,10 @@ public class MilestoneProgressService {
         // actualStartAt = thời điểm hiện tại khi milestone thực sự bắt đầu (khi
         // manager/specialist start)
         milestone.setActualStartAt(LocalDateTime.now());
-        if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED
-                || milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
+        // Chỉ set IN_PROGRESS nếu milestone đang ở READY_TO_START
+        // (không set nếu đang ở PLANNED, WAITING_ASSIGNMENT, WAITING_SPECIALIST_ACCEPT, 
+        // hoặc TASK_ACCEPTED_WAITING_ACTIVATION vì milestone chưa được activate)
+        if (milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
             milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
         }
         contractMilestoneRepository.save(milestone);

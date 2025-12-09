@@ -72,6 +72,9 @@ const TASK_TYPE_TO_SPECIALIST = {
 // Milestone work status colors
 const MILESTONE_WORK_STATUS_COLORS = {
   PLANNED: 'default',
+  WAITING_ASSIGNMENT: 'orange',
+  WAITING_SPECIALIST_ACCEPT: 'gold',
+  TASK_ACCEPTED_WAITING_ACTIVATION: 'lime',
   READY_TO_START: 'cyan',
   IN_PROGRESS: 'processing',
   WAITING_CUSTOMER: 'warning',
@@ -83,6 +86,9 @@ const MILESTONE_WORK_STATUS_COLORS = {
 // Milestone work status labels
 const MILESTONE_WORK_STATUS_LABELS = {
   PLANNED: 'Đã lên kế hoạch',
+  WAITING_ASSIGNMENT: 'Chờ assign task',
+  WAITING_SPECIALIST_ACCEPT: 'Chờ specialist accept',
+  TASK_ACCEPTED_WAITING_ACTIVATION: 'Đã accept, chờ activate',
   READY_TO_START: 'Sẵn sàng bắt đầu',
   IN_PROGRESS: 'Đang thực hiện',
   WAITING_CUSTOMER: 'Chờ khách hàng',
@@ -519,9 +525,12 @@ export default function TaskAssignmentWorkspace() {
     // Validate milestone work status
     if (selectedMilestone) {
       const workStatus = selectedMilestone.workStatus?.toUpperCase();
-      if (workStatus !== 'PLANNED' && workStatus !== 'IN_PROGRESS') {
+      if (workStatus !== 'PLANNED' 
+          && workStatus !== 'WAITING_ASSIGNMENT' 
+          && workStatus !== 'READY_TO_START'
+          && workStatus !== 'IN_PROGRESS') {
         message.error(
-          `Không thể tạo task: Milestone phải ở trạng thái PLANNED hoặc IN_PROGRESS. ` +
+          `Không thể tạo task: Milestone phải ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS. ` +
             `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
         );
         return;
@@ -771,9 +780,12 @@ export default function TaskAssignmentWorkspace() {
                     item.workStatus?.toUpperCase() || 'PLANNED';
                   const isCompleted = workStatus === 'COMPLETED';
                   const isCancelled = workStatus === 'CANCELLED';
-                  // Chỉ cho phép chọn milestones có workStatus = PLANNED hoặc IN_PROGRESS
+                  // Chỉ cho phép chọn milestones có workStatus = PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS
                   const canSelect =
-                    workStatus === 'PLANNED' || workStatus === 'IN_PROGRESS';
+                    workStatus === 'PLANNED' 
+                    || workStatus === 'WAITING_ASSIGNMENT'
+                    || workStatus === 'READY_TO_START'
+                    || workStatus === 'IN_PROGRESS';
                   const activeTaskCount =
                     (stats.assigned || 0) + (stats.inProgress || 0);
                   const hasActiveTask = activeTaskCount > 0;
@@ -784,6 +796,12 @@ export default function TaskAssignmentWorkspace() {
                     switch (workStatus) {
                       case 'PLANNED':
                         return 'default';
+                      case 'WAITING_ASSIGNMENT':
+                        return 'orange';
+                      case 'WAITING_SPECIALIST_ACCEPT':
+                        return 'gold';
+                      case 'TASK_ACCEPTED_WAITING_ACTIVATION':
+                        return 'lime';
                       case 'READY_TO_START':
                         return 'cyan';
                       case 'IN_PROGRESS':
@@ -823,7 +841,11 @@ export default function TaskAssignmentWorkspace() {
                               ? 'Milestone đã bị hủy'
                               : hasActiveTask
                                 ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
-                                : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED hoặc IN_PROGRESS';
+                                : workStatus === 'WAITING_SPECIALIST_ACCEPT'
+                                  ? 'Milestone đang chờ specialist accept task. Vui lòng đợi specialist accept hoặc hủy task hiện tại.'
+                                  : workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                    ? 'Milestone đã có task được accept, đang chờ activate. Không thể tạo task mới.'
+                                    : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS';
                           message.warning(reason);
                         }
                       }}

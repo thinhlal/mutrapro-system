@@ -2119,6 +2119,12 @@ const ContractDetailPage = () => {
                       switch (workStatus) {
                         case 'PLANNED':
                           return 'default';
+                        case 'WAITING_ASSIGNMENT':
+                          return 'orange';
+                        case 'WAITING_SPECIALIST_ACCEPT':
+                          return 'gold';
+                        case 'TASK_ACCEPTED_WAITING_ACTIVATION':
+                          return 'lime';
                         case 'READY_TO_START':
                           return 'cyan';
                         case 'IN_PROGRESS':
@@ -2140,6 +2146,12 @@ const ContractDetailPage = () => {
                       switch (workStatus) {
                         case 'PLANNED':
                           return 'Đã lên kế hoạch';
+                        case 'WAITING_ASSIGNMENT':
+                          return 'Chờ assign task';
+                        case 'WAITING_SPECIALIST_ACCEPT':
+                          return 'Chờ specialist accept';
+                        case 'TASK_ACCEPTED_WAITING_ACTIVATION':
+                          return 'Đã accept, chờ activate';
                         case 'READY_TO_START':
                           return 'Sẵn sàng bắt đầu';
                         case 'IN_PROGRESS':

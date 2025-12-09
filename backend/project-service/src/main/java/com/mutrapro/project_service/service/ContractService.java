@@ -1310,8 +1310,8 @@ public class ContractService {
             );
         }
 
-        // Kiểm tra tất cả milestone phải được assign task và có ít nhất 1 task đã được accept
-        // Điều này đảm bảo deadline không bị lùi khi start contract
+        // Chỉ milestone 1 phải có task assignment và đã được accept
+        // Các milestone khác có thể chưa assign hoặc chưa accept (contract không bị block)
         List<ContractMilestone> allMilestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(contractId);
         
@@ -1323,6 +1323,21 @@ public class ContractService {
             );
         }
         
+        // Tìm milestone 1
+        ContractMilestone firstMilestone = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == 1)
+            .findFirst()
+            .orElse(null);
+        
+        if (firstMilestone == null) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                "Cannot start contract work: Contract must have a milestone with orderIndex = 1."
+            );
+        }
+        
+        // Chỉ milestone 1 phải có task assignment và đã được accept
         List<AssignmentStatus> acceptedStatuses = List.of(
             AssignmentStatus.accepted_waiting,
             AssignmentStatus.ready_to_start,
@@ -1330,51 +1345,36 @@ public class ContractService {
             AssignmentStatus.completed
         );
         
-        for (ContractMilestone milestone : allMilestones) {
-            String milestoneId = milestone.getMilestoneId();
-            
-            // Kiểm tra milestone này có task assignment active không
-            // Logic: Mỗi milestone có thể có nhiều task assignments nhưng chỉ có 1 active (không cancelled)
-            Optional<TaskAssignment> activeTaskOpt = taskAssignmentRepository
-                .findByMilestoneIdAndStatusNot(milestoneId, AssignmentStatus.cancelled);
-            
-            // Tất cả milestone phải có task assignment active
-            if (activeTaskOpt.isEmpty()) {
-                throw InvalidContractStatusException.cannotUpdate(
-                    contractId,
-                    contract.getStatus(),
-                    String.format(
-                        "Cannot start contract work: Milestone '%s' (order %d) has no active task assignment. " +
-                        "All milestones must have at least one active task assignment before starting contract.",
-                        milestone.getName(),
-                        milestone.getOrderIndex()
-                    )
-                );
-            }
-            
-            TaskAssignment activeTask = activeTaskOpt.get();
-            
-            // Kiểm tra task active có được accept không
-            if (!acceptedStatuses.contains(activeTask.getStatus())) {
-                throw InvalidContractStatusException.cannotUpdate(
-                    contractId,
-                    contract.getStatus(),
-                    String.format(
-                        "Cannot start contract work: Milestone '%s' (order %d) has an active task assignment but it is not accepted. " +
-                        "The task assignment must be accepted before starting contract.",
-                        milestone.getName(),
-                        milestone.getOrderIndex()
-                    )
-                );
-            }
+        String firstMilestoneId = firstMilestone.getMilestoneId();
+        Optional<TaskAssignment> firstMilestoneTaskOpt = taskAssignmentRepository
+            .findByMilestoneIdAndStatusNot(firstMilestoneId, AssignmentStatus.cancelled);
+        
+        if (firstMilestoneTaskOpt.isEmpty()) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                String.format(
+                    "Cannot start contract work: Milestone 1 '%s' has no active task assignment. " +
+                    "Milestone 1 must have at least one active task assignment before starting contract.",
+                    firstMilestone.getName()
+                )
+            );
         }
         
-        // Lấy milestone 1 để dùng sau
-        String firstMilestoneId = allMilestones.stream()
-            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == 1)
-            .map(ContractMilestone::getMilestoneId)
-            .findFirst()
-            .orElse(null);
+        TaskAssignment firstMilestoneTask = firstMilestoneTaskOpt.get();
+        
+        // Milestone 1 phải có task đã được accept
+        if (!acceptedStatuses.contains(firstMilestoneTask.getStatus())) {
+            throw InvalidContractStatusException.cannotUpdate(
+                contractId,
+                contract.getStatus(),
+                String.format(
+                    "Cannot start contract work: Milestone 1 '%s' has an active task assignment but it is not accepted. " +
+                    "The task assignment must be accepted before starting contract.",
+                    firstMilestone.getName()
+                )
+            );
+        }
 
         LocalDateTime startAt = requestedStartAt != null ? requestedStartAt : LocalDateTime.now();
         if (startAt.isBefore(contract.getDepositPaidAt())) {
@@ -1810,12 +1810,14 @@ public class ContractService {
             }
             milestone.setPlannedDueDate(plannedDue);
             
-            // Unlock milestone đầu tiên nếu được yêu cầu
-            if (unlockFirstMilestone && milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+            // Khi contract active, set milestone status = WAITING_ASSIGNMENT (chờ assign task)
+            // Unlock milestone đầu tiên nếu được yêu cầu (sẽ được set READY_TO_START sau khi có task accepted)
+            if (unlockFirstMilestone) {
+                // Khi start contract work, milestone chưa có task → set WAITING_ASSIGNMENT
                 if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-                    milestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
-                    log.info("Milestone 1 unlocked and READY_TO_START: contractId={}, milestoneId={}",
-                        contractId, milestone.getMilestoneId());
+                    milestone.setWorkStatus(MilestoneWorkStatus.WAITING_ASSIGNMENT);
+                    log.info("Milestone set to WAITING_ASSIGNMENT when contract active: contractId={}, milestoneId={}, orderIndex={}",
+                        contractId, milestone.getMilestoneId(), milestone.getOrderIndex());
                 }
             }
             
@@ -1867,14 +1869,46 @@ public class ContractService {
         if (nextMilestoneOpt.isPresent()) {
             ContractMilestone nextMilestone = nextMilestoneOpt.get();
             
-            // Milestone tiếp theo chuyển sang READY_TO_START để chờ manager/specialist bắt đầu thực tế
+            // Milestone tiếp theo chuyển sang:
+            // - WAITING_ASSIGNMENT: nếu chưa có task
+            // - WAITING_SPECIALIST_ACCEPT: nếu đã có task nhưng chưa accepted
+            // - TASK_ACCEPTED_WAITING_ACTIVATION: nếu đã có task và đã accepted
             if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
-                nextMilestone.setWorkStatus(MilestoneWorkStatus.READY_TO_START);
-                contractMilestoneRepository.save(nextMilestone);
-                log.info("Milestone unlocked and READY_TO_START: contractId={}, milestoneId={}, orderIndex={}", 
-                    contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                // Kiểm tra xem milestone này đã có task assignment chưa
+                List<TaskAssignment> tasks = taskAssignmentRepository
+                    .findByContractIdAndMilestoneId(contractId, nextMilestone.getMilestoneId())
+                    .stream()
+                    .filter(task -> task.getStatus() != AssignmentStatus.cancelled)
+                    .toList();
+                
+                if (tasks.isEmpty()) {
+                    // Chưa có task → chuyển WAITING_ASSIGNMENT
+                    nextMilestone.setWorkStatus(MilestoneWorkStatus.WAITING_ASSIGNMENT);
+                    contractMilestoneRepository.save(nextMilestone);
+                    log.info("Milestone unlocked to WAITING_ASSIGNMENT (no task yet): contractId={}, milestoneId={}, orderIndex={}", 
+                        contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                } else {
+                    // Đã có task → kiểm tra task đã accepted chưa
+                    boolean hasAcceptedTask = tasks.stream()
+                        .anyMatch(task -> task.getStatus() == AssignmentStatus.accepted_waiting);
+                    
+                    if (hasAcceptedTask) {
+                        // Đã có task accepted → chuyển TASK_ACCEPTED_WAITING_ACTIVATION
+                        nextMilestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+                        contractMilestoneRepository.save(nextMilestone);
+                        log.info("Milestone unlocked to TASK_ACCEPTED_WAITING_ACTIVATION (has accepted task): contractId={}, milestoneId={}, orderIndex={}", 
+                            contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                    } else {
+                        // Đã có task nhưng chưa accepted → chuyển WAITING_SPECIALIST_ACCEPT
+                        nextMilestone.setWorkStatus(MilestoneWorkStatus.WAITING_SPECIALIST_ACCEPT);
+                        contractMilestoneRepository.save(nextMilestone);
+                        log.info("Milestone unlocked to WAITING_SPECIALIST_ACCEPT (has task but not accepted): contractId={}, milestoneId={}, orderIndex={}", 
+                            contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                    }
+                }
             }
 
+            // Activate assignments nếu milestone đã có task accepted
             taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
             
             // Nếu milestone tiếp theo đã có task accepted/completed (nhưng chưa có actualStartAt vì milestone trước đó chưa completed),

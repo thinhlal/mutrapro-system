@@ -333,7 +333,15 @@ const MilestoneDeliveriesPage = () => {
                             ? 'success'
                             : milestoneInfo.workStatus === 'IN_PROGRESS'
                               ? 'processing'
-                              : 'default'
+                              : milestoneInfo.workStatus === 'WAITING_ASSIGNMENT'
+                                ? 'orange'
+                                : milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT'
+                                  ? 'gold'
+                                  : milestoneInfo.workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                    ? 'lime'
+                                    : milestoneInfo.workStatus === 'READY_TO_START'
+                                      ? 'cyan'
+                                      : 'default'
                     }
                   >
                     {milestoneInfo.workStatus === 'WAITING_CUSTOMER'
@@ -344,7 +352,15 @@ const MilestoneDeliveriesPage = () => {
                           ? 'Hoàn thành'
                           : milestoneInfo.workStatus === 'IN_PROGRESS'
                             ? 'Đang thực hiện'
-                            : milestoneInfo.workStatus || 'N/A'}
+                            : milestoneInfo.workStatus === 'WAITING_ASSIGNMENT'
+                              ? 'Chờ assign task'
+                              : milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT'
+                                ? 'Chờ specialist accept'
+                                : milestoneInfo.workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                  ? 'Đã accept, chờ activate'
+                                  : milestoneInfo.workStatus === 'READY_TO_START'
+                                    ? 'Sẵn sàng bắt đầu'
+                                    : milestoneInfo.workStatus || 'N/A'}
                   </Tag>
                   {/* Chỉ hiển thị nút "Thanh toán" khi milestone READY_FOR_PAYMENT/COMPLETED VÀ installment chưa PAID */}
                   {(milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ||

@@ -526,17 +526,28 @@ export default function ContractsManagement() {
               return {
                 id: m.milestoneId,
                 name: m.name || `Milestone ${m.orderIndex || ''}`.trim(),
+                orderIndex: m.orderIndex,
                 ...stats,
               };
             });
 
-            // Milestone chưa có task assignment active hoặc task chưa được accept
-            const missingMilestones = milestoneSummaries.filter(
-              m => !m.hasActiveTask || !m.isAccepted
-            );
-            // Nếu KHÔNG có milestone nào (chưa sync milestones) HOẶC còn milestone chưa có task accepted
+            // Chỉ milestone 1 phải có task assignment và đã được accept
+            // Các milestone khác có thể chưa assign hoặc chưa accept (contract không bị block)
+            const firstMilestone = milestoneSummaries.find(
+              m => m.orderIndex === 1 || m.name?.toLowerCase().includes('milestone 1')
+            ) || milestoneSummaries[0]; // Fallback: lấy milestone đầu tiên
+            
+            // Milestone 1 chưa có task assignment active hoặc task chưa được accept
+            const firstMilestoneMissing = firstMilestone && (!firstMilestone.hasActiveTask || !firstMilestone.isAccepted);
+            
+            // Các milestone khác chưa có task (chỉ để hiển thị cảnh báo, không block)
+            const otherMilestonesMissing = milestoneSummaries
+              .filter(m => m.id !== firstMilestone?.id)
+              .filter(m => !m.hasActiveTask || !m.isAccepted);
+            
+            // Nếu KHÔNG có milestone nào (chưa sync milestones) HOẶC milestone 1 chưa ready
             const hasBlockingMissing =
-              milestoneSummaries.length === 0 || missingMilestones.length > 0;
+              milestoneSummaries.length === 0 || firstMilestoneMissing;
 
             // Lưu context và mở modal riêng thay vì dùng Modal.confirm
             setStartWorkContext({
@@ -1203,17 +1214,27 @@ export default function ContractsManagement() {
                   ))}
                 </ul>
                 {startWorkContext.hasBlockingMissing ? (
-                  <p style={{ marginTop: 8 }}>
-                    Có milestone chưa có task assignment active hoặc task chưa
-                    được accept, nên chưa thể Start Work. Vui lòng vào
-                    Milestones / Task Progress để gán và đảm bảo task đã được
-                    accept trước.
+                  <p style={{ marginTop: 8, color: '#ff4d4f' }}>
+                    <strong>Milestone 1 chưa có task assignment active hoặc task chưa được accept.</strong> 
+                    {' '}Milestone 1 phải có task đã được accept trước khi Start Work. 
+                    Vui lòng vào Milestones / Task Progress để gán và đảm bảo task đã được accept.
                   </p>
                 ) : (
-                  <p style={{ marginTop: 8 }}>
-                    Tất cả milestones đã có task assignment và đã được accept.
-                    Bạn có chắc chắn muốn Start Work cho contract này không?
-                  </p>
+                  <>
+                    <p style={{ marginTop: 8 }}>
+                      <strong>Milestone 1 đã có task assignment và đã được accept ✓</strong>
+                    </p>
+                    {startWorkContext.otherMilestonesMissing?.length > 0 && (
+                      <p style={{ marginTop: 8, color: '#faad14' }}>
+                        <strong>Lưu ý:</strong> Có {startWorkContext.otherMilestonesMissing.length} milestone khác 
+                        {' '}chưa có task assignment hoặc task chưa được accept. 
+                        {' '}Các milestone này có thể được assign sau, không ảnh hưởng đến việc Start Work.
+                      </p>
+                    )}
+                    <p style={{ marginTop: 8 }}>
+                      Bạn có chắc chắn muốn Start Work cho contract này không?
+                    </p>
+                  </>
                 )}
                 <p style={{ marginTop: 8 }}>
                   Sau khi Start Work, SLA và timeline sẽ được tính từ ngày bắt

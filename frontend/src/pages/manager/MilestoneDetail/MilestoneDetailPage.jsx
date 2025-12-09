@@ -77,6 +77,9 @@ const STATUS_LABELS = {
 
 const WORK_STATUS_COLORS = {
   planned: 'default',
+  waiting_assignment: 'orange',
+  waiting_specialist_accept: 'gold',
+  task_accepted_waiting_activation: 'lime',
   ready_to_start: 'purple',
   in_progress: 'processing',
   waiting_customer: 'orange',
@@ -87,6 +90,9 @@ const WORK_STATUS_COLORS = {
 
 const WORK_STATUS_LABELS = {
   planned: 'Chưa bắt đầu',
+  waiting_assignment: 'Chờ assign task',
+  waiting_specialist_accept: 'Chờ specialist accept',
+  task_accepted_waiting_activation: 'Đã accept, chờ activate',
   ready_to_start: 'Sẵn sàng bắt đầu',
   in_progress: 'Đang thực hiện',
   waiting_customer: 'Chờ khách hàng',
