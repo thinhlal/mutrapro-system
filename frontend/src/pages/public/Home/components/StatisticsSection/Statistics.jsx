@@ -10,15 +10,15 @@ import backgroundImage from '../../../../../assets/images/HomePage/7-2-1-1.jpg';
 
 // ===== Constants =====
 const OBSERVER_OPTS = { threshold: 0.3, rootMargin: '0px 0px -100px 0px' };
-const TARGET_NUMBERS = { transcriptions: 50629, customers: 22897 };
+const TARGET_NUMBERS = { orders: 5000, customers: 1500 };
 const COUNT_DURATION_MS = 2500;
 
 function Statistics() {
   const { ref: sectionRef, isVisible } = useIntersection(OBSERVER_OPTS);
 
-  // Counting animation ONLY for transcriptions
-  const transcriptionsCount = useCountUp(
-    TARGET_NUMBERS.transcriptions,
+  // Counting animation ONLY for orders
+  const ordersCount = useCountUp(
+    TARGET_NUMBERS.orders,
     COUNT_DURATION_MS,
     isVisible
   );
@@ -29,33 +29,29 @@ function Statistics() {
   const statisticsCards = useMemo(
     () => [
       {
-        id: 'google',
-        icon: 'G',
+        id: 'services',
+        icon: '🎵',
         iconColor: '#4285f4',
-        title: '5.0 on Google Reviews',
-        rating: 5,
-        reviews: '791 reviews',
-        linkText: 'SEE ON GOOGLE',
-        linkColor: '#4285f4',
+        title: 'Comprehensive Services',
+        subtitle: 'Transcription, Arrangement & Recording',
+        description: 'All-in-one music production platform',
       },
       {
-        id: 'location',
-        icon: '🌍',
+        id: 'customers',
+        icon: '👥',
         iconColor: '#00d4aa',
-        title: 'Based in the US, UK & Europe',
+        title: 'Satisfied Customers',
         number: TARGET_NUMBERS.customers,
-        subtitle: 'happy customers',
-        description: 'until September 2025',
+        subtitle: 'active users',
+        description: 'trusting MuTraPro for their music needs',
       },
       {
-        id: 'facebook',
-        icon: 'f',
+        id: 'quality',
+        icon: '⭐',
         iconColor: '#1877f2',
-        title: '5.0 on Facebook Reviews',
-        rating: 5,
-        reviews: '306 reviews',
-        linkText: 'SEE ON FACEBOOK',
-        linkColor: '#1877f2',
+        title: 'Professional Quality',
+        subtitle: 'AI-assisted & Expert-reviewed',
+        description: 'Accurate notation and seamless workflow',
       },
     ],
     []
@@ -80,16 +76,16 @@ function Statistics() {
             })}
           >
             <h2 className={styles.mainTitle}>
-              The highest-rated online sheet music transcribers
+              Your trusted platform for music transcription and production
             </h2>
 
             {/* Main Statistics */}
             <div className={styles.mainStats}>
               <div className={styles.bigNumber}>
-                {formatNumber(transcriptionsCount)}
+                {formatNumber(ordersCount)}
               </div>
               <div className={styles.bigNumberSubtitle}>
-                transcriptions delivered since 2011
+                orders completed with excellence
               </div>
             </div>
           </div>

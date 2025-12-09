@@ -67,7 +67,7 @@ function VocalistSelectionCard({
   const experienceYears = specialist?.experienceYears || 0;
 
   return (
-    <div className="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+    <div className={`col-12 col-md-6 col-lg-4 col-xl-3 mb-4 ${styles.cardWrapper}`}>
       <Card
         hoverable={!disabled}
         className={`${styles.card} ${isSelected ? styles.selected : ''} ${disabled ? styles.disabled : ''}`}
@@ -85,21 +85,10 @@ function VocalistSelectionCard({
             {fullName.charAt(0).toUpperCase()}
           </Avatar>
           {specialist?.mainDemoPreviewUrl && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 8,
-                left: 8,
-                right: 8,
-                background: 'rgba(0, 0, 0, 0.7)',
-                borderRadius: 4,
-                padding: '4px 8px',
-                zIndex: 3,
-              }}
-            >
+            <div className={styles.audioPlayerContainer}>
               <audio
                 controls
-                style={{ width: '100%', height: '24px' }}
+                className={styles.audioPlayer}
                 onClick={e => e.stopPropagation()}
                 onPlay={e => e.stopPropagation()}
               >
@@ -128,11 +117,9 @@ function VocalistSelectionCard({
               ({reviews} reviews)
             </Text>
           </div>
-          {bio && (
-            <Paragraph className={styles.description} ellipsis={{ rows: 2 }}>
-              {bio}
-            </Paragraph>
-          )}
+          <Paragraph className={styles.description} ellipsis={{ rows: 2 }}>
+            {bio || '\u00A0'}
+          </Paragraph>
           {genres.length > 0 && (
             <div style={{ marginBottom: 8 }}>
               <Text

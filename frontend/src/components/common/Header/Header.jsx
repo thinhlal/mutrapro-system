@@ -8,7 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import UserMenu from '../UserMenu/UserMenu';
 import NotificationBell from '../../NotificationBell/NotificationBell';
 import styles from './Header.module.css';
-import logo from '../../../assets/images/Logo/Logotip-Positiu.svg';
+import logo from '../../../assets/images/Logo/Mutralogo.svg';
 
 // ---- Helpers ----
 const SECTION_KEYS = new Map([

@@ -60,31 +60,30 @@ function HeroSection() {
               {/* Logo */}
               <div className={styles.logoSection}>
                 <h1 className={styles.logoText}>
-                  <span className={styles.logoMy}>my</span>
-                  <span className={styles.logoMain}>sheet music</span>
-                  <br />
-                  <span className={styles.logoSub}>transcriptions</span>
+                  <span className={styles.logoMy}>Mu</span>
+                  <span className={styles.logoMain}>Tra</span>
+                  <span className={styles.logoMy}>Pro</span>
                 </h1>
               </div>
 
               {/* Main Heading */}
               <div className={styles.mainHeading}>
                 <h2 className={styles.heroTitle}>
-                  Your #1 sheet music transcription service online
+                  Custom Music Transcription and Production System
                 </h2>
               </div>
 
               {/* Description */}
               <div className={styles.description}>
                 <p className={styles.heroDescription}>
-                  Get accurate and high-quality sheet music to learn a song,
-                  perform, register a composition, educate, or for any music
-                  tech application.
+                  Transform any audio, song, or video into detailed musical notation. 
+                  Get custom arrangements and professional vocal recordings—all managed 
+                  seamlessly from request to delivery.
                 </p>
                 <p className={styles.heroSubDescription}>
                   <strong>
-                    Reliable digital notation services by professional
-                    transcribers and music editors.
+                    An integrated platform for on-demand music transcription, 
+                    arrangement, and production services.
                   </strong>
                 </p>
               </div>
