@@ -12,21 +12,21 @@ const OBSERVER_OPTS = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
 const STEPS = [
   {
     id: 1,
-    title: 'Send us audio',
+    title: 'Submit Your Request',
     description:
-      'We will promptly send you a quote and an estimated delivery time',
+      'Upload your audio file, song, or video. Submit existing music scores for arrangement, or book studio sessions for recording services',
   },
   {
     id: 2,
-    title: 'We transcribe it for you',
+    title: 'We Process Your Order',
     description:
-      'Our team of transcribers will prepare the sheet music as per your requirements',
+      'Our specialists handle transcription, arrangement, and recording. Track progress in real-time and request revisions as needed',
   },
   {
     id: 3,
-    title: 'Print & Play',
+    title: 'Receive & Use',
     description:
-      'You will be able to use and play your sheet music in PDF and other formats',
+      'Get your deliverables in multiple formats (PDF, MusicXML). Approve final outputs and download your completed work',
   },
 ];
 
@@ -52,7 +52,7 @@ function HowItWorks() {
               <div className={withVisible(styles.processIllustration)}>
                 <img
                   src={stepsImage}
-                  alt="3 steps: Send Audio → Transcribe → Print & Play"
+                  alt="3 steps: Submit Request → Process Order → Receive & Use"
                   className={styles.processImage}
                   loading="lazy"
                 />

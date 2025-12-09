@@ -12,38 +12,38 @@ const AUTOPLAY_MS = 4000;
 const REVIEWS = [
   {
     name: 'Sarah A.',
-    locationRole: 'Harpist from the US',
+    locationRole: 'Musician from the US',
     date: 'March 2025',
     rating: 5,
-    text: 'Such an amazing team and great work they provide! Very professional, everything is handled with care and done in a timely manner! Until I can learn to play music on my harp by ear, I’ll only use their services from now on which is 💯x better than AI transcriptions! ❤️',
+    text: 'MuTraPro made the entire process so smooth! I uploaded my audio file, tracked the transcription progress in real-time, and got my sheet music in PDF and MusicXML formats. The AI-assisted transcription was incredibly accurate, and the revision process was seamless. Highly recommended!',
   },
   {
     name: 'Guy L.',
-    locationRole: 'Pianist from the UK',
+    locationRole: 'Composer from the UK',
     date: 'January 2025',
     rating: 5,
-    text: 'Exceptional. I requested a transcription of a pretty complex piano piece, and the finished product really exceeded my expectations in terms of accuracy and presentation. Despite its complexity, I didn’t need to ask for any revisions. Will definitely use again.',
+    text: 'I needed both transcription and arrangement services. The platform made it easy to submit my requirements, and I could see exactly which specialist was working on my project. The final arrangement exceeded my expectations. The integrated workflow is fantastic!',
   },
   {
     name: 'Marta S.',
-    locationRole: 'Composer from Spain',
+    locationRole: 'Producer from Spain',
     date: 'December 2024',
     rating: 5,
-    text: 'Fast turnaround and stellar quality! Communication was clear and friendly from start to finish. Highly recommended.',
+    text: 'Booked a studio session through MuTraPro for vocal recording. The scheduling feature worked perfectly, and the Artist assigned to my project was professional. The entire process from booking to receiving the final recording was transparent and efficient.',
   },
   {
     name: 'Ethan P.',
-    locationRole: 'Guitarist from Canada',
+    locationRole: 'Music Teacher from Canada',
     date: 'November 2024',
     rating: 5,
-    text: 'They nailed the fingerstyle parts I was struggling with. Clean notation and easy to read. Will come back for more.',
+    text: 'The wallet system and payment process are very convenient. I could top up funds, see deposit requirements before confirming, and track all my transactions. The transcription quality is excellent, and I love being able to request revisions easily.',
   },
   {
     name: 'Julia K.',
-    locationRole: 'Vocalist from Germany',
+    locationRole: 'Songwriter from Germany',
     date: 'September 2024',
     rating: 5,
-    text: 'Beautifully formatted lead sheets with correct harmonies. Exactly what I needed for rehearsal.',
+    text: 'As someone who needed multiple services—transcription, arrangement, and recording—MuTraPro was the perfect solution. Everything is managed in one platform, and I could monitor progress at every stage. The customer support is responsive and helpful.',
   },
 ];
 

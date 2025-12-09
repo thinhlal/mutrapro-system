@@ -1,9 +1,18 @@
+.cardWrapper {
+  display: flex;
+  height: 100%;
+}
+
 .card {
   transition: all 0.3s ease;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
 .card:hover {
@@ -14,6 +23,11 @@
 .card.selected {
   border: 3px solid #ec8a1c;
   box-shadow: 0 0 0 2px rgba(236, 138, 28, 0.2);
+}
+
+.card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .imageContainer {
@@ -33,6 +47,32 @@
 
 .card:hover .singerImage {
   transform: scale(1.05);
+}
+
+.audioPlayerContainer {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  padding: 4px 8px;
+  z-index: 3;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: none;
+}
+
+.card:hover .audioPlayerContainer {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.audioPlayer {
+  width: 100%;
+  height: 24px;
 }
 
 .onlineBadge {
@@ -69,6 +109,9 @@
 
 .cardBody {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .roles {
@@ -110,6 +153,12 @@
   color: #666;
   margin-bottom: 12px;
   min-height: 40px;
+  height: 40px;
+  line-height: 20px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .credits {
@@ -132,7 +181,7 @@
 }
 
 .actionButtons {
-  margin-top: 12px;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid #f0f0f0;
 }

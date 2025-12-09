@@ -14,12 +14,12 @@ const OBSERVER_OPTS = { threshold: 0.2, rootMargin: '0px 0px -50px 0px' };
 
 const CARDS = [
   {
-    id: 'fast',
+    id: 'services',
     icon: fastDeliveryIcon,
-    iconAlt: 'Fast delivery icon',
+    iconAlt: 'Services icon',
     iconClass: 'iconImage',
-    title: 'Fast turnaround time',
-    description: '1-2 days standard delivery time. Rush orders available',
+    title: 'Comprehensive Services',
+    description: 'Transcription, arrangement, and recording services. Book studio sessions and track progress in real-time',
     delay: '0.2s',
   },
   {
@@ -27,19 +27,19 @@ const CARDS = [
     icon: fileIconsImage,
     iconAlt: 'File format icons',
     iconClass: 'fileIconsImage',
-    title: 'All sheet music formats',
+    title: 'Multiple Export Formats',
     description:
-      'Get the transcription in digital format: PDF, midi, SIB, MUSX, XML, MSCZ, GP',
+      'Get your deliverables in PDF, MusicXML, and other digital formats. Integrated notation editor for editing',
     delay: '0.4s',
   },
   {
-    id: 'accuracy',
+    id: 'workflow',
     icon: accuracyIcon,
-    iconAlt: 'Accuracy target icon',
+    iconAlt: 'Workflow icon',
     iconClass: 'iconImage',
-    title: '100% accuracy & Customer care',
+    title: 'Streamlined Workflow',
     description:
-      'Note-for-note transcriptions and full customer support along the process',
+      'AI-assisted transcription, expert review, revision requests, and transparent progress tracking throughout the process',
     delay: '0.6s',
   },
 ];

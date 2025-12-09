@@ -42,34 +42,32 @@ function WhoAreWe() {
           <Col lg={6} md={6} sm={12} className={styles.textCol}>
             <div className={withVisible(styles.textContent)}>
               <p className={styles.paragraph}>
-                We are{' '}
+                <strong>MuTraPro</strong> is an integrated platform that provides 
+                on-demand music transcription, arrangement, and production services 
+                efficiently and seamlessly. Our system connects customers with 
+                professional specialists to deliver high-quality musical outputs.
+              </p>
+
+              <p className={styles.paragraph}>
+                Why MuTraPro? We optimize the music production workflow by 
+                facilitating transparent interaction, progress monitoring, and 
+                ensuring high-quality service delivery from request to final product.
+              </p>
+
+              <p className={styles.paragraph}>
+                How does it work? Our platform manages the entire process—from 
+                receiving your request, assigning tasks to Transcription Specialists, 
+                Arrangement Specialists, and Artists, to delivering the final product. 
+                We also integrate studio session booking for professional recordings.
+              </p>
+
+              <p className={styles.paragraph}>
+                Our system uses{' '}
+                <strong>AI-assisted transcription combined with expert review</strong> 
+                to ensure accuracy. We provide{' '}
                 <strong>
-                  a team of 40+ professional transcribers, arrangers, music
-                  editors, musicologists, and engineers
-                </strong>{' '}
-                with proven experience in all types of musical transcriptions,
-                arrangements, digitizations, and their music applications.
-              </p>
-
-              <p className={styles.paragraph}>
-                Why do we do it? To create opportunities and facilitate the
-                preservation, usefulness, and accessibility of musical
-                brilliance.
-              </p>
-
-              <p className={styles.paragraph}>
-                How do we like to do it? Bridging the gap between audio and
-                music notation through a combination of expertise, experience,
-                optimization, and commitment to quality!
-              </p>
-
-              <p className={styles.paragraph}>
-                We transcribe{' '}
-                <strong>each note by hand and by ear one by one</strong>. We
-                don't use any kind of automatic transcription software. It's a
-                slow process but it gives{' '}
-                <strong>
-                  great results, reliable notation, and tailored solutions
+                  detailed musical notation, custom arrangements, and professional 
+                  recordings—all managed through our streamlined platform
                 </strong>
                 .
               </p>

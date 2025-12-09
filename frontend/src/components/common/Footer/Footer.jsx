@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons';
 import styles from './Footer.module.css';
 
-// (Tùy chọn) import logo của bạn
+// (Optional) import your logo
 // import logo from "../../../../assets/logo.svg";
 
 const Footer = () => {
@@ -22,14 +22,14 @@ const Footer = () => {
 
   const handleSubscribe = e => {
     e.preventDefault();
-    // TODO: Gọi API/submit form của bạn
-    // reset hoặc toast ở đây
+    // TODO: Call API/submit form
+    // reset or show toast here
     setEmail('');
   };
 
   return (
     <footer className={styles.footer}>
-      {/* BG trang trí nhẹ (nếu muốn thay bằng ảnh sóng) */}
+      {/* Decorative background (optional: replace with wave image) */}
       <div className={styles.bgDecor} aria-hidden="true" />
 
       <Container>
@@ -39,14 +39,14 @@ const Footer = () => {
             <div className={styles.brand}>
               {/* <img src={logo} alt="MuTraPro" className={styles.logo} /> */}
               <div className={styles.logoText}>
-                <span className={styles.logoMy}>my</span>
-                <span className={styles.logoMain}>sheet music</span>
-                <span className={styles.logoSub}>transcriptions</span>
+                <span className={styles.logoMy}>Mu</span>
+                <span className={styles.logoMain}>Tra</span>
+                <span className={styles.logoMy}>Pro</span>
               </div>
               <p className={styles.desc}>
-                Chúng tôi chuyên <b>ký âm</b>, <b>hòa âm phối khí</b> và sản
-                xuất bản nhạc số chính xác cho nghệ sĩ, giáo dục và ứng dụng âm
-                nhạc.
+                We provide on-demand <b>music transcription</b>, <b>arrangement</b>, 
+                and <b>production services</b> for artists, educators, and music 
+                applications. An integrated platform for seamless music production workflow.
               </p>
 
               <div className={styles.contacts}>
@@ -141,7 +141,8 @@ const Footer = () => {
           <Col xs={12} md={6} lg={4}>
             <h4 className={styles.heading}>Stay in the loop</h4>
             <p className={styles.small}>
-              Nhận tips ký âm, template lead sheet, và ưu đãi dịch vụ mỗi tháng.
+              Receive transcription tips, lead sheet templates, and service 
+              offers every month.
             </p>
 
             <form className={styles.subscribe} onSubmit={handleSubscribe}>

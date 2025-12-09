@@ -11,46 +11,46 @@ import quartetIcon from '../../../../../assets/icons/Pricing/Cuartet2-1-2-1.png'
 const CARDS = [
   {
     icon: pianoIcon,
-    iconAlt: 'Piano icon',
-    title: 'Piano',
-    price: 'from',
-    amount: '$19 USD',
-    suffix: 'per minute of music',
+    iconAlt: 'Transcription icon',
+    title: 'Transcription Service',
+    price: 'Custom',
+    amount: 'Pricing',
+    suffix: 'based on complexity',
     factors: [
-      'Music length',
+      'Audio file length and quality',
       'Musical complexity and density',
-      'Difficulty of listening, notation, layers, and polyphonies',
+      'Number of instruments and layers',
     ],
-    minimum: '*minimum charge of $49 USD',
+    minimum: '*AI-assisted transcription with expert review',
     delay: '0.2s',
   },
   {
     icon: quartetIcon,
-    iconAlt: 'Bands/Ensembles icon',
-    title: 'Bands/Ensembles',
-    price: 'from',
-    amount: '$30 USD',
-    suffix: 'per minute of music',
+    iconAlt: 'Arrangement icon',
+    title: 'Arrangement Service',
+    price: 'Custom',
+    amount: 'Pricing',
+    suffix: 'based on requirements',
     factors: [
-      'Music length',
-      'Notation complexity and difficulty of listening',
-      'Part extraction',
+      'Original score complexity',
+      'Arrangement style and instrumentation',
+      'Customer specifications and revisions',
     ],
     delay: '0.4s',
   },
   {
     icon: hornsIcon,
-    iconAlt: 'Melodic Instrument icon',
-    title: 'Melodic Instrument',
-    price: 'from',
-    amount: '$15 USD',
-    suffix: 'per minute of music',
+    iconAlt: 'Recording icon',
+    title: 'Recording Service',
+    price: 'Studio',
+    amount: 'Session',
+    suffix: 'booking available',
     factors: [
-      'Music length',
-      'Musical complexity and density',
-      'Idiomatic difficulty relative to each instrument',
+      'Studio facility and equipment',
+      'Session duration and scheduling',
+      'Artist assignment and performance',
     ],
-    minimum: '*minimum charge of $49 USD',
+    minimum: '*Professional recording with vocal/instrumental artists',
     delay: '0.6s',
   },
 ];
@@ -75,29 +75,26 @@ function FlexiblePricing() {
         {/* Description Text */}
         <div className={withVisible(styles.descriptionSection)}>
           <p className={styles.descriptionText}>
-            <strong>There are pricing options for every budget.</strong> The
-            more instruments and the longer or more complex a piece is, the
-            longer it takes to transcribe. The simpler and more schematic the
-            required notation can be, the less time it takes.
+            <strong>Flexible pricing tailored to your project needs.</strong> Our 
+            pricing depends on the complexity of your request, the length of audio, 
+            the number of instruments, and the specific services required (transcription, 
+            arrangement, or recording).
           </p>
           <p className={styles.descriptionText}>
-            We are a team of professional musicians, performers, editors, and
-            musicologists with extensive experience.{' '}
+            MuTraPro connects you with professional Transcription Specialists, 
+            Arrangement Specialists, and Artists.{' '}
             <strong>
-              Your score will be 100% personalized, tailored to your needs, and
-              crafted note by note manually by our professional
-              transcribers.{' '}
+              Your project will be managed from intake to delivery, with real-time 
+              progress tracking and the ability to request revisions.{' '}
             </strong>
-            The process will be coordinated by our customer service specialists,
-            who will keep you informed at all times.
+            Our Managers coordinate the workflow and ensure quality at every step.
           </p>
           <p className={styles.descriptionText}>
-            Revisions and transpositions are included in the price, as well as
-            all the digital formats you may need.
+            Revisions and multiple export formats (PDF, MusicXML) are included. 
+            Secure online payments and wallet system for convenient transactions.
           </p>
           <p className={styles.descriptionText}>
-            Below you will find a price guide, but please contact us for
-            customized proposals:
+            Contact us for a customized quote based on your specific requirements:
           </p>
         </div>
 
