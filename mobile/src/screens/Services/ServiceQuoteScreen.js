@@ -47,9 +47,15 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
       setLoading(true);
       
       // Fetch calculated price
+      // For arrangement services, durationMinutes is not required
+      const durationMinutes = 
+        serviceType === 'transcription' 
+          ? formData.durationMinutes 
+          : undefined;
+      
       const priceResponse = await calculatePrice(
         serviceType,
-        formData.durationMinutes
+        durationMinutes
       );
 
       if (priceResponse.status === "success" && priceResponse.data) {
@@ -63,7 +69,10 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
       }
     } catch (error) {
       console.error("Error fetching pricing:", error);
-      Alert.alert("Error", "Unable to calculate price. Please try again.");
+      Alert.alert(
+        "Error", 
+        error?.message || error?.data?.message || "Unable to calculate price. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -102,11 +111,13 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
         instrumentIds: formData.instrumentIds || [],
+        mainInstrumentId: formData.mainInstrumentId || null,
         durationMinutes: formData.durationMinutes,
         hasVocalist: formData.hasVocalist || false,
         externalGuestCount: formData.externalGuestCount || 0,
         genres: formData.genres || null,
         purpose: formData.purpose || null,
+        preferredSpecialists: formData.preferredSpecialists || null,
         files: [uploadedFile],
       };
 

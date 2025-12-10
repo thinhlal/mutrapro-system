@@ -336,10 +336,13 @@ const WalletScreen = ({ navigation }) => {
           <View style={styles.balanceActions}>
             <TouchableOpacity
               style={styles.depositButton}
-              onPress={() => setDepositModalVisible(true)}
+              onPress={() => {
+                // Show modal to input amount first
+                setDepositModalVisible(true);
+              }}
             >
               <Ionicons name="add-circle" size={20} color={COLORS.white} />
-              <Text style={styles.depositButtonText}>Deposit</Text>
+              <Text style={styles.depositButtonText}>Nạp tiền</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -421,7 +424,7 @@ const WalletScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Deposit Modal */}
+      {/* Deposit Modal - Keep for backward compatibility or remove if not needed */}
       <Modal
         visible={depositModalVisible}
         transparent
@@ -431,22 +434,22 @@ const WalletScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Deposit to Wallet</Text>
+              <Text style={styles.modalTitle}>Nạp tiền vào ví</Text>
               <TouchableOpacity onPress={() => setDepositModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Amount (VND)</Text>
+              <Text style={styles.inputLabel}>Số tiền (VND)</Text>
               <TextInput
                 style={styles.amountInput}
-                placeholder="Enter amount"
+                placeholder="Nhập số tiền"
                 keyboardType="numeric"
                 value={depositAmount}
                 onChangeText={setDepositAmount}
               />
-              <Text style={styles.inputHint}>Minimum: 1,000 VND</Text>
+              <Text style={styles.inputHint}>Tối thiểu: 1,000 VND</Text>
             </View>
 
             <View style={styles.modalActions}>
@@ -454,7 +457,7 @@ const WalletScreen = ({ navigation }) => {
                 style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => setDepositModalVisible(false)}
               >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                <Text style={styles.modalCancelButtonText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -462,13 +465,25 @@ const WalletScreen = ({ navigation }) => {
                   styles.modalConfirmButton,
                   depositLoading && styles.modalButtonDisabled,
                 ]}
-                onPress={handleDeposit}
+                onPress={() => {
+                  const amount = parseFloat(depositAmount);
+                  if (!amount || amount < 1000) {
+                    Alert.alert("Lỗi", "Số tiền tối thiểu là 1,000 VND");
+                    return;
+                  }
+                  setDepositModalVisible(false);
+                  // Navigate to TopupPayment with amount
+                  navigation.navigate('TopupPayment', {
+                    amount: amount.toString(),
+                    description: 'Nạp tiền vào ví',
+                  });
+                }}
                 disabled={depositLoading}
               >
                 {depositLoading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
-                  <Text style={styles.modalConfirmButtonText}>Deposit</Text>
+                  <Text style={styles.modalConfirmButtonText}>Tiếp tục</Text>
                 )}
               </TouchableOpacity>
             </View>
