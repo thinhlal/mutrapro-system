@@ -2961,9 +2961,28 @@ const ContractDetailPage = () => {
                                 padding: '10px',
                               }}
                             >
-                              <strong>
-                                {milestone.name || `Milestone ${index + 1}`}
-                              </strong>
+                              <div>
+                                <strong>
+                                  {milestone.name || `Milestone ${index + 1}`}
+                                </strong>
+                                {milestone.milestoneType && (
+                                  <Tag
+                                    color="blue"
+                                    size="small"
+                                    style={{ marginLeft: 8 }}
+                                  >
+                                    {milestone.milestoneType === 'transcription'
+                                      ? 'Transcription'
+                                      : milestone.milestoneType ===
+                                          'arrangement'
+                                        ? 'Arrangement'
+                                        : milestone.milestoneType ===
+                                            'recording'
+                                          ? 'Recording'
+                                          : milestone.milestoneType}
+                                  </Tag>
+                                )}
+                              </div>
                             </td>
                             <td
                               style={{

@@ -4,6 +4,7 @@ import com.mutrapro.project_service.dto.response.FileInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.TaskAssignment;
+import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.ContentType;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
@@ -11,6 +12,7 @@ import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.exception.FileNotFoundException;
 import com.mutrapro.project_service.exception.FileUploadException;
+import com.mutrapro.project_service.exception.InvalidBookingStatusException;
 import com.mutrapro.project_service.exception.InvalidFileStatusException;
 import com.mutrapro.project_service.exception.InvalidFileTypeForTaskException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
@@ -19,6 +21,7 @@ import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.shared.event.FileUploadedEvent;
 import com.mutrapro.shared.service.S3Service;
 import lombok.AccessLevel;
@@ -45,6 +48,7 @@ public class FileService {
     FileRepository fileRepository;
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
+    StudioBookingRepository studioBookingRepository;
     S3Service s3Service;
     FileAccessService fileAccessService;
 
@@ -383,27 +387,59 @@ public class FileService {
                 contentType = ContentType.notation;  // default
             }
             
+            // Determine file source based on task type
+            // recording_supervision task → studio_recording
+            // Other tasks → specialist_output
+            FileSourceType fileSource = (assignment.getTaskType() == TaskType.recording_supervision)
+                    ? FileSourceType.studio_recording
+                    : FileSourceType.specialist_output;
+            
+            // Get studio booking ID if this is a recording_supervision task
+            // Validate booking status before allowing file upload
+            final String bookingId;
+            if (assignment.getTaskType() == TaskType.recording_supervision 
+                    && assignment.getStudioBookingId() != null) {
+                String tempBookingId = assignment.getStudioBookingId();
+                
+                // Validate booking status: chỉ cho phép upload khi booking ở trạng thái hợp lệ
+                studioBookingRepository.findByBookingId(tempBookingId)
+                        .ifPresent(booking -> {
+                            BookingStatus bookingStatus = booking.getStatus();
+                            // Chỉ cho phép upload khi booking ở trạng thái: CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                            if (bookingStatus != BookingStatus.CONFIRMED 
+                                    && bookingStatus != BookingStatus.IN_PROGRESS 
+                                    && bookingStatus != BookingStatus.COMPLETED) {
+                                throw InvalidBookingStatusException.cannotUploadFile(tempBookingId, bookingStatus);
+                            }
+                        });
+                
+                bookingId = tempBookingId;
+            } else {
+                bookingId = null;
+            }
+            
             // Save file metadata (store file key, not URL)
             File fileEntity = File.builder()
                     .fileName(file.getOriginalFilename())
                     .fileKeyS3(fileKey)  // Store S3 object key
                     .fileSize(file.getSize())
                     .mimeType(file.getContentType())
-                    .fileSource(FileSourceType.specialist_output)
+                    .fileSource(fileSource)
                     .contentType(contentType)
                     .description(description)
                     .uploadDate(LocalDateTime.now())
                     .createdBy(userId)
                     .assignmentId(assignmentId)
                     .requestId(requestId)
+                    .bookingId(bookingId)  // Link to studio booking for recording_supervision
                     .submissionId(null)  // Can be set later if file is added to submission
                     .fileStatus(FileStatus.uploaded)  // Chờ specialist submit for review
                     .deliveredToCustomer(false)
                     .build();
             
             File saved = fileRepository.save(fileEntity);
-            log.info("File uploaded successfully: fileId={}, assignmentId={}, fileName={}", 
-                    saved.getFileId(), assignmentId, file.getOriginalFilename());
+            log.info("File uploaded successfully: fileId={}, assignmentId={}, taskType={}, fileSource={}, fileName={}", 
+                    saved.getFileId(), assignmentId, assignment.getTaskType(), fileSource, file.getOriginalFilename());
             
             
             return FileInfoResponse.builder()

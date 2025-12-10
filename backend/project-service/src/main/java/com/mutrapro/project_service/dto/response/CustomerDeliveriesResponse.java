@@ -55,6 +55,7 @@ public class CustomerDeliveriesResponse {
         String milestoneId;
         String name;
         String description;
+        String milestoneType;  // transcription, arrangement, recording
         String workStatus;  // PLANNED, IN_PROGRESS, WAITING_CUSTOMER, etc.
         LocalDateTime plannedDueDate;
         LocalDateTime actualStartAt;

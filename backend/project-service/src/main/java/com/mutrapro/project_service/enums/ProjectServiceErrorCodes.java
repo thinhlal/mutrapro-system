@@ -256,6 +256,11 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     STUDIO_NOT_FOUND("CONTRACT_7050", 404,
         "https://docs.mutrapro.com/errors/CONTRACT_7050",
         "Studio not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_BOOKING_STATUS("CONTRACT_7051", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7051",
+        "Invalid booking status for the requested action",
         Retryable.NON_TRANSIENT);
 
     private final String code;

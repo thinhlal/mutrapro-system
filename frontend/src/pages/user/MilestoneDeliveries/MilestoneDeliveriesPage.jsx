@@ -321,6 +321,17 @@ const MilestoneDeliveriesPage = () => {
               <Descriptions.Item label="Milestone Name">
                 <Text strong>{milestoneInfo.name || 'N/A'}</Text>
               </Descriptions.Item>
+              <Descriptions.Item label="Milestone Type">
+                <Tag color="purple">
+                  {milestoneInfo.milestoneType === 'transcription'
+                    ? 'Transcription'
+                    : milestoneInfo.milestoneType === 'arrangement'
+                      ? 'Arrangement'
+                      : milestoneInfo.milestoneType === 'recording'
+                        ? 'Recording'
+                        : milestoneInfo.milestoneType?.toUpperCase() || 'N/A'}
+                </Tag>
+              </Descriptions.Item>
               <Descriptions.Item label="Milestone Status">
                 <Space>
                   <Tag

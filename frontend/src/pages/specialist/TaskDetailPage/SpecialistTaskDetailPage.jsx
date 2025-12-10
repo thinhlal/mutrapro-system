@@ -144,6 +144,7 @@ function getTaskTypeLabel(taskType) {
     arrangement: 'Arrangement',
     arrangement_with_recording: 'Arrangement with Recording',
     recording: 'Recording',
+    recording_supervision: 'Recording Supervision',
   };
   return labels[normalizedType] || taskType;
 }
@@ -1752,19 +1753,23 @@ const SpecialistTaskDetailPage = () => {
                 const needsStudioBooking = isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
                 
                 // Kiểm tra booking status nếu đã có booking (chỉ check status, không check thời gian)
+                // Lưu ý: Khi revision (in_revision), booking có thể đã COMPLETED nhưng vẫn cho phép làm việc (revision hậu kỳ)
                 let canStartWithBooking = true;
                 let bookingStatusMessage = '';
-                if (hasStudioBooking && studioBooking) {
+                if (hasStudioBooking && studioBooking && hasStartButton) {
+                  // Chỉ check booking status khi task đang ở trạng thái ready_to_start (cần start)
+                  // Khi task đã in_progress hoặc in_revision, không cần check booking status nữa
                   const bookingStatus = studioBooking.status;
                   
-                  // Chỉ cho phép start khi booking status là CONFIRMED hoặc IN_PROGRESS
-                  if (bookingStatus !== 'CONFIRMED' && bookingStatus !== 'IN_PROGRESS') {
+                  // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                  // COMPLETED được cho phép vì có thể là revision hậu kỳ (đã thu âm xong, chỉnh sửa file)
+                  if (bookingStatus !== 'CONFIRMED' && bookingStatus !== 'IN_PROGRESS' && bookingStatus !== 'COMPLETED') {
                     canStartWithBooking = false;
                     bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
                   }
                 }
                 
-                const cannotStart = needsStudioBooking || (hasStudioBooking && !canStartWithBooking);
+                const cannotStart = needsStudioBooking || (hasStudioBooking && hasStartButton && !canStartWithBooking);
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
                 // VÀ không có submission nào đang active (pending_review, approved, delivered, customer_accepted)
                 const hasActiveSubmission = submissions.some(sub => {
@@ -1790,7 +1795,9 @@ const SpecialistTaskDetailPage = () => {
                 const hasPendingReviewSubmission = submissions.some(
                   sub => sub.status?.toLowerCase() === 'pending_review'
                 );
+                // Với recording_supervision task, không hiển thị button báo deadline vì đã có booking date cụ thể
                 const hasIssueButton =
+                  !isRecordingSupervision &&
                   status === 'in_progress' &&
                   !task.hasIssue &&
                   !hasPendingReviewSubmission &&
@@ -2005,31 +2012,58 @@ const SpecialistTaskDetailPage = () => {
       </Card>
 
       {/* Khối 1: Draft Files */}
-      {(task.status?.toLowerCase() === 'in_progress' ||
-        task.status?.toLowerCase() === 'revision_requested' ||
-        task.status?.toLowerCase() === 'in_revision') && (
-        <Card
-          className={styles.section}
-          title="Draft Files (chưa submit)"
-          extra={
-            task.status?.toLowerCase() !== 'assigned' &&
-            task.status?.toLowerCase() !== 'accepted_waiting' &&
-            task.status?.toLowerCase() !== 'ready_to_start' &&
-            task.status?.toLowerCase() !== 'delivery_pending' &&
-            task.status?.toLowerCase() !== 'waiting_customer_review' &&
-            task.status?.toLowerCase() !== 'cancelled' &&
-            task.status?.toLowerCase() !== 'ready_for_review' &&
-            task.status?.toLowerCase() !== 'completed' && (
-              <Button
-                type="primary"
-                icon={<UploadOutlined />}
-                onClick={handleOpenUploadModal}
-              >
-                Upload new version
-              </Button>
-            )
-          }
-        >
+      {(() => {
+        // Kiểm tra xem có submission nào đang active (pending_review, approved, delivered, customer_accepted)
+        const hasActiveSubmission = submissions.some(sub => {
+          const subStatus = sub.status?.toLowerCase();
+          return (
+            subStatus === 'pending_review' ||
+            subStatus === 'approved' ||
+            subStatus === 'delivered' ||
+            subStatus === 'customer_accepted'
+          );
+        });
+        
+        // Ẩn Draft Files card khi có active submission (giống logic submit button)
+        // Chỉ hiển thị khi task status hợp lệ VÀ không có active submission
+        const shouldShowDraftFiles = 
+          (task.status?.toLowerCase() === 'in_progress' ||
+           task.status?.toLowerCase() === 'revision_requested' ||
+           task.status?.toLowerCase() === 'in_revision') &&
+          !hasActiveSubmission;
+        
+        if (!shouldShowDraftFiles) return null;
+        
+        // Chỉ hiển thị button upload khi:
+        // 1. Task status hợp lệ (không phải assigned, accepted_waiting, ready_to_start, delivery_pending, waiting_customer_review, cancelled, ready_for_review, completed)
+        // 2. Không có submission nào đang active (đang chờ review hoặc đã được approve/deliver)
+        const canUpload = 
+          task.status?.toLowerCase() !== 'assigned' &&
+          task.status?.toLowerCase() !== 'accepted_waiting' &&
+          task.status?.toLowerCase() !== 'ready_to_start' &&
+          task.status?.toLowerCase() !== 'delivery_pending' &&
+          task.status?.toLowerCase() !== 'waiting_customer_review' &&
+          task.status?.toLowerCase() !== 'cancelled' &&
+          task.status?.toLowerCase() !== 'ready_for_review' &&
+          task.status?.toLowerCase() !== 'completed' &&
+          !hasActiveSubmission;
+        
+        return (
+          <Card
+            className={styles.section}
+            title="Draft Files (chưa submit)"
+            extra={
+              canUpload ? (
+                <Button
+                  type="primary"
+                  icon={<UploadOutlined />}
+                  onClick={handleOpenUploadModal}
+                >
+                  Upload new version
+                </Button>
+              ) : null
+            }
+          >
           {draftFiles.length > 0 ? (
             <Table
               rowKey="fileId"
@@ -2048,7 +2082,8 @@ const SpecialistTaskDetailPage = () => {
             />
           )}
         </Card>
-      )}
+        );
+      })()}
 
       {/* Khối 2: Current Submission */}
       {currentSubmission &&
@@ -2413,19 +2448,21 @@ const SpecialistTaskDetailPage = () => {
         </Card>
       )}
 
-      {/* Notation Editor link */}
-      <Card className={styles.section} title="Open in Notation Editor">
-        <Space direction="vertical">
-          <Text>Use the full transcription editor to work on this task.</Text>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`${basePath}/edit-tool`)}
-          >
-            Open Editor
-          </Button>
-        </Space>
-      </Card>
+      {/* Notation Editor link - Ẩn cho recording_supervision task */}
+      {task?.taskType?.toLowerCase() === 'transcription' && (
+        <Card className={styles.section} title="Open in Notation Editor">
+          <Space direction="vertical">
+            <Text>Use the full transcription editor to work on this task.</Text>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`${basePath}/edit-tool`)}
+            >
+              Open Editor
+            </Button>
+          </Space>
+        </Card>
+      )}
 
       {/* Upload Modal */}
       <Modal

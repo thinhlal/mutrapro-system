@@ -46,6 +46,7 @@ import com.mutrapro.project_service.exception.TaskAssignmentAlreadyCompletedExce
 import com.mutrapro.project_service.exception.TaskAssignmentNotFoundException;
 import com.mutrapro.project_service.exception.UnauthorizedException;
 import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
+import com.mutrapro.project_service.exception.InvalidStateException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
 import com.mutrapro.project_service.exception.TaskAssignmentNotBelongToContractException;
 import com.mutrapro.project_service.exception.TaskAssignmentNoIssueException;
@@ -1179,7 +1180,6 @@ public class TaskAssignmentService {
                 }
                 return 999;
             })); // Sort theo milestoneOrderIndex trong cùng contract
-
         return PageResponse.<TaskAssignmentResponse>builder()
             .content(enrichedAssignments)
             .pageNumber(pageResult.getNumber())
@@ -1947,11 +1947,8 @@ public class TaskAssignmentService {
             && milestone != null 
             && milestone.getMilestoneType() == MilestoneType.recording) {
             if (assignment.getStudioBookingId() == null || assignment.getStudioBookingId().isEmpty()) {
-                throw new IllegalStateException(
-                    String.format("Cannot start recording supervision task without studio booking. " +
-                        "TaskAssignmentId: %s, MilestoneId: %s. " +
-                        "Please ensure a studio booking is created and linked to this task before starting work.",
-                        assignment.getAssignmentId(), assignment.getMilestoneId()));
+                throw InvalidStateException.missingStudioBookingForRecordingTask(
+                    assignment.getAssignmentId(), assignment.getMilestoneId());
             }
             log.info("Recording supervision task has studio booking linked before start: taskId={}, bookingId={}", 
                 assignment.getAssignmentId(), assignment.getStudioBookingId());
@@ -2376,11 +2373,8 @@ public class TaskAssignmentService {
             for (TaskAssignment task : acceptedTasks) {
                 if (task.getTaskType() == TaskType.recording_supervision) {
                     if (task.getStudioBookingId() == null || task.getStudioBookingId().isEmpty()) {
-                        throw new IllegalStateException(
-                            String.format("Cannot activate recording milestone without studio booking linked to recording task. " +
-                                "MilestoneId: %s, TaskAssignmentId: %s. " +
-                                "Please create a studio booking for this milestone first, then update the task's studioBookingId.",
-                                milestoneId, task.getAssignmentId()));
+                        throw InvalidStateException.missingStudioBookingForRecordingMilestone(
+                            milestoneId, task.getAssignmentId());
                     }
                     log.info("Recording task has studio booking linked: taskId={}, bookingId={}", 
                         task.getAssignmentId(), task.getStudioBookingId());

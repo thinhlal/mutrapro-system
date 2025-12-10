@@ -29,5 +29,29 @@ public class InvalidStateException extends BusinessException {
                 revisionRequestId, currentStatus)
         );
     }
+
+    /**
+     * Không thể start recording_supervision task khi chưa có studio booking
+     */
+    public static InvalidStateException missingStudioBookingForRecordingTask(String assignmentId, String milestoneId) {
+        return new InvalidStateException(
+            String.format("Cannot start recording supervision task without studio booking. " +
+                "TaskAssignmentId: %s, MilestoneId: %s. " +
+                "Please ensure a studio booking is created and linked to this task before starting work.",
+                assignmentId, milestoneId)
+        );
+    }
+
+    /**
+     * Không thể activate recording milestone khi chưa có studio booking cho recording task
+     */
+    public static InvalidStateException missingStudioBookingForRecordingMilestone(String milestoneId, String assignmentId) {
+        return new InvalidStateException(
+            String.format("Cannot activate recording milestone without studio booking linked to recording task. " +
+                "MilestoneId: %s, TaskAssignmentId: %s. " +
+                "Please create a studio booking for this milestone first, then update the task's studioBookingId.",
+                milestoneId, assignmentId)
+        );
+    }
 }
 

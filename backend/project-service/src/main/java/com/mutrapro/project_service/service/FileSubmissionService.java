@@ -11,17 +11,20 @@ import com.mutrapro.project_service.entity.FileSubmission;
 import com.mutrapro.project_service.entity.RevisionRequest;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
+import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
 import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.project_service.enums.SubmissionStatus;
+import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.FileNotBelongToAssignmentException;
 import com.mutrapro.project_service.exception.FileSubmissionNotFoundException;
+import com.mutrapro.project_service.exception.InvalidBookingStatusException;
 import com.mutrapro.project_service.exception.InvalidFileStatusException;
 import com.mutrapro.project_service.exception.InvalidSubmissionStatusException;
 import com.mutrapro.project_service.exception.InvalidTaskAssignmentStatusException;
@@ -38,6 +41,7 @@ import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.repository.RevisionRequestRepository;
+import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import com.mutrapro.project_service.entity.ContractInstallment;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -72,6 +76,7 @@ public class FileSubmissionService {
     OutboxEventRepository outboxEventRepository;
     RevisionRequestService revisionRequestService;
     RevisionRequestRepository revisionRequestRepository;
+    StudioBookingRepository studioBookingRepository;
     ContractService contractService;
     ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
@@ -141,6 +146,22 @@ public class FileSubmissionService {
             }
         }
 
+        // Validate booking status for recording_supervision task before submitting
+        // (Đảm bảo booking không bị CANCELLED sau khi upload file)
+        if (assignment.getTaskType() == TaskType.recording_supervision 
+                && assignment.getStudioBookingId() != null) {
+            studioBookingRepository.findByBookingId(assignment.getStudioBookingId())
+                    .ifPresent(booking -> {
+                        BookingStatus bookingStatus = booking.getStatus();
+                        // Không cho phép submit nếu booking đã bị CANCELLED hoặc NO_SHOW
+                        if (bookingStatus == BookingStatus.CANCELLED 
+                                || bookingStatus == BookingStatus.NO_SHOW) {
+                            throw InvalidBookingStatusException.cannotSubmitFiles(
+                                booking.getBookingId(), bookingStatus);
+                        }
+                    });
+        }
+
         // 1. Tự động tạo submission package
         Integer nextVersion = getNextVersion(assignmentId);
 
@@ -193,6 +214,30 @@ public class FileSubmissionService {
                 log.warn(
                         "Failed to auto-update revision request on file submit: assignmentId={}, submissionId={}, error={}",
                         assignmentId, submissionId, e.getMessage());
+            }
+        }
+
+        // Update studio booking status to COMPLETED when recording_supervision task submits files for review
+        // (Recording session đã hoàn thành và file đã được upload)
+        if (assignment.getTaskType() == TaskType.recording_supervision 
+                && assignment.getStudioBookingId() != null) {
+            try {
+                studioBookingRepository.findByBookingId(assignment.getStudioBookingId())
+                        .ifPresent(booking -> {
+                            // Chỉ update nếu booking đang ở IN_PROGRESS hoặc CONFIRMED
+                            // (Không update nếu đã COMPLETED hoặc CANCELLED)
+                            if (booking.getStatus() == BookingStatus.IN_PROGRESS 
+                                    || booking.getStatus() == BookingStatus.CONFIRMED) {
+                                booking.setStatus(BookingStatus.COMPLETED);
+                                studioBookingRepository.save(booking);
+                                log.info("Studio booking status updated to COMPLETED after file submission: bookingId={}, assignmentId={}",
+                                        booking.getBookingId(), assignmentId);
+                            }
+                        });
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.warn("Failed to update studio booking status on file submit: assignmentId={}, bookingId={}, error={}",
+                        assignmentId, assignment.getStudioBookingId(), e.getMessage());
             }
         }
 
@@ -331,6 +376,7 @@ public class FileSubmissionService {
                 .milestoneId(milestone.getMilestoneId())
                 .name(milestone.getName())
                 .description(milestone.getDescription())
+                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().toString() : null)
                 .workStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().toString() : null)
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
