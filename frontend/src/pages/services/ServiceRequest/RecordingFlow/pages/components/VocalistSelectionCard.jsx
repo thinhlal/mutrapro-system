@@ -78,14 +78,16 @@ function VocalistSelectionCard({
           <Avatar
             src={avatarUrl}
             alt={fullName}
-            size={200}
-            style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+            shape="square"
+            style={{ width: '100%', height: '100%', borderRadius: 0 }}
             className={styles.singerImage}
           >
             {fullName.charAt(0).toUpperCase()}
           </Avatar>
+          <div className={styles.hoverOverlay}></div>
           {specialist?.mainDemoPreviewUrl && (
             <div className={styles.audioPlayerContainer}>
+              <Text className={styles.demoText}>Bấm để nghe bản demo</Text>
               <audio
                 controls
                 className={styles.audioPlayer}
