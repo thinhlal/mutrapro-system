@@ -6,8 +6,9 @@
   display: flex;
   align-items: center;
   padding: 60px 0;
-  margin-top: 8rem;
+  margin-top: 4rem;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .diagonalBg {
@@ -42,7 +43,7 @@
 
 .singerRoles {
   font-size: 1.15rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255);
   display: block;
   margin-bottom: 1.25rem;
   font-weight: 500;
@@ -60,22 +61,21 @@
 }
 
 .singerLocation {
-  color: #e0e0e0;
+  color: #ffffff;
   display: block;
   margin-top: 0.5rem;
 }
 
 .headerImageContainer {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-
-  width: 60%;
-
+  top: 50%;
+  right: 14%;
+  transform: translateY(-50%);
+  width: 400px;
+  height: 400px;
   display: flex;
-  justify-content: flex-end;
-  align-items: stretch;
+  justify-content: center;
+  align-items: center;
   z-index: 0;
 }
 
@@ -84,9 +84,8 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  border-radius: 12px;
+  border-radius: 50%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
   transition: transform 0.3s ease;
 }
 
@@ -96,7 +95,7 @@
 
 .mainContent {
   padding: 60px 0;
-  background-color: #fafbfc;
+  flex: 1;
 }
 
 .mainColumn .introParagraph {
@@ -256,10 +255,18 @@
     height: auto;
     margin-top: 12px;
   }
-  .singerImage {
-    clip-path: none;
+  .headerImageContainer {
+    position: static;
     width: 100%;
-    height: 260px;
+    height: auto;
+    transform: none;
+    margin-top: 12px;
+  }
+  
+  .singerImage {
+    width: 280px;
+    height: 280px;
+    margin: 0 auto;
   }
   .singerName {
     font-size: 2.2rem !important;
