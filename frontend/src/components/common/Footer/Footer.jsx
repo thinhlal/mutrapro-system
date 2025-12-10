@@ -44,9 +44,10 @@ const Footer = () => {
                 <span className={styles.logoMy}>Pro</span>
               </div>
               <p className={styles.desc}>
-                We provide on-demand <b>music transcription</b>, <b>arrangement</b>, 
-                and <b>production services</b> for artists, educators, and music 
-                applications. An integrated platform for seamless music production workflow.
+                We provide on-demand <b>music transcription</b>,{' '}
+                <b>arrangement</b>, and <b>production services</b> for artists,
+                educators, and music applications. An integrated platform for
+                seamless music production workflow.
               </p>
 
               <div className={styles.contacts}>
@@ -141,7 +142,7 @@ const Footer = () => {
           <Col xs={12} md={6} lg={4}>
             <h4 className={styles.heading}>Stay in the loop</h4>
             <p className={styles.small}>
-              Receive transcription tips, lead sheet templates, and service 
+              Receive transcription tips, lead sheet templates, and service
               offers every month.
             </p>
 

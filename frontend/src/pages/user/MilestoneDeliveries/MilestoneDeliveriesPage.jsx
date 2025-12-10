@@ -344,13 +344,17 @@ const MilestoneDeliveriesPage = () => {
                             ? 'success'
                             : milestoneInfo.workStatus === 'IN_PROGRESS'
                               ? 'processing'
-                              : milestoneInfo.workStatus === 'WAITING_ASSIGNMENT'
+                              : milestoneInfo.workStatus ===
+                                  'WAITING_ASSIGNMENT'
                                 ? 'orange'
-                                : milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT'
+                                : milestoneInfo.workStatus ===
+                                    'WAITING_SPECIALIST_ACCEPT'
                                   ? 'gold'
-                                  : milestoneInfo.workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                  : milestoneInfo.workStatus ===
+                                      'TASK_ACCEPTED_WAITING_ACTIVATION'
                                     ? 'lime'
-                                    : milestoneInfo.workStatus === 'READY_TO_START'
+                                    : milestoneInfo.workStatus ===
+                                        'READY_TO_START'
                                       ? 'cyan'
                                       : 'default'
                     }
@@ -365,11 +369,14 @@ const MilestoneDeliveriesPage = () => {
                             ? 'Đang thực hiện'
                             : milestoneInfo.workStatus === 'WAITING_ASSIGNMENT'
                               ? 'Chờ assign task'
-                              : milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT'
+                              : milestoneInfo.workStatus ===
+                                  'WAITING_SPECIALIST_ACCEPT'
                                 ? 'Chờ specialist accept'
-                                : milestoneInfo.workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                : milestoneInfo.workStatus ===
+                                    'TASK_ACCEPTED_WAITING_ACTIVATION'
                                   ? 'Đã accept, chờ activate'
-                                  : milestoneInfo.workStatus === 'READY_TO_START'
+                                  : milestoneInfo.workStatus ===
+                                      'READY_TO_START'
                                     ? 'Sẵn sàng bắt đầu'
                                     : milestoneInfo.workStatus || 'N/A'}
                   </Tag>

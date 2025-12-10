@@ -76,13 +76,13 @@ function HeroSection() {
               {/* Description */}
               <div className={styles.description}>
                 <p className={styles.heroDescription}>
-                  Transform any audio, song, or video into detailed musical notation. 
-                  Get custom arrangements and professional vocal recordings—all managed 
-                  seamlessly from request to delivery.
+                  Transform any audio, song, or video into detailed musical
+                  notation. Get custom arrangements and professional vocal
+                  recordings—all managed seamlessly from request to delivery.
                 </p>
                 <p className={styles.heroSubDescription}>
                   <strong>
-                    An integrated platform for on-demand music transcription, 
+                    An integrated platform for on-demand music transcription,
                     arrangement, and production services.
                   </strong>
                 </p>

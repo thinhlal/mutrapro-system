@@ -492,12 +492,16 @@ const MyTasksPage = ({ onOpenTask }) => {
         render: (_, record) => {
           const status = record.status?.toLowerCase();
           const isTakingAction = startingAssignmentId === record.assignmentId;
-          
+
           // Với recording_supervision task, cần có studio booking trước khi start
-          const isRecordingSupervision = record.taskType?.toLowerCase() === 'recording_supervision';
-          const isRecordingMilestone = record.milestone?.milestoneType?.toLowerCase() === 'recording';
-          const hasStudioBooking = record.studioBookingId && record.studioBookingId.trim().length > 0;
-          const needsStudioBooking = isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
+          const isRecordingSupervision =
+            record.taskType?.toLowerCase() === 'recording_supervision';
+          const isRecordingMilestone =
+            record.milestone?.milestoneType?.toLowerCase() === 'recording';
+          const hasStudioBooking =
+            record.studioBookingId && record.studioBookingId.trim().length > 0;
+          const needsStudioBooking =
+            isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
 
           return (
             <Space direction="vertical" size="small" style={{ width: '100%' }}>

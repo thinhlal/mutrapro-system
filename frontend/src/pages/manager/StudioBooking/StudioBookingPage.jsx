@@ -26,7 +26,10 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getMilestoneById, getContractById } from '../../../services/contractService';
+import {
+  getMilestoneById,
+  getContractById,
+} from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import {
   getAvailableSlots,
@@ -77,19 +80,27 @@ const StudioBookingPage = () => {
           getMilestoneById(contractId, milestoneId),
           getContractById(contractId),
         ]);
-        
-        if (milestoneResponse?.status === 'success' && milestoneResponse?.data) {
+
+        if (
+          milestoneResponse?.status === 'success' &&
+          milestoneResponse?.data
+        ) {
           setMilestone(milestoneResponse.data);
         }
 
         if (contractResponse?.status === 'success' && contractResponse?.data) {
           setContract(contractResponse.data);
-          
+
           // Load request info nếu có requestId
           if (contractResponse.data.requestId) {
             try {
-              const requestResponse = await getServiceRequestById(contractResponse.data.requestId);
-              if (requestResponse?.status === 'success' && requestResponse?.data) {
+              const requestResponse = await getServiceRequestById(
+                contractResponse.data.requestId
+              );
+              if (
+                requestResponse?.status === 'success' &&
+                requestResponse?.data
+              ) {
                 setRequest(requestResponse.data);
               }
             } catch (error) {
@@ -120,7 +131,7 @@ const StudioBookingPage = () => {
         const response = await getAvailableSlots(
           selectedDate.format('YYYY-MM-DD')
         );
-        
+
         if (response?.status === 'success' && response?.data) {
           setAvailableSlots(response.data);
         }
@@ -144,7 +155,8 @@ const StudioBookingPage = () => {
         setLoadingArtists(true);
         // Truyền genres và preferredSpecialistIds từ request để backend không cần gọi request-service
         const genres = request?.genres || null;
-        const preferredSpecialistIds = request?.preferredSpecialists?.map(ps => ps.specialistId) || null;
+        const preferredSpecialistIds =
+          request?.preferredSpecialists?.map(ps => ps.specialistId) || null;
         const response = await getAvailableArtists(
           milestoneId,
           selectedDate.format('YYYY-MM-DD'),
@@ -153,7 +165,7 @@ const StudioBookingPage = () => {
           genres,
           preferredSpecialistIds
         );
-        
+
         if (response?.status === 'success' && response?.data) {
           setAvailableArtists(response.data);
         }
@@ -191,7 +203,7 @@ const StudioBookingPage = () => {
     setCurrentStep(1);
   };
 
-  const handleArtistSelect = (artistId) => {
+  const handleArtistSelect = artistId => {
     const artist = availableArtists.find(a => a.specialistId === artistId);
     if (artist) {
       setSelectedArtist(artist);
@@ -212,13 +224,18 @@ const StudioBookingPage = () => {
         bookingDate: selectedDate.format('YYYY-MM-DD'),
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
-        durationHours: dayjs(selectedSlot.endTime, 'HH:mm:ss')
-          .diff(dayjs(selectedSlot.startTime, 'HH:mm:ss'), 'hour', true),
-        artists: [{
-          specialistId: selectedArtist.specialistId,
-          role: selectedArtist.role || 'VOCALIST',
-          isPrimary: selectedArtist.isPreferred || false,
-        }],
+        durationHours: dayjs(selectedSlot.endTime, 'HH:mm:ss').diff(
+          dayjs(selectedSlot.startTime, 'HH:mm:ss'),
+          'hour',
+          true
+        ),
+        artists: [
+          {
+            specialistId: selectedArtist.specialistId,
+            role: selectedArtist.role || 'VOCALIST',
+            isPrimary: selectedArtist.isPreferred || false,
+          },
+        ],
       };
 
       const response = await createBookingForRecordingMilestone(bookingData);
@@ -284,7 +301,9 @@ const StudioBookingPage = () => {
                 <Text strong>Thể loại: </Text>
                 <Space wrap>
                   {request.genres.map((genre, idx) => (
-                    <Tag key={idx} color="blue">{genre}</Tag>
+                    <Tag key={idx} color="blue">
+                      {genre}
+                    </Tag>
                   ))}
                 </Space>
               </div>
@@ -340,37 +359,45 @@ const StudioBookingPage = () => {
                 if (!current) return false;
                 const today = dayjs().startOf('day');
                 const tomorrow = today.add(1, 'day');
-                
+
                 // Không cho chọn ngày trong quá khứ và hôm nay
                 // Chỉ cho chọn từ ngày mai trở đi (cần thời gian chuẩn bị)
                 if (current < tomorrow) return true;
-                
+
                 // Nếu có milestone, chỉ cho chọn ngày trong milestone timeline
                 // Milestone bắt đầu tính SLA từ hôm nay, nhưng chỉ cho book từ ngày mai
                 // End date = hôm nay + SLA days (không phải ngày mai + SLA days)
                 if (milestone && milestone.milestoneSlaDays) {
-                  const milestoneEnd = today.add(milestone.milestoneSlaDays, 'day').endOf('day');
-                  
+                  const milestoneEnd = today
+                    .add(milestone.milestoneSlaDays, 'day')
+                    .endOf('day');
+
                   return current > milestoneEnd;
                 }
-                
+
                 return false;
               }}
               style={{ width: 200 }}
             />
-            {milestone && milestone.milestoneSlaDays && (() => {
-              const today = dayjs().startOf('day');
-              const tomorrow = today.add(1, 'day');
-              // Milestone bắt đầu tính SLA từ hôm nay, nhưng chỉ cho book từ ngày mai
-              // End date = hôm nay + SLA days (không phải ngày mai + SLA days)
-              const endDate = today.add(milestone.milestoneSlaDays, 'day');
-              
-              return (
-                <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
-                  (Khoảng: {tomorrow.format('DD/MM/YYYY')} - {endDate.format('DD/MM/YYYY')})
-                </Text>
-              );
-            })()}
+            {milestone &&
+              milestone.milestoneSlaDays &&
+              (() => {
+                const today = dayjs().startOf('day');
+                const tomorrow = today.add(1, 'day');
+                // Milestone bắt đầu tính SLA từ hôm nay, nhưng chỉ cho book từ ngày mai
+                // End date = hôm nay + SLA days (không phải ngày mai + SLA days)
+                const endDate = today.add(milestone.milestoneSlaDays, 'day');
+
+                return (
+                  <Text
+                    type="secondary"
+                    style={{ marginLeft: 8, fontSize: 12 }}
+                  >
+                    (Khoảng: {tomorrow.format('DD/MM/YYYY')} -{' '}
+                    {endDate.format('DD/MM/YYYY')})
+                  </Text>
+                );
+              })()}
           </div>
           {selectedDate && (
             <div>
@@ -382,12 +409,20 @@ const StudioBookingPage = () => {
                   {availableSlots.map((slot, idx) => (
                     <Button
                       key={idx}
-                      type={selectedSlot?.startTime === slot.startTime ? 'primary' : 'default'}
+                      type={
+                        selectedSlot?.startTime === slot.startTime
+                          ? 'primary'
+                          : 'default'
+                      }
                       disabled={!slot.available}
                       onClick={() => handleSlotSelect(slot)}
                     >
                       {slot.startTime} - {slot.endTime}
-                      {!slot.available && <Tag color="red" style={{ marginLeft: 4 }}>Booked</Tag>}
+                      {!slot.available && (
+                        <Tag color="red" style={{ marginLeft: 4 }}>
+                          Booked
+                        </Tag>
+                      )}
                     </Button>
                   ))}
                 </Space>
@@ -410,53 +445,85 @@ const StudioBookingPage = () => {
               onChange={e => handleArtistSelect(e.target.value)}
               style={{ width: '100%' }}
             >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: '100%' }}
+              >
                 {availableArtists.map(artist => (
                   <Card
                     key={artist.specialistId}
                     size="small"
                     style={{
-                      border: selectedArtist?.specialistId === artist.specialistId
-                        ? '2px solid #52c41a'
-                        : '1px solid #d9d9d9',
+                      border:
+                        selectedArtist?.specialistId === artist.specialistId
+                          ? '2px solid #52c41a'
+                          : '1px solid #d9d9d9',
                       cursor: 'pointer',
                     }}
                     onClick={() => handleArtistSelect(artist.specialistId)}
                   >
                     <Row align="middle" justify="space-between">
                       <Col flex="auto">
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Space
+                          direction="vertical"
+                          size="small"
+                          style={{ width: '100%' }}
+                        >
                           <Space>
                             <Radio value={artist.specialistId} />
                             {artist.avatarUrl && (
                               <img
                                 src={artist.avatarUrl}
                                 alt={artist.name}
-                                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                }}
                               />
                             )}
                             <div>
                               <div>
                                 <Text strong>{artist.name}</Text>
                                 {artist.isPreferred && (
-                                  <Tag color="gold" icon={<StarFilled />} style={{ marginLeft: 8 }}>
+                                  <Tag
+                                    color="gold"
+                                    icon={<StarFilled />}
+                                    style={{ marginLeft: 8 }}
+                                  >
                                     Preferred
                                   </Tag>
                                 )}
-                                <Tag color={artist.isAvailable ? 'green' : 'red'} style={{ marginLeft: 8 }}>
-                                  {artist.availabilityStatus === 'available' ? 'Available' : 'Busy'}
+                                <Tag
+                                  color={artist.isAvailable ? 'green' : 'red'}
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  {artist.availabilityStatus === 'available'
+                                    ? 'Available'
+                                    : 'Busy'}
                                 </Tag>
                               </div>
                               {artist.email && (
                                 <div>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>{artist.email}</Text>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    {artist.email}
+                                  </Text>
                                 </div>
                               )}
                             </div>
                           </Space>
                           <Space wrap>
                             {artist.role && (
-                              <Tag color={artist.role === 'VOCALIST' ? 'orange' : 'blue'}>
+                              <Tag
+                                color={
+                                  artist.role === 'VOCALIST' ? 'orange' : 'blue'
+                                }
+                              >
                                 {artist.role === 'VOCALIST'
                                   ? 'Vocal'
                                   : artist.role === 'INSTRUMENT_PLAYER'
@@ -465,7 +532,9 @@ const StudioBookingPage = () => {
                               </Tag>
                             )}
                             {artist.experienceYears && (
-                              <Tag color="blue">{artist.experienceYears} năm kinh nghiệm</Tag>
+                              <Tag color="blue">
+                                {artist.experienceYears} năm kinh nghiệm
+                              </Tag>
                             )}
                             {artist.rating && (
                               <Tag color="orange">
@@ -473,21 +542,28 @@ const StudioBookingPage = () => {
                               </Tag>
                             )}
                             {artist.totalProjects && (
-                              <Tag color="cyan">{artist.totalProjects} projects</Tag>
+                              <Tag color="cyan">
+                                {artist.totalProjects} projects
+                              </Tag>
                             )}
                             {artist.genres && artist.genres.length > 0 && (
                               <>
                                 {artist.genres.map((genre, idx) => (
-                                  <Tag key={idx} color="purple">{genre}</Tag>
+                                  <Tag key={idx} color="purple">
+                                    {genre}
+                                  </Tag>
                                 ))}
                               </>
                             )}
                           </Space>
-                          {!artist.isAvailable && artist.conflictStartTime && artist.conflictEndTime && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              Conflict: {artist.conflictStartTime} - {artist.conflictEndTime}
-                            </Text>
-                          )}
+                          {!artist.isAvailable &&
+                            artist.conflictStartTime &&
+                            artist.conflictEndTime && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Conflict: {artist.conflictStartTime} -{' '}
+                                {artist.conflictEndTime}
+                              </Text>
+                            )}
                         </Space>
                       </Col>
                     </Row>
@@ -513,9 +589,7 @@ const StudioBookingPage = () => {
                   <div>
                     Thời gian: {selectedSlot.startTime} - {selectedSlot.endTime}
                   </div>
-                  <div>
-                    Artist: {selectedArtist.name}
-                  </div>
+                  <div>Artist: {selectedArtist.name}</div>
                 </div>
               }
               type="info"
@@ -537,4 +611,3 @@ const StudioBookingPage = () => {
 };
 
 export default StudioBookingPage;
-

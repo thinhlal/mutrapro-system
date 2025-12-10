@@ -42,32 +42,38 @@ function WhoAreWe() {
           <Col lg={6} md={6} sm={12} className={styles.textCol}>
             <div className={withVisible(styles.textContent)}>
               <p className={styles.paragraph}>
-                <strong>MuTraPro</strong> is an integrated platform that provides 
-                on-demand music transcription, arrangement, and production services 
-                efficiently and seamlessly. Our system connects customers with 
-                professional specialists to deliver high-quality musical outputs.
+                <strong>MuTraPro</strong> is an integrated platform that
+                provides on-demand music transcription, arrangement, and
+                production services efficiently and seamlessly. Our system
+                connects customers with professional specialists to deliver
+                high-quality musical outputs.
               </p>
 
               <p className={styles.paragraph}>
-                Why MuTraPro? We optimize the music production workflow by 
-                facilitating transparent interaction, progress monitoring, and 
-                ensuring high-quality service delivery from request to final product.
+                Why MuTraPro? We optimize the music production workflow by
+                facilitating transparent interaction, progress monitoring, and
+                ensuring high-quality service delivery from request to final
+                product.
               </p>
 
               <p className={styles.paragraph}>
-                How does it work? Our platform manages the entire process—from 
-                receiving your request, assigning tasks to Transcription Specialists, 
-                Arrangement Specialists, and Artists, to delivering the final product. 
-                We also integrate studio session booking for professional recordings.
+                How does it work? Our platform manages the entire process—from
+                receiving your request, assigning tasks to Transcription
+                Specialists, Arrangement Specialists, and Artists, to delivering
+                the final product. We also integrate studio session booking for
+                professional recordings.
               </p>
 
               <p className={styles.paragraph}>
                 Our system uses{' '}
-                <strong>AI-assisted transcription combined with expert review</strong> 
+                <strong>
+                  AI-assisted transcription combined with expert review
+                </strong>
                 to ensure accuracy. We provide{' '}
                 <strong>
-                  detailed musical notation, custom arrangements, and professional 
-                  recordings—all managed through our streamlined platform
+                  detailed musical notation, custom arrangements, and
+                  professional recordings—all managed through our streamlined
+                  platform
                 </strong>
                 .
               </p>

@@ -67,7 +67,9 @@ function VocalistSelectionCard({
   const experienceYears = specialist?.experienceYears || 0;
 
   return (
-    <div className={`col-12 col-md-6 col-lg-4 col-xl-3 mb-4 ${styles.cardWrapper}`}>
+    <div
+      className={`col-12 col-md-6 col-lg-4 col-xl-3 mb-4 ${styles.cardWrapper}`}
+    >
       <Card
         hoverable={!disabled}
         className={`${styles.card} ${isSelected ? styles.selected : ''} ${disabled ? styles.disabled : ''}`}

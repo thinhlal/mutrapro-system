@@ -82,7 +82,7 @@ export const getSpecialistById = async specialistId => {
     if (response.data?.data?.specialist) {
       return {
         ...response.data,
-        data: response.data.data.specialist
+        data: response.data.data.specialist,
       };
     }
     return response.data;

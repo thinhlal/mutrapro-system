@@ -12,11 +12,7 @@ import {
   Card,
   Tooltip,
 } from 'antd';
-import {
-  EyeOutlined,
-  ReloadOutlined,
-  CopyOutlined,
-} from '@ant-design/icons';
+import { EyeOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getMyStudioBookings } from '../../../services/studioBookingService';
 import { useNavigate } from 'react-router-dom';
@@ -49,7 +45,7 @@ const MyStudioBookings = () => {
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
-  
+
   // Filters
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -66,7 +62,7 @@ const MyStudioBookings = () => {
     try {
       setLoading(true);
       const response = await getMyStudioBookings();
-      
+
       if (response?.status === 'success' && response?.data) {
         setBookings(response.data);
       }
@@ -84,10 +80,11 @@ const MyStudioBookings = () => {
     // Filter by search text (bookingId, contractId, milestoneId)
     if (searchText) {
       const searchLower = searchText.toLowerCase();
-      filtered = filtered.filter(booking => 
-        booking.bookingId?.toLowerCase().includes(searchLower) ||
-        booking.contractId?.toLowerCase().includes(searchLower) ||
-        booking.milestoneId?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        booking =>
+          booking.bookingId?.toLowerCase().includes(searchLower) ||
+          booking.contractId?.toLowerCase().includes(searchLower) ||
+          booking.milestoneId?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -103,12 +100,12 @@ const MyStudioBookings = () => {
     loadBookings();
   };
 
-  const handleCopyBookingId = (bookingId) => {
+  const handleCopyBookingId = bookingId => {
     navigator.clipboard.writeText(bookingId);
     message.success('Đã copy Booking ID');
   };
 
-  const handleViewBookingDetail = (bookingId) => {
+  const handleViewBookingDetail = bookingId => {
     navigate(`/recording-artist/studio-bookings/${bookingId}`);
   };
 
@@ -118,7 +115,7 @@ const MyStudioBookings = () => {
       dataIndex: 'bookingId',
       key: 'bookingId',
       width: 120,
-      render: (text) => (
+      render: text => (
         <Space>
           <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
             {text?.substring(0, 8)}...
@@ -139,7 +136,7 @@ const MyStudioBookings = () => {
       dataIndex: 'bookingDate',
       key: 'bookingDate',
       width: 120,
-      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'N/A',
+      render: date => (date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'),
     },
     {
       title: 'Thời gian',
@@ -156,17 +153,15 @@ const MyStudioBookings = () => {
       dataIndex: 'studioName',
       key: 'studioName',
       width: 150,
-      render: (studioName) => studioName || 'N/A',
+      render: studioName => studioName || 'N/A',
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status) => (
-        <Tag color={statusColor[status] || 'default'}>
-          {status || 'N/A'}
-        </Tag>
+      render: status => (
+        <Tag color={statusColor[status] || 'default'}>{status || 'N/A'}</Tag>
       ),
     },
     {
@@ -174,11 +169,7 @@ const MyStudioBookings = () => {
       dataIndex: 'sessionType',
       key: 'sessionType',
       width: 150,
-      render: (sessionType) => (
-        <Tag color="purple">
-          {sessionType || 'N/A'}
-        </Tag>
-      ),
+      render: sessionType => <Tag color="purple">{sessionType || 'N/A'}</Tag>,
     },
     {
       title: 'My Role',
@@ -188,9 +179,7 @@ const MyStudioBookings = () => {
         // Backend đã filter bookings của artist hiện tại, nên tất cả bookings đều có artist này
         // Hiển thị role của artist đầu tiên (thường là artist hiện tại)
         const myArtist = record.artists?.[0];
-        return myArtist?.role ? (
-          <Tag>{myArtist.role}</Tag>
-        ) : 'N/A';
+        return myArtist?.role ? <Tag>{myArtist.role}</Tag> : 'N/A';
       },
     },
     {
@@ -216,7 +205,9 @@ const MyStudioBookings = () => {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Title level={3}>My Studio Bookings</Title>
-          <Text type="secondary">Danh sách các studio bookings mà bạn được book vào</Text>
+          <Text type="secondary">
+            Danh sách các studio bookings mà bạn được book vào
+          </Text>
         </div>
 
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -225,7 +216,7 @@ const MyStudioBookings = () => {
             <Input
               placeholder="Tìm kiếm (Booking ID, Contract ID, Milestone ID)"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
               allowClear
             />
@@ -260,7 +251,7 @@ const MyStudioBookings = () => {
             pagination={{
               pageSize: 20,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} bookings`,
+              showTotal: total => `Tổng ${total} bookings`,
             }}
             scroll={{ x: 1200 }}
           />
@@ -271,4 +262,3 @@ const MyStudioBookings = () => {
 };
 
 export default MyStudioBookings;
-

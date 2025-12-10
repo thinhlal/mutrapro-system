@@ -75,26 +75,30 @@ function FlexiblePricing() {
         {/* Description Text */}
         <div className={withVisible(styles.descriptionSection)}>
           <p className={styles.descriptionText}>
-            <strong>Flexible pricing tailored to your project needs.</strong> Our 
-            pricing depends on the complexity of your request, the length of audio, 
-            the number of instruments, and the specific services required (transcription, 
-            arrangement, or recording).
+            <strong>Flexible pricing tailored to your project needs.</strong>{' '}
+            Our pricing depends on the complexity of your request, the length of
+            audio, the number of instruments, and the specific services required
+            (transcription, arrangement, or recording).
           </p>
           <p className={styles.descriptionText}>
-            MuTraPro connects you with professional Transcription Specialists, 
+            MuTraPro connects you with professional Transcription Specialists,
             Arrangement Specialists, and Artists.{' '}
             <strong>
-              Your project will be managed from intake to delivery, with real-time 
-              progress tracking and the ability to request revisions.{' '}
+              Your project will be managed from intake to delivery, with
+              real-time progress tracking and the ability to request
+              revisions.{' '}
             </strong>
-            Our Managers coordinate the workflow and ensure quality at every step.
+            Our Managers coordinate the workflow and ensure quality at every
+            step.
           </p>
           <p className={styles.descriptionText}>
-            Revisions and multiple export formats (PDF, MusicXML) are included. 
-            Secure online payments and wallet system for convenient transactions.
+            Revisions and multiple export formats (PDF, MusicXML) are included.
+            Secure online payments and wallet system for convenient
+            transactions.
           </p>
           <p className={styles.descriptionText}>
-            Contact us for a customized quote based on your specific requirements:
+            Contact us for a customized quote based on your specific
+            requirements:
           </p>
         </div>
 

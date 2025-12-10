@@ -578,7 +578,10 @@ function App() {
           >
             <Route index element={<Navigate to="studio-bookings" replace />} />
             <Route path="studio-bookings" element={<MyStudioBookings />} />
-            <Route path="studio-bookings/:bookingId" element={<RecordingArtistStudioBookingDetailPage />} />
+            <Route
+              path="studio-bookings/:bookingId"
+              element={<RecordingArtistStudioBookingDetailPage />}
+            />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 

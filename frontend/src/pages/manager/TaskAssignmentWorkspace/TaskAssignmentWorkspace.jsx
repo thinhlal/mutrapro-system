@@ -281,7 +281,7 @@ export default function TaskAssignmentWorkspace() {
       if (response?.status === 'success' && response?.data) {
         const tasks = response.data;
         setAllTasks(tasks); // Lưu tất cả tasks
-        
+
         const statsMap = {};
         tasks.forEach(task => {
           if (!task.milestoneId) return;
@@ -397,7 +397,12 @@ export default function TaskAssignmentWorkspace() {
   // Set selected specialist when specialists are loaded and we have assignment data
   // Hoặc auto suggest arrangement specialist cho recording milestone
   useEffect(() => {
-    if (isEditMode && currentAssignment && specialists.length > 0 && !selectedSpecialist) {
+    if (
+      isEditMode &&
+      currentAssignment &&
+      specialists.length > 0 &&
+      !selectedSpecialist
+    ) {
       // Edit mode: set specialist từ assignment hiện tại
       const specialist = specialists.find(
         s => s.specialistId === currentAssignment.specialistId
@@ -405,31 +410,44 @@ export default function TaskAssignmentWorkspace() {
       if (specialist) {
         setSelectedSpecialist(specialist);
       }
-    } else if (!isEditMode && selectedMilestoneId && contract && allTasks.length > 0 && specialists.length > 0 && !selectedSpecialist) {
+    } else if (
+      !isEditMode &&
+      selectedMilestoneId &&
+      contract &&
+      allTasks.length > 0 &&
+      specialists.length > 0 &&
+      !selectedSpecialist
+    ) {
       // Tạo mới: nếu là recording milestone, tìm arrangement task để suggest specialist
       const selectedMilestone = contract.milestones?.find(
         m => m.milestoneId === selectedMilestoneId
       );
-      
-      if (selectedMilestone?.milestoneType === 'recording' && taskType === 'recording_supervision') {
+
+      if (
+        selectedMilestone?.milestoneType === 'recording' &&
+        taskType === 'recording_supervision'
+      ) {
         // Tìm arrangement task trong cùng contract
         // Ưu tiên: completed > in_progress > assigned
         const arrangementTasks = allTasks.filter(
-          task => task.taskType === 'arrangement' && task.contractId === contractId
+          task =>
+            task.taskType === 'arrangement' && task.contractId === contractId
         );
-        
+
         let suggestedTask = null;
         // Ưu tiên completed
         suggestedTask = arrangementTasks.find(t => t.status === 'completed');
         if (!suggestedTask) {
           // Nếu không có completed, tìm in_progress
-          suggestedTask = arrangementTasks.find(t => t.status === 'in_progress');
+          suggestedTask = arrangementTasks.find(
+            t => t.status === 'in_progress'
+          );
         }
         if (!suggestedTask) {
           // Nếu không có in_progress, tìm assigned
           suggestedTask = arrangementTasks.find(t => t.status === 'assigned');
         }
-        
+
         if (suggestedTask?.specialistId) {
           const suggestedSpecialist = specialists.find(
             s => s.specialistId === suggestedTask.specialistId
@@ -443,7 +461,17 @@ export default function TaskAssignmentWorkspace() {
         }
       }
     }
-  }, [isEditMode, currentAssignment, specialists, selectedSpecialist, selectedMilestoneId, contract, allTasks, taskType, contractId]);
+  }, [
+    isEditMode,
+    currentAssignment,
+    specialists,
+    selectedSpecialist,
+    selectedMilestoneId,
+    contract,
+    allTasks,
+    taskType,
+    contractId,
+  ]);
 
   useEffect(() => {
     // Chỉ fetch khi contract và milestone đã load xong
@@ -577,10 +605,12 @@ export default function TaskAssignmentWorkspace() {
     // Validate milestone work status
     if (selectedMilestone) {
       const workStatus = selectedMilestone.workStatus?.toUpperCase();
-      if (workStatus !== 'PLANNED' 
-          && workStatus !== 'WAITING_ASSIGNMENT' 
-          && workStatus !== 'READY_TO_START'
-          && workStatus !== 'IN_PROGRESS') {
+      if (
+        workStatus !== 'PLANNED' &&
+        workStatus !== 'WAITING_ASSIGNMENT' &&
+        workStatus !== 'READY_TO_START' &&
+        workStatus !== 'IN_PROGRESS'
+      ) {
         message.error(
           `Không thể tạo task: Milestone phải ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS. ` +
             `Trạng thái hiện tại: ${selectedMilestone.workStatus}`
@@ -834,10 +864,10 @@ export default function TaskAssignmentWorkspace() {
                   const isCancelled = workStatus === 'CANCELLED';
                   // Chỉ cho phép chọn milestones có workStatus = PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS
                   const canSelect =
-                    workStatus === 'PLANNED' 
-                    || workStatus === 'WAITING_ASSIGNMENT'
-                    || workStatus === 'READY_TO_START'
-                    || workStatus === 'IN_PROGRESS';
+                    workStatus === 'PLANNED' ||
+                    workStatus === 'WAITING_ASSIGNMENT' ||
+                    workStatus === 'READY_TO_START' ||
+                    workStatus === 'IN_PROGRESS';
                   const activeTaskCount =
                     (stats.assigned || 0) + (stats.inProgress || 0);
                   const hasActiveTask = activeTaskCount > 0;
@@ -895,7 +925,8 @@ export default function TaskAssignmentWorkspace() {
                                 ? 'Milestone này đã có task đang hoạt động. Vui lòng hoàn tất hoặc hủy task trước khi tạo task mới.'
                                 : workStatus === 'WAITING_SPECIALIST_ACCEPT'
                                   ? 'Milestone đang chờ specialist accept task. Vui lòng đợi specialist accept hoặc hủy task hiện tại.'
-                                  : workStatus === 'TASK_ACCEPTED_WAITING_ACTIVATION'
+                                  : workStatus ===
+                                      'TASK_ACCEPTED_WAITING_ACTIVATION'
                                     ? 'Milestone đã có task được accept, đang chờ activate. Không thể tạo task mới.'
                                     : 'Chỉ có thể tạo task cho milestone ở trạng thái PLANNED, WAITING_ASSIGNMENT, READY_TO_START hoặc IN_PROGRESS';
                           message.warning(reason);

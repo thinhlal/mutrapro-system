@@ -188,115 +188,119 @@ export default function VocalistSelectionPage() {
     <div>
       <Header />
       <div className={styles.container}>
-        <Card 
-        className={styles.headerCard}
-        style={{ backgroundImage: `url(${bannerImage})` }}
-      >
-        <div className={styles.headerOverlay}></div>
-        <div className={styles.header}>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={handleBack}
-            className={styles.backButton}
-          >
-            Back to Flow
-          </Button>
-          <Title level={2} className={styles.title}>
-            {allowMultiple ? 'Select Preferred Vocalist' : 'Select Vocalist'}
-          </Title>
-          <p className={styles.description}>
-            {allowMultiple
-              ? `Choose ${maxSelections === 2 ? '1-2' : '1'} vocalist${maxSelections === 2 ? 's' : ''} you like (selected: ${selectedIds.length}/${maxSelections})`
-              : 'Choose a vocalist for your recording session'}
-          </p>
-        </div>
-      </Card>
-
-      <Card className={styles.contentCard}>
-        <div style={{ marginBottom: 20 }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <Space wrap>
-              <Text strong>Filter by gender: </Text>
-              <Radio.Group
-                value={genderFilter}
-                onChange={e => setGenderFilter(e.target.value)}
-                buttonStyle="solid"
-              >
-                <Radio.Button value="ALL">All</Radio.Button>
-                <Radio.Button value="FEMALE">Female</Radio.Button>
-                <Radio.Button value="MALE">Male</Radio.Button>
-              </Radio.Group>
-            </Space>
-            <Space wrap>
-              <Text strong>Filter by genre: </Text>
-              <Select
-                mode="multiple"
-                placeholder="Select genres (multiple selection)"
-                value={selectedGenres}
-                onChange={setSelectedGenres}
-                style={{ minWidth: 300 }}
-                allowClear
-                maxTagCount="responsive"
-              >
-                {availableGenres.map(genre => (
-                  <Select.Option key={genre} value={genre}>
-                    {genre}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Space>
-            <Text type="secondary">
-              ({vocalists.length} vocalist{vocalists.length !== 1 ? 's' : ''})
-            </Text>
-          </Space>
-        </div>
-        <Spin spinning={loading}>
-          <div className="row">
-            {vocalists.length === 0 && !loading ? (
-              <div
-                style={{ textAlign: 'center', padding: '40px', width: '100%' }}
-              >
-                <p>No vocalists found</p>
-              </div>
-            ) : (
-              vocalists.map(vocalist => (
-                <VocalistSelectionCard
-                  key={vocalist.specialistId}
-                  specialist={vocalist}
-                  isSelected={isSelected(vocalist.specialistId)}
-                  selectedId={allowMultiple ? selectedIds : selectedId}
-                  onSelect={handleSelect}
-                  disabled={
-                    allowMultiple &&
-                    !canSelectMore &&
-                    !isSelected(vocalist.specialistId)
-                  }
-                />
-              ))
-            )}
-          </div>
-        </Spin>
-      </Card>
-
-      {(allowMultiple ? selectedIds.length > 0 : selectedId) && (
-        <Card className={styles.actionCard}>
-          <Space>
-            <Button size="large" onClick={handleBack}>
-              Cancel
-            </Button>
+        <Card
+          className={styles.headerCard}
+          style={{ backgroundImage: `url(${bannerImage})` }}
+        >
+          <div className={styles.headerOverlay}></div>
+          <div className={styles.header}>
             <Button
-              type="primary"
-              size="large"
-              icon={<CheckOutlined />}
-              onClick={handleConfirm}
+              icon={<ArrowLeftOutlined />}
+              onClick={handleBack}
+              className={styles.backButton}
             >
-              {allowMultiple
-                ? `Confirm (${selectedIds.length} vocalist${selectedIds.length !== 1 ? 's' : ''})`
-                : 'Confirm Selection'}
+              Back to Flow
             </Button>
-          </Space>
+            <Title level={2} className={styles.title}>
+              {allowMultiple ? 'Select Preferred Vocalist' : 'Select Vocalist'}
+            </Title>
+            <p className={styles.description}>
+              {allowMultiple
+                ? `Choose ${maxSelections === 2 ? '1-2' : '1'} vocalist${maxSelections === 2 ? 's' : ''} you like (selected: ${selectedIds.length}/${maxSelections})`
+                : 'Choose a vocalist for your recording session'}
+            </p>
+          </div>
         </Card>
-      )}
+
+        <Card className={styles.contentCard}>
+          <div style={{ marginBottom: 20 }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Space wrap>
+                <Text strong>Filter by gender: </Text>
+                <Radio.Group
+                  value={genderFilter}
+                  onChange={e => setGenderFilter(e.target.value)}
+                  buttonStyle="solid"
+                >
+                  <Radio.Button value="ALL">All</Radio.Button>
+                  <Radio.Button value="FEMALE">Female</Radio.Button>
+                  <Radio.Button value="MALE">Male</Radio.Button>
+                </Radio.Group>
+              </Space>
+              <Space wrap>
+                <Text strong>Filter by genre: </Text>
+                <Select
+                  mode="multiple"
+                  placeholder="Select genres (multiple selection)"
+                  value={selectedGenres}
+                  onChange={setSelectedGenres}
+                  style={{ minWidth: 300 }}
+                  allowClear
+                  maxTagCount="responsive"
+                >
+                  {availableGenres.map(genre => (
+                    <Select.Option key={genre} value={genre}>
+                      {genre}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Space>
+              <Text type="secondary">
+                ({vocalists.length} vocalist{vocalists.length !== 1 ? 's' : ''})
+              </Text>
+            </Space>
+          </div>
+          <Spin spinning={loading}>
+            <div className="row">
+              {vocalists.length === 0 && !loading ? (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '40px',
+                    width: '100%',
+                  }}
+                >
+                  <p>No vocalists found</p>
+                </div>
+              ) : (
+                vocalists.map(vocalist => (
+                  <VocalistSelectionCard
+                    key={vocalist.specialistId}
+                    specialist={vocalist}
+                    isSelected={isSelected(vocalist.specialistId)}
+                    selectedId={allowMultiple ? selectedIds : selectedId}
+                    onSelect={handleSelect}
+                    disabled={
+                      allowMultiple &&
+                      !canSelectMore &&
+                      !isSelected(vocalist.specialistId)
+                    }
+                  />
+                ))
+              )}
+            </div>
+          </Spin>
+        </Card>
+
+        {(allowMultiple ? selectedIds.length > 0 : selectedId) && (
+          <Card className={styles.actionCard}>
+            <Space>
+              <Button size="large" onClick={handleBack}>
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<CheckOutlined />}
+                onClick={handleConfirm}
+              >
+                {allowMultiple
+                  ? `Confirm (${selectedIds.length} vocalist${selectedIds.length !== 1 ? 's' : ''})`
+                  : 'Confirm Selection'}
+              </Button>
+            </Space>
+          </Card>
+        )}
       </div>
     </div>
   );

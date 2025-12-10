@@ -412,7 +412,7 @@ const MilestoneDetailPage = () => {
       const arrangementMilestones = contract.milestones.filter(
         m => m.milestoneType === 'arrangement'
       );
-      
+
       if (arrangementMilestones.length === 0) {
         return false; // Không có arrangement milestone
       }
@@ -521,7 +521,9 @@ const MilestoneDetailPage = () => {
                 type="primary"
                 icon={<CalendarOutlined />}
                 onClick={() =>
-                  navigate(`/manager/studio-booking/${contractId}/${milestoneId}`)
+                  navigate(
+                    `/manager/studio-booking/${contractId}/${milestoneId}`
+                  )
                 }
                 style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
@@ -835,42 +837,74 @@ const MilestoneDetailPage = () => {
                 )}
               </Descriptions.Item>
               {/* Hiển thị arrangement submission files cho recording milestone */}
-              {milestone.milestoneType === 'recording' && 
-               milestone.sourceArrangementSubmission && (
-                <Descriptions.Item label="Arrangement Final Files" span={2}>
-                  <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <Text strong>Arrangement Final Files:</Text>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {milestone.sourceArrangementSubmission.submissionName} 
-                        (v{milestone.sourceArrangementSubmission.version})
-                      </Text>
-                      {milestone.sourceArrangementSubmission.files && 
-                       milestone.sourceArrangementSubmission.files.length > 0 && (
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                          {milestone.sourceArrangementSubmission.files.map((file, idx) => (
-                            <Button
-                              key={idx}
-                              type="link"
+              {milestone.milestoneType === 'recording' &&
+                milestone.sourceArrangementSubmission && (
+                  <Descriptions.Item label="Arrangement Final Files" span={2}>
+                    <div
+                      style={{
+                        padding: 12,
+                        background: '#f5f5f5',
+                        borderRadius: 4,
+                      }}
+                    >
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: '100%' }}
+                      >
+                        <Text strong>Arrangement Final Files:</Text>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {milestone.sourceArrangementSubmission.submissionName}
+                          (v{milestone.sourceArrangementSubmission.version})
+                        </Text>
+                        {milestone.sourceArrangementSubmission.files &&
+                          milestone.sourceArrangementSubmission.files.length >
+                            0 && (
+                            <Space
+                              direction="vertical"
                               size="small"
-                              icon={<DownloadOutlined />}
-                              onClick={() => downloadFileHelper(file.fileId, file.fileName)}
-                              style={{ padding: 0, height: 'auto' }}
+                              style={{ width: '100%' }}
                             >
-                              {file.fileName}
-                              {file.fileSize && (
-                                <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
-                                  ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                </Text>
+                              {milestone.sourceArrangementSubmission.files.map(
+                                (file, idx) => (
+                                  <Button
+                                    key={idx}
+                                    type="link"
+                                    size="small"
+                                    icon={<DownloadOutlined />}
+                                    onClick={() =>
+                                      downloadFileHelper(
+                                        file.fileId,
+                                        file.fileName
+                                      )
+                                    }
+                                    style={{ padding: 0, height: 'auto' }}
+                                  >
+                                    {file.fileName}
+                                    {file.fileSize && (
+                                      <Text
+                                        type="secondary"
+                                        style={{
+                                          marginLeft: 8,
+                                          fontSize: '11px',
+                                        }}
+                                      >
+                                        (
+                                        {(file.fileSize / 1024 / 1024).toFixed(
+                                          2
+                                        )}{' '}
+                                        MB)
+                                      </Text>
+                                    )}
+                                  </Button>
+                                )
                               )}
-                            </Button>
-                          ))}
-                        </Space>
-                      )}
-                    </Space>
-                  </div>
-                </Descriptions.Item>
-              )}
+                            </Space>
+                          )}
+                      </Space>
+                    </div>
+                  </Descriptions.Item>
+                )}
             </Descriptions>
           </Card>
         </div>

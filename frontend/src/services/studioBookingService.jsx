@@ -22,7 +22,7 @@ export const createBookingForRecordingMilestone = async bookingData => {
  * GET /api/v1/projects/studio-bookings/available-slots?date={date}
  * Backend tự động lấy studio active (single studio system)
  */
-export const getAvailableSlots = async (date) => {
+export const getAvailableSlots = async date => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.STUDIO_BOOKINGS.GET_AVAILABLE_SLOTS(date)
@@ -36,7 +36,7 @@ export const getAvailableSlots = async (date) => {
 /**
  * Lấy available artists cho một slot cụ thể
  * GET /api/v1/projects/studio-bookings/available-artists?milestoneId={milestoneId}&date={date}&startTime={startTime}&endTime={endTime}&genres={genres}&preferredSpecialistIds={ids}
- * 
+ *
  * @param {string} milestoneId - ID của milestone
  * @param {string} date - Ngày booking (YYYY-MM-DD)
  * @param {string} startTime - Thời gian bắt đầu (HH:mm:ss)
@@ -59,23 +59,25 @@ export const getAvailableArtists = async (
       startTime,
       endTime
     );
-    
+
     const params = new URLSearchParams();
-    
+
     // Thêm genres vào query params nếu có
     if (genres && genres.length > 0) {
       genres.forEach(genre => params.append('genres', genre));
     }
-    
+
     // Thêm preferredSpecialistIds vào query params nếu có
     if (preferredSpecialistIds && preferredSpecialistIds.length > 0) {
-      preferredSpecialistIds.forEach(id => params.append('preferredSpecialistIds', id));
+      preferredSpecialistIds.forEach(id =>
+        params.append('preferredSpecialistIds', id)
+      );
     }
-    
+
     if (params.toString()) {
       url += (url.includes('?') ? '&' : '?') + params.toString();
     }
-    
+
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
@@ -86,36 +88,46 @@ export const getAvailableArtists = async (
 /**
  * Lấy danh sách studio bookings
  * GET /api/v1/projects/studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
- * 
+ *
  * @param {string} contractId - Optional - Filter theo contract
  * @param {string} milestoneId - Optional - Filter theo milestone
  * @param {string} status - Optional - Filter theo status
  */
-export const getStudioBookings = async (contractId = null, milestoneId = null, status = null) => {
+export const getStudioBookings = async (
+  contractId = null,
+  milestoneId = null,
+  status = null
+) => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.STUDIO_BOOKINGS.LIST(contractId, milestoneId, status)
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách studio bookings' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách studio bookings',
+      }
+    );
   }
 };
 
 /**
  * Lấy chi tiết một studio booking
  * GET /api/v1/projects/studio-bookings/{bookingId}
- * 
+ *
  * @param {string} bookingId - ID của booking
  */
-export const getStudioBookingById = async (bookingId) => {
+export const getStudioBookingById = async bookingId => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.STUDIO_BOOKINGS.GET_BY_ID(bookingId)
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy chi tiết studio booking' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi lấy chi tiết studio booking' }
+    );
   }
 };
 
@@ -130,7 +142,10 @@ export const getMyStudioBookings = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách studio bookings' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách studio bookings',
+      }
+    );
   }
 };
-

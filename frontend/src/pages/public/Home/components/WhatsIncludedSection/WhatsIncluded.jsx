@@ -19,7 +19,8 @@ const CARDS = [
     iconAlt: 'Services icon',
     iconClass: 'iconImage',
     title: 'Comprehensive Services',
-    description: 'Transcription, arrangement, and recording services. Book studio sessions and track progress in real-time',
+    description:
+      'Transcription, arrangement, and recording services. Book studio sessions and track progress in real-time',
     delay: '0.2s',
   },
   {

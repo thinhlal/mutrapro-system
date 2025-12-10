@@ -18,7 +18,10 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getStudioBookingById } from '../../../services/studioBookingService';
-import { getContractById, getMilestoneById } from '../../../services/contractService';
+import {
+  getContractById,
+  getMilestoneById,
+} from '../../../services/contractService';
 import { getSpecialistById } from '../../../services/specialistService';
 import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
@@ -121,14 +124,18 @@ const StudioBookingDetailPage = () => {
       if (response?.status === 'success' && response?.data) {
         const booking = response.data;
         setBookingDetail(booking);
-        
+
         // Nếu là CONTRACT_RECORDING, load thêm thông tin contract, milestone và tasks
-        if (booking.context === 'CONTRACT_RECORDING' && booking.contractId && booking.milestoneId) {
+        if (
+          booking.context === 'CONTRACT_RECORDING' &&
+          booking.contractId &&
+          booking.milestoneId
+        ) {
           loadContractInfo(booking.contractId);
           loadMilestoneInfo(booking.contractId, booking.milestoneId);
           loadMilestoneTasks(booking.contractId, booking.milestoneId);
         }
-        
+
         // Load thông tin artists nếu có
         if (booking.artists && booking.artists.length > 0) {
           loadArtistsInfo(booking.artists);
@@ -145,7 +152,7 @@ const StudioBookingDetailPage = () => {
     }
   };
 
-  const loadContractInfo = async (contractId) => {
+  const loadContractInfo = async contractId => {
     try {
       setLoadingContract(true);
       const response = await getContractById(contractId);
@@ -178,7 +185,10 @@ const StudioBookingDetailPage = () => {
   const loadMilestoneTasks = async (contractId, milestoneId) => {
     try {
       setLoadingTasks(true);
-      const response = await getTaskAssignmentsByMilestone(contractId, milestoneId);
+      const response = await getTaskAssignmentsByMilestone(
+        contractId,
+        milestoneId
+      );
       if (response?.status === 'success' && Array.isArray(response.data)) {
         setMilestoneTasks(response.data);
       }
@@ -190,17 +200,17 @@ const StudioBookingDetailPage = () => {
     }
   };
 
-  const loadArtistsInfo = async (artists) => {
+  const loadArtistsInfo = async artists => {
     try {
       setLoadingArtists(true);
       const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
-      
+
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
         return;
       }
-      
-      const promises = specialistIds.map(async (specialistId) => {
+
+      const promises = specialistIds.map(async specialistId => {
         try {
           const response = await getSpecialistById(specialistId);
           if (response?.status === 'success' && response?.data) {
@@ -212,7 +222,7 @@ const StudioBookingDetailPage = () => {
           return { specialistId, data: null };
         }
       });
-      
+
       const results = await Promise.all(promises);
       const infoMap = {};
       results.forEach(({ specialistId, data }) => {
@@ -228,12 +238,12 @@ const StudioBookingDetailPage = () => {
     }
   };
 
-  const handleCopyBookingId = (bookingId) => {
+  const handleCopyBookingId = bookingId => {
     navigator.clipboard.writeText(bookingId);
     message.success('Đã copy Booking ID');
   };
 
-  const handleViewContract = (contractId) => {
+  const handleViewContract = contractId => {
     if (contractId) {
       navigate(`/manager/contracts/${contractId}`);
     }
@@ -241,7 +251,9 @@ const StudioBookingDetailPage = () => {
 
   const handleViewMilestone = (contractId, milestoneId) => {
     if (contractId && milestoneId) {
-      navigate(`/manager/milestone-assignments/${contractId}/milestone/${milestoneId}`);
+      navigate(
+        `/manager/milestone-assignments/${contractId}/milestone/${milestoneId}`
+      );
     }
   };
 
@@ -280,7 +292,9 @@ const StudioBookingDetailPage = () => {
           </Button>
           <Space size="small" wrap className={styles.headerMeta}>
             <Tag color={bookingStatusColor[bookingDetail.status] || 'default'}>
-              {bookingStatusLabels[bookingDetail.status] || bookingDetail.status || 'N/A'}
+              {bookingStatusLabels[bookingDetail.status] ||
+                bookingDetail.status ||
+                'N/A'}
             </Tag>
             {bookingDetail.context && (
               <Tag color={contextColors[bookingDetail.context] || 'purple'}>
@@ -303,7 +317,9 @@ const StudioBookingDetailPage = () => {
         <Descriptions bordered column={2} size="middle">
           <Descriptions.Item label="Booking ID" span={2}>
             <Space>
-              <span style={{ fontFamily: 'monospace' }}>{bookingDetail.bookingId}</span>
+              <span style={{ fontFamily: 'monospace' }}>
+                {bookingDetail.bookingId}
+              </span>
               <Button
                 type="text"
                 size="small"
@@ -314,12 +330,16 @@ const StudioBookingDetailPage = () => {
           </Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color={bookingStatusColor[bookingDetail.status] || 'default'}>
-              {bookingStatusLabels[bookingDetail.status] || bookingDetail.status || 'N/A'}
+              {bookingStatusLabels[bookingDetail.status] ||
+                bookingDetail.status ||
+                'N/A'}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Context">
             <Tag color={contextColors[bookingDetail.context] || 'purple'}>
-              {contextLabels[bookingDetail.context] || bookingDetail.context || 'N/A'}
+              {contextLabels[bookingDetail.context] ||
+                bookingDetail.context ||
+                'N/A'}
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Session Type">
@@ -329,14 +349,16 @@ const StudioBookingDetailPage = () => {
             {bookingDetail.studioName || 'N/A'}
           </Descriptions.Item>
           <Descriptions.Item label="Ngày">
-            {bookingDetail.bookingDate ? dayjs(bookingDetail.bookingDate).format('DD/MM/YYYY') : 'N/A'}
+            {bookingDetail.bookingDate
+              ? dayjs(bookingDetail.bookingDate).format('DD/MM/YYYY')
+              : 'N/A'}
           </Descriptions.Item>
           <Descriptions.Item label="Thời gian">
             {bookingDetail.startTime && bookingDetail.endTime
               ? `${bookingDetail.startTime} - ${bookingDetail.endTime}`
               : 'N/A'}
           </Descriptions.Item>
-          
+
           {/* Thông tin Contract và Milestone cho CONTRACT_RECORDING */}
           {bookingDetail.context === 'CONTRACT_RECORDING' && (
             <>
@@ -350,7 +372,9 @@ const StudioBookingDetailPage = () => {
                       <Button
                         type="link"
                         size="small"
-                        onClick={() => handleViewContract(bookingDetail.contractId)}
+                        onClick={() =>
+                          handleViewContract(bookingDetail.contractId)
+                        }
                         style={{ padding: 0 }}
                       >
                         {contractInfo.contractId}
@@ -371,20 +395,34 @@ const StudioBookingDetailPage = () => {
                     {contractInfo.status && (
                       <Space>
                         <Text strong>Status:</Text>
-                        <Tag color={
-                          contractInfo.status === 'signed' ? 'orange' :
-                          contractInfo.status === 'active' ? 'green' :
-                          contractInfo.status === 'active_pending_assignment' ? 'gold' :
-                          contractInfo.status === 'completed' ? 'success' :
-                          contractInfo.status === 'cancelled' ? 'error' :
-                          'default'
-                        }>
-                          {contractInfo.status === 'signed' ? 'Đã ký' :
-                           contractInfo.status === 'active' ? 'Đang thực thi' :
-                           contractInfo.status === 'active_pending_assignment' ? 'Chờ gán task' :
-                           contractInfo.status === 'completed' ? 'Hoàn thành' :
-                           contractInfo.status === 'cancelled' ? 'Đã hủy' :
-                           contractInfo.status}
+                        <Tag
+                          color={
+                            contractInfo.status === 'signed'
+                              ? 'orange'
+                              : contractInfo.status === 'active'
+                                ? 'green'
+                                : contractInfo.status ===
+                                    'active_pending_assignment'
+                                  ? 'gold'
+                                  : contractInfo.status === 'completed'
+                                    ? 'success'
+                                    : contractInfo.status === 'cancelled'
+                                      ? 'error'
+                                      : 'default'
+                          }
+                        >
+                          {contractInfo.status === 'signed'
+                            ? 'Đã ký'
+                            : contractInfo.status === 'active'
+                              ? 'Đang thực thi'
+                              : contractInfo.status ===
+                                  'active_pending_assignment'
+                                ? 'Chờ gán task'
+                                : contractInfo.status === 'completed'
+                                  ? 'Hoàn thành'
+                                  : contractInfo.status === 'cancelled'
+                                    ? 'Đã hủy'
+                                    : contractInfo.status}
                         </Tag>
                       </Space>
                     )}
@@ -396,7 +434,9 @@ const StudioBookingDetailPage = () => {
                       <Button
                         type="link"
                         size="small"
-                        onClick={() => handleViewContract(bookingDetail.contractId)}
+                        onClick={() =>
+                          handleViewContract(bookingDetail.contractId)
+                        }
                       >
                         {bookingDetail.contractId}
                       </Button>
@@ -416,7 +456,12 @@ const StudioBookingDetailPage = () => {
                       <Button
                         type="link"
                         size="small"
-                        onClick={() => handleViewMilestone(bookingDetail.contractId, bookingDetail.milestoneId)}
+                        onClick={() =>
+                          handleViewMilestone(
+                            bookingDetail.contractId,
+                            bookingDetail.milestoneId
+                          )
+                        }
                         style={{ padding: 0 }}
                       >
                         {milestoneInfo.milestoneId}
@@ -437,7 +482,15 @@ const StudioBookingDetailPage = () => {
                     {milestoneInfo.milestoneType && (
                       <Space>
                         <Text strong>Type:</Text>
-                        <Tag color={milestoneInfo.milestoneType === 'recording' ? 'blue' : milestoneInfo.milestoneType === 'arrangement' ? 'purple' : 'default'}>
+                        <Tag
+                          color={
+                            milestoneInfo.milestoneType === 'recording'
+                              ? 'blue'
+                              : milestoneInfo.milestoneType === 'arrangement'
+                                ? 'purple'
+                                : 'default'
+                          }
+                        >
                           {milestoneInfo.milestoneType}
                         </Tag>
                       </Space>
@@ -445,70 +498,145 @@ const StudioBookingDetailPage = () => {
                     {milestoneInfo.workStatus && (
                       <Space>
                         <Text strong>Work Status:</Text>
-                        <Tag color={
-                          milestoneInfo.workStatus === 'IN_PROGRESS' ? 'processing' :
-                          milestoneInfo.workStatus === 'READY_TO_START' ? 'purple' :
-                          milestoneInfo.workStatus === 'COMPLETED' ? 'success' :
-                          milestoneInfo.workStatus === 'CANCELLED' ? 'error' :
-                          milestoneInfo.workStatus === 'WAITING_ASSIGNMENT' ? 'orange' :
-                          milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT' ? 'gold' :
-                          milestoneInfo.workStatus === 'WAITING_CUSTOMER' ? 'warning' :
-                          milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ? 'gold' :
-                          'default'
-                        }>
-                          {milestoneInfo.workStatus === 'IN_PROGRESS' ? 'Đang thực hiện' :
-                           milestoneInfo.workStatus === 'READY_TO_START' ? 'Sẵn sàng bắt đầu' :
-                           milestoneInfo.workStatus === 'COMPLETED' ? 'Hoàn thành' :
-                           milestoneInfo.workStatus === 'CANCELLED' ? 'Đã hủy' :
-                           milestoneInfo.workStatus === 'WAITING_ASSIGNMENT' ? 'Chờ assign task' :
-                           milestoneInfo.workStatus === 'WAITING_SPECIALIST_ACCEPT' ? 'Chờ specialist accept' :
-                           milestoneInfo.workStatus === 'WAITING_CUSTOMER' ? 'Chờ khách hàng' :
-                           milestoneInfo.workStatus === 'READY_FOR_PAYMENT' ? 'Sẵn sàng thanh toán' :
-                           milestoneInfo.workStatus}
+                        <Tag
+                          color={
+                            milestoneInfo.workStatus === 'IN_PROGRESS'
+                              ? 'processing'
+                              : milestoneInfo.workStatus === 'READY_TO_START'
+                                ? 'purple'
+                                : milestoneInfo.workStatus === 'COMPLETED'
+                                  ? 'success'
+                                  : milestoneInfo.workStatus === 'CANCELLED'
+                                    ? 'error'
+                                    : milestoneInfo.workStatus ===
+                                        'WAITING_ASSIGNMENT'
+                                      ? 'orange'
+                                      : milestoneInfo.workStatus ===
+                                          'WAITING_SPECIALIST_ACCEPT'
+                                        ? 'gold'
+                                        : milestoneInfo.workStatus ===
+                                            'WAITING_CUSTOMER'
+                                          ? 'warning'
+                                          : milestoneInfo.workStatus ===
+                                              'READY_FOR_PAYMENT'
+                                            ? 'gold'
+                                            : 'default'
+                          }
+                        >
+                          {milestoneInfo.workStatus === 'IN_PROGRESS'
+                            ? 'Đang thực hiện'
+                            : milestoneInfo.workStatus === 'READY_TO_START'
+                              ? 'Sẵn sàng bắt đầu'
+                              : milestoneInfo.workStatus === 'COMPLETED'
+                                ? 'Hoàn thành'
+                                : milestoneInfo.workStatus === 'CANCELLED'
+                                  ? 'Đã hủy'
+                                  : milestoneInfo.workStatus ===
+                                      'WAITING_ASSIGNMENT'
+                                    ? 'Chờ assign task'
+                                    : milestoneInfo.workStatus ===
+                                        'WAITING_SPECIALIST_ACCEPT'
+                                      ? 'Chờ specialist accept'
+                                      : milestoneInfo.workStatus ===
+                                          'WAITING_CUSTOMER'
+                                        ? 'Chờ khách hàng'
+                                        : milestoneInfo.workStatus ===
+                                            'READY_FOR_PAYMENT'
+                                          ? 'Sẵn sàng thanh toán'
+                                          : milestoneInfo.workStatus}
                         </Tag>
                       </Space>
                     )}
                     {milestoneInfo.description && (
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: '100%' }}
+                      >
                         <Text strong>Description:</Text>
-                        <Text type="secondary">{milestoneInfo.description}</Text>
+                        <Text type="secondary">
+                          {milestoneInfo.description}
+                        </Text>
                       </Space>
                     )}
                     {/* Hiển thị arrangement submission files cho recording milestone */}
-                    {milestoneInfo.milestoneType === 'recording' && 
-                     milestoneInfo.sourceArrangementSubmission && (
-                      <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                          <Text strong>Arrangement Final Files:</Text>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {milestoneInfo.sourceArrangementSubmission.submissionName} 
-                            (v{milestoneInfo.sourceArrangementSubmission.version})
-                          </Text>
-                          {milestoneInfo.sourceArrangementSubmission.files && 
-                           milestoneInfo.sourceArrangementSubmission.files.length > 0 && (
-                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                              {milestoneInfo.sourceArrangementSubmission.files.map((file, idx) => (
-                                <Button
-                                  key={idx}
-                                  type="link"
+                    {milestoneInfo.milestoneType === 'recording' &&
+                      milestoneInfo.sourceArrangementSubmission && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            padding: 12,
+                            background: '#f5f5f5',
+                            borderRadius: 4,
+                          }}
+                        >
+                          <Space
+                            direction="vertical"
+                            size="small"
+                            style={{ width: '100%' }}
+                          >
+                            <Text strong>Arrangement Final Files:</Text>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {
+                                milestoneInfo.sourceArrangementSubmission
+                                  .submissionName
+                              }
+                              (v
+                              {
+                                milestoneInfo.sourceArrangementSubmission
+                                  .version
+                              }
+                              )
+                            </Text>
+                            {milestoneInfo.sourceArrangementSubmission.files &&
+                              milestoneInfo.sourceArrangementSubmission.files
+                                .length > 0 && (
+                                <Space
+                                  direction="vertical"
                                   size="small"
-                                  icon={<DownloadOutlined />}
-                                  onClick={() => downloadFileHelper(file.fileId, file.fileName)}
-                                  style={{ padding: 0, height: 'auto' }}
+                                  style={{ width: '100%' }}
                                 >
-                                  {file.fileName}
-                                  {file.fileSize && (
-                                    <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
-                                      ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
-                                    </Text>
+                                  {milestoneInfo.sourceArrangementSubmission.files.map(
+                                    (file, idx) => (
+                                      <Button
+                                        key={idx}
+                                        type="link"
+                                        size="small"
+                                        icon={<DownloadOutlined />}
+                                        onClick={() =>
+                                          downloadFileHelper(
+                                            file.fileId,
+                                            file.fileName
+                                          )
+                                        }
+                                        style={{ padding: 0, height: 'auto' }}
+                                      >
+                                        {file.fileName}
+                                        {file.fileSize && (
+                                          <Text
+                                            type="secondary"
+                                            style={{
+                                              marginLeft: 8,
+                                              fontSize: '11px',
+                                            }}
+                                          >
+                                            (
+                                            {(
+                                              file.fileSize /
+                                              1024 /
+                                              1024
+                                            ).toFixed(2)}{' '}
+                                            MB)
+                                          </Text>
+                                        )}
+                                      </Button>
+                                    )
                                   )}
-                                </Button>
-                              ))}
-                            </Space>
-                          )}
-                        </Space>
-                      </div>
-                    )}
+                                </Space>
+                              )}
+                          </Space>
+                        </div>
+                      )}
                   </Space>
                 ) : (
                   <Space>
@@ -517,7 +645,12 @@ const StudioBookingDetailPage = () => {
                       <Button
                         type="link"
                         size="small"
-                        onClick={() => handleViewMilestone(bookingDetail.contractId, bookingDetail.milestoneId)}
+                        onClick={() =>
+                          handleViewMilestone(
+                            bookingDetail.contractId,
+                            bookingDetail.milestoneId
+                          )
+                        }
                       >
                         {bookingDetail.milestoneId}
                       </Button>
@@ -529,7 +662,7 @@ const StudioBookingDetailPage = () => {
               </Descriptions.Item>
             </>
           )}
-          
+
           {/* Hiển thị Contract ID và Milestone ID cho các loại booking khác */}
           {bookingDetail.context !== 'CONTRACT_RECORDING' && (
             <>
@@ -551,7 +684,12 @@ const StudioBookingDetailPage = () => {
                   <Button
                     type="link"
                     size="small"
-                    onClick={() => handleViewMilestone(bookingDetail.contractId, bookingDetail.milestoneId)}
+                    onClick={() =>
+                      handleViewMilestone(
+                        bookingDetail.contractId,
+                        bookingDetail.milestoneId
+                      )
+                    }
                   >
                     {bookingDetail.milestoneId}
                   </Button>
@@ -561,7 +699,7 @@ const StudioBookingDetailPage = () => {
               </Descriptions.Item>
             </>
           )}
-          
+
           {/* Các field không cần thiết cho CONTRACT_RECORDING */}
           {bookingDetail.context !== 'CONTRACT_RECORDING' && (
             <>
@@ -582,94 +720,149 @@ const StudioBookingDetailPage = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Hold Expires At">
                 {bookingDetail.holdExpiresAt
-                  ? dayjs(bookingDetail.holdExpiresAt).format('DD/MM/YYYY HH:mm')
+                  ? dayjs(bookingDetail.holdExpiresAt).format(
+                      'DD/MM/YYYY HH:mm'
+                    )
                   : 'N/A'}
               </Descriptions.Item>
             </>
           )}
-          
+
           {/* Task và Supervisor (cho CONTRACT_RECORDING) */}
-          {bookingDetail.context === 'CONTRACT_RECORDING' && bookingDetail.milestoneId && (
-            <Descriptions.Item label="Task & Supervisor" span={2}>
-              {loadingTasks ? (
-                <Spin />
-              ) : milestoneTasks.length > 0 ? (
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  {milestoneTasks
-                    .filter(task => task.taskType === 'recording_supervision')
-                    .map((task, idx) => (
-                      <Card key={idx} size="small" style={{ marginBottom: 8 }}>
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                          <Space>
-                            <Text strong>Task ID:</Text>
-                            <Button
-                              type="link"
-                              size="small"
-                              onClick={() => handleViewTask(bookingDetail.contractId, task.assignmentId)}
-                              style={{ padding: 0 }}
-                            >
-                              {task.assignmentId?.substring(0, 8)}...
-                            </Button>
-                            <Tag color="blue">
-                              {taskTypeLabels[task.taskType] || task.taskType || 'N/A'}
-                            </Tag>
-                            {task.status && (
-                              <Tag color={taskStatusColors[task.status] || 'default'}>
-                                {taskStatusLabels[task.status] || task.status}
+          {bookingDetail.context === 'CONTRACT_RECORDING' &&
+            bookingDetail.milestoneId && (
+              <Descriptions.Item label="Task & Supervisor" span={2}>
+                {loadingTasks ? (
+                  <Spin />
+                ) : milestoneTasks.length > 0 ? (
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%' }}
+                  >
+                    {milestoneTasks
+                      .filter(task => task.taskType === 'recording_supervision')
+                      .map((task, idx) => (
+                        <Card
+                          key={idx}
+                          size="small"
+                          style={{ marginBottom: 8 }}
+                        >
+                          <Space
+                            direction="vertical"
+                            size="small"
+                            style={{ width: '100%' }}
+                          >
+                            <Space>
+                              <Text strong>Task ID:</Text>
+                              <Button
+                                type="link"
+                                size="small"
+                                onClick={() =>
+                                  handleViewTask(
+                                    bookingDetail.contractId,
+                                    task.assignmentId
+                                  )
+                                }
+                                style={{ padding: 0 }}
+                              >
+                                {task.assignmentId?.substring(0, 8)}...
+                              </Button>
+                              <Tag color="blue">
+                                {taskTypeLabels[task.taskType] ||
+                                  task.taskType ||
+                                  'N/A'}
                               </Tag>
+                              {task.status && (
+                                <Tag
+                                  color={
+                                    taskStatusColors[task.status] || 'default'
+                                  }
+                                >
+                                  {taskStatusLabels[task.status] || task.status}
+                                </Tag>
+                              )}
+                            </Space>
+                            {task.specialistId && (
+                              <Space>
+                                <Text strong>Supervisor (Specialist ID):</Text>
+                                <Text
+                                  copyable={{ text: task.specialistId }}
+                                  style={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '12px',
+                                  }}
+                                >
+                                  {task.specialistId?.substring(0, 8)}...
+                                </Text>
+                              </Space>
+                            )}
+                            {task.specialistName && (
+                              <Space>
+                                <Text strong>Supervisor Name:</Text>
+                                <Text>{task.specialistName}</Text>
+                              </Space>
+                            )}
+                            {task.assignedDate && (
+                              <Space>
+                                <Text strong>Assigned Date:</Text>
+                                <Text>
+                                  {dayjs(task.assignedDate).format(
+                                    'DD/MM/YYYY HH:mm'
+                                  )}
+                                </Text>
+                              </Space>
                             )}
                           </Space>
-                          {task.specialistId && (
-                            <Space>
-                              <Text strong>Supervisor (Specialist ID):</Text>
-                              <Text copyable={{ text: task.specialistId }} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                                {task.specialistId?.substring(0, 8)}...
-                              </Text>
-                            </Space>
-                          )}
-                          {task.specialistName && (
-                            <Space>
-                              <Text strong>Supervisor Name:</Text>
-                              <Text>{task.specialistName}</Text>
-                            </Space>
-                          )}
-                          {task.assignedDate && (
-                            <Space>
-                              <Text strong>Assigned Date:</Text>
-                              <Text>{dayjs(task.assignedDate).format('DD/MM/YYYY HH:mm')}</Text>
-                            </Space>
-                          )}
-                        </Space>
-                      </Card>
-                    ))}
-                  {milestoneTasks.filter(task => task.taskType === 'recording_supervision').length === 0 && (
-                    <Text type="secondary">Chưa có task recording_supervision được assign</Text>
-                  )}
-                </Space>
-              ) : (
-                <Text type="secondary">Chưa có task được assign cho milestone này</Text>
-              )}
-            </Descriptions.Item>
-          )}
-          
+                        </Card>
+                      ))}
+                    {milestoneTasks.filter(
+                      task => task.taskType === 'recording_supervision'
+                    ).length === 0 && (
+                      <Text type="secondary">
+                        Chưa có task recording_supervision được assign
+                      </Text>
+                    )}
+                  </Space>
+                ) : (
+                  <Text type="secondary">
+                    Chưa có task được assign cho milestone này
+                  </Text>
+                )}
+              </Descriptions.Item>
+            )}
+
           {/* Artists (cho luồng 2) */}
           {bookingDetail.artists && bookingDetail.artists.length > 0 && (
             <Descriptions.Item label="Artists" span={2}>
               {loadingArtists ? (
                 <Spin />
               ) : (
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
                   {bookingDetail.artists.map((artist, idx) => {
                     const specialistInfo = artistsInfo[artist.specialistId];
                     return (
                       <Card key={idx} size="small" style={{ marginBottom: 8 }}>
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Space
+                          direction="vertical"
+                          size="small"
+                          style={{ width: '100%' }}
+                        >
                           <Space>
                             {specialistInfo?.avatarUrl && (
                               <img
                                 src={specialistInfo.avatarUrl}
                                 alt={specialistInfo.fullName || 'Artist'}
-                                style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                }}
                               />
                             )}
                             <Space direction="vertical" size={0}>
@@ -682,7 +875,10 @@ const StudioBookingDetailPage = () => {
                                 )}
                               </Space>
                               {specialistInfo?.email && (
-                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: '12px' }}
+                                >
                                   {specialistInfo.email}
                                 </Text>
                               )}
@@ -690,13 +886,23 @@ const StudioBookingDetailPage = () => {
                           </Space>
                           <Space>
                             <Text strong>Specialist ID:</Text>
-                            <Text copyable={{ text: artist.specialistId }} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                            <Text
+                              copyable={{ text: artist.specialistId }}
+                              style={{
+                                fontFamily: 'monospace',
+                                fontSize: '12px',
+                              }}
+                            >
                               {artist.specialistId?.substring(0, 8)}...
                             </Text>
                           </Space>
                           <Space>
                             <Text strong>Role:</Text>
-                            <Tag color={artist.role === 'VOCALIST' ? 'orange' : 'blue'}>
+                            <Tag
+                              color={
+                                artist.role === 'VOCALIST' ? 'orange' : 'blue'
+                              }
+                            >
                               {artist.role === 'VOCALIST'
                                 ? 'Vocal'
                                 : artist.role === 'INSTRUMENT_PLAYER'
@@ -709,17 +915,24 @@ const StudioBookingDetailPage = () => {
                               {specialistInfo.experienceYears && (
                                 <Space>
                                   <Text strong>Experience:</Text>
-                                  <Text>{specialistInfo.experienceYears} years</Text>
+                                  <Text>
+                                    {specialistInfo.experienceYears} years
+                                  </Text>
                                 </Space>
                               )}
-                              {specialistInfo.genres && specialistInfo.genres.length > 0 && (
-                                <Space wrap>
-                                  <Text strong>Genres:</Text>
-                                  {specialistInfo.genres.map((genre, gIdx) => (
-                                    <Tag key={gIdx} color="purple">{genre}</Tag>
-                                  ))}
-                                </Space>
-                              )}
+                              {specialistInfo.genres &&
+                                specialistInfo.genres.length > 0 && (
+                                  <Space wrap>
+                                    <Text strong>Genres:</Text>
+                                    {specialistInfo.genres.map(
+                                      (genre, gIdx) => (
+                                        <Tag key={gIdx} color="purple">
+                                          {genre}
+                                        </Tag>
+                                      )
+                                    )}
+                                  </Space>
+                                )}
                             </>
                           )}
                         </Space>
@@ -730,22 +943,30 @@ const StudioBookingDetailPage = () => {
               )}
             </Descriptions.Item>
           )}
-          
+
           {/* Chỉ hiển thị cost cho STANDALONE_BOOKING và PRE_CONTRACT_HOLD */}
           {bookingDetail.context !== 'CONTRACT_RECORDING' && (
             <>
               <Descriptions.Item label="Artist Fee (Total)">
-                {bookingDetail.artistFee ? `${bookingDetail.artistFee.toLocaleString()} VND` : '0 VND'}
+                {bookingDetail.artistFee
+                  ? `${bookingDetail.artistFee.toLocaleString()} VND`
+                  : '0 VND'}
               </Descriptions.Item>
               <Descriptions.Item label="Equipment Rental Fee">
-                {bookingDetail.equipmentRentalFee ? `${bookingDetail.equipmentRentalFee.toLocaleString()} VND` : '0 VND'}
+                {bookingDetail.equipmentRentalFee
+                  ? `${bookingDetail.equipmentRentalFee.toLocaleString()} VND`
+                  : '0 VND'}
               </Descriptions.Item>
               <Descriptions.Item label="External Guest Fee">
-                {bookingDetail.externalGuestFee ? `${bookingDetail.externalGuestFee.toLocaleString()} VND` : '0 VND'}
+                {bookingDetail.externalGuestFee
+                  ? `${bookingDetail.externalGuestFee.toLocaleString()} VND`
+                  : '0 VND'}
               </Descriptions.Item>
               <Descriptions.Item label="Total Cost">
                 <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                  {bookingDetail.totalCost ? `${bookingDetail.totalCost.toLocaleString()} VND` : '0 VND'}
+                  {bookingDetail.totalCost
+                    ? `${bookingDetail.totalCost.toLocaleString()} VND`
+                    : '0 VND'}
                 </Text>
               </Descriptions.Item>
             </>
@@ -754,51 +975,89 @@ const StudioBookingDetailPage = () => {
           {bookingDetail.context === 'PRE_CONTRACT_HOLD' && (
             <>
               <Descriptions.Item label="Reservation Fee Amount">
-                {bookingDetail.reservationFeeAmount && bookingDetail.reservationFeeAmount > 0
+                {bookingDetail.reservationFeeAmount &&
+                bookingDetail.reservationFeeAmount > 0
                   ? `${bookingDetail.reservationFeeAmount.toLocaleString()} VND`
                   : '0 VND'}
               </Descriptions.Item>
               <Descriptions.Item label="Reservation Fee Status">
                 {bookingDetail.reservationFeeStatus ? (
-                  <Tag color={
-                    bookingDetail.reservationFeeStatus === 'PAID' ? 'success' :
-                    bookingDetail.reservationFeeStatus === 'PENDING' ? 'processing' :
-                    bookingDetail.reservationFeeStatus === 'REFUNDED' ? 'default' :
-                    bookingDetail.reservationFeeStatus === 'NONE' ? 'default' :
-                    'default'
-                  }>
-                    {bookingDetail.reservationFeeStatus === 'PAID' ? 'Đã thanh toán' :
-                     bookingDetail.reservationFeeStatus === 'PENDING' ? 'Đang chờ' :
-                     bookingDetail.reservationFeeStatus === 'REFUNDED' ? 'Đã hoàn tiền' :
-                     bookingDetail.reservationFeeStatus === 'NONE' ? 'Không có' :
-                     bookingDetail.reservationFeeStatus}
+                  <Tag
+                    color={
+                      bookingDetail.reservationFeeStatus === 'PAID'
+                        ? 'success'
+                        : bookingDetail.reservationFeeStatus === 'PENDING'
+                          ? 'processing'
+                          : bookingDetail.reservationFeeStatus === 'REFUNDED'
+                            ? 'default'
+                            : bookingDetail.reservationFeeStatus === 'NONE'
+                              ? 'default'
+                              : 'default'
+                    }
+                  >
+                    {bookingDetail.reservationFeeStatus === 'PAID'
+                      ? 'Đã thanh toán'
+                      : bookingDetail.reservationFeeStatus === 'PENDING'
+                        ? 'Đang chờ'
+                        : bookingDetail.reservationFeeStatus === 'REFUNDED'
+                          ? 'Đã hoàn tiền'
+                          : bookingDetail.reservationFeeStatus === 'NONE'
+                            ? 'Không có'
+                            : bookingDetail.reservationFeeStatus}
                   </Tag>
                 ) : (
                   'N/A'
                 )}
               </Descriptions.Item>
               {bookingDetail.reservationWalletTxId && (
-                <Descriptions.Item label="Reservation Wallet Transaction ID" span={2}>
-                  <Text copyable={{ text: bookingDetail.reservationWalletTxId }} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                <Descriptions.Item
+                  label="Reservation Wallet Transaction ID"
+                  span={2}
+                >
+                  <Text
+                    copyable={{ text: bookingDetail.reservationWalletTxId }}
+                    style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                  >
                     {bookingDetail.reservationWalletTxId?.substring(0, 8)}...
                   </Text>
                 </Descriptions.Item>
               )}
               {bookingDetail.reservationRefundWalletTxId && (
-                <Descriptions.Item label="Reservation Refund Transaction ID" span={2}>
-                  <Text copyable={{ text: bookingDetail.reservationRefundWalletTxId }} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                    {bookingDetail.reservationRefundWalletTxId?.substring(0, 8)}...
+                <Descriptions.Item
+                  label="Reservation Refund Transaction ID"
+                  span={2}
+                >
+                  <Text
+                    copyable={{
+                      text: bookingDetail.reservationRefundWalletTxId,
+                    }}
+                    style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                  >
+                    {bookingDetail.reservationRefundWalletTxId?.substring(0, 8)}
+                    ...
                   </Text>
                 </Descriptions.Item>
               )}
               {bookingDetail.reservationAppliedToMilestoneId && (
-                <Descriptions.Item label="Reservation Applied To Milestone" span={2}>
+                <Descriptions.Item
+                  label="Reservation Applied To Milestone"
+                  span={2}
+                >
                   <Button
                     type="link"
                     size="small"
-                    onClick={() => handleViewMilestone(bookingDetail.contractId, bookingDetail.reservationAppliedToMilestoneId)}
+                    onClick={() =>
+                      handleViewMilestone(
+                        bookingDetail.contractId,
+                        bookingDetail.reservationAppliedToMilestoneId
+                      )
+                    }
                   >
-                    {bookingDetail.reservationAppliedToMilestoneId?.substring(0, 8)}...
+                    {bookingDetail.reservationAppliedToMilestoneId?.substring(
+                      0,
+                      8
+                    )}
+                    ...
                   </Button>
                 </Descriptions.Item>
               )}
@@ -821,4 +1080,3 @@ const StudioBookingDetailPage = () => {
 };
 
 export default StudioBookingDetailPage;
-

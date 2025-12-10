@@ -384,31 +384,37 @@ const MilestonesPage = () => {
         // - Task type sẽ là 'recording'
         // - Không cần điều kiện đặc biệt (có thể assign task trước hoặc sau booking)
         const isRecordingMilestone = milestoneType === 'recording';
-        const isArrangementWithRecording = contractType === 'arrangement_with_recording';
-        
+        const isArrangementWithRecording =
+          contractType === 'arrangement_with_recording';
+
         // Tooltip cho recording milestone
-        const assignButtonTooltip = isRecordingMilestone && isArrangementWithRecording
-          ? 'Assign task cho recording specialist (task type: recording_supervision)'
-          : 'Assign task cho specialist';
+        const assignButtonTooltip =
+          isRecordingMilestone && isArrangementWithRecording
+            ? 'Assign task cho recording specialist (task type: recording_supervision)'
+            : 'Assign task cho specialist';
 
         // Logic hiển thị nút Book Studio (tương tự MilestoneDetailPage)
         // Check basic conditions, chi tiết sẽ check ở detail page hoặc booking page
         const contractStatus = (record.contractStatus || '').toLowerCase();
-        
+
         // Check tất cả arrangement milestones đã completed (từ backend)
-        const allArrangementsCompleted = record.allArrangementsCompleted === true;
-        
-        const canShowBookStudioButton = 
-          isRecordingMilestone && 
+        const allArrangementsCompleted =
+          record.allArrangementsCompleted === true;
+
+        const canShowBookStudioButton =
+          isRecordingMilestone &&
           isArrangementWithRecording &&
-          (contractStatus === 'active' || contractStatus === 'active_pending_assignment') &&
+          (contractStatus === 'active' ||
+            contractStatus === 'active_pending_assignment') &&
           allArrangementsCompleted && // Tất cả arrangement milestones đã completed
           milestoneWorkStatus !== 'completed' &&
           milestoneWorkStatus !== 'cancelled' &&
           !record.studioBookingId; // Nếu đã có booking thì không hiện
-        
-        const handleBookStudio = (slot) => {
-          navigate(`/manager/studio-booking/${slot.contractId}/${slot.milestoneId}`);
+
+        const handleBookStudio = slot => {
+          navigate(
+            `/manager/studio-booking/${slot.contractId}/${slot.milestoneId}`
+          );
         };
 
         return (

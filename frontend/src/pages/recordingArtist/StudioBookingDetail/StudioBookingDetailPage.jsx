@@ -88,8 +88,10 @@ const StudioBookingDetailPage = () => {
   const loadArtistsInfo = async () => {
     try {
       setLoadingArtists(true);
-      const artistIds = booking.artists.map(a => a.specialistId).filter(Boolean);
-      const infoPromises = artistIds.map(id => 
+      const artistIds = booking.artists
+        .map(a => a.specialistId)
+        .filter(Boolean);
+      const infoPromises = artistIds.map(id =>
         getSpecialistById(id).catch(err => {
           console.warn(`Failed to load specialist ${id}:`, err);
           return null;
@@ -151,10 +153,7 @@ const StudioBookingDetailPage = () => {
                 Studio Booking Detail
               </Title>
             </Space>
-            <Button
-              icon={<CopyOutlined />}
-              onClick={handleCopyBookingId}
-            >
+            <Button icon={<CopyOutlined />} onClick={handleCopyBookingId}>
               Copy Booking ID
             </Button>
           </div>
@@ -191,7 +190,9 @@ const StudioBookingDetailPage = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Session Type">
               <Tag color="purple">
-                {sessionTypeLabels[booking.sessionType] || booking.sessionType || 'N/A'}
+                {sessionTypeLabels[booking.sessionType] ||
+                  booking.sessionType ||
+                  'N/A'}
               </Tag>
             </Descriptions.Item>
             {booking.notes && (
@@ -206,17 +207,22 @@ const StudioBookingDetailPage = () => {
             <div>
               <Title level={4}>Artists</Title>
               <Spin spinning={loadingArtists}>
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Space
+                  direction="vertical"
+                  size="middle"
+                  style={{ width: '100%' }}
+                >
                   {booking.artists.map((artist, index) => {
                     const specialistInfo = artistsInfo[artist.specialistId];
                     return (
                       <Card key={index} size="small">
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Space
+                          direction="vertical"
+                          size="small"
+                          style={{ width: '100%' }}
+                        >
                           <Space>
-                            <Avatar
-                              src={specialistInfo?.avatarUrl}
-                              size={40}
-                            >
+                            <Avatar src={specialistInfo?.avatarUrl} size={40}>
                               {specialistInfo?.fullNameSnapshot?.[0] || 'A'}
                             </Avatar>
                             <div>
@@ -226,7 +232,10 @@ const StudioBookingDetailPage = () => {
                                 </Text>
                               </div>
                               <div>
-                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: '12px' }}
+                                >
                                   {specialistInfo?.emailSnapshot || 'N/A'}
                                 </Text>
                               </div>
@@ -250,41 +259,63 @@ const StudioBookingDetailPage = () => {
 
           {/* Arrangement Final Files (cho recording milestones) */}
           {booking?.context === 'CONTRACT_RECORDING' &&
-           booking?.sourceArrangementSubmission && (
-            <div>
-              <Title level={4}>Arrangement Final Files</Title>
-              <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {booking.sourceArrangementSubmission.submissionName}
-                    (v{booking.sourceArrangementSubmission.version})
-                  </Text>
-                  {booking.sourceArrangementSubmission.files &&
-                   booking.sourceArrangementSubmission.files.length > 0 && (
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {booking.sourceArrangementSubmission.files.map((file, idx) => (
-                        <Button
-                          key={idx}
-                          type="link"
+            booking?.sourceArrangementSubmission && (
+              <div>
+                <Title level={4}>Arrangement Final Files</Title>
+                <div
+                  style={{
+                    padding: 12,
+                    background: '#f5f5f5',
+                    borderRadius: 4,
+                  }}
+                >
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%' }}
+                  >
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      {booking.sourceArrangementSubmission.submissionName}
+                      (v{booking.sourceArrangementSubmission.version})
+                    </Text>
+                    {booking.sourceArrangementSubmission.files &&
+                      booking.sourceArrangementSubmission.files.length > 0 && (
+                        <Space
+                          direction="vertical"
                           size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() => downloadFileHelper(file.fileId, file.fileName)}
-                          style={{ padding: 0, height: 'auto' }}
+                          style={{ width: '100%' }}
                         >
-                          {file.fileName}
-                          {file.fileSize && (
-                            <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
-                              ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
-                            </Text>
+                          {booking.sourceArrangementSubmission.files.map(
+                            (file, idx) => (
+                              <Button
+                                key={idx}
+                                type="link"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                onClick={() =>
+                                  downloadFileHelper(file.fileId, file.fileName)
+                                }
+                                style={{ padding: 0, height: 'auto' }}
+                              >
+                                {file.fileName}
+                                {file.fileSize && (
+                                  <Text
+                                    type="secondary"
+                                    style={{ marginLeft: 8, fontSize: '11px' }}
+                                  >
+                                    ({(file.fileSize / 1024 / 1024).toFixed(2)}{' '}
+                                    MB)
+                                  </Text>
+                                )}
+                              </Button>
+                            )
                           )}
-                        </Button>
-                      ))}
-                    </Space>
-                  )}
-                </Space>
+                        </Space>
+                      )}
+                  </Space>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </Space>
       </Card>
     </div>
@@ -292,4 +323,3 @@ const StudioBookingDetailPage = () => {
 };
 
 export default StudioBookingDetailPage;
-
