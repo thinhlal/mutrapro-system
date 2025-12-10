@@ -96,6 +96,7 @@ public class TaskAssignmentService {
     MilestoneProgressService milestoneProgressService;
     FileSubmissionRepository fileSubmissionRepository;
     StudioBookingRepository studioBookingRepository;
+    ContractMilestoneService contractMilestoneService;
 
     /**
      * Helper method để publish event vào outbox
@@ -705,6 +706,10 @@ public class TaskAssignmentService {
                     estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
                 }
                 
+                // Fetch arrangement submission nếu có sourceArrangementSubmissionId (gọi từ ContractMilestoneService)
+                TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
+                    contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+                
                 TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
                     .milestoneId(milestone.getMilestoneId())
                     .name(milestone.getName())
@@ -720,6 +725,9 @@ public class TaskAssignmentService {
                     .finalCompletedAt(milestone.getFinalCompletedAt())
                     .milestoneSlaDays(milestone.getMilestoneSlaDays())
                     .estimatedDeadline(estimatedDeadline)
+                    .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
+                    .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
+                    .sourceArrangementSubmission(arrangementSubmissionInfo)
                     .build();
                 response.setMilestone(milestoneInfo);
             }

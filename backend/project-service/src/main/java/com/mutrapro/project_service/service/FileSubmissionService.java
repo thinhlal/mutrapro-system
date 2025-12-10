@@ -13,6 +13,7 @@ import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.enums.FileStatus;
+import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.RevisionRequestStatus;
 import com.mutrapro.project_service.enums.SubmissionStatus;
@@ -667,6 +668,11 @@ public class FileSubmissionService {
                                 contractService.unlockNextMilestone(assignment.getContractId(), milestone.getOrderIndex());
                             }
                         }
+                        
+                        // Link arrangement submission với recording milestone (nếu milestone này là arrangement)
+                        if (milestone.getMilestoneType() == MilestoneType.arrangement) {
+                            linkArrangementSubmissionToRecordingMilestone(milestone, submissionId, assignment.getContractId());
+                        }
                     }
                 }
                 log.debug(
@@ -994,5 +1000,81 @@ public class FileSubmissionService {
                 .reviewedAt(file.getReviewedAt())
                 .rejectionReason(file.getRejectionReason())
                 .build();
+    }
+    
+    /**
+     * Link arrangement submission với recording milestone trong cùng contract
+     * Được gọi khi arrangement milestone được customer accept
+     * 
+     * Logic:
+     * - Chỉ link nếu arrangement milestone này là arrangement milestone cuối cùng (orderIndex cao nhất)
+     * - Luôn update (overwrite) để đảm bảo link với submission mới nhất khi có revision
+     */
+    private void linkArrangementSubmissionToRecordingMilestone(
+            ContractMilestone arrangementMilestone, 
+            String submissionId, 
+            String contractId) {
+        try {
+            // Tìm tất cả arrangement milestones trong contract
+            List<ContractMilestone> allMilestones = contractMilestoneRepository
+                    .findByContractIdOrderByOrderIndexAsc(contractId);
+            
+            // Tìm arrangement milestones
+            List<ContractMilestone> arrangementMilestones = allMilestones.stream()
+                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                    .toList();
+            
+            // Chỉ link nếu arrangement milestone này là arrangement milestone cuối cùng (orderIndex cao nhất)
+            // Vì recording cần file arrangement cuối cùng
+            boolean isLastArrangementMilestone = true;
+            if (!arrangementMilestones.isEmpty() && arrangementMilestone.getOrderIndex() != null) {
+                Integer maxOrderIndex = arrangementMilestones.stream()
+                        .filter(m -> m.getOrderIndex() != null)
+                        .map(ContractMilestone::getOrderIndex)
+                        .max(Integer::compareTo)
+                        .orElse(null);
+                isLastArrangementMilestone = maxOrderIndex != null 
+                        && maxOrderIndex.equals(arrangementMilestone.getOrderIndex());
+            }
+            
+            if (!isLastArrangementMilestone) {
+                log.debug("Skipping link: arrangement milestone is not the last one. arrangementMilestoneId={}, orderIndex={}, contractId={}",
+                        arrangementMilestone.getMilestoneId(), arrangementMilestone.getOrderIndex(), contractId);
+                return;
+            }
+            
+            // Tìm recording milestone (có milestoneType = recording)
+            Optional<ContractMilestone> recordingMilestoneOpt = allMilestones.stream()
+                    .filter(m -> m.getMilestoneType() == MilestoneType.recording)
+                    .findFirst();
+            
+            if (recordingMilestoneOpt.isPresent()) {
+                ContractMilestone recordingMilestone = recordingMilestoneOpt.get();
+                
+                // Luôn update (overwrite) để đảm bảo link với submission mới nhất khi có revision
+                recordingMilestone.setSourceArrangementMilestoneId(arrangementMilestone.getMilestoneId());
+                recordingMilestone.setSourceArrangementSubmissionId(submissionId);
+                contractMilestoneRepository.save(recordingMilestone);
+                
+                log.info("Linked arrangement submission to recording milestone: arrangementMilestoneId={}, submissionId={}, recordingMilestoneId={}, contractId={}",
+                        arrangementMilestone.getMilestoneId(), submissionId, recordingMilestone.getMilestoneId(), contractId);
+            } else {
+                log.debug("No recording milestone found in contract: contractId={}", contractId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.error("Failed to link arrangement submission to recording milestone: arrangementMilestoneId={}, submissionId={}, contractId={}, error={}",
+                    arrangementMilestone.getMilestoneId(), submissionId, contractId, e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Internal method: Get submission by ID without access check (for internal use)
+     * Dùng để fetch arrangement submission cho recording milestone
+     */
+    public FileSubmissionResponse getSubmissionInternal(String submissionId) {
+        FileSubmission submission = fileSubmissionRepository.findById(submissionId)
+                .orElseThrow(() -> FileSubmissionNotFoundException.byId(submissionId));
+        return toResponse(submission);
     }
 }

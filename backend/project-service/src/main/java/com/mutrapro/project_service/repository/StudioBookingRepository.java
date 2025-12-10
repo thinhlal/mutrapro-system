@@ -3,6 +3,8 @@ package com.mutrapro.project_service.repository;
 import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -31,4 +33,9 @@ public interface StudioBookingRepository extends JpaRepository<StudioBooking, St
     Optional<StudioBooking> findByBookingId(String bookingId);
     
     Optional<StudioBooking> findByMilestoneId(String milestoneId);
+    
+    List<StudioBooking> findByMilestoneIdIn(List<String> milestoneIds);
+    
+    @Query("SELECT sb FROM StudioBooking sb JOIN FETCH sb.studio WHERE sb.bookingId IN :bookingIds")
+    List<StudioBooking> findByBookingIdIn(@Param("bookingIds") List<String> bookingIds);
 }

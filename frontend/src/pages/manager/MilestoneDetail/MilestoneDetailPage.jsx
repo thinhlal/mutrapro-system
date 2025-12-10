@@ -19,6 +19,7 @@ import {
   ExclamationCircleOutlined,
   StarFilled,
   CalendarOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -29,6 +30,7 @@ import {
 } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
+import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import {
   getGenreLabel,
@@ -832,6 +834,43 @@ const MilestoneDetailPage = () => {
                   </Text>
                 )}
               </Descriptions.Item>
+              {/* Hiển thị arrangement submission files cho recording milestone */}
+              {milestone.milestoneType === 'recording' && 
+               milestone.sourceArrangementSubmission && (
+                <Descriptions.Item label="Arrangement Final Files" span={2}>
+                  <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Text strong>Arrangement Final Files:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        {milestone.sourceArrangementSubmission.submissionName} 
+                        (v{milestone.sourceArrangementSubmission.version})
+                      </Text>
+                      {milestone.sourceArrangementSubmission.files && 
+                       milestone.sourceArrangementSubmission.files.length > 0 && (
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          {milestone.sourceArrangementSubmission.files.map((file, idx) => (
+                            <Button
+                              key={idx}
+                              type="link"
+                              size="small"
+                              icon={<DownloadOutlined />}
+                              onClick={() => downloadFileHelper(file.fileId, file.fileName)}
+                              style={{ padding: 0, height: 'auto' }}
+                            >
+                              {file.fileName}
+                              {file.fileSize && (
+                                <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
+                                  ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
+                                </Text>
+                              )}
+                            </Button>
+                          ))}
+                        </Space>
+                      )}
+                    </Space>
+                  </div>
+                </Descriptions.Item>
+              )}
             </Descriptions>
           </Card>
         </div>

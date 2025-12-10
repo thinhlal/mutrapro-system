@@ -7,6 +7,7 @@ import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
 import com.mutrapro.project_service.dto.response.BookingArtistResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
+import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.entity.BookingArtist;
 import com.mutrapro.project_service.entity.Contract;
@@ -36,6 +37,9 @@ import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +66,41 @@ public class StudioBookingService {
     TaskAssignmentRepository taskAssignmentRepository;
     SpecialistServiceFeignClient specialistServiceFeignClient;
     TaskAssignmentService taskAssignmentService;
+    ContractMilestoneService contractMilestoneService;
+    
+    /**
+     * Lấy specialistId của user hiện tại
+     * Ưu tiên lấy từ JWT token (nếu có), nếu không thì gọi specialist-service
+     */
+    private String getCurrentSpecialistId() {
+        // Thử lấy từ JWT token trước (nếu identity-service set specialistId claim)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            String specialistId = jwt.getClaimAsString("specialistId");
+            if (specialistId != null && !specialistId.isEmpty()) {
+                log.debug("Got specialistId from JWT token: {}", specialistId);
+                return specialistId;
+            }
+        }
+        
+        // Fallback: gọi specialist-service để lấy specialistId từ userId
+        try {
+            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
+            if (response == null || !"success".equals(response.getStatus()) 
+                || response.getData() == null) {
+                throw new IllegalStateException("Specialist not found for current user");
+            }
+            Map<String, Object> data = response.getData();
+            String specialistId = (String) data.get("specialistId");
+            if (specialistId == null || specialistId.isEmpty()) {
+                throw new IllegalStateException("Specialist ID not found in response");
+            }
+            return specialistId;
+        } catch (Exception e) {
+            log.error("Failed to get specialist info: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to get specialist information: " + e.getMessage());
+        }
+    }
 
     /**
      * Tạo booking cho recording milestone trong arrangement_with_recording contract
@@ -432,8 +471,8 @@ public class StudioBookingService {
         return StudioBookingResponse.builder()
             .bookingId(booking.getBookingId())
             .userId(booking.getUserId())
-            .studioId(booking.getStudio().getStudioId())
-            .studioName(booking.getStudio().getStudioName())
+            .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
+            .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
             .requestId(booking.getRequestId())
             .contractId(booking.getContractId())
             .milestoneId(booking.getMilestoneId())
@@ -777,7 +816,79 @@ public class StudioBookingService {
             booking.getStudio().getStudioName(); // Trigger lazy load trong transaction
         }
         
-        return mapToResponse(booking);
+        StudioBookingResponse response = mapToResponse(booking);
+        
+        // Enrich với arrangement submission info nếu là recording milestone
+        // (không cần check contract access vì đây là internal call từ studio booking)
+        if (booking.getMilestoneId() != null && !booking.getMilestoneId().isEmpty()) {
+            try {
+                ContractMilestone milestone = contractMilestoneRepository.findById(booking.getMilestoneId())
+                    .orElse(null);
+                
+                if (milestone != null && milestone.getMilestoneType() == MilestoneType.recording) {
+                    TaskAssignmentResponse.ArrangementSubmissionInfo arrangementInfo = 
+                        contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+                    
+                    if (arrangementInfo != null) {
+                        // Map sang StudioBookingResponse.ArrangementSubmissionInfo
+                        StudioBookingResponse.ArrangementSubmissionInfo mappedInfo = 
+                            StudioBookingResponse.ArrangementSubmissionInfo.builder()
+                                .submissionId(arrangementInfo.getSubmissionId())
+                                .submissionName(arrangementInfo.getSubmissionName())
+                                .status(arrangementInfo.getStatus())
+                                .version(arrangementInfo.getVersion())
+                                .files(arrangementInfo.getFiles() != null ? arrangementInfo.getFiles().stream()
+                                    .map(file -> StudioBookingResponse.FileInfo.builder()
+                                        .fileId(file.getFileId())
+                                        .fileName(file.getFileName())
+                                        .fileUrl(file.getFileUrl())
+                                        .fileSize(file.getFileSize())
+                                        .mimeType(file.getMimeType())
+                                        .build())
+                                    .toList() : null)
+                                .build();
+                        response.setSourceArrangementSubmission(mappedInfo);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to enrich studio booking with arrangement submission: bookingId={}, milestoneId={}, error={}",
+                    bookingId, booking.getMilestoneId(), e.getMessage());
+                // Không throw error, chỉ log warning
+            }
+        }
+        
+        return response;
+    }
+    
+    /**
+     * Lấy danh sách studio bookings của recording artist hiện tại
+     * GET /studio-bookings/my-bookings
+     */
+    @Transactional(readOnly = true)
+    public List<StudioBookingResponse> getMyStudioBookings() {
+        String specialistId = getCurrentSpecialistId();
+        log.info("Getting studio bookings for recording artist: specialistId={}", specialistId);
+        
+        // Tìm tất cả BookingArtist records của specialist này
+        List<BookingArtist> bookingArtists = bookingArtistRepository.findBySpecialistId(specialistId);
+        
+        // Lấy danh sách booking IDs
+        List<String> bookingIds = bookingArtists.stream()
+            .map(ba -> ba.getBooking().getBookingId())
+            .distinct()
+            .toList();
+        
+        if (bookingIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // Lấy tất cả bookings (đã JOIN FETCH studio trong query)
+        List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(bookingIds);
+        
+        // Convert sang response (trong cùng transaction)
+        return bookings.stream()
+            .map(this::mapToResponse)
+            .toList();
     }
     
 }

@@ -78,5 +78,12 @@ public class ContractMilestone extends BaseEntity<String> {
 
     @Column(name = "final_completed_at")
     LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
+
+    // Link với arrangement milestone và submission (cho recording milestone)
+    @Column(name = "source_arrangement_milestone_id", length = 36)
+    String sourceArrangementMilestoneId;  // ID của arrangement milestone tạo ra recording milestone này
+
+    @Column(name = "source_arrangement_submission_id", length = 36)
+    String sourceArrangementSubmissionId;  // ID của arrangement submission final được dùng để recording
 }
 

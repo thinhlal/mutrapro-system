@@ -48,5 +48,10 @@ public interface BookingArtistRepository extends JpaRepository<BookingArtist, St
         @Param("startTime") LocalTime startTime,
         @Param("endTime") LocalTime endTime
     );
+
+    /**
+     * Tìm tất cả bookings mà một recording artist được book vào
+     */
+    List<BookingArtist> findBySpecialistId(String specialistId);
 }
 

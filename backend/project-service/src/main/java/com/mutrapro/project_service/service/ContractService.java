@@ -7,6 +7,7 @@ import com.mutrapro.shared.event.ContractNotificationEvent;
 import com.mutrapro.project_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.entity.Contract;
@@ -20,6 +21,7 @@ import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.GateCondition;
 import com.mutrapro.project_service.enums.InstallmentStatus;
 import com.mutrapro.project_service.enums.InstallmentType;
+import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.project_service.exception.ContractAlreadyExistsException;
@@ -102,6 +104,7 @@ public class ContractService {
     ContractSignSessionRepository contractSignSessionRepository;
     FileRepository fileRepository;
     MilestoneProgressService milestoneProgressService;
+    ContractMilestoneService contractMilestoneService;
     TaskAssignmentService taskAssignmentService;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
@@ -502,7 +505,43 @@ public class ContractService {
             .findByMilestoneIdAndContractId(milestoneId, contractId)
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
         
-        return contractMilestoneMapper.toResponse(milestone);
+        ContractMilestoneResponse response = contractMilestoneMapper.toResponse(milestone);
+        
+        // Enrich với arrangement submission nếu là recording milestone
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            try {
+                TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
+                    contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+                
+                if (arrangementSubmissionInfo != null) {
+                    // Map từ TaskAssignmentResponse.ArrangementSubmissionInfo sang ContractMilestoneResponse.ArrangementSubmissionInfo
+                    ContractMilestoneResponse.ArrangementSubmissionInfo mappedInfo = 
+                        ContractMilestoneResponse.ArrangementSubmissionInfo.builder()
+                            .submissionId(arrangementSubmissionInfo.getSubmissionId())
+                            .submissionName(arrangementSubmissionInfo.getSubmissionName())
+                            .status(arrangementSubmissionInfo.getStatus())
+                            .version(arrangementSubmissionInfo.getVersion())
+                            .files(arrangementSubmissionInfo.getFiles() != null 
+                                ? arrangementSubmissionInfo.getFiles().stream()
+                                    .map(f -> ContractMilestoneResponse.FileInfo.builder()
+                                        .fileId(f.getFileId())
+                                        .fileName(f.getFileName())
+                                        .fileUrl(f.getFileUrl())
+                                        .fileSize(f.getFileSize())
+                                        .mimeType(f.getMimeType())
+                                        .build())
+                                    .collect(Collectors.toList())
+                                : null)
+                            .build();
+                    response.setSourceArrangementSubmission(mappedInfo);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to enrich milestone with arrangement submission: milestoneId={}, error={}", 
+                    milestoneId, e.getMessage());
+            }
+        }
+        
+        return response;
     }
     
     

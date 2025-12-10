@@ -1,23 +1,33 @@
 package com.mutrapro.project_service.service;
 
+import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
+import com.mutrapro.project_service.entity.BookingArtist;
 import com.mutrapro.project_service.entity.Contract;
+import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
+import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.FileSourceType;
 import com.mutrapro.project_service.exception.FileAccessDeniedException;
 import com.mutrapro.project_service.exception.FileNotFoundException;
+import com.mutrapro.project_service.repository.BookingArtistRepository;
+import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
+import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
+import com.mutrapro.shared.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service kiểm tra quyền truy cập file
@@ -31,6 +41,10 @@ public class FileAccessService {
     FileRepository fileRepository;
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
+    ContractMilestoneRepository contractMilestoneRepository;
+    BookingArtistRepository bookingArtistRepository;
+    StudioBookingRepository studioBookingRepository;
+    SpecialistServiceFeignClient specialistServiceFeignClient;
 
     /**
      * Kiểm tra xem user có quyền xem file hay không
@@ -164,11 +178,27 @@ public class FileAccessService {
         // Kiểm tra xem specialist có phải là owner của assignment không
         // So sánh với specialistUserIdSnapshot (userId của specialist)
         if (!userId.equals(assignment.getSpecialistUserIdSnapshot())) {
-            log.warn("Specialist {} is not owner of assignment {} for file {}", 
-                userId, assignment.getAssignmentId(), file.getFileId());
-            throw FileAccessDeniedException.withMessage(
-                "You can only access files from your assigned tasks"
-            );
+            // Trường hợp đặc biệt: File arrangement submission được link với recording milestone
+            // Recording specialist cần download file arrangement để làm recording
+            if (file.getSubmissionId() != null && !file.getSubmissionId().isEmpty()) {
+                if (checkArrangementSubmissionAccessForRecording(file, userId, assignment)) {
+                    log.debug("Specialist {} granted access to arrangement submission file {} for recording milestone", 
+                        userId, file.getFileId());
+                    // Cho phép truy cập, không throw exception
+                } else {
+                    log.warn("Specialist {} is not owner of assignment {} for file {} and file is not linked to their recording milestone", 
+                        userId, assignment.getAssignmentId(), file.getFileId());
+                    throw FileAccessDeniedException.withMessage(
+                        "You can only access files from your assigned tasks"
+                    );
+                }
+            } else {
+                log.warn("Specialist {} is not owner of assignment {} for file {}", 
+                    userId, assignment.getAssignmentId(), file.getFileId());
+                throw FileAccessDeniedException.withMessage(
+                    "You can only access files from your assigned tasks"
+                );
+            }
         }
         
         // Specialist được xem customer_upload và specialist_output của task của họ
@@ -279,6 +309,129 @@ public class FileAccessService {
         // TODO: Implement booking owner check
         
         return false;
+    }
+
+    /**
+     * Kiểm tra xem file arrangement submission có được link với recording milestone 
+     * mà recording artist được book vào studio booking không
+     * Dùng cho trường hợp recording artist cần download file arrangement để làm recording
+     */
+    private boolean checkArrangementSubmissionAccessForRecording(
+            File file, String userId, TaskAssignment fileAssignment) {
+        try {
+            // 1. Lấy specialistId từ userId (cho recording artist)
+            String specialistId = getSpecialistIdFromUserId(userId);
+            if (specialistId == null || specialistId.isEmpty()) {
+                log.debug("Could not get specialistId for userId {}, skipping arrangement submission access check", userId);
+                return false;
+            }
+            
+            // 2. Tìm recording milestone có sourceArrangementSubmissionId = submissionId này
+            List<ContractMilestone> recordingMilestones = contractMilestoneRepository
+                    .findBySourceArrangementSubmissionId(file.getSubmissionId());
+            
+            if (recordingMilestones.isEmpty()) {
+                return false;
+            }
+            
+            // 3. Check xem recording artist có được book vào studio booking của recording milestone không
+            for (ContractMilestone recordingMilestone : recordingMilestones) {
+                String milestoneId = recordingMilestone.getMilestoneId();
+                
+                // Tìm studio bookings cho milestone này (có thể có nhiều bookings)
+                // Sử dụng findByMilestoneId trả về Optional, nhưng để an toàn, check cả trường hợp có nhiều bookings
+                StudioBooking studioBooking = studioBookingRepository.findByMilestoneId(milestoneId)
+                        .orElse(null);
+                
+                if (studioBooking != null) {
+                    // Check xem recording artist có được book vào studio booking này không
+                    List<BookingArtist> bookingArtists = bookingArtistRepository
+                            .findByBookingBookingId(studioBooking.getBookingId());
+                    
+                    boolean isBooked = bookingArtists.stream()
+                            .anyMatch(ba -> specialistId.equals(ba.getSpecialistId()));
+                    
+                    if (isBooked) {
+                        log.debug("Recording artist {} (specialistId={}) is booked in studio booking {} for recording milestone {} linked to arrangement submission {}", 
+                            userId, specialistId, studioBooking.getBookingId(), milestoneId, file.getSubmissionId());
+                        return true;
+                    }
+                }
+                
+                // Fallback: Check xem specialist có task assignment trong cùng contract với recording milestone không
+                // (cho recording supervision specialist)
+                String contractId = recordingMilestone.getContractId();
+                if (contractId != null) {
+                    List<TaskAssignment> specialistAssignments = taskAssignmentRepository
+                            .findByContractId(contractId);
+                    
+                    boolean hasAssignment = specialistAssignments.stream().anyMatch(assignment -> {
+                        // Check cả specialistUserIdSnapshot (userId) và specialistId
+                        String assignmentSpecialistUserId = assignment.getSpecialistUserIdSnapshot();
+                        String assignmentSpecialistId = assignment.getSpecialistId();
+                        
+                        // Match nếu userId khớp với specialistUserIdSnapshot HOẶC specialistId khớp
+                        boolean userIdMatch = userId.equals(assignmentSpecialistUserId);
+                        boolean specialistIdMatch = specialistId != null && specialistId.equals(assignmentSpecialistId);
+                        
+                        return (userIdMatch || specialistIdMatch) 
+                                && milestoneId.equals(assignment.getMilestoneId());
+                    });
+                    
+                    if (hasAssignment) {
+                        log.debug("Specialist {} (specialistId={}) has assignment in recording milestone {} linked to arrangement submission {}", 
+                            userId, specialistId, milestoneId, file.getSubmissionId());
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        } catch (Exception e) {
+            log.warn("Error checking arrangement submission access for recording: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Lấy specialistId từ userId
+     * Ưu tiên lấy từ JWT token (nếu có), nếu không thì gọi specialist-service
+     */
+    private String getSpecialistIdFromUserId(String userId) {
+        try {
+            // Thử lấy từ JWT token trước (nếu identity-service set specialistId claim)
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+                // Verify userId từ JWT khớp với userId parameter
+                String jwtUserId = jwt.getClaimAsString("userId");
+                if (jwtUserId != null && jwtUserId.equals(userId)) {
+                    String specialistId = jwt.getClaimAsString("specialistId");
+                    if (specialistId != null && !specialistId.isEmpty()) {
+                        log.debug("Got specialistId from JWT token: {} for userId: {}", specialistId, userId);
+                        return specialistId;
+                    }
+                } else {
+                    log.warn("UserId mismatch: JWT userId={}, parameter userId={}", jwtUserId, userId);
+                }
+            }
+            
+            // Fallback: gọi specialist-service để lấy specialistId từ userId hiện tại
+            // Note: getMySpecialistInfo() lấy thông tin của user hiện tại từ JWT
+            // Trong context này, userId parameter = userId từ JWT, nên OK
+            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
+            if (response != null && "success".equals(response.getStatus()) 
+                && response.getData() != null) {
+                Map<String, Object> data = response.getData();
+                String specialistId = (String) data.get("specialistId");
+                if (specialistId != null && !specialistId.isEmpty()) {
+                    log.debug("Got specialistId from specialist-service: {} for userId: {}", specialistId, userId);
+                    return specialistId;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get specialistId from userId {}: {}", userId, e.getMessage());
+        }
+        return null;
     }
 
     /**

@@ -158,5 +158,24 @@ public class StudioBookingController {
             .status("success")
             .build());
     }
+    
+    /**
+     * Lấy danh sách studio bookings của recording artist hiện tại
+     * GET /studio-bookings/my-bookings
+     */
+    @GetMapping("/my-bookings")
+    public ResponseEntity<ApiResponse<List<StudioBookingResponse>>> getMyStudioBookings() {
+        
+        log.info("Getting studio bookings for current recording artist");
+        
+        List<StudioBookingResponse> bookings = studioBookingService.getMyStudioBookings();
+        
+        return ResponseEntity.ok(ApiResponse.<List<StudioBookingResponse>>builder()
+            .message("Studio bookings retrieved successfully")
+            .data(bookings)
+            .statusCode(HttpStatus.OK.value())
+            .status("success")
+            .build());
+    }
 }
 

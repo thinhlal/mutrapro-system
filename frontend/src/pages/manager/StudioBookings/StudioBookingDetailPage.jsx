@@ -13,6 +13,7 @@ import {
 import {
   ArrowLeftOutlined,
   CopyOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -20,6 +21,7 @@ import { getStudioBookingById } from '../../../services/studioBookingService';
 import { getContractById, getMilestoneById } from '../../../services/contractService';
 import { getSpecialistById } from '../../../services/specialistService';
 import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
+import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './StudioBookingDetailPage.module.css';
 
 const { Title, Text } = Typography;
@@ -471,6 +473,41 @@ const StudioBookingDetailPage = () => {
                         <Text strong>Description:</Text>
                         <Text type="secondary">{milestoneInfo.description}</Text>
                       </Space>
+                    )}
+                    {/* Hiển thị arrangement submission files cho recording milestone */}
+                    {milestoneInfo.milestoneType === 'recording' && 
+                     milestoneInfo.sourceArrangementSubmission && (
+                      <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          <Text strong>Arrangement Final Files:</Text>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {milestoneInfo.sourceArrangementSubmission.submissionName} 
+                            (v{milestoneInfo.sourceArrangementSubmission.version})
+                          </Text>
+                          {milestoneInfo.sourceArrangementSubmission.files && 
+                           milestoneInfo.sourceArrangementSubmission.files.length > 0 && (
+                            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                              {milestoneInfo.sourceArrangementSubmission.files.map((file, idx) => (
+                                <Button
+                                  key={idx}
+                                  type="link"
+                                  size="small"
+                                  icon={<DownloadOutlined />}
+                                  onClick={() => downloadFileHelper(file.fileId, file.fileName)}
+                                  style={{ padding: 0, height: 'auto' }}
+                                >
+                                  {file.fileName}
+                                  {file.fileSize && (
+                                    <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
+                                      ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
+                                    </Text>
+                                  )}
+                                </Button>
+                              ))}
+                            </Space>
+                          )}
+                        </Space>
+                      </div>
                     )}
                   </Space>
                 ) : (

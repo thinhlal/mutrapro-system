@@ -110,6 +110,8 @@ import RevisionRequestsManagement from './pages/manager/RevisionRequests/Revisio
 import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
+import MyStudioBookings from './pages/recordingArtist/MyStudioBookings/MyStudioBookings';
+import RecordingArtistStudioBookingDetailPage from './pages/recordingArtist/StudioBookingDetail/StudioBookingDetailPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -574,7 +576,9 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="profile" replace />} />
+            <Route index element={<Navigate to="studio-bookings" replace />} />
+            <Route path="studio-bookings" element={<MyStudioBookings />} />
+            <Route path="studio-bookings/:bookingId" element={<RecordingArtistStudioBookingDetailPage />} />
             <Route path="profile" element={<SpecialistProfile />} />
           </Route>
 

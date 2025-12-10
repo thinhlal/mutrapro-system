@@ -119,3 +119,18 @@ export const getStudioBookingById = async (bookingId) => {
   }
 };
 
+/**
+ * Lấy danh sách studio bookings của recording artist hiện tại
+ * GET /api/v1/projects/studio-bookings/my-bookings
+ */
+export const getMyStudioBookings = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.MY_BOOKINGS
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách studio bookings' };
+  }
+};
+

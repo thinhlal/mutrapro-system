@@ -69,18 +69,35 @@ export const getAllSpecialists = async (filters = {}) => {
 
 /**
  * Lấy specialist theo ID
+ * Sử dụng public endpoint để có thể truy cập từ cả manager và specialist
  */
 export const getSpecialistById = async specialistId => {
   try {
-    // Thử dùng manager endpoint trước (cho manager)
+    // Thử dùng public endpoint trước (cho cả manager và specialist)
     const response = await axiosInstance.get(
-      API_ENDPOINTS.SPECIALISTS.MANAGER.GET_BY_ID(specialistId)
+      API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_SPECIALIST_DETAIL(specialistId)
     );
+    // Public endpoint trả về SpecialistDetailResponse với structure: { specialist, skills, demos }
+    // Nếu response có structure này, trả về specialist field
+    if (response.data?.data?.specialist) {
+      return {
+        ...response.data,
+        data: response.data.data.specialist
+      };
+    }
     return response.data;
   } catch (error) {
-    throw (
-      error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
-    );
+    // Fallback: thử dùng manager endpoint nếu public endpoint fail (cho manager)
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.SPECIALISTS.MANAGER.GET_BY_ID(specialistId)
+      );
+      return response.data;
+    } catch (fallbackError) {
+      throw (
+        error.response?.data || { message: 'Lỗi khi lấy thông tin specialist' }
+      );
+    }
   }
 };
 

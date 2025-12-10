@@ -57,5 +57,34 @@ public class StudioBookingResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<BookingArtistResponse> artists;  // Danh sách artists tham gia booking (cho luồng 2)
+    
+    // Arrangement submission info (cho recording milestones)
+    ArrangementSubmissionInfo sourceArrangementSubmission;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class ArrangementSubmissionInfo {
+        String submissionId;
+        String submissionName;
+        String status;
+        Integer version;
+        List<FileInfo> files;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class FileInfo {
+        String fileId;
+        String fileName;
+        String fileUrl;
+        Long fileSize;
+        String mimeType;
+    }
 }
 

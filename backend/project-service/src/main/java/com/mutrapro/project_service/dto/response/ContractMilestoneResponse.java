@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -49,8 +50,40 @@ public class ContractMilestoneResponse {
 
     LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     
+    // Source arrangement info (cho recording milestone)
+    String sourceArrangementMilestoneId;  // ID của arrangement milestone tạo ra recording milestone này
+    String sourceArrangementSubmissionId;  // ID của arrangement submission final được dùng để recording
+    ArrangementSubmissionInfo sourceArrangementSubmission;  // Thông tin arrangement submission (nếu có)
+    
     LocalDateTime createdAt;
     
     LocalDateTime updatedAt;
+    
+    // Nested class cho ArrangementSubmissionInfo
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class ArrangementSubmissionInfo {
+        String submissionId;
+        String submissionName;
+        String status;
+        Integer version;
+        List<FileInfo> files;  // Danh sách files trong submission
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class FileInfo {
+        String fileId;
+        String fileName;
+        String fileUrl;  // Download URL
+        Long fileSize;
+        String mimeType;
+    }
 }
 

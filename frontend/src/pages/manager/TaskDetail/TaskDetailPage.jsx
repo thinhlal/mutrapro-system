@@ -56,8 +56,11 @@ import {
 } from '../../../services/revisionRequestService';
 import { getContractById } from '../../../services/contractService';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
+import { getStudioBookingById } from '../../../services/studioBookingService';
+import { getSpecialistById } from '../../../services/specialistService';
 import FileList from '../../../components/common/FileList/FileList';
 import axiosInstance from '../../../utils/axiosInstance';
+import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import {
   getGenreLabel,
   getPurposeLabel,
@@ -170,6 +173,75 @@ const TaskDetailPage = () => {
   const [selectedRevisionRequest, setSelectedRevisionRequest] = useState(null);
   const [reviewRevisionAction, setReviewRevisionAction] = useState(''); // 'approve' or 'reject'
   const [reviewRevisionNote, setReviewRevisionNote] = useState('');
+  const [studioBooking, setStudioBooking] = useState(null);
+  const [loadingStudioBooking, setLoadingStudioBooking] = useState(false);
+  const [artistsInfo, setArtistsInfo] = useState({});
+  const [loadingArtists, setLoadingArtists] = useState(false);
+
+  const loadArtistsInfo = useCallback(async (artists) => {
+    try {
+      setLoadingArtists(true);
+      const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
+      
+      if (specialistIds.length === 0) {
+        setLoadingArtists(false);
+        return;
+      }
+      
+      const promises = specialistIds.map(async (specialistId) => {
+        try {
+          const response = await getSpecialistById(specialistId);
+          if (response?.status === 'success' && response?.data) {
+            return { specialistId, data: response.data };
+          }
+          return { specialistId, data: null };
+        } catch (error) {
+          console.warn(`Error loading specialist ${specialistId}:`, error);
+          return { specialistId, data: null };
+        }
+      });
+      
+      const results = await Promise.all(promises);
+      const infoMap = {};
+      results.forEach(({ specialistId, data }) => {
+        if (data) {
+          infoMap[specialistId] = data;
+        }
+      });
+      setArtistsInfo(infoMap);
+    } catch (error) {
+      console.error('Error loading artists info:', error);
+    } finally {
+      setLoadingArtists(false);
+    }
+  }, []);
+
+  const loadStudioBooking = useCallback(async bookingId => {
+    if (!bookingId) {
+      setStudioBooking(null);
+      return;
+    }
+    try {
+      setLoadingStudioBooking(true);
+      const response = await getStudioBookingById(bookingId);
+      if (response?.status === 'success' && response?.data) {
+        const booking = response.data;
+        setStudioBooking(booking);
+        
+        // Load thông tin artists nếu có
+        if (booking.artists && booking.artists.length > 0) {
+          loadArtistsInfo(booking.artists);
+        }
+      } else {
+        setStudioBooking(null);
+      }
+    } catch (error) {
+      console.error('Error loading studio booking:', error);
+      setStudioBooking(null);
+    } finally {
+      setLoadingStudioBooking(false);
+    }
+  }, [loadArtistsInfo]);
 
   useEffect(() => {
     if (contractId && assignmentId) {
@@ -183,8 +255,12 @@ const TaskDetailPage = () => {
     if (task && assignmentId) {
       loadFiles();
       loadRevisionRequests();
+      // Load studio booking nếu là recording_supervision task
+      if (task.studioBookingId && task.taskType === 'recording_supervision') {
+        loadStudioBooking(task.studioBookingId);
+      }
     }
-  }, [task, assignmentId]);
+  }, [task, assignmentId, loadStudioBooking]);
 
   const loadData = async () => {
     try {
@@ -1074,6 +1150,43 @@ const TaskDetailPage = () => {
                       )
                     : '—'}
                 </Descriptions.Item>
+                {/* Hiển thị arrangement submission files cho recording milestone */}
+                {task.milestone.milestoneType === 'recording' && 
+                 task.milestone.sourceArrangementSubmission && (
+                  <Descriptions.Item label="Arrangement Final Files" span={2}>
+                    <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        <Text strong>Arrangement Final Files:</Text>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          {task.milestone.sourceArrangementSubmission.submissionName} 
+                          (v{task.milestone.sourceArrangementSubmission.version})
+                        </Text>
+                        {task.milestone.sourceArrangementSubmission.files && 
+                         task.milestone.sourceArrangementSubmission.files.length > 0 && (
+                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                            {task.milestone.sourceArrangementSubmission.files.map((file, idx) => (
+                              <Button
+                                key={idx}
+                                type="link"
+                                size="small"
+                                icon={<DownloadOutlined />}
+                                onClick={() => downloadFileHelper(file.fileId, file.fileName)}
+                                style={{ padding: 0, height: 'auto' }}
+                              >
+                                {file.fileName}
+                                {file.fileSize && (
+                                  <Text type="secondary" style={{ marginLeft: 8, fontSize: '11px' }}>
+                                    ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
+                                  </Text>
+                                )}
+                              </Button>
+                            ))}
+                          </Space>
+                        )}
+                      </Space>
+                    </div>
+                  </Descriptions.Item>
+                )}
               </>
             )}
             <Descriptions.Item label="Milestone Deadline" span={2}>
@@ -1306,6 +1419,154 @@ const TaskDetailPage = () => {
             )}
           </Descriptions>
         </Card>
+
+        {/* Studio Booking Information (cho recording_supervision) */}
+        {task?.taskType === 'recording_supervision' && task?.studioBookingId && (
+          <Card title="Studio Booking Information" size="small" bordered>
+            {loadingStudioBooking ? (
+              <Spin />
+            ) : studioBooking ? (
+              <Descriptions column={1} size="small" bordered>
+                <Descriptions.Item label="Booking ID">
+                  <Space>
+                    <Text copyable type="secondary" style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                      {studioBooking.bookingId}
+                    </Text>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EyeOutlined />}
+                      onClick={() => navigate(`/manager/studio-bookings/${studioBooking.bookingId}`)}
+                    >
+                      Xem chi tiết
+                    </Button>
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Studio">
+                  <Text>{studioBooking.studioName || 'N/A'}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày">
+                  {studioBooking.bookingDate
+                    ? dayjs(studioBooking.bookingDate).format('DD/MM/YYYY')
+                    : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Thời gian">
+                  {studioBooking.startTime && studioBooking.endTime
+                    ? `${studioBooking.startTime} - ${studioBooking.endTime}`
+                    : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag color={
+                    studioBooking.status === 'CONFIRMED' ? 'success' :
+                    studioBooking.status === 'IN_PROGRESS' ? 'processing' :
+                    studioBooking.status === 'PENDING' ? 'processing' :
+                    studioBooking.status === 'COMPLETED' ? 'success' :
+                    studioBooking.status === 'CANCELLED' ? 'error' :
+                    'default'
+                  }>
+                    {studioBooking.status === 'CONFIRMED' ? 'Đã xác nhận' :
+                     studioBooking.status === 'IN_PROGRESS' ? 'Đang thực hiện' :
+                     studioBooking.status === 'PENDING' ? 'Đang chờ' :
+                     studioBooking.status === 'COMPLETED' ? 'Hoàn thành' :
+                     studioBooking.status === 'CANCELLED' ? 'Đã hủy' :
+                     studioBooking.status || 'N/A'}
+                  </Tag>
+                </Descriptions.Item>
+                {studioBooking.sessionType && (
+                  <Descriptions.Item label="Session Type">
+                    <Tag color="blue">{studioBooking.sessionType}</Tag>
+                  </Descriptions.Item>
+                )}
+                {studioBooking.artists && studioBooking.artists.length > 0 && (
+                  <Descriptions.Item label="Artists" span={2}>
+                    {loadingArtists ? (
+                      <Spin />
+                    ) : (
+                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                        {studioBooking.artists.map((artist, idx) => {
+                          const specialistInfo = artistsInfo[artist.specialistId];
+                          return (
+                            <Card key={idx} size="small" style={{ marginBottom: 8 }}>
+                              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                                <Space>
+                                  {specialistInfo?.avatarUrl && (
+                                    <img
+                                      src={specialistInfo.avatarUrl}
+                                      alt={specialistInfo.fullName || 'Artist'}
+                                      style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                                    />
+                                  )}
+                                  <Space direction="vertical" size={0}>
+                                    <Space>
+                                      <Text strong>
+                                        {specialistInfo?.fullName || 'N/A'}
+                                      </Text>
+                                      {artist.isPrimary && (
+                                        <Tag color="gold">Primary</Tag>
+                                      )}
+                                    </Space>
+                                    {specialistInfo?.email && (
+                                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                                        {specialistInfo.email}
+                                      </Text>
+                                    )}
+                                  </Space>
+                                </Space>
+                                <Space>
+                                  <Text strong>Specialist ID:</Text>
+                                  <Text copyable={{ text: artist.specialistId }} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                                    {artist.specialistId?.substring(0, 8)}...
+                                  </Text>
+                                </Space>
+                                <Space>
+                                  <Text strong>Role:</Text>
+                                  <Tag color={artist.role === 'VOCALIST' ? 'orange' : 'blue'}>
+                                    {artist.role === 'VOCALIST'
+                                      ? 'Vocal'
+                                      : artist.role === 'INSTRUMENT_PLAYER'
+                                        ? 'Instrument'
+                                        : artist.role || 'N/A'}
+                                  </Tag>
+                                </Space>
+                                {specialistInfo?.primaryTag && (
+                                  <Space>
+                                    <Text strong>Primary Tag:</Text>
+                                    <Tag>{specialistInfo.primaryTag}</Tag>
+                                  </Space>
+                                )}
+                                {specialistInfo?.experienceYears && (
+                                  <Space>
+                                    <Text strong>Experience:</Text>
+                                    <Text>{specialistInfo.experienceYears} năm</Text>
+                                  </Space>
+                                )}
+                                {specialistInfo?.genres && specialistInfo.genres.length > 0 && (
+                                  <Space wrap>
+                                    <Text strong>Genres:</Text>
+                                    {specialistInfo.genres.map((genre, gIdx) => (
+                                      <Tag key={gIdx} size="small">{genre}</Tag>
+                                    ))}
+                                  </Space>
+                                )}
+                              </Space>
+                            </Card>
+                          );
+                        })}
+                      </Space>
+                    )}
+                  </Descriptions.Item>
+                )}
+                {studioBooking.notes && (
+                  <Descriptions.Item label="Notes" span={2}>
+                    <Text>{studioBooking.notes}</Text>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            ) : (
+              <Empty description="Không tìm thấy thông tin booking" />
+            )}
+          </Card>
+        )}
 
         {/* Revision Requests */}
         {revisionRequests.length > 0 && (

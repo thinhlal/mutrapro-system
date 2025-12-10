@@ -129,6 +129,37 @@ public class TaskAssignmentResponse {
         LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
         Integer milestoneSlaDays;
         LocalDateTime estimatedDeadline;  // Deadline ước tính khi chưa có actual/planned (tính từ deadline milestone trước đó + slaDays)
+        
+        // Source arrangement info (cho recording milestone)
+        String sourceArrangementMilestoneId;  // ID của arrangement milestone tạo ra recording milestone này
+        String sourceArrangementSubmissionId;  // ID của arrangement submission final được dùng để recording
+        ArrangementSubmissionInfo sourceArrangementSubmission;  // Thông tin arrangement submission (nếu có)
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class ArrangementSubmissionInfo {
+        String submissionId;
+        String submissionName;
+        String status;
+        Integer version;
+        List<FileInfo> files;  // Danh sách files trong submission
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class FileInfo {
+        String fileId;
+        String fileName;
+        String fileUrl;  // Download URL
+        Long fileSize;
+        String mimeType;
     }
 }
 

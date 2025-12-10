@@ -210,6 +210,8 @@ export const API_ENDPOINTS = {
     },
     // GET /studio-bookings/{bookingId}
     GET_BY_ID: bookingId => `${PROJECT_PATH}/studio-bookings/${bookingId}`,
+    // GET /studio-bookings/my-bookings (for recording artist)
+    MY_BOOKINGS: `${PROJECT_PATH}/studio-bookings/my-bookings`,
   },
 
   // === File Submissions Management ===
