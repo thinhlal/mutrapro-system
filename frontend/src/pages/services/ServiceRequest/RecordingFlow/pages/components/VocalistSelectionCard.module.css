@@ -39,10 +39,44 @@
 }
 
 .singerImage {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
   object-fit: cover;
   transition: transform 0.3s ease;
+}
+
+.singerImage :global(.ant-avatar),
+.singerImage :global(.ant-avatar-image),
+.singerImage :global(img) {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  object-fit: cover;
+}
+
+.hoverOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: none;
+}
+
+.card:hover .hoverOverlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card.disabled:hover .hoverOverlay {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .card:hover .singerImage {
@@ -54,20 +88,31 @@
   bottom: 8px;
   left: 8px;
   right: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 8px;
   z-index: 3;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .card:hover .audioPlayerContainer {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+.demoText {
+  color: #fff !important;
+  font-size: 11px !important;
+  text-align: center;
+  margin: 0 !important;
+  font-weight: 500;
 }
 
 .audioPlayer {

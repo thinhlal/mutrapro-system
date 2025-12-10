@@ -255,11 +255,18 @@ export default function SingerDetailPage() {
 
   if (loading) {
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Header />
-        <Container style={{ padding: '100px 0', textAlign: 'center' }}>
-          <Spin size="large" />
-        </Container>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className={styles.singerHeaderWrapper} style={{ minHeight: '500px' }}>
+            <Container style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '500px' }}>
+              <Spin size="large" />
+            </Container>
+          </div>
+          <Container className={styles.mainContent} style={{ flex: 1, minHeight: '400px' }}>
+            <div style={{ height: '400px' }}></div>
+          </Container>
+        </div>
         <Footer />
       </div>
     );
@@ -267,17 +274,24 @@ export default function SingerDetailPage() {
 
   if (!specialist) {
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Header />
-        <Container style={{ padding: '100px 0', textAlign: 'center' }}>
-          <Text>Specialist not found</Text>
-        </Container>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className={styles.singerHeaderWrapper} style={{ minHeight: '500px' }}>
+            <Container style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '500px' }}>
+              <Text style={{ color: '#fff', fontSize: '1.2rem' }}>Specialist not found</Text>
+            </Container>
+          </div>
+          <Container className={styles.mainContent} style={{ flex: 1, minHeight: '400px' }}>
+            <div style={{ height: '400px' }}></div>
+          </Container>
+        </div>
         <Footer />
       </div>
     );
   }
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header />
       <div className={styles.singerHeaderWrapper}>
         <div className={styles.diagonalBg} />
@@ -336,7 +350,7 @@ export default function SingerDetailPage() {
                 fontSize: '72px',
                 color: '#fff',
                 fontWeight: 'bold',
-                clipPath: 'polygon(30% 0, 100% 0, 100% 100%, 0% 100%)',
+                borderRadius: '50%',
               }}
             >
               {specialist.fullName

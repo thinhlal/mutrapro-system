@@ -1,4 +1,4 @@
-// VocalistSelectionPage.jsx - Trang chọn vocalist trong flow
+// VocalistSelectionPage.jsx - Vocalist selection page in flow
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -15,6 +15,8 @@ import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons';
 import { getVocalists } from '../../../../../services/specialistService';
 import { MUSIC_GENRES } from '../../../../../constants/musicOptionsConstants';
 import VocalistSelectionCard from './components/VocalistSelectionCard';
+import Header from '../../../../../components/common/Header/Header';
+import bannerImage from '../../../../../assets/images/ChooseSingerBanner/BannerSing.png';
 import styles from './VocalistSelectionPage.module.css';
 
 const { Title, Text } = Typography;
@@ -53,10 +55,10 @@ export default function VocalistSelectionPage() {
     }
   }, [fromFlow, fromArrangement, navigate]);
 
-  // Lấy danh sách genres đầy đủ từ constants
+  // Get full list of genres from constants
   const availableGenres = MUSIC_GENRES.map(g => g.value);
 
-  // Fetch vocalists từ backend với filter
+  // Fetch vocalists from backend with filter
   useEffect(() => {
     fetchVocalists();
   }, [genderFilter, selectedGenres]);
@@ -64,17 +66,17 @@ export default function VocalistSelectionPage() {
   const fetchVocalists = async () => {
     setLoading(true);
     try {
-      // Chuẩn bị params
+      // Prepare params
       const gender = genderFilter !== 'ALL' ? genderFilter : null;
       const genres = selectedGenres.length > 0 ? selectedGenres : null;
 
-      // Fetch vocalists với filter từ backend
+      // Fetch vocalists with filter from backend
       const response = await getVocalists(gender, genres);
       if (response?.data) {
         setVocalists(response.data);
       }
     } catch (error) {
-      message.error(error.message || 'Không thể tải danh sách vocalists');
+      message.error(error.message || 'Unable to load vocalists list');
     } finally {
       setLoading(false);
     }
@@ -183,8 +185,14 @@ export default function VocalistSelectionPage() {
     : true;
 
   return (
-    <div className={styles.container}>
-      <Card className={styles.headerCard}>
+    <div>
+      <Header />
+      <div className={styles.container}>
+        <Card 
+        className={styles.headerCard}
+        style={{ backgroundImage: `url(${bannerImage})` }}
+      >
+        <div className={styles.headerOverlay}></div>
         <div className={styles.header}>
           <Button
             icon={<ArrowLeftOutlined />}
@@ -194,11 +202,11 @@ export default function VocalistSelectionPage() {
             Back to Flow
           </Button>
           <Title level={2} className={styles.title}>
-            {allowMultiple ? 'Chọn ca sĩ ưu tiên' : 'Select Vocalist'}
+            {allowMultiple ? 'Select Preferred Vocalist' : 'Select Vocalist'}
           </Title>
           <p className={styles.description}>
             {allowMultiple
-              ? `Chọn ${maxSelections === 2 ? '1-2' : '1'} ca sĩ bạn thích (đã chọn: ${selectedIds.length}/${maxSelections})`
+              ? `Choose ${maxSelections === 2 ? '1-2' : '1'} vocalist${maxSelections === 2 ? 's' : ''} you like (selected: ${selectedIds.length}/${maxSelections})`
               : 'Choose a vocalist for your recording session'}
           </p>
         </div>
@@ -208,22 +216,22 @@ export default function VocalistSelectionPage() {
         <div style={{ marginBottom: 20 }}>
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Space wrap>
-              <Text strong>Lọc theo giới tính: </Text>
+              <Text strong>Filter by gender: </Text>
               <Radio.Group
                 value={genderFilter}
                 onChange={e => setGenderFilter(e.target.value)}
                 buttonStyle="solid"
               >
-                <Radio.Button value="ALL">Tất cả</Radio.Button>
-                <Radio.Button value="FEMALE">Nữ</Radio.Button>
-                <Radio.Button value="MALE">Nam</Radio.Button>
+                <Radio.Button value="ALL">All</Radio.Button>
+                <Radio.Button value="FEMALE">Female</Radio.Button>
+                <Radio.Button value="MALE">Male</Radio.Button>
               </Radio.Group>
             </Space>
             <Space wrap>
-              <Text strong>Lọc theo thể loại: </Text>
+              <Text strong>Filter by genre: </Text>
               <Select
                 mode="multiple"
-                placeholder="Chọn thể loại (có thể chọn nhiều)"
+                placeholder="Select genres (multiple selection)"
                 value={selectedGenres}
                 onChange={setSelectedGenres}
                 style={{ minWidth: 300 }}
@@ -248,7 +256,7 @@ export default function VocalistSelectionPage() {
               <div
                 style={{ textAlign: 'center', padding: '40px', width: '100%' }}
               >
-                <p>Không có vocalist nào</p>
+                <p>No vocalists found</p>
               </div>
             ) : (
               vocalists.map(vocalist => (
@@ -274,7 +282,7 @@ export default function VocalistSelectionPage() {
         <Card className={styles.actionCard}>
           <Space>
             <Button size="large" onClick={handleBack}>
-              Hủy
+              Cancel
             </Button>
             <Button
               type="primary"
@@ -283,12 +291,13 @@ export default function VocalistSelectionPage() {
               onClick={handleConfirm}
             >
               {allowMultiple
-                ? `Xác nhận (${selectedIds.length} ca sĩ)`
+                ? `Confirm (${selectedIds.length} vocalist${selectedIds.length !== 1 ? 's' : ''})`
                 : 'Confirm Selection'}
             </Button>
           </Space>
         </Card>
       )}
+      </div>
     </div>
   );
 }
