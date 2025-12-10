@@ -2197,15 +2197,12 @@ const ContractDetailPage = () => {
                               <div
                                 style={{
                                   display: 'flex',
-                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
                                   gap: 8,
-                                  marginBottom: 4,
+                                  marginBottom: 8,
+                                  alignItems: 'center',
                                 }}
                               >
-                                <Text strong style={{ fontSize: 16 }}>
-                                  {milestone.name ||
-                                    `Milestone ${milestone.orderIndex || index + 1}`}
-                                </Text>
                                 {milestone.milestoneType && (
                                   <Tag color="blue" style={{ margin: 0 }}>
                                     {milestone.milestoneType === 'transcription'
@@ -2228,6 +2225,12 @@ const ContractDetailPage = () => {
                                     days
                                   </Tag>
                                 )}
+                              </div>
+                              <div style={{ marginBottom: 4 }}>
+                                <Text strong style={{ fontSize: 16 }}>
+                                  {milestone.name ||
+                                    `Milestone ${milestone.orderIndex || index + 1}`}
+                                </Text>
                               </div>
                               {milestone.description && (
                                 <div style={{ marginTop: 8, marginBottom: 8 }}>
