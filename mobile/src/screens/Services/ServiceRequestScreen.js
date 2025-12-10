@@ -45,6 +45,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   const [genres, setGenres] = useState([]);
   const [purpose, setPurpose] = useState(null);
   
+  // Preferred vocalists (for arrangement_with_recording) - max 2
+  const [preferredVocalists, setPreferredVocalists] = useState([]);
+  
   // File upload
   const [selectedFile, setSelectedFile] = useState(null);
   
@@ -53,6 +56,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   
   // Check if arrangement service
   const isArrangement = serviceType === "arrangement" || serviceType === "arrangement_with_recording";
+  const isArrangementWithRecording = serviceType === "arrangement_with_recording";
   
   // Load instruments for main instrument selection
   useEffect(() => {
@@ -159,6 +163,13 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         mainInstrumentId: mainInstrumentId,
         genres: isArrangement ? genres : null,
         purpose: isArrangement ? purpose : null,
+        preferredSpecialists: isArrangementWithRecording && preferredVocalists.length > 0
+          ? preferredVocalists.map((v) => ({
+              specialistId: v.id || v.specialistId,
+              name: v.name || v.fullName || `Vocalist ${v.id || v.specialistId}`,
+              role: "VOCALIST", // Mặc định là VOCALIST cho arrangement_with_recording
+            }))
+          : null,
         durationMinutes: selectedFile?.duration || 0,
       },
       uploadedFile: selectedFile,
@@ -452,6 +463,78 @@ const ServiceRequestScreen = ({ route, navigation }) => {
           </View>
         )}
 
+        {/* Preferred Vocalists - Only for arrangement_with_recording */}
+        {isArrangementWithRecording && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>
+              Ca sĩ ưu tiên (Tùy chọn)
+            </Text>
+            <Text style={styles.hintText}>
+              Lưu ý: Đây là gợi ý ưu tiên, không phải cam kết. Chúng tôi sẽ cố gắng book ca sĩ bạn chọn. Nếu họ không có sẵn, manager sẽ đề xuất lựa chọn tương tự.
+            </Text>
+            
+            {/* Selected Vocalists */}
+            {preferredVocalists.length > 0 && (
+              <View style={styles.selectedVocalistsContainer}>
+                {preferredVocalists.map((vocalist) => (
+                  <View key={vocalist.id || vocalist.specialistId} style={styles.vocalistTag}>
+                    <Text style={styles.vocalistTagText}>
+                      {vocalist.name || vocalist.fullName || `Vocalist ${vocalist.id || vocalist.specialistId}`}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setPreferredVocalists(
+                          preferredVocalists.filter(
+                            (v) => (v.id || v.specialistId) !== (vocalist.id || vocalist.specialistId)
+                          )
+                        );
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Add Vocalist Button */}
+            <TouchableOpacity
+              style={[
+                styles.addVocalistButton,
+                preferredVocalists.length >= 2 && styles.addVocalistButtonDisabled,
+              ]}
+              onPress={() => {
+                if (preferredVocalists.length < 2) {
+                  navigation.navigate("VocalistSelection", {
+                    allowMultiple: true,
+                    maxSelections: 2,
+                    selectedVocalists: preferredVocalists,
+                    onSelect: (selected) => {
+                      setPreferredVocalists(selected);
+                    },
+                  });
+                }
+              }}
+              disabled={preferredVocalists.length >= 2}
+            >
+              <Ionicons name="add-circle" size={20} color={COLORS.primary} />
+              <Text style={styles.addVocalistButtonText}>
+                {preferredVocalists.length === 0
+                  ? "Thêm ca sĩ ưu tiên (tối đa 2)"
+                  : preferredVocalists.length === 1
+                  ? "Thêm ca sĩ thứ 2"
+                  : "Đã chọn đủ 2 ca sĩ"}
+              </Text>
+            </TouchableOpacity>
+            
+            {preferredVocalists.length === 0 && (
+              <Text style={styles.hintText}>
+                Hoặc để trống để manager tự đề xuất ca sĩ phù hợp
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* File Upload */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>
@@ -700,6 +783,53 @@ const styles = StyleSheet.create({
   purposeButtonTextSelected: {
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  hintText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+    lineHeight: 18,
+  },
+  selectedVocalistsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  vocalistTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary + "15",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs,
+  },
+  vocalistTagText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  addVocalistButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    marginTop: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  addVocalistButtonDisabled: {
+    opacity: 0.5,
+    borderColor: COLORS.gray[300],
+  },
+  addVocalistButtonText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
 });
 

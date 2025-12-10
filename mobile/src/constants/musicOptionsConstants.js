@@ -40,7 +40,7 @@ export const MUSIC_PURPOSES = [
  * Helper function to get genre label by value
  */
 export const getGenreLabel = (value) => {
-  const genre = MUSIC_GENRES.find(g => g.value === value);
+  const genre = MUSIC_GENRES.find((g) => g.value === value);
   return genre ? genre.label : value;
 };
 
@@ -48,7 +48,6 @@ export const getGenreLabel = (value) => {
  * Helper function to get purpose label by value
  */
 export const getPurposeLabel = (value) => {
-  const purpose = MUSIC_PURPOSES.find(p => p.value === value);
+  const purpose = MUSIC_PURPOSES.find((p) => p.value === value);
   return purpose ? purpose.label : value;
 };
-

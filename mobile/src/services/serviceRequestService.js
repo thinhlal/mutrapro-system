@@ -74,6 +74,18 @@ export const createServiceRequest = async (requestData) => {
       formData.append('mainInstrumentId', requestData.mainInstrumentId);
     }
 
+    // Thêm preferredSpecialists (cho arrangement_with_recording)
+    if (
+      requestData.preferredSpecialists &&
+      requestData.preferredSpecialists.length > 0
+    ) {
+      // Convert array of objects to JSON string
+      formData.append(
+        'preferredSpecialists',
+        JSON.stringify(requestData.preferredSpecialists)
+      );
+    }
+
     // Thêm files - React Native format
     if (requestData.files && requestData.files.length > 0) {
       requestData.files.forEach((file) => {

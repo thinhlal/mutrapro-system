@@ -83,11 +83,19 @@ export const getPricingByServiceType = (pricingData, serviceType) => {
  */
 export const getPricingDetail = async (serviceType) => {
   try {
+    // Backend enum uses underscore format: arrangement_with_recording
+    // Keep the original format for path variable
+    let urlServiceType = serviceType;
+    if (serviceType === 'arrangement-with-recording') {
+      urlServiceType = 'arrangement_with_recording';
+    }
+    
     const response = await axiosInstance.get(
-      API_ENDPOINTS.PRICING.GET_BY_SERVICE_TYPE(serviceType)
+      API_ENDPOINTS.PRICING.GET_BY_SERVICE_TYPE(urlServiceType)
     );
     return response.data;
   } catch (error) {
+    console.error('Error getting pricing detail:', error);
     throw error.response?.data || {
       message: `Lỗi khi lấy thông tin giá của ${serviceType}`,
     };
@@ -102,11 +110,27 @@ export const getPricingDetail = async (serviceType) => {
  */
 export const calculatePrice = async (serviceType, durationMinutes) => {
   try {
-    const response = await axiosInstance.get(
-      API_ENDPOINTS.PRICING.CALCULATE(serviceType, durationMinutes)
-    );
+    // Convert serviceType to URL format (arrangement_with_recording -> arrangement-with-recording)
+    let urlServiceType = serviceType;
+    if (serviceType === 'arrangement_with_recording' || serviceType === 'arrangement-with-recording') {
+      urlServiceType = 'arrangement-with-recording';
+    }
+    
+    // Build URL - only add durationMinutes for transcription
+    // Extract base path from API_ENDPOINTS
+    const basePath = API_ENDPOINTS.PRICING.GET_ALL.replace('/pricing-matrix', '');
+    let url = `${basePath}/pricing-matrix/calculate/${urlServiceType}`;
+    
+    if (serviceType === 'transcription' && durationMinutes !== undefined && durationMinutes !== null) {
+      url += `?durationMinutes=${durationMinutes}`;
+    }
+    
+    console.log('💰 [Calculate Price] Calling API:', url);
+    const response = await axiosInstance.get(url);
+    console.log('✅ [Calculate Price] Success:', response.data);
     return response.data;
   } catch (error) {
+    console.error('Error calculating price:', error);
     throw error.response?.data || {
       message: `Lỗi khi tính toán giá ${serviceType}`,
     };
