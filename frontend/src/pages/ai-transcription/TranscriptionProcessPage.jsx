@@ -27,7 +27,7 @@ const TranscriptionProcessPage = () => {
   const [midiLoaded, setMidiLoaded] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const { jobId, status, error, midiBlob, downloadResult } =
+  const { jobId, status, error, midiBlob, downloadResult, outputFormats } =
     useKlangTranscriptionStore();
 
   const file = location.state?.file;
@@ -209,14 +209,28 @@ const TranscriptionProcessPage = () => {
                 >
                   {showFlatViewer ? ' Sheet Music Opened' : ' View Sheet Music'}
                 </Button>
-                <Button
-                  size="large"
-                  icon={<DownloadOutlined />}
-                  onClick={() => downloadResult('midi')}
-                  className={styles.downloadButton}
-                >
-                  Download MIDI
-                </Button>
+                {outputFormats?.map(format => {
+                  const isMidi = format === 'midi';
+                  const label =
+                    format === 'pdf'
+                      ? 'Download PDF'
+                      : format === 'midi'
+                        ? 'Download MIDI'
+                        : `Download ${format.toUpperCase()}`;
+
+                  return (
+                    <Button
+                      key={format}
+                      size="large"
+                      icon={<DownloadOutlined />}
+                      onClick={() => downloadResult(format)}
+                      disabled={isMidi && !midiBlob}
+                      className={styles.downloadButton}
+                    >
+                      {label}
+                    </Button>
+                  );
+                })}
               </Space>
 
               {/* Job ID */}
