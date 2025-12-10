@@ -188,6 +188,30 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/revision-requests/contract/${contractId}/stats`,
   },
 
+  // === Studio Bookings Management ===
+  STUDIO_BOOKINGS: {
+    BASE: `${PROJECT_PATH}/studio-bookings`,
+    // POST /studio-bookings/recording-milestone
+    CREATE_FOR_RECORDING_MILESTONE: `${PROJECT_PATH}/studio-bookings/recording-milestone`,
+    // GET /studio-bookings/available-slots?studioId={studioId}&date={date}
+    GET_AVAILABLE_SLOTS: date =>
+      `${PROJECT_PATH}/studio-bookings/available-slots?date=${date}`,
+    // GET /studio-bookings/available-artists?milestoneId={milestoneId}&date={date}&startTime={startTime}&endTime={endTime}
+    GET_AVAILABLE_ARTISTS: (milestoneId, date, startTime, endTime) =>
+      `${PROJECT_PATH}/studio-bookings/available-artists?milestoneId=${milestoneId}&date=${date}&startTime=${startTime}&endTime=${endTime}`,
+    // GET /studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
+    LIST: (contractId, milestoneId, status) => {
+      const params = new URLSearchParams();
+      if (contractId) params.append('contractId', contractId);
+      if (milestoneId) params.append('milestoneId', milestoneId);
+      if (status) params.append('status', status);
+      const query = params.toString();
+      return `${PROJECT_PATH}/studio-bookings${query ? `?${query}` : ''}`;
+    },
+    // GET /studio-bookings/{bookingId}
+    GET_BY_ID: bookingId => `${PROJECT_PATH}/studio-bookings/${bookingId}`,
+  },
+
   // === File Submissions Management ===
   SUBMISSIONS: {
     // POST /submissions

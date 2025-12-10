@@ -52,6 +52,9 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Find all task assignments by contract ID and task type
     List<TaskAssignment> findByContractIdAndTaskType(String contractId, TaskType taskType);
 
+    // Find task assignment by milestone ID and task type
+    Optional<TaskAssignment> findByMilestoneIdAndTaskType(String milestoneId, TaskType taskType);
+
     // Find all task assignments by contract ID and status
     List<TaskAssignment> findByContractIdAndStatus(String contractId, AssignmentStatus status);
 

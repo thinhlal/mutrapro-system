@@ -71,7 +71,7 @@ function getTaskTypeLabel(taskType) {
   const labels = {
     transcription: 'Transcription',
     arrangement: 'Arrangement',
-    recording: 'Recording',
+    recording_supervision: 'Recording Supervision',
   };
   return labels[taskType.toLowerCase()] || taskType;
 }
@@ -492,6 +492,12 @@ const MyTasksPage = ({ onOpenTask }) => {
         render: (_, record) => {
           const status = record.status?.toLowerCase();
           const isTakingAction = startingAssignmentId === record.assignmentId;
+          
+          // Với recording_supervision task, cần có studio booking trước khi start
+          const isRecordingSupervision = record.taskType?.toLowerCase() === 'recording_supervision';
+          const isRecordingMilestone = record.milestone?.milestoneType?.toLowerCase() === 'recording';
+          const hasStudioBooking = record.studioBookingId && record.studioBookingId.trim().length > 0;
+          const needsStudioBooking = isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
 
           return (
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -529,14 +535,23 @@ const MyTasksPage = ({ onOpenTask }) => {
                 )}
                 {status === 'ready_to_start' && (
                   <>
-                    <Button
-                      type="primary"
-                      size="small"
-                      loading={isTakingAction}
-                      onClick={() => handleStartTask(record)}
+                    <Tooltip
+                      title={
+                        needsStudioBooking
+                          ? 'Task recording supervision này cần có studio booking trước khi bắt đầu. Vui lòng liên hệ Manager.'
+                          : null
+                      }
                     >
-                      Start Work
-                    </Button>
+                      <Button
+                        type="primary"
+                        size="small"
+                        loading={isTakingAction}
+                        disabled={needsStudioBooking}
+                        onClick={() => handleStartTask(record)}
+                      >
+                        Start Work
+                      </Button>
+                    </Tooltip>
                     <Button
                       danger
                       size="small"

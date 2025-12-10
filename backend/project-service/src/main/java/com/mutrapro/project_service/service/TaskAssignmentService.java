@@ -20,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.OutboxEvent;
+import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -29,6 +30,7 @@ import com.mutrapro.shared.dto.TaskStatsResponse;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
+import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
@@ -51,7 +53,9 @@ import com.mutrapro.project_service.exception.SpecialistNotFoundException;
 import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.FileSubmissionRepository;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
+import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -90,7 +94,8 @@ public class TaskAssignmentService {
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     MilestoneProgressService milestoneProgressService;
-    com.mutrapro.project_service.repository.FileSubmissionRepository fileSubmissionRepository;
+    FileSubmissionRepository fileSubmissionRepository;
+    StudioBookingRepository studioBookingRepository;
 
     /**
      * Helper method để publish event vào outbox
@@ -704,6 +709,7 @@ public class TaskAssignmentService {
                     .milestoneId(milestone.getMilestoneId())
                     .name(milestone.getName())
                     .description(milestone.getDescription())
+                    .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
                     .contractId(milestone.getContractId())
                     .orderIndex(milestone.getOrderIndex())
                     .plannedStartAt(milestone.getPlannedStartAt())
@@ -853,16 +859,48 @@ public class TaskAssignmentService {
                 continue;
             }
 
+            // Check if last arrangement milestone is completed (for recording milestones)
+            // Chỉ cần check milestone arrangement cuối cùng (gần nhất với recording milestone)
+            // Vì milestones unlock tuần tự, nếu milestone cuối cùng đã completed thì các milestone trước đó cũng đã completed
+            Boolean allArrangementsCompleted = null;
+            if (milestone.getMilestoneType() == MilestoneType.recording && 
+                contract.getContractType() == ContractType.arrangement_with_recording) {
+                List<ContractMilestone> allContractMilestones = contractMilestoneRepository
+                    .findByContractIdOrderByOrderIndexAsc(contract.getContractId());
+                List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
+                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                    .toList();
+                
+                if (!arrangementMilestones.isEmpty()) {
+                    // Lấy milestone arrangement cuối cùng (có orderIndex cao nhất)
+                    ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
+                        .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                        .orElse(null);
+                    
+                    if (lastArrangementMilestone != null) {
+                        allArrangementsCompleted = 
+                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
+                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
+                    } else {
+                        allArrangementsCompleted = false;
+                    }
+                } else {
+                    allArrangementsCompleted = false; // Không có arrangement milestone
+                }
+            }
+
             MilestoneAssignmentSlotResponse slot = MilestoneAssignmentSlotResponse.builder()
                 .contractId(contract.getContractId())
                 .contractNumber(contract.getContractNumber())
                 .contractType(contract.getContractType() != null ? contract.getContractType().name() : null)
                 .customerName(contract.getNameSnapshot())
                 .contractCreatedAt(contract.getCreatedAt())
+                .contractStatus(contract.getStatus() != null ? contract.getStatus().name() : null)
                 .milestoneId(milestone.getMilestoneId())
                 .milestoneOrderIndex(milestone.getOrderIndex())
                 .milestoneName(milestone.getName())
                 .milestoneDescription(milestone.getDescription())
+                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
                 .plannedStartAt(milestone.getPlannedStartAt())
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
@@ -881,6 +919,8 @@ public class TaskAssignmentService {
                 .assignedDate(assignment != null ? assignment.getAssignedDate() : null)
                 .hasIssue(assignment != null ? assignment.getHasIssue() : null)
                 .canAssign(isUnassigned)
+                .studioBookingId(assignment != null ? assignment.getStudioBookingId() : null)
+                .allArrangementsCompleted(allArrangementsCompleted)
                 .build();
 
             slots.add(slot);
@@ -1440,6 +1480,11 @@ public class TaskAssignmentService {
         }
         
         // Verify task type matches milestone type (milestoneType luôn được set)
+        // QUAN TRỌNG: Milestone nào → Task nấy (không trộn)
+        // - Milestone TRANSCRIPTION → Task type: TRANSCRIPTION
+        // - Milestone ARRANGEMENT → Task type: ARRANGEMENT
+        // - Milestone RECORDING → Task type: RECORDING_SUPERVISION
+        // Mỗi milestone có task riêng, không reuse task từ milestone khác
         if (milestone.getMilestoneType() == null) {
             throw InvalidTaskTypeException.create(
                 taskType, 
@@ -1447,13 +1492,32 @@ public class TaskAssignmentService {
                     milestone.getName(), milestone.getMilestoneId())
             );
         }
-        TaskType expectedTaskType = TaskType.valueOf(milestone.getMilestoneType().name());
-        if (taskType != expectedTaskType) {
-            throw InvalidTaskTypeException.create(
-                taskType, 
-                String.format("Task type must match milestone type. Expected: %s, Got: %s", 
-                    expectedTaskType, taskType)
-            );
+        
+        // Với recording milestone, chỉ accept RECORDING_SUPERVISION
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            if (taskType != TaskType.recording_supervision) {
+                throw InvalidTaskTypeException.create(
+                    taskType, 
+                    String.format("Recording milestone must have task type RECORDING_SUPERVISION. Got: %s. " +
+                        "Each milestone has its own task - cannot reuse tasks from other milestones.", 
+                        taskType)
+                );
+            }
+        } else {
+            // Với các milestone khác, task type phải match chính xác
+            TaskType expectedTaskType = switch (milestone.getMilestoneType()) {
+                case transcription -> TaskType.transcription;
+                case arrangement -> TaskType.arrangement;
+                case recording -> null; // Đã xử lý ở trên
+            };
+            if (expectedTaskType != null && taskType != expectedTaskType) {
+                throw InvalidTaskTypeException.create(
+                    taskType, 
+                    String.format("Task type must match milestone type. Expected: %s, Got: %s. " +
+                        "Each milestone has its own task - cannot reuse tasks from other milestones.", 
+                        expectedTaskType, taskType)
+                );
+            }
         }
         
         // Verify milestone work status allows task assignment creation
@@ -1504,6 +1568,20 @@ public class TaskAssignmentService {
             throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
         }
         
+        // Với recording_supervision task, tự động tìm và link studio booking (nếu đã có)
+        String studioBookingId = null;
+        
+        if (taskType == TaskType.recording_supervision) {
+            // Tìm studio booking cho milestone này (nếu đã có)
+            Optional<StudioBooking> bookingOpt = 
+                studioBookingRepository.findByMilestoneId(request.getMilestoneId());
+            if (bookingOpt.isPresent()) {
+                studioBookingId = bookingOpt.get().getBookingId();
+                log.info("Found existing studio booking for recording milestone: bookingId={}, milestoneId={}", 
+                    studioBookingId, request.getMilestoneId());
+            }
+        }
+        
         // Create task assignment
         TaskAssignment assignment = TaskAssignment.builder()
             .contractId(contractId)
@@ -1518,10 +1596,12 @@ public class TaskAssignmentService {
             .milestoneId(request.getMilestoneId())
             .notes(request.getNotes())
             .assignedDate(LocalDateTime.now())
+            .studioBookingId(studioBookingId)  // Có thể null nếu chưa có booking
             .build();
         
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
-        log.info("Task assignment created successfully: assignmentId={}", saved.getAssignmentId());
+        log.info("Task assignment created successfully: assignmentId={}, studioBookingId={}", 
+            saved.getAssignmentId(), saved.getStudioBookingId());
         
         notifySpecialistTaskAssigned(saved, contract, milestone);
         
@@ -1649,13 +1729,15 @@ public class TaskAssignmentService {
         return switch (contractType) {
             case transcription -> taskType == TaskType.transcription;
             case arrangement -> taskType == TaskType.arrangement;
-            case recording -> taskType == TaskType.recording;
+            case recording -> 
+                taskType == TaskType.recording_supervision;
             case arrangement_with_recording -> 
-                taskType == TaskType.arrangement || taskType == TaskType.recording;
+                taskType == TaskType.arrangement 
+                || taskType == TaskType.recording_supervision;
             case bundle -> 
                 taskType == TaskType.transcription 
                 || taskType == TaskType.arrangement 
-                || taskType == TaskType.recording;
+                || taskType == TaskType.recording_supervision;
         };
     }
 
@@ -1847,6 +1929,26 @@ public class TaskAssignmentService {
             throw InvalidTaskAssignmentStatusException.cannotStart(assignment.getAssignmentId(), assignment.getStatus());
         }
 
+        // Fetch milestone để validate và update
+        ContractMilestone milestone = contractMilestoneRepository.findByMilestoneIdAndContractId(
+            assignment.getMilestoneId(), assignment.getContractId()
+        ).orElse(null);
+
+        // Với recording_supervision task, bắt buộc phải có studio booking trước khi start work
+        if (assignment.getTaskType() == TaskType.recording_supervision 
+            && milestone != null 
+            && milestone.getMilestoneType() == MilestoneType.recording) {
+            if (assignment.getStudioBookingId() == null || assignment.getStudioBookingId().isEmpty()) {
+                throw new IllegalStateException(
+                    String.format("Cannot start recording supervision task without studio booking. " +
+                        "TaskAssignmentId: %s, MilestoneId: %s. " +
+                        "Please ensure a studio booking is created and linked to this task before starting work.",
+                        assignment.getAssignmentId(), assignment.getMilestoneId()));
+            }
+            log.info("Recording supervision task has studio booking linked before start: taskId={}, bookingId={}", 
+                assignment.getAssignmentId(), assignment.getStudioBookingId());
+        }
+
         // Update task: ready_to_start → in_progress
         assignment.setStatus(AssignmentStatus.in_progress);
         assignment.setSpecialistRespondedAt(LocalDateTime.now());
@@ -1854,9 +1956,6 @@ public class TaskAssignmentService {
         log.info("Task assignment moved to IN_PROGRESS: assignmentId={}", assignmentId);
 
         // Update milestone: READY_TO_START → IN_PROGRESS
-        ContractMilestone milestone = contractMilestoneRepository.findByMilestoneIdAndContractId(
-            assignment.getMilestoneId(), assignment.getContractId()
-        ).orElse(null);
         
         if (milestone != null && milestone.getWorkStatus() == MilestoneWorkStatus.READY_TO_START) {
             milestone.setWorkStatus(MilestoneWorkStatus.IN_PROGRESS);
@@ -2262,6 +2361,23 @@ public class TaskAssignmentService {
             log.debug("No accepted tasks found for milestone, cannot activate: contractId={}, milestoneId={}",
                 contractId, milestoneId);
             return;
+        }
+        
+        // Với recording milestone, bắt buộc phải có studio booking trước khi activate
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            for (TaskAssignment task : acceptedTasks) {
+                if (task.getTaskType() == TaskType.recording_supervision) {
+                    if (task.getStudioBookingId() == null || task.getStudioBookingId().isEmpty()) {
+                        throw new IllegalStateException(
+                            String.format("Cannot activate recording milestone without studio booking linked to recording task. " +
+                                "MilestoneId: %s, TaskAssignmentId: %s. " +
+                                "Please create a studio booking for this milestone first, then update the task's studioBookingId.",
+                                milestoneId, task.getAssignmentId()));
+                    }
+                    log.info("Recording task has studio booking linked: taskId={}, bookingId={}", 
+                        task.getAssignmentId(), task.getStudioBookingId());
+                }
+            }
         }
         
         // Update milestone: TASK_ACCEPTED_WAITING_ACTIVATION → READY_TO_START

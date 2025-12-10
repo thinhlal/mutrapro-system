@@ -18,6 +18,7 @@ import {
   UserAddOutlined,
   ExclamationCircleOutlined,
   StarFilled,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -40,7 +41,7 @@ const { Title, Text } = Typography;
 const TASK_TYPE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
-  recording: 'Recording',
+  recording_supervision: 'Recording Supervision',
 };
 
 const MILESTONE_TYPE_LABELS = {
@@ -383,6 +384,69 @@ const MilestoneDetailPage = () => {
     return true;
   }, [workStatus, hasActiveTask, milestoneTasks]);
 
+  // Kiểm tra xem có thể hiển thị nút Book Studio không
+  // Chỉ hiện khi: milestone là recording, contract là arrangement_with_recording, và tất cả arrangement milestones đã completed
+  const canShowBookStudioButton = useMemo(() => {
+    // Chỉ cho recording milestone
+    if (milestone?.milestoneType !== 'recording') {
+      return false;
+    }
+
+    // Contract phải là arrangement_with_recording
+    if (contract?.contractType !== 'arrangement_with_recording') {
+      return false;
+    }
+
+    // Contract phải active
+    if (
+      contract?.status !== 'active' &&
+      contract?.status !== 'active_pending_assignment'
+    ) {
+      return false;
+    }
+
+    // Check tất cả arrangement milestones đã completed
+    if (contract?.milestones && Array.isArray(contract.milestones)) {
+      const arrangementMilestones = contract.milestones.filter(
+        m => m.milestoneType === 'arrangement'
+      );
+      
+      if (arrangementMilestones.length === 0) {
+        return false; // Không có arrangement milestone
+      }
+
+      // Tất cả arrangement milestones phải completed hoặc ready_for_payment
+      const allArrangementsCompleted = arrangementMilestones.every(m => {
+        const status = m.workStatus?.toLowerCase();
+        return status === 'completed' || status === 'ready_for_payment';
+      });
+
+      if (!allArrangementsCompleted) {
+        return false; // Chưa có arrangement milestone nào completed
+      }
+    }
+
+    // Milestone chưa completed hoặc cancelled
+    if (workStatus === 'completed' || workStatus === 'cancelled') {
+      return false;
+    }
+
+    // Check xem đã có booking chưa (qua studioBookingId trong task)
+    // Nếu đã có task và task đã có studioBookingId thì không hiện nút "Book Studio" nữa
+    // Lưu ý: Có thể tạo booking trước khi có task, nên chỉ check nếu đã có task
+    if (milestoneTasks && milestoneTasks.length > 0) {
+      const hasBooking = milestoneTasks.some(task => {
+        return task.studioBookingId && task.studioBookingId.trim() !== '';
+      });
+
+      if (hasBooking) {
+        return false; // Đã có booking rồi
+      }
+
+      return true;
+    }
+  }, [milestone, contract, workStatus, milestoneTasks]);
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -448,6 +512,18 @@ const MilestoneDetailPage = () => {
                 }
               >
                 Assign Task
+              </Button>
+            )}
+            {canShowBookStudioButton && (
+              <Button
+                type="primary"
+                icon={<CalendarOutlined />}
+                onClick={() =>
+                  navigate(`/manager/studio-booking/${contractId}/${milestoneId}`)
+                }
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                Book Studio
               </Button>
             )}
           </Space>

@@ -49,7 +49,7 @@ public class ContractMilestone extends BaseEntity<String> {
     // Phần WORK
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    @Column(name = "work_status", nullable = false, length = 20)
+    @Column(name = "work_status", nullable = false, length = 50)
     MilestoneWorkStatus workStatus = MilestoneWorkStatus.PLANNED;
 
     // Payment flag: milestone này có installment tương ứng không

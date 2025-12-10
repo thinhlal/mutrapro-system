@@ -28,6 +28,7 @@ public class MilestoneAssignmentSlotResponse {
     Integer milestoneOrderIndex;
     String milestoneName;
     String milestoneDescription;
+    String milestoneType;  // transcription, arrangement, recording
     LocalDateTime plannedStartAt;
     LocalDateTime plannedDueDate;
     LocalDateTime actualStartAt;
@@ -47,6 +48,16 @@ public class MilestoneAssignmentSlotResponse {
     Boolean hasIssue;
 
     boolean canAssign;
+
+    // For recording milestones - link to studio booking
+    String studioBookingId;  // Soft reference to studio_bookings.booking_id (nullable)
+
+    // Contract status for validation
+    String contractStatus;  // signed, active, active_pending_assignment, completed, etc.
+
+    // For recording milestones in arrangement_with_recording contracts
+    // Indicates if all arrangement milestones are completed/ready_for_payment
+    Boolean allArrangementsCompleted;  // true if all arrangement milestones are completed/ready_for_payment
 }
 
 

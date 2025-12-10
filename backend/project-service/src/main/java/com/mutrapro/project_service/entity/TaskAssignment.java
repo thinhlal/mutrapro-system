@@ -53,7 +53,7 @@ public class TaskAssignment extends BaseEntity<String> {
     String specialistUserIdSnapshot;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "task_type", nullable = false, length = 20)
+    @Column(name = "task_type", nullable = false, length = 30)
     TaskType taskType;
 
     @Builder.Default
@@ -90,5 +90,9 @@ public class TaskAssignment extends BaseEntity<String> {
 
     @Column(name = "issue_reported_at")
     LocalDateTime issueReportedAt;  // Thời gian specialist báo issue
+
+    // Link to studio booking (cho recording tasks)
+    @Column(name = "studio_booking_id")
+    String studioBookingId; // Soft reference to studio_bookings.booking_id (nullable - có thể null lúc mới tạo task)
 }
 

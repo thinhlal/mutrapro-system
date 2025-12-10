@@ -107,6 +107,8 @@ import MilestoneDetailPage from './pages/manager/MilestoneDetail/MilestoneDetail
 import TaskDetailPage from './pages/manager/TaskDetail/TaskDetailPage';
 import ManagerChatPage from './pages/manager/Chat/ManagerChatPage';
 import RevisionRequestsManagement from './pages/manager/RevisionRequests/RevisionRequestsManagement';
+import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
+import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -463,6 +465,14 @@ function App() {
             <Route
               path="milestone-assignments/:contractId/milestone/:milestoneId"
               element={<MilestoneDetailPage />}
+            />
+            <Route
+              path="studio-booking/:contractId/:milestoneId"
+              element={<StudioBookingPage />}
+            />
+            <Route
+              path="studio-bookings"
+              element={<StudioBookingsManagement />}
             />
             <Route
               path="tasks/:contractId/:assignmentId"

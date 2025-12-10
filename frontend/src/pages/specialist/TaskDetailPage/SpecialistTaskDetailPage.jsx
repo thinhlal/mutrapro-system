@@ -1489,6 +1489,12 @@ const SpecialistTaskDetailPage = () => {
                 const hasAcceptButton = status === 'assigned';
                 const hasStartButton = status === 'ready_to_start';
                 const awaitingAlert = status === 'accepted_waiting';
+                
+                // Với recording_supervision task, cần có studio booking trước khi start
+                const isRecordingSupervision = task.taskType?.toLowerCase() === 'recording_supervision';
+                const isRecordingMilestone = task.milestone?.milestoneType?.toLowerCase() === 'recording';
+                const hasStudioBooking = task.studioBookingId && task.studioBookingId.trim().length > 0;
+                const needsStudioBooking = isRecordingSupervision && isRecordingMilestone && !hasStudioBooking;
                 // Cho phép submit khi in_progress, revision_requested hoặc in_revision (không cho submit khi ready_for_review hoặc completed)
                 // VÀ không có submission nào đang active (pending_review, approved, delivered, customer_accepted)
                 const hasActiveSubmission = submissions.some(sub => {
@@ -1536,14 +1542,15 @@ const SpecialistTaskDetailPage = () => {
                   }
                 );
                 const hasFilesToSubmit = draftFileIds.length > 0;
-                // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó
+                // Hiển thị Quick Actions nếu có issue alert HOẶC có button nào đó HOẶC có studio booking warning
                 const hasAnyAction =
                   hasIssueAlert ||
                   hasAcceptButton ||
                   hasStartButton ||
                   awaitingAlert ||
                   hasSubmitButton ||
-                  hasIssueButton;
+                  hasIssueButton ||
+                  needsStudioBooking;
 
                 if (!hasAnyAction) return null;
 
@@ -1617,6 +1624,15 @@ const SpecialistTaskDetailPage = () => {
                         />
                       )}
 
+                      {needsStudioBooking && (
+                        <Alert
+                          message="Chưa có Studio Booking"
+                          description="Task recording supervision này cần có studio booking trước khi bắt đầu làm việc. Vui lòng liên hệ Manager để tạo studio booking cho milestone này."
+                          type="warning"
+                          showIcon
+                        />
+                      )}
+
                       {(hasAcceptButton ||
                         hasStartButton ||
                         hasSubmitButton ||
@@ -1645,6 +1661,7 @@ const SpecialistTaskDetailPage = () => {
                               <Button
                                 type="primary"
                                 onClick={handleStartTask}
+                                disabled={needsStudioBooking}
                                 loading={startingTask}
                               >
                                 Start Task
@@ -1683,7 +1700,7 @@ const SpecialistTaskDetailPage = () => {
                                       M4A, WMA)
                                     </Text>
                                   );
-                                } else if (taskType === 'recording') {
+                                } else if (taskType === 'recording_supervision') {
                                   return (
                                     <Text type="secondary">
                                       Audio files only: MP3, WAV, FLAC, AAC,
@@ -2198,7 +2215,7 @@ const SpecialistTaskDetailPage = () => {
                   ) {
                     allowedExts = [...notationExts, ...audioExts];
                     allowedTypes = 'notation or audio files';
-                  } else if (taskType === 'recording') {
+                  } else if (taskType === 'recording_session' || taskType === 'recording_supervision') {
                     allowedExts = audioExts;
                     allowedTypes = 'audio files (MP3, WAV, FLAC, etc.)';
                   } else {
@@ -2259,7 +2276,7 @@ const SpecialistTaskDetailPage = () => {
                 ) {
                   allowedExts = [...notationExts, ...audioExts];
                   allowedTypes = 'notation or audio files';
-                } else if (taskType === 'recording') {
+                } else if (taskType === 'recording_session' || taskType === 'recording_supervision') {
                   allowedExts = audioExts;
                   allowedTypes = 'audio files (MP3, WAV, FLAC, etc.)';
                 } else {
@@ -2289,7 +2306,7 @@ const SpecialistTaskDetailPage = () => {
                   taskType === 'arrangement_with_recording'
                 ) {
                   return '.musicxml,.xml,.mid,.midi,.pdf,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
-                } else if (taskType === 'recording') {
+                } else if (taskType === 'recording_session' || taskType === 'recording_supervision') {
                   return '.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma';
                 }
                 // Default: allow all for unknown task types
@@ -2321,7 +2338,7 @@ const SpecialistTaskDetailPage = () => {
                       const taskType = task?.taskType?.toLowerCase();
                       if (taskType === 'transcription') {
                         return 'Only notation files allowed: MusicXML, XML, MIDI, PDF';
-                      } else if (taskType === 'recording') {
+                      } else if (taskType === 'recording_session' || taskType === 'recording_supervision') {
                         return 'Only audio files allowed: MP3, WAV, FLAC, etc.';
                       } else if (
                         taskType === 'arrangement' ||

@@ -48,7 +48,7 @@ const { Title, Text } = Typography;
 const TASK_TYPE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
-  recording: 'Recording',
+  recording_supervision: 'Recording Supervision',
 };
 
 // Assignment status colors
@@ -150,7 +150,7 @@ const TASK_TYPE_OPTIONS = [
   { label: 'Tất cả', value: 'all' },
   { label: 'Transcription', value: 'TRANSCRIPTION' },
   { label: 'Arrangement', value: 'ARRANGEMENT' },
-  { label: 'Recording', value: 'RECORDING' },
+  { label: 'Recording Supervision', value: 'RECORDING_SUPERVISION' },
 ];
 
 export default function TaskProgressManagement() {

@@ -43,5 +43,6 @@ public class ServiceRequestInfoResponse {
     String purpose;  // Mục đích (VD: "karaoke_cover", "performance") cho arrangement
     List<Object> instruments;  // Danh sách instruments
     List<Object> files;  // Danh sách files mà customer đã upload
+    List<PreferredSpecialistInfo> preferredSpecialists;  // Danh sách specialist mà customer chọn (cho arrangement_with_recording)
 }
 

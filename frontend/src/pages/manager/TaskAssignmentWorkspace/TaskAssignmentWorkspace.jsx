@@ -52,7 +52,7 @@ const { Option } = Select;
 const TASK_TYPE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
-  recording: 'Recording',
+  recording_supervision: 'Recording Supervision',
 };
 
 const defaultStats = {
@@ -66,7 +66,7 @@ const defaultStats = {
 const TASK_TYPE_TO_SPECIALIST = {
   transcription: 'TRANSCRIPTION',
   arrangement: 'ARRANGEMENT',
-  recording: 'RECORDING_ARTIST',
+  recording_supervision: 'ARRANGEMENT', // Recording supervision thường do arrangement specialist làm
 };
 
 // Milestone work status colors
@@ -273,12 +273,17 @@ export default function TaskAssignmentWorkspace() {
     [selectedMilestoneId, contractId] // Thêm dependencies để fetch lại khi milestone thay đổi
   );
 
+  const [allTasks, setAllTasks] = useState([]); // Lưu tất cả tasks để tìm arrangement task
+
   const fetchTaskStats = async id => {
     try {
       const response = await getTaskAssignmentsByContract(id);
       if (response?.status === 'success' && response?.data) {
+        const tasks = response.data;
+        setAllTasks(tasks); // Lưu tất cả tasks
+        
         const statsMap = {};
-        response.data.forEach(task => {
+        tasks.forEach(task => {
           if (!task.milestoneId) return;
           if (!statsMap[task.milestoneId]) {
             statsMap[task.milestoneId] = { ...defaultStats };
@@ -368,32 +373,77 @@ export default function TaskAssignmentWorkspace() {
     }
 
     // Tự động set taskType từ milestone.milestoneType (milestoneType luôn được set)
+    // QUAN TRỌNG: Milestone nào → Task nấy (không trộn)
+    // - Milestone TRANSCRIPTION → Task type: TRANSCRIPTION
+    // - Milestone ARRANGEMENT → Task type: ARRANGEMENT
+    // - Milestone RECORDING → Task type: RECORDING_SUPERVISION
+    // Mỗi milestone có task riêng, không reuse task từ milestone khác
     if (selectedMilestoneId && contract?.milestones) {
       const selectedMilestone = contract.milestones.find(
         m => m.milestoneId === selectedMilestoneId
       );
       if (selectedMilestone?.milestoneType) {
-        setTaskType(selectedMilestone.milestoneType);
+        // Với recording milestone, mặc định dùng recording_supervision
+        // (thường do arrangement specialist supervise và deliver)
+        if (selectedMilestone.milestoneType === 'recording') {
+          setTaskType('recording_supervision');
+        } else {
+          setTaskType(selectedMilestone.milestoneType);
+        }
       }
     }
   }, [contract, milestoneStats, selectedMilestoneId, isEditMode]);
 
   // Set selected specialist when specialists are loaded and we have assignment data
+  // Hoặc auto suggest arrangement specialist cho recording milestone
   useEffect(() => {
-    if (
-      isEditMode &&
-      currentAssignment &&
-      specialists.length > 0 &&
-      !selectedSpecialist
-    ) {
+    if (isEditMode && currentAssignment && specialists.length > 0 && !selectedSpecialist) {
+      // Edit mode: set specialist từ assignment hiện tại
       const specialist = specialists.find(
         s => s.specialistId === currentAssignment.specialistId
       );
       if (specialist) {
         setSelectedSpecialist(specialist);
       }
+    } else if (!isEditMode && selectedMilestoneId && contract && allTasks.length > 0 && specialists.length > 0 && !selectedSpecialist) {
+      // Tạo mới: nếu là recording milestone, tìm arrangement task để suggest specialist
+      const selectedMilestone = contract.milestones?.find(
+        m => m.milestoneId === selectedMilestoneId
+      );
+      
+      if (selectedMilestone?.milestoneType === 'recording' && taskType === 'recording_supervision') {
+        // Tìm arrangement task trong cùng contract
+        // Ưu tiên: completed > in_progress > assigned
+        const arrangementTasks = allTasks.filter(
+          task => task.taskType === 'arrangement' && task.contractId === contractId
+        );
+        
+        let suggestedTask = null;
+        // Ưu tiên completed
+        suggestedTask = arrangementTasks.find(t => t.status === 'completed');
+        if (!suggestedTask) {
+          // Nếu không có completed, tìm in_progress
+          suggestedTask = arrangementTasks.find(t => t.status === 'in_progress');
+        }
+        if (!suggestedTask) {
+          // Nếu không có in_progress, tìm assigned
+          suggestedTask = arrangementTasks.find(t => t.status === 'assigned');
+        }
+        
+        if (suggestedTask?.specialistId) {
+          const suggestedSpecialist = specialists.find(
+            s => s.specialistId === suggestedTask.specialistId
+          );
+          if (suggestedSpecialist) {
+            setSelectedSpecialist(suggestedSpecialist);
+            message.info(
+              `Đã tự động chọn arrangement specialist: ${suggestedSpecialist.fullName || suggestedSpecialist.email}`
+            );
+          }
+        }
+      }
     }
-  }, [isEditMode, currentAssignment, specialists, selectedSpecialist]);
+  }, [isEditMode, currentAssignment, specialists, selectedSpecialist, selectedMilestoneId, contract, allTasks, taskType, contractId]);
 
   useEffect(() => {
     // Chỉ fetch khi contract và milestone đã load xong
@@ -423,12 +473,14 @@ export default function TaskAssignmentWorkspace() {
       })
       .map(item => item.name);
 
-    // Tìm main instrument name (chỉ cho arrangement)
+    // Tìm main instrument name (chỉ cho arrangement và recording_supervision)
+    // Với recording_supervision, cũng cần filter theo main instrument vì thường do arrangement specialist làm
     const mainInstrument = instrumentDetails.find(inst => inst.isMain === true);
     const mainInstrumentName =
       mainInstrument &&
       (effectiveTaskType === 'arrangement' ||
-        effectiveTaskType === 'arrangement_with_recording')
+        effectiveTaskType === 'arrangement_with_recording' ||
+        effectiveTaskType === 'recording_supervision')
         ? mainInstrument.name
         : null;
 

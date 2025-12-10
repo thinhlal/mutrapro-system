@@ -70,7 +70,7 @@ const { TextArea } = Input;
 const TASK_TYPE_LABELS = {
   transcription: 'Transcription',
   arrangement: 'Arrangement',
-  recording: 'Recording',
+  recording_supervision: 'Recording Supervision',
 };
 
 const STATUS_COLORS = {
@@ -1038,7 +1038,9 @@ const TaskDetailPage = () => {
                       : task.milestone.milestoneType === 'arrangement'
                         ? 'Arrangement'
                         : task.milestone.milestoneType === 'recording'
-                          ? 'Recording'
+                          ? task.taskType === 'recording_supervision'
+                            ? 'Recording Supervision'
+                            : 'Recording'
                           : task.milestone.milestoneType}
                   </Tag>
                 )}

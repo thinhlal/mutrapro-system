@@ -18,6 +18,7 @@ import {
   UserAddOutlined,
   EyeOutlined,
   ExclamationCircleOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -351,6 +352,10 @@ const MilestonesPage = () => {
       render: (_, record) => {
         const assignmentStatus = record.assignmentStatus?.toLowerCase();
         const milestoneWorkStatus = record.milestoneWorkStatus?.toLowerCase();
+        // Lưu ý: milestoneType và contractType từ backend có thể là uppercase (enum name)
+        // Cần normalize về lowercase để so sánh
+        const milestoneType = (record.milestoneType || '').toLowerCase();
+        const contractType = (record.contractType || '').toLowerCase();
 
         // Không hiện nút Assign Task nếu:
         // 1. Task đã completed (không chặn nếu cancelled vì có thể assign task mới)
@@ -374,6 +379,38 @@ const MilestonesPage = () => {
         const canShowAssignButton =
           !isTaskCompleted && !isMilestoneCompleted && !hasActiveTask;
 
+        // Với recording milestone trong arrangement_with_recording:
+        // - Vẫn có thể assign task (cho recording specialist)
+        // - Task type sẽ là 'recording'
+        // - Không cần điều kiện đặc biệt (có thể assign task trước hoặc sau booking)
+        const isRecordingMilestone = milestoneType === 'recording';
+        const isArrangementWithRecording = contractType === 'arrangement_with_recording';
+        
+        // Tooltip cho recording milestone
+        const assignButtonTooltip = isRecordingMilestone && isArrangementWithRecording
+          ? 'Assign task cho recording specialist (task type: recording_supervision)'
+          : 'Assign task cho specialist';
+
+        // Logic hiển thị nút Book Studio (tương tự MilestoneDetailPage)
+        // Check basic conditions, chi tiết sẽ check ở detail page hoặc booking page
+        const contractStatus = (record.contractStatus || '').toLowerCase();
+        
+        // Check tất cả arrangement milestones đã completed (từ backend)
+        const allArrangementsCompleted = record.allArrangementsCompleted === true;
+        
+        const canShowBookStudioButton = 
+          isRecordingMilestone && 
+          isArrangementWithRecording &&
+          (contractStatus === 'active' || contractStatus === 'active_pending_assignment') &&
+          allArrangementsCompleted && // Tất cả arrangement milestones đã completed
+          milestoneWorkStatus !== 'completed' &&
+          milestoneWorkStatus !== 'cancelled' &&
+          !record.studioBookingId; // Nếu đã có booking thì không hiện
+        
+        const handleBookStudio = (slot) => {
+          navigate(`/manager/studio-booking/${slot.contractId}/${slot.milestoneId}`);
+        };
+
         return (
           <Space size="small">
             {canShowAssignButton && (
@@ -382,8 +419,21 @@ const MilestonesPage = () => {
                 size="small"
                 icon={<UserAddOutlined />}
                 onClick={() => handleAssign(record)}
+                title={assignButtonTooltip}
               >
                 Assign Task
+              </Button>
+            )}
+            {canShowBookStudioButton && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<CalendarOutlined />}
+                onClick={() => handleBookStudio(record)}
+                title="Book Studio cho recording milestone"
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                Book Studio
               </Button>
             )}
             <Button

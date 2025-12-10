@@ -29,4 +29,6 @@ public interface StudioBookingRepository extends JpaRepository<StudioBooking, St
     );
     
     Optional<StudioBooking> findByBookingId(String bookingId);
+    
+    Optional<StudioBooking> findByMilestoneId(String milestoneId);
 }

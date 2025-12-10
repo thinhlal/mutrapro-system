@@ -12,6 +12,7 @@ import {
   UsergroupAddOutlined,
   MessageOutlined,
   EditOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -53,6 +54,11 @@ const menuItems = [
     label: <Link to="/manager/revision-requests">Revision Requests</Link>,
   },
   {
+    key: '/manager/studio-bookings',
+    icon: <CalendarOutlined />,
+    label: <Link to="/manager/studio-bookings">Studio Bookings</Link>,
+  },
+  {
     key: '/manager/chat',
     icon: <MessageOutlined />,
     label: <Link to="/manager/chat">Chat</Link>,
@@ -75,6 +81,9 @@ const ManagerLayout = () => {
     // Match exact paths or paths that start with the menu key
     if (path.startsWith('/manager/chat')) {
       return '/manager/chat';
+    }
+    if (path.startsWith('/manager/studio-booking')) {
+      return '/manager/studio-bookings';
     }
     return path;
   };

@@ -54,6 +54,9 @@ public class TaskAssignmentResponse {
     String issueReason;
     LocalDateTime issueReportedAt;
 
+    // Link to studio booking (for recording tasks)
+    String studioBookingId;  // Soft reference to studio_bookings.booking_id (nullable)
+
     // Request info (nested) - chỉ các field quan trọng cho specialist
     RequestInfo request;
 
@@ -115,6 +118,7 @@ public class TaskAssignmentResponse {
         String milestoneId;
         String name;
         String description;
+        String milestoneType;          // transcription, arrangement, recording
         String contractId;            // Hỗ trợ FE tính chuỗi milestone
         Integer orderIndex;              // Thứ tự milestone (1, 2, 3...) để tính start date của milestone sau
         LocalDateTime plannedStartAt;

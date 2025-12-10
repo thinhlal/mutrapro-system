@@ -485,7 +485,7 @@ public class FileService {
                         audioMimeTypes.stream().anyMatch(lowerMimeType::contains);
                 yield "notation or audio files";
             }
-            case recording -> {
+            case recording_supervision -> {
                 // Chỉ cho audio files
                 isValid = audioExtensions.contains(extension) ||
                         audioMimeTypes.stream().anyMatch(lowerMimeType::contains);

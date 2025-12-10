@@ -3,10 +3,13 @@ package com.mutrapro.project_service.entity;
 import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.RecordingSessionType;
 import com.mutrapro.project_service.enums.ReservationFeeStatus;
+import com.mutrapro.project_service.enums.StudioBookingContext;
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,6 +22,8 @@ import java.time.LocalTime;
     @Index(name = "idx_studio_bookings_studio_id", columnList = "studio_id"),
     @Index(name = "idx_studio_bookings_request_id", columnList = "request_id"),
     @Index(name = "idx_studio_bookings_contract_id", columnList = "contract_id"),
+    @Index(name = "idx_studio_bookings_milestone_id", columnList = "milestone_id"),
+    @Index(name = "idx_studio_bookings_context", columnList = "context"),
     @Index(name = "idx_studio_bookings_session_type", columnList = "session_type"),
     @Index(name = "idx_studio_bookings_booking_date", columnList = "booking_date"),
     @Index(name = "idx_studio_bookings_status", columnList = "status")
@@ -50,6 +55,14 @@ public class StudioBooking extends BaseEntity<String> {
     @Column(name = "contract_id")
     String contractId;  // Soft reference to contracts table (same service)
 
+    @Column(name = "milestone_id")
+    String milestoneId;  // Reference to contract_milestones (cho CONTRACT_RECORDING context)
+
+    // Booking context - để phân biệt booking thuộc luồng nào
+    @Enumerated(EnumType.STRING)
+    @Column(name = "context", nullable = false, length = 30)
+    StudioBookingContext context;  // CONTRACT_RECORDING / STANDALONE_BOOKING / PRE_CONTRACT_HOLD
+
     // Recording session type
     @Enumerated(EnumType.STRING)
     @Column(name = "session_type", nullable = false, length = 30)
@@ -75,14 +88,6 @@ public class StudioBooking extends BaseEntity<String> {
 
     // Billing config & derivation
     @Builder.Default
-    @Column(name = "billing_step_hours", precision = 3, scale = 2)
-    BigDecimal billingStepHours = new BigDecimal("0.50");
-
-    @Builder.Default
-    @Column(name = "min_billing_hours", precision = 3, scale = 2)
-    BigDecimal minBillingHours = new BigDecimal("1.00");
-
-    @Builder.Default
     @Column(name = "external_guest_count", nullable = false)
     Integer externalGuestCount = 0;
 
@@ -98,10 +103,6 @@ public class StudioBooking extends BaseEntity<String> {
     @Builder.Default
     @Column(name = "equipment_rental_fee", precision = 12, scale = 2)
     BigDecimal equipmentRentalFee = BigDecimal.ZERO;
-
-    @Builder.Default
-    @Column(name = "admin_fee", precision = 12, scale = 2)
-    BigDecimal adminFee = BigDecimal.ZERO;
 
     @Builder.Default
     @Column(name = "external_guest_fee", precision = 12, scale = 2)
@@ -140,6 +141,7 @@ public class StudioBooking extends BaseEntity<String> {
     @Column(name = "reservation_applied_to_milestone_id")
     String reservationAppliedToMilestoneId;  // Reference to contract_milestones
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "refund_policy_json", columnDefinition = "jsonb")
     String refundPolicyJson;  // JSON string for refund policy
 }

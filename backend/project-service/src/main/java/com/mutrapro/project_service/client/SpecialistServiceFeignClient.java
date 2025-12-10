@@ -4,7 +4,9 @@ import com.mutrapro.shared.dto.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,5 +33,15 @@ public interface SpecialistServiceFeignClient {
      */
     @GetMapping("/manager/specialists/{specialistId}")
     ApiResponse<Map<String, Object>> getSpecialistById(@PathVariable String specialistId);
+    
+    /**
+     * Lấy danh sách tất cả vocalists (RECORDING_ARTIST với recordingRoles chứa VOCALIST)
+     * GET /public/specialists/vocalists
+     * Public endpoint - không cần authentication
+     */
+    @GetMapping("/public/specialists/vocalists")
+    ApiResponse<List<Map<String, Object>>> getVocalists(
+        @RequestParam(required = false) String gender,
+        @RequestParam(required = false) List<String> genres);
 }
 
