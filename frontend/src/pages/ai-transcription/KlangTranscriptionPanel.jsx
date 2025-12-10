@@ -15,14 +15,20 @@ const KlangTranscriptionPanel = () => {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [outputFormat, setOutputFormat] = useState('midi');
 
-  const { model, setModel, createTranscription, reset } =
+  const { model, setModel, createTranscription, reset, setOutputFormats } =
     useKlangTranscriptionStore();
 
   const handleBeforeUpload = file => {
     setFile(file);
     reset();
     return false; // Don't upload to server, keep in state
+  };
+
+  const handleOutputChange = value => {
+    setOutputFormat(value);
+    setOutputFormats([value]);
   };
 
   const handleTranscribe = async () => {
@@ -33,6 +39,8 @@ const KlangTranscriptionPanel = () => {
 
     try {
       setIsSubmitting(true);
+      // ensure store has current output format
+      setOutputFormats([outputFormat]);
 
       // Start transcription
       await createTranscription(file);
@@ -111,10 +119,34 @@ const KlangTranscriptionPanel = () => {
               </div>
             </div>
 
-            {/* Step 3: Start Transcription */}
+            {/* Step 3: Choose Output Format */}
             <div className={styles.stepSection}>
               <div className={styles.stepTitle}>
                 <span className={styles.stepNumber}>3</span>
+                Choose Output Format
+              </div>
+              <Select
+                className={styles.modelSelect}
+                size="large"
+                value={outputFormat}
+                onChange={handleOutputChange}
+                options={[
+                  { label: 'MIDI (.mid)', value: 'midi' },
+                  { label: 'PDF (.pdf)', value: 'pdf' },
+                ]}
+              />
+              <div className={styles.stepDescription}>
+                <Text type="secondary">
+                  Free plan may only return one format per job; choose the one
+                  you need.
+                </Text>
+              </div>
+            </div>
+
+            {/* Step 3: Start Transcription */}
+            <div className={styles.stepSection}>
+              <div className={styles.stepTitle}>
+                <span className={styles.stepNumber}>4</span>
                 Start Transcription
               </div>
               <Button

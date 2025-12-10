@@ -60,6 +60,11 @@ export const API_ENDPOINTS = {
   },
 
   // === Billing Service ===
+  PAYMENT: {
+    CREATE_ORDER: `${BILLING_PATH}/payments/orders`,
+    GET_ORDER: (orderId) => `${BILLING_PATH}/payments/orders/${orderId}`,
+    GET_ORDER_QR: (orderId) => `${BILLING_PATH}/payments/orders/${orderId}/qr`,
+  },
   WALLET: {
     GET_OR_CREATE_MY_WALLET: `${BILLING_PATH}/wallets/me`,
     GET_BY_ID: (walletId) => `${BILLING_PATH}/wallets/${walletId}`,
@@ -153,6 +158,18 @@ export const API_ENDPOINTS = {
     
     // WebSocket
     WS_ENDPOINT: `${CHAT_PATH}/ws`,
+  },
+
+  // === Specialist Service ===
+  SPECIALISTS: {
+    // Public endpoints (for customers)
+    PUBLIC: {
+      // GET /public/specialists/vocalists?gender=&genres=
+      GET_VOCALISTS: `${SPECIALIST_PATH}/public/specialists/vocalists`,
+      // GET /public/specialists/{specialistId}
+      GET_SPECIALIST_DETAIL: (specialistId) =>
+        `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
+    },
   },
 };
 

@@ -36,3 +36,6 @@ export { default as WalletScreen } from './Wallet/WalletScreen';
 // Payment Screens
 export { default as PaymentDepositScreen } from './Payments/PaymentDepositScreen';
 export { default as PaymentMilestoneScreen } from './Payments/PaymentMilestoneScreen';
+export { default as PaymentRevisionFeeScreen } from './Payments/PaymentRevisionFeeScreen';
+export { default as TopupPaymentScreen } from './Payments/TopupPaymentScreen';
+export { default as PaymentSuccessScreen } from './Payments/PaymentSuccessScreen';

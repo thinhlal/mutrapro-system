@@ -19,6 +19,8 @@ import WalletScreen from '../screens/Wallet/WalletScreen';
 import PaymentDepositScreen from '../screens/Payments/PaymentDepositScreen';
 import PaymentMilestoneScreen from '../screens/Payments/PaymentMilestoneScreen';
 import PaymentRevisionFeeScreen from '../screens/Payments/PaymentRevisionFeeScreen';
+import TopupPaymentScreen from '../screens/Payments/TopupPaymentScreen';
+import PaymentSuccessScreen from '../screens/Payments/PaymentSuccessScreen';
 import MilestoneDeliveriesScreen from '../screens/Milestones/MilestoneDeliveriesScreen';
 import ContractsListScreen from '../screens/Contracts/ContractsListScreen';
 import ContractSignedSuccessScreen from '../screens/Contracts/ContractSignedSuccessScreen';
@@ -153,6 +155,26 @@ const MainStack = () => {
           drawerItemStyle: { display: 'none' }, // Hide from drawer menu
           ...defaultDrawerScreenOptions,
           headerLeft: () => getContractSignedSuccessHeaderLeft(navigation),
+        })}
+      />
+      <Drawer.Screen
+        name="TopupPayment"
+        component={TopupPaymentScreen}
+        options={({ navigation }) => ({
+          title: 'Nạp tiền',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getPaymentHeaderLeft(navigation),
+        })}
+      />
+      <Drawer.Screen
+        name="PaymentSuccess"
+        component={PaymentSuccessScreen}
+        options={({ navigation }) => ({
+          title: 'Thanh toán thành công',
+          drawerItemStyle: { display: 'none' }, // Hide from drawer menu
+          ...defaultDrawerScreenOptions,
+          headerLeft: () => getPaymentHeaderLeft(navigation),
         })}
       />
     </Drawer.Navigator>

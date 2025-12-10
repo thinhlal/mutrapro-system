@@ -20,6 +20,8 @@ import ChatListScreen from "../screens/Chat/ChatListScreen";
 import ChatRoomScreen from "../screens/Chat/ChatRoomScreen";
 import ServiceRequestScreen from "../screens/Services/ServiceRequestScreen";
 import ServiceQuoteScreen from "../screens/Services/ServiceQuoteScreen";
+import VocalistSelectionScreen from "../screens/Services/VocalistSelectionScreen";
+import VocalistDetailScreen from "../screens/Services/VocalistDetailScreen";
 import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
 import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
 
@@ -52,6 +54,16 @@ const HomeStack = ({ navigation }) => {
         name="ServiceRequest"
         component={ServiceRequestScreen}
         options={{ title: "Service Request" }}
+      />
+      <Stack.Screen
+        name="VocalistSelection"
+        component={VocalistSelectionScreen}
+        options={{ title: "Chọn ca sĩ ưu tiên" }}
+      />
+      <Stack.Screen
+        name="VocalistDetail"
+        component={VocalistDetailScreen}
+        options={{ title: "Chi tiết ca sĩ" }}
       />
       <Stack.Screen
         name="ServiceQuote"

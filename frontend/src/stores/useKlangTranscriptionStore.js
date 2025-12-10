@@ -11,6 +11,7 @@ export const useKlangTranscriptionStore = create((set, get) => ({
   loading: false,
   error: null,
   midiBlob: null, // Store MIDI blob for Flat display
+  pdfBlob: null, // Store PDF blob for inline preview
 
   // actions
   setModel: model => set({ model }),
@@ -20,11 +21,17 @@ export const useKlangTranscriptionStore = create((set, get) => ({
       status: null,
       error: null,
       midiBlob: null,
+      pdfBlob: null,
     }),
+
+  // Output formats requested for the job (default midi; UI can change)
+  outputFormats: ['midi'],
+
+  setOutputFormats: outputs => set({ outputFormats: outputs }),
 
   // Tạo transcription job
   createTranscription: async file => {
-    const { model, pollStatus } = get();
+    const { model, pollStatus, outputFormats } = get();
 
     if (!file) {
       set({ error: 'Please choose an audio file first.' });
@@ -44,8 +51,7 @@ export const useKlangTranscriptionStore = create((set, get) => ({
       const formData = new FormData();
       formData.append('file', file);
       // outputs – mỗi lần append là 1 phần tử trong array
-      formData.append('outputs', 'midi');
-      //   formData.append("outputs", "xml");
+      outputFormats.forEach(output => formData.append('outputs', output));
 
       const res = await fetch(
         `${KLANG_BASE_URL}/transcription?${params.toString()}`,
@@ -75,7 +81,7 @@ export const useKlangTranscriptionStore = create((set, get) => ({
       pollStatus(data.job_id);
     } catch (err) {
       console.error(err);
-      set({ error: err.message, loading: false });
+      set({ error: err.message, loading: false, status: 'FAILED' });
     }
   },
 
@@ -101,8 +107,13 @@ export const useKlangTranscriptionStore = create((set, get) => ({
         set({ status: data.status });
 
         if (data.status === 'COMPLETED') {
-          // Auto-fetch MIDI when completed
-          get().fetchMidiBlob();
+          const { outputFormats } = get();
+          if (outputFormats.includes('midi')) {
+            get().fetchMidiBlob();
+          }
+          if (outputFormats.includes('pdf')) {
+            get().fetchPdfBlob();
+          }
           return;
         }
 
@@ -145,10 +156,44 @@ export const useKlangTranscriptionStore = create((set, get) => ({
     }
   },
 
-  // Download kết quả theo format (xml, midi, pdf, audio, ...)
-  downloadResult: async format => {
+  // Fetch PDF blob for inline preview
+  fetchPdfBlob: async () => {
     const { jobId } = get();
     if (!jobId) return;
+
+    try {
+      const res = await fetch(`${KLANG_BASE_URL}/job/${jobId}/pdf`, {
+        headers: { 'kl-api-key': KLANG_API_KEY },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Fetch PDF HTTP ${res.status}: ${text}`);
+      }
+
+      const blob = await res.blob();
+      set({ pdfBlob: blob });
+    } catch (err) {
+      console.error('Failed to fetch PDF:', err);
+      set({ error: err.message });
+    }
+  },
+
+  // Download kết quả theo format (xml, midi, pdf, audio, ...)
+  downloadResult: async format => {
+    const { jobId, outputFormats } = get();
+    if (!jobId) return;
+
+    // If format not requested/allowed, surface a friendly error
+    if (!outputFormats.includes(format)) {
+      set({
+        error:
+          format === 'xml'
+            ? 'MusicXML output is not supported by the current transcription service.'
+            : `Output ${format} is not supported.`,
+      });
+      return;
+    }
 
     try {
       const res = await fetch(`${KLANG_BASE_URL}/job/${jobId}/${format}`, {
@@ -165,8 +210,9 @@ export const useKlangTranscriptionStore = create((set, get) => ({
       const a = document.createElement('a');
 
       let ext = format;
-      if (format === 'xml') ext = 'musicxml';
+      if (format === 'xml') ext = 'xml';
       if (format === 'midi') ext = 'mid';
+      if (format === 'pdf') ext = 'pdf';
 
       a.href = url;
       a.download = `${jobId}.${ext}`;

@@ -1,0 +1,518 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  Image,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
+import { getVocalists } from "../../services/specialistService";
+import { MUSIC_GENRES } from "../../constants/musicOptionsConstants";
+
+const VocalistSelectionScreen = ({ navigation, route }) => {
+  const {
+    allowMultiple = false,
+    maxSelections = 1,
+    selectedVocalists = [],
+    onSelect,
+  } = route.params || {};
+
+  const [vocalists, setVocalists] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [genderFilter, setGenderFilter] = useState("ALL"); // ALL, FEMALE, MALE
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const selectedVocalist = selectedVocalists?.[0];
+  
+  const [selectedIds, setSelectedIds] = useState(() => {
+    if (allowMultiple && selectedVocalists) {
+      return selectedVocalists.map((v) => v.id || v.specialistId || v);
+    }
+    return selectedVocalist ? [selectedVocalist.id || selectedVocalist.specialistId || selectedVocalist] : [];
+  });
+
+  // Fetch vocalists with filters
+  useEffect(() => {
+    fetchVocalists();
+  }, [genderFilter, selectedGenres]);
+
+  const fetchVocalists = async () => {
+    setLoading(true);
+    try {
+      const gender = genderFilter !== "ALL" ? genderFilter : null;
+      const genres = selectedGenres.length > 0 ? selectedGenres : null;
+
+      const response = await getVocalists(gender, genres);
+      if (response?.status === "success" && response?.data) {
+        setVocalists(response.data);
+      } else if (response?.data) {
+        // Handle case where data is directly in response.data
+        setVocalists(Array.isArray(response.data) ? response.data : []);
+      }
+    } catch (error) {
+      console.error("Error fetching vocalists:", error);
+      Alert.alert("Error", error.message || "Không thể tải danh sách ca sĩ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelect = (vocalist) => {
+    const vocalistId = vocalist.id || vocalist.specialistId;
+    const vocalistName = vocalist.name || vocalist.fullName || `Vocalist ${vocalistId}`;
+
+    if (allowMultiple) {
+      setSelectedIds((prev) => {
+        if (prev.includes(vocalistId)) {
+          // Deselect
+          return prev.filter((id) => id !== vocalistId);
+        } else {
+          // Select (check max limit)
+          if (prev.length >= maxSelections) {
+            Alert.alert("Thông báo", `Bạn chỉ có thể chọn tối đa ${maxSelections} ca sĩ`);
+            return prev;
+          }
+          return [...prev, vocalistId];
+        }
+      });
+    } else {
+      // Single selection
+      setSelectedIds([vocalistId]);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (selectedIds.length === 0) {
+      Alert.alert("Thông báo", "Vui lòng chọn ít nhất một ca sĩ");
+      return;
+    }
+
+    // Get selected vocalists with full info
+    const selected = vocalists
+      .filter((v) => selectedIds.includes(v.id || v.specialistId))
+      .map((v) => ({
+        id: v.id || v.specialistId,
+        specialistId: v.specialistId || v.id,
+        name: v.name || v.fullName || `Vocalist ${v.id || v.specialistId}`,
+        fullName: v.fullName || v.name,
+        avatar: v.avatar || v.avatarUrl,
+        gender: v.gender,
+      }));
+
+    if (onSelect) {
+      onSelect(selected);
+    }
+
+    navigation.goBack();
+  };
+
+  const isSelected = (vocalist) => {
+    const vocalistId = vocalist.id || vocalist.specialistId;
+    return selectedIds.includes(vocalistId);
+  };
+
+  const availableGenres = MUSIC_GENRES.map((g) => g.value);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chọn ca sĩ ưu tiên</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Filters */}
+        <View style={styles.filtersCard}>
+          <Text style={styles.filterLabel}>Lọc theo giới tính:</Text>
+          <View style={styles.genderFilterContainer}>
+            {["ALL", "FEMALE", "MALE"].map((gender) => (
+              <TouchableOpacity
+                key={gender}
+                style={[
+                  styles.genderFilterButton,
+                  genderFilter === gender && styles.genderFilterButtonSelected,
+                ]}
+                onPress={() => setGenderFilter(gender)}
+              >
+                <Text
+                  style={[
+                    styles.genderFilterText,
+                    genderFilter === gender && styles.genderFilterTextSelected,
+                  ]}
+                >
+                  {gender === "ALL" ? "Tất cả" : gender === "FEMALE" ? "Nữ" : "Nam"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.filterLabel, { marginTop: SPACING.md }]}>
+            Lọc theo thể loại:
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.genresContainer}
+          >
+            {availableGenres.map((genre) => {
+              const isSelected = selectedGenres.includes(genre);
+              return (
+                <TouchableOpacity
+                  key={genre}
+                  style={[
+                    styles.genreTag,
+                    isSelected && styles.genreTagSelected,
+                  ]}
+                  onPress={() => {
+                    if (isSelected) {
+                      setSelectedGenres(selectedGenres.filter((g) => g !== genre));
+                    } else {
+                      setSelectedGenres([...selectedGenres, genre]);
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.genreTagText,
+                      isSelected && styles.genreTagTextSelected,
+                    ]}
+                  >
+                    {genre}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.resultCount}>
+            ({vocalists.length} ca sĩ{vocalists.length !== 1 ? "" : ""})
+          </Text>
+        </View>
+
+        {/* Vocalists List */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Đang tải danh sách ca sĩ...</Text>
+          </View>
+        ) : vocalists.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="person-outline" size={64} color={COLORS.textSecondary} />
+            <Text style={styles.emptyText}>Không tìm thấy ca sĩ nào</Text>
+          </View>
+        ) : (
+          <View style={styles.vocalistsList}>
+            {vocalists.map((vocalist) => {
+              const vocalistId = vocalist.id || vocalist.specialistId;
+              const vocalistName = vocalist.name || vocalist.fullName || `Vocalist ${vocalistId}`;
+              const avatar = vocalist.avatar || vocalist.avatarUrl;
+              const selected = isSelected(vocalist);
+
+              return (
+                <View
+                  key={vocalistId}
+                  style={[
+                    styles.vocalistCard,
+                    selected && styles.vocalistCardSelected,
+                  ]}
+                >
+                  <TouchableOpacity
+                    style={styles.vocalistCardContent}
+                    onPress={() => handleSelect(vocalist)}
+                  >
+                    <View style={styles.vocalistInfo}>
+                      {avatar ? (
+                        <Image source={{ uri: avatar }} style={styles.avatar} />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Ionicons name="person" size={32} color={COLORS.textSecondary} />
+                        </View>
+                      )}
+                      <View style={styles.vocalistDetails}>
+                        <Text style={styles.vocalistName}>{vocalistName}</Text>
+                        {vocalist.gender && (
+                          <Text style={styles.vocalistGender}>
+                            {vocalist.gender === "FEMALE" ? "Nữ" : "Nam"}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    {selected && (
+                      <View style={styles.selectedBadge}>
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => {
+                      navigation.navigate("VocalistDetail", {
+                        specialistId: vocalistId,
+                        vocalist: vocalist,
+                      });
+                    }}
+                  >
+                    <Ionicons name="information-circle-outline" size={24} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Footer with Confirm Button */}
+      {selectedIds.length > 0 && (
+        <View style={styles.footer}>
+          <Text style={styles.selectedCount}>
+            Đã chọn: {selectedIds.length}
+            {allowMultiple && maxSelections > 1 ? ` / ${maxSelections}` : ""}
+          </Text>
+          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+            <Text style={styles.confirmButtonText}>Xác nhận</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  backButton: {
+    padding: SPACING.xs,
+  },
+  headerTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  placeholder: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: SPACING.lg,
+  },
+  filtersCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  filterLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  genderFilterContainer: {
+    flexDirection: "row",
+    gap: SPACING.sm,
+  },
+  genderFilterButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
+  },
+  genderFilterButtonSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  genderFilterText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  genderFilterTextSelected: {
+    color: COLORS.white,
+  },
+  genresContainer: {
+    marginTop: SPACING.sm,
+  },
+  genreTag: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: SPACING.sm,
+  },
+  genreTagSelected: {
+    backgroundColor: COLORS.primary + "15",
+    borderColor: COLORS.primary,
+  },
+  genreTagText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+  },
+  genreTagTextSelected: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  resultCount: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+  },
+  loadingContainer: {
+    padding: SPACING.xl,
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.textSecondary,
+  },
+  emptyContainer: {
+    padding: SPACING.xl,
+    alignItems: "center",
+  },
+  emptyText: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.textSecondary,
+  },
+  vocalistsList: {
+    gap: SPACING.md,
+  },
+  vocalistCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: "transparent",
+    marginBottom: SPACING.sm,
+  },
+  vocalistCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flex: 1,
+  },
+  detailButton: {
+    padding: SPACING.sm,
+    marginLeft: SPACING.sm,
+  },
+  vocalistCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "10",
+  },
+  vocalistInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: SPACING.md,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: SPACING.md,
+  },
+  vocalistDetails: {
+    flex: 1,
+  },
+  vocalistName: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: SPACING.xs / 2,
+  },
+  vocalistGender: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  selectedBadge: {
+    marginLeft: SPACING.sm,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  selectedCount: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  confirmButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  confirmButtonText: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "700",
+    color: COLORS.white,
+  },
+});
+
+export default VocalistSelectionScreen;
+
