@@ -77,11 +77,6 @@ chat:
   service:
     base-url: http://localhost:8088
 
-# Notification Service Configuration
-notification:
-  service:
-    base-url: http://localhost:8085
-
 # Billing Service Configuration
 billing:
   service:

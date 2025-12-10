@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
     name = "identity-service",
-    url = "${identity.service.base-url:http://localhost:8081}",
+    url = "${identity.service.base-url:http://identity-service:8081}",
     path = "/admin/users"
 )
 public interface IdentityServiceFeignClient {

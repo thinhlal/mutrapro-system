@@ -111,10 +111,6 @@ management:
     export:
       prometheus:
         enabled: true
-        
-notification:
-  service:
-    base-url: ${NOTIFICATION_SERVICE_BASE_URL:http://notification-service:8085}
 
 logging:
   level:

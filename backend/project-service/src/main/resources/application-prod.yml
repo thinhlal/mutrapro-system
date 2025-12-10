@@ -72,27 +72,22 @@ app:
 # Request Service Configuration
 request:
   service:
-    base-url: ${REQUEST_SERVICE_URL:http://request-service:8084}
+    base-url: ${REQUEST_SERVICE_BASE_URL:http://request-service:8084}
 
 # Chat Service Configuration
 chat:
   service:
-    base-url: ${CHAT_SERVICE_URL:http://chat-service:8088}
+    base-url: ${CHAT_SERVICE_BASE_URL:http://chat-service:8088}
 
 # Billing Service Configuration
 billing:
   service:
-    base-url: ${BILLING_SERVICE_URL:http://billing-service:8083}
-
-# Notification Service Configuration
-notification:
-  service:
-    base-url: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
+    base-url: ${BILLING_SERVICE_BASE_URL:http://billing-service:8083}
 
 # Specialist Service Configuration
 specialist:
   service:
-    base-url: ${SPECIALIST_SERVICE_URL:http://specialist-service:8086}
+    base-url: ${SPECIALIST_SERVICE_BASE_URL:http://specialist-service:8086}
 
 # AWS S3 Configuration
 aws:

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  */
 @FeignClient(
     name = "project-service",
-    url = "${project.service.base-url:http://localhost:8082}"
+    url = "${project.service.base-url:http://project-service:8082}"
 )
 public interface ProjectServiceFeignClient {
 

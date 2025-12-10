@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @FeignClient(
     name = "chat-service",
-    url = "${chat.service.base-url:http://localhost:8088}"
+    url = "${chat.service.base-url:http://chat-service:8088}"
 )
 public interface ChatServiceFeignClient {
 

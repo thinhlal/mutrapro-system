@@ -41,6 +41,16 @@ aws:
     secret-key: ${AWS_S3_SECRET_KEY:}
     bucket-name: ${AWS_S3_BUCKET_NAME:mutrapro-dev-files}
 
+# Project Service Configuration
+project:
+  service:
+    base-url: ${PROJECT_SERVICE_BASE_URL:http://project-service:8082}
+
+# Identity Service Configuration
+identity:
+  service:
+    base-url: ${IDENTITY_SERVICE_BASE_URL:http://identity-service:8081}
+
 # Management & Actuator
 management:
   endpoints:

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @FeignClient(
     name = "request-service",
-    url = "${request.service.base-url:http://localhost:8084}",
+    url = "${request.service.base-url:http://request-service:8084}",
     path = "/requests"
 )
 public interface RequestServiceFeignClient {

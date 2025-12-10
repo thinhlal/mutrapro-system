@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @FeignClient(
     name = "specialist-service",
-    url = "${specialist.service.base-url:http://localhost:8086}"
+    url = "${specialist.service.base-url:http://specialist-service:8086}"
 )
 public interface SpecialistServiceFeignClient {
 

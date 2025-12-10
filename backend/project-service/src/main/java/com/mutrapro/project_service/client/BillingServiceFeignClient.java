@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.FeignClient;
  */
 @FeignClient(
     name = "billing-service",
-    url = "${billing.service.base-url}"
+    url = "${billing.service.base-url:http://billing-service:8083}"
 )
 public interface BillingServiceFeignClient {
     // Feign client methods sẽ được thêm khi cần

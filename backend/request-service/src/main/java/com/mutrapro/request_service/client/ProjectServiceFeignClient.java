@@ -17,7 +17,7 @@ import java.util.Map;
  */
 @FeignClient(
     name = "project-service",
-    url = "${project.service.base-url:http://localhost:8082}",
+    url = "${project.service.base-url:http://project-service:8082}",
     path = ""
 )
 public interface ProjectServiceFeignClient {

@@ -129,11 +129,11 @@ services:
       - AWS_S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
       - AWS_S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
       # Service URLs (match với application-prod.yml)
-      - REQUEST_SERVICE_URL=${REQUEST_SERVICE_URL:-http://request-service:8084}
-      - CHAT_SERVICE_URL=${CHAT_SERVICE_URL:-http://chat-service:8088}
-      - BILLING_SERVICE_URL=${BILLING_SERVICE_URL:-http://billing-service:8083}
-      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL:-http://notification-service:8085}
-      - SPECIALIST_SERVICE_URL=${SPECIALIST_SERVICE_URL:-http://specialist-service:8086}
+      # Spring Boot relaxed binding: REQUEST_SERVICE_BASE_URL -> request.service.base-url
+      - REQUEST_SERVICE_BASE_URL=${REQUEST_SERVICE_BASE_URL:-http://request-service:8084}
+      - CHAT_SERVICE_BASE_URL=${CHAT_SERVICE_BASE_URL:-http://chat-service:8088}
+      - BILLING_SERVICE_BASE_URL=${BILLING_SERVICE_BASE_URL:-http://billing-service:8083}
+      - SPECIALIST_SERVICE_BASE_URL=${SPECIALIST_SERVICE_BASE_URL:-http://specialist-service:8086}
       # E-Signature Configuration (match với application-prod.yml)
       - ESIGN_OTP_EXPIRATION_MINUTES=${ESIGN_OTP_EXPIRATION_MINUTES:-5}
       - ESIGN_OTP_MAX_ATTEMPTS=${ESIGN_OTP_MAX_ATTEMPTS:-3}
@@ -335,6 +335,9 @@ services:
       - AWS_S3_REGION=${AWS_S3_REGION:-ap-southeast-1}
       - AWS_S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
       - AWS_S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      # Service URLs (match với application-prod.yml)
+      - PROJECT_SERVICE_BASE_URL=${PROJECT_SERVICE_BASE_URL:-http://project-service:8082}
+      - IDENTITY_SERVICE_BASE_URL=${IDENTITY_SERVICE_BASE_URL:-http://identity-service:8081}
     networks:
       - mutrapro-network
     restart: unless-stopped
@@ -368,8 +371,6 @@ services:
       - JWT_REFRESHABLE_DURATION=${JWT_REFRESHABLE_DURATION:-86400}
       # Outbox Configuration (match với application-prod.yml)
       - OUTBOX_MAX_RETRIES=${OUTBOX_MAX_RETRIES:-3}
-      # Service URLs (match với application-prod.yml)
-      - NOTIFICATION_SERVICE_BASE_URL=${NOTIFICATION_SERVICE_BASE_URL:-http://notification-service:8085}
       # Swagger Configuration (match với application-prod.yml)
       - SWAGGER_ENABLED=${SWAGGER_ENABLED:-false}
       # Kafka Topic Names (match với application-prod.yml - có default values)
