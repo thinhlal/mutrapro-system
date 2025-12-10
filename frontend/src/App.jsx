@@ -109,6 +109,7 @@ import ManagerChatPage from './pages/manager/Chat/ManagerChatPage';
 import RevisionRequestsManagement from './pages/manager/RevisionRequests/RevisionRequestsManagement';
 import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
+import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
 
 // AI Transcription Pages
 import KlangTranscriptionPanel from './pages/ai-transcription/KlangTranscriptionPanel.jsx';
@@ -473,6 +474,10 @@ function App() {
             <Route
               path="studio-bookings"
               element={<StudioBookingsManagement />}
+            />
+            <Route
+              path="studio-bookings/:bookingId"
+              element={<StudioBookingDetailPage />}
             />
             <Route
               path="tasks/:contractId/:assignmentId"

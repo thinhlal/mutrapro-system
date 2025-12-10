@@ -1,12 +1,11 @@
 package com.mutrapro.project_service.service;
 
-import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
 import com.mutrapro.project_service.dto.request.ArtistBookingInfo;
 import com.mutrapro.project_service.dto.request.CreateStudioBookingRequest;
 import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
-import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.project_service.dto.response.BookingArtistResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.entity.BookingArtist;
@@ -60,7 +59,6 @@ public class StudioBookingService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     BookingArtistRepository bookingArtistRepository;
-    RequestServiceFeignClient requestServiceFeignClient;
     TaskAssignmentRepository taskAssignmentRepository;
     SpecialistServiceFeignClient specialistServiceFeignClient;
     TaskAssignmentService taskAssignmentService;
@@ -418,6 +416,19 @@ public class StudioBookingService {
      * Map StudioBooking entity sang StudioBookingResponse
      */
     private StudioBookingResponse mapToResponse(StudioBooking booking) {
+        // Lấy danh sách artists tham gia booking
+        List<BookingArtist> bookingArtists = bookingArtistRepository.findByBookingBookingId(booking.getBookingId());
+        List<BookingArtistResponse> artists = bookingArtists.stream()
+            .map(ba -> BookingArtistResponse.builder()
+                .bookingArtistId(ba.getBookingArtistId())
+                .specialistId(ba.getSpecialistId())
+                .role(ba.getRole())
+                .isPrimary(ba.getIsPrimary())
+                .artistFee(ba.getArtistFee())
+                .skillId(ba.getSkillId())
+                .build())
+            .toList();
+        
         return StudioBookingResponse.builder()
             .bookingId(booking.getBookingId())
             .userId(booking.getUserId())
@@ -450,6 +461,7 @@ public class StudioBookingService {
             .refundPolicyJson(booking.getRefundPolicyJson())
             .createdAt(booking.getCreatedAt())
             .updatedAt(booking.getUpdatedAt())
+            .artists(artists)
             .build();
     }
     

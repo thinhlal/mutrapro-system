@@ -72,8 +72,9 @@ export const getAllSpecialists = async (filters = {}) => {
  */
 export const getSpecialistById = async specialistId => {
   try {
+    // Thử dùng manager endpoint trước (cho manager)
     const response = await axiosInstance.get(
-      API_ENDPOINTS.SPECIALISTS.ADMIN.GET_BY_ID(specialistId)
+      API_ENDPOINTS.SPECIALISTS.MANAGER.GET_BY_ID(specialistId)
     );
     return response.data;
   } catch (error) {

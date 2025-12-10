@@ -422,6 +422,8 @@ export const API_ENDPOINTS = {
     MANAGER: {
       // GET /manager/specialists?specialization=
       GET_AVAILABLE: `${SPECIALIST_PATH}/manager/specialists`,
+      // GET /manager/specialists/{id}
+      GET_BY_ID: id => `${SPECIALIST_PATH}/manager/specialists/${id}`,
     },
     // Public endpoints (for customers)
     PUBLIC: {

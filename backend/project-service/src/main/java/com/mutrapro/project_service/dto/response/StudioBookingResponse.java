@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -55,5 +56,6 @@ public class StudioBookingResponse {
     String refundPolicyJson;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
+    List<BookingArtistResponse> artists;  // Danh sách artists tham gia booking (cho luồng 2)
 }
 

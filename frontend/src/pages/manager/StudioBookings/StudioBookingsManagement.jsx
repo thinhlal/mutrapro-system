@@ -11,18 +11,20 @@ import {
   Spin,
   Card,
   DatePicker,
+  Tooltip,
 } from 'antd';
 import {
   EyeOutlined,
   ReloadOutlined,
   CalendarOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getStudioBookings } from '../../../services/studioBookingService';
 import { useNavigate } from 'react-router-dom';
 import styles from './StudioBookingsManagement.module.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const BOOKING_STATUS = [
@@ -87,14 +89,13 @@ const StudioBookingsManagement = () => {
   const applyFilters = () => {
     let filtered = [...bookings];
 
-    // Filter by search text (bookingId, contractId, milestoneId, studioName)
+    // Filter by search text (bookingId, contractId, milestoneId)
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(booking => 
         booking.bookingId?.toLowerCase().includes(searchLower) ||
         booking.contractId?.toLowerCase().includes(searchLower) ||
-        booking.milestoneId?.toLowerCase().includes(searchLower) ||
-        booking.studioName?.toLowerCase().includes(searchLower)
+        booking.milestoneId?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -117,23 +118,36 @@ const StudioBookingsManagement = () => {
     }
   };
 
+  const handleCopyBookingId = (bookingId) => {
+    navigator.clipboard.writeText(bookingId);
+    message.success('Đã copy Booking ID');
+  };
+
+  const handleViewBookingDetail = (bookingId) => {
+    navigate(`/manager/studio-bookings/${bookingId}`);
+  };
+
   const columns = [
     {
       title: 'Booking ID',
       dataIndex: 'bookingId',
       key: 'bookingId',
-      width: 200,
+      width: 120,
       render: (text) => (
-        <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-          {text?.substring(0, 8)}...
-        </span>
+        <Space>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+            {text?.substring(0, 8)}...
+          </span>
+          <Tooltip title="Copy Booking ID">
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => handleCopyBookingId(text)}
+            />
+          </Tooltip>
+        </Space>
       ),
-    },
-    {
-      title: 'Studio',
-      dataIndex: 'studioName',
-      key: 'studioName',
-      width: 150,
     },
     {
       title: 'Ngày',
@@ -153,13 +167,6 @@ const StudioBookingsManagement = () => {
       ),
     },
     {
-      title: 'Duration',
-      dataIndex: 'durationHours',
-      key: 'durationHours',
-      width: 100,
-      render: (hours) => hours ? `${hours}h` : 'N/A',
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -171,40 +178,51 @@ const StudioBookingsManagement = () => {
       ),
     },
     {
-      title: 'Contract',
-      dataIndex: 'contractId',
-      key: 'contractId',
+      title: 'Type Booking',
+      dataIndex: 'context',
+      key: 'context',
       width: 150,
-      render: (contractId) => contractId ? (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => handleViewContract(contractId)}
-        >
-          {contractId.substring(0, 8)}...
-        </Button>
-      ) : 'N/A',
+      render: (context) => {
+        const contextLabels = {
+          CONTRACT_RECORDING: 'Contract Recording',
+          STANDALONE_BOOKING: 'Standalone Booking',
+          PRE_CONTRACT_HOLD: 'Pre Contract Hold',
+        };
+        const contextColors = {
+          CONTRACT_RECORDING: 'blue',
+          STANDALONE_BOOKING: 'green',
+          PRE_CONTRACT_HOLD: 'orange',
+        };
+        return (
+          <Tag color={contextColors[context] || 'default'}>
+            {contextLabels[context] || context || 'N/A'}
+          </Tag>
+        );
+      },
     },
     {
-      title: 'Milestone',
-      key: 'milestone',
+      title: 'Session Type',
+      dataIndex: 'sessionType',
+      key: 'sessionType',
       width: 150,
-      render: (_, record) => record.milestoneId ? (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => handleViewMilestone(record.contractId, record.milestoneId)}
-        >
-          {record.milestoneId.substring(0, 8)}...
-        </Button>
-      ) : 'N/A',
+      render: (sessionType) => (
+        <Tag color="purple">
+          {sessionType || 'N/A'}
+        </Tag>
+      ),
     },
     {
       title: 'Total Cost',
       dataIndex: 'totalCost',
       key: 'totalCost',
       width: 120,
-      render: (cost) => cost ? `${cost.toLocaleString()} VND` : '0 VND',
+      render: (cost, record) => {
+        // Ẩn Total Cost cho booking CONTRACT_RECORDING (luồng 2) vì không tính total_cost
+        if (record.context === 'CONTRACT_RECORDING') {
+          return <span style={{ color: '#999' }}>N/A</span>;
+        }
+        return cost ? `${cost.toLocaleString()} VND` : '0 VND';
+      },
     },
     {
       title: 'Created At',
@@ -212,6 +230,22 @@ const StudioBookingsManagement = () => {
       key: 'createdAt',
       width: 150,
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : 'N/A',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 100,
+      fixed: 'right',
+      render: (_, record) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewBookingDetail(record.bookingId)}
+        >
+          Chi tiết
+        </Button>
+      ),
     },
   ];
 
@@ -226,7 +260,7 @@ const StudioBookingsManagement = () => {
           {/* Filters */}
           <Space wrap>
             <Input
-              placeholder="Tìm kiếm (Booking ID, Contract ID, Milestone ID, Studio)"
+              placeholder="Tìm kiếm (Booking ID, Contract ID, Milestone ID)"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 300 }}
