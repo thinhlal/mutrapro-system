@@ -91,25 +91,25 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-  assigned: 'Đã gán',
-  accepted_waiting: 'Đã nhận - Chờ',
-  ready_to_start: 'Sẵn sàng làm',
-  in_progress: 'Đang thực hiện',
-  ready_for_review: 'Chờ duyệt',
-  revision_requested: 'Yêu cầu chỉnh sửa',
-  in_revision: 'Đang chỉnh sửa',
-  delivery_pending: 'Chờ giao hàng',
-  waiting_customer_review: 'Chờ Customer review',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
+  assigned: 'Assigned',
+  accepted_waiting: 'Accepted - Waiting',
+  ready_to_start: 'Ready to start',
+  in_progress: 'In progress',
+  ready_for_review: 'Ready for review',
+  revision_requested: 'Revision requested',
+  in_revision: 'In revision',
+  delivery_pending: 'Pending delivery',
+  waiting_customer_review: 'Waiting customer review',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
 };
 
 const FILE_STATUS_LABELS = {
-  uploaded: 'Đã upload',
-  pending_review: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Đã từ chối',
-  delivered: 'Đã giao',
+  uploaded: 'Uploaded',
+  pending_review: 'Pending review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  delivered: 'Delivered',
 };
 
 const FILE_STATUS_COLORS = {
@@ -122,12 +122,12 @@ const FILE_STATUS_COLORS = {
 
 const SUBMISSION_STATUS_LABELS = {
   draft: 'Draft',
-  pending_review: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Đã từ chối',
-  delivered: 'Đã gửi',
-  customer_accepted: 'Đã chấp nhận',
-  customer_rejected: 'Khách từ chối - Yêu cầu chỉnh sửa',
+  pending_review: 'Pending review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  delivered: 'Delivered',
+  customer_accepted: 'Customer accepted',
+  customer_rejected: 'Customer rejected - Needs revision',
 };
 
 const SUBMISSION_STATUS_COLORS = {
@@ -274,7 +274,7 @@ const TaskDetailPage = () => {
       // (sẽ được trigger bởi useEffect khi task thay đổi)
     } catch (error) {
       console.error('Error loading data:', error);
-      message.error('Lỗi khi tải dữ liệu task');
+      message.error('Failed to load task data');
     } finally {
       setLoading(false);
     }
@@ -288,7 +288,7 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading task:', error);
-      message.error('Lỗi khi tải thông tin task');
+      message.error('Failed to load task info');
     }
   };
 
@@ -362,12 +362,12 @@ const TaskDetailPage = () => {
         }
       } catch (error) {
         console.error('Error loading submissions:', error);
-        message.error('Lỗi khi tải danh sách submissions');
+        message.error('Failed to load submissions');
         setSubmissions([]);
       }
     } catch (error) {
       console.error('Error loading files:', error);
-      message.error('Lỗi khi tải danh sách files');
+      message.error('Failed to load files');
       setSubmissions([]);
     } finally {
       setFilesLoading(false);
@@ -397,12 +397,12 @@ const TaskDetailPage = () => {
       setActionLoading(true);
       const response = await approveFile(fileId);
       if (response?.status === 'success') {
-        message.success('Đã duyệt file thành công');
+        message.success('Approved file successfully');
         await loadFiles();
       }
     } catch (error) {
       console.error('Error approving file:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi duyệt file');
+      message.error(error?.response?.data?.message || 'Failed to approve file');
     } finally {
       setActionLoading(false);
     }
@@ -410,7 +410,7 @@ const TaskDetailPage = () => {
 
   const handleRequestRevision = async () => {
     if (!selectedFileForRevision || !revisionReason.trim()) {
-      message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
+      message.warning('Please enter a revision reason');
       return;
     }
     try {
@@ -420,7 +420,7 @@ const TaskDetailPage = () => {
         revisionReason
       );
       if (response?.status === 'success') {
-        message.success('Đã yêu cầu chỉnh sửa file');
+        message.success('Requested file revision');
         setRevisionModalVisible(false);
         setSelectedFileForRevision(null);
         setRevisionReason('');
@@ -429,7 +429,7 @@ const TaskDetailPage = () => {
     } catch (error) {
       console.error('Error requesting revision:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi yêu cầu chỉnh sửa file'
+        error?.response?.data?.message || 'Failed to request file revision'
       );
     } finally {
       setActionLoading(false);
@@ -441,7 +441,7 @@ const TaskDetailPage = () => {
       setActionLoading(true);
       const response = await deliverSubmission(submissionId);
       if (response?.status === 'success') {
-        message.success('Đã gửi submission cho khách hàng');
+        message.success('Sent submission to customer');
         await loadFiles();
         await loadTask();
       }
@@ -449,7 +449,7 @@ const TaskDetailPage = () => {
       console.error('Error delivering submission:', error);
       message.error(
         error?.response?.data?.message ||
-          'Lỗi khi gửi submission cho khách hàng'
+          'Failed to send submission to customer'
       );
     } finally {
       setActionLoading(false);
@@ -461,14 +461,14 @@ const TaskDetailPage = () => {
       setActionLoading(true);
       const response = await reviewSubmission(submissionId, 'approve');
       if (response?.status === 'success') {
-        message.success('Đã duyệt submission thành công');
+        message.success('Approved submission successfully');
         // Reload cả task assignment và submissions để cập nhật status
         await Promise.all([loadTask(), loadFiles()]);
       }
     } catch (error) {
       console.error('Error approving submission:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi duyệt submission'
+        error?.response?.data?.message || 'Failed to approve submission'
       );
     } finally {
       setActionLoading(false);
@@ -477,7 +477,7 @@ const TaskDetailPage = () => {
 
   const handleRejectSubmission = async () => {
     if (!submissionRejectReason || submissionRejectReason.trim().length === 0) {
-      message.warning('Vui lòng nhập lý do từ chối');
+      message.warning('Please enter a rejection reason');
       return;
     }
     try {
@@ -488,7 +488,7 @@ const TaskDetailPage = () => {
         submissionRejectReason
       );
       if (response?.status === 'success') {
-        message.success('Đã từ chối submission');
+        message.success('Rejected submission');
         setRejectionReasonModalVisible(false);
         setSelectedSubmissionForReject(null);
         setSubmissionRejectReason('');
@@ -499,7 +499,7 @@ const TaskDetailPage = () => {
     } catch (error) {
       console.error('Error rejecting submission:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi từ chối submission'
+        error?.response?.data?.message || 'Failed to reject submission'
       );
     } finally {
       setActionLoading(false);
@@ -510,7 +510,7 @@ const TaskDetailPage = () => {
     if (!selectedRevisionRequest) return;
 
     if (reviewRevisionAction === 'reject' && !reviewRevisionNote.trim()) {
-      message.warning('Vui lòng nhập lý do từ chối');
+      message.warning('Please enter a rejection reason');
       return;
     }
 
@@ -524,8 +524,8 @@ const TaskDetailPage = () => {
       if (response?.status === 'success') {
         message.success(
           reviewRevisionAction === 'approve'
-            ? 'Đã duyệt revision request'
-            : 'Đã từ chối revision request'
+            ? 'Approved revision request'
+            : 'Rejected revision request'
         );
         setReviewRevisionModalVisible(false);
         setSelectedRevisionRequest(null);
@@ -537,7 +537,7 @@ const TaskDetailPage = () => {
     } catch (error) {
       console.error('Error reviewing revision request:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi review revision request'
+        error?.response?.data?.message || 'Failed to review revision request'
       );
     } finally {
       setActionLoading(false);
@@ -546,19 +546,19 @@ const TaskDetailPage = () => {
 
   const handleResolveIssue = async () => {
     if (!contractId || !assignmentId) {
-      message.warning('Thiếu thông tin contract hoặc assignment');
+      message.warning('Missing contract or assignment info');
       return;
     }
     try {
       setActionLoading(true);
       const response = await resolveIssue(contractId, assignmentId);
       if (response?.status === 'success') {
-        message.success('Đã cho phép specialist tiếp tục task');
+        message.success('Allowed specialist to continue the task');
         await loadTask();
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi resolve issue');
+      message.error(error?.response?.data?.message || 'Failed to resolve issue');
     } finally {
       setActionLoading(false);
     }
@@ -566,7 +566,7 @@ const TaskDetailPage = () => {
 
   const handleCancelTaskByManager = async () => {
     if (!contractId || !assignmentId) {
-      message.warning('Thiếu thông tin contract hoặc assignment');
+      message.warning('Missing contract or assignment info');
       return;
     }
     try {
@@ -574,16 +574,16 @@ const TaskDetailPage = () => {
       const response = await cancelTaskByManager(contractId, assignmentId);
       if (response?.status === 'success') {
         message.success(
-          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
+          'Task cancelled successfully. Redirecting to create a new task...'
         );
-        // Navigate đến workspace với data pre-filled từ task cũ
+        // Navigate to workspace with data pre-filled from old task
         navigate(
           `/manager/milestone-assignments/${contractId}/new?milestoneId=${task.milestoneId}&taskType=${task.taskType}&excludeSpecialistId=${task.specialistId}`
         );
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.response?.data?.message || 'Lỗi khi hủy task');
+      message.error(error?.response?.data?.message || 'Failed to cancel task');
     } finally {
       setActionLoading(false);
     }

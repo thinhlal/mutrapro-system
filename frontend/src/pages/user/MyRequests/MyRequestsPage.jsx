@@ -54,7 +54,7 @@ const MyRequestsContent = () => {
     total: 0,
   });
 
-  // Load requests với phân trang
+  // Load requests with pagination
   const loadRequests = async (
     status = '',
     requestType = '',
@@ -64,7 +64,7 @@ const MyRequestsContent = () => {
     try {
       setLoading(true);
 
-      // Xử lý 2 case pending đặc biệt ở client-side
+      // Handle two special pending cases on client-side
       const isPendingNoManager = status === 'pending_no_manager';
       const isPendingHasManager = status === 'pending_has_manager';
 
@@ -75,14 +75,14 @@ const MyRequestsContent = () => {
         sort: 'createdAt,desc',
       };
 
-      // Chỉ thêm status nếu có giá trị (không phải empty string)
+      // Only add status if it has value (not empty string)
       if (isPendingNoManager || isPendingHasManager) {
         filters.status = 'pending';
       } else if (status && status.trim() !== '') {
         filters.status = status;
       }
 
-      // Thêm requestType nếu có giá trị
+      // Add requestType if provided
       if (requestType && requestType.trim() !== '') {
         filters.requestType = requestType;
       }
@@ -90,10 +90,10 @@ const MyRequestsContent = () => {
       const response = await getMyRequests(filters);
 
       if (response && response.status === 'success') {
-        // API trả về Page object hoặc array trực tiếp
+        // API can return a Page object or a plain array
         const pageData = response.data;
         console.log('pageData', pageData);
-        // Kiểm tra xem pageData là array hay Page object
+        // Check whether pageData is an array or Page object
         let data = [];
         let paginationInfo = {
           current: 1,
@@ -102,7 +102,7 @@ const MyRequestsContent = () => {
         };
 
         if (Array.isArray(pageData)) {
-          // Nếu là array trực tiếp (Spring có thể serialize Page thành array)
+          // If it's a direct array (Spring may serialize Page into array)
           data = pageData;
           paginationInfo = {
             current: 1,
@@ -110,7 +110,7 @@ const MyRequestsContent = () => {
             total: pageData.length,
           };
         } else if (pageData && typeof pageData === 'object') {
-          // Nếu là Page object với structure {content: [...], number: 0, size: 10, ...}
+          // If it's a Page object with structure {content: [...], number: 0, size: 10, ...}
           data = pageData.content || [];
           paginationInfo = {
             current: (pageData.number || 0) + 1, // Spring Data page starts from 0
@@ -119,7 +119,7 @@ const MyRequestsContent = () => {
           };
         }
 
-        // Filter client-side cho 2 case đặc biệt (chỉ áp dụng cho trang hiện tại)
+        // Client-side filter for the two special cases (current page only)
         if (isPendingNoManager) {
           data = data.filter(r => !r.managerUserId);
         } else if (isPendingHasManager) {
@@ -129,24 +129,24 @@ const MyRequestsContent = () => {
         setRequests(data);
         setPagination(paginationInfo);
 
-        // Clear bookings cũ và load bookings mới cho recording requests
+        // Clear old bookings and load bookings for recording requests
         setBookings({});
         const recordingRequests = data.filter(r => r.requestType === 'recording');
         if (recordingRequests.length > 0) {
           loadBookings(recordingRequests.map(r => r.requestId));
         }
       } else {
-        message.error('Không thể tải danh sách requests');
+        message.error('Unable to load requests');
       }
     } catch (error) {
       console.error('Error loading requests:', error);
-      message.error(error.message || 'Lỗi khi tải danh sách requests');
+      message.error(error.message || 'Failed to load requests');
     } finally {
       setLoading(false);
     }
   };
 
-  // Load bookings cho recording requests
+  // Load bookings for recording requests
   const loadBookings = async (requestIds) => {
     if (!requestIds || requestIds.length === 0) return;
     
@@ -159,7 +159,7 @@ const MyRequestsContent = () => {
             return { requestId, booking: response.data };
           }
         } catch (error) {
-          // Không hiển thị error vì booking có thể chưa tồn tại
+          // Do not show error because booking may not exist yet
           console.log(`No booking found for requestId: ${requestId}`);
         }
         return null;
@@ -180,20 +180,20 @@ const MyRequestsContent = () => {
     }
   };
 
-  // Load data khi component mount lần đầu
+  // Load data on first mount
   useEffect(() => {
     loadRequests(selectedStatus, selectedServiceType, 0, pagination.pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Chỉ chạy 1 lần khi mount
+  }, []); // Run once on mount
 
-  // Load data khi filter thay đổi
+  // Reload data when filters change
   useEffect(() => {
     if (selectedStatus !== undefined || selectedServiceType !== undefined) {
-      // Reset về trang 1 khi filter thay đổi
+      // Reset to page 1 when filters change
       loadRequests(selectedStatus, selectedServiceType, 0, pagination.pageSize);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatus, selectedServiceType]); // Chạy khi selectedStatus hoặc selectedServiceType thay đổi
+  }, [selectedStatus, selectedServiceType]); // Run when status or service type changes
 
   const handleStatusChange = value => {
     setSelectedStatus(value);
@@ -220,57 +220,57 @@ const MyRequestsContent = () => {
         ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
         description: hasManager
-          ? 'Manager đang chuẩn bị hợp đồng.'
-          : 'Đang chờ manager nhận request.',
+          ? 'Manager is preparing the contract.'
+          : 'Waiting for manager to accept the request.',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
-        description: 'Hợp đồng đã được gửi cho bạn.',
+        description: 'Contract has been sent to you.',
       },
       contract_approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt hợp đồng - Chờ ký',
-        description: 'Bạn đã duyệt nội dung, vui lòng hoàn tất e-sign.',
+        text: 'Contract approved - awaiting signature',
+        description: 'You approved the content, please complete e-sign.',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
         text: 'Contract signed',
-        description: 'Hợp đồng đã ký, chờ thanh toán deposit.',
+        description: 'Contract signed, awaiting deposit payment.',
       },
       awaiting_assignment: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
         text: 'Awaiting assignment',
         description:
-          'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
+          'Deposit paid. Waiting for manager to assign tasks and start work.',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
         text: 'In progress',
-        description: 'Dịch vụ đang được thực hiện.',
+        description: 'Service is in progress.',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
         text: 'Completed',
-        description: 'Request đã hoàn thành.',
+        description: 'Request completed.',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
         text: 'Cancelled',
-        description: 'Request đã bị hủy.',
+        description: 'Request was cancelled.',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
         text: 'Rejected',
-        description: 'Request đã bị từ chối.',
+        description: 'Request was rejected.',
       },
     };
     return (
@@ -278,7 +278,7 @@ const MyRequestsContent = () => {
         color: 'default',
         icon: null,
         text: status,
-        description: 'Trạng thái hiện tại của request.',
+        description: 'Current request status.',
       }
     );
   };
@@ -446,7 +446,7 @@ const MyRequestsContent = () => {
                       </div>
                     )}
 
-                    {/* Hiển thị genres và purpose cho arrangement requests */}
+                    {/* Show genres and purpose for arrangement requests */}
                     {(request.requestType === 'arrangement' ||
                       request.requestType === 'arrangement_with_recording') &&
                       request.genres &&
@@ -495,7 +495,7 @@ const MyRequestsContent = () => {
                       </div>
                     )}
 
-                    {/* Hiển thị thông tin booking cơ bản cho recording requests */}
+                    {/* Show basic booking info for recording requests */}
                     {request.requestType === 'recording' && bookings[request.requestId] && (
                       <>
                         {bookings[request.requestId].bookingDate && (

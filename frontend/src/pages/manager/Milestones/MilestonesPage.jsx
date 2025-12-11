@@ -459,11 +459,10 @@ const MilestonesPage = () => {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-            Quản lý Milestones
+          Milestones Management
           </Title>
           <Text type="secondary">
-            Danh sách milestones và tasks. Click "Xem chi tiết" để quản lý tasks
-            của milestone.
+          List of milestones and tasks. Click "View Details" to manage the tasks of a milestone.
           </Text>
         </div>
         <Button

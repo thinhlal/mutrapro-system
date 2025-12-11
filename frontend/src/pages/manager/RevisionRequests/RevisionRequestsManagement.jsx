@@ -278,7 +278,7 @@ const RevisionRequestsManagement = () => {
             }}
           >
             <Title level={3} style={{ margin: 0 }}>
-              Quản lý Revision Requests
+            Managing Revision Requests
             </Title>
             <Space>
               <Select
