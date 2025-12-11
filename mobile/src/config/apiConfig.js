@@ -24,6 +24,7 @@ const REQUEST_PATH = `${API_PREFIX}/requests`;
 const CHAT_PATH = `${API_PREFIX}/chat`;
 const NOTIFICATIONS_PATH = `${API_PREFIX}/notifications`;
 const SPECIALIST_PATH = `${API_PREFIX}/specialists`;
+const STUDIO_BOOKINGS_PATH = `${API_PREFIX}/projects/studio-bookings`;
 
 // API Endpoints - giống như web
 export const API_ENDPOINTS = {
@@ -170,6 +171,47 @@ export const API_ENDPOINTS = {
       GET_SPECIALIST_DETAIL: (specialistId) =>
         `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
     },
+  },
+
+  // === Equipment (Recording) ===
+  EQUIPMENT: {
+    // GET /requests/equipment?skillId=&includeInactive=&includeUnavailable=
+    GET_ALL: `${REQUEST_PATH}/equipment`,
+  },
+
+  // === Studio Booking (Recording) ===
+  STUDIO_BOOKINGS: {
+    // GET /projects/studio-bookings/available-slots?date=YYYY-MM-DD
+    GET_AVAILABLE_SLOTS: (date) =>
+      `${STUDIO_BOOKINGS_PATH}/available-slots?date=${date}`,
+    // GET /projects/studio-bookings/available-artists-for-request?date=&startTime=&endTime=&skillId=&roleType=&genres=
+    GET_AVAILABLE_ARTISTS_FOR_REQUEST: (
+      date,
+      startTime,
+      endTime,
+      skillId = null,
+      roleType = null,
+      genres = null
+    ) => {
+      const params = new URLSearchParams();
+      if (date) params.append('date', date);
+      if (startTime) params.append('startTime', startTime);
+      if (endTime) params.append('endTime', endTime);
+      if (skillId) params.append('skillId', skillId);
+      if (roleType) params.append('roleType', roleType);
+      if (genres && Array.isArray(genres)) {
+        genres.forEach(g => params.append('genres', g));
+      }
+      return `${STUDIO_BOOKINGS_PATH}/available-artists-for-request${
+        params.toString() ? `?${params.toString()}` : ''
+      }`;
+    },
+    // POST /projects/studio-bookings/from-request/{requestId}
+    CREATE_FROM_SERVICE_REQUEST: requestId =>
+      `${STUDIO_BOOKINGS_PATH}/from-request/${requestId}`,
+    // GET /projects/studio-bookings/by-request/{requestId}
+    GET_BY_REQUEST_ID: requestId =>
+      `${STUDIO_BOOKINGS_PATH}/by-request/${requestId}`,
   },
 };
 

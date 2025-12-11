@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import RequestCard from "../../components/RequestCard";
 import { getMyRequests } from "../../services/serviceRequestService";
+import { getBookingByRequestId } from "../../services/studioBookingService";
 
 const MyRequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
@@ -26,6 +27,7 @@ const MyRequestsScreen = ({ navigation }) => {
     total: 0,
     hasMore: true,
   });
+  const [bookingMap, setBookingMap] = useState({});
 
   const STATUS_OPTIONS = [
     { value: "", label: "All Status" },
@@ -109,8 +111,10 @@ const MyRequestsScreen = ({ navigation }) => {
 
         if (isLoadMore) {
           setRequests((prev) => [...prev, ...data]);
+          await loadBookingsForRecording(data);
         } else {
           setRequests(data);
+          await loadBookingsForRecording(data);
         }
         setPagination(paginationInfo);
       }
@@ -142,6 +146,37 @@ const MyRequestsScreen = ({ navigation }) => {
   const handleRequestPress = (request) => {
     // Navigate to request detail screen
     navigation.navigate("RequestDetail", { requestId: request.requestId });
+  };
+
+  const loadBookingsForRecording = async (requestsList) => {
+    const recordingRequests = requestsList.filter((r) => r.requestType === "recording");
+    if (recordingRequests.length === 0) return;
+    try {
+      const entries = await Promise.all(
+        recordingRequests.map(async (r) => {
+          try {
+            const resp = await getBookingByRequestId(r.requestId);
+            if (resp?.status === "success" && resp?.data) {
+              return [r.requestId, resp.data];
+            } else if (resp?.data) {
+              return [r.requestId, resp.data];
+            }
+          } catch (err) {
+            return null;
+          }
+          return null;
+        })
+      );
+      const map = {};
+      entries.forEach((e) => {
+        if (e && e[0]) {
+          map[e[0]] = e[1];
+        }
+      });
+      setBookingMap((prev) => ({ ...prev, ...map }));
+    } catch (error) {
+      console.error("Error loading bookings for requests:", error);
+    }
   };
 
   const renderFilterModal = () => (
@@ -260,6 +295,7 @@ const MyRequestsScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <RequestCard
             request={item}
+            booking={bookingMap[item.requestId]}
             onPress={() => handleRequestPress(item)}
           />
         )}

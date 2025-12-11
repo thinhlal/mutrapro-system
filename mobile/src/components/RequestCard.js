@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
 
-const RequestCard = ({ request, onPress }) => {
+const RequestCard = ({ request, onPress, booking }) => {
   const getStatusConfig = (status, hasManager) => {
     const configs = {
       pending: {
@@ -21,7 +21,7 @@ const RequestCard = ({ request, onPress }) => {
       contract_approved: {
         color: COLORS.info,
         icon: "checkmark-circle-outline",
-        text: "Đã duyệt hợp đồng - Chờ ký",
+        text: "Contract approved - awaiting signature",
         bgColor: COLORS.info + "15",
       },
       contract_signed: {
@@ -163,6 +163,34 @@ const RequestCard = ({ request, onPress }) => {
               Guests: {request.externalGuestCount} {request.externalGuestCount === 1 ? "person" : "people"}
             </Text>
           </View>
+        )}
+
+        {/* Booking info for recording */}
+        {request.requestType === "recording" && booking && (
+          <>
+            {booking.bookingDate && (
+              <View style={styles.infoRow}>
+                <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.infoText}>Date: {booking.bookingDate}</Text>
+              </View>
+            )}
+            {booking.startTime && booking.endTime && (
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.infoText}>
+                  Time: {booking.startTime} - {booking.endTime}
+                </Text>
+              </View>
+            )}
+            {booking.totalCost !== undefined && (
+              <View style={styles.infoRow}>
+                <Ionicons name="cash-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.infoText}>
+                  Total: {booking.totalCost.toLocaleString("vi-VN")} VND
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </View>
 

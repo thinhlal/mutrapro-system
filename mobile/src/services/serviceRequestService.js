@@ -9,19 +9,19 @@ import axiosInstance from '../utils/axiosInstance';
  *
  * @param {Object} requestData - Dữ liệu request
  * @param {string} requestData.requestType - 'transcription' | 'arrangement' | 'arrangement_with_recording' | 'recording'
- * @param {string} requestData.title - Tiêu đề
- * @param {string} requestData.description - Mô tả yêu cầu
- * @param {string} requestData.contactName - Tên liên hệ
- * @param {string} requestData.contactPhone - Số điện thoại
- * @param {string} requestData.contactEmail - Email liên hệ
- * @param {number} requestData.tempoPercentage - Tốc độ tempo (%) (optional, default 100)
- * @param {number} requestData.durationMinutes - Thời lượng (phút)
- * @param {Array<string>} requestData.instrumentIds - Danh sách ID nhạc cụ
- * @param {boolean} requestData.hasVocalist - Có ca sĩ không (optional)
- * @param {number} requestData.externalGuestCount - Số lượng khách mời (optional)
- * @param {Array<string>} requestData.genres - Danh sách genres (optional, cho arrangement)
- * @param {string} requestData.purpose - Mục đích (optional, cho arrangement)
- * @param {Array<Object>} requestData.files - Danh sách files upload (with uri property)
+ * @param {string} requestData.title - Title
+ * @param {string} requestData.description - Description
+ * @param {string} requestData.contactName - Contact name
+ * @param {string} requestData.contactPhone - Contact phone
+ * @param {string} requestData.contactEmail - Contact email
+ * @param {number} requestData.tempoPercentage - Tempo speed (%) (optional, default 100)
+ * @param {number} requestData.durationMinutes - Duration (minutes)
+ * @param {Array<string>} requestData.instrumentIds - Instrument IDs
+ * @param {boolean} requestData.hasVocalist - Has vocalist (optional)
+ * @param {number} requestData.externalGuestCount - Guest count (optional)
+ * @param {Array<string>} requestData.genres - Genres (optional, for arrangement)
+ * @param {string} requestData.purpose - Purpose (optional, for arrangement)
+ * @param {Array<Object>} requestData.files - Files to upload (with uri property)
  *
  * @returns {Promise} ApiResponse
  */
