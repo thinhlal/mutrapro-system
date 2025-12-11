@@ -16,17 +16,7 @@ import {
   Input,
   Upload,
 } from 'antd';
-import {
-  CheckCircleOutlined,
-  ArrowLeftOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
-  ToolOutlined,
-  UploadOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+// Icons removed per request
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../../../contexts/AuthContext';
@@ -39,7 +29,7 @@ const { TextArea } = Input;
 
 /**
  * Step 4: Review & Submit
- * Tổng hợp tất cả thông tin đã chọn, nhập thông tin service request và submit
+ * Aggregate selected info, enter service request details, and submit
  */
 export default function RecordingStep4({ formData, onBack, onSubmit }) {
   const navigate = useNavigate();
@@ -52,7 +42,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
   // Destructure formData
   const { step1, step2, step3 } = formData;
 
-  // Initialize form với user info
+  // Initialize form with user info
   useEffect(() => {
     if (user) {
       form.setFieldsValue({
@@ -81,14 +71,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                     file.type === 'application/xml';
     
     if (!isAudio) {
-      toast.error('Chỉ chấp nhận file audio, PDF hoặc XML!');
+      toast.error('Only audio, PDF or XML files are accepted!');
       return Upload.LIST_IGNORE;
     }
 
     // Validate file size (100MB)
     const isLt100M = file.size / 1024 / 1024 < 100;
     if (!isLt100M) {
-      toast.error('File phải nhỏ hơn 100MB!');
+      toast.error('File must be smaller than 100MB!');
       return Upload.LIST_IGNORE;
     }
 
@@ -107,12 +97,12 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     let participantFee = 0;
     let equipmentRentalFee = 0;
 
-    // Vocal fees (nếu thuê internal vocalists)
+    // Vocal fees (when hiring internal vocalists)
     if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
       step2.selectedVocalists.forEach(vocalist => {
-        // Lấy hourlyRate từ vocalist data, fallback về 500k nếu không có
+        // Use hourlyRate from vocalist data, fallback to 500k if missing
         const rate = vocalist.hourlyRate || 500000;
-        // Tính fee = hourlyRate * số giờ booking (từ step1)
+        // Calculate fee = hourlyRate * booking hours (from step1)
         const hours = step1?.durationHours || 2;
         participantFee += rate * hours;
       });
@@ -121,14 +111,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     // Instrument fees
     if (step3?.instruments && step3.instruments.length > 0) {
       step3.instruments.forEach(instrument => {
-        // Performer fee (nếu thuê internal artist)
+        // Performer fee (when hiring internal artist)
         if (
           instrument.performerSource === 'INTERNAL_ARTIST' &&
           instrument.specialistId
         ) {
-          // Lấy hourlyRate từ instrument data, fallback về 300k nếu không có
+          // Use hourlyRate from instrument data, fallback to 300k if missing
           const rate = instrument.hourlyRate || 300000;
-          // Tính fee = hourlyRate * số giờ booking (từ step1)
+          // Calculate fee = hourlyRate * booking hours (from step1)
           console.log('instrument', instrument);
           console.log('rate', rate);
           console.log('step1?.durationHours', step1?.durationHours);
@@ -137,14 +127,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           console.log('participantFee', participantFee);
         }
 
-        // Equipment rental fee (nếu thuê equipment từ studio)
+        // Equipment rental fee (when renting from studio)
         if (
           instrument.instrumentSource === 'STUDIO_SIDE' &&
           instrument.equipmentId
         ) {
           const quantity = instrument.quantity || 1;
           const rentalFee = instrument.rentalFee || 0;
-          // Tính fee = rentalFee (per hour) × quantity × số giờ booking
+          // Calculate fee = rentalFee (per hour) x quantity x booking hours
           const hours = step1?.durationHours || 2;
           equipmentRentalFee += rentalFee * quantity * hours;
         }
@@ -179,7 +169,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           rate: rate,
           hours: hours,
           fee: fee,
-          formula: `${rate.toLocaleString('vi-VN')} VND/giờ × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+          formula: `${rate.toLocaleString('vi-VN')} VND/hour x ${hours} hrs = ${fee.toLocaleString('vi-VN')} VND`,
         });
       });
     }
@@ -199,7 +189,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             rate: rate,
             hours: hours,
             fee: fee,
-            formula: `${rate.toLocaleString('vi-VN')} VND/giờ × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+            formula: `${rate.toLocaleString('vi-VN')} VND/hour x ${hours} hrs = ${fee.toLocaleString('vi-VN')} VND`,
           });
         }
 
@@ -218,7 +208,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             quantity: quantity,
             hours: hours,
             fee: fee,
-            formula: `${rentalFee.toLocaleString('vi-VN')} VND/giờ × ${quantity} cái × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+            formula: `${rentalFee.toLocaleString('vi-VN')} VND/hour x ${quantity} unit(s) x ${hours} hrs = ${fee.toLocaleString('vi-VN')} VND`,
           });
         }
       });
@@ -235,10 +225,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     const requiredEquipment = [];
     const hours = step1?.durationHours || 2;
 
-    // Add vocalists từ step2
+    // Add vocalists from step2
     if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
       step2.selectedVocalists.forEach(vocalist => {
-        // Calculate total fee = hourlyRate × hours
+        // Calculate total fee = hourlyRate x hours
         const hourlyRate = vocalist.hourlyRate || 500000;
         const totalFee = hourlyRate * hours;
         
@@ -246,12 +236,12 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           specialistId: vocalist.specialistId,
           roleType: 'VOCAL',
           performerSource: 'INTERNAL_ARTIST',
-          participantFee: totalFee, // ← Gửi giá trị đã tính (hourlyRate × hours)
+          participantFee: totalFee, // Send calculated value (hourlyRate x hours)
         });
       });
     }
 
-    // Add customer self vocalist nếu có
+    // Add customer self vocalist if any
     if (step2?.vocalChoice === 'CUSTOMER_SELF' || step2?.vocalChoice === 'BOTH') {
       participants.push({
         roleType: 'VOCAL',
@@ -259,12 +249,12 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       });
     }
 
-    // Add instrumentalists và equipment từ step3
+    // Add instrumentalists and equipment from step3
     if (step3?.instruments && step3.instruments.length > 0) {
       step3.instruments.forEach(instrument => {
         // Add performer
         if (instrument.performerSource === 'INTERNAL_ARTIST' && instrument.specialistId) {
-          // Calculate total fee = hourlyRate × hours
+          // Calculate total fee = hourlyRate x hours
           const hourlyRate = instrument.hourlyRate || 400000;
           const totalFee = hourlyRate * hours;
           
@@ -275,7 +265,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             skillId: instrument.skillId,
             instrumentSource: instrument.instrumentSource,
             equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
-            participantFee: totalFee, // ← Gửi giá trị đã tính (hourlyRate × hours)
+            participantFee: totalFee, // Send calculated value (hourlyRate x hours)
           });
         } else if (instrument.performerSource === 'CUSTOMER_SELF') {
           participants.push({
@@ -291,14 +281,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         if (instrument.instrumentSource === 'STUDIO_SIDE' && instrument.equipmentId) {
           const quantity = instrument.quantity || 1;
           const rentalFeePerHour = instrument.rentalFee || 0;
-          // Calculate total: rentalFeePerHour × quantity × hours
+          // Calculate total: rentalFeePerHour x quantity x hours
           const totalRentalFee = rentalFeePerHour * quantity * hours;
           
           requiredEquipment.push({
             equipmentId: instrument.equipmentId,
             quantity: quantity,
             rentalFeePerUnit: rentalFeePerHour,
-            totalRentalFee: totalRentalFee, // ← Gửi giá trị đã tính (rentalFee × quantity × hours)
+            totalRentalFee: totalRentalFee, // Send calculated value (rentalFee x quantity x hours)
           });
         }
       });
@@ -319,7 +309,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     try {
       // Validate file upload (MANDATORY)
       if (!uploadedFile) {
-        toast.error('Vui lòng upload file (reference track, backing track, hoặc sheet music)');
+        toast.error('Please upload a file (reference track, backing track, or sheet music)');
         return;
       }
 
@@ -331,7 +321,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       // Calculate duration in minutes
       const durationMinutes = Math.round((step1?.durationHours || 2) * 60);
 
-      // 1. Tạo service request
+      // 1. Create service request
       // Note: serviceRequestService.jsx will automatically convert to FormData and upload files
       const requestData = {
         requestType: 'recording',
@@ -350,17 +340,17 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       const requestId = requestResponse?.data?.requestId;
 
       if (!requestId) {
-        throw new Error('Không thể lấy requestId từ response');
+        throw new Error('Unable to get requestId from response');
       }
 
-      // 2. Tạo booking từ service request
+      // 2. Create booking from service request
       const bookingData = transformBookingData();
       const bookingResponse = await createBookingFromServiceRequest(requestId, bookingData);
 
       // Clear session storage
       sessionStorage.removeItem('recordingFlowData');
 
-      toast.success('Tạo request và booking thành công!');
+      toast.success('Created request and booking successfully!');
 
       // Navigate to request detail
       const bookingId = bookingResponse?.data?.bookingId;
@@ -387,12 +377,12 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       instrument: instrument.skillName,
       performer:
         instrument.performerSource === 'CUSTOMER_SELF'
-          ? 'Tôi tự chơi'
-          : instrument.specialistName || 'Chưa chọn',
+          ? 'I will play'
+          : instrument.specialistName || 'Not selected',
       instrumentSource:
         instrument.instrumentSource === 'CUSTOMER_SIDE'
-          ? 'Tôi tự mang'
-          : instrument.equipmentName || 'Chưa chọn',
+          ? 'I will bring my own'
+          : instrument.equipmentName || 'Not selected',
       quantity: instrument.quantity || 1,
       fee:
         instrument.instrumentSource === 'STUDIO_SIDE'
@@ -402,28 +392,28 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
   const instrumentColumns = [
     {
-      title: 'Nhạc cụ',
+      title: 'Instrument',
       dataIndex: 'instrument',
       key: 'instrument',
     },
     {
-      title: 'Người chơi',
+      title: 'Performer',
       dataIndex: 'performer',
       key: 'performer',
     },
     {
-      title: 'Nguồn nhạc cụ',
+      title: 'Instrument source',
       dataIndex: 'instrumentSource',
       key: 'instrumentSource',
     },
     {
-      title: 'Số lượng',
+      title: 'Quantity',
       dataIndex: 'quantity',
       key: 'quantity',
       align: 'center',
     },
     {
-      title: 'Phí thuê',
+      title: 'Rental fee',
       dataIndex: 'fee',
       key: 'fee',
       align: 'right',
@@ -434,12 +424,9 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
   return (
     <Card className={styles.container}>
       <div className={styles.header}>
-        <Title level={3}>
-          <CheckCircleOutlined className={styles.headerIcon} />
-          Xem lại thông tin booking
-        </Title>
+        <Title level={3}>Review booking details</Title>
         <Text type="secondary">
-          Vui lòng kiểm tra kỹ thông tin trước khi xác nhận
+          Please double-check the information before confirming
         </Text>
       </div>
 
@@ -448,10 +435,9 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         <Card
           type="inner"
           title={
-            <Space>
-              <CalendarOutlined />
-              <span>Thời gian booking</span>
-            </Space>
+              <Space>
+                <span>Booking time</span>
+              </Space>
           }
           className={styles.section}
         >
@@ -459,30 +445,30 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                  Ngày
+                  Date
                 </Text>
-                <Tag color="blue" icon={<CalendarOutlined />} style={{ fontSize: 14 }}>
-                  {step1?.bookingDate || 'Chưa chọn'}
+                <Tag color="blue" style={{ fontSize: 14 }}>
+                  {step1?.bookingDate || 'Not selected'}
                 </Tag>
               </div>
             </Col>
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                  Giờ bắt đầu
+                  Start time
                 </Text>
-                <Tag color="green" icon={<ClockCircleOutlined />} style={{ fontSize: 14 }}>
-                  {step1?.bookingStartTime || 'Chưa chọn'}
+                <Tag color="green" style={{ fontSize: 14 }}>
+                  {step1?.bookingStartTime || 'Not selected'}
                 </Tag>
               </div>
             </Col>
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                  Giờ kết thúc
+                  End time
                 </Text>
-                <Tag color="orange" icon={<ClockCircleOutlined />} style={{ fontSize: 14 }}>
-                  {step1?.bookingEndTime || 'Chưa chọn'}
+                <Tag color="orange" style={{ fontSize: 14 }}>
+                  {step1?.bookingEndTime || 'Not selected'}
                 </Tag>
               </div>
             </Col>
@@ -494,28 +480,17 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           type="inner"
           title={
             <Space>
-              <UserOutlined />
               <span>Vocal Setup</span>
             </Space>
           }
           className={styles.section}
         >
           {step2?.vocalChoice === 'NONE' && (
-            <Alert
-              message="Không thu vocal"
-              type="info"
-              showIcon
-              icon={<UserOutlined />}
-            />
+            <Alert message="No vocal recording" type="info" showIcon={false} />
           )}
 
           {step2?.vocalChoice === 'CUSTOMER_SELF' && (
-            <Alert
-              message="Tôi tự hát"
-              type="success"
-              showIcon
-              icon={<UserOutlined />}
-            />
+            <Alert message="I will sing" type="success" showIcon={false} />
           )}
 
           {(step2?.vocalChoice === 'INTERNAL_ARTIST' ||
@@ -523,15 +498,14 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <>
               {step2.vocalChoice === 'BOTH' && (
                 <Alert
-                  message="Tôi tự hát + Thuê ca sĩ nội bộ"
+                  message="I will sing + hire in-house vocalist(s)"
                   type="success"
-                  showIcon
-                  icon={<TeamOutlined />}
+                  showIcon={false}
                   style={{ marginBottom: 16 }}
                 />
               )}
               <Descriptions
-                title="Ca sĩ nội bộ đã chọn"
+                title="Selected in-house vocalists"
                 column={1}
                 bordered
                 size="small"
@@ -557,7 +531,6 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           type="inner"
           title={
             <Space>
-              <ToolOutlined />
               <span>Instrument Setup</span>
             </Space>
           }
@@ -565,9 +538,8 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         >
           {step3?.hasLiveInstruments === false ? (
             <Alert
-              message="Không sử dụng nhạc cụ live (chỉ dùng beat/backing track)"
+              message="No live instruments (beat/backing track only)"
               type="info"
-              showIcon
             />
           ) : (
             <Table
@@ -585,19 +557,13 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         {/* File Upload Section */}
         <Card
           type="inner"
-          title={
-            <Space>
-              <UploadOutlined />
-              <span>Upload File *</span>
-            </Space>
-          }
+          title="Upload File *"
           className={styles.section}
         >
           <Alert
-            message="File bắt buộc"
-            description="Vui lòng upload reference track, backing track, hoặc sheet music (PDF/XML)"
+            message="File required"
+            description="Please upload a reference track, backing track, or sheet music (PDF/XML)"
             type="info"
-            showIcon
             style={{ marginBottom: 16 }}
           />
           <Upload
@@ -607,9 +573,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             onRemove={handleRemoveFile}
             maxCount={1}
           >
-            <Button icon={<UploadOutlined />} size="large">
-              Chọn file
-            </Button>
+            <Button size="large">Choose file</Button>
           </Upload>
           {fileList.length > 0 && (
             <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
@@ -623,13 +587,13 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         {/* Fee Summary */}
         <Card
           type="inner"
-          title={<span>💰 Tổng phí dự kiến</span>}
+          title={<span>Estimated total fee</span>}
           className={styles.feeSection}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <Statistic
-                title="Phí Participant"
+                title="Participant fee"
                 value={fees.participantFee}
                 suffix="VND"
                 valueStyle={{ color: '#1890ff' }}
@@ -640,18 +604,18 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
             <Col xs={24} sm={8}>
               <Statistic
-                title="Phí thiết bị"
+                title="Equipment fee"
                 value={fees.equipmentRentalFee}
                 suffix="VND"
                 valueStyle={{ color: '#52c41a' }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                (Equipment từ studio)
+                (Equipment from studio)
               </Text>
             </Col>
             <Col xs={24} sm={8}>
               <Statistic
-                title="Tổng cộng"
+                title="Total"
                 value={fees.totalFee}
                 suffix="VND"
                 valueStyle={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 24 }}
@@ -661,18 +625,17 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
           {fees.totalFee === 0 && (
             <Alert
-              message="Phí tổng = 0 VND"
-              description="Bạn đang tự thực hiện (tự hát, tự chơi nhạc cụ, tự mang thiết bị)"
+              message="Total fee = 0 VND"
+              description="You are self-performing (self vocal, self instruments, self equipment)"
               type="info"
-              showIcon
               style={{ marginTop: 16 }}
             />
           )}
 
-          {/* Chi tiết cách tính */}
+          {/* Breakdown details */}
           <div style={{ marginTop: 24 }}>
             <Title level={5} style={{ marginBottom: 16 }}>
-              📋 Chi tiết cách tính:
+              Breakdown details:
             </Title>
             <Descriptions
               bordered
@@ -689,10 +652,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                     <Space>
                       <Text strong>
                         {item.type === 'vocalist'
-                          ? '🎤 Ca sĩ'
+                          ? '🎤 Vocalist'
                           : item.type === 'instrumentalist'
-                          ? '🎸 Nhạc công'
-                          : '🔧 Thiết bị'}
+                          ? '🎸 Instrumentalist'
+                          : '🔧 Equipment'}
                       </Text>
                       <Text type="secondary">({item.name})</Text>
                     </Space>
@@ -706,7 +669,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               <Descriptions.Item
                 label={
                   <Text strong style={{ fontSize: 16 }}>
-                    💵 Tổng cộng
+                     Grand total
                   </Text>
                 }
               >
@@ -723,7 +686,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         {/* Service Request Information Form */}
         <Card
           type="inner"
-          title={<span>📝 Thông tin Service Request</span>}
+          title={<span>Service Request Information</span>}
           className={styles.section}
         >
           <Form
@@ -734,25 +697,25 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label="Tiêu đề"
+                  label="Title"
                   name="title"
-                  rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+                  rules={[{ required: true, message: 'Please enter a title' }]}
                 >
-                  <Input size="large" placeholder="Ví dụ: Thu âm bài hát mới của tôi" />
+                  <Input size="large" placeholder="E.g. Record my new song" />
                 </Form.Item>
               </Col>
               <Col xs={24}>
                 <Form.Item
-                  label="Mô tả"
+                  label="Description"
                   name="description"
                   rules={[
-                    { required: true, message: 'Vui lòng nhập mô tả' },
-                    { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' },
+                    { required: true, message: 'Please enter a description' },
+                    { min: 10, message: 'Description must be at least 10 characters' },
                   ]}
                 >
                   <TextArea
                     rows={4}
-                    placeholder="Mô tả chi tiết về yêu cầu thu âm của bạn..."
+                    placeholder="Describe your recording request in detail..."
                   />
                 </Form.Item>
               </Col>
@@ -760,18 +723,18 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label="Tên liên hệ"
+                  label="Contact name"
                   name="contactName"
-                  rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+                  rules={[{ required: true, message: 'Please enter a name' }]}
                 >
-                  <Input size="large" placeholder="Họ và tên" />
+                  <Input size="large" placeholder="Full name" />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
-                  label="Số điện thoại"
+                  label="Phone number"
                   name="contactPhone"
-                  rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+                  rules={[{ required: true, message: 'Please enter a phone number' }]}
                 >
                   <Input size="large" placeholder="+84 ..." />
                 </Form.Item>
@@ -780,11 +743,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
-                  label="Email liên hệ"
+                  label="Contact email"
                   name="contactEmail"
                   rules={[
-                    { required: true, message: 'Vui lòng nhập email' },
-                    { type: 'email', message: 'Email không hợp lệ' },
+                    { required: true, message: 'Please enter an email' },
+                    { type: 'email', message: 'Invalid email' },
                   ]}
                 >
                   <Input size="large" placeholder="email@example.com" />
@@ -797,23 +760,17 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
       {/* Action Buttons */}
       <div className={styles.actionRow}>
-        <Button
-          size="large"
-          icon={<ArrowLeftOutlined />}
-          onClick={onBack}
-          disabled={submitting}
-        >
+        <Button size="large" onClick={onBack} disabled={submitting}>
           Back to Instrument Setup
         </Button>
         <Button
           type="primary"
           size="large"
-          icon={<CheckCircleOutlined />}
           onClick={handleSubmit}
           loading={submitting}
           className={styles.submitButton}
         >
-          Xác nhận & Submit Booking
+          Confirm & Submit Booking
         </Button>
       </div>
     </Card>

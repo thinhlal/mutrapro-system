@@ -56,7 +56,7 @@ function VocalistSelectionCard({
     }
   };
 
-  // Format data từ backend
+  // Format data from backend
   const avatarUrl = specialist?.avatarUrl || 'https://via.placeholder.com/300';
   const fullName = specialist?.fullName || 'Unknown';
   const bio = specialist?.bio || '';
@@ -89,7 +89,7 @@ function VocalistSelectionCard({
           <div className={styles.hoverOverlay}></div>
           {specialist?.mainDemoPreviewUrl && (
             <div className={styles.audioPlayerContainer}>
-              <Text className={styles.demoText}>Bấm để nghe bản demo</Text>
+              <Text className={styles.demoText}>Tap to listen to the demo</Text>
               <audio
                 controls
                 className={styles.audioPlayer}
@@ -112,7 +112,7 @@ function VocalistSelectionCard({
           </Title>
           {experienceYears > 0 && (
             <Text type="secondary" className={styles.location}>
-              {experienceYears} năm kinh nghiệm
+              {experienceYears} years of experience
             </Text>
           )}
           <div className={styles.rating}>
@@ -174,7 +174,7 @@ function VocalistSelectionCard({
                 style={{ flex: 1 }}
                 disabled={disabled && !isSelected}
               >
-                {isSelected ? 'Selected' : disabled ? 'Đã đủ' : 'Select'}
+                {isSelected ? 'Selected' : disabled ? 'Full' : 'Select'}
               </Button>
             </Space>
           </div>

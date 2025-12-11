@@ -196,7 +196,7 @@ export default function RecordingFlowController() {
           />
         );
       case 3:
-        // Step 4: Review & Submit (với form và submit trực tiếp)
+        // Step 4: Review & Submit (with form and direct submit)
         return (
           <RecordingStep4
             formData={{

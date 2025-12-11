@@ -1,4 +1,4 @@
-// RecordingStep3.jsx - Instrument Setup (Nhạc cụ + Ai chơi + Lấy từ đâu)
+// RecordingStep3.jsx - Instrument Setup (which instruments, who plays, from where)
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -76,7 +76,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         }
       } catch (error) {
         console.error('Error fetching skills:', error);
-        message.error('Không thể tải danh sách nhạc cụ');
+        message.error('Unable to load instrument list');
       } finally {
         setLoadingSkills(false);
       }
@@ -131,12 +131,12 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
   const handleContinue = () => {
     // Validation
     if (hasLiveInstruments === null) {
-      message.error('Vui lòng chọn có sử dụng nhạc cụ live hay không');
+      message.error('Please choose whether live instruments will be used');
       return;
     }
 
     if (hasLiveInstruments && selectedInstruments.length === 0) {
-      message.error('Vui lòng chọn ít nhất 1 nhạc cụ');
+      message.error('Please select at least one instrument');
       return;
     }
 
@@ -147,7 +147,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         !inst.specialistId
       ) {
         message.error(
-          `Vui lòng chọn instrumentalist cho ${inst.skillName}`
+          `Please choose an instrumentalist for ${inst.skillName}`
         );
         return;
       }
@@ -157,7 +157,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         !inst.equipmentId
       ) {
         message.error(
-          `Vui lòng chọn equipment cho ${inst.skillName}`
+          `Please choose equipment for ${inst.skillName}`
         );
         return;
       }
@@ -176,7 +176,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
           Step 3: Instrument Setup
         </Title>
         <Text className={styles.description}>
-          Nhạc cụ nào sẽ được sử dụng trong buổi thu?
+          Which instruments will be used in the session?
         </Text>
       </div>
 
@@ -209,7 +209,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       {/* Has Live Instruments Section */}
       <div className={styles.liveInstrumentsSection}>
         <Text strong style={{ display: 'block', marginBottom: 16 }}>
-          Buổi thu có sử dụng nhạc cụ live không?
+          Will the session use live instruments?
         </Text>
         <Radio.Group
           value={hasLiveInstruments}
@@ -218,14 +218,14 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
           <Space direction="vertical" size={12}>
             <Radio value={false}>
               <Space>
-                <span>Không, chỉ dùng beat/backing track</span>
+                <span>No, only beat/backing track</span>
                 <Tag color="default">No live instruments</Tag>
               </Space>
             </Radio>
             <Radio value={true}>
               <Space>
                 <ToolOutlined />
-                <span>Có, sử dụng nhạc cụ live</span>
+                <span>Yes, use live instruments</span>
                 <Tag color="blue">Live performance</Tag>
               </Space>
             </Radio>
@@ -238,17 +238,17 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         <div className={styles.instrumentSelectionSection}>
           {loadingSkills ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin tip="Đang tải danh sách nhạc cụ..." />
+              <Spin tip="Loading instrument list..." />
             </div>
           ) : availableSkills.length === 0 ? (
             <Empty
-              description="Không có nhạc cụ available"
+              description="No instruments available"
               style={{ padding: '40px 0' }}
             />
           ) : (
             <>
               <Text strong style={{ display: 'block', marginBottom: 16 }}>
-                Chọn nhạc cụ:
+                Select instruments:
               </Text>
               <div className={styles.skillsGrid}>
                 {availableSkills.map(skill => {
@@ -270,9 +270,9 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                 })}
               </div>
 
-              {selectedInstruments.length > 0 && (
+                  {selectedInstruments.length > 0 && (
                 <div className={styles.instrumentConfigSection}>
-                  <Title level={4}>Cấu hình cho từng nhạc cụ:</Title>
+                  <Title level={4}>Configure each instrument:</Title>
                   <Collapse accordion>
                     {selectedInstruments.map(instrument => (
                       <Panel
@@ -375,7 +375,7 @@ function InstrumentConfig({
         }
       } catch (error) {
         console.error('Error fetching instrumentalists:', error);
-        message.error('Không thể tải danh sách instrumentalist');
+        message.error('Unable to load instrumentalist list');
       } finally {
         setLoadingInstrumentalists(false);
       }
@@ -411,7 +411,7 @@ function InstrumentConfig({
         }
       } catch (error) {
         console.error('Error fetching equipment:', error);
-        message.error('Không thể tải danh sách equipment');
+        message.error('Unable to load equipment list');
       } finally {
         setLoadingEquipment(false);
       }
@@ -424,7 +424,7 @@ function InstrumentConfig({
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       {/* Performer Source */}
       <div>
-        <Text strong>Ai sẽ chơi {instrument.skillName}?</Text>
+        <Text strong>Who will play {instrument.skillName}?</Text>
         <Radio.Group
           value={instrument.performerSource}
           onChange={e => {
@@ -441,13 +441,13 @@ function InstrumentConfig({
             <Radio value={PERFORMER_SOURCE.CUSTOMER_SELF}>
               <Space>
                 <UserOutlined />
-                Tôi tự chơi
+                I will play
               </Space>
             </Radio>
             <Radio value={PERFORMER_SOURCE.INTERNAL_ARTIST}>
               <Space>
                 <TeamOutlined />
-                Thuê instrumentalist nội bộ
+                Hire in-house instrumentalist
               </Space>
             </Radio>
           </Space>
@@ -459,11 +459,11 @@ function InstrumentConfig({
             {loadingInstrumentalists ? (
               <Spin size="small" />
             ) : availableInstrumentalists.length === 0 ? (
-              <Text type="secondary">Không có instrumentalist available</Text>
+              <Text type="secondary">No instrumentalists available</Text>
             ) : (
               <Select
                 style={{ width: '100%' }}
-                placeholder="Chọn instrumentalist"
+                placeholder="Select instrumentalist"
                 value={instrument.specialistId}
                 onChange={(value, option) => {
                   const selectedArtist = availableInstrumentalists.find(
@@ -488,7 +488,7 @@ function InstrumentConfig({
 
       {/* Instrument Source */}
       <div>
-        <Text strong>Nhạc cụ lấy từ đâu?</Text>
+        <Text strong>Where will the instrument come from?</Text>
         <Radio.Group
           value={instrument.instrumentSource}
           onChange={e => {
@@ -505,10 +505,10 @@ function InstrumentConfig({
         >
           <Space direction="vertical">
             <Radio value={INSTRUMENT_SOURCE.CUSTOMER_SIDE}>
-              Tôi tự mang
+              I will bring my own
             </Radio>
             <Radio value={INSTRUMENT_SOURCE.STUDIO_SIDE}>
-              Thuê nhạc cụ của studio
+              Rent from studio
             </Radio>
           </Space>
         </Radio.Group>
@@ -519,12 +519,12 @@ function InstrumentConfig({
             {loadingEquipment ? (
               <Spin size="small" />
             ) : availableEquipment.length === 0 ? (
-              <Text type="secondary">Không có equipment available</Text>
+              <Text type="secondary">No equipment available</Text>
             ) : (
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Select
                   style={{ width: '100%' }}
-                  placeholder="Chọn equipment"
+                  placeholder="Select equipment"
                   value={instrument.equipmentId}
                   onChange={(value, option) => {
                     const selectedEq = availableEquipment.find(
@@ -543,7 +543,7 @@ function InstrumentConfig({
                 />
                 {instrument.equipmentId && (
                   <Space>
-                    <Text>Số lượng:</Text>
+                    <Text>Quantity:</Text>
                     <InputNumber
                       min={1}
                       value={instrument.quantity}

@@ -1,4 +1,4 @@
-// RecordingStep5.jsx - Booking Calendar với logic lịch trống/đã có người
+// RecordingStep5.jsx - Booking Calendar with available/occupied logic
 import { useState, useMemo } from 'react';
 import {
   Card,
@@ -18,7 +18,7 @@ import styles from './RecordingStep5.module.css';
 const { Title, Text } = Typography;
 const { RangePicker } = TimePicker;
 
-// Mock data - sẽ thay bằng API call thực tế
+// Mock data - will be replaced with real API calls
 const MOCK_BOOKINGS = {
   '2024-12-20': [
     { start: '09:00', end: '12:00', status: 'booked' },

@@ -64,7 +64,7 @@ export default function RecordingStep1({ data, onComplete }) {
         }
       } catch (error) {
         console.error('Error fetching available slots:', error);
-        message.warning('Không thể tải available slots. Sử dụng slots mặc định.');
+        message.warning('Unable to load available slots. Using default slots.');
         // Fallback: generate slots locally
         generateDefaultSlots();
       } finally {
@@ -75,7 +75,7 @@ export default function RecordingStep1({ data, onComplete }) {
     const generateDefaultSlots = () => {
       // Generate slots theo logic backend: startHour = 8, slotDuration = 2, endHour = 18
       const slots = [];
-      const startHour = 8; // 8 AM - giống backend
+      const startHour = 8; // 8 AM - same as backend
       const endHour = 18; // 6 PM
       const slotDuration = 2; // 2 hours per slot
 

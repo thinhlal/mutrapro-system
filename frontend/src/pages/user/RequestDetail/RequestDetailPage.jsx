@@ -81,12 +81,12 @@ const RequestDetailPage = () => {
           setRequest(response.data);
           console.log('Request data:', response.data);
         } else {
-          message.error('Không thể tải chi tiết request');
+          message.error('Unable to load request details');
           navigate('/my-requests');
         }
       } catch (error) {
         console.error('Error loading request:', error);
-        message.error(error.message || 'Lỗi khi tải chi tiết request');
+        message.error(error.message || 'Failed to load request details');
         navigate('/my-requests');
       } finally {
         setLoading(false);
@@ -111,7 +111,7 @@ const RequestDetailPage = () => {
         }
       } catch (error) {
         console.error('Error loading booking:', error);
-        // Không hiển thị error message vì booking có thể chưa tồn tại
+        // Do not show error because booking may not exist yet
       } finally {
         setLoadingBooking(false);
       }
@@ -133,7 +133,7 @@ const RequestDetailPage = () => {
         }
       } catch (error) {
         console.error('Error loading contracts:', error);
-        // Không hiển thị error nếu chưa có contract
+        // Do not show error if there is no contract yet
       } finally {
         setLoadingContracts(false);
       }
@@ -154,57 +154,57 @@ const RequestDetailPage = () => {
         ),
         text: hasManager ? 'Assigned - pending' : 'Waiting for manager',
         description: hasManager
-          ? 'Manager đã nhận request và đang chuẩn bị hợp đồng.'
-          : 'Đang chờ manager nhận xử lý request của bạn.',
+          ? 'Manager is preparing the contract.'
+          : 'Waiting for manager to accept and process your request.',
       },
       contract_sent: {
         color: 'blue',
         icon: <FileTextOutlined />,
         text: 'Contract sent',
-        description: 'Hợp đồng đã được gửi. Vui lòng kiểm tra và phê duyệt.',
+        description: 'Contract has been sent. Please review and approve.',
       },
       contract_approved: {
         color: 'cyan',
         icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt hợp đồng - Chờ ký',
-        description: 'Bạn đã duyệt nội dung. Hoàn tất e-sign để tiếp tục.',
+        text: 'Contract approved - awaiting signature',
+        description: 'You approved the content. Complete e-sign to continue.',
       },
       contract_signed: {
         color: 'geekblue',
         icon: <FileTextOutlined />,
         text: 'Contract signed',
-        description: 'Hợp đồng đã ký, chờ thanh toán deposit để bắt đầu.',
+        description: 'Contract signed, awaiting deposit payment to start.',
       },
       awaiting_assignment: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
         text: 'Awaiting assignment',
         description:
-          'Bạn đã thanh toán deposit. Chờ manager gán task và bấm Start Work để bắt đầu thực hiện.',
+          'Deposit paid. Waiting for manager to assign tasks and start work.',
       },
       in_progress: {
         color: 'processing',
         icon: <SyncOutlined spin />,
         text: 'In progress',
-        description: 'Dịch vụ đang được thực hiện.',
+        description: 'Service is in progress.',
       },
       completed: {
         color: 'success',
         icon: <CheckCircleOutlined />,
         text: 'Completed',
-        description: 'Request đã hoàn thành.',
+        description: 'Request completed.',
       },
       cancelled: {
         color: 'default',
         icon: <CloseCircleOutlined />,
         text: 'Cancelled',
-        description: 'Request đã bị hủy.',
+        description: 'Request was cancelled.',
       },
       rejected: {
         color: 'error',
         icon: <ExclamationCircleOutlined />,
         text: 'Rejected',
-        description: 'Request đã bị từ chối.',
+        description: 'Request was rejected.',
       },
     };
     return (
@@ -212,7 +212,7 @@ const RequestDetailPage = () => {
         color: 'default',
         icon: null,
         text: status,
-        description: 'Trạng thái hiện tại của request.',
+        description: 'Current request status.',
       }
     );
   };
@@ -259,14 +259,14 @@ const RequestDetailPage = () => {
     try {
       setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await approveContract(contractId);
-      message.success('Đã duyệt contract thành công');
+      message.success('Approved contract successfully');
       // Reload contracts
       const response = await getContractsByRequestId(requestId);
       if (response.status === 'success' && response.data) {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi duyệt contract');
+      message.error(error.message || 'Failed to approve contract');
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -274,14 +274,14 @@ const RequestDetailPage = () => {
 
   const handleRequestChange = async () => {
     if (!selectedContract || !changeReason.trim()) {
-      message.warning('Vui lòng nhập lý do yêu cầu chỉnh sửa');
+      message.warning('Please enter a reason for the change request');
       return;
     }
     const contractId = selectedContract.contractId;
     try {
       setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await requestChangeContract(contractId, changeReason);
-      message.success('Đã gửi yêu cầu chỉnh sửa contract');
+      message.success('Sent contract change request');
       setRequestChangeModalVisible(false);
       setChangeReason('');
       setSelectedContract(null);
@@ -291,7 +291,7 @@ const RequestDetailPage = () => {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi yêu cầu chỉnh sửa contract');
+      message.error(error.message || 'Failed to request contract change');
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -303,7 +303,7 @@ const RequestDetailPage = () => {
     try {
       setActionLoading(prev => ({ ...prev, [contractId]: true }));
       await cancelContract(contractId, reason);
-      message.success('Đã hủy contract thành công');
+      message.success('Cancelled contract successfully');
       setCancelModalVisible(false);
       setSelectedContract(null);
       // Reload contracts
@@ -312,7 +312,7 @@ const RequestDetailPage = () => {
         setContracts(response.data || []);
       }
     } catch (error) {
-      message.error(error.message || 'Lỗi khi hủy contract');
+      message.error(error.message || 'Failed to cancel contract');
     } finally {
       setActionLoading(prev => ({ ...prev, [contractId]: false }));
     }
@@ -382,16 +382,16 @@ const RequestDetailPage = () => {
 
           <Divider />
 
-          {/* Phần đầu: 2 cột - 6 mục trái, 6 mục phải */}
+          {/* First part: 2 columns */}
           <Descriptions bordered column={2} size="middle">
-            {/* Cột trái - 6 mục đầu tiên */}
+            {/* Left column items */}
             <Descriptions.Item label="Request ID">
               <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
                 {request.requestId}
               </span>
             </Descriptions.Item>
 
-            {/* Cột phải - Duration - Chỉ hiển thị cho transcription */}
+            {/* Right column - Duration - transcription only */}
             {request.requestType === 'transcription' ? (
               request.durationMinutes ? (
                 <Descriptions.Item label="Duration">
@@ -408,7 +408,7 @@ const RequestDetailPage = () => {
               {request.title || 'N/A'}
             </Descriptions.Item>
 
-            {/* Cột phải - Tempo - Chỉ hiển thị cho transcription */}
+            {/* Right column - Tempo - transcription only */}
             {request.requestType === 'transcription' ? (
               request.tempoPercentage ? (
                 <Descriptions.Item label="Tempo">
@@ -425,7 +425,7 @@ const RequestDetailPage = () => {
               {request.description || 'No description'}
             </Descriptions.Item>
 
-            {/* Cột phải - Instruments */}
+            {/* Right column - Instruments */}
             {request.requestType !== 'recording' 
             && (request.instruments && request.instruments.length > 0) ||
             (request.instrumentIds && request.instrumentIds.length > 0) && (
@@ -472,7 +472,7 @@ const RequestDetailPage = () => {
               {request.contactName || 'N/A'}
             </Descriptions.Item>
 
-            {/* Service Price - Ẩn cho recording */}
+            {/* Service Price - hidden for recording */}
             {request.requestType !== 'recording' && (
               request.servicePrice ? (
                 <Descriptions.Item label="Service Price">
@@ -489,7 +489,7 @@ const RequestDetailPage = () => {
               {request.contactEmail || 'N/A'}
             </Descriptions.Item>
 
-            {/* Instruments Price - Ẩn cho recording */}
+            {/* Instruments Price - hidden for recording */}
             {request.requestType !== 'recording' && (
               request.instrumentPrice && request.instrumentPrice > 0 ? (
                 <Descriptions.Item label="Instruments Price">
@@ -509,7 +509,7 @@ const RequestDetailPage = () => {
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
-            {/* Total Price - Ẩn cho recording (dùng booking totalCost) */}
+            {/* Total Price - hidden for recording (uses booking totalCost) */}
             {request.requestType !== 'recording' && (
               request.totalPrice ? (
                 <Descriptions.Item label="Total Price">
@@ -525,14 +525,14 @@ const RequestDetailPage = () => {
             )}
           </Descriptions>
 
-          {/* Phần sau: 1 cột - các mục còn lại */}
+          {/* Second part: single column for remaining items */}
           <Descriptions
             bordered
             column={1}
             size="middle"
             style={{ marginTop: 16 }}
           >
-            {/* Các mục có điều kiện cho arrangement/recording */}
+            {/* Conditional items for arrangement/recording */}
             {request.hasVocalist !== undefined &&
               request.requestType === 'arrangement_with_recording' && (
                 <Descriptions.Item label="Vocalist">
@@ -569,7 +569,7 @@ const RequestDetailPage = () => {
                 </Descriptions.Item>
               )}
 
-            {/* Hiển thị genres và purpose cho arrangement requests */}
+            {/* Show genres and purpose for arrangement requests */}
             {(request.requestType === 'arrangement' ||
               request.requestType === 'arrangement_with_recording') && (
               <>
@@ -658,7 +658,7 @@ const RequestDetailPage = () => {
           </Descriptions>
         </Card>
 
-        {/* Studio Booking Section - CHỈ hiển thị cho recording requests */}
+        {/* Studio Booking Section - only for recording requests */}
         {request.requestType === 'recording' && (
           <Card 
             title="🎙️ Studio Booking Information" 
@@ -679,7 +679,7 @@ const RequestDetailPage = () => {
                 )}
                 {booking.durationHours && (
                   <Descriptions.Item label="⏱️ Duration">
-                    {booking.durationHours} giờ
+                    {booking.durationHours} hours
                   </Descriptions.Item>
                 )}
                 {booking.status && (
@@ -719,7 +719,7 @@ const RequestDetailPage = () => {
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
                       {booking.requiredEquipment.map((eq, index) => (
                         <div key={index}>
-                          {eq.equipmentName || 'Equipment'} × {eq.quantity}
+                          {eq.equipmentName || 'Equipment'} x {eq.quantity}
                           {eq.totalRentalFee && (
                             <span style={{ marginLeft: 8, color: '#666' }}>
                               - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
@@ -752,7 +752,7 @@ const RequestDetailPage = () => {
                 )}
               </Descriptions>
             ) : (
-              <Empty description="Chưa có thông tin booking" />
+              <Empty description="No booking information yet" />
             )}
           </Card>
         )}

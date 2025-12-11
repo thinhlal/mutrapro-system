@@ -1,4 +1,4 @@
-// RecordingStep2.jsx - Vocal Setup (Ai hát?)
+// RecordingStep2.jsx - Vocal Setup (who will sing?)
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -73,11 +73,11 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
           setAvailableVocalists(response.data);
         } else {
           setAvailableVocalists([]);
-          message.warning('Không thể tải danh sách vocalist');
+          message.warning('Unable to load vocalist list');
         }
       } catch (error) {
         console.error('Error fetching vocalists:', error);
-        message.error('Lỗi khi tải danh sách vocalist');
+        message.error('Failed to load vocalist list');
         setAvailableVocalists([]);
       } finally {
         setLoadingVocalists(false);
@@ -123,7 +123,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
         vocalChoice === VOCAL_CHOICES.BOTH) &&
       selectedVocalists.length === 0
     ) {
-      message.error('Vui lòng chọn ít nhất 1 vocalist');
+      message.error('Please select at least one vocalist');
       return;
     }
 
@@ -144,7 +144,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
           Step 2: Vocal Setup
         </Title>
         <Text className={styles.description}>
-          Ai sẽ hát trong buổi thu này?
+          Who will sing in this recording session?
         </Text>
       </div>
 
@@ -185,7 +185,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
             <Radio value={VOCAL_CHOICES.NONE} className={styles.radioOption}>
               <Space>
                 <span className={styles.radioLabel}>
-                  Không thu vocal (chỉ nhạc cụ / playback)
+                  No vocal needed (instrumental / playback only)
                 </span>
                 <Tag color="default">Instrumental only</Tag>
               </Space>
@@ -197,7 +197,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
             >
               <Space>
                 <UserOutlined />
-                <span className={styles.radioLabel}>Tôi tự hát</span>
+                <span className={styles.radioLabel}>I will sing</span>
                 <Tag color="green">Self-performance</Tag>
               </Space>
             </Radio>
@@ -209,7 +209,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
               <Space>
                 <TeamOutlined />
                 <span className={styles.radioLabel}>
-                  Tôi muốn thuê ca sĩ nội bộ
+                  I want to hire an in-house vocalist
                 </span>
                 <Tag color="blue">Professional vocalist</Tag>
               </Space>
@@ -219,7 +219,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
               <Space>
                 <TeamOutlined />
                 <span className={styles.radioLabel}>
-                  Tôi tự hát & thuê thêm ca sĩ nội bộ (backing / song ca)
+                  I will sing & hire in-house vocalist(s) (backing/duet)
                 </span>
                 <Tag color="purple">Collaboration</Tag>
               </Space>
@@ -232,27 +232,27 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
       {needsVocalistSelection && (
         <div className={styles.vocalistSelectionSection}>
           <div className={styles.sectionHeader}>
-            <Title level={4}>Chọn Vocalist</Title>
+            <Title level={4}>Select Vocalist</Title>
             <Text type="secondary">
               {vocalChoice === VOCAL_CHOICES.BOTH
-                ? 'Chọn vocalist để hỗ trợ bạn (backing/song ca)'
-                : 'Chọn vocalist chuyên nghiệp cho buổi thu'}
+                ? 'Select vocalists to support you (backing/duet)'
+                : 'Choose a professional vocalist for the session'}
             </Text>
           </div>
 
           {loadingVocalists ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin tip="Đang tải danh sách vocalist..." />
+              <Spin tip="Loading vocalists..." />
             </div>
           ) : availableVocalists.length === 0 ? (
-            <Empty
-              description="Không có vocalist available trong slot này"
+              <Empty
+              description="No vocalists available for this slot"
               style={{ padding: '40px 0' }}
             />
           ) : (
             <>
               <Alert
-                message={`Tìm thấy ${availableVocalists.length} vocalist available`}
+                message={`Found ${availableVocalists.length} vocalist(s) available`}
                 type="success"
                 showIcon
                 style={{ marginBottom: 16 }}

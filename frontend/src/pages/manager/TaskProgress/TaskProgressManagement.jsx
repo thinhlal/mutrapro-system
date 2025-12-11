@@ -867,10 +867,10 @@ export default function TaskProgressManagement() {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-            Quản lý Task
+          Task Management
           </Title>
           <Text type="secondary">
-            Danh sách tất cả tasks. Click "Xem chi tiết" để xem thông tin chi
+          List of all tasks. Click "View Details" to see detailed task information.
             tiết task.
           </Text>
         </div>
