@@ -196,7 +196,7 @@ export default function RecordingFlowController() {
           />
         );
       case 3:
-        // Step 4: Review & Submit
+        // Step 4: Review & Submit (với form và submit trực tiếp)
         return (
           <RecordingStep4
             formData={{
@@ -206,16 +206,6 @@ export default function RecordingFlowController() {
             }}
             onBack={handlePrev}
             onSubmit={() => {
-              // Final step - submit all data
-              const finalData = {
-                step1: flowData.step1,
-                step2: flowData.step2,
-                step3: flowData.step3,
-              };
-              // Navigate to quote page to create service request + booking
-              navigate('/services/quotes/recording', {
-                state: { recordingData: finalData },
-              });
             }}
           />
         );

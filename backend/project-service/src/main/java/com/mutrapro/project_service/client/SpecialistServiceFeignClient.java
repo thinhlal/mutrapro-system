@@ -52,5 +52,13 @@ public interface SpecialistServiceFeignClient {
     @GetMapping("/public/specialists/by-skill/{skillId}")
     ApiResponse<List<Map<String, Object>>> getSpecialistsBySkillId(
         @PathVariable("skillId") String skillId);
+    
+    /**
+     * Lấy thông tin specialist theo specialistId (public endpoint)
+     * GET /public/specialists/{specialistId}
+     * Public endpoint - không cần authentication
+     */
+    @GetMapping("/public/specialists/{specialistId}")
+    ApiResponse<Map<String, Object>> getPublicSpecialistById(@PathVariable String specialistId);
 }
 

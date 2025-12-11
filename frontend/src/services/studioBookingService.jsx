@@ -225,3 +225,18 @@ export const getAvailableArtistsForRequest = async (
     );
   }
 };
+
+/**
+ * Lấy booking information theo requestId
+ * GET /api/v1/project/bookings/by-request/{requestId}
+ */
+export const getBookingByRequestId = async (requestId) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.GET_BY_REQUEST_ID(requestId)
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy booking information' };
+  }
+};

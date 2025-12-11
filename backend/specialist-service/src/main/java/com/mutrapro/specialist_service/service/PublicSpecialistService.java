@@ -1,12 +1,12 @@
 package com.mutrapro.specialist_service.service;
 
+import com.mutrapro.specialist_service.dto.response.SpecialistDetailResponse;
 import com.mutrapro.specialist_service.entity.Specialist;
 import com.mutrapro.specialist_service.entity.SpecialistSkill;
 import com.mutrapro.specialist_service.enums.Gender;
 import com.mutrapro.specialist_service.enums.RecordingRole;
 import com.mutrapro.specialist_service.enums.SpecialistStatus;
 import com.mutrapro.specialist_service.enums.SpecialistType;
-import com.mutrapro.specialist_service.exception.SpecialistNotFoundException;
 import com.mutrapro.specialist_service.repository.SpecialistRepository;
 import com.mutrapro.specialist_service.repository.SpecialistSkillRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +29,7 @@ public class PublicSpecialistService {
     
     private final SpecialistRepository specialistRepository;
     private final SpecialistSkillRepository specialistSkillRepository;
+    private final SpecialistLookupService specialistLookupService;
     
     /**
      * Lấy danh sách vocalists (public access)
@@ -116,14 +117,13 @@ public class PublicSpecialistService {
     
     /**
      * Lấy chi tiết specialist theo specialistId (public access)
+     * Trả về full detail với skills và demos
      */
-    public Map<String, Object> getSpecialistById(String specialistId) {
-        log.info("[getSpecialistById] Getting specialist by ID: {}", specialistId);
+    public SpecialistDetailResponse getSpecialistById(String specialistId) {
+        log.info("[getSpecialistById] Getting specialist detail by ID: {}", specialistId);
         
-        Specialist specialist = specialistRepository.findById(specialistId)
-            .orElseThrow(() -> new SpecialistNotFoundException(specialistId));
-        
-        return toSpecialistMap(specialist);
+        // Dùng SpecialistLookupService để lấy full detail (bao gồm skills và demos)
+        return specialistLookupService.getSpecialistDetail(specialistId);
     }
     
     /**

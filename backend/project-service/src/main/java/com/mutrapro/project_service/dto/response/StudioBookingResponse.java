@@ -57,6 +57,8 @@ public class StudioBookingResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<BookingArtistResponse> artists;  // Danh sách artists tham gia booking (cho luồng 2)
+    List<BookingParticipantInfo> participants;  // Danh sách participants (cho luồng 3 - recording from request)
+    List<BookingEquipmentInfo> requiredEquipment;  // Danh sách equipment (cho luồng 3)
     
     // Arrangement submission info (cho recording milestones)
     ArrangementSubmissionInfo sourceArrangementSubmission;
@@ -85,6 +87,37 @@ public class StudioBookingResponse {
         String fileUrl;
         Long fileSize;
         String mimeType;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class BookingParticipantInfo {
+        String participantId;
+        String specialistId;
+        String specialistName;  // Enriched from specialist-service
+        String roleType;  // VOCAL or INSTRUMENT
+        String performerSource;  // INTERNAL_ARTIST or CUSTOMER_SELF
+        String skillId;
+        String skillName;  // Enriched
+        String instrumentSource;  // STUDIO_SIDE or CUSTOMER_SIDE
+        String equipmentId;
+        BigDecimal participantFee;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class BookingEquipmentInfo {
+        String equipmentId;
+        String equipmentName;  // Enriched from Equipment entity
+        Integer quantity;
+        BigDecimal rentalFeePerUnit;
+        BigDecimal totalRentalFee;
     }
 }
 

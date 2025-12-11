@@ -58,7 +58,6 @@ import DiscoverProsPage from './pages/professionals/Discover/DiscoverProsPage';
 import ServiceRequestPage from './pages/services/ServiceRequest/ServiceRequestPage';
 import TranscriptionQuotePage from './pages/services/quotes/Transcription/TranscriptionQuotePageSimplified';
 import ArrangementQuotePage from './pages/services/quotes/Arrangement/ArrangementQuotePage';
-import RecordingQuotePage from './pages/services/quotes/Recording/RecordingQuotePage';
 import ReviewOrderPage from './pages/services/quotes/ReviewOrder/ReviewOrderPage';
 // Recording Flow
 import RecordingFlowController from './pages/services/ServiceRequest/RecordingFlow/RecordingFlowController';
@@ -403,16 +402,6 @@ function App() {
                 allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
               >
                 <ArrangementQuotePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/services/quotes/recording"
-            element={
-              <ProtectedRoute
-                allowedRoles={['CUSTOMER', 'MANAGER', 'SYSTEM_ADMIN']}
-              >
-                <RecordingQuotePage />
               </ProtectedRoute>
             }
           />

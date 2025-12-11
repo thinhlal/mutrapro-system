@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons';
 import Header from '../../../components/common/Header/Header';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import { useInstrumentStore } from '../../../stores/useInstrumentStore';
 import { formatDurationMMSS } from '../../../utils/timeUtils';
 import {
@@ -55,6 +56,8 @@ const RequestDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState([]);
   const [loadingContracts, setLoadingContracts] = useState(false);
+  const [booking, setBooking] = useState(null);
+  const [loadingBooking, setLoadingBooking] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [requestChangeModalVisible, setRequestChangeModalVisible] =
     useState(false);
@@ -94,6 +97,30 @@ const RequestDetailPage = () => {
       loadRequest();
     }
   }, [requestId, navigate]);
+
+  useEffect(() => {
+    const loadBooking = async () => {
+      if (!requestId || request?.requestType !== 'recording') return;
+      
+      try {
+        setLoadingBooking(true);
+        const response = await getBookingByRequestId(requestId);
+        console.log('Booking data:', response.data);
+        if (response.status === 'success' && response.data) {
+          setBooking(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading booking:', error);
+        // Không hiển thị error message vì booking có thể chưa tồn tại
+      } finally {
+        setLoadingBooking(false);
+      }
+    };
+
+    if (request?.requestType === 'recording') {
+      loadBooking();
+    }
+  }, [requestId, request?.requestType]);
 
   useEffect(() => {
     const loadContracts = async () => {
@@ -399,8 +426,9 @@ const RequestDetailPage = () => {
             </Descriptions.Item>
 
             {/* Cột phải - Instruments */}
-            {(request.instruments && request.instruments.length > 0) ||
-            (request.instrumentIds && request.instrumentIds.length > 0) ? (
+            {request.requestType !== 'recording' 
+            && (request.instruments && request.instruments.length > 0) ||
+            (request.instrumentIds && request.instrumentIds.length > 0) && (
               <Descriptions.Item label="Instruments">
                 <Space wrap>
                   {request.instruments && request.instruments.length > 0
@@ -438,60 +466,62 @@ const RequestDetailPage = () => {
                       })}
                 </Space>
               </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Instruments">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
             )}
 
             <Descriptions.Item label="Contact Name">
               {request.contactName || 'N/A'}
             </Descriptions.Item>
 
-            {/* Cột phải - Service Price */}
-            {request.servicePrice ? (
-              <Descriptions.Item label="Service Price">
-                {formatPrice(request.servicePrice, request.currency || 'VND')}
-              </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Service Price">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
+            {/* Service Price - Ẩn cho recording */}
+            {request.requestType !== 'recording' && (
+              request.servicePrice ? (
+                <Descriptions.Item label="Service Price">
+                  {formatPrice(request.servicePrice, request.currency || 'VND')}
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Service Price">
+                  <span style={{ color: '#999' }}>N/A</span>
+                </Descriptions.Item>
+              )
             )}
 
             <Descriptions.Item label="Contact Email">
               {request.contactEmail || 'N/A'}
             </Descriptions.Item>
 
-            {/* Cột phải - Instruments Price */}
-            {request.instrumentPrice && request.instrumentPrice > 0 ? (
-              <Descriptions.Item label="Instruments Price">
-                {formatPrice(
-                  request.instrumentPrice,
-                  request.currency || 'VND'
-                )}
-              </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Instruments Price">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
+            {/* Instruments Price - Ẩn cho recording */}
+            {request.requestType !== 'recording' && (
+              request.instrumentPrice && request.instrumentPrice > 0 ? (
+                <Descriptions.Item label="Instruments Price">
+                  {formatPrice(
+                    request.instrumentPrice,
+                    request.currency || 'VND'
+                  )}
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Instruments Price">
+                  <span style={{ color: '#999' }}>N/A</span>
+                </Descriptions.Item>
+              )
             )}
 
             <Descriptions.Item label="Phone Number">
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
-            {/* Cột phải - Total Price */}
-            {request.totalPrice ? (
-              <Descriptions.Item label="Total Price">
-                <Tag color="green">
-                  {formatPrice(request.totalPrice, request.currency || 'VND')}
-                </Tag>
-              </Descriptions.Item>
-            ) : (
-              <Descriptions.Item label="Total Price">
-                <span style={{ color: '#999' }}>N/A</span>
-              </Descriptions.Item>
+            {/* Total Price - Ẩn cho recording (dùng booking totalCost) */}
+            {request.requestType !== 'recording' && (
+              request.totalPrice ? (
+                <Descriptions.Item label="Total Price">
+                  <Tag color="green">
+                    {formatPrice(request.totalPrice, request.currency || 'VND')}
+                  </Tag>
+                </Descriptions.Item>
+              ) : (
+                <Descriptions.Item label="Total Price">
+                  <span style={{ color: '#999' }}>N/A</span>
+                </Descriptions.Item>
+              )
             )}
           </Descriptions>
 
@@ -627,6 +657,105 @@ const RequestDetailPage = () => {
             </Descriptions.Item>
           </Descriptions>
         </Card>
+
+        {/* Studio Booking Section - CHỈ hiển thị cho recording requests */}
+        {request.requestType === 'recording' && (
+          <Card 
+            title="🎙️ Studio Booking Information" 
+            style={{ marginTop: '1.5rem' }}
+            loading={loadingBooking}
+          >
+            {booking ? (
+              <Descriptions bordered column={2} size="middle">
+                {booking.bookingDate && (
+                  <Descriptions.Item label="📅 Booking Date">
+                    {booking.bookingDate}
+                  </Descriptions.Item>
+                )}
+                {(booking.startTime && booking.endTime) && (
+                  <Descriptions.Item label="🕒 Time Slot">
+                    {booking.startTime} - {booking.endTime}
+                  </Descriptions.Item>
+                )}
+                {booking.durationHours && (
+                  <Descriptions.Item label="⏱️ Duration">
+                    {booking.durationHours} giờ
+                  </Descriptions.Item>
+                )}
+                {booking.status && (
+                  <Descriptions.Item label="Status">
+                    <Tag color={
+                      booking.status === 'CONFIRMED' ? 'green' : 
+                      booking.status === 'TENTATIVE' ? 'orange' : 
+                      'default'
+                    }>
+                      {booking.status}
+                    </Tag>
+                  </Descriptions.Item>
+                )}
+                
+                {booking.participants && booking.participants.length > 0 && (
+                  <Descriptions.Item label="👥 Participants" span={2}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {booking.participants.map((p, index) => (
+                        <div key={index}>
+                          <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}>
+                            {p.roleType}
+                          </Tag>
+                          {p.specialistName || 'Self'}
+                          {p.participantFee && (
+                            <span style={{ marginLeft: 8, color: '#666' }}>
+                              - {p.participantFee.toLocaleString('vi-VN')} VND
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                
+                {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
+                  <Descriptions.Item label="🎸 Equipment" span={2}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {booking.requiredEquipment.map((eq, index) => (
+                        <div key={index}>
+                          {eq.equipmentName || 'Equipment'} × {eq.quantity}
+                          {eq.totalRentalFee && (
+                            <span style={{ marginLeft: 8, color: '#666' }}>
+                              - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+                
+                {booking.artistFee && booking.artistFee > 0 && (
+                  <Descriptions.Item label="💰 Participant Fee">
+                    {booking.artistFee.toLocaleString('vi-VN')} VND
+                  </Descriptions.Item>
+                )}
+                {booking.equipmentRentalFee && booking.equipmentRentalFee > 0 && (
+                  <Descriptions.Item label="🔧 Equipment Fee">
+                    {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
+                  </Descriptions.Item>
+                )}
+                {booking.totalCost && (
+                  <Descriptions.Item label="💵 Total Cost" span={2}>
+                    <Space>
+                      <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f' }}>
+                        {booking.totalCost.toLocaleString('vi-VN')} VND
+                      </span>
+                    </Space>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            ) : (
+              <Empty description="Chưa có thông tin booking" />
+            )}
+          </Card>
+        )}
 
         {/* Contracts Section */}
         <RequestContractList

@@ -192,13 +192,27 @@ export default function SingerDetailPage() {
 
           // response từ axios là { data: ApiResponse }
           // ApiResponse có structure: { status, message, data: SpecialistDetailResponse }
+          // SpecialistDetailResponse có structure: { specialist, skills, demos }
           const apiResponse = response?.data || response;
-          const detailData = apiResponse?.data || apiResponse;
-
-          if (detailData) {
-            setDetailData(detailData);
+          const specialistDetailData = apiResponse?.data || apiResponse;
+          
+          if (specialistDetailData) {
+            // Backend trả về SpecialistDetailResponse với structure { specialist, skills, demos }
+            if (specialistDetailData.specialist) {
+              // Đúng structure, dùng trực tiếp
+              setDetailData(specialistDetailData);
+            } else {
+              // Fallback: nếu không có structure đúng, coi như toàn bộ data là specialist object
+              // (trường hợp này không nên xảy ra với endpoint mới)
+              setDetailData({
+                specialist: specialistDetailData,
+                skills: [],
+                demos: [],
+              });
+            }
           }
         } catch (error) {
+          console.error('Error fetching specialist detail:', error);
           message.error(error.message || 'Không thể tải thông tin specialist');
         } finally {
           setLoading(false);

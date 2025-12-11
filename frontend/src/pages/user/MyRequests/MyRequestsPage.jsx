@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './MyRequestsPage.module.css';
 import Header from '../../../components/common/Header/Header';
 import { getMyRequests } from '../../../services/serviceRequestService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import {
   getGenreLabel,
   getPurposeLabel,
@@ -45,6 +46,8 @@ const MyRequestsContent = () => {
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedServiceType, setSelectedServiceType] = useState('');
+  const [bookings, setBookings] = useState({}); // Map requestId -> booking data
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -125,6 +128,13 @@ const MyRequestsContent = () => {
 
         setRequests(data);
         setPagination(paginationInfo);
+
+        // Clear bookings cũ và load bookings mới cho recording requests
+        setBookings({});
+        const recordingRequests = data.filter(r => r.requestType === 'recording');
+        if (recordingRequests.length > 0) {
+          loadBookings(recordingRequests.map(r => r.requestId));
+        }
       } else {
         message.error('Không thể tải danh sách requests');
       }
@@ -133,6 +143,40 @@ const MyRequestsContent = () => {
       message.error(error.message || 'Lỗi khi tải danh sách requests');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load bookings cho recording requests
+  const loadBookings = async (requestIds) => {
+    if (!requestIds || requestIds.length === 0) return;
+    
+    try {
+      setLoadingBookings(true);
+      const bookingPromises = requestIds.map(async (requestId) => {
+        try {
+          const response = await getBookingByRequestId(requestId);
+          if (response.status === 'success' && response.data) {
+            return { requestId, booking: response.data };
+          }
+        } catch (error) {
+          // Không hiển thị error vì booking có thể chưa tồn tại
+          console.log(`No booking found for requestId: ${requestId}`);
+        }
+        return null;
+      });
+
+      const results = await Promise.all(bookingPromises);
+      const bookingsMap = {};
+      results.forEach(result => {
+        if (result && result.booking) {
+          bookingsMap[result.requestId] = result.booking;
+        }
+      });
+      setBookings(bookingsMap);
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+    } finally {
+      setLoadingBookings(false);
     }
   };
 
@@ -248,6 +292,16 @@ const MyRequestsContent = () => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+    });
+  };
+
+  const formatBookingDate = dateString => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
     });
   };
 
@@ -422,7 +476,7 @@ const MyRequestsContent = () => {
                         </div>
                       )}
 
-                    {request.totalPrice && (
+                    { request.requestType !== 'recording' && request.totalPrice && (
                       <div className={styles.infoRow}>
                         <span className={styles.infoLabel}>Total Price:</span>
                         <span
@@ -439,6 +493,43 @@ const MyRequestsContent = () => {
                           )}
                         </span>
                       </div>
+                    )}
+
+                    {/* Hiển thị thông tin booking cơ bản cho recording requests */}
+                    {request.requestType === 'recording' && bookings[request.requestId] && (
+                      <>
+                        {bookings[request.requestId].bookingDate && (
+                          <div className={styles.infoRow}>
+                            <span className={styles.infoLabel}>📅 Date:</span>
+                            <span className={styles.infoValue}>
+                              {formatBookingDate(bookings[request.requestId].bookingDate)}
+                            </span>
+                          </div>
+                        )}
+                        {bookings[request.requestId].startTime && bookings[request.requestId].endTime && (
+                          <div className={styles.infoRow}>
+                            <span className={styles.infoLabel}>🕒 Time Slot:</span>
+                            <span className={styles.infoValue}>
+                              {bookings[request.requestId].startTime} - {bookings[request.requestId].endTime}
+                            </span>
+                          </div>
+                        )}
+                        {bookings[request.requestId].totalCost !== undefined && (
+                          <div className={styles.infoRow}>
+                            <span className={styles.infoLabel}>💰 Total Cost:</span>
+                            <span
+                              className={styles.infoValue}
+                              style={{
+                                fontWeight: 600,
+                                color: '#ff4d4f',
+                                fontSize: '16px',
+                              }}
+                            >
+                              {bookings[request.requestId].totalCost?.toLocaleString('vi-VN')} VND
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 

@@ -232,6 +232,26 @@ public class StudioBookingController {
     }
     
     /**
+     * Lấy studio booking theo requestId
+     * GET /studio-bookings/by-request/{requestId}
+     */
+    @GetMapping("/by-request/{requestId}")
+    public ResponseEntity<ApiResponse<StudioBookingResponse>> getStudioBookingByRequestId(
+            @PathVariable("requestId") String requestId) {
+        
+        log.info("Getting studio booking by requestId: {}", requestId);
+        
+        StudioBookingResponse booking = studioBookingService.getStudioBookingByRequestId(requestId);
+        
+        return ResponseEntity.ok(ApiResponse.<StudioBookingResponse>builder()
+            .message("Studio booking retrieved successfully")
+            .data(booking)
+            .statusCode(HttpStatus.OK.value())
+            .status("success")
+            .build());
+    }
+    
+    /**
      * Lấy danh sách studio bookings của recording artist hiện tại
      * GET /studio-bookings/my-bookings
      */

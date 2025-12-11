@@ -1,6 +1,7 @@
 package com.mutrapro.specialist_service.controller;
 
 import com.mutrapro.shared.dto.ApiResponse;
+import com.mutrapro.specialist_service.dto.response.SpecialistDetailResponse;
 import com.mutrapro.specialist_service.service.PublicSpecialistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -67,19 +68,20 @@ public class PublicSpecialistController {
     /**
      * Lấy chi tiết specialist theo specialistId (public access)
      * GET /public/specialists/{specialistId}
+     * Trả về full detail với skills và demos
      */
     @GetMapping("/{specialistId}")
     @Operation(
         summary = "Get specialist detail (public)", 
-        description = "Get specialist details by ID. No authentication required."
+        description = "Get specialist details by ID including skills and demos. No authentication required."
     )
-    public ApiResponse<Map<String, Object>> getSpecialistById(
+    public ApiResponse<SpecialistDetailResponse> getSpecialistById(
             @PathVariable String specialistId) {
         log.info("GET /public/specialists/{} - Getting specialist detail", specialistId);
-        Map<String, Object> specialist = publicSpecialistService.getSpecialistById(specialistId);
-        return ApiResponse.<Map<String, Object>>builder()
+        SpecialistDetailResponse specialistDetail = publicSpecialistService.getSpecialistById(specialistId);
+        return ApiResponse.<SpecialistDetailResponse>builder()
             .message("Specialist retrieved successfully")
-            .data(specialist)
+            .data(specialistDetail)
                 .build();
     }
 }

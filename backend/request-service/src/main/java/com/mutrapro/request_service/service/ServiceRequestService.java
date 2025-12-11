@@ -359,10 +359,11 @@ public class ServiceRequestService {
         boolean isSheetMusic = isSheetMusicFile(contentType);
         
         if (isAudio) {
-            // Audio files: allowed for transcription, arrangement, arrangement_with_recording
+            // Audio files: allowed for transcription, arrangement, arrangement_with_recording, recording
             if (requestType != ServiceType.transcription && 
                 requestType != ServiceType.arrangement &&
-                requestType != ServiceType.arrangement_with_recording) {
+                requestType != ServiceType.arrangement_with_recording &&
+                requestType != ServiceType.recording) {
                 throw FileTypeNotSupportedForRequestException.create(
                         file.getOriginalFilename(),
                         contentType,
@@ -370,9 +371,10 @@ public class ServiceRequestService {
                         getSupportedFileTypesForRequestType(requestType));
             }
         } else if (isSheetMusic) {
-            // Sheet music files: allowed for arrangement, arrangement_with_recording
+            // Sheet music files: allowed for arrangement, arrangement_with_recording, recording
             if (requestType != ServiceType.arrangement &&
-                requestType != ServiceType.arrangement_with_recording) {
+                requestType != ServiceType.arrangement_with_recording &&
+                requestType != ServiceType.recording) {
                 throw FileTypeNotSupportedForRequestException.create(
                         file.getOriginalFilename(),
                         contentType,
@@ -397,7 +399,7 @@ public class ServiceRequestService {
             case transcription -> "audio files (MP3, WAV, M4A, etc.)";
             case arrangement -> "audio files (MP3, WAV, M4A, etc.) or sheet music files (PDF, MusicXML, MIDI)";
             case arrangement_with_recording -> "audio files (MP3, WAV, M4A, etc.) or sheet music files (PDF, MusicXML, MIDI)";
-            case recording -> "no files required";
+            case recording -> "audio files (MP3, WAV, M4A, etc.) or sheet music files (PDF, MusicXML, MIDI) for reference tracks";
         };
     }
     

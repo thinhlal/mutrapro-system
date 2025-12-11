@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Button,
@@ -12,6 +12,9 @@ import {
   Statistic,
   Row,
   Col,
+  Form,
+  Input,
+  Upload,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -21,20 +24,43 @@ import {
   UserOutlined,
   TeamOutlined,
   ToolOutlined,
+  UploadOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
+import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../../../../contexts/AuthContext';
+import { createServiceRequest } from '../../../../../../services/serviceRequestService';
+import { createBookingFromServiceRequest } from '../../../../../../services/studioBookingService';
 import styles from './RecordingStep4.module.css';
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 /**
  * Step 4: Review & Submit
- * Tổng hợp tất cả thông tin đã chọn và hiển thị tổng phí
+ * Tổng hợp tất cả thông tin đã chọn, nhập thông tin service request và submit
  */
 export default function RecordingStep4({ formData, onBack, onSubmit }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileList, setFileList] = useState([]);
 
   // Destructure formData
   const { step1, step2, step3 } = formData;
+
+  // Initialize form với user info
+  useEffect(() => {
+    if (user) {
+      form.setFieldsValue({
+        contactName: user.fullName || '',
+        contactEmail: user.email || '',
+      });
+    }
+  }, [user, form]);
 
   // Debug: Log data to console
   console.log('📊 Step 4 - Form Data:', {
@@ -43,7 +69,40 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     step3,
   });
 
-  // Calculate fees
+  // File upload handlers
+  const handleFileChange = ({ fileList: newFileList }) => {
+    setFileList(newFileList);
+  };
+
+  const handleBeforeUpload = (file) => {
+    // Validate file type
+    const isAudio = file.type.startsWith('audio/') || 
+                    file.type === 'application/pdf' || 
+                    file.type === 'application/xml';
+    
+    if (!isAudio) {
+      toast.error('Chỉ chấp nhận file audio, PDF hoặc XML!');
+      return Upload.LIST_IGNORE;
+    }
+
+    // Validate file size (100MB)
+    const isLt100M = file.size / 1024 / 1024 < 100;
+    if (!isLt100M) {
+      toast.error('File phải nhỏ hơn 100MB!');
+      return Upload.LIST_IGNORE;
+    }
+
+    // Store file for upload
+    setUploadedFile(file);
+    return false; // Prevent auto upload
+  };
+
+  const handleRemoveFile = () => {
+    setFileList([]);
+    setUploadedFile(null);
+  };
+
+  // Calculate fees (participant + equipment only)
   const calculateFees = () => {
     let participantFee = 0;
     let equipmentRentalFee = 0;
@@ -170,13 +229,152 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
   const detailedBreakdown = calculateDetailedBreakdown();
 
+  // Transform booking data
+  const transformBookingData = () => {
+    const participants = [];
+    const requiredEquipment = [];
+    const hours = step1?.durationHours || 2;
+
+    // Add vocalists từ step2
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach(vocalist => {
+        // Calculate total fee = hourlyRate × hours
+        const hourlyRate = vocalist.hourlyRate || 500000;
+        const totalFee = hourlyRate * hours;
+        
+        participants.push({
+          specialistId: vocalist.specialistId,
+          roleType: 'VOCAL',
+          performerSource: 'INTERNAL_ARTIST',
+          participantFee: totalFee, // ← Gửi giá trị đã tính (hourlyRate × hours)
+        });
+      });
+    }
+
+    // Add customer self vocalist nếu có
+    if (step2?.vocalChoice === 'CUSTOMER_SELF' || step2?.vocalChoice === 'BOTH') {
+      participants.push({
+        roleType: 'VOCAL',
+        performerSource: 'CUSTOMER_SELF',
+      });
+    }
+
+    // Add instrumentalists và equipment từ step3
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach(instrument => {
+        // Add performer
+        if (instrument.performerSource === 'INTERNAL_ARTIST' && instrument.specialistId) {
+          // Calculate total fee = hourlyRate × hours
+          const hourlyRate = instrument.hourlyRate || 400000;
+          const totalFee = hourlyRate * hours;
+          
+          participants.push({
+            specialistId: instrument.specialistId,
+            roleType: 'INSTRUMENT',
+            performerSource: 'INTERNAL_ARTIST',
+            skillId: instrument.skillId,
+            instrumentSource: instrument.instrumentSource,
+            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+            participantFee: totalFee, // ← Gửi giá trị đã tính (hourlyRate × hours)
+          });
+        } else if (instrument.performerSource === 'CUSTOMER_SELF') {
+          participants.push({
+            roleType: 'INSTRUMENT',
+            performerSource: 'CUSTOMER_SELF',
+            skillId: instrument.skillId,
+            instrumentSource: instrument.instrumentSource,
+            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+          });
+        }
+
+        // Add equipment
+        if (instrument.instrumentSource === 'STUDIO_SIDE' && instrument.equipmentId) {
+          const quantity = instrument.quantity || 1;
+          const rentalFeePerHour = instrument.rentalFee || 0;
+          // Calculate total: rentalFeePerHour × quantity × hours
+          const totalRentalFee = rentalFeePerHour * quantity * hours;
+          
+          requiredEquipment.push({
+            equipmentId: instrument.equipmentId,
+            quantity: quantity,
+            rentalFeePerUnit: rentalFeePerHour,
+            totalRentalFee: totalRentalFee, // ← Gửi giá trị đã tính (rentalFee × quantity × hours)
+          });
+        }
+      });
+    }
+
+    return {
+      bookingDate: step1.bookingDate,
+      startTime: step1.bookingStartTime,
+      endTime: step1.bookingEndTime,
+      durationHours: step1.durationHours,
+      participants,
+      requiredEquipment,
+    };
+  };
+
   // Handle submit
   const handleSubmit = async () => {
-    setSubmitting(true);
     try {
-      await onSubmit();
+      // Validate file upload (MANDATORY)
+      if (!uploadedFile) {
+        toast.error('Vui lòng upload file (reference track, backing track, hoặc sheet music)');
+        return;
+      }
+
+      // Validate form
+      const values = await form.validateFields();
+      
+      setSubmitting(true);
+
+      // Calculate duration in minutes
+      const durationMinutes = Math.round((step1?.durationHours || 2) * 60);
+
+      // 1. Tạo service request
+      // Note: serviceRequestService.jsx will automatically convert to FormData and upload files
+      const requestData = {
+        requestType: 'recording',
+        title: values.title,
+        description: values.description,
+        contactName: values.contactName,
+        contactPhone: values.contactPhone,
+        contactEmail: values.contactEmail,
+        durationMinutes,
+        hasVocalist: step2?.vocalChoice !== 'NONE',
+        instrumentIds: [],
+        files: uploadedFile ? [uploadedFile] : [], // File object will be uploaded via FormData
+      };
+
+      const requestResponse = await createServiceRequest(requestData);
+      const requestId = requestResponse?.data?.requestId;
+
+      if (!requestId) {
+        throw new Error('Không thể lấy requestId từ response');
+      }
+
+      // 2. Tạo booking từ service request
+      const bookingData = transformBookingData();
+      const bookingResponse = await createBookingFromServiceRequest(requestId, bookingData);
+
+      // Clear session storage
+      sessionStorage.removeItem('recordingFlowData');
+
+      toast.success('Tạo request và booking thành công!');
+
+      // Navigate to request detail
+      const bookingId = bookingResponse?.data?.bookingId;
+      if (bookingId) {
+        navigate(`/my-requests/${requestId}`, {
+          state: { bookingCreated: true, bookingId },
+        });
+      } else {
+        navigate(`/my-requests/${requestId}`);
+      }
     } catch (error) {
       console.error('Submit error:', error);
+      const errorMessage = error?.message || error?.data?.message || 'Failed to create request and booking';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -384,21 +582,50 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
         <Divider />
 
+        {/* File Upload Section */}
+        <Card
+          type="inner"
+          title={
+            <Space>
+              <UploadOutlined />
+              <span>Upload File *</span>
+            </Space>
+          }
+          className={styles.section}
+        >
+          <Alert
+            message="File bắt buộc"
+            description="Vui lòng upload reference track, backing track, hoặc sheet music (PDF/XML)"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Upload
+            fileList={fileList}
+            onChange={handleFileChange}
+            beforeUpload={handleBeforeUpload}
+            onRemove={handleRemoveFile}
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />} size="large">
+              Chọn file
+            </Button>
+          </Upload>
+          {fileList.length > 0 && (
+            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+              File: {fileList[0].name} ({(fileList[0].size / 1024 / 1024).toFixed(2)} MB)
+            </Text>
+          )}
+        </Card>
+
+        <Divider />
+
         {/* Fee Summary */}
         <Card
           type="inner"
-          title={<span>Tổng phí dự kiến</span>}
+          title={<span>💰 Tổng phí dự kiến</span>}
           className={styles.feeSection}
         >
-          {fees.totalFee === 0 ? (
-            <Alert
-              message="Phí tổng = 0 VND"
-              description="Bạn đang tự thực hiện (tự hát, tự chơi nhạc cụ, tự mang thiết bị) nên không phát sinh chi phí từ studio."
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          ) : null}
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <Statistic
@@ -408,12 +635,12 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 valueStyle={{ color: '#1890ff' }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                (Internal vocalists + instrumentalists)
+                (Vocalists + Instrumentalists)
               </Text>
             </Col>
             <Col xs={24} sm={8}>
               <Statistic
-                title="Phí thuê thiết bị"
+                title="Phí thiết bị"
                 value={fees.equipmentRentalFee}
                 suffix="VND"
                 valueStyle={{ color: '#52c41a' }}
@@ -427,56 +654,144 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 title="Tổng cộng"
                 value={fees.totalFee}
                 suffix="VND"
-                valueStyle={{ color: '#ff4d4f', fontWeight: 'bold' }}
+                valueStyle={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 24 }}
               />
             </Col>
           </Row>
 
+          {fees.totalFee === 0 && (
+            <Alert
+              message="Phí tổng = 0 VND"
+              description="Bạn đang tự thực hiện (tự hát, tự chơi nhạc cụ, tự mang thiết bị)"
+              type="info"
+              showIcon
+              style={{ marginTop: 16 }}
+            />
+          )}
+
           {/* Chi tiết cách tính */}
-          {detailedBreakdown.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <Title level={5} style={{ marginBottom: 16 }}>
-                📋 Chi tiết cách tính:
-              </Title>
-              <Descriptions
-                bordered
-                column={1}
-                size="small"
-                style={{ marginBottom: 16 }}
-              >
-                {detailedBreakdown.map((item, index) => (
-                  <Descriptions.Item
-                    key={index}
-                    label={
-                      <Space>
-                        <Text strong>
-                          {item.type === 'vocalist'
-                            ? '🎤 Ca sĩ'
-                            : item.type === 'instrumentalist'
-                            ? '🎸 Nhạc công'
-                            : '🔧 Thiết bị'}
-                        </Text>
-                        <Text type="secondary">({item.name})</Text>
-                      </Space>
-                    }
-                  >
-                    <Text>{item.formula}</Text>
-                  </Descriptions.Item>
-                ))}
+          <div style={{ marginTop: 24 }}>
+            <Title level={5} style={{ marginBottom: 16 }}>
+              📋 Chi tiết cách tính:
+            </Title>
+            <Descriptions
+              bordered
+              column={1}
+              size="small"
+              style={{ marginBottom: 16 }}
+            >
+              {/* Service Fee */}
+              {/* Participants & Equipment */}
+              {detailedBreakdown.map((item, index) => (
                 <Descriptions.Item
+                  key={index}
                   label={
-                    <Text strong style={{ fontSize: 16 }}>
-                      Tổng cộng
-                    </Text>
+                    <Space>
+                      <Text strong>
+                        {item.type === 'vocalist'
+                          ? '🎤 Ca sĩ'
+                          : item.type === 'instrumentalist'
+                          ? '🎸 Nhạc công'
+                          : '🔧 Thiết bị'}
+                      </Text>
+                      <Text type="secondary">({item.name})</Text>
+                    </Space>
                   }
                 >
-                  <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
-                    {fees.totalFee.toLocaleString('vi-VN')} VND
-                  </Text>
+                  <Text>{item.formula}</Text>
                 </Descriptions.Item>
-              </Descriptions>
-            </div>
-          )}
+              ))}
+
+              {/* Grand Total */}
+              <Descriptions.Item
+                label={
+                  <Text strong style={{ fontSize: 16 }}>
+                    💵 Tổng cộng
+                  </Text>
+                }
+              >
+                <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
+                  {fees.totalFee.toLocaleString('vi-VN')} VND
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        </Card>
+
+        <Divider />
+
+        {/* Service Request Information Form */}
+        <Card
+          type="inner"
+          title={<span>📝 Thông tin Service Request</span>}
+          className={styles.section}
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark="optional"
+          >
+            <Row gutter={16}>
+              <Col xs={24}>
+                <Form.Item
+                  label="Tiêu đề"
+                  name="title"
+                  rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
+                >
+                  <Input size="large" placeholder="Ví dụ: Thu âm bài hát mới của tôi" />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item
+                  label="Mô tả"
+                  name="description"
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập mô tả' },
+                    { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' },
+                  ]}
+                >
+                  <TextArea
+                    rows={4}
+                    placeholder="Mô tả chi tiết về yêu cầu thu âm của bạn..."
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label="Tên liên hệ"
+                  name="contactName"
+                  rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+                >
+                  <Input size="large" placeholder="Họ và tên" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label="Số điện thoại"
+                  name="contactPhone"
+                  rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+                >
+                  <Input size="large" placeholder="+84 ..." />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col xs={24}>
+                <Form.Item
+                  label="Email liên hệ"
+                  name="contactEmail"
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập email' },
+                    { type: 'email', message: 'Email không hợp lệ' },
+                  ]}
+                >
+                  <Input size="large" placeholder="email@example.com" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
         </Card>
       </div>
 
