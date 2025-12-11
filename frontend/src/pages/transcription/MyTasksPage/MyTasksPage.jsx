@@ -690,16 +690,16 @@ const MyTasksPage = ({ onOpenTask }) => {
                       
                       return (
                         <Tooltip title={!validation.canStart ? validation.reason : null}>
-                          <Button
-                            type="primary"
-                            size="small"
-                            loading={isTakingAction}
+                      <Button
+                        type="primary"
+                        size="small"
+                        loading={isTakingAction}
                             disabled={!validation.canStart}
-                            onClick={() => handleStartTask(record)}
-                          >
+                        onClick={() => handleStartTask(record)}
+                      >
                             Start Task
-                          </Button>
-                        </Tooltip>
+                      </Button>
+                    </Tooltip>
                       );
                     })()}
                     <Button

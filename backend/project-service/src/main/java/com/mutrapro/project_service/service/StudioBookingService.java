@@ -72,6 +72,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -1569,29 +1570,47 @@ public class StudioBookingService {
     /**
      * Lấy danh sách studio bookings của recording artist hiện tại
      * GET /studio-bookings/my-bookings
+     * 
+     * Query từ 2 nguồn:
+     * 1. BookingArtist (luồng 2 - arrangement_with_recording)
+     * 2. BookingParticipant với performerSource = INTERNAL_ARTIST (luồng 3 - recording từ service request)
      */
     @Transactional(readOnly = true)
     public List<StudioBookingResponse> getMyStudioBookings() {
         String specialistId = getCurrentSpecialistId();
         log.info("Getting studio bookings for recording artist: specialistId={}", specialistId);
         
-        // Tìm tất cả BookingArtist records của specialist này
-        List<BookingArtist> bookingArtists = bookingArtistRepository.findBySpecialistId(specialistId);
-        
-        // Lấy danh sách booking IDs
-        List<String> bookingIds = bookingArtists.stream()
+        // 1. Lấy booking IDs từ BookingArtist (luồng 2)
+        List<String> bookingIdsFromArtists = bookingArtistRepository.findBySpecialistId(specialistId)
+            .stream()
             .map(ba -> ba.getBooking().getBookingId())
             .distinct()
             .toList();
         
-        if (bookingIds.isEmpty()) {
+        // 2. Lấy booking IDs từ BookingParticipant với performerSource = INTERNAL_ARTIST (luồng 3)
+        List<String> bookingIdsFromParticipants = bookingParticipantRepository.findBySpecialistId(specialistId)
+            .stream()
+            .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+            .map(bp -> bp.getBooking().getBookingId())
+            .distinct()
+            .toList();
+        
+        // 3. Merge 2 lists và distinct
+        Set<String> allBookingIds = new java.util.HashSet<>();
+        allBookingIds.addAll(bookingIdsFromArtists);
+        allBookingIds.addAll(bookingIdsFromParticipants);
+        
+        log.info("Found {} bookings from BookingArtist, {} from BookingParticipant, {} total unique bookings",
+            bookingIdsFromArtists.size(), bookingIdsFromParticipants.size(), allBookingIds.size());
+        
+        if (allBookingIds.isEmpty()) {
             return List.of();
         }
         
-        // Lấy tất cả bookings (đã JOIN FETCH studio trong query)
-        List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(bookingIds);
+        // 4. Lấy tất cả bookings (đã JOIN FETCH studio trong query)
+        List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(new java.util.ArrayList<>(allBookingIds));
         
-        // Convert sang response (trong cùng transaction)
+        // 5. Convert sang response (trong cùng transaction)
         return bookings.stream()
             .map(this::mapToResponse)
             .toList();

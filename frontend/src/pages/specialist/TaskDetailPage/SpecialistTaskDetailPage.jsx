@@ -1953,14 +1953,14 @@ const SpecialistTaskDetailPage = () => {
                     console.log('📌 VALIDATE FOR START BUTTON');
                     
                     // Check 1: Booking Status
-                    // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
-                    if (
-                      bookingStatus !== 'CONFIRMED' &&
-                      bookingStatus !== 'IN_PROGRESS' &&
-                      bookingStatus !== 'COMPLETED'
-                    ) {
-                      canStartWithBooking = false;
-                      bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
+                  // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                  if (
+                    bookingStatus !== 'CONFIRMED' &&
+                    bookingStatus !== 'IN_PROGRESS' &&
+                    bookingStatus !== 'COMPLETED'
+                  ) {
+                    canStartWithBooking = false;
+                    bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
                       console.log('❌ CHECK 1 FAILED: Status không hợp lệ →', bookingStatus);
                       console.log('   canStartWithBooking =', canStartWithBooking);
                       console.log('   message =', bookingStatusMessage);
@@ -2152,8 +2152,11 @@ const SpecialistTaskDetailPage = () => {
                         />
                       )}
                       
-                      {/* Hiển thị booking info nếu có */}
-                      {hasStudioBooking && studioBooking && bookingDateFormatted && (
+                      {/* Hiển thị booking info nếu có - CHỈ KHI CHƯA START TASK */}
+                      {hasStudioBooking && 
+                        studioBooking && 
+                        bookingDateFormatted && 
+                        (status === 'ready_to_start' || status === 'accepted_waiting') && (
                         <Alert
                           message={`🎙️ Recording Session: ${bookingDateFormatted}`}
                           description={

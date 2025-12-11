@@ -31,6 +31,13 @@ const BOOKING_STATUS = [
   { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
+const BOOKING_CONTEXT = [
+  { label: 'Tất cả', value: '' },
+  { label: 'Contract Recording', value: 'CONTRACT_RECORDING' },
+  { label: 'Pre-Contract Hold', value: 'PRE_CONTRACT_HOLD' },
+  { label: 'Standalone Booking', value: 'STANDALONE_BOOKING' },
+];
+
 const statusColor = {
   TENTATIVE: 'default',
   PENDING: 'processing',
@@ -48,6 +55,7 @@ const MyStudioBookings = () => {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('');
+  const [contextFilter, setContextFilter] = useState('');
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
@@ -56,7 +64,7 @@ const MyStudioBookings = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [bookings, statusFilter, searchText]);
+  }, [bookings, statusFilter, contextFilter, searchText]);
 
   const loadBookings = async () => {
     try {
@@ -91,6 +99,11 @@ const MyStudioBookings = () => {
     // Filter by status
     if (statusFilter) {
       filtered = filtered.filter(booking => booking.status === statusFilter);
+    }
+
+    // Filter by context
+    if (contextFilter) {
+      filtered = filtered.filter(booking => booking.context === contextFilter);
     }
 
     setFilteredBookings(filtered);
@@ -165,6 +178,27 @@ const MyStudioBookings = () => {
       ),
     },
     {
+      title: 'Context',
+      dataIndex: 'context',
+      key: 'context',
+      width: 150,
+      render: context => {
+        const contextColors = {
+          CONTRACT_RECORDING: 'blue',
+          PRE_CONTRACT_HOLD: 'orange',
+        };
+        const contextLabels = {
+          CONTRACT_RECORDING: 'Contract Recording',
+          PRE_CONTRACT_HOLD: 'Pre-Contract',
+        };
+        return (
+          <Tag color={contextColors[context] || 'default'}>
+            {contextLabels[context] || context || 'N/A'}
+          </Tag>
+        );
+      },
+    },
+    {
       title: 'Session Type',
       dataIndex: 'sessionType',
       key: 'sessionType',
@@ -176,11 +210,48 @@ const MyStudioBookings = () => {
       key: 'role',
       width: 120,
       render: (_, record) => {
-        // Backend đã filter bookings của artist hiện tại, nên tất cả bookings đều có artist này
-        // Hiển thị role của artist đầu tiên (thường là artist hiện tại)
-        const myArtist = record.artists?.[0];
-        return myArtist?.role ? <Tag>{myArtist.role}</Tag> : 'N/A';
+        // Luồng 2 (CONTRACT_RECORDING): lấy từ artists
+        if (record.artists && record.artists.length > 0) {
+          const myArtist = record.artists[0];
+          return myArtist?.role ? <Tag>{myArtist.role}</Tag> : 'N/A';
+        }
+        
+        // Luồng 3 (PRE_CONTRACT_HOLD): lấy từ participants
+        if (record.participants && record.participants.length > 0) {
+          // Tìm participant với isPrimary = true hoặc lấy participant đầu tiên
+          const myParticipant = record.participants.find(p => p.isPrimary) || record.participants[0];
+          return myParticipant?.roleType ? <Tag>{myParticipant.roleType}</Tag> : 'N/A';
+        }
+        
+        return 'N/A';
       },
+    },
+    {
+      title: 'Participants',
+      key: 'participantsCount',
+      width: 120,
+      render: (_, record) => {
+        const count = (record.artists?.length || 0) + (record.participants?.length || 0);
+        return count > 0 ? `${count} người` : 'N/A';
+      },
+    },
+    {
+      title: 'Equipment',
+      key: 'equipmentCount',
+      width: 120,
+      render: (_, record) => {
+        const count = record.requiredEquipment?.length || 0;
+        return count > 0 ? `${count} thiết bị` : 'N/A';
+      },
+    },
+    {
+      title: 'Total Cost',
+      dataIndex: 'totalCost',
+      key: 'totalCost',
+      width: 130,
+      render: cost => (
+        cost != null ? `${cost.toLocaleString('vi-VN')} ₫` : 'N/A'
+      ),
     },
     {
       title: 'Actions',
@@ -230,6 +301,19 @@ const MyStudioBookings = () => {
               {BOOKING_STATUS.map(status => (
                 <Option key={status.value} value={status.value}>
                   {status.label}
+                </Option>
+              ))}
+            </Select>
+            <Select
+              placeholder="Context"
+              value={contextFilter}
+              onChange={setContextFilter}
+              style={{ width: 180 }}
+              allowClear
+            >
+              {BOOKING_CONTEXT.map(context => (
+                <Option key={context.value} value={context.value}>
+                  {context.label}
                 </Option>
               ))}
             </Select>

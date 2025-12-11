@@ -15,11 +15,15 @@ import {
   ArrowLeftOutlined,
   CopyOutlined,
   DownloadOutlined,
+  FileOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { getStudioBookingById } from '../../../services/studioBookingService';
 import { getSpecialistById } from '../../../services/specialistService';
+import { getFilesByRequestId } from '../../../services/fileService';
+import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './StudioBookingDetailPage.module.css';
 
@@ -57,6 +61,10 @@ const StudioBookingDetailPage = () => {
   const [booking, setBooking] = useState(null);
   const [artistsInfo, setArtistsInfo] = useState({});
   const [loadingArtists, setLoadingArtists] = useState(false);
+  const [requestFiles, setRequestFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [supervisor, setSupervisor] = useState(null);
+  const [loadingSupervisor, setLoadingSupervisor] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -67,6 +75,18 @@ const StudioBookingDetailPage = () => {
   useEffect(() => {
     if (booking?.artists && booking.artists.length > 0) {
       loadArtistsInfo();
+    }
+  }, [booking]);
+
+  useEffect(() => {
+    if (booking?.requestId) {
+      loadRequestFiles();
+    }
+  }, [booking]);
+
+  useEffect(() => {
+    if (booking?.milestoneId && booking?.contractId) {
+      loadSupervisor();
     }
   }, [booking]);
 
@@ -109,6 +129,54 @@ const StudioBookingDetailPage = () => {
       console.error('Error loading artists info:', error);
     } finally {
       setLoadingArtists(false);
+    }
+  };
+
+  const loadRequestFiles = async () => {
+    try {
+      setLoadingFiles(true);
+      const response = await getFilesByRequestId(booking.requestId);
+      if (response?.status === 'success' && response?.data) {
+        setRequestFiles(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading request files:', error);
+      // Không hiển thị error toast, chỉ log
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const loadSupervisor = async () => {
+    try {
+      setLoadingSupervisor(true);
+      const response = await getTaskAssignmentsByMilestone(
+        booking.contractId,
+        booking.milestoneId
+      );
+      if (response?.status === 'success' && response?.data) {
+        // Tìm task recording_supervision
+        const recordingTask = response.data.find(
+          task => task.taskType === 'recording_supervision'
+        );
+        if (recordingTask) {
+          // Fetch specialist info
+          const specialistResponse = await getSpecialistById(
+            recordingTask.specialistId
+          );
+          if (specialistResponse?.status === 'success' && specialistResponse?.data) {
+            setSupervisor({
+              ...recordingTask,
+              specialistInfo: specialistResponse.data,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading supervisor:', error);
+      // Không hiển thị error toast, chỉ log
+    } finally {
+      setLoadingSupervisor(false);
     }
   };
 
@@ -175,6 +243,18 @@ const StudioBookingDetailPage = () => {
                 {bookingStatusLabels[booking.status] || booking.status}
               </Tag>
             </Descriptions.Item>
+            <Descriptions.Item label="Context">
+              <Tag color={
+                booking.context === 'CONTRACT_RECORDING' ? 'blue' :
+                booking.context === 'PRE_CONTRACT_HOLD' ? 'orange' :
+                booking.context === 'STANDALONE_BOOKING' ? 'green' : 'default'
+              }>
+                {booking.context === 'CONTRACT_RECORDING' ? 'Contract Recording' :
+                 booking.context === 'PRE_CONTRACT_HOLD' ? 'Pre-Contract Hold' :
+                 booking.context === 'STANDALONE_BOOKING' ? 'Standalone Booking' :
+                 booking.context || 'N/A'}
+              </Tag>
+            </Descriptions.Item>
             <Descriptions.Item label="Ngày booking">
               {booking.bookingDate
                 ? dayjs(booking.bookingDate).format('DD/MM/YYYY')
@@ -184,6 +264,9 @@ const StudioBookingDetailPage = () => {
               {booking.startTime && booking.endTime
                 ? `${booking.startTime} - ${booking.endTime}`
                 : 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Duration">
+              {booking.durationHours ? `${booking.durationHours} giờ` : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Studio">
               {booking.studioName || 'N/A'}
@@ -195,6 +278,23 @@ const StudioBookingDetailPage = () => {
                   'N/A'}
               </Tag>
             </Descriptions.Item>
+            {booking.totalCost != null && (
+              <Descriptions.Item label="Total Cost" span={2}>
+                <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                  {booking.totalCost.toLocaleString('vi-VN')} ₫
+                </Text>
+              </Descriptions.Item>
+            )}
+            {booking.purpose && (
+              <Descriptions.Item label="Purpose" span={2}>
+                {booking.purpose}
+              </Descriptions.Item>
+            )}
+            {booking.specialInstructions && (
+              <Descriptions.Item label="Special Instructions" span={2}>
+                {booking.specialInstructions}
+              </Descriptions.Item>
+            )}
             {booking.notes && (
               <Descriptions.Item label="Notes" span={2}>
                 {booking.notes}
@@ -202,10 +302,10 @@ const StudioBookingDetailPage = () => {
             )}
           </Descriptions>
 
-          {/* Artists Information */}
+          {/* Artists Information (CONTRACT_RECORDING) */}
           {booking.artists && booking.artists.length > 0 && (
             <div>
-              <Title level={4}>Artists</Title>
+              <Title level={4}>Artists (Contract Recording)</Title>
               <Spin spinning={loadingArtists}>
                 <Space
                   direction="vertical"
@@ -248,11 +348,208 @@ const StudioBookingDetailPage = () => {
                           {artist.isPrimary && (
                             <Tag color="gold">Primary Artist</Tag>
                           )}
+                          {artist.artistFee != null && artist.artistFee > 0 && (
+                            <div>
+                              <Text type="secondary">Fee: </Text>
+                              <Text strong>{artist.artistFee.toLocaleString('vi-VN')} ₫</Text>
+                            </div>
+                          )}
                         </Space>
                       </Card>
                     );
                   })}
                 </Space>
+              </Spin>
+            </div>
+          )}
+
+          {/* Participants Information (PRE_CONTRACT_HOLD, STANDALONE_BOOKING) */}
+          {booking.participants && booking.participants.length > 0 && (
+            <div>
+              <Title level={4}>👥 Participants</Title>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {booking.participants.map((participant, index) => (
+                  <Card key={index} size="small">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <Text strong>{participant.specialistName || participant.specialistId || 'N/A'}</Text>
+                        {participant.isPrimary && <Tag color="gold">Primary</Tag>}
+                      </Space>
+                      <Space wrap>
+                        <div>
+                          <Text type="secondary">Role: </Text>
+                          <Tag color="blue">{participant.roleType || 'N/A'}</Tag>
+                        </div>
+                        <div>
+                          <Text type="secondary">Source: </Text>
+                          <Tag color={participant.performerSource === 'INTERNAL_ARTIST' ? 'green' : 'orange'}>
+                            {participant.performerSource || 'N/A'}
+                          </Tag>
+                        </div>
+                        {participant.skillName && (
+                          <div>
+                            <Text type="secondary">Skill: </Text>
+                            <Tag>{participant.skillName}</Tag>
+                          </div>
+                        )}
+                      </Space>
+                      {participant.participantFee != null && participant.participantFee > 0 && (
+                        <div>
+                          <Text type="secondary">Fee: </Text>
+                          <Text strong style={{ color: '#1890ff' }}>
+                            {participant.participantFee.toLocaleString('vi-VN')} ₫
+                          </Text>
+                          <Text type="secondary" style={{ marginLeft: 8, fontSize: '12px' }}>
+                            ({booking.durationHours}h × {(participant.participantFee / booking.durationHours).toLocaleString('vi-VN')} ₫/h)
+                          </Text>
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </div>
+          )}
+
+          {/* Required Equipment */}
+          {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
+            <div>
+              <Title level={4}>🎸 Required Equipment</Title>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {booking.requiredEquipment.map((equipment, index) => (
+                  <Card key={index} size="small">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Text strong>{equipment.equipmentName || equipment.equipmentId || 'N/A'}</Text>
+                      <Space wrap>
+                        <div>
+                          <Text type="secondary">Quantity: </Text>
+                          <Tag color="cyan">{equipment.quantity || 1}</Tag>
+                        </div>
+                        {equipment.rentalFeePerUnit != null && (
+                          <div>
+                            <Text type="secondary">Fee/Unit: </Text>
+                            <Text>{equipment.rentalFeePerUnit.toLocaleString('vi-VN')} ₫/h</Text>
+                          </div>
+                        )}
+                      </Space>
+                      {equipment.totalRentalFee != null && equipment.totalRentalFee > 0 && (
+                        <div>
+                          <Text type="secondary">Total Fee: </Text>
+                          <Text strong style={{ color: '#1890ff' }}>
+                            {equipment.totalRentalFee.toLocaleString('vi-VN')} ₫
+                          </Text>
+                          <Text type="secondary" style={{ marginLeft: 8, fontSize: '12px' }}>
+                            ({equipment.quantity} × {booking.durationHours}h × {equipment.rentalFeePerUnit.toLocaleString('vi-VN')} ₫/h)
+                          </Text>
+                        </div>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </div>
+          )}
+
+          {/* Recording Supervisor (cho recording bookings) */}
+          {(booking?.context === 'PRE_CONTRACT_HOLD' || booking?.context === 'CONTRACT_RECORDING') && (
+            <div>
+              <Title level={4}>🎙️ Recording Supervisor</Title>
+              <Spin spinning={loadingSupervisor}>
+                {supervisor ? (
+                  <Card size="small">
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Space>
+                        <Avatar 
+                          src={supervisor.specialistInfo?.avatarUrl} 
+                          icon={<UserOutlined />}
+                          size={48}
+                        />
+                        <div>
+                          <div>
+                            <Text strong style={{ fontSize: '16px' }}>
+                              {supervisor.specialistInfo?.fullNameSnapshot || 'N/A'}
+                            </Text>
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {supervisor.specialistInfo?.emailSnapshot || 'N/A'}
+                            </Text>
+                          </div>
+                        </div>
+                      </Space>
+                      <Space wrap>
+                        <div>
+                          <Text type="secondary">Task Status: </Text>
+                          <Tag color={
+                            supervisor.status === 'completed' ? 'success' :
+                            supervisor.status === 'in_progress' ? 'processing' :
+                            supervisor.status === 'ready_to_start' ? 'blue' :
+                            'default'
+                          }>
+                            {supervisor.status?.toUpperCase().replace('_', ' ')}
+                          </Tag>
+                        </div>
+                        {supervisor.plannedStartAt && (
+                          <div>
+                            <Text type="secondary">Planned Start: </Text>
+                            <Text>{dayjs(supervisor.plannedStartAt).format('DD/MM/YYYY HH:mm')}</Text>
+                          </div>
+                        )}
+                      </Space>
+                    </Space>
+                  </Card>
+                ) : (
+                  <Empty 
+                    description="Chưa có supervisor được assign" 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
+              </Spin>
+            </div>
+          )}
+
+          {/* Request Files (cho PRE_CONTRACT_HOLD bookings) */}
+          {booking?.context === 'PRE_CONTRACT_HOLD' && booking?.requestId && (
+            <div>
+              <Title level={4}>📎 Request Files</Title>
+              <Spin spinning={loadingFiles}>
+                {requestFiles && requestFiles.length > 0 ? (
+                  <div
+                    style={{
+                      padding: 12,
+                      background: '#f5f5f5',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {requestFiles.map((file, idx) => (
+                        <Button
+                          key={idx}
+                          type="link"
+                          size="small"
+                          icon={<FileOutlined />}
+                          onClick={() => downloadFileHelper(file.fileId, file.fileName)}
+                          style={{ padding: 0, height: 'auto' }}
+                        >
+                          {file.fileName}
+                          {file.fileSize && (
+                            <Text
+                              type="secondary"
+                              style={{ marginLeft: 8, fontSize: '11px' }}
+                            >
+                              ({(file.fileSize / 1024 / 1024).toFixed(2)} MB)
+                            </Text>
+                          )}
+                        </Button>
+                      ))}
+                    </Space>
+                  </div>
+                ) : (
+                  <Empty 
+                    description="Không có files được upload" 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
               </Spin>
             </div>
           )}
