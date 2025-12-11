@@ -193,12 +193,28 @@ export const API_ENDPOINTS = {
     BASE: `${PROJECT_PATH}/studio-bookings`,
     // POST /studio-bookings/recording-milestone
     CREATE_FOR_RECORDING_MILESTONE: `${PROJECT_PATH}/studio-bookings/recording-milestone`,
+    // POST /studio-bookings/from-request/{requestId}
+    CREATE_FROM_SERVICE_REQUEST: requestId =>
+      `${PROJECT_PATH}/studio-bookings/from-request/${requestId}`,
     // GET /studio-bookings/available-slots?studioId={studioId}&date={date}
     GET_AVAILABLE_SLOTS: date =>
       `${PROJECT_PATH}/studio-bookings/available-slots?date=${date}`,
     // GET /studio-bookings/available-artists?milestoneId={milestoneId}&date={date}&startTime={startTime}&endTime={endTime}
     GET_AVAILABLE_ARTISTS: (milestoneId, date, startTime, endTime) =>
       `${PROJECT_PATH}/studio-bookings/available-artists?milestoneId=${milestoneId}&date=${date}&startTime=${startTime}&endTime=${endTime}`,
+    // GET /studio-bookings/available-artists-for-request?date={date}&startTime={startTime}&endTime={endTime}&skillId={skillId}&roleType={roleType}&genres={genres}
+    GET_AVAILABLE_ARTISTS_FOR_REQUEST: (date, startTime, endTime, skillId, roleType, genres) => {
+      const params = new URLSearchParams();
+      params.append('date', date);
+      params.append('startTime', startTime);
+      params.append('endTime', endTime);
+      if (skillId) params.append('skillId', skillId);
+      if (roleType) params.append('roleType', roleType);
+      if (genres && genres.length > 0) {
+        genres.forEach(genre => params.append('genres', genre));
+      }
+      return `${PROJECT_PATH}/studio-bookings/available-artists-for-request?${params.toString()}`;
+    },
     // GET /studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
     LIST: (contractId, milestoneId, status) => {
       const params = new URLSearchParams();

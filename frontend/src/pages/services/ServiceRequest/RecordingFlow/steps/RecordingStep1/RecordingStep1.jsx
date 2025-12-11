@@ -1,5 +1,5 @@
 // RecordingStep1.jsx - Slot Selection (Date & Time)
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   Calendar,
@@ -10,23 +10,15 @@ import {
   Typography,
   Alert,
   message,
+  Spin,
 } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { getAvailableSlots } from '../../../../../../services/studioBookingService';
 import styles from './RecordingStep1.module.css';
 
 const { Title, Text } = Typography;
 const { RangePicker } = TimePicker;
-
-// Mock data - sẽ thay bằng API call thực tế
-const MOCK_BOOKINGS = {
-  '2024-12-20': [
-    { start: '09:00', end: '12:00', status: 'booked' },
-    { start: '14:00', end: '17:00', status: 'tentative' },
-  ],
-  '2024-12-21': [{ start: '10:00', end: '13:00', status: 'booked' }],
-  '2024-12-22': [],
-};
 
 export default function RecordingStep1({ data, onComplete }) {
   const [selectedDate, setSelectedDate] = useState(
@@ -40,55 +32,89 @@ export default function RecordingStep1({ data, onComplete }) {
         ]
       : null
   );
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // Get bookings for selected date
-  const dateBookings = useMemo(() => {
-    if (!selectedDate) return [];
-    const dateKey = selectedDate.format('YYYY-MM-DD');
-    return MOCK_BOOKINGS[dateKey] || [];
+  // Fetch available slots from backend when date is selected
+  useEffect(() => {
+    if (!selectedDate) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const fetchSlots = async () => {
+      try {
+        setLoadingSlots(true);
+        const dateStr = selectedDate.format('YYYY-MM-DD');
+        const response = await getAvailableSlots(dateStr);
+        
+        if (response?.status === 'success' && response?.data) {
+          // Map backend slots to frontend format
+          const slots = response.data.map(slot => ({
+            start: slot.startTime || slot.start_time,
+            end: slot.endTime || slot.end_time,
+            available: slot.available !== false, // Default true if not specified
+            status: slot.status || (slot.available ? 'available' : 'booked'),
+          }));
+          console.log('slots', slots);
+          setAvailableSlots(slots);
+        } else {
+          // Fallback: generate slots locally if API fails
+          generateDefaultSlots();
+        }
+      } catch (error) {
+        console.error('Error fetching available slots:', error);
+        message.warning('Không thể tải available slots. Sử dụng slots mặc định.');
+        // Fallback: generate slots locally
+        generateDefaultSlots();
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+
+    const generateDefaultSlots = () => {
+      // Generate slots theo logic backend: startHour = 8, slotDuration = 2, endHour = 18
+      const slots = [];
+      const startHour = 8; // 8 AM - giống backend
+      const endHour = 18; // 6 PM
+      const slotDuration = 2; // 2 hours per slot
+
+      for (let hour = startHour; hour < endHour; hour += slotDuration) {
+        const start = `${hour.toString().padStart(2, '0')}:00`;
+        const end = `${(hour + slotDuration).toString().padStart(2, '0')}:00`;
+        if (hour + slotDuration <= endHour) {
+          slots.push({ start, end, available: true, status: 'available' });
+        }
+      }
+      setAvailableSlots(slots);
+    };
+
+    fetchSlots();
   }, [selectedDate]);
 
-  // Check if time slot is available
+  // Check if time slot is available (from backend slots)
   const isTimeSlotAvailable = (start, end) => {
-    if (!dateBookings.length) return true;
+    if (!availableSlots.length) return true;
 
     const slotStart = dayjs(start, 'HH:mm');
     const slotEnd = dayjs(end, 'HH:mm');
 
-    return !dateBookings.some(booking => {
-      const bookingStart = dayjs(booking.start, 'HH:mm');
-      const bookingEnd = dayjs(booking.end, 'HH:mm');
-
-      // Check for overlap
+    // Check if there's an available slot matching this time range
+    return availableSlots.some(slot => {
+      const slotStartTime = dayjs(slot.start, 'HH:mm');
+      const slotEndTime = dayjs(slot.end, 'HH:mm');
+      
+      // Exact match or within slot range
       return (
-        (slotStart.isBefore(bookingEnd) && slotEnd.isAfter(bookingStart)) ||
-        (slotStart.isSame(bookingStart) && slotEnd.isSame(bookingEnd))
+        slot.available &&
+        ((slotStart.isSame(slotStartTime) && slotEnd.isSame(slotEndTime)) ||
+         (slotStart.isAfter(slotStartTime) && slotEnd.isBefore(slotEndTime)))
       );
     });
   };
 
-  // Get available time slots for selected date
-  const availableTimeSlots = useMemo(() => {
-    if (!selectedDate) return [];
-
-    const slots = [];
-    const startHour = 9; // 9 AM
-    const endHour = 18; // 6 PM
-    const slotDuration = 2; // 2 hours per slot
-
-    for (let hour = startHour; hour <= endHour - slotDuration; hour++) {
-      const start = `${hour.toString().padStart(2, '0')}:00`;
-      const end = `${(hour + slotDuration).toString().padStart(2, '0')}:00`;
-
-      if (isTimeSlotAvailable(start, end)) {
-        slots.push({ start, end, available: true });
-      } else {
-        slots.push({ start, end, available: false });
-      }
-    }
-
-    return slots;
-  }, [selectedDate, dateBookings]);
+  // Use slots from backend
+  const availableTimeSlots = availableSlots;
 
   const handleDateSelect = date => {
     setSelectedDate(date);
@@ -151,33 +177,11 @@ export default function RecordingStep1({ data, onComplete }) {
 
   // Custom date cell renderer
   const dateCellRender = date => {
-    const dateKey = date.format('YYYY-MM-DD');
-    const bookings = MOCK_BOOKINGS[dateKey] || [];
     const isPast = date.isBefore(dayjs(), 'day');
     const isToday = date.isSame(dayjs(), 'day');
 
     if (isPast && !isToday) {
       return <div className={styles.pastDate}>Past</div>;
-    }
-
-    if (bookings.length > 0) {
-      const bookedCount = bookings.filter(b => b.status === 'booked').length;
-      const tentativeCount = bookings.filter(
-        b => b.status === 'tentative'
-      ).length;
-
-      return (
-        <div className={styles.dateInfo}>
-          {bookedCount > 0 && (
-            <div className={styles.bookedBadge}>{bookedCount} booked</div>
-          )}
-          {tentativeCount > 0 && (
-            <div className={styles.tentativeBadge}>
-              {tentativeCount} tentative
-            </div>
-          )}
-        </div>
-      );
     }
 
     return null;
@@ -213,20 +217,28 @@ export default function RecordingStep1({ data, onComplete }) {
             </Text>
           </div>
 
-          {dateBookings.length > 0 && (
+          {loadingSlots && (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <Spin tip="Loading available slots..." />
+            </div>
+          )}
+
+          {!loadingSlots && availableSlots.some(slot => !slot.available) && (
             <Alert
-              message="Existing Bookings"
+              message="Booked Slots"
               description={
                 <div>
-                  {dateBookings.map((booking, idx) => (
-                    <Tag
-                      key={idx}
-                      color={booking.status === 'booked' ? 'red' : 'orange'}
-                      style={{ marginTop: 4 }}
-                    >
-                      {booking.start} - {booking.end} ({booking.status})
-                    </Tag>
-                  ))}
+                  {availableSlots
+                    .filter(slot => !slot.available)
+                    .map((slot, idx) => (
+                      <Tag
+                        key={idx}
+                        color={slot.status === 'tentative' ? 'orange' : 'red'}
+                        style={{ marginTop: 4 }}
+                      >
+                        {slot.start} - {slot.end} ({slot.status})
+                      </Tag>
+                    ))}
                 </div>
               }
               type="info"

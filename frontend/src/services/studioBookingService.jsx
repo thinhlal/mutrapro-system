@@ -149,3 +149,79 @@ export const getMyStudioBookings = async () => {
     );
   }
 };
+
+/**
+ * Tạo studio booking từ service request (Luồng 3: Recording)
+ * POST /api/v1/projects/studio-bookings/from-request/{requestId}
+ *
+ * @param {string} requestId - ID của service request
+ * @param {Object} bookingData - Dữ liệu booking
+ * @param {string} bookingData.bookingDate - Ngày booking (YYYY-MM-DD)
+ * @param {string} bookingData.startTime - Thời gian bắt đầu (HH:mm:ss)
+ * @param {string} bookingData.endTime - Thời gian kết thúc (HH:mm:ss)
+ * @param {number} bookingData.durationHours - Thời lượng (giờ)
+ * @param {Array} bookingData.participants - Danh sách participants
+ * @param {Array} bookingData.requiredEquipment - Danh sách equipment cần thuê
+ * @param {number} bookingData.externalGuestCount - Số lượng khách mời (optional)
+ * @param {string} bookingData.purpose - Mục đích (optional)
+ * @param {string} bookingData.specialInstructions - Hướng dẫn đặc biệt (optional)
+ * @param {string} bookingData.notes - Ghi chú (optional)
+ */
+export const createBookingFromServiceRequest = async (
+  requestId,
+  bookingData
+) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.STUDIO_BOOKINGS.CREATE_FROM_SERVICE_REQUEST(requestId),
+      bookingData
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi tạo studio booking từ service request',
+      }
+    );
+  }
+};
+
+/**
+ * Lấy available artists/instrumentalists cho luồng 3 (Booking từ Service Request)
+ * GET /api/v1/projects/studio-bookings/available-artists-for-request?date={date}&startTime={startTime}&endTime={endTime}&skillId={skillId}&roleType={roleType}&genres={genres}
+ *
+ * @param {string} date - Ngày booking (YYYY-MM-DD)
+ * @param {string} startTime - Thời gian bắt đầu (HH:mm:ss)
+ * @param {string} endTime - Thời gian kết thúc (HH:mm:ss)
+ * @param {string} skillId - Optional - Skill ID để filter instrumentalists
+ * @param {string} roleType - Optional - VOCAL hoặc INSTRUMENT
+ * @param {Array<string>} genres - Optional - Genres để filter vocalists
+ */
+export const getAvailableArtistsForRequest = async (
+  date,
+  startTime,
+  endTime,
+  skillId = null,
+  roleType = null,
+  genres = null
+) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.GET_AVAILABLE_ARTISTS_FOR_REQUEST(
+        date,
+        startTime,
+        endTime,
+        skillId,
+        roleType,
+        genres
+      )
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy available artists cho request',
+      }
+    );
+  }
+};

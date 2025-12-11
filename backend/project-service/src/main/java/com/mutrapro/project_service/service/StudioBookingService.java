@@ -867,7 +867,8 @@ public class StudioBookingService {
         List<StudioBooking> bookingsOnDate = studioBookingRepository
             .findByStudioStudioIdAndBookingDate(studioId, date);
         
-        // 3. Filter bookings có status active
+        // 3. Filter bookings có status active (không bao gồm COMPLETED, CANCELLED, NO_SHOW)
+        // COMPLETED booking đã xong, không nên block slot nữa
         List<BookingStatus> activeStatuses = List.of(
             BookingStatus.TENTATIVE, BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
         
@@ -875,8 +876,8 @@ public class StudioBookingService {
             .filter(booking -> activeStatuses.contains(booking.getStatus()))
             .toList();
         
-        // 4. Tạo available slots (9:00 - 18:00, mỗi slot 2 giờ, không overlap)
-        // Slots: 09:00-11:00, 11:00-13:00, 13:00-15:00, 15:00-17:00, 17:00-19:00
+        // 4. Tạo available slots (8:00 - 18:00, mỗi slot 2 giờ, không overlap)
+        // Slots: 08:00-10:00, 10:00-12:00, 12:00-14:00, 14:00-16:00, 16:00-18:00
         List<AvailableTimeSlotResponse> slots = new java.util.ArrayList<>();
         LocalTime endHour = LocalTime.of(18, 0);
         int slotDurationHours = 2;
