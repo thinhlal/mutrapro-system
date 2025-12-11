@@ -2,14 +2,11 @@ package com.mutrapro.project_service.entity;
 
 import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.RecordingSessionType;
-import com.mutrapro.project_service.enums.ReservationFeeStatus;
 import com.mutrapro.project_service.enums.StudioBookingContext;
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -121,27 +118,4 @@ public class StudioBooking extends BaseEntity<String> {
 
     @Column(name = "notes", columnDefinition = "text")
     String notes;
-
-    // Reservation fee management (cho giữ chỗ trước hợp đồng)
-    @Builder.Default
-    @Column(name = "reservation_fee_amount", precision = 12, scale = 2)
-    BigDecimal reservationFeeAmount = BigDecimal.ZERO;
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "reservation_fee_status", nullable = false, length = 30)
-    ReservationFeeStatus reservationFeeStatus = ReservationFeeStatus.NONE;
-
-    @Column(name = "reservation_wallet_tx_id")
-    String reservationWalletTxId;  // Soft reference to billing-service
-
-    @Column(name = "reservation_refund_wallet_tx_id")
-    String reservationRefundWalletTxId;  // Soft reference to billing-service
-
-    @Column(name = "reservation_applied_to_milestone_id")
-    String reservationAppliedToMilestoneId;  // Reference to contract_milestones
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "refund_policy_json", columnDefinition = "jsonb")
-    String refundPolicyJson;  // JSON string for refund policy
 }

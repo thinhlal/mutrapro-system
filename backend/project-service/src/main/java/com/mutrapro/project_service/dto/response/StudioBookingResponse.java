@@ -2,7 +2,6 @@ package com.mutrapro.project_service.dto.response;
 
 import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.RecordingSessionType;
-import com.mutrapro.project_service.enums.ReservationFeeStatus;
 import com.mutrapro.project_service.enums.StudioBookingContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,12 +47,6 @@ public class StudioBookingResponse {
     String purpose;
     String specialInstructions;
     String notes;
-    BigDecimal reservationFeeAmount;
-    ReservationFeeStatus reservationFeeStatus;
-    String reservationWalletTxId;
-    String reservationRefundWalletTxId;
-    String reservationAppliedToMilestoneId;
-    String refundPolicyJson;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<BookingArtistResponse> artists;  // Danh sách artists tham gia booking (cho luồng 2)

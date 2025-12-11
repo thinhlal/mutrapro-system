@@ -21,7 +21,6 @@ public enum StudioBookingContext {
     /**
      * Booking giữ chỗ trước khi có contract
      * - Status = TENTATIVE
-     * - Có reservation fee
      * - Chờ customer ký hợp đồng mới chuyển sang CONFIRMED
      */
     PRE_CONTRACT_HOLD
