@@ -25,12 +25,12 @@ const HomePage = () => {
       <main className={styles.mainContent}>
         <HeroSection />
         <HowItWorks />
-        <Statistics />
+        {/* <Statistics /> */}
         <WhoAreWe />
         <WhatsIncluded />
         <FlexiblePricing />
         <EdgeGalleryStrip />
-        <ReviewsSection />
+        {/* <ReviewsSection /> */}
       </main>
 
       {/* Footer */}

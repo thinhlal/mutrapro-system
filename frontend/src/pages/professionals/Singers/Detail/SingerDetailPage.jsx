@@ -113,27 +113,15 @@ const DemosTab = ({ demos }) => (
       Demos ({demos?.length || 0})
     </Title>
     {demos && demos.length > 0 ? (
-      <div>
+      <div className={styles.demosContainer}>
         {demos.map(demo => (
-          <div
-            key={demo.demoId}
-            className={styles.audioTrack}
-            style={{ marginBottom: 20 }}
-          >
-            <PlayCircleFilled className={styles.playIcon} />
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 4,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <Text strong style={{ fontSize: '1.1rem' }}>
-                  {demo.title}
-                </Text>
+          <div key={demo.demoId} className={styles.audioTrack}>
+            <div className={styles.playIconContainer}>
+              <PlayCircleFilled className={styles.playIcon} />
+            </div>
+            <div className={styles.audioTrackContent}>
+              <div className={styles.audioTrackHeader}>
+                <Text className={styles.audioTrackTitle}>{demo.title}</Text>
                 {demo.skill && (
                   <Tag
                     color={
@@ -145,22 +133,12 @@ const DemosTab = ({ demos }) => (
                 )}
               </div>
               {demo.description && (
-                <Text
-                  type="secondary"
-                  style={{ display: 'block', marginBottom: 8 }}
-                >
+                <Text className={styles.audioTrackDescription}>
                   {demo.description}
                 </Text>
               )}
               {demo.genres && demo.genres.length > 0 && (
-                <div
-                  style={{
-                    marginBottom: 12,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
+                <div className={styles.audioTrackGenres}>
                   {demo.genres.map(genre => (
                     <Tag key={genre} color="orange">
                       {genre}
@@ -169,12 +147,14 @@ const DemosTab = ({ demos }) => (
                 </div>
               )}
               {demo.previewUrl ? (
-                <audio controls style={{ width: '100%', marginTop: 8 }}>
-                  <source src={demo.previewUrl} type="audio/mpeg" />
-                  Your browser does not support the audio element.
-                </audio>
+                <div className={styles.audioPlayerWrapper}>
+                  <audio controls>
+                    <source src={demo.previewUrl} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
               ) : (
-                <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                <Text className={styles.noPreviewText}>
                   No preview available
                 </Text>
               )}
@@ -183,8 +163,9 @@ const DemosTab = ({ demos }) => (
         ))}
       </div>
     ) : (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <Text type="secondary">Chưa có demo nào</Text>
+      <div className={styles.emptyDemosState}>
+        <PlayCircleFilled className={styles.emptyDemosIcon} />
+        <Text className={styles.emptyDemosText}>Chưa có demo nào</Text>
       </div>
     )}
   </div>
