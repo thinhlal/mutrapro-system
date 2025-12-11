@@ -106,6 +106,7 @@ public class ContractService {
     MilestoneProgressService milestoneProgressService;
     ContractMilestoneService contractMilestoneService;
     TaskAssignmentService taskAssignmentService;
+    StudioBookingService studioBookingService;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     com.mutrapro.project_service.repository.TaskAssignmentRepository taskAssignmentRepository;
@@ -1321,6 +1322,18 @@ public class ContractService {
             } catch (Exception e) {
                 log.error("Failed to update request status to awaiting_assignment after deposit paid: requestId={}, contractId={}, error={}",
                     contract.getRequestId(), contractId, e.getMessage(), e);
+            }
+            
+            // Update booking status từ TENTATIVE → CONFIRMED (chỉ cho recording contracts)
+            // Check contractType có recording milestone
+            if (contract.getContractType() == ContractType.recording) {
+                try {
+                    studioBookingService.updateBookingStatusOnDepositPaid(contractId);
+                } catch (Exception e) {
+                    log.error("Failed to update booking status on deposit paid: contractId={}, error={}", 
+                        contractId, e.getMessage(), e);
+                    // Không throw exception để không fail transaction
+                }
             }
         }
     }

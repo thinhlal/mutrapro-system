@@ -31,6 +31,7 @@ import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.MilestoneType;
+import com.mutrapro.project_service.enums.StudioBookingContext;
 import com.mutrapro.project_service.enums.TaskType;
 import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
@@ -1699,6 +1700,26 @@ public class TaskAssignmentService {
             // Tìm studio booking cho milestone này (nếu đã có)
             Optional<StudioBooking> bookingOpt = 
                 studioBookingRepository.findByMilestoneId(request.getMilestoneId());
+            
+            // Nếu không tìm thấy theo milestoneId, tìm theo contractId với context PRE_CONTRACT_HOLD
+            // (booking có thể chưa được link với milestone khi assign task)
+            if (bookingOpt.isEmpty()) {
+                List<StudioBooking> bookings = studioBookingRepository.findByContractId(contractId);
+                bookingOpt = bookings.stream()
+                    .filter(b -> b.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD 
+                        && b.getMilestoneId() == null)
+                    .findFirst();
+                
+                // Nếu tìm thấy, link booking với milestone
+                if (bookingOpt.isPresent()) {
+                    StudioBooking booking = bookingOpt.get();
+                    booking.setMilestoneId(request.getMilestoneId());
+                    studioBookingRepository.save(booking);
+                    log.info("Linked booking to milestone: bookingId={}, milestoneId={}", 
+                        booking.getBookingId(), request.getMilestoneId());
+                }
+            }
+            
             if (bookingOpt.isPresent()) {
                 studioBookingId = bookingOpt.get().getBookingId();
                 log.info("Found existing studio booking for recording milestone: bookingId={}, milestoneId={}", 

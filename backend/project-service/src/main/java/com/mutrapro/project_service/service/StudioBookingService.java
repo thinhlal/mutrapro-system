@@ -1591,5 +1591,90 @@ public class StudioBookingService {
             .toList();
     }
     
+    /**
+     * Link booking với contract và milestone khi contract được signed
+     * Được gọi từ ESignService khi contract được ký
+     * 
+     * Logic:
+     * - Check contract có recording milestone (chỉ link cho recording contracts)
+     * - Tìm booking theo requestId với context = PRE_CONTRACT_HOLD và chưa có contractId
+     * - Link booking với contract và milestone
+     * - Giữ nguyên status TENTATIVE (sẽ update khi deposit paid)
+     */
+    @Transactional
+    public void linkBookingToContract(String requestId, String contractId) {
+        log.info("Linking booking to contract: requestId={}, contractId={}", requestId, contractId);
+        
+        // Check contract có recording milestone (chỉ link cho recording contracts)
+        List<ContractMilestone> milestones = contractMilestoneRepository
+            .findByContractIdOrderByOrderIndexAsc(contractId);
+        ContractMilestone recordingMilestone = milestones.stream()
+            .filter(m -> m.getMilestoneType() == MilestoneType.recording)
+            .findFirst()
+            .orElse(null);
+        
+        if (recordingMilestone == null) {
+            log.debug("No recording milestone found in contract: contractId={}, skipping booking link", contractId);
+            return;
+        }
+        
+        // Tìm booking theo requestId với context PRE_CONTRACT_HOLD và chưa có contractId
+        List<StudioBooking> bookings = studioBookingRepository.findByRequestId(requestId);
+        StudioBooking booking = bookings.stream()
+            .filter(b -> b.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD 
+                && b.getContractId() == null)
+            .findFirst()
+            .orElse(null);
+        
+        if (booking == null) {
+            log.debug("No PRE_CONTRACT_HOLD booking found for requestId={}, skipping link", requestId);
+            return;
+        }
+        
+        // Link booking với contract và milestone
+        booking.setContractId(contractId);
+        booking.setMilestoneId(recordingMilestone.getMilestoneId());
+        studioBookingRepository.save(booking);
+        
+        log.info("Linked booking to contract and milestone: bookingId={}, contractId={}, milestoneId={}", 
+            booking.getBookingId(), contractId, recordingMilestone.getMilestoneId());
+    }
+    
+    /**
+     * Update booking status từ TENTATIVE → CONFIRMED khi deposit được paid
+     * Được gọi từ ContractService.handleDepositPaid
+     * 
+     * Logic:
+     * - Chỉ update cho luồng 3 (PRE_CONTRACT_HOLD context)
+     * - Tìm booking theo contractId với status = TENTATIVE và context = PRE_CONTRACT_HOLD
+     * - Update status thành CONFIRMED
+     * 
+     * Lưu ý: Luồng 2 (CONTRACT_RECORDING) booking đã là CONFIRMED khi tạo, không cần update
+     */
+    @Transactional
+    public void updateBookingStatusOnDepositPaid(String contractId) {
+        log.info("Updating booking status on deposit paid: contractId={}", contractId);
+        
+        // Tìm booking theo contractId với status TENTATIVE và context PRE_CONTRACT_HOLD (luồng 3)
+        List<StudioBooking> bookings = studioBookingRepository.findByContractId(contractId);
+        StudioBooking booking = bookings.stream()
+            .filter(b -> b.getStatus() == BookingStatus.TENTATIVE 
+                && b.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD)
+            .findFirst()
+            .orElse(null);
+        
+        if (booking == null) {
+            log.debug("No TENTATIVE PRE_CONTRACT_HOLD booking found for contractId={}, skipping status update", contractId);
+            return;
+        }
+        
+        // Update status
+        booking.setStatus(BookingStatus.CONFIRMED);
+        studioBookingRepository.save(booking);
+        
+        log.info("Updated booking status to CONFIRMED: bookingId={}, contractId={}", 
+            booking.getBookingId(), contractId);
+    }
+    
 }
 

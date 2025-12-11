@@ -201,6 +201,11 @@ const PayMilestonePage = () => {
   };
 
   const handlePayWithWallet = async () => {
+    // Ngăn chặn double-click - check ngay từ đầu
+    if (paying) {
+      return;
+    }
+
     if (!wallet || !targetMilestone || !targetMilestone.installment) {
       message.error('Wallet or installment information not available');
       return;

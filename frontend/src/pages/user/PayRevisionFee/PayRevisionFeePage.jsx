@@ -126,6 +126,11 @@ const PayRevisionFeePage = () => {
   };
 
   const handlePayWithWallet = async () => {
+    // Ngăn chặn double-click - check ngay từ đầu
+    if (paying) {
+      return;
+    }
+
     if (!wallet || !feeAmount) {
       message.error('Wallet or fee amount information not available');
       return;

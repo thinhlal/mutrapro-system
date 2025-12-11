@@ -11,6 +11,7 @@ import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractSignSession;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.enums.ContractStatus;
+import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.SignSessionStatus;
 import com.mutrapro.project_service.exception.*;
 import com.mutrapro.project_service.repository.ContractInstallmentRepository;
@@ -56,6 +57,7 @@ public class ESignService {
     final ObjectMapper objectMapper;
     final S3Service s3Service;
     final RequestServiceFeignClient requestServiceFeignClient;
+    final StudioBookingService studioBookingService;
 
     @Value("${esign.otp.expiration-minutes:5}")
     int otpExpirationMinutes;
@@ -278,6 +280,17 @@ public class ESignService {
         } catch (Exception e) {
             log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
                 contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Link booking với contract và milestone (chỉ cho recording contracts)
+        if (contract.getContractType() == ContractType.recording) {
+            try {
+                studioBookingService.linkBookingToContract(contract.getRequestId(), contractId);
+            } catch (Exception e) {
+                log.error("Failed to link booking to contract: requestId={}, contractId={}, error={}", 
+                    contract.getRequestId(), contractId, e.getMessage(), e);
+                // Không throw exception để không fail transaction
+            }
         }
 
         // 3. Gửi notification cho manager qua Kafka
