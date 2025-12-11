@@ -20,69 +20,75 @@
   font-size: 16px;
 }
 
-.choiceSection {
+.checkboxSection {
   margin-bottom: 32px;
-}
-
-.radioGroup {
-  width: 100%;
-}
-
-.radioContainer {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-}
-
-.radioButton {
-  flex: 1;
-  height: auto;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: left;
-}
-
-.radioContent {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.icon {
-  font-size: 32px;
-  color: #ec8a1c;
-}
-
-.radioTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.radioDescription {
-  font-size: 14px;
-  color: #666;
-}
-
-.selectionSection {
-  margin: 32px 0;
   padding: 24px;
   background: #f9f9f9;
   border-radius: 8px;
-  text-align: center;
 }
 
-.selectedInfo {
+.checkbox {
+  font-size: 16px;
+}
+
+.instrumentsSection {
+  margin-top: 32px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sectionHeader h4 {
+  margin: 0 !important;
+}
+
+.addButton {
+  width: auto;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
+}
+
+.instrumentCard {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.instrumentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.instrumentHeader h5 {
+  margin: 0 !important;
+}
+
+.instrumentForm {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  gap: 20px;
 }
 
-.selectButton {
-  width: 100%;
-  max-width: 300px;
+.formItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .actionRow {
@@ -111,13 +117,17 @@
     padding: 20px;
   }
 
-  .radioContainer {
+  .sectionHeader {
     flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
 
-  .radioButton {
-    padding: 16px;
+  .addButton {
     width: 100%;
+  }
+
+  .instrumentCard {
+    padding: 16px;
   }
 }

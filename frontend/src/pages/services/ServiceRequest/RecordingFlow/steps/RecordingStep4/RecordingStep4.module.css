@@ -20,69 +20,47 @@
   font-size: 16px;
 }
 
-.choiceSection {
-  margin-bottom: 32px;
-}
-
-.radioGroup {
-  width: 100%;
-}
-
-.radioContainer {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-}
-
-.radioButton {
-  flex: 1;
-  height: auto;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: left;
-}
-
-.radioContent {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.icon {
-  font-size: 32px;
-  color: #ec8a1c;
-}
-
-.radioTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.radioDescription {
-  font-size: 14px;
-  color: #666;
-}
-
-.selectionSection {
-  margin: 32px 0;
-  padding: 24px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.selectedInfo {
+.summarySection {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  gap: 24px;
 }
 
-.selectButton {
-  width: 100%;
-  max-width: 300px;
+.section {
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.section h4 {
+  margin: 0 0 16px 0 !important;
+  color: #333;
+}
+
+.participantItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.participantInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.participantCost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .actionRow {
@@ -91,7 +69,7 @@
   justify-content: flex-end;
 }
 
-.continueButton {
+.submitButton {
   background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
   border: none;
   height: 48px;
@@ -100,7 +78,7 @@
   font-weight: 600;
 }
 
-.continueButton:hover:not(:disabled) {
+.submitButton:hover:not(:disabled) {
   background: linear-gradient(135deg, #d67a16 0%, #c66a06 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
@@ -111,13 +89,13 @@
     padding: 20px;
   }
 
-  .radioContainer {
+  .participantItem {
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
   }
 
-  .radioButton {
-    padding: 16px;
+  .participantCost {
+    align-items: flex-start;
     width: 100%;
   }
 }
