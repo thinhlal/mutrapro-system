@@ -6,83 +6,101 @@
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  text-align: center;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+  margin: 0 0 8px 0 !important;
   color: #333;
 }
 
 .description {
   color: #666;
-  margin: 0;
+  font-size: 16px;
 }
 
-.form {
+.calendarSection {
   margin-bottom: 32px;
 }
 
-.uploadSection {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid #e8e8e8;
-}
-
-.sectionTitle {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
-  color: #333;
-}
-
-.sectionDescription {
-  color: #666;
-  margin: 0 0 16px 0;
-}
-
-.dragger {
-  background: #fafafa;
-  border: 1px dashed #d9d9d9;
-  border-radius: 8px;
-}
-
-.fileList {
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
-}
-
-.fileItem {
-  padding: 8px;
+.calendar {
   background: white;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-radius: 8px;
+  padding: 16px;
 }
 
-.fileSize {
-  color: #999;
-  font-size: 12px;
-}
-
-.clearButton {
-  background: none;
-  border: none;
-  color: #ff4d4f;
-  cursor: pointer;
-  padding: 4px 8px;
+.dateInfo {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
+  font-size: 11px;
 }
 
-.clearButton:hover {
-  color: #ff7875;
+.pastDate {
+  color: #ccc;
+  font-size: 11px;
+}
+
+.bookedBadge {
+  background: #ff4d4f;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tentativeBadge {
+  background: #faad14;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.timeSelectionSection {
+  margin-top: 32px;
+  padding: 24px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.sectionHeader {
+  margin-bottom: 16px;
+}
+
+.sectionHeader h4 {
+  margin: 0 0 4px 0 !important;
+}
+
+.timePickerSection {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.quickSlots {
+  margin-top: 24px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+}
+
+.slotButton {
+  margin: 4px;
+}
+
+.selectedInfo {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 1px solid #91d5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .actionRow {
@@ -91,26 +109,19 @@
   justify-content: flex-end;
 }
 
-.nextButton {
+.continueButton {
   background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
-  color: white;
   border: none;
-  padding: 12px 32px;
-  border-radius: 8px;
+  height: 48px;
+  padding: 0 32px;
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
-.nextButton:hover:not(:disabled) {
+.continueButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d67a16 0%, #c66a06 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
-}
-
-.nextButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
@@ -118,7 +129,12 @@
     padding: 20px;
   }
 
-  .title {
-    font-size: 20px;
+  .quickSlots {
+    padding: 12px;
+  }
+
+  .slotButton {
+    width: 100%;
+    margin: 4px 0;
   }
 }

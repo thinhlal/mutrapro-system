@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Steps, Button, Card } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
+// Step 1: Slot Selection (moved from Step5)
 import RecordingStep1 from './steps/RecordingStep1/RecordingStep1';
+// Step 2: Vocal Setup
 import RecordingStep2 from './steps/RecordingStep2/RecordingStep2';
+// Step 3: Instrument Setup
 import RecordingStep3 from './steps/RecordingStep3/RecordingStep3';
+// Step 4: Summary
 import RecordingStep4 from './steps/RecordingStep4/RecordingStep4';
-import RecordingStep5 from './steps/RecordingStep5/RecordingStep5';
 import styles from './RecordingFlowController.module.css';
 import Header from '../../../../components/common/Header/Header';
 
@@ -15,24 +18,20 @@ const STORAGE_KEY = 'recordingFlowData';
 
 const STEPS = [
   {
-    title: 'Basic Info',
-    description: 'Form & Audio Upload',
-  },
-  {
-    title: 'Vocalist',
-    description: 'Select Vocalist (Optional)',
-  },
-  {
-    title: 'Instrumentalists',
-    description: 'Select Instrumentalists (Optional)',
-  },
-  {
-    title: 'Equipment',
-    description: 'Select Equipment (Optional)',
-  },
-  {
-    title: 'Booking',
+    title: 'Slot Selection',
     description: 'Select Date & Time',
+  },
+  {
+    title: 'Vocal Setup',
+    description: 'Who will sing?',
+  },
+  {
+    title: 'Instrument Setup',
+    description: 'Instruments & Equipment',
+  },
+  {
+    title: 'Summary',
+    description: 'Review & Confirm',
   },
 ];
 
@@ -162,6 +161,7 @@ export default function RecordingFlowController() {
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
+        // Step 1: Slot Selection
         return (
           <RecordingStep1
             data={flowData.step1}
@@ -169,38 +169,45 @@ export default function RecordingFlowController() {
           />
         );
       case 1:
+        // Step 2: Vocal Setup - pass step1 data for booking slot info
         return (
           <RecordingStep2
-            data={flowData.step2}
+            data={{
+              ...flowData.step2,
+              bookingDate: flowData.step1?.bookingDate,
+              bookingStartTime: flowData.step1?.bookingStartTime,
+              bookingEndTime: flowData.step1?.bookingEndTime,
+            }}
             onComplete={data => handleStepComplete({ step2: data })}
-            onSkip={handleSkip}
           />
         );
       case 2:
+        // Step 3: Instrument Setup - pass step1 and step2 data
         return (
           <RecordingStep3
-            data={flowData.step3}
+            data={{
+              ...flowData.step3,
+              bookingDate: flowData.step1?.bookingDate,
+              bookingStartTime: flowData.step1?.bookingStartTime,
+              bookingEndTime: flowData.step1?.bookingEndTime,
+            }}
             onComplete={data => handleStepComplete({ step3: data })}
-            onSkip={handleSkip}
           />
         );
       case 3:
+        // Step 4: Summary
         return (
           <RecordingStep4
-            data={flowData.step4}
-            onComplete={data => handleStepComplete({ step4: data })}
-            onSkip={handleSkip}
-          />
-        );
-      case 4:
-        return (
-          <RecordingStep5
-            data={flowData.step5}
+            data={{
+              step1: flowData.step1 || {},
+              step2: flowData.step2 || {},
+              step3: flowData.step3 || {},
+            }}
             onComplete={data => {
               // Final step - submit all data
               const finalData = {
                 ...flowData,
-                step5: data,
+                step4: data,
               };
               updateFlowData(finalData);
               // Navigate to quote page or submit
