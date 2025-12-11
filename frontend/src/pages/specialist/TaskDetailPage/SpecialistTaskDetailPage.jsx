@@ -149,8 +149,21 @@ function getTaskTypeLabel(taskType) {
   return labels[normalizedType] || taskType;
 }
 
-function getActualDeadline(milestone) {
-  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
+function getActualDeadline(milestone, studioBooking = null) {
+  // Recording milestone: deadline tính từ booking date, không phải actualStartAt
+  if (
+    milestone?.milestoneType?.toLowerCase() === 'recording' &&
+    studioBooking?.bookingDate &&
+    milestone?.milestoneSlaDays
+  ) {
+    const bookingDate = new Date(studioBooking.bookingDate);
+    if (!Number.isFinite(bookingDate.getTime())) return null;
+    const due = new Date(bookingDate);
+    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
+    return due;
+  }
+  
+  // Other milestones: SLA tính từ khi bắt đầu làm việc (actualStartAt)
   if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) return null;
   const start = new Date(milestone.actualStartAt);
   if (!Number.isFinite(start.getTime())) return null;
@@ -219,7 +232,9 @@ function getFallbackDeadline(milestone, allTasks = []) {
     );
     if (previousTask?.milestone) {
       const previousMilestone = previousTask.milestone;
-      const previousActualDeadline = getActualDeadline(previousMilestone);
+      // Note: previousTask có thể là recording, nhưng chúng ta không có studioBooking của previous task ở đây
+      // Frontend không cần quá chính xác cho fallback deadline của milestone phụ thuộc
+      const previousActualDeadline = getActualDeadline(previousMilestone, null);
       const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
       const previousFallbackDeadline = getFallbackDeadline(
         previousMilestone,
@@ -314,7 +329,8 @@ const SpecialistTaskDetailPage = () => {
         estimatedDeadline: null,
       };
     }
-    const actual = getActualDeadline(task.milestone);
+    // Pass studioBooking để tính deadline cho recording milestone
+    const actual = getActualDeadline(task.milestone, studioBooking);
     const planned = getPlannedDeadline(task.milestone);
     const estimated =
       !actual && !planned
@@ -325,7 +341,7 @@ const SpecialistTaskDetailPage = () => {
       plannedDeadline: planned,
       estimatedDeadline: estimated,
     };
-  }, [task, contractTasks]);
+  }, [task, contractTasks, studioBooking]);
 
   const loadTaskFiles = useCallback(async assignmentId => {
     if (!assignmentId) return;
@@ -1906,23 +1922,93 @@ const SpecialistTaskDetailPage = () => {
                 // Lưu ý: Khi revision (in_revision), booking có thể đã COMPLETED nhưng vẫn cho phép làm việc (revision hậu kỳ)
                 let canStartWithBooking = true;
                 let bookingStatusMessage = '';
-                if (hasStudioBooking && studioBooking && hasStartButton) {
-                  // Chỉ check booking status khi task đang ở trạng thái ready_to_start (cần start)
-                  // Khi task đã in_progress hoặc in_revision, không cần check booking status nữa
+                let daysUntilBooking = null;
+                let bookingDateFormatted = '';
+                
+                console.log('=== BOOKING VALIDATION START ===');
+                console.log('hasStudioBooking:', hasStudioBooking);
+                console.log('studioBooking:', studioBooking);
+                console.log('hasStartButton:', hasStartButton);
+                console.log('task.status:', task?.status);
+                
+                if (hasStudioBooking && studioBooking) { // ← BỎ điều kiện hasStartButton
+                  // Chỉ validate khi hasStartButton = true (ready_to_start)
+                  // Nhưng vẫn hiển thị booking info cho mọi status
                   const bookingStatus = studioBooking.status;
-
-                  // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
-                  // COMPLETED được cho phép vì có thể là revision hậu kỳ (đã thu âm xong, chỉnh sửa file)
-                  if (
-                    bookingStatus !== 'CONFIRMED' &&
-                    bookingStatus !== 'IN_PROGRESS' &&
-                    bookingStatus !== 'COMPLETED'
-                  ) {
-                    canStartWithBooking = false;
-                    bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
+                  console.log('📌 Booking Status =', bookingStatus);
+                  
+                  // Tính toán booking date và countdown (luôn tính để hiển thị)
+                  if (studioBooking.bookingDate) {
+                    const bookingDate = dayjs(studioBooking.bookingDate).startOf('day');
+                    const today = dayjs().startOf('day');
+                    daysUntilBooking = bookingDate.diff(today, 'day');
+                    bookingDateFormatted = `${studioBooking.bookingDate} | ${studioBooking.startTime || 'N/A'} - ${studioBooking.endTime || 'N/A'}`;
+                    console.log('   bookingDate:', studioBooking.bookingDate);
+                    console.log('   today:', today.format('YYYY-MM-DD'));
+                    console.log('   daysUntilBooking:', daysUntilBooking);
                   }
-                }
 
+                  // Chỉ validate cho nút "Start Task" khi hasStartButton = true
+                  if (hasStartButton) {
+                    console.log('📌 VALIDATE FOR START BUTTON');
+                    
+                    // Check 1: Booking Status
+                    // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                    if (
+                      bookingStatus !== 'CONFIRMED' &&
+                      bookingStatus !== 'IN_PROGRESS' &&
+                      bookingStatus !== 'COMPLETED'
+                    ) {
+                      canStartWithBooking = false;
+                      bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
+                      console.log('❌ CHECK 1 FAILED: Status không hợp lệ →', bookingStatus);
+                      console.log('   canStartWithBooking =', canStartWithBooking);
+                      console.log('   message =', bookingStatusMessage);
+                    } else {
+                      console.log('✅ CHECK 1 PASSED: Status hợp lệ');
+                    }
+                    
+                    // Check 2: Thời gian
+                    if (studioBooking.bookingDate && canStartWithBooking) {
+                      console.log('📌 CHECK 2: Thời gian');
+                      
+                      // Quá sớm: > 7 ngày trước booking date
+                      if (daysUntilBooking > 7) {
+                        canStartWithBooking = false;
+                        bookingStatusMessage = `Chưa thể bắt đầu task. Recording session sẽ diễn ra vào ${bookingDateFormatted}. Bạn có thể bắt đầu task trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`;
+                        console.log('❌ CHECK 2 FAILED: Quá sớm (> 7 ngày)');
+                        console.log('   canStartWithBooking =', canStartWithBooking);
+                        console.log('   message =', bookingStatusMessage);
+                      }
+                      // Quá muộn: > 1 ngày sau booking date
+                      else if (daysUntilBooking < -1) {
+                        canStartWithBooking = false;
+                        bookingStatusMessage = `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày (${bookingDateFormatted}). Vui lòng liên hệ Manager nếu cần hỗ trợ.`;
+                        console.log('❌ CHECK 2 FAILED: Quá muộn (< -1 ngày)');
+                        console.log('   canStartWithBooking =', canStartWithBooking);
+                        console.log('   message =', bookingStatusMessage);
+                      } else {
+                        console.log('✅ CHECK 2 PASSED: Trong khoảng -1 đến 7 ngày');
+                      }
+                    } else if (!studioBooking.bookingDate) {
+                      console.log('⚠️ CHECK 2 SKIPPED: Không có bookingDate');
+                    } else if (!canStartWithBooking) {
+                      console.log('⚠️ CHECK 2 SKIPPED: canStartWithBooking đã false từ CHECK 1');
+                    }
+                  } else {
+                    console.log('⚠️ VALIDATION SKIPPED: hasStartButton = false (task status không phải ready_to_start)');
+                    console.log('   → Booking info vẫn được tính toán để hiển thị');
+                  }
+                } else {
+                  console.log('⚠️ VALIDATION SKIPPED: Không có booking data');
+                }
+                
+                console.log('=== FINAL RESULT ===');
+                console.log('canStartWithBooking:', canStartWithBooking);
+                console.log('bookingStatusMessage:', bookingStatusMessage);
+                console.log('daysUntilBooking:', daysUntilBooking);
+                console.log('bookingDateFormatted:', bookingDateFormatted);
+                console.log('=== BOOKING VALIDATION END ===\n');
                 const cannotStart =
                   needsStudioBooking ||
                   (hasStudioBooking && hasStartButton && !canStartWithBooking);
@@ -2065,6 +2151,44 @@ const SpecialistTaskDetailPage = () => {
                           showIcon
                         />
                       )}
+                      
+                      {/* Hiển thị booking info nếu có */}
+                      {hasStudioBooking && studioBooking && bookingDateFormatted && (
+                        <Alert
+                          message={`🎙️ Recording Session: ${bookingDateFormatted}`}
+                          description={
+                            daysUntilBooking !== null && (
+                              <span>
+                                {daysUntilBooking > 0 && (
+                                  <span>
+                                    Còn <strong>{daysUntilBooking} ngày</strong> đến ngày thu âm.
+                                    {daysUntilBooking <= 7 && ' Bạn đã có thể bắt đầu task!'}
+                                  </span>
+                                )}
+                                {daysUntilBooking === 0 && (
+                                  <span><strong>Hôm nay là ngày thu âm!</strong> Sẵn sàng bắt đầu task.</span>
+                                )}
+                                {daysUntilBooking < 0 && daysUntilBooking >= -1 && (
+                                  <span>Ngày thu âm đã qua {Math.abs(daysUntilBooking)} ngày. Vẫn có thể bắt đầu task.</span>
+                                )}
+                                {studioBooking.durationHours && (
+                                  <span> • Thời lượng: {studioBooking.durationHours}h</span>
+                                )}
+                                {studioBooking.status && (
+                                  <span> • Trạng thái: {studioBooking.status}</span>
+                                )}
+                              </span>
+                            )
+                          }
+                          type={
+                            canStartWithBooking && daysUntilBooking !== null && daysUntilBooking <= 7 && daysUntilBooking >= -1
+                              ? 'success'
+                              : 'info'
+                          }
+                          showIcon
+                        />
+                      )}
+                      
                       {hasStudioBooking &&
                         !canStartWithBooking &&
                         bookingStatusMessage && (
@@ -2100,11 +2224,11 @@ const SpecialistTaskDetailPage = () => {
                                 Submit for Review
                               </Button>
                             )}
-                            {hasStartButton && (
+                            {hasStartButton && !needsStudioBooking && (
                               <Button
                                 type="primary"
                                 onClick={handleStartTask}
-                                disabled={cannotStart}
+                                disabled={!canStartWithBooking}
                                 loading={startingTask}
                               >
                                 Start Task

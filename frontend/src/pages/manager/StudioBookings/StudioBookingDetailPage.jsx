@@ -944,6 +944,121 @@ const StudioBookingDetailPage = () => {
             </Descriptions.Item>
           )}
 
+          {/* Participants (cho luồng 3: PRE_CONTRACT_HOLD - recording requests) */}
+          {bookingDetail.participants && bookingDetail.participants.length > 0 && (
+            <Descriptions.Item label="👥 Participants" span={2}>
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: '100%' }}
+              >
+                {bookingDetail.participants.map((participant, idx) => (
+                  <Card key={idx} size="small" style={{ marginBottom: 8 }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
+                      <Space>
+                        <Text strong>
+                          {participant.specialistName || 'Self'}
+                        </Text>
+                        {participant.isPrimary && (
+                          <Tag color="gold">Primary</Tag>
+                        )}
+                      </Space>
+                      {participant.specialistId && (
+                        <Space>
+                          <Text strong>Specialist ID:</Text>
+                          <Text
+                            copyable={{ text: participant.specialistId }}
+                            style={{
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {participant.specialistId?.substring(0, 8)}...
+                          </Text>
+                        </Space>
+                      )}
+                      <Space>
+                        <Text strong>Role:</Text>
+                        <Tag
+                          color={
+                            participant.roleType === 'VOCAL' ? 'blue' : 'purple'
+                          }
+                        >
+                          {participant.roleType || 'N/A'}
+                        </Tag>
+                      </Space>
+                      {participant.performerSource && (
+                        <Space>
+                          <Text strong>Source:</Text>
+                          <Tag color="cyan">
+                            {participant.performerSource === 'INTERNAL_ARTIST' ? 'Internal' : 
+                             participant.performerSource === 'EXTERNAL_GUEST' ? 'External' :
+                             participant.performerSource}
+                          </Tag>
+                        </Space>
+                      )}
+                      {participant.skillName && (
+                        <Space>
+                          <Text strong>Skill:</Text>
+                          <Text>{participant.skillName}</Text>
+                        </Space>
+                      )}
+                      {participant.participantFee && (
+                        <Space>
+                          <Text strong>Fee:</Text>
+                          <Text strong style={{ color: '#ff4d4f' }}>
+                            {participant.participantFee.toLocaleString()} VND
+                          </Text>
+                        </Space>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </Descriptions.Item>
+          )}
+
+          {/* Required Equipment (cho luồng 3: PRE_CONTRACT_HOLD) */}
+          {bookingDetail.requiredEquipment && bookingDetail.requiredEquipment.length > 0 && (
+            <Descriptions.Item label="🎸 Required Equipment" span={2}>
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: '100%' }}
+              >
+                {bookingDetail.requiredEquipment.map((equipment, idx) => (
+                  <Card key={idx} size="small" style={{ marginBottom: 8 }}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      <Text strong>{equipment.equipmentName || 'Equipment'}</Text>
+                      <Space>
+                        <Text strong>Quantity:</Text>
+                        <Tag>{equipment.quantity}</Tag>
+                      </Space>
+                      {equipment.rentalFeePerUnit && (
+                        <Space>
+                          <Text strong>Fee per unit:</Text>
+                          <Text>{equipment.rentalFeePerUnit.toLocaleString()} VND</Text>
+                        </Space>
+                      )}
+                      {equipment.totalRentalFee && (
+                        <Space>
+                          <Text strong>Total Fee:</Text>
+                          <Text strong style={{ color: '#ff4d4f' }}>
+                            {equipment.totalRentalFee.toLocaleString()} VND
+                          </Text>
+                        </Space>
+                      )}
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </Descriptions.Item>
+          )}
+
           {/* Chỉ hiển thị cost cho STANDALONE_BOOKING và PRE_CONTRACT_HOLD */}
           {bookingDetail.context !== 'CONTRACT_RECORDING' && (
             <>

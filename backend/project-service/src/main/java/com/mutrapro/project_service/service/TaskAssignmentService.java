@@ -69,6 +69,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -625,6 +627,52 @@ public class TaskAssignmentService {
             return null;
         }
         Integer slaDays = milestone.getMilestoneSlaDays();
+        
+        // Recording milestone: deadline tính từ booking date, không phải actualStartAt
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            // Ưu tiên 1: plannedDueDate (đã được tính từ booking date ở ContractService)
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            
+            // Ưu tiên 2: Tính từ booking date nếu có actualStartAt (specialist đã start)
+            if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
+                try {
+                    Optional<StudioBooking> bookingOpt = 
+                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                    
+                    if (bookingOpt.isPresent() && bookingOpt.get().getBookingDate() != null) {
+                        LocalDate bookingDate = bookingOpt.get().getBookingDate();
+                        LocalTime startTime = bookingOpt.get().getStartTime() != null ? 
+                            bookingOpt.get().getStartTime() : LocalTime.of(9, 0);
+                        LocalDateTime bookingDateTime = bookingDate.atTime(startTime);
+                        
+                        log.debug("Recording milestone deadline calculated from booking date: milestoneId={}, bookingDate={}, slaDays={}", 
+                            milestone.getMilestoneId(), bookingDate, slaDays);
+                        return bookingDateTime.plusDays(slaDays);
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching booking for recording milestone deadline: milestoneId={}, error={}", 
+                        milestone.getMilestoneId(), e.getMessage());
+                }
+                // Fallback: use actualStartAt if no booking found
+                return milestone.getActualStartAt().plusDays(slaDays);
+            }
+            
+            // Ưu tiên 3: actualEndAt
+            if (milestone.getActualEndAt() != null) {
+                return milestone.getActualEndAt();
+            }
+            
+            // Ưu tiên 4: plannedStartAt + slaDays
+            if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            
+            return null;
+        }
+        
+        // Other milestones: logic cũ
         if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
             return milestone.getActualStartAt().plusDays(slaDays);
         }
@@ -2023,6 +2071,18 @@ public class TaskAssignmentService {
         ).orElseThrow(() -> ContractMilestoneNotFoundException.byId(
             assignment.getMilestoneId(), assignment.getContractId()));
 
+        // Với recording task, tự động link studioBookingId nếu booking đã được tạo trước đó
+        if (assignment.getTaskType() == TaskType.recording_supervision 
+            && milestone.getMilestoneType() == MilestoneType.recording
+            && (assignment.getStudioBookingId() == null || assignment.getStudioBookingId().isEmpty())) {
+            Optional<StudioBooking> bookingOpt = studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+            if (bookingOpt.isPresent()) {
+                assignment.setStudioBookingId(bookingOpt.get().getBookingId());
+                log.info("Auto-linked studio booking to recording task on accept: taskId={}, bookingId={}, milestoneId={}",
+                    assignment.getAssignmentId(), bookingOpt.get().getBookingId(), milestone.getMilestoneId());
+            }
+        }
+
         // Specialist accept task → task status = ACCEPTED_WAITING
         // Milestone chuyển từ WAITING_SPECIALIST_ACCEPT → TASK_ACCEPTED_WAITING_ACTIVATION
         if (milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_SPECIALIST_ACCEPT) {
@@ -2031,6 +2091,14 @@ public class TaskAssignmentService {
             milestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
             contractMilestoneRepository.save(milestone);
             log.info("Task assignment accepted (waiting for milestone activation): assignmentId={}, milestoneId={}, milestoneStatus={}", 
+                assignmentId, milestone.getMilestoneId(), MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+        } else if (milestone.getWorkStatus() == MilestoneWorkStatus.WAITING_ASSIGNMENT) {
+            // Trường hợp milestone vẫn ở WAITING_ASSIGNMENT (có thể do race condition hoặc milestone chưa được update)
+            assignment.setStatus(AssignmentStatus.accepted_waiting);
+            // Milestone chuyển sang TASK_ACCEPTED_WAITING_ACTIVATION (đã accept, chờ activate)
+            milestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+            contractMilestoneRepository.save(milestone);
+            log.info("Task assignment accepted (milestone was WAITING_ASSIGNMENT, now TASK_ACCEPTED_WAITING_ACTIVATION): assignmentId={}, milestoneId={}, milestoneStatus={}", 
                 assignmentId, milestone.getMilestoneId(), MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
         } else if (milestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
             assignment.setStatus(AssignmentStatus.accepted_waiting);
@@ -2062,6 +2130,23 @@ public class TaskAssignmentService {
                 assignment.getContractId(),
                 assignment.getMilestoneId()
             );
+        }
+        
+        // Với recording milestone, nếu milestone đã ở TASK_ACCEPTED_WAITING_ACTIVATION và task đã có booking,
+        // tự động activate milestone để chuyển sang READY_TO_START
+        if (milestone.getMilestoneType() == MilestoneType.recording 
+            && milestone.getWorkStatus() == MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION
+            && saved.getTaskType() == TaskType.recording_supervision
+            && saved.getStudioBookingId() != null && !saved.getStudioBookingId().isEmpty()) {
+            try {
+                activateAssignmentsForMilestone(assignment.getContractId(), milestone.getMilestoneId());
+                log.info("Auto-activated recording milestone after task accepted with booking: milestoneId={}, taskId={}, bookingId={}",
+                    milestone.getMilestoneId(), saved.getAssignmentId(), saved.getStudioBookingId());
+            } catch (Exception e) {
+                log.warn("Failed to auto-activate milestone after task accepted: milestoneId={}, taskId={}, error={}",
+                    milestone.getMilestoneId(), saved.getAssignmentId(), e.getMessage());
+                // Không throw error, chỉ log warning (milestone sẽ được activate sau)
+            }
         }
         
         return taskAssignmentMapper.toResponse(saved);

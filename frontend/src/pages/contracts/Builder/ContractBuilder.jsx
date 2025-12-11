@@ -17,6 +17,7 @@ import {
   Tag,
   Tooltip,
   Card,
+  Collapse,
 } from 'antd';
 import {
   QuestionCircleOutlined,
@@ -41,6 +42,7 @@ import {
   getContractById,
   updateContract,
 } from '../../../services/contractService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import { API_CONFIG } from '../../../config/apiConfig';
 import {
   getDefaultTermsAndConditions,
@@ -64,6 +66,9 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
     ['milestones', field.name, 'hasPayment'],
     form
   );
+  const contractType = Form.useWatch('contract_type', form);
+  const depositPercent = Form.useWatch('deposit_percent', form);
+  const contractSlaDays = Form.useWatch('sla_days', form);
 
   // Tự động set milestoneType dựa trên contractType khi component mount hoặc contractType thay đổi
   useEffect(() => {
@@ -87,6 +92,25 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
       );
     }
   }, [form, field.name]);
+
+  // Auto-update paymentPercent và milestoneSlaDays cho recording milestone
+  useEffect(() => {
+    if (contractType === 'recording') {
+      // Auto-set hasPayment = true
+      form.setFieldValue(['milestones', field.name, 'hasPayment'], true);
+      
+      // Auto-update paymentPercent khi depositPercent thay đổi
+      if (depositPercent !== undefined) {
+        const expectedPaymentPercent = 100 - depositPercent;
+        form.setFieldValue(['milestones', field.name, 'paymentPercent'], expectedPaymentPercent);
+      }
+      
+      // Auto-update milestoneSlaDays = contract slaDays
+      if (contractSlaDays !== undefined) {
+        form.setFieldValue(['milestones', field.name, 'milestoneSlaDays'], contractSlaDays);
+      }
+    }
+  }, [contractType, depositPercent, contractSlaDays, form, field.name]);
 
   // Tách key ra khỏi field để tránh lỗi React key prop
   const { key, ...restField } = field;
@@ -217,14 +241,23 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
           valuePropName="checked"
           initialValue={false}
         >
-          <Switch />
+          <Switch disabled={contractType === 'recording'} />
         </Form.Item>
 
         {hasPayment && (
           <Form.Item
             {...restField}
             name={[field.name, 'paymentPercent']}
-            label="Payment Percent (%)"
+            label={
+              <span>
+                Payment Percent (%)
+                {contractType === 'recording' && (
+                  <span style={{ marginLeft: 8, color: '#999', fontWeight: 'normal' }}>
+                    (Auto: 100% - Deposit)
+                  </span>
+                )}
+              </span>
+            }
             rules={[
               {
                 required: true,
@@ -245,6 +278,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
               precision={2}
               style={{ width: '100%' }}
               placeholder="e.g., 30.00"
+              disabled={contractType === 'recording'}
             />
           </Form.Item>
         )}
@@ -255,6 +289,11 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
           label={
             <span>
               Milestone SLA Days{' '}
+              {contractType === 'recording' ? (
+                <span style={{ color: '#999', fontWeight: 'normal' }}>
+                  (Auto: = Contract SLA)
+                </span>
+              ) : (
               <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
                 <QuestionCircleOutlined
                   style={{
@@ -263,6 +302,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
                   }}
                 />
               </Tooltip>
+              )}
             </span>
           }
           rules={[
@@ -283,6 +323,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
             step={1}
             style={{ width: '100%' }}
             placeholder="Số ngày SLA cho milestone này"
+            disabled={contractType === 'recording'}
           />
         </Form.Item>
       </Space>
@@ -374,6 +415,7 @@ const ContractBuilder = () => {
   const [loadingServiceRequest, setLoadingServiceRequest] = useState(false);
   const [loadingContract, setLoadingContract] = useState(false);
   const [serviceRequest, setServiceRequest] = useState(null);
+  const [bookingData, setBookingData] = useState(null);
   const [existingContract, setExistingContract] = useState(null);
   const [creatingContract, setCreatingContract] = useState(false);
   const [error, setError] = useState(null);
@@ -538,7 +580,27 @@ const ContractBuilder = () => {
 
         // Map ServiceType to ContractType
         const contractType = mapServiceTypeToContractType(request.requestType);
-        const totalPrice = request.totalPrice || 0;
+        
+        // For recording requests, get totalPrice from booking totalCost and save booking data
+        let totalPrice = request.totalPrice || 0;
+        if (request.requestType === 'recording') {
+          try {
+            const bookingResponse = await getBookingByRequestId(requestId);
+            if (bookingResponse?.status === 'success' && bookingResponse.data) {
+              setBookingData(bookingResponse.data);  // Save booking data to display
+              if (bookingResponse.data.totalCost) {
+                totalPrice = bookingResponse.data.totalCost;
+                console.log('Using booking totalCost for recording contract:', totalPrice);
+              }
+            } else {
+              console.warn('No booking found for recording request, using request totalPrice:', totalPrice);
+            }
+          } catch (error) {
+            console.warn('Failed to fetch booking for recording request:', error);
+            // Fallback to request.totalPrice
+          }
+        }
+        
         const depositPercent = 40;
         const defaultSlaDays = getDefaultSlaDays(contractType);
         const defaultRevisionDeadlineDays =
@@ -1567,6 +1629,65 @@ const ContractBuilder = () => {
                   size="small"
                 />
               )}
+              
+              {/* Studio Booking Info - only for recording requests */}
+              {bookingData && serviceRequest?.requestType === 'recording' && !isEditMode && (
+                <Collapse
+                  defaultActiveKey={['booking']}
+                  style={{ marginBottom: 16 }}
+                  items={[
+                    {
+                      key: 'booking',
+                      label: <span style={{ fontWeight: 500 }}>🎙️ Studio Booking Information</span>,
+                      children: (
+                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          {bookingData.bookingDate && (
+                            <div>
+                              <strong>📅 Date:</strong> {bookingData.bookingDate} | {bookingData.startTime} - {bookingData.endTime} ({bookingData.durationHours}h)
+                            </div>
+                          )}
+                          {bookingData.status && (
+                            <div>
+                              <strong>Status:</strong> <Tag color={bookingData.status === 'CONFIRMED' ? 'green' : 'orange'}>{bookingData.status}</Tag>
+                            </div>
+                          )}
+                          {bookingData.participants && bookingData.participants.length > 0 && (
+                            <div>
+                              <strong>👥 Participants ({bookingData.participants.length}):</strong>
+                              <div style={{ marginLeft: 16, marginTop: 4 }}>
+                                {bookingData.participants.map((p, idx) => (
+                                  <div key={idx} style={{ fontSize: '13px' }}>
+                                    • <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'} size="small">{p.roleType}</Tag>
+                                    {p.specialistName || 'Self'} - {p.participantFee?.toLocaleString('vi-VN')} VND
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {bookingData.requiredEquipment && bookingData.requiredEquipment.length > 0 && (
+                            <div>
+                              <strong>🎸 Equipment ({bookingData.requiredEquipment.length}):</strong>
+                              <div style={{ marginLeft: 16, marginTop: 4 }}>
+                                {bookingData.requiredEquipment.map((eq, idx) => (
+                                  <div key={idx} style={{ fontSize: '13px' }}>
+                                    • {eq.equipmentName} x {eq.quantity} - {eq.totalRentalFee?.toLocaleString('vi-VN')} VND
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8, marginTop: 8 }}>
+                            <strong>💵 Total Booking Cost:</strong> 
+                            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff4d4f', marginLeft: 8 }}>
+                              {bookingData.totalCost?.toLocaleString('vi-VN')} VND
+                            </span>
+                          </div>
+                        </Space>
+                      ),
+                    },
+                  ]}
+                />
+              )}
               {isEditMode && existingContract && (
                 <Alert
                   message={`Editing contract: ${existingContract.contractNumber || existingContract.contractId}`}
@@ -1868,6 +1989,7 @@ const ContractBuilder = () => {
                                       const milestones =
                                         form.getFieldValue('milestones') || [];
                                       const newOrderIndex = fields.length + 1;
+                                      const depositPercent = form.getFieldValue('deposit_percent') || 0;
 
                                       const newMilestone = {
                                         name: '',
@@ -1887,6 +2009,14 @@ const ContractBuilder = () => {
                                       ) {
                                         newMilestone.milestoneType =
                                           contractType; // transcription, arrangement, recording
+                                        
+                                        // Với recording contract (1 milestone duy nhất), auto-set payment
+                                        if (contractType === 'recording') {
+                                          newMilestone.hasPayment = true;
+                                          newMilestone.paymentPercent = 100 - depositPercent;
+                                          newMilestone.name = 'Recording Session';
+                                          newMilestone.description = 'Complete recording service as specified in booking details';
+                                        }
                                       }
                                       // Với arrangement_with_recording, user sẽ tự chọn milestoneType
                                       // và orderIndex sẽ được tự động điều chỉnh khi chọn milestoneType
@@ -1895,8 +2025,10 @@ const ContractBuilder = () => {
                                     }}
                                     block
                                     icon={<PlusOutlined />}
+                                    disabled={contractType === 'recording' && fields.length >= 1}
                                   >
                                     Add Milestone
+                                    {contractType === 'recording' && fields.length >= 1 && ' (Recording contract chỉ có 1 milestone)'}
                                   </Button>
                                 </Form.Item>
                               </>
@@ -2249,6 +2381,23 @@ const ContractBuilder = () => {
                             )}
                         </>
                       )}
+                      
+                      {/* Recording-specific fields: Studio Booking Summary */}
+                      {serviceRequest.requestType === 'recording' && bookingData && (
+                        <>
+                          <h4 style={{ marginTop: '16px', marginBottom: '8px' }}>Studio Booking Details</h4>
+                          {bookingData.bookingDate && (
+                            <p>
+                              <strong>Booking Date & Time:</strong> {bookingData.bookingDate}, {bookingData.startTime} - {bookingData.endTime} ({bookingData.durationHours} hours)
+                            </p>
+                          )}
+                          {bookingData.status && (
+                            <p>
+                              <strong>Booking Status:</strong> {bookingData.status}
+                              </p>
+                            )}
+                        </>
+                      )}
                     </>
                   )}
 
@@ -2260,7 +2409,8 @@ const ContractBuilder = () => {
                   (serviceRequest?.servicePrice &&
                     (serviceRequest.requestType === 'arrangement' ||
                       serviceRequest.requestType ===
-                        'arrangement_with_recording'))) && (
+                        'arrangement_with_recording')) ||
+                  (serviceRequest?.requestType === 'recording' && bookingData)) && (
                   <div
                     style={{
                       marginBottom: '16px',
@@ -2383,6 +2533,112 @@ const ContractBuilder = () => {
                                   serviceRequest.servicePrice}
                               </td>
                             </tr>
+                          )}
+
+                        {/* Recording: Participants */}
+                        {serviceRequest?.requestType === 'recording' && bookingData?.participants && bookingData.participants.length > 0 && (
+                          <>
+                            <tr>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#f0f0f0',
+                                }}
+                              >
+                                Recording Participants:
+                              </td>
+                            </tr>
+                            {bookingData.participants.map((p, idx) => {
+                              // Calculate hourly rate from participantFee / durationHours
+                              const hourlyRate = bookingData.durationHours > 0 
+                                ? (p.participantFee / bookingData.durationHours) 
+                                : 0;
+                              
+                              return (
+                                <tr key={`participant-${idx}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {p.roleType}: {p.specialistName || 'Self'}
+                                    <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                                      ({hourlyRate.toLocaleString('vi-VN')} VND/hour × {bookingData.durationHours}h)
+                                    </div>
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {p.participantFee?.toLocaleString?.() ?? p.participantFee}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </>
+                        )}
+                        
+                        {/* Recording: Equipment */}
+                        {serviceRequest?.requestType === 'recording' && bookingData?.requiredEquipment && bookingData.requiredEquipment.length > 0 && (
+                          <>
+                            <tr>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#f0f0f0',
+                                }}
+                              >
+                                Studio Equipment Rental:
+                              </td>
+                            </tr>
+                            {bookingData.requiredEquipment.map((eq, idx) => {
+                              // Calculate rental fee per hour from totalRentalFee / (quantity * durationHours)
+                              const rentalFeePerHour = (bookingData.durationHours > 0 && eq.quantity > 0)
+                                ? (eq.totalRentalFee / (eq.quantity * bookingData.durationHours))
+                                : 0;
+                              
+                              return (
+                                <tr key={`equipment-${idx}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {eq.equipmentName} (Qty: {eq.quantity})
+                                    <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                                      ({rentalFeePerHour.toLocaleString('vi-VN')} VND/hour × {eq.quantity} × {bookingData.durationHours}h)
+                                    </div>
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {eq.totalRentalFee?.toLocaleString?.() ?? eq.totalRentalFee}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </>
                           )}
 
                         {/* Instruments */}

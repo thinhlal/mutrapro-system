@@ -59,10 +59,12 @@ import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.ChatSystemMessageEvent;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
+import com.mutrapro.project_service.entity.StudioBooking;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.mutrapro.project_service.exception.SignatureImageNotFoundException;
 import com.mutrapro.shared.service.S3Service;
@@ -107,6 +109,7 @@ public class ContractService {
     ContractMilestoneService contractMilestoneService;
     TaskAssignmentService taskAssignmentService;
     StudioBookingService studioBookingService;
+    com.mutrapro.project_service.repository.StudioBookingRepository studioBookingRepository;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
     com.mutrapro.project_service.repository.TaskAssignmentRepository taskAssignmentRepository;
@@ -288,6 +291,23 @@ public class ContractService {
         // Validate và tạo milestones từ request nếu có
         List<ContractMilestone> createdMilestones = new java.util.ArrayList<>();
         if (createRequest.getMilestones() != null && !createRequest.getMilestones().isEmpty()) {
+            // Validate: recording contract phải có đúng 1 milestone
+            if (contractType == ContractType.recording && createRequest.getMilestones().size() != 1) {
+                throw new IllegalArgumentException(
+                    String.format("Recording contract must have exactly 1 milestone. Got: %d milestones", 
+                        createRequest.getMilestones().size()));
+            }
+            
+            // Validate: recording milestone phải có milestoneType = recording
+            if (contractType == ContractType.recording) {
+                CreateMilestoneRequest milestone = createRequest.getMilestones().get(0);
+                if (milestone.getMilestoneType() != MilestoneType.recording) {
+                    throw new IllegalArgumentException(
+                        String.format("Recording contract milestone must have type 'recording'. Got: %s", 
+                            milestone.getMilestoneType()));
+                }
+            }
+            
             // Validate: depositPercent + sum(paymentPercent của milestones có hasPayment=true) = 100%
             validatePaymentPercentages(createRequest.getDepositPercent(), createRequest.getMilestones());
             
@@ -1837,6 +1857,7 @@ public class ContractService {
     
     /**
      * Tính plannedStartAt/plannedDueDate cho toàn bộ milestones dựa trên expectedStartDate (baseline cố định).
+     * Đặc biệt: Recording milestone sẽ tính từ booking date thay vì cursor hiện tại
      * @param unlockFirstMilestone nếu true, set milestone đầu tiên thành READY_TO_START
      */
     private void calculatePlannedDatesForAllMilestones(String contractId, LocalDateTime contractStartAt, boolean unlockFirstMilestone) {
@@ -1850,17 +1871,74 @@ public class ContractService {
         LocalDateTime cursor = contractStartAt;
         for (ContractMilestone milestone : milestones) {
             Integer slaDays = milestone.getMilestoneSlaDays();
-            milestone.setPlannedStartAt(cursor);
-
-            LocalDateTime plannedDue;
-            if (slaDays == null || slaDays <= 0) {
-                log.warn("Milestone missing SLA days when calculating planned baseline: contractId={}, milestoneId={}",
-                    contractId, milestone.getMilestoneId());
-                plannedDue = cursor;
+            
+            // Recording milestone: planned dates tính từ booking date
+            if (milestone.getMilestoneType() == MilestoneType.recording) {
+                boolean usedBookingDate = false;
+                try {
+                    Optional<StudioBooking> bookingOpt = 
+                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                    
+                    if (bookingOpt.isPresent()) {
+                        StudioBooking booking = bookingOpt.get();
+                        if (booking.getBookingDate() != null) {
+                            // PlannedStartAt = booking date + start time
+                            LocalTime startTime = booking.getStartTime() != null ? 
+                                booking.getStartTime() : 
+                                LocalTime.of(9, 0);
+                            
+                            LocalDateTime bookingDateTime = booking.getBookingDate().atTime(startTime);
+                            milestone.setPlannedStartAt(bookingDateTime);
+                            
+                            // PlannedDueDate = booking date + SLA days
+                            LocalDateTime plannedDue;
+                            if (slaDays == null || slaDays <= 0) {
+                                log.warn("Recording milestone missing SLA days: contractId={}, milestoneId={}", 
+                                    contractId, milestone.getMilestoneId());
+                                plannedDue = bookingDateTime;
+                            } else {
+                                plannedDue = bookingDateTime.plusDays(slaDays);
+                            }
+                            milestone.setPlannedDueDate(plannedDue);
+                            
+                            // Update cursor cho milestones tiếp theo
+                            cursor = plannedDue;
+                            usedBookingDate = true;
+                            
+                            log.info("Recording milestone planned dates set from booking: contractId={}, milestoneId={}, bookingDate={}, plannedDue={}", 
+                                contractId, milestone.getMilestoneId(), booking.getBookingDate(), plannedDue);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching booking for recording milestone: contractId={}, milestoneId={}, error={}", 
+                        contractId, milestone.getMilestoneId(), e.getMessage());
+                }
+                
+                // Fallback: Nếu không dùng được booking date, dùng cursor
+                if (!usedBookingDate) {
+                    log.warn("Recording milestone using cursor (no booking date): contractId={}, milestoneId={}", 
+                        contractId, milestone.getMilestoneId());
+                    milestone.setPlannedStartAt(cursor);
+                    LocalDateTime plannedDue = (slaDays != null && slaDays > 0) ? 
+                        cursor.plusDays(slaDays) : cursor;
+                    milestone.setPlannedDueDate(plannedDue);
+                    cursor = plannedDue;
+                }
             } else {
-                plannedDue = cursor.plusDays(slaDays);
+                // Other milestones: logic cũ (tính từ cursor)
+                milestone.setPlannedStartAt(cursor);
+
+                LocalDateTime plannedDue;
+                if (slaDays == null || slaDays <= 0) {
+                    log.warn("Milestone missing SLA days when calculating planned baseline: contractId={}, milestoneId={}",
+                        contractId, milestone.getMilestoneId());
+                    plannedDue = cursor;
+                } else {
+                    plannedDue = cursor.plusDays(slaDays);
+                }
+                milestone.setPlannedDueDate(plannedDue);
+                cursor = plannedDue;
             }
-            milestone.setPlannedDueDate(plannedDue);
             
             // Khi contract active, set milestone status = WAITING_ASSIGNMENT (chờ assign task)
             // Unlock milestone đầu tiên nếu được yêu cầu (sẽ được set READY_TO_START sau khi có task accepted)
@@ -1872,8 +1950,6 @@ public class ContractService {
                         contractId, milestone.getMilestoneId(), milestone.getOrderIndex());
                 }
             }
-            
-            cursor = plannedDue;
         }
 
         contractMilestoneRepository.saveAll(milestones);
@@ -1920,6 +1996,18 @@ public class ContractService {
         
         if (nextMilestoneOpt.isPresent()) {
             ContractMilestone nextMilestone = nextMilestoneOpt.get();
+            String milestoneId = nextMilestone.getMilestoneId();
+            
+            // Reload milestone từ DB để đảm bảo có data mới nhất (tránh race condition với transaction tạo task)
+            // Nếu milestone đã được update bởi transaction khác, reload sẽ lấy version mới nhất
+            nextMilestone = contractMilestoneRepository
+                .findByMilestoneIdAndContractId(milestoneId, contractId)
+                .orElse(null);
+            
+            if (nextMilestone == null) {
+                log.warn("Milestone not found after reload: contractId={}, milestoneId={}", contractId, milestoneId);
+                return;
+            }
             
             // Milestone tiếp theo chuyển sang:
             // - WAITING_ASSIGNMENT: nếu chưa có task
@@ -1927,18 +2015,30 @@ public class ContractService {
             // - TASK_ACCEPTED_WAITING_ACTIVATION: nếu đã có task và đã accepted
             if (nextMilestone.getWorkStatus() == MilestoneWorkStatus.PLANNED) {
                 // Kiểm tra xem milestone này đã có task assignment chưa
+                // Check tasks với tất cả status (trừ cancelled) để tránh miss task mới được tạo
                 List<TaskAssignment> tasks = taskAssignmentRepository
-                    .findByContractIdAndMilestoneId(contractId, nextMilestone.getMilestoneId())
+                    .findByContractIdAndMilestoneId(contractId, milestoneId)
                     .stream()
                     .filter(task -> task.getStatus() != AssignmentStatus.cancelled)
                     .toList();
                 
+                // Reload milestone một lần nữa trước khi update (double-check để tránh race condition)
+                ContractMilestone milestoneToUpdate = contractMilestoneRepository
+                    .findByMilestoneIdAndContractId(milestoneId, contractId)
+                    .orElse(null);
+                
+                if (milestoneToUpdate == null || milestoneToUpdate.getWorkStatus() != MilestoneWorkStatus.PLANNED) {
+                    log.info("Milestone status changed by another transaction, skipping unlock: contractId={}, milestoneId={}, currentStatus={}", 
+                        contractId, milestoneId, milestoneToUpdate != null ? milestoneToUpdate.getWorkStatus() : "NOT_FOUND");
+                    return;
+                }
+                
                 if (tasks.isEmpty()) {
                     // Chưa có task → chuyển WAITING_ASSIGNMENT
-                    nextMilestone.setWorkStatus(MilestoneWorkStatus.WAITING_ASSIGNMENT);
-                    contractMilestoneRepository.save(nextMilestone);
+                    milestoneToUpdate.setWorkStatus(MilestoneWorkStatus.WAITING_ASSIGNMENT);
+                    contractMilestoneRepository.save(milestoneToUpdate);
                     log.info("Milestone unlocked to WAITING_ASSIGNMENT (no task yet): contractId={}, milestoneId={}, orderIndex={}", 
-                        contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                        contractId, milestoneId, milestoneToUpdate.getOrderIndex());
                 } else {
                     // Đã có task → kiểm tra task đã accepted chưa
                     boolean hasAcceptedTask = tasks.stream()
@@ -1946,18 +2046,21 @@ public class ContractService {
                     
                     if (hasAcceptedTask) {
                         // Đã có task accepted → chuyển TASK_ACCEPTED_WAITING_ACTIVATION
-                        nextMilestone.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
-                        contractMilestoneRepository.save(nextMilestone);
+                        milestoneToUpdate.setWorkStatus(MilestoneWorkStatus.TASK_ACCEPTED_WAITING_ACTIVATION);
+                        contractMilestoneRepository.save(milestoneToUpdate);
                         log.info("Milestone unlocked to TASK_ACCEPTED_WAITING_ACTIVATION (has accepted task): contractId={}, milestoneId={}, orderIndex={}", 
-                            contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                            contractId, milestoneId, milestoneToUpdate.getOrderIndex());
                     } else {
                         // Đã có task nhưng chưa accepted → chuyển WAITING_SPECIALIST_ACCEPT
-                        nextMilestone.setWorkStatus(MilestoneWorkStatus.WAITING_SPECIALIST_ACCEPT);
-                        contractMilestoneRepository.save(nextMilestone);
+                        milestoneToUpdate.setWorkStatus(MilestoneWorkStatus.WAITING_SPECIALIST_ACCEPT);
+                        contractMilestoneRepository.save(milestoneToUpdate);
                         log.info("Milestone unlocked to WAITING_SPECIALIST_ACCEPT (has task but not accepted): contractId={}, milestoneId={}, orderIndex={}", 
-                            contractId, nextMilestone.getMilestoneId(), nextMilestone.getOrderIndex());
+                            contractId, milestoneId, milestoneToUpdate.getOrderIndex());
                     }
                 }
+                
+                // Update nextMilestone reference để dùng ở phần sau
+                nextMilestone = milestoneToUpdate;
             }
 
             // Activate assignments nếu milestone đã có task accepted

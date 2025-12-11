@@ -43,6 +43,7 @@ import {
   getServiceRequestById,
   calculatePricing,
 } from '../../../services/serviceRequestService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import {
   formatDurationMMSS,
   formatTempoPercentage,
@@ -118,6 +119,8 @@ const ManagerContractDetailPage = () => {
     transcriptionDetails: null, // { basePrice, quantity, unitPrice, breakdown }
   });
   const [requestDetails, setRequestDetails] = useState(null);
+  const [bookingData, setBookingData] = useState(null);
+  const [loadingBooking, setLoadingBooking] = useState(false);
 
   // Load contract data
   useEffect(() => {
@@ -125,6 +128,34 @@ const ManagerContractDetailPage = () => {
       loadContract();
     }
   }, [contractId]);
+
+  // Load booking data for recording contracts
+  useEffect(() => {
+    const loadBooking = async () => {
+      if (!contract?.requestId || contract?.contractType !== 'recording') {
+        setBookingData(null);
+        return;
+      }
+      
+      try {
+        setLoadingBooking(true);
+        const response = await getBookingByRequestId(contract.requestId);
+        if (response?.status === 'success' && response.data) {
+          setBookingData(response.data);
+          console.log('Loaded booking data for recording contract:', response.data);
+        }
+      } catch (error) {
+        console.error('Error loading booking:', error);
+        // Do not show error
+      } finally {
+        setLoadingBooking(false);
+      }
+    };
+
+    if (contract?.contractType === 'recording') {
+      loadBooking();
+    }
+  }, [contract?.requestId, contract?.contractType]);
 
   // Fetch signature image securely from backend when contract is signed
   useEffect(() => {
@@ -2123,10 +2154,22 @@ const ManagerContractDetailPage = () => {
                                 .join(', ')}
                             </p>
                           )}
-                      </>
-                    )}
                   </>
                 )}
+              </>
+            )}
+
+              {/* Studio Booking Information for Recording */}
+              {contract?.contractType === 'recording' && bookingData && (
+                <p style={{ marginBottom: '12px', fontSize: '14px' }}>
+                  <strong>Studio Booking:</strong>{' '}
+                  {bookingData.bookingDate || 'N/A'} |{' '}
+                  {bookingData.startTime && bookingData.endTime
+                    ? `${bookingData.startTime} - ${bookingData.endTime}`
+                    : 'N/A'}{' '}
+                  ({bookingData.durationHours}h)
+                </p>
+              )}
 
               <h3>Pricing & Payment</h3>
 
@@ -2136,7 +2179,8 @@ const ManagerContractDetailPage = () => {
                 (requestDetails?.servicePrice &&
                   (requestDetails.requestType === 'arrangement' ||
                     requestDetails.requestType ===
-                      'arrangement_with_recording'))) && (
+                      'arrangement_with_recording')) ||
+                (contract?.contractType === 'recording' && bookingData)) && (
                 <div
                   style={{
                     marginBottom: '16px',
@@ -2253,6 +2297,174 @@ const ManagerContractDetailPage = () => {
                                 requestDetails.servicePrice}
                             </td>
                           </tr>
+                        )}
+
+                      {/* Recording Participants */}
+                      {contract?.contractType === 'recording' &&
+                        bookingData?.participants &&
+                        bookingData.participants.length > 0 && (
+                          <>
+                            <tr>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#f0f0f0',
+                                }}
+                              >
+                                Recording Participants:
+                              </td>
+                            </tr>
+                            {bookingData.participants.map((participant, index) => (
+                              <tr key={`participant-${index}`}>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    paddingLeft: '24px',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  • {participant.specialistName || 'Unnamed'}{' '}
+                                  ({participant.roleType}) -{' '}
+                                  {participant.participantFee?.toLocaleString()} VND/giờ
+                                  × {bookingData.durationHours} giờ
+                                </td>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    textAlign: 'right',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  {(
+                                    (participant.participantFee || 0) *
+                                    (bookingData.durationHours || 1)
+                                  ).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                Participant Total:
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                {bookingData.participants
+                                  .reduce(
+                                    (sum, p) =>
+                                      sum +
+                                      (p.participantFee || 0) *
+                                        (bookingData.durationHours || 1),
+                                    0
+                                  )
+                                  .toLocaleString()}
+                              </td>
+                            </tr>
+                          </>
+                        )}
+
+                      {/* Studio Equipment Rental */}
+                      {contract?.contractType === 'recording' &&
+                        bookingData?.requiredEquipment &&
+                        bookingData.requiredEquipment.length > 0 && (
+                          <>
+                            <tr>
+                              <td
+                                colSpan={2}
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#f0f0f0',
+                                }}
+                              >
+                                Studio Equipment Rental:
+                              </td>
+                            </tr>
+                            {bookingData.requiredEquipment.map((equipment, index) => (
+                              <tr key={`equipment-${index}`}>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    paddingLeft: '24px',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  • {equipment.equipmentName || 'Unnamed'} ×{' '}
+                                  {equipment.quantity} -{' '}
+                                  {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
+                                  VND/giờ × {bookingData.durationHours} giờ
+                                </td>
+                                <td
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    textAlign: 'right',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#fff',
+                                  }}
+                                >
+                                  {(
+                                    (equipment.rentalFeePerUnit || 0) *
+                                    (equipment.quantity || 1) *
+                                    (bookingData.durationHours || 1)
+                                  ).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                Equipment Total:
+                              </td>
+                              <td
+                                style={{
+                                  border: '1px solid #000',
+                                  padding: '8px',
+                                  textAlign: 'right',
+                                  fontWeight: 'bold',
+                                  backgroundColor: '#e8e8e8',
+                                }}
+                              >
+                                {bookingData.requiredEquipment
+                                  .reduce(
+                                    (sum, eq) =>
+                                      sum +
+                                      (eq.rentalFeePerUnit || 0) *
+                                        (eq.quantity || 1) *
+                                        (bookingData.durationHours || 1),
+                                    0
+                                  )
+                                  .toLocaleString()}
+                              </td>
+                            </tr>
+                          </>
                         )}
 
                       {/* Instruments */}

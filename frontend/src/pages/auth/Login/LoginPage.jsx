@@ -184,8 +184,6 @@ function LoginPage() {
 
             <div className={styles.optionsRow}>
               <label className={styles.checkboxLabel}>
-                <input type="checkbox" className={styles.checkbox} />
-                <span>Remember me</span>
               </label>
               <button
                 type="button"

@@ -821,13 +821,19 @@ public class StudioBookingService {
                     try {
                         ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getPublicSpecialistById(p.getSpecialistId());
                         if (response != null && "success".equals(response.getStatus()) && response.getData() != null) {
-                            Map<String, Object> specialist = response.getData();
-                            specialistName = (String) specialist.get("fullName");
+                            Map<String, Object> data = response.getData();
+                            
+                            // Response structure: { specialist: {...}, skills: [...], demos: [...] }
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> specialist = (Map<String, Object>) data.get("specialist");
+                            if (specialist != null) {
+                                specialistName = (String) specialist.get("fullName");
+                            }
                             
                             // Lấy skill name nếu là INSTRUMENT
-                            if (p.getSkillId() != null && specialist.get("skills") != null) {
+                            if (p.getSkillId() != null && data.get("skills") != null) {
                                 @SuppressWarnings("unchecked")
-                                List<Map<String, Object>> skills = (List<Map<String, Object>>) specialist.get("skills");
+                                List<Map<String, Object>> skills = (List<Map<String, Object>>) data.get("skills");
                                 for (Map<String, Object> skill : skills) {
                                     if (p.getSkillId().equals(skill.get("skillId"))) {
                                         skillName = (String) skill.get("skillName");

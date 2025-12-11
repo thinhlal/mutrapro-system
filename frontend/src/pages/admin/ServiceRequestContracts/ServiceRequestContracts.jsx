@@ -25,6 +25,7 @@ import dayjs from 'dayjs';
 import { getServiceRequestById } from '../../../services/serviceRequestService';
 import { getContractsByRequestId } from '../../../services/contractService';
 import { getFilesByRequestId } from '../../../services/fileService';
+import { getBookingByRequestId } from '../../../services/studioBookingService';
 import FileList from '../../../components/common/FileList/FileList';
 import ChatPopup from '../../../components/chat/ChatPopup/ChatPopup';
 import {
@@ -128,6 +129,8 @@ export default function ServiceRequestContracts() {
   const [loadingContracts, setLoadingContracts] = useState(false);
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [booking, setBooking] = useState(null);
+  const [loadingBooking, setLoadingBooking] = useState(false);
   console.log('files', files);
 
   const basePath = location.pathname.startsWith('/admin')
@@ -202,6 +205,32 @@ export default function ServiceRequestContracts() {
     fetchContracts();
     fetchFiles();
   }, [requestId]);
+
+  useEffect(() => {
+    const fetchBooking = async () => {
+      if (!requestId || request?.requestType !== 'recording') return;
+      
+      try {
+        setLoadingBooking(true);
+        const response = await getBookingByRequestId(requestId);
+        console.log('Booking data:', response.data);
+        console.log('Participants:', response.data?.participants);
+        console.log('Required Equipment:', response.data?.requiredEquipment);
+        if (response.status === 'success' && response.data) {
+          setBooking(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading booking:', error);
+        // Do not show error because booking may not exist yet
+      } finally {
+        setLoadingBooking(false);
+      }
+    };
+
+    if (request?.requestType === 'recording') {
+      fetchBooking();
+    }
+  }, [requestId, request?.requestType]);
 
   const handleRefresh = () => {
     fetchRequest();
@@ -790,6 +819,106 @@ export default function ServiceRequestContracts() {
           </Card>
         </div>
       </Spin>
+
+      {/* Studio Booking Section - only for recording requests */}
+      {request?.requestType === 'recording' && (
+        <Card 
+          title="🎙️ Studio Booking Information" 
+          style={{ marginBottom: '1.5rem' }}
+          loading={loadingBooking}
+          bordered
+        >
+          {booking ? (
+            <Descriptions bordered column={2} size="middle">
+              {booking.bookingDate && (
+                <Descriptions.Item label="📅 Booking Date">
+                  {booking.bookingDate}
+                </Descriptions.Item>
+              )}
+              {(booking.startTime && booking.endTime) && (
+                <Descriptions.Item label="🕒 Time Slot">
+                  {booking.startTime} - {booking.endTime}
+                </Descriptions.Item>
+              )}
+              {booking.durationHours && (
+                <Descriptions.Item label="⏱️ Duration">
+                  {booking.durationHours} hours
+                </Descriptions.Item>
+              )}
+              {booking.status && (
+                <Descriptions.Item label="Status">
+                  <Tag color={
+                    booking.status === 'CONFIRMED' ? 'green' : 
+                    booking.status === 'TENTATIVE' ? 'orange' : 
+                    'default'
+                  }>
+                    {booking.status}
+                  </Tag>
+                </Descriptions.Item>
+              )}
+              
+              {booking.participants && booking.participants.length > 0 && (
+                <Descriptions.Item label="👥 Participants" span={2}>
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {booking.participants.map((p, index) => (
+                      <div key={index}>
+                        <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}>
+                          {p.roleType}
+                        </Tag>
+                        {p.specialistName || 'Self'}
+                        {p.participantFee && (
+                          <span style={{ marginLeft: 8, color: '#666' }}>
+                            - {p.participantFee.toLocaleString('vi-VN')} VND
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </Space>
+                </Descriptions.Item>
+              )}
+              
+              {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
+                <Descriptions.Item label="🎸 Equipment" span={2}>
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {booking.requiredEquipment.map((eq, index) => (
+                      <div key={index}>
+                        {eq.equipmentName || 'Equipment'} x {eq.quantity}
+                        {eq.totalRentalFee && (
+                          <span style={{ marginLeft: 8, color: '#666' }}>
+                            - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </Space>
+                </Descriptions.Item>
+              )}
+              
+              {booking.artistFee && booking.artistFee > 0 && (
+                <Descriptions.Item label="💰 Participant Fee">
+                  {booking.artistFee.toLocaleString('vi-VN')} VND
+                </Descriptions.Item>
+              )}
+              {booking.equipmentRentalFee && booking.equipmentRentalFee > 0 && (
+                <Descriptions.Item label="🔧 Equipment Fee">
+                  {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
+                </Descriptions.Item>
+              )}
+              {booking.totalCost && (
+                <Descriptions.Item label="💵 Total Cost" span={2}>
+                  <Space>
+                    <Text strong style={{ fontSize: 18, color: '#ff4d4f' }}>
+                      {booking.totalCost.toLocaleString('vi-VN')} VND
+                    </Text>
+                  </Space>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          ) : (
+            <Empty description="No booking information yet" />
+          )}
+        </Card>
+      )}
 
       <Card
         title={`Danh sách Contracts (${contracts.length})`}
