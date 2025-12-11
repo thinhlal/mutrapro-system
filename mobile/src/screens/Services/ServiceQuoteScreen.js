@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { calculatePrice, formatPrice, getPricingDetail } from "../../services/pricingMatrixService";
 import { createServiceRequest } from "../../services/serviceRequestService";
+import { createBookingFromServiceRequest } from "../../services/studioBookingService";
 import { getNotationInstrumentsByIds } from "../../services/instrumentService";
 
 const SERVICE_TYPE_LABELS = {
@@ -121,8 +122,24 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
         files: [uploadedFile],
       };
 
-      // Call API
-      await createServiceRequest(requestData);
+      // Call API: create request first
+      const requestResp = await createServiceRequest(requestData);
+      const requestId = requestResp?.data?.requestId || requestResp?.requestId;
+
+      // If recording, create booking from request with slot data and participants/equipment (not yet built here)
+      if (serviceType === "recording" && requestId) {
+        const bookingData = {
+          bookingDate: formData.bookingDate,
+          startTime: formData.bookingStartTime,
+          endTime: formData.bookingEndTime,
+          durationHours: formData.durationMinutes
+            ? parseFloat((formData.durationMinutes / 60).toFixed(2))
+            : null,
+          participants: [], // TODO: build from future instrument/vocal selection
+          requiredEquipment: [], // TODO: build when equipment selection is added
+        };
+        await createBookingFromServiceRequest(requestId, bookingData);
+      }
 
       // Success
       Alert.alert(

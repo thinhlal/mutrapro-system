@@ -16,6 +16,7 @@ import FileUploader from "../../components/FileUploader";
 import InstrumentPicker from "../../components/InstrumentPicker";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { MUSIC_GENRES, MUSIC_PURPOSES, getGenreLabel, getPurposeLabel } from "../../constants/musicOptionsConstants";
+import { getAvailableSlots } from "../../services/studioBookingService";
 
 const SERVICE_TYPE_LABELS = {
   transcription: "Transcription (Sound → Sheet)",
@@ -35,6 +36,13 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   const [contactEmail, setContactEmail] = useState(user?.email || "");
   const [contactPhone, setContactPhone] = useState("");
   const [tempoPercentage, setTempoPercentage] = useState("100");
+
+  // Recording-specific state
+  const [bookingDate, setBookingDate] = useState(null); // YYYY-MM-DD
+  const [bookingStartTime, setBookingStartTime] = useState(null); // HH:mm
+  const [bookingEndTime, setBookingEndTime] = useState(null); // HH:mm
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotLoading, setSlotLoading] = useState(false);
   
   // Instrument selection
   const [selectedInstruments, setSelectedInstruments] = useState([]);
@@ -83,6 +91,33 @@ const ServiceRequestScreen = ({ route, navigation }) => {
   const needsInstruments = serviceType && serviceType !== "recording";
   const multipleInstruments =
     serviceType === "arrangement" || serviceType === "arrangement_with_recording";
+  const needsRecordingSlot = serviceType === "recording";
+
+  useEffect(() => {
+    if (needsRecordingSlot && bookingDate) {
+      fetchAvailableSlots(bookingDate);
+    }
+  }, [needsRecordingSlot, bookingDate]);
+
+  const fetchAvailableSlots = async (date) => {
+    try {
+      setSlotLoading(true);
+      const resp = await getAvailableSlots(date);
+      if (resp?.status === "success" && resp?.data) {
+        setAvailableSlots(resp.data);
+      } else if (resp?.data) {
+        setAvailableSlots(resp.data);
+      } else {
+        setAvailableSlots([]);
+      }
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      Alert.alert("Error", error?.message || "Failed to load available slots");
+      setAvailableSlots([]);
+    } finally {
+      setSlotLoading(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -131,6 +166,19 @@ const ServiceRequestScreen = ({ route, navigation }) => {
       newErrors.file = "Please upload an audio/video file";
     }
 
+    // Recording slot validation
+    if (needsRecordingSlot) {
+      if (!bookingDate || !bookingStartTime || !bookingEndTime) {
+        newErrors.slot = "Please choose booking date and time";
+      } else {
+        const start = bookingStartTime;
+        const end = bookingEndTime;
+        if (start >= end) {
+          newErrors.slot = "End time must be after start time";
+        }
+      }
+    }
+
     // Validate tempo - Only for transcription
     if (serviceType === "transcription") {
       const tempo = parseInt(tempoPercentage);
@@ -171,6 +219,9 @@ const ServiceRequestScreen = ({ route, navigation }) => {
             }))
           : null,
         durationMinutes: selectedFile?.duration || 0,
+        bookingDate,
+        bookingStartTime,
+        bookingEndTime,
       },
       uploadedFile: selectedFile,
       serviceType: serviceType,
@@ -406,6 +457,52 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                 {errors.mainInstrument && <Text style={styles.errorText}>{errors.mainInstrument}</Text>}
               </View>
             )}
+          </View>
+        )}
+
+        {/* Recording Slot */}
+        {needsRecordingSlot && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>
+              Booking Date & Time <Text style={styles.required}>*</Text>
+            </Text>
+            <TextInput
+              style={[styles.input, errors.slot && styles.inputError]}
+              placeholder="YYYY-MM-DD"
+              value={bookingDate || ""}
+              onChangeText={(text) => {
+                setBookingDate(text);
+                if (errors.slot) setErrors({ ...errors, slot: null });
+              }}
+            />
+            <View style={{ flexDirection: "row", gap: SPACING.sm, marginTop: SPACING.sm }}>
+              <TextInput
+                style={[styles.input, { flex: 1 }, errors.slot && styles.inputError]}
+                placeholder="Start (HH:mm)"
+                value={bookingStartTime || ""}
+                onChangeText={(text) => {
+                  setBookingStartTime(text);
+                  if (errors.slot) setErrors({ ...errors, slot: null });
+                }}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1 }, errors.slot && styles.inputError]}
+                placeholder="End (HH:mm)"
+                value={bookingEndTime || ""}
+                onChangeText={(text) => {
+                  setBookingEndTime(text);
+                  if (errors.slot) setErrors({ ...errors, slot: null });
+                }}
+              />
+            </View>
+            {slotLoading && <Text style={styles.helperText}>Loading available slots...</Text>}
+            {availableSlots.length > 0 && (
+              <Text style={styles.helperText}>
+                Available slots:{" "}
+                {availableSlots.map((s) => `${s.start} - ${s.end}`).join(", ")}
+              </Text>
+            )}
+            {errors.slot && <Text style={styles.errorText}>{errors.slot}</Text>}
           </View>
         )}
         

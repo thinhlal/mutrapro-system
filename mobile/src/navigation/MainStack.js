@@ -24,6 +24,7 @@ import PaymentSuccessScreen from '../screens/Payments/PaymentSuccessScreen';
 import MilestoneDeliveriesScreen from '../screens/Milestones/MilestoneDeliveriesScreen';
 import ContractsListScreen from '../screens/Contracts/ContractsListScreen';
 import ContractSignedSuccessScreen from '../screens/Contracts/ContractSignedSuccessScreen';
+import RecordingFlowStack from './RecordingFlowStack';
 
 const Drawer = createDrawerNavigator();
 
@@ -176,6 +177,15 @@ const MainStack = () => {
           ...defaultDrawerScreenOptions,
           headerLeft: () => getPaymentHeaderLeft(navigation),
         })}
+      />
+      <Drawer.Screen
+        name="RecordingFlow"
+        component={RecordingFlowStack}
+        options={{
+          title: 'Recording Flow',
+          drawerItemStyle: { display: 'none' },
+          ...defaultDrawerScreenOptions,
+        }}
       />
     </Drawer.Navigator>
   );
