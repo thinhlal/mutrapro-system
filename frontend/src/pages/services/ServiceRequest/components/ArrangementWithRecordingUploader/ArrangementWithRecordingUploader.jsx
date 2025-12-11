@@ -491,19 +491,19 @@ export default function ArrangementWithRecordingUploader({
 
   const handleSubmit = () => {
     if (!file) {
-      message.warning('Vui lòng upload file notation gốc.');
+      message.warning('Please upload the original notation file.');
       return;
     }
 
     // Validate form data
     if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Vui lòng điền đầy đủ thông tin form phía trên.');
+      message.warning('Please fill in all the form information above.');
       return;
     }
 
     // Validate instruments
     if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
-      message.warning('Vui lòng chọn ít nhất một nhạc cụ.');
+      message.warning('Please select at least one instrument.');
       return;
     }
 
@@ -524,7 +524,7 @@ export default function ArrangementWithRecordingUploader({
     }
 
     if (!finalMainInstrumentId) {
-      message.warning('Vui lòng chọn nhạc cụ chính cho arrangement.');
+      message.warning('Please select the main instrument for arrangement.');
       return;
     }
 
@@ -568,8 +568,8 @@ export default function ArrangementWithRecordingUploader({
               Arrangement + Recording
             </h2>
             <p className={styles.desc}>
-              Upload file notation gốc (MusicXML/MIDI/PDF). Chúng tôi sẽ
-              arrangement và recording cho bạn.
+              Upload original notation file (MusicXML/MIDI/PDF). We will
+              arrange and record for you.
             </p>
           </div>
         </div>
@@ -590,12 +590,12 @@ export default function ArrangementWithRecordingUploader({
             <Form.Item
               label="Music Genres"
               name="musicGenres"
-              tooltip="Chọn một hoặc nhiều thể loại nhạc cho arrangement"
+              tooltip="Select one or more music genres for arrangement"
             >
               <Select
                 mode="multiple"
                 size="large"
-                placeholder="Chọn genres (ví dụ: Pop, Rock, Jazz...)"
+                placeholder="Select genres (e.g., Pop, Rock, Jazz...)"
                 style={{ width: '100%' }}
                 options={MUSIC_GENRES}
               />
@@ -604,17 +604,17 @@ export default function ArrangementWithRecordingUploader({
             <Form.Item
               label="Purpose"
               name="musicPurpose"
-              tooltip="Mục đích của arrangement này là gì?"
+              tooltip="What is the purpose of this arrangement?"
             >
               <Select
                 size="large"
-                placeholder="Chọn purpose"
+                placeholder="Select purpose"
                 style={{ width: '100%' }}
                 options={MUSIC_PURPOSES}
               />
             </Form.Item>
 
-            <Form.Item label="Chọn nhạc cụ (Nhiều)" required>
+            <Form.Item label="Select Instruments (Multiple)" required>
               <Row gutter={16} align="middle">
                 <Col xs={24} sm={24} md={12}>
                   <Button
@@ -626,8 +626,8 @@ export default function ArrangementWithRecordingUploader({
                     loading={instrumentsLoading}
                   >
                     {selectedInstruments.length > 0
-                      ? `Đã chọn ${selectedInstruments.length} nhạc cụ`
-                      : 'Chọn nhạc cụ'}
+                      ? `Selected ${selectedInstruments.length} instruments`
+                      : 'Select instruments'}
                   </Button>
                 </Col>
                 {selectedInstruments.length > 0 && (
@@ -669,8 +669,8 @@ export default function ArrangementWithRecordingUploader({
 
             {/* Vocalist Preference (Optional) */}
             <Form.Item
-              label="Ca sĩ ưu tiên (Tùy chọn)"
-              tooltip="Bạn có thể chọn 1-2 ca sĩ mình thích, hoặc để manager đề xuất"
+              label="Preferred Vocalist (Optional)"
+              tooltip="You can select 1-2 preferred vocalists, or let the manager suggest"
             >
               <Space
                 direction="vertical"
@@ -686,9 +686,10 @@ export default function ArrangementWithRecordingUploader({
                     color: '#666',
                   }}
                 >
-                  <strong>Lưu ý:</strong> Đây là gợi ý ưu tiên, không phải cam
-                  kết. Chúng tôi sẽ cố gắng book ca sĩ bạn chọn. Nếu họ không có
-                  sẵn, manager sẽ đề xuất lựa chọn tương tự.
+                  <strong>Note:</strong> This is a preference suggestion, not a
+                  commitment. We will try to book the vocalist you selected. If
+                  they are not available, the manager will suggest similar
+                  options.
                 </div>
 
                 <Space
@@ -703,10 +704,10 @@ export default function ArrangementWithRecordingUploader({
                     disabled={preferredVocalists.length >= 2}
                   >
                     {preferredVocalists.length === 0
-                      ? 'Chọn ca sĩ ưu tiên (1-2 người)'
+                      ? 'Select preferred vocalist (1-2 people)'
                       : preferredVocalists.length === 1
-                        ? 'Thêm ca sĩ ưu tiên (tối đa 2)'
-                        : 'Đã chọn đủ 2 ca sĩ'}
+                        ? 'Add preferred vocalist (max 2)'
+                        : 'Maximum 2 vocalists selected'}
                   </Button>
 
                   {preferredVocalists.length > 0 && (
@@ -745,7 +746,7 @@ export default function ArrangementWithRecordingUploader({
                       marginTop: 4,
                     }}
                   >
-                    Hoặc để trống để manager tự đề xuất ca sĩ phù hợp
+                    Or leave blank to let the manager suggest suitable vocalists
                   </div>
                 </Space>
               </Space>
@@ -767,7 +768,7 @@ export default function ArrangementWithRecordingUploader({
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>
-              <p className="ant-upload-text">Kéo thả file notation vào đây</p>
+              <p className="ant-upload-text">Drag and drop notation file here</p>
               <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
             </Dragger>
           </div>
@@ -790,7 +791,7 @@ export default function ArrangementWithRecordingUploader({
                   danger
                   type="text"
                 >
-                  Xóa
+                  Delete
                 </Button>
               </div>
             </Space>
@@ -815,13 +816,13 @@ export default function ArrangementWithRecordingUploader({
                 handleSubmit();
               } catch (error) {
                 console.error('Error in handleSubmit:', error);
-                message.error('Có lỗi xảy ra: ' + error.message);
+                message.error('An error occurred: ' + error.message);
               }
             }}
             loading={submitting}
             disabled={!file || !formData}
           >
-            Gửi yêu cầu <ArrowRightOutlined />
+            Submit Request <ArrowRightOutlined />
           </Button>
         </div>
       </div>
@@ -837,7 +838,7 @@ export default function ArrangementWithRecordingUploader({
         onSelect={handleInstrumentSelect}
         onMainInstrumentChange={handleMainInstrumentChange}
         multipleSelection={true}
-        title="Chọn nhạc cụ (Nhiều)"
+        title="Select Instruments (Multiple)"
       />
     </section>
   );
