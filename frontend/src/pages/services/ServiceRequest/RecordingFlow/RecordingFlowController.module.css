@@ -2,21 +2,22 @@
   min-height: 100vh;
   background: #f5f5f5;
   padding-top: 120px;
+  padding-bottom: 120px;
 }
 
 .stepsContainer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto 24px;
 }
 
 .contentContainer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   min-height: 60vh;
 }
 
 .navigationContainer {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 24px auto 0;
   display: flex;
   justify-content: space-between;
