@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -120,10 +122,44 @@ import TranscriptionProcessPage from './pages/ai-transcription/TranscriptionProc
 import './App.css';
 import MilestoneDeliveriesPage from './pages/user/MilestoneDeliveries/MilestoneDeliveriesPage.jsx';
 
+const RECORDING_FLOW_STORAGE_KEYS = [
+  'recordingFlowData',
+  'recordingFlowVocalistCallback',
+  'recordingFlowInstrumentalistCallback',
+  'recordingFlowEquipmentCallback',
+];
+
+function RecordingFlowStorageWatcher() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const isRecordingFlowPath = location.pathname.startsWith('/recording-flow');
+
+    if (!isRecordingFlowPath) {
+      // Clear flow-related session storage when user leaves the flow routes
+      RECORDING_FLOW_STORAGE_KEYS.forEach(key =>
+        sessionStorage.removeItem(key)
+      );
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    // Cleanup when app unmounts (e.g. tab close or full reload)
+    return () => {
+      RECORDING_FLOW_STORAGE_KEYS.forEach(key =>
+        sessionStorage.removeItem(key)
+      );
+    };
+  }, []);
+
+  return null;
+}
+
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <RecordingFlowStorageWatcher />
         <ScrollToTop />
         <Toaster position="top-center" />
         <Routes>

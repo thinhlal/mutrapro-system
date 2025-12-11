@@ -119,6 +119,7 @@ const DemoManagement = () => {
       title: 'Public',
       dataIndex: 'isPublic',
       key: 'isPublic',
+      width: 180,
       align: 'center',
       render: isPublic => (
         <Tag color={isPublic ? 'green' : 'red'}>
@@ -135,7 +136,7 @@ const DemoManagement = () => {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      width: 230,
       render: (_, record) => (
         <Space>
           <Button
