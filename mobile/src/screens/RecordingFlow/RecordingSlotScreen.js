@@ -7,7 +7,10 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../config/constan
 import { getAvailableSlots } from '../../services/studioBookingService';
 import { useRecordingFlow } from '../../context/RecordingFlowContext';
 
-dayjs.extend(customParseFormat);
+// Extend dayjs with customParseFormat plugin
+if (!dayjs.prototype.customParseFormat) {
+  dayjs.extend(customParseFormat);
+}
 
 const RecordingSlotScreen = ({ navigation }) => {
   const { state, update } = useRecordingFlow();
