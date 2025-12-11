@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './RegisterPage.module.css';
 import { useAuth } from '../../../contexts/AuthContext';
+import { OAuthConfig } from '../../../config/OAuthConfig';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
@@ -83,6 +84,22 @@ function RegisterPage() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Google OAuth (reuse login logic)
+  const handleGoogleLogin = () => {
+    try {
+      const targetUrl =
+        `${OAuthConfig.authUri}?` +
+        `client_id=${OAuthConfig.clientId}&` +
+        `redirect_uri=${encodeURIComponent(OAuthConfig.redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(OAuthConfig.scope)}`;
+      window.location.href = targetUrl;
+    } catch (error) {
+      console.error('Google login error:', error);
+      setErrors({ general: 'Google login error' });
+    }
   };
 
   const handleSubmit = async e => {
@@ -327,7 +344,11 @@ function RegisterPage() {
             </div>
 
             <div className={styles.socialRow}>
-              <button type="button" className={styles.socialButton}>
+              <button
+                type="button"
+                className={styles.socialButton}
+                onClick={handleGoogleLogin}
+              >
                 <svg
                   width="20"
                   height="20"
