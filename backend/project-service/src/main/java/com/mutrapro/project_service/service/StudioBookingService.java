@@ -1048,15 +1048,26 @@ public class StudioBookingService {
             Integer experienceYears = vocalist.get("experienceYears") != null 
                 ? ((Number) vocalist.get("experienceYears")).intValue() 
                 : null;
-            java.math.BigDecimal rating = vocalist.get("rating") != null
-                ? (vocalist.get("rating") instanceof java.math.BigDecimal 
-                    ? (java.math.BigDecimal) vocalist.get("rating")
-                    : new java.math.BigDecimal(vocalist.get("rating").toString()))
+            BigDecimal rating = vocalist.get("rating") != null
+                ? (vocalist.get("rating") instanceof BigDecimal 
+                    ? (BigDecimal) vocalist.get("rating")
+                    : new BigDecimal(vocalist.get("rating").toString()))
                 : null;
             Integer totalProjects = vocalist.get("totalProjects") != null
                 ? ((Number) vocalist.get("totalProjects")).intValue()
                 : null;
             
+            // Lấy hourlyRate
+            BigDecimal hourlyRate = null;
+            if (vocalist.get("hourlyRate") != null) {
+                Object hourlyRateObj = vocalist.get("hourlyRate");
+                if (hourlyRateObj instanceof BigDecimal) {
+                    hourlyRate = (BigDecimal) hourlyRateObj;
+                } else if (hourlyRateObj instanceof Number) {
+                    hourlyRate = new BigDecimal(hourlyRateObj.toString());
+                }
+            }
+            log.info("hourlyRate: {}", hourlyRate);
             // Lấy genres
             @SuppressWarnings("unchecked")
             List<String> artistGenres = vocalist.get("genres") != null
@@ -1073,6 +1084,7 @@ public class StudioBookingService {
                 .experienceYears(experienceYears)
                 .rating(rating)
                 .totalProjects(totalProjects)
+                .hourlyRate(hourlyRate)
                 .isPreferred(isPreferred)  // Mark preferred ones
                 .isAvailable(!isBusy)
                 .availabilityStatus(isBusy ? "busy" : "available")
@@ -1296,14 +1308,25 @@ public class StudioBookingService {
             Integer experienceYears = artist.get("experienceYears") != null 
                 ? ((Number) artist.get("experienceYears")).intValue() 
                 : null;
-            java.math.BigDecimal rating = artist.get("rating") != null
-                ? (artist.get("rating") instanceof java.math.BigDecimal 
-                    ? (java.math.BigDecimal) artist.get("rating")
-                    : new java.math.BigDecimal(artist.get("rating").toString()))
+            BigDecimal rating = artist.get("rating") != null
+                ? (artist.get("rating") instanceof BigDecimal 
+                    ? (BigDecimal) artist.get("rating")
+                    : new BigDecimal(artist.get("rating").toString()))
                 : null;
             Integer totalProjects = artist.get("totalProjects") != null
                 ? ((Number) artist.get("totalProjects")).intValue()
                 : null;
+            
+            // Lấy hourlyRate
+            BigDecimal hourlyRate = null;
+            if (artist.get("hourlyRate") != null) {
+                Object hourlyRateObj = artist.get("hourlyRate");
+                if (hourlyRateObj instanceof BigDecimal) {
+                    hourlyRate = (BigDecimal) hourlyRateObj;
+                } else if (hourlyRateObj instanceof Number) {
+                    hourlyRate = new BigDecimal(hourlyRateObj.toString());
+                }
+            }
             
             @SuppressWarnings("unchecked")
             List<String> artistGenres = artist.get("genres") != null
@@ -1320,6 +1343,7 @@ public class StudioBookingService {
                 .experienceYears(experienceYears)
                 .rating(rating)
                 .totalProjects(totalProjects)
+                .hourlyRate(hourlyRate)
                 .isPreferred(false)
                 .isAvailable(!isBusy)
                 .availabilityStatus(isBusy ? "busy" : "available")

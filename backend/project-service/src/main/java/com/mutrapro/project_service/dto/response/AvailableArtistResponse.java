@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class AvailableArtistResponse {
     String role;  // VOCALIST, GUITARIST, etc.
     List<String> genres;  // Danh sách genres mà artist có thể làm
     Integer experienceYears;  // Số năm kinh nghiệm
-    java.math.BigDecimal rating;  // Rating của artist
+    BigDecimal rating;  // Rating của artist
     Integer totalProjects;  // Tổng số projects đã làm
     Boolean isPreferred;  // true nếu là preferred artist từ customer
     Boolean isAvailable;  // true nếu artist rảnh trong slot này
@@ -33,5 +34,6 @@ public class AvailableArtistResponse {
     LocalTime conflictEndTime;  // Nếu busy, thời gian kết thúc conflict
     String skillId;  // Skill ID nếu có
     String skillName;  // Skill name nếu có
+    BigDecimal hourlyRate;  // Hourly rate của artist (VND/hour)
 }
 

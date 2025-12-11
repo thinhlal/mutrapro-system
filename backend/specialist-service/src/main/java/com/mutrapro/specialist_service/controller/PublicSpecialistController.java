@@ -21,9 +21,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Tag(name = "Public Specialists", description = "Public endpoints for specialists (no authentication required)")
 public class PublicSpecialistController {
-    
+
     private final PublicSpecialistService publicSpecialistService;
-    
+
     /**
      * Lấy danh sách vocalists (public access)
      * GET /public/specialists/vocalists?gender={gender}&genres={genres}
@@ -39,8 +39,8 @@ public class PublicSpecialistController {
         log.info("GET /public/specialists/vocalists - gender={}, genres={}", gender, genres);
         List<Map<String, Object>> vocalists = publicSpecialistService.getVocalists(gender, genres);
         return ApiResponse.<List<Map<String, Object>>>builder()
-            .message("Vocalists retrieved successfully")
-            .data(vocalists)
+                .message("Vocalists retrieved successfully")
+                .data(vocalists)
             .build();
     }
     
@@ -61,9 +61,9 @@ public class PublicSpecialistController {
         return ApiResponse.<List<Map<String, Object>>>builder()
             .message("Specialists retrieved successfully")
             .data(specialists)
-            .build();
+                .build();
     }
-    
+
     /**
      * Lấy chi tiết specialist theo specialistId (public access)
      * GET /public/specialists/{specialistId}
@@ -80,6 +80,6 @@ public class PublicSpecialistController {
         return ApiResponse.<Map<String, Object>>builder()
             .message("Specialist retrieved successfully")
             .data(specialist)
-            .build();
+                .build();
     }
 }

@@ -105,6 +105,10 @@ public class Specialist extends BaseEntity<String> {
     @Column(name = "reviews")
     @Builder.Default
     private Integer reviews = 0; // Number of reviews (separate from total_projects)
+    
+    @Column(name = "hourly_rate", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal hourlyRate = BigDecimal.ZERO; // Hourly rate for recording artists (VND/hour)
 
     // ===== RELATIONSHIPS =====
     

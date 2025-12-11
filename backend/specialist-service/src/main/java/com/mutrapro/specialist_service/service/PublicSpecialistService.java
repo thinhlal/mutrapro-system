@@ -35,7 +35,7 @@ public class PublicSpecialistService {
      * Filter theo gender và genres nếu có
      */
     public List<Map<String, Object>> getVocalists(String genderStr, List<String> genres) {
-        log.info("Getting vocalists: gender={}, genres={}", genderStr, genres);
+        log.info("[getVocalists] Getting vocalists: gender={}, genres={}", genderStr, genres);
         
         // Parse gender
         Gender gender = null;
@@ -43,7 +43,7 @@ public class PublicSpecialistService {
             try {
                 gender = Gender.valueOf(genderStr.toUpperCase());
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid gender: {}", genderStr);
+                log.warn("[getVocalists] Invalid gender: {}", genderStr);
             }
         }
         
@@ -76,9 +76,10 @@ public class PublicSpecialistService {
     /**
      * Lấy danh sách specialists theo skill_id (public access)
      * Dùng để lấy instrumentalists cho booking
+     * CHỈ lấy RECORDING_ARTIST với INSTRUMENT_PLAYER role (tương tự getVocalists)
      */
     public List<Map<String, Object>> getSpecialistsBySkillId(String skillId) {
-        log.info("Getting specialists by skillId: {}", skillId);
+        log.info("[getSpecialistsBySkillId] Getting specialists by skillId: {}", skillId);
         
         // Lấy tất cả specialist_skills có skillId này
         List<SpecialistSkill> specialistSkills = specialistSkillRepository
@@ -89,7 +90,7 @@ public class PublicSpecialistService {
             .collect(Collectors.toList());
         
         if (specialistSkills.isEmpty()) {
-            log.warn("No specialists found for skillId: {}", skillId);
+            log.warn("[getSpecialistsBySkillId] No specialists found for skillId: {}", skillId);
             return Collections.emptyList();
         }
         
@@ -99,10 +100,13 @@ public class PublicSpecialistService {
             .distinct()
             .collect(Collectors.toList());
         
-        // Lấy specialists (chỉ ACTIVE)
+        // Lấy specialists (chỉ ACTIVE và RECORDING_ARTIST với INSTRUMENT_PLAYER role)
         List<Specialist> specialists = specialistRepository.findAllById(specialistIds)
             .stream()
             .filter(s -> s.getStatus() == SpecialistStatus.ACTIVE)
+            .filter(s -> s.getSpecialization() == SpecialistType.RECORDING_ARTIST)
+            .filter(s -> s.getRecordingRoles() != null && 
+                s.getRecordingRoles().contains(RecordingRole.INSTRUMENT_PLAYER))
             .collect(Collectors.toList());
         
         return specialists.stream()
@@ -114,7 +118,7 @@ public class PublicSpecialistService {
      * Lấy chi tiết specialist theo specialistId (public access)
      */
     public Map<String, Object> getSpecialistById(String specialistId) {
-        log.info("Getting specialist by ID: {}", specialistId);
+        log.info("[getSpecialistById] Getting specialist by ID: {}", specialistId);
         
         Specialist specialist = specialistRepository.findById(specialistId)
             .orElseThrow(() -> new SpecialistNotFoundException(specialistId));
@@ -143,6 +147,7 @@ public class PublicSpecialistService {
         map.put("rating", specialist.getRating());
         map.put("totalProjects", specialist.getTotalProjects());
         map.put("reviews", specialist.getReviews());
+        map.put("hourlyRate", specialist.getHourlyRate());
         return map;
     }
 }

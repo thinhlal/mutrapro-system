@@ -1,309 +1,504 @@
-// RecordingStep4.jsx - Summary & Review
-import { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   Button,
+  Space,
   Typography,
   Descriptions,
-  Divider,
-  Space,
   Tag,
+  Divider,
   Alert,
-  message,
+  Table,
+  Statistic,
+  Row,
+  Col,
 } from 'antd';
-import { CheckCircleOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+  TeamOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import styles from './RecordingStep4.module.css';
 
 const { Title, Text } = Typography;
 
-// Mock pricing - sẽ thay bằng API call thực tế
-const MOCK_STUDIO_RATE_PER_HOUR = 1000000; // 1,000,000 VND/hour
-const MOCK_ADMIN_FEE = 50000; // 50,000 VND
-const MOCK_EXTERNAL_GUEST_FEE_PER_PERSON = 100000; // 100,000 VND/person
+/**
+ * Step 4: Review & Submit
+ * Tổng hợp tất cả thông tin đã chọn và hiển thị tổng phí
+ */
+export default function RecordingStep4({ formData, onBack, onSubmit }) {
+  const [submitting, setSubmitting] = useState(false);
 
-export default function RecordingStep4({ data, onComplete }) {
-  const step1 = data?.step1 || {};
-  const step2 = data?.step2 || {};
-  const step3 = data?.step3 || {};
+  // Destructure formData
+  const { step1, step2, step3 } = formData;
 
-  // Calculate duration in hours
-  const durationHours = useMemo(() => {
-    if (!step1.bookingStartTime || !step1.bookingEndTime) return 0;
-    
-    const start = new Date(`2000-01-01 ${step1.bookingStartTime}`);
-    const end = new Date(`2000-01-01 ${step1.bookingEndTime}`);
-    const diffMs = end - start;
-    const diffHours = diffMs / (1000 * 60 * 60);
-    return Math.max(diffHours, 0);
-  }, [step1.bookingStartTime, step1.bookingEndTime]);
+  // Debug: Log data to console
+  console.log('📊 Step 4 - Form Data:', {
+    step1,
+    step2,
+    step3,
+  });
 
-  // Calculate costs
-  const costBreakdown = useMemo(() => {
-    const studioRate = durationHours * MOCK_STUDIO_RATE_PER_HOUR;
-    
-    // Artist fee = SUM participant_fee WHERE performer_source = INTERNAL_ARTIST
-    const artistFee =
-      (step2.vocalParticipants || [])
-        .filter(p => p.performerSource === 'INTERNAL_ARTIST')
-        .reduce((sum, p) => sum + (p.participantFee || 0), 0) +
-      (step3.instrumentParticipants || [])
-        .filter(p => p.performerSource === 'INTERNAL_ARTIST')
-        .reduce((sum, p) => sum + (p.participantFee || 0), 0);
+  // Calculate fees
+  const calculateFees = () => {
+    let participantFee = 0;
+    let equipmentRentalFee = 0;
 
-    // Equipment rental fee = SUM equipment_rental_fee từ instrumentParticipants
-    const equipmentRentalFee =
-      (step3.instrumentParticipants || [])
-        .filter(
-          p =>
-            p.roleType === 'INSTRUMENT' &&
-            p.instrumentSource === 'STUDIO_SIDE'
-        )
-        .reduce((sum, p) => sum + (p.equipmentRentalFee || 0), 0);
+    // Vocal fees (nếu thuê internal vocalists)
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach(vocalist => {
+        // Lấy hourlyRate từ vocalist data, fallback về 500k nếu không có
+        const rate = vocalist.hourlyRate || 500000;
+        // Tính fee = hourlyRate * số giờ booking (từ step1)
+        const hours = step1?.durationHours || 2;
+        participantFee += rate * hours;
+      });
+    }
 
-    const adminFee = MOCK_ADMIN_FEE;
-    const externalGuestFee =
-      (step1.externalGuestCount || 0) * MOCK_EXTERNAL_GUEST_FEE_PER_PERSON;
+    // Instrument fees
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach(instrument => {
+        // Performer fee (nếu thuê internal artist)
+        if (
+          instrument.performerSource === 'INTERNAL_ARTIST' &&
+          instrument.specialistId
+        ) {
+          // Lấy hourlyRate từ instrument data, fallback về 300k nếu không có
+          const rate = instrument.hourlyRate || 300000;
+          // Tính fee = hourlyRate * số giờ booking (từ step1)
+          console.log('instrument', instrument);
+          console.log('rate', rate);
+          console.log('step1?.durationHours', step1?.durationHours);
+          const hours = step1?.durationHours || 2;
+          participantFee += rate * hours;
+          console.log('participantFee', participantFee);
+        }
 
-    const totalCost =
-      studioRate +
-      artistFee +
-      equipmentRentalFee +
-      adminFee +
-      externalGuestFee;
+        // Equipment rental fee (nếu thuê equipment từ studio)
+        if (
+          instrument.instrumentSource === 'STUDIO_SIDE' &&
+          instrument.equipmentId
+        ) {
+          const quantity = instrument.quantity || 1;
+          const rentalFee = instrument.rentalFee || 0;
+          // Tính fee = rentalFee (per hour) × quantity × số giờ booking
+          const hours = step1?.durationHours || 2;
+          equipmentRentalFee += rentalFee * quantity * hours;
+        }
+      });
+    }
 
     return {
-      studioRate,
-      artistFee,
+      participantFee,
       equipmentRentalFee,
-      adminFee,
-      externalGuestFee,
-      totalCost,
+      totalFee: participantFee + equipmentRentalFee,
     };
-  }, [
-    durationHours,
-    step1.externalGuestCount,
-    step2.vocalParticipants,
-    step3.instrumentParticipants,
-  ]);
-
-  const handleSubmit = () => {
-    // Prepare final booking data
-    const bookingData = {
-      // Slot info
-      bookingDate: step1.bookingDate,
-      bookingStartTime: step1.bookingStartTime,
-      bookingEndTime: step1.bookingEndTime,
-      durationHours,
-
-      // Participants
-      participants: [
-        ...(step2.vocalParticipants || []),
-        ...(step3.instrumentParticipants || []),
-      ],
-
-      // Equipment (chỉ STUDIO_SIDE)
-      requiredEquipment:
-        (step3.instrumentParticipants || [])
-          .filter(
-            p =>
-              p.roleType === 'INSTRUMENT' &&
-              p.instrumentSource === 'STUDIO_SIDE' &&
-              p.equipmentId
-          )
-          .map(p => ({
-            equipmentId: p.equipmentId,
-            quantity: 1,
-            rentalFeePerUnit: p.equipmentRentalFee,
-            totalRentalFee: p.equipmentRentalFee,
-          })) || [],
-
-      // Cost breakdown
-      costBreakdown,
-
-      // Additional info
-      externalGuestCount: step1.externalGuestCount || 0,
-    };
-
-    message.success('Booking summary prepared successfully!');
-    onComplete(bookingData);
   };
 
+  const fees = calculateFees();
+
+  // Debug: Log fees
+  console.log('💰 Calculated Fees:', fees);
+
+  // Calculate detailed breakdown for display
+  const calculateDetailedBreakdown = () => {
+    const breakdown = [];
+    const hours = step1?.durationHours || 2;
+
+    // Vocal fees breakdown
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach(vocalist => {
+        const rate = vocalist.hourlyRate || 500000;
+        const fee = rate * hours;
+        breakdown.push({
+          type: 'vocalist',
+          name: vocalist.name || 'Vocalist',
+          rate: rate,
+          hours: hours,
+          fee: fee,
+          formula: `${rate.toLocaleString('vi-VN')} VND/giờ × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+        });
+      });
+    }
+
+    // Instrument performer fees breakdown
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach(instrument => {
+        if (
+          instrument.performerSource === 'INTERNAL_ARTIST' &&
+          instrument.specialistId
+        ) {
+          const rate = instrument.hourlyRate || 300000;
+          const fee = rate * hours;
+          breakdown.push({
+            type: 'instrumentalist',
+            name: instrument.specialistName || instrument.skillName || 'Instrumentalist',
+            rate: rate,
+            hours: hours,
+            fee: fee,
+            formula: `${rate.toLocaleString('vi-VN')} VND/giờ × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+          });
+        }
+
+        // Equipment rental breakdown
+        if (
+          instrument.instrumentSource === 'STUDIO_SIDE' &&
+          instrument.equipmentId
+        ) {
+          const quantity = instrument.quantity || 1;
+          const rentalFee = instrument.rentalFee || 0;
+          const fee = rentalFee * quantity * hours;
+          breakdown.push({
+            type: 'equipment',
+            name: instrument.equipmentName || instrument.skillName || 'Equipment',
+            rate: rentalFee,
+            quantity: quantity,
+            hours: hours,
+            fee: fee,
+            formula: `${rentalFee.toLocaleString('vi-VN')} VND/giờ × ${quantity} cái × ${hours} giờ = ${fee.toLocaleString('vi-VN')} VND`,
+          });
+        }
+      });
+    }
+
+    return breakdown;
+  };
+
+  const detailedBreakdown = calculateDetailedBreakdown();
+
+  // Handle submit
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await onSubmit();
+    } catch (error) {
+      console.error('Submit error:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Prepare instrument table data
+  const instrumentTableData =
+    step3?.instruments?.map((instrument, index) => ({
+      key: index,
+      instrument: instrument.skillName,
+      performer:
+        instrument.performerSource === 'CUSTOMER_SELF'
+          ? 'Tôi tự chơi'
+          : instrument.specialistName || 'Chưa chọn',
+      instrumentSource:
+        instrument.instrumentSource === 'CUSTOMER_SIDE'
+          ? 'Tôi tự mang'
+          : instrument.equipmentName || 'Chưa chọn',
+      quantity: instrument.quantity || 1,
+      fee:
+        instrument.instrumentSource === 'STUDIO_SIDE'
+          ? (instrument.rentalFee || 0) * (instrument.quantity || 1)
+          : 0,
+    })) || [];
+
+  const instrumentColumns = [
+    {
+      title: 'Nhạc cụ',
+      dataIndex: 'instrument',
+      key: 'instrument',
+    },
+    {
+      title: 'Người chơi',
+      dataIndex: 'performer',
+      key: 'performer',
+    },
+    {
+      title: 'Nguồn nhạc cụ',
+      dataIndex: 'instrumentSource',
+      key: 'instrumentSource',
+    },
+    {
+      title: 'Số lượng',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      align: 'center',
+    },
+    {
+      title: 'Phí thuê',
+      dataIndex: 'fee',
+      key: 'fee',
+      align: 'right',
+      render: fee => `${fee.toLocaleString('vi-VN')} VND`,
+    },
+  ];
+
   return (
-    <Card className={styles.card}>
+    <Card className={styles.container}>
       <div className={styles.header}>
-        <Title level={2} className={styles.title}>
-          Step 4: Review & Confirm
+        <Title level={3}>
+          <CheckCircleOutlined className={styles.headerIcon} />
+          Xem lại thông tin booking
         </Title>
-        <Text className={styles.description}>
-          Please review your booking details and confirm
+        <Text type="secondary">
+          Vui lòng kiểm tra kỹ thông tin trước khi xác nhận
         </Text>
       </div>
 
-      <div className={styles.summarySection}>
-        {/* Slot Information */}
-        <div className={styles.section}>
-          <Title level={4}>Booking Slot</Title>
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Date">
-              {step1.bookingDate
-                ? new Date(step1.bookingDate).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })
-                : 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Time">
-              {step1.bookingStartTime && step1.bookingEndTime
-                ? `${step1.bookingStartTime} - ${step1.bookingEndTime}`
-                : 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Duration">
-              {durationHours} hour(s)
-            </Descriptions.Item>
-          </Descriptions>
-        </div>
-
-        {/* Vocal Participants */}
-        {step2.vocalParticipants && step2.vocalParticipants.length > 0 && (
-          <div className={styles.section}>
-            <Title level={4}>Vocal Participants</Title>
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
-              {step2.vocalParticipants.map((p, idx) => (
-                <div key={idx} className={styles.participantItem}>
-                  <Tag color={p.performerSource === 'INTERNAL_ARTIST' ? 'blue' : 'green'}>
-                    {p.performerSource === 'INTERNAL_ARTIST'
-                      ? 'Internal Artist'
-                      : 'Customer Self'}
-                  </Tag>
-                  <Text>
-                    {p.performerSource === 'INTERNAL_ARTIST'
-                      ? `Vocalist ID: ${p.specialistId?.slice(0, 8)}...`
-                      : 'Customer will sing'}
-                  </Text>
-                  {p.performerSource === 'INTERNAL_ARTIST' && (
-                    <Text strong style={{ marginLeft: 'auto' }}>
-                      {p.participantFee?.toLocaleString('vi-VN')}₫
-                    </Text>
-                  )}
-                </div>
-              ))}
+      <div className={styles.content}>
+        {/* Booking Time */}
+        <Card
+          type="inner"
+          title={
+            <Space>
+              <CalendarOutlined />
+              <span>Thời gian booking</span>
             </Space>
-          </div>
-        )}
+          }
+          className={styles.section}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                  Ngày
+                </Text>
+                <Tag color="blue" icon={<CalendarOutlined />} style={{ fontSize: 14 }}>
+                  {step1?.bookingDate || 'Chưa chọn'}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                  Giờ bắt đầu
+                </Text>
+                <Tag color="green" icon={<ClockCircleOutlined />} style={{ fontSize: 14 }}>
+                  {step1?.bookingStartTime || 'Chưa chọn'}
+                </Tag>
+              </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <div style={{ textAlign: 'center' }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                  Giờ kết thúc
+                </Text>
+                <Tag color="orange" icon={<ClockCircleOutlined />} style={{ fontSize: 14 }}>
+                  {step1?.bookingEndTime || 'Chưa chọn'}
+                </Tag>
+              </div>
+            </Col>
+          </Row>
+        </Card>
 
-        {/* Instrument Participants */}
-        {step3.instrumentParticipants &&
-          step3.instrumentParticipants.length > 0 && (
-            <div className={styles.section}>
-              <Title level={4}>Instrument Participants</Title>
-              <Space
-                direction="vertical"
-                style={{ width: '100%' }}
-                size="small"
-              >
-                {step3.instrumentParticipants.map((p, idx) => (
-                  <div key={idx} className={styles.participantItem}>
-                    <div className={styles.participantInfo}>
-                      <Tag
-                        color={
-                          p.performerSource === 'INTERNAL_ARTIST'
-                            ? 'blue'
-                            : 'green'
-                        }
-                      >
-                        {p.performerSource === 'INTERNAL_ARTIST'
-                          ? 'Internal Artist'
-                          : 'Customer Self'}
-                      </Tag>
-                      <Text strong>{p.skillName || 'Unknown Instrument'}</Text>
-                      {p.equipmentName && (
-                        <Tag color="orange">{p.equipmentName}</Tag>
-                      )}
-                      <Tag color="cyan">
-                        {p.instrumentSource === 'STUDIO_SIDE'
-                          ? 'Studio Equipment'
-                          : p.instrumentSource === 'ARTIST_SIDE'
-                          ? 'Artist Equipment'
-                          : 'Customer Equipment'}
-                      </Tag>
-                    </div>
-                    <div className={styles.participantCost}>
-                      {p.performerSource === 'INTERNAL_ARTIST' && (
-                        <Text>
-                          Artist: {p.participantFee?.toLocaleString('vi-VN')}₫
-                        </Text>
-                      )}
-                      {p.equipmentRentalFee > 0 && (
-                        <Text>
-                          Equipment:{' '}
-                          {p.equipmentRentalFee?.toLocaleString('vi-VN')}₫
-                        </Text>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </Space>
-            </div>
+        {/* Vocal Setup */}
+        <Card
+          type="inner"
+          title={
+            <Space>
+              <UserOutlined />
+              <span>Vocal Setup</span>
+            </Space>
+          }
+          className={styles.section}
+        >
+          {step2?.vocalChoice === 'NONE' && (
+            <Alert
+              message="Không thu vocal"
+              type="info"
+              showIcon
+              icon={<UserOutlined />}
+            />
           )}
 
-        {/* Cost Breakdown */}
-        <div className={styles.section}>
-          <Title level={4}>Cost Breakdown</Title>
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Studio Rate">
-              {costBreakdown.studioRate.toLocaleString('vi-VN')}₫ (
-              {durationHours} hour(s) ×{' '}
-              {MOCK_STUDIO_RATE_PER_HOUR.toLocaleString('vi-VN')}₫/hour)
-            </Descriptions.Item>
-            {costBreakdown.artistFee > 0 && (
-              <Descriptions.Item label="Artist Fee">
-                {costBreakdown.artistFee.toLocaleString('vi-VN')}₫
-              </Descriptions.Item>
-            )}
-            {costBreakdown.equipmentRentalFee > 0 && (
-              <Descriptions.Item label="Equipment Rental Fee">
-                {costBreakdown.equipmentRentalFee.toLocaleString('vi-VN')}₫
-              </Descriptions.Item>
-            )}
-            {costBreakdown.externalGuestFee > 0 && (
-              <Descriptions.Item label="External Guest Fee">
-                {costBreakdown.externalGuestFee.toLocaleString('vi-VN')}₫ (
-                {step1.externalGuestCount || 0} guest(s) ×{' '}
-                {MOCK_EXTERNAL_GUEST_FEE_PER_PERSON.toLocaleString('vi-VN')}₫
-                /person)
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="Admin Fee">
-              {costBreakdown.adminFee.toLocaleString('vi-VN')}₫
-            </Descriptions.Item>
-            <Descriptions.Item label="Total Cost">
-              <Text strong style={{ fontSize: '18px', color: '#ec8a1c' }}>
-                {costBreakdown.totalCost.toLocaleString('vi-VN')}₫
+          {step2?.vocalChoice === 'CUSTOMER_SELF' && (
+            <Alert
+              message="Tôi tự hát"
+              type="success"
+              showIcon
+              icon={<UserOutlined />}
+            />
+          )}
+
+          {(step2?.vocalChoice === 'INTERNAL_ARTIST' ||
+            step2?.vocalChoice === 'BOTH') && (
+            <>
+              {step2.vocalChoice === 'BOTH' && (
+                <Alert
+                  message="Tôi tự hát + Thuê ca sĩ nội bộ"
+                  type="success"
+                  showIcon
+                  icon={<TeamOutlined />}
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+              <Descriptions
+                title="Ca sĩ nội bộ đã chọn"
+                column={1}
+                bordered
+                size="small"
+              >
+                {step2?.selectedVocalists?.map((vocalist, index) => (
+                  <Descriptions.Item
+                    key={index}
+                    label={`Vocalist ${index + 1}`}
+                  >
+                    <Space>
+                      <Text>{vocalist.name}</Text>
+                      <Tag color="purple">Internal Artist</Tag>
+                    </Space>
+                  </Descriptions.Item>
+                ))}
+              </Descriptions>
+            </>
+          )}
+        </Card>
+
+        {/* Instrument Setup */}
+        <Card
+          type="inner"
+          title={
+            <Space>
+              <ToolOutlined />
+              <span>Instrument Setup</span>
+            </Space>
+          }
+          className={styles.section}
+        >
+          {step3?.hasLiveInstruments === false ? (
+            <Alert
+              message="Không sử dụng nhạc cụ live (chỉ dùng beat/backing track)"
+              type="info"
+              showIcon
+            />
+          ) : (
+            <Table
+              dataSource={instrumentTableData}
+              columns={instrumentColumns}
+              pagination={false}
+              size="small"
+              bordered
+            />
+          )}
+        </Card>
+
+        <Divider />
+
+        {/* Fee Summary */}
+        <Card
+          type="inner"
+          title={<span>Tổng phí dự kiến</span>}
+          className={styles.feeSection}
+        >
+          {fees.totalFee === 0 ? (
+            <Alert
+              message="Phí tổng = 0 VND"
+              description="Bạn đang tự thực hiện (tự hát, tự chơi nhạc cụ, tự mang thiết bị) nên không phát sinh chi phí từ studio."
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          ) : null}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Statistic
+                title="Phí Participant"
+                value={fees.participantFee}
+                suffix="VND"
+                valueStyle={{ color: '#1890ff' }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                (Internal vocalists + instrumentalists)
               </Text>
-            </Descriptions.Item>
-          </Descriptions>
-        </div>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Statistic
+                title="Phí thuê thiết bị"
+                value={fees.equipmentRentalFee}
+                suffix="VND"
+                valueStyle={{ color: '#52c41a' }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                (Equipment từ studio)
+              </Text>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Statistic
+                title="Tổng cộng"
+                value={fees.totalFee}
+                suffix="VND"
+                valueStyle={{ color: '#ff4d4f', fontWeight: 'bold' }}
+              />
+            </Col>
+          </Row>
+
+          {/* Chi tiết cách tính */}
+          {detailedBreakdown.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <Title level={5} style={{ marginBottom: 16 }}>
+                📋 Chi tiết cách tính:
+              </Title>
+              <Descriptions
+                bordered
+                column={1}
+                size="small"
+                style={{ marginBottom: 16 }}
+              >
+                {detailedBreakdown.map((item, index) => (
+                  <Descriptions.Item
+                    key={index}
+                    label={
+                      <Space>
+                        <Text strong>
+                          {item.type === 'vocalist'
+                            ? '🎤 Ca sĩ'
+                            : item.type === 'instrumentalist'
+                            ? '🎸 Nhạc công'
+                            : '🔧 Thiết bị'}
+                        </Text>
+                        <Text type="secondary">({item.name})</Text>
+                      </Space>
+                    }
+                  >
+                    <Text>{item.formula}</Text>
+                  </Descriptions.Item>
+                ))}
+                <Descriptions.Item
+                  label={
+                    <Text strong style={{ fontSize: 16 }}>
+                      Tổng cộng
+                    </Text>
+                  }
+                >
+                  <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
+                    {fees.totalFee.toLocaleString('vi-VN')} VND
+                  </Text>
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+          )}
+        </Card>
       </div>
 
-      <Alert
-        message="Note"
-        description="This is a summary of your booking. After confirmation, you will be redirected to complete the booking process."
-        type="info"
-        showIcon
-        style={{ marginBottom: 24 }}
-      />
-
+      {/* Action Buttons */}
       <div className={styles.actionRow}>
+        <Button
+          size="large"
+          icon={<ArrowLeftOutlined />}
+          onClick={onBack}
+          disabled={submitting}
+        >
+          Back to Instrument Setup
+        </Button>
         <Button
           type="primary"
           size="large"
           icon={<CheckCircleOutlined />}
           onClick={handleSubmit}
+          loading={submitting}
           className={styles.submitButton}
         >
-          Confirm Booking
+          Xác nhận & Submit Booking
         </Button>
       </div>
     </Card>

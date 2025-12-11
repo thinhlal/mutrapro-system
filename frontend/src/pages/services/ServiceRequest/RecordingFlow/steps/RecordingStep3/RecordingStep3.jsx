@@ -466,9 +466,13 @@ function InstrumentConfig({
                 placeholder="Chọn instrumentalist"
                 value={instrument.specialistId}
                 onChange={(value, option) => {
+                  const selectedArtist = availableInstrumentalists.find(
+                    a => a.specialistId === value
+                  );
                   onUpdate({
                     specialistId: value,
                     specialistName: option.label,
+                    hourlyRate: selectedArtist?.hourlyRate || 0,
                   });
                 }}
                 options={availableInstrumentalists.map(artist => ({
@@ -529,7 +533,7 @@ function InstrumentConfig({
                     onUpdate({
                       equipmentId: value,
                       equipmentName: option.label,
-                      rentalFee: selectedEq?.dailyRentalFee || 0,
+                      rentalFee: selectedEq?.rentalFee || 0,
                     });
                   }}
                   options={availableEquipment.map(eq => ({

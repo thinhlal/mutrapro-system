@@ -162,6 +162,7 @@ export default function RecordingStep1({ data, onComplete }) {
     const [start, end] = selectedTimeRange;
     const startStr = start.format('HH:mm');
     const endStr = end.format('HH:mm');
+    const durationHours = end.diff(start, 'hour', true); // Calculate duration in hours (decimal)
 
     if (!isTimeSlotAvailable(startStr, endStr)) {
       message.error('Selected time slot is no longer available');
@@ -172,6 +173,7 @@ export default function RecordingStep1({ data, onComplete }) {
       bookingDate: selectedDate.format('YYYY-MM-DD'),
       bookingStartTime: startStr,
       bookingEndTime: endStr,
+      durationHours, // Save duration for fee calculation
     });
   };
 

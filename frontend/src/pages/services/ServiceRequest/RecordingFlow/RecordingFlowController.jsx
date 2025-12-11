@@ -196,22 +196,23 @@ export default function RecordingFlowController() {
           />
         );
       case 3:
-        // Step 4: Summary
+        // Step 4: Review & Submit
         return (
           <RecordingStep4
-            data={{
+            formData={{
               step1: flowData.step1 || {},
               step2: flowData.step2 || {},
               step3: flowData.step3 || {},
             }}
-            onComplete={data => {
+            onBack={handlePrev}
+            onSubmit={() => {
               // Final step - submit all data
               const finalData = {
-                ...flowData,
-                step4: data,
+                step1: flowData.step1,
+                step2: flowData.step2,
+                step3: flowData.step3,
               };
-              updateFlowData(finalData);
-              // Navigate to quote page or submit
+              // Navigate to quote page to create service request + booking
               navigate('/services/quotes/recording', {
                 state: { recordingData: finalData },
               });

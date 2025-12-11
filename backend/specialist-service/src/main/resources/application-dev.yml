@@ -51,6 +51,16 @@ aws:
     secret-key: 1nS91Joigp9WxI6zCx9229mmueWxoGc/cZXfQrPe
     bucket-name: mutrapro-dev-files
 
+# Project Service Configuration
+project:
+  service:
+    base-url: ${PROJECT_SERVICE_BASE_URL:http://localhost:8082}
+
+# Identity Service Configuration
+identity:
+  service:
+    base-url: ${IDENTITY_SERVICE_BASE_URL:http://localhost:8081}
+
 # Management & Actuator
 management:
   endpoints:
