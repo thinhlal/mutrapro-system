@@ -319,6 +319,24 @@ export const API_ENDPOINTS = {
     UPLOAD_IMAGE: id => `${REQUEST_PATH}/notation-instruments/${id}/image`,
   },
 
+  // === Equipment Management ===
+  EQUIPMENT: {
+    // GET /equipment?skillId=xxx&includeInactive=true&includeUnavailable=false
+    GET_ALL: `${REQUEST_PATH}/equipment`,
+    // GET /equipment/available
+    GET_AVAILABLE: `${REQUEST_PATH}/equipment/available`,
+    // GET /equipment/by-ids?ids=id1&ids=id2
+    GET_BY_IDS: `${REQUEST_PATH}/equipment/by-ids`,
+    // GET /equipment/{id}
+    GET_BY_ID: id => `${REQUEST_PATH}/equipment/${id}`,
+    // POST /equipment (with multipart/form-data)
+    CREATE: `${REQUEST_PATH}/equipment`,
+    // PUT /equipment/{id} (with multipart/form-data)
+    UPDATE: id => `${REQUEST_PATH}/equipment/${id}`,
+    // POST /equipment/{id}/image
+    UPLOAD_IMAGE: id => `${REQUEST_PATH}/equipment/${id}/image`,
+  },
+
   // === Chat Service (Quản lý Chat Rooms & Messages) ===
   CHAT: {
     // Chat Rooms

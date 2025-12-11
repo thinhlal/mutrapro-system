@@ -1,0 +1,21 @@
+.container {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.container :global(.ant-table-wrapper) {
+  background: white;
+}
+
+.container :global(.ant-upload-list-picture-card-container) {
+  width: 104px;
+  height: 104px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+}
+

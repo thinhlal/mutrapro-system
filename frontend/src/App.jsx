@@ -89,6 +89,7 @@ import ContractsList from './pages/contracts/List/ContractsList';
 // Admin Pages
 import UserManagement from './pages/admin/UserManagement/UserManagement';
 import NotationInstruments from './pages/admin/NotationInstruments/NotationInstruments';
+import EquipmentManagement from './pages/admin/EquipmentManagement/EquipmentManagement';
 import AdminProfile from './pages/admin/Profile/AdminProfile';
 import ServiceRequestManagement from './pages/admin/ServiceRequestManagement/ServiceRequestManagement';
 import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/ServiceRequestContracts';
@@ -514,6 +515,10 @@ function App() {
             <Route
               path="notation-instruments"
               element={<NotationInstruments />}
+            />
+            <Route
+              path="equipment"
+              element={<EquipmentManagement />}
             />
             <Route path="specialists" element={<SpecialistManagement />} />
             <Route path="skills" element={<SkillManagement />} />

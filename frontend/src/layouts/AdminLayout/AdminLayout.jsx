@@ -51,6 +51,11 @@ const menuItems = [
     label: <Link to="/admin/notation-instruments">Notation Instruments</Link>,
   },
   {
+    key: '/admin/equipment',
+    icon: <BarsOutlined />,
+    label: <Link to="/admin/equipment">Equipment Management</Link>,
+  },
+  {
     key: '/admin/specialists',
     icon: <StarOutlined />,
     label: <Link to="/admin/specialists">Specialist Management</Link>,
