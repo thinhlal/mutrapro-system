@@ -1,4 +1,4 @@
-package com.mutrapro.request_service.entity;
+package com.mutrapro.project_service.entity;
 
 import com.mutrapro.shared.entity.BaseEntity;
 import jakarta.persistence.*;

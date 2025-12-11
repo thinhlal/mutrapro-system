@@ -76,7 +76,7 @@ public class BookingParticipant extends BaseEntity<String> {
     InstrumentSource instrumentSource; // STUDIO_SIDE | CUSTOMER_SIDE (chỉ cho INSTRUMENT)
 
     @Column(name = "equipment_id", length = 36)
-    String equipmentId; // Soft reference to request-service.equipment.equipment_id
+    String equipmentId; // Reference to project-service.equipment.equipment_id
     // LƯU Ý: equipment_id PHẢI match với skill_id qua skill_equipment_mapping (nếu STUDIO_SIDE)
 
     // Phí

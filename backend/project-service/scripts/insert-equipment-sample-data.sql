@@ -1,4 +1,5 @@
 -- Seed data cho bảng equipment và skill_equipment_mapping
+-- Database: project_db (hoặc tên database của project-service)
 -- Lưu ý: 
 -- 1. Script này giả định skills table có trong cùng database hoặc có cross-database access
 -- 2. Nếu skills table ở database khác (specialist_db), cần:
@@ -84,12 +85,12 @@ FROM equipment;
 -- 3. HƯỚNG DẪN: Map Equipment với Skills
 -- ========================================
 -- Lưu ý: Skills table nằm ở specialist_db (database khác)
--- Không thể query trực tiếp từ request_db
+-- Không thể query trực tiếp từ project_db
 --
 -- CÁCH LÀM:
 -- 1. Chạy get-skill-ids-helper.sql trong specialist_db để lấy skill_ids
 -- 2. Update skill_ids vào insert-equipment-mapping-with-skill-ids.sql
--- 3. Chạy insert-equipment-mapping-with-skill-ids.sql trong request_db
+-- 3. Chạy insert-equipment-mapping-with-skill-ids.sql trong project_db
 --
 -- Sau khi map xong, kiểm tra bằng query:
 -- SELECT 

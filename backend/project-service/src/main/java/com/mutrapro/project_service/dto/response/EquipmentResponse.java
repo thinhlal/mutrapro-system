@@ -1,4 +1,4 @@
-package com.mutrapro.request_service.dto.response;
+package com.mutrapro.project_service.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

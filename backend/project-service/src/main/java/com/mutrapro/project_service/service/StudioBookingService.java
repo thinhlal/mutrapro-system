@@ -1,15 +1,22 @@
 package com.mutrapro.project_service.service;
 
+import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
 import com.mutrapro.project_service.dto.request.ArtistBookingInfo;
+import com.mutrapro.project_service.dto.request.CreateStudioBookingFromRequestRequest;
 import com.mutrapro.project_service.dto.request.CreateStudioBookingRequest;
+import com.mutrapro.project_service.dto.request.ParticipantRequest;
+import com.mutrapro.project_service.dto.request.RequiredEquipmentRequest;
 import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
 import com.mutrapro.project_service.dto.response.BookingArtistResponse;
+import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.project_service.entity.BookingArtist;
+import com.mutrapro.project_service.entity.BookingParticipant;
+import com.mutrapro.project_service.entity.BookingRequiredEquipment;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.Studio;
@@ -19,17 +26,31 @@ import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
+import com.mutrapro.project_service.enums.InstrumentSource;
 import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
+import com.mutrapro.project_service.enums.PerformerSource;
 import com.mutrapro.project_service.enums.RecordingSessionType;
+import com.mutrapro.project_service.enums.SessionRoleType;
 import com.mutrapro.project_service.enums.StudioBookingContext;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.project_service.exception.ArtistBookingConflictException;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
 import com.mutrapro.project_service.exception.InvalidContractStatusException;
+import com.mutrapro.project_service.exception.InvalidParticipantException;
+import com.mutrapro.project_service.exception.InvalidRequestTypeException;
+import com.mutrapro.project_service.exception.InvalidStateException;
+import com.mutrapro.project_service.exception.InvalidTimeRangeException;
+import com.mutrapro.project_service.exception.NoActiveStudioException;
+import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
+import com.mutrapro.project_service.exception.StudioBookingConflictException;
 import com.mutrapro.project_service.repository.BookingArtistRepository;
+import com.mutrapro.project_service.repository.BookingParticipantRepository;
+import com.mutrapro.project_service.repository.BookingRequiredEquipmentRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
+import com.mutrapro.project_service.repository.SkillEquipmentMappingRepository;
 import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.StudioRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
@@ -63,10 +84,14 @@ public class StudioBookingService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     BookingArtistRepository bookingArtistRepository;
+    BookingParticipantRepository bookingParticipantRepository;
+    BookingRequiredEquipmentRepository bookingRequiredEquipmentRepository;
     TaskAssignmentRepository taskAssignmentRepository;
+    RequestServiceFeignClient requestServiceFeignClient;
     SpecialistServiceFeignClient specialistServiceFeignClient;
     TaskAssignmentService taskAssignmentService;
     ContractMilestoneService contractMilestoneService;
+    SkillEquipmentMappingRepository skillEquipmentMappingRepository;
     
     /**
      * Lấy specialistId của user hiện tại
@@ -446,6 +471,319 @@ public class StudioBookingService {
         } else {
             log.info("Recording milestone already in ready/progress state: milestoneId={}, status={}",
                 recordingMilestone.getMilestoneId(), recordingMilestone.getWorkStatus());
+        }
+        
+        return mapToResponse(saved);
+    }
+
+    /**
+     * Tạo studio booking từ service request (Luồng 3: Recording)
+     * 
+     * Flow:
+     * 1. Customer tạo service request (request-service)
+     * 2. Customer tạo booking từ request với participants và equipment (project-service)
+     * 
+     * Validation:
+     * 1. RequestId phải tồn tại và có request_type = 'recording'
+     * 2. Studio phải active
+     * 3. Time range hợp lệ
+     * 4. Studio availability
+     * 5. Participants validation:
+     *    - VOCAL: không có skill_id, equipment_id, instrument_source
+     *    - INSTRUMENT: bắt buộc skill_id, equipment match skill_id (nếu STUDIO_SIDE)
+     * 6. Equipment validation: equipment phải match skill_id qua skill_equipment_mapping
+     * 
+     * Logic:
+     * - context = PRE_CONTRACT_HOLD
+     * - status = TENTATIVE (chờ Manager tạo contract)
+     * - Tính toán fees: participant_fee + equipment_rental_fee
+     */
+    @Transactional
+    public StudioBookingResponse createBookingFromServiceRequest(
+            String requestId, 
+            CreateStudioBookingFromRequestRequest request) {
+        
+        log.info("Creating studio booking from service request: requestId={}, bookingDate={}, startTime={}, endTime={}",
+            requestId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
+        
+        // 1. Validate requestId tồn tại và có request_type = 'recording'
+        ApiResponse<ServiceRequestInfoResponse> serviceRequestResponse = 
+            requestServiceFeignClient.getServiceRequestById(requestId);
+        
+        if (serviceRequestResponse == null || !"success".equals(serviceRequestResponse.getStatus()) 
+            || serviceRequestResponse.getData() == null) {
+            throw ServiceRequestNotFoundException.byId(requestId);
+        }
+        
+        ServiceRequestInfoResponse serviceRequest = serviceRequestResponse.getData();
+        
+        // Validate request_type = 'recording'
+        if (!"recording".equalsIgnoreCase(serviceRequest.getRequestType())) {
+            throw InvalidRequestTypeException.forBooking(requestId, serviceRequest.getRequestType());
+        }
+        
+        // 2. Get customer user ID từ service request
+        String customerUserId = serviceRequest.getUserId();
+        if (customerUserId == null || customerUserId.isBlank()) {
+            throw new InvalidStateException("Service request does not have user ID");
+        }
+        
+        // 3. Tự động lấy studio active duy nhất (single studio system)
+        List<Studio> activeStudios = studioRepository.findByIsActiveTrue();
+        if (activeStudios.isEmpty()) {
+            throw NoActiveStudioException.notFound();
+        }
+        if (activeStudios.size() > 1) {
+            throw NoActiveStudioException.multipleFound(activeStudios.size());
+        }
+        Studio studio = activeStudios.get(0);
+        log.info("Auto-selected studio for booking: studioId={}, studioName={}",
+            studio.getStudioId(), studio.getStudioName());
+        
+        // 4. Validate time range
+        if (request.getStartTime().isAfter(request.getEndTime())) {
+            throw InvalidTimeRangeException.startAfterEnd(request.getStartTime(), request.getEndTime());
+        }
+        if (request.getStartTime().equals(request.getEndTime())) {
+            throw InvalidTimeRangeException.startEqualsEnd(request.getStartTime(), request.getEndTime());
+        }
+        
+        // 5. Check studio availability (tránh double booking)
+        List<StudioBooking> bookingsOnDate = studioBookingRepository
+            .findByStudioStudioIdAndBookingDate(studio.getStudioId(), request.getBookingDate());
+        
+        List<BookingStatus> activeStatuses = List.of(
+            BookingStatus.TENTATIVE, BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+        
+        List<StudioBooking> conflictingBookings = bookingsOnDate.stream()
+            .filter(booking -> activeStatuses.contains(booking.getStatus()))
+            .filter(booking -> {
+                LocalTime bookingStart = booking.getStartTime();
+                LocalTime bookingEnd = booking.getEndTime();
+                // Overlap: requestStart < bookingEnd && requestEnd > bookingStart
+                return request.getStartTime().isBefore(bookingEnd) && request.getEndTime().isAfter(bookingStart);
+            })
+            .toList();
+        
+        if (!conflictingBookings.isEmpty()) {
+            throw StudioBookingConflictException.forTimeSlot(
+                request.getBookingDate(), request.getStartTime(), request.getEndTime());
+        }
+        
+        // 6. Validate participants
+        if (request.getParticipants() != null && !request.getParticipants().isEmpty()) {
+            for (ParticipantRequest participant : request.getParticipants()) {
+                // Validate VOCAL: không có skill_id, equipment_id, instrument_source
+                if (participant.getRoleType() == SessionRoleType.VOCAL) {
+                    if (participant.getSkillId() != null && !participant.getSkillId().isBlank()) {
+                        throw InvalidParticipantException.vocalWithSkillId();
+                    }
+                    if (participant.getEquipmentId() != null && !participant.getEquipmentId().isBlank()) {
+                        throw InvalidParticipantException.vocalWithEquipmentId();
+                    }
+                    if (participant.getInstrumentSource() != null) {
+                        throw InvalidParticipantException.vocalWithInstrumentSource();
+                    }
+                    // Validate INTERNAL_ARTIST có specialistId
+                    if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST) {
+                        if (participant.getSpecialistId() == null || participant.getSpecialistId().isBlank()) {
+                            throw InvalidParticipantException.internalArtistWithoutSpecialistId();
+                        }
+                    }
+                }
+                
+                // Validate INSTRUMENT: bắt buộc skill_id
+                if (participant.getRoleType() == SessionRoleType.INSTRUMENT) {
+                    if (participant.getSkillId() == null || participant.getSkillId().isBlank()) {
+                        throw InvalidParticipantException.instrumentWithoutSkillId();
+                    }
+                    // Validate INTERNAL_ARTIST có specialistId
+                    if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST) {
+                        if (participant.getSpecialistId() == null || participant.getSpecialistId().isBlank()) {
+                            throw InvalidParticipantException.internalArtistWithoutSpecialistId();
+                        }
+                    }
+                    // Validate STUDIO_SIDE có equipmentId
+                    if (participant.getInstrumentSource() == InstrumentSource.STUDIO_SIDE) {
+                        if (participant.getEquipmentId() == null || participant.getEquipmentId().isBlank()) {
+                            throw InvalidParticipantException.studioSideWithoutEquipmentId();
+                        }
+                        // Validate equipment match skill_id qua skill_equipment_mapping
+                        String equipmentId = participant.getEquipmentId();
+                        String skillId = participant.getSkillId();
+                        boolean equipmentMatchesSkill = skillEquipmentMappingRepository
+                            .existsBySkillIdAndEquipment_EquipmentId(skillId, equipmentId);
+                        if (!equipmentMatchesSkill) {
+                            throw InvalidParticipantException.equipmentNotMatchingSkill(equipmentId, skillId);
+                        }
+                        log.debug("Validated equipment-skill mapping: equipmentId={}, skillId={}", equipmentId, skillId);
+                    }
+                }
+            }
+            
+            // Check artist availability (nếu có INTERNAL_ARTIST)
+            List<String> specialistIds = request.getParticipants().stream()
+                .filter(p -> p.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                .filter(p -> p.getSpecialistId() != null && !p.getSpecialistId().isBlank())
+                .map(ParticipantRequest::getSpecialistId)
+                .distinct()
+                .toList();
+            
+            if (!specialistIds.isEmpty()) {
+                // Check conflict với booking_artists (cho luồng 2)
+                List<BookingArtist> conflictingArtists = bookingArtistRepository
+                    .findConflictingBookingsForMultipleArtists(
+                        specialistIds,
+                        request.getBookingDate(),
+                        request.getStartTime(),
+                        request.getEndTime()
+                    );
+                
+                // Check conflict với booking_participants (cho luồng 3)
+                List<BookingParticipant> conflictingParticipants = bookingParticipantRepository
+                    .findConflictingBookingsForMultipleSpecialists(
+                        specialistIds,
+                        request.getBookingDate(),
+                        request.getStartTime(),
+                        request.getEndTime()
+                    );
+                
+                // Combine conflicts từ cả 2 bảng
+                List<String> allConflictingSpecialistIds = new java.util.ArrayList<>();
+                if (!conflictingArtists.isEmpty()) {
+                    List<String> artistConflicts = conflictingArtists.stream()
+                        .map(BookingArtist::getSpecialistId)
+                        .distinct()
+                        .toList();
+                    allConflictingSpecialistIds.addAll(artistConflicts);
+                }
+                if (!conflictingParticipants.isEmpty()) {
+                    List<String> participantConflicts = conflictingParticipants.stream()
+                        .map(BookingParticipant::getSpecialistId)
+                        .filter(id -> id != null && !id.isBlank())
+                        .distinct()
+                        .toList();
+                    allConflictingSpecialistIds.addAll(participantConflicts);
+                }
+                
+                // Remove duplicates
+                List<String> uniqueConflicts = allConflictingSpecialistIds.stream()
+                    .distinct()
+                    .toList();
+                
+                if (!uniqueConflicts.isEmpty()) {
+                    throw ArtistBookingConflictException.forArtists(uniqueConflicts);
+                }
+            }
+        }
+        
+        // 7. Set default sessionType
+        RecordingSessionType sessionType = request.getSessionType() != null 
+            ? request.getSessionType() 
+            : RecordingSessionType.SELF_RECORDING; // Default cho luồng 3
+        
+        // 8. Tính toán fees
+        BigDecimal totalParticipantFee = BigDecimal.ZERO;
+        BigDecimal totalEquipmentRentalFee = BigDecimal.ZERO;
+        
+        if (request.getParticipants() != null) {
+            for (ParticipantRequest participant : request.getParticipants()) {
+                if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST 
+                    && participant.getParticipantFee() != null) {
+                    totalParticipantFee = totalParticipantFee.add(participant.getParticipantFee());
+                }
+            }
+        }
+        
+        if (request.getRequiredEquipment() != null) {
+            for (RequiredEquipmentRequest equipment : request.getRequiredEquipment()) {
+                BigDecimal equipmentTotalFee = equipment.getTotalRentalFee();
+                if (equipmentTotalFee == null) {
+                    // Tính từ quantity * rentalFeePerUnit
+                    Integer quantity = equipment.getQuantity() != null ? equipment.getQuantity() : 1;
+                    equipmentTotalFee = equipment.getRentalFeePerUnit().multiply(BigDecimal.valueOf(quantity));
+                }
+                totalEquipmentRentalFee = totalEquipmentRentalFee.add(equipmentTotalFee);
+            }
+        }
+        
+        // 9. Tạo booking
+        StudioBooking booking = StudioBooking.builder()
+            .userId(customerUserId)
+            .studio(studio)
+            .requestId(requestId)
+            .contractId(null) // Chưa có contract
+            .milestoneId(null) // Không có milestone cho luồng 3
+            .context(StudioBookingContext.PRE_CONTRACT_HOLD)
+            .sessionType(sessionType)
+            .bookingDate(request.getBookingDate())
+            .startTime(request.getStartTime())
+            .endTime(request.getEndTime())
+            .status(BookingStatus.TENTATIVE) // Chờ Manager tạo contract
+            .durationHours(request.getDurationHours())
+            .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
+            .artistFee(totalParticipantFee)
+            .equipmentRentalFee(totalEquipmentRentalFee)
+            .externalGuestFee(BigDecimal.ZERO)
+            .totalCost(totalParticipantFee.add(totalEquipmentRentalFee)) // Tổng phí
+            .purpose(request.getPurpose())
+            .specialInstructions(request.getSpecialInstructions())
+            .notes(request.getNotes())
+            .build();
+        
+        StudioBooking saved = studioBookingRepository.save(booking);
+        log.info("Created studio booking from service request: bookingId={}, requestId={}, bookingDate={}",
+            saved.getBookingId(), requestId, request.getBookingDate());
+        
+        // 10. Tạo booking_participants
+        if (request.getParticipants() != null && !request.getParticipants().isEmpty()) {
+            for (ParticipantRequest participantRequest : request.getParticipants()) {
+                BookingParticipant participant = BookingParticipant.builder()
+                    .booking(saved)
+                    .roleType(participantRequest.getRoleType())
+                    .performerSource(participantRequest.getPerformerSource())
+                    .specialistId(participantRequest.getSpecialistId())
+                    .skillId(participantRequest.getSkillId())
+                    .instrumentSource(participantRequest.getInstrumentSource())
+                    .equipmentId(participantRequest.getEquipmentId())
+                    .participantFee(participantRequest.getParticipantFee() != null 
+                        ? participantRequest.getParticipantFee() 
+                        : BigDecimal.ZERO)
+                    .isPrimary(participantRequest.getIsPrimary() != null ? participantRequest.getIsPrimary() : false)
+                    .notes(participantRequest.getNotes())
+                    .build();
+                
+                bookingParticipantRepository.save(participant);
+                log.info("Created booking participant: participantId={}, roleType={}, performerSource={}, specialistId={}",
+                    participant.getParticipantId(), participant.getRoleType(), 
+                    participant.getPerformerSource(), participant.getSpecialistId());
+            }
+        }
+        
+        // 11. Tạo booking_required_equipment
+        if (request.getRequiredEquipment() != null && !request.getRequiredEquipment().isEmpty()) {
+            for (RequiredEquipmentRequest equipmentRequest : request.getRequiredEquipment()) {
+                Integer quantity = equipmentRequest.getQuantity() != null ? equipmentRequest.getQuantity() : 1;
+                BigDecimal rentalFeePerUnit = equipmentRequest.getRentalFeePerUnit();
+                // Tính totalRentalFee nếu không có
+                BigDecimal totalRentalFee = equipmentRequest.getTotalRentalFee();
+                if (totalRentalFee == null) {
+                    totalRentalFee = rentalFeePerUnit.multiply(BigDecimal.valueOf(quantity));
+                }
+                
+                BookingRequiredEquipment equipment = BookingRequiredEquipment.builder()
+                    .booking(saved)
+                    .equipmentId(equipmentRequest.getEquipmentId())
+                    .quantity(quantity)
+                    .rentalFeePerUnit(rentalFeePerUnit)
+                    .totalRentalFee(totalRentalFee)
+                    .participantId(equipmentRequest.getParticipantId())
+                    .build();
+                
+                bookingRequiredEquipmentRepository.save(equipment);
+                log.info("Created booking required equipment: equipmentId={}, quantity={}, totalRentalFee={}",
+                    equipment.getEquipmentId(), equipment.getQuantity(), equipment.getTotalRentalFee());
+            }
         }
         
         return mapToResponse(saved);

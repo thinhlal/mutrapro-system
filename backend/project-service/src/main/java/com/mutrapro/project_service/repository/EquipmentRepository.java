@@ -1,6 +1,6 @@
-package com.mutrapro.request_service.repository;
+package com.mutrapro.project_service.repository;
 
-import com.mutrapro.request_service.entity.Equipment;
+import com.mutrapro.project_service.entity.Equipment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

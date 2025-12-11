@@ -261,6 +261,62 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     INVALID_BOOKING_STATUS("CONTRACT_7051", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7051",
         "Invalid booking status for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_REQUEST_TYPE("CONTRACT_7052", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7052",
+        "Invalid service request type for booking",
+        Retryable.NON_TRANSIENT),
+    
+    STUDIO_BOOKING_CONFLICT("CONTRACT_7053", 409,
+        "https://docs.mutrapro.com/errors/CONTRACT_7053",
+        "Studio is already booked at the requested time slot",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_PARTICIPANT("CONTRACT_7054", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7054",
+        "Invalid participant configuration",
+        Retryable.NON_TRANSIENT),
+    
+    ARTIST_BOOKING_CONFLICT("CONTRACT_7055", 409,
+        "https://docs.mutrapro.com/errors/CONTRACT_7055",
+        "One or more artists are already booked at the requested time slot",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_TIME_RANGE("CONTRACT_7056", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7056",
+        "Invalid time range for booking",
+        Retryable.NON_TRANSIENT),
+    
+    NO_ACTIVE_STUDIO("CONTRACT_7057", 500,
+        "https://docs.mutrapro.com/errors/CONTRACT_7057",
+        "No active studio found in the system",
+        Retryable.NON_TRANSIENT),
+    
+    // Equipment Management Errors (7060-7069)
+    EQUIPMENT_NOT_FOUND("CONTRACT_7060", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7060",
+        "Equipment not found",
+        Retryable.NON_TRANSIENT),
+    
+    EQUIPMENT_DUPLICATE("CONTRACT_7061", 409,
+        "https://docs.mutrapro.com/errors/CONTRACT_7061",
+        "Equipment already exists with the same brand and model",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_REQUIRED("CONTRACT_7062", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7062",
+        "File is required",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_SIZE_EXCEEDED("CONTRACT_7063", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7063",
+        "File size exceeds maximum allowed size",
+        Retryable.NON_TRANSIENT),
+    
+    FILE_TYPE_NOT_ALLOWED("CONTRACT_7064", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7064",
+        "File type not allowed",
         Retryable.NON_TRANSIENT);
 
     private final String code;

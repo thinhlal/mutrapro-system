@@ -8,13 +8,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+
 /**
  * Feign Client để gọi request-service
  */
 @FeignClient(
     name = "request-service",
     url = "${request.service.base-url:http://request-service:8084}",
-    path = "/requests"
+    path = ""
 )
 public interface RequestServiceFeignClient {
 
@@ -23,14 +24,14 @@ public interface RequestServiceFeignClient {
      * GET /requests/{requestId}
      * ServiceRequestInfoResponse đã được mở rộng để chứa đầy đủ thông tin
      */
-    @GetMapping("/{requestId}")
+    @GetMapping("/requests/{requestId}")
     ApiResponse<ServiceRequestInfoResponse> getServiceRequestById(@PathVariable("requestId") String requestId);
 
     /**
      * Cập nhật status của service request
      * PUT /requests/{requestId}/status?status={status}
      */
-    @PutMapping("/{requestId}/status")
+    @PutMapping("/requests/{requestId}/status")
     ApiResponse<ServiceRequestInfoResponse> updateRequestStatus(
         @PathVariable("requestId") String requestId,
         @RequestParam("status") String status);

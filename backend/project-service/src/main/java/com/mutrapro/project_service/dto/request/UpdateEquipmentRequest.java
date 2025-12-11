@@ -1,4 +1,4 @@
-package com.mutrapro.request_service.dto.request;
+package com.mutrapro.project_service.dto.request;
 
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;

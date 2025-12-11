@@ -1,6 +1,6 @@
-package com.mutrapro.request_service.exception;
+package com.mutrapro.project_service.exception;
 
-import com.mutrapro.request_service.enums.RequestServiceErrorCodes;
+import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
 import com.mutrapro.shared.exception.ResourceNotFoundException;
 
 import java.util.Map;
@@ -11,11 +11,11 @@ import java.util.Map;
 public class EquipmentNotFoundException extends ResourceNotFoundException {
 
     public EquipmentNotFoundException(String message) {
-        super(RequestServiceErrorCodes.RESOURCE_NOT_FOUND, message);
+        super(ProjectServiceErrorCodes.EQUIPMENT_NOT_FOUND, message);
     }
 
     public EquipmentNotFoundException(String message, String equipmentId) {
-        super(RequestServiceErrorCodes.RESOURCE_NOT_FOUND, message, 
+        super(ProjectServiceErrorCodes.EQUIPMENT_NOT_FOUND, message, 
               Map.of("equipmentId", equipmentId));
     }
 

@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  * Bảng: booking_required_equipment
  * 
  * LƯU Ý: CHỈ lưu equipment có instrument_source = STUDIO_SIDE (cần tính phí thuê)
- * Equipment nằm ở request-service, dùng soft reference (equipment_id là String UUID)
+ * Equipment nằm ở project-service (cùng database), dùng reference (equipment_id là String UUID)
  */
 @Entity
 @Table(name = "booking_required_equipment", indexes = {
@@ -44,7 +44,7 @@ public class BookingRequiredEquipment extends BaseEntity<String> {
     }
 
     @Column(name = "equipment_id", nullable = false, length = 36)
-    String equipmentId; // Soft reference to request-service.equipment.equipment_id
+    String equipmentId; // Reference to project-service.equipment.equipment_id
 
     @Column(name = "quantity", nullable = false)
     @Builder.Default

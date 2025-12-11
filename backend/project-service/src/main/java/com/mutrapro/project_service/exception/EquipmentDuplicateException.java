@@ -1,6 +1,6 @@
-package com.mutrapro.request_service.exception;
+package com.mutrapro.project_service.exception;
 
-import com.mutrapro.request_service.enums.RequestServiceErrorCodes;
+import com.mutrapro.project_service.enums.ProjectServiceErrorCodes;
 import com.mutrapro.shared.exception.BusinessException;
 
 /**
@@ -9,7 +9,7 @@ import com.mutrapro.shared.exception.BusinessException;
 public class EquipmentDuplicateException extends BusinessException {
 
     public EquipmentDuplicateException(String message) {
-        super(RequestServiceErrorCodes.DUPLICATE_RESOURCE, message);
+        super(ProjectServiceErrorCodes.EQUIPMENT_DUPLICATE, message);
     }
 
     public static EquipmentDuplicateException create(String brand, String model) {

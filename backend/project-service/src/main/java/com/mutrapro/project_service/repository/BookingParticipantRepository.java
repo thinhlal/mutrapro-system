@@ -2,8 +2,12 @@ package com.mutrapro.project_service.repository;
 
 import com.mutrapro.project_service.entity.BookingParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
@@ -43,5 +47,47 @@ public interface BookingParticipantRepository extends JpaRepository<BookingParti
      * Đếm số participants của một booking
      */
     long countByBooking_BookingId(String bookingId);
+    
+    /**
+     * Tìm các participants có conflict về thời gian với một slot cụ thể
+     * (cho một specialist cụ thể)
+     */
+    @Query("""
+        SELECT bp FROM BookingParticipant bp
+        JOIN bp.booking sb
+        WHERE bp.specialistId = :specialistId
+          AND sb.bookingDate = :bookingDate
+          AND sb.status IN ('TENTATIVE', 'PENDING', 'CONFIRMED', 'IN_PROGRESS')
+          AND (
+            (sb.startTime < :endTime AND sb.endTime > :startTime)
+          )
+        """)
+    List<BookingParticipant> findConflictingBookings(
+        @Param("specialistId") String specialistId,
+        @Param("bookingDate") LocalDate bookingDate,
+        @Param("startTime") LocalTime startTime,
+        @Param("endTime") LocalTime endTime
+    );
+    
+    /**
+     * Tìm các participants có conflict về thời gian với một slot cụ thể
+     * (cho nhiều specialists)
+     */
+    @Query("""
+        SELECT bp FROM BookingParticipant bp
+        JOIN bp.booking sb
+        WHERE bp.specialistId IN :specialistIds
+          AND sb.bookingDate = :bookingDate
+          AND sb.status IN ('TENTATIVE', 'PENDING', 'CONFIRMED', 'IN_PROGRESS')
+          AND (
+            (sb.startTime < :endTime AND sb.endTime > :startTime)
+          )
+        """)
+    List<BookingParticipant> findConflictingBookingsForMultipleSpecialists(
+        @Param("specialistIds") List<String> specialistIds,
+        @Param("bookingDate") LocalDate bookingDate,
+        @Param("startTime") LocalTime startTime,
+        @Param("endTime") LocalTime endTime
+    );
 }
 

@@ -1,10 +1,10 @@
-package com.mutrapro.request_service.controller;
+package com.mutrapro.project_service.controller;
 
-import com.mutrapro.request_service.dto.request.CreateEquipmentRequest;
-import com.mutrapro.request_service.dto.request.UpdateEquipmentRequest;
-import com.mutrapro.request_service.dto.response.EquipmentResponse;
-import com.mutrapro.request_service.dto.response.ImageUploadResponse;
-import com.mutrapro.request_service.service.EquipmentService;
+import com.mutrapro.project_service.dto.request.CreateEquipmentRequest;
+import com.mutrapro.project_service.dto.request.UpdateEquipmentRequest;
+import com.mutrapro.project_service.dto.response.EquipmentResponse;
+import com.mutrapro.project_service.dto.response.ImageUploadResponse;
+import com.mutrapro.project_service.service.EquipmentService;
 import com.mutrapro.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

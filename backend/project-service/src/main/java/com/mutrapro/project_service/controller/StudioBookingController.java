@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.controller;
 
+import com.mutrapro.project_service.dto.request.CreateStudioBookingFromRequestRequest;
 import com.mutrapro.project_service.dto.request.CreateStudioBookingRequest;
 import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
@@ -53,6 +54,38 @@ public class StudioBookingController {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.<StudioBookingResponse>builder()
                 .message("Studio booking created successfully")
+                .data(booking)
+                .statusCode(HttpStatus.CREATED.value())
+                .status("success")
+                .build());
+    }
+
+    /**
+     * Tạo studio booking từ service request (Luồng 3: Recording)
+     * 
+     * POST /studio-bookings/from-request/{requestId}
+     * 
+     * Flow:
+     * 1. Customer tạo service request (request-service)
+     * 2. Customer tạo booking từ request với participants và equipment (project-service)
+     * 
+     * Body: CreateStudioBookingFromRequestRequest
+     * 
+     * Response: StudioBookingResponse
+     */
+    @PostMapping("/from-request/{requestId}")
+    public ResponseEntity<ApiResponse<StudioBookingResponse>> createBookingFromServiceRequest(
+            @PathVariable("requestId") String requestId,
+            @Valid @RequestBody CreateStudioBookingFromRequestRequest request) {
+        
+        log.info("Creating studio booking from service request: requestId={}, bookingDate={}, startTime={}, endTime={}",
+            requestId, request.getBookingDate(), request.getStartTime(), request.getEndTime());
+        
+        StudioBookingResponse booking = studioBookingService.createBookingFromServiceRequest(requestId, request);
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.<StudioBookingResponse>builder()
+                .message("Studio booking created successfully from service request")
                 .data(booking)
                 .statusCode(HttpStatus.CREATED.value())
                 .status("success")
