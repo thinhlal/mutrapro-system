@@ -69,7 +69,7 @@
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 17, 23, 0.65);
+  background: rgba(146, 146, 146, 0.65);
   color: #e6e6f0;
   cursor: pointer;
   backdrop-filter: blur(8px);
@@ -125,7 +125,7 @@
   margin: 0 0 12px 0;
 }
 .subtitle {
-  color: #6767cb;
+  color: #ffffff;
   margin: 0;
 }
 
