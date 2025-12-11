@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
+import { RecordingFlowProvider } from '../context/RecordingFlowContext';
 import LoadingScreen from '../components/LoadingScreen';
 
 const RootNavigator = () => {
@@ -17,7 +18,9 @@ const RootNavigator = () => {
   return (
     <NavigationContainer>
       <NotificationProvider>
-        {isAuthenticated ? <MainStack /> : <AuthStack />}
+        <RecordingFlowProvider>
+          {isAuthenticated ? <MainStack /> : <AuthStack />}
+        </RecordingFlowProvider>
       </NotificationProvider>
     </NavigationContainer>
   );

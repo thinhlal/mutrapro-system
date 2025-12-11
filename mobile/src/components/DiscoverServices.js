@@ -55,10 +55,15 @@ const DiscoverServices = () => {
   }, [fetchPricingData]);
 
   const handleServicePress = (item) => {
-    // Navigate to ServiceRequestScreen with serviceType
-    navigation.navigate('ServiceRequest', {
-      serviceType: item.serviceType,
-    });
+    if (item.serviceType === 'recording') {
+      // Use dedicated Recording flow (multi-step like web)
+      navigation.navigate('RecordingFlow');
+    } else {
+      // Default: single form flow
+      navigation.navigate('ServiceRequest', {
+        serviceType: item.serviceType,
+      });
+    }
   };
 
   return (

@@ -57,7 +57,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error("Error fetching vocalists:", error);
-      Alert.alert("Error", error.message || "Không thể tải danh sách ca sĩ");
+      Alert.alert("Error", error.message || "Failed to load vocalists");
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
         } else {
           // Select (check max limit)
           if (prev.length >= maxSelections) {
-            Alert.alert("Thông báo", `Bạn chỉ có thể chọn tối đa ${maxSelections} ca sĩ`);
+            Alert.alert("Notice", `You can select up to ${maxSelections} vocalists`);
             return prev;
           }
           return [...prev, vocalistId];
@@ -89,7 +89,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
 
   const handleConfirm = () => {
     if (selectedIds.length === 0) {
-      Alert.alert("Thông báo", "Vui lòng chọn ít nhất một ca sĩ");
+      Alert.alert("Notice", "Please select at least one vocalist");
       return;
     }
 
@@ -131,7 +131,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chọn ca sĩ ưu tiên</Text>
+        <Text style={styles.headerTitle}>Select Preferred Vocalist</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -142,7 +142,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
       >
         {/* Filters */}
         <View style={styles.filtersCard}>
-          <Text style={styles.filterLabel}>Lọc theo giới tính:</Text>
+          <Text style={styles.filterLabel}>Filter by gender:</Text>
           <View style={styles.genderFilterContainer}>
             {["ALL", "FEMALE", "MALE"].map((gender) => (
               <TouchableOpacity
@@ -159,14 +159,14 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
                     genderFilter === gender && styles.genderFilterTextSelected,
                   ]}
                 >
-                  {gender === "ALL" ? "Tất cả" : gender === "FEMALE" ? "Nữ" : "Nam"}
+                  {gender === "ALL" ? "All" : gender === "FEMALE" ? "Female" : "Male"}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <Text style={[styles.filterLabel, { marginTop: SPACING.md }]}>
-            Lọc theo thể loại:
+            Filter by genre:
           </Text>
           <ScrollView
             horizontal
@@ -204,7 +204,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
           </ScrollView>
 
           <Text style={styles.resultCount}>
-            ({vocalists.length} ca sĩ{vocalists.length !== 1 ? "" : ""})
+            ({vocalists.length} vocalist{vocalists.length !== 1 ? "s" : ""})
           </Text>
         </View>
 
@@ -212,12 +212,12 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Đang tải danh sách ca sĩ...</Text>
+            <Text style={styles.loadingText}>Loading vocalists...</Text>
           </View>
         ) : vocalists.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="person-outline" size={64} color={COLORS.textSecondary} />
-            <Text style={styles.emptyText}>Không tìm thấy ca sĩ nào</Text>
+            <Text style={styles.emptyText}>No vocalists found</Text>
           </View>
         ) : (
           <View style={styles.vocalistsList}>
@@ -251,7 +251,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
                         <Text style={styles.vocalistName}>{vocalistName}</Text>
                         {vocalist.gender && (
                           <Text style={styles.vocalistGender}>
-                            {vocalist.gender === "FEMALE" ? "Nữ" : "Nam"}
+                        {vocalist.gender === "FEMALE" ? "Female" : "Male"}
                           </Text>
                         )}
                       </View>
@@ -284,11 +284,11 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
       {selectedIds.length > 0 && (
         <View style={styles.footer}>
           <Text style={styles.selectedCount}>
-            Đã chọn: {selectedIds.length}
+            Selected: {selectedIds.length}
             {allowMultiple && maxSelections > 1 ? ` / ${maxSelections}` : ""}
           </Text>
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-            <Text style={styles.confirmButtonText}>Xác nhận</Text>
+            <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
         </View>
       )}

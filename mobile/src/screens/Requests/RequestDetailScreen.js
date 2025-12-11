@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { getServiceRequestById } from "../../services/serviceRequestService";
+import { getBookingByRequestId } from "../../services/studioBookingService";
 import {
   getContractsByRequestId,
   approveContract,
@@ -38,6 +39,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   const [instruments, setInstruments] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [openingChat, setOpeningChat] = useState(false);
+  const [booking, setBooking] = useState(null);
 
   // Modal states
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -49,6 +51,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     loadRequestDetail();
     loadContracts();
+    loadBooking();
   }, [requestId]);
 
   const loadRequestDetail = async () => {
@@ -106,6 +109,22 @@ const RequestDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  const loadBooking = async () => {
+    try {
+      const resp = await getBookingByRequestId(requestId);
+      if (resp?.status === "success" && resp?.data) {
+        setBooking(resp.data);
+      } else if (resp?.data) {
+        setBooking(resp.data);
+      } else {
+        setBooking(null);
+      }
+    } catch (error) {
+      console.error("Error loading booking:", error);
+      setBooking(null);
+    }
+  };
+
   const loadInstruments = async (instrumentIds) => {
     try {
       console.log('[Mobile] Loading instruments for IDs:', instrumentIds);
@@ -133,6 +152,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
     setRefreshing(true);
     loadRequestDetail();
     loadContracts();
+    loadBooking();
   }, [requestId]);
 
   const handleApproveContract = async (contractId) => {
@@ -255,7 +275,7 @@ const RequestDetailScreen = ({ navigation, route }) => {
       contract_approved: {
         color: COLORS.info,
         icon: "checkmark-circle-outline",
-        text: "Đã duyệt hợp đồng - Chờ ký",
+        text: "Contract approved - awaiting signature",
         bgColor: COLORS.info + "15",
       },
       contract_signed: {
@@ -698,6 +718,84 @@ const RequestDetailScreen = ({ navigation, route }) => {
             value={formatDate(request.updatedAt)}
           />
         </View>
+
+        {/* Booking Info (Recording) */}
+        {request.requestType === "recording" && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Booking Information</Text>
+            {booking ? (
+              <>
+                <InfoRow
+                  icon="calendar-outline"
+                  label="Booking Date"
+                  value={booking.bookingDate || "N/A"}
+                />
+                <InfoRow
+                  icon="time-outline"
+                  label="Time Slot"
+                  value={
+                    booking.startTime && booking.endTime
+                      ? `${booking.startTime} - ${booking.endTime}`
+                      : "N/A"
+                  }
+                />
+                {booking.durationHours && (
+                  <InfoRow
+                    icon="timer-outline"
+                    label="Duration"
+                    value={`${booking.durationHours} hrs`}
+                  />
+                )}
+
+                {booking.participants && booking.participants.length > 0 && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="people-outline" size={18} color={COLORS.textSecondary} />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Participants</Text>
+                      {booking.participants.map((p, idx) => (
+                        <Text key={idx} style={styles.infoValue}>
+                          • {p.roleType} - {p.performerSource}
+                          {p.specialistName ? ` (${p.specialistName})` : ""}
+                          {p.participantFee
+                            ? ` • ${p.participantFee.toLocaleString("vi-VN")} VND`
+                            : ""}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="hammer-outline" size={18} color={COLORS.textSecondary} />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Equipment</Text>
+                      {booking.requiredEquipment.map((eq, idx) => (
+                        <Text key={idx} style={styles.infoValue}>
+                          • {eq.equipmentName || eq.equipmentId} x {eq.quantity}
+                          {eq.totalRentalFee
+                            ? ` • ${eq.totalRentalFee.toLocaleString("vi-VN")} VND`
+                            : ""}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {booking.totalCost && (
+                  <InfoRow
+                    icon="cash-outline"
+                    label="Total Cost"
+                    value={`${booking.totalCost.toLocaleString("vi-VN")} VND`}
+                    valueColor={COLORS.error}
+                  />
+                )}
+              </>
+            ) : (
+              <Text style={styles.helperText}>No booking information yet.</Text>
+            )}
+          </View>
+        )}
 
         {/* Contracts Section */}
         <View style={styles.contractsSection}>
