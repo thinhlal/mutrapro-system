@@ -1,8 +1,6 @@
 .card {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .header {
@@ -11,113 +9,188 @@
 }
 
 .title {
-  margin: 0 0 8px 0 !important;
-  color: #333;
+  color: #f97316;
+  margin-bottom: 8px !important;
 }
 
 .description {
-  color: #666;
   font-size: 16px;
+  color: #6b7280;
 }
 
-.choiceSection {
+/* Vocal Choice Section */
+.vocalChoiceSection {
   margin-bottom: 32px;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 8px;
 }
 
 .radioGroup {
   width: 100%;
 }
 
-.radioContainer {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-}
-
-.radioButton {
-  width: 100%;
-  height: auto;
-  padding: 20px;
-  border-radius: 8px;
-  text-align: left;
-  margin-bottom: 12px;
-}
-
-.radioContent {
+.radioOption {
   display: flex;
   align-items: center;
-  gap: 16px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.3s ease;
+  width: 100%;
 }
 
-.icon {
-  font-size: 32px;
-  color: #ec8a1c;
+.radioOption:hover {
+  border-color: #f97316;
+  background: #fff7ed;
 }
 
-.radioTitle {
+.radioOption input[type='radio']:checked ~ * {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.radioLabel {
   font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  font-weight: 500;
+  margin-left: 8px;
 }
 
-.radioDescription {
-  font-size: 14px;
-  color: #666;
-}
-
-.selectionSection {
-  margin: 32px 0;
-  padding: 24px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.selectedInfo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.selectButton {
-  width: 100%;
-  max-width: 300px;
-}
-
-.actionRow {
+/* Vocalist Selection Section */
+.vocalistSelectionSection {
   margin-top: 32px;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.sectionHeader {
+  margin-bottom: 20px;
+}
+
+.sectionHeader h4 {
+  margin-bottom: 4px !important;
+}
+
+.vocalistList {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.vocalistList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vocalistList::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.vocalistList::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.vocalistList::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.vocalistItem {
+  padding: 16px !important;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vocalistItem:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+}
+
+.vocalistItem.selected {
+  border-color: #f97316;
+  background: #fff7ed;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+}
+
+.vocalistItem.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.vocalistItem.unavailable:hover {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+  transform: none;
+  box-shadow: none;
+}
+
+.vocalistStats {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.selectedSummary {
+  margin-top: 20px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #f97316;
+  border-radius: 8px;
+}
+
+/* Action Row */
+.actionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .continueButton {
-  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
-  border: none;
-  height: 48px;
-  padding: 0 32px;
-  font-size: 16px;
-  font-weight: 600;
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
 }
 
-.continueButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d67a16 0%, #c66a06 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
+.continueButton:hover {
+  background-color: #ea580c !important;
+  border-color: #ea580c !important;
 }
 
+.continueButton:disabled {
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .card {
-    padding: 20px;
-  }
-
-  .radioContainer {
+  .actionRow {
     flex-direction: column;
     gap: 12px;
   }
 
-  .radioButton {
-    padding: 16px;
+  .actionRow button {
     width: 100%;
+  }
+
+  .vocalistItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vocalistStats {
+    align-items: flex-start;
+    margin-top: 12px;
   }
 }

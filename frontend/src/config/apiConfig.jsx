@@ -468,6 +468,8 @@ export const API_ENDPOINTS = {
       // GET /public/specialists/{specialistId}
       GET_SPECIALIST_DETAIL: specialistId =>
         `${SPECIALIST_PATH}/public/specialists/${specialistId}`,
+      // GET /public/skills
+      GET_ALL_SKILLS: `${SPECIALIST_PATH}/public/skills`,
     },
     PROFILE: {
       // GET /specialists/me

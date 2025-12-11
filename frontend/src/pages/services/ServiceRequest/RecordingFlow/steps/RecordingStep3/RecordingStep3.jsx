@@ -1,107 +1,37 @@
-// RecordingStep3.jsx - Instrument Setup
+// RecordingStep3.jsx - Instrument Setup (Nhạc cụ + Ai chơi + Lấy từ đâu)
 import { useState, useEffect } from 'react';
 import {
   Card,
+  Radio,
   Button,
+  Space,
+  Typography,
+  Alert,
   Checkbox,
   Select,
-  Radio,
-  Typography,
-  message,
-  Space,
-  Tag,
-  Divider,
   InputNumber,
+  Collapse,
+  Spin,
+  Empty,
+  message,
+  Tag,
+  Avatar,
+  List,
 } from 'antd';
 import {
+  CheckCircleOutlined,
+  UserOutlined,
   TeamOutlined,
-  ArrowRightOutlined,
-  PlusOutlined,
-  DeleteOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../../../../../utils/axiosInstance';
+import { API_ENDPOINTS } from '../../../../../../config/apiConfig';
+import { getAvailableArtistsForRequest } from '../../../../../../services/studioBookingService';
+import { getAllEquipment } from '../../../../../../services/equipmentService';
 import styles from './RecordingStep3.module.css';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
-
-// Mock data - sẽ thay bằng API call thực tế
-const MOCK_SKILLS = [
-  {
-    id: 'skill-guitar',
-    name: 'Guitar Performance',
-    recordingCategory: 'INSTRUMENT',
-  },
-  {
-    id: 'skill-piano',
-    name: 'Piano Performance',
-    recordingCategory: 'INSTRUMENT',
-  },
-  {
-    id: 'skill-drums',
-    name: 'Drums Performance',
-    recordingCategory: 'INSTRUMENT',
-  },
-  {
-    id: 'skill-bass',
-    name: 'Bass Performance',
-    recordingCategory: 'INSTRUMENT',
-  },
-];
-
-const MOCK_EQUIPMENT_BY_SKILL = {
-  'skill-guitar': [
-    {
-      id: 'eq-guitar-1',
-      name: 'Fender Stratocaster',
-      brand: 'Fender',
-      model: 'Stratocaster',
-      rentalFee: 200000,
-      availableQuantity: 2,
-    },
-    {
-      id: 'eq-guitar-2',
-      name: 'Gibson Les Paul',
-      brand: 'Gibson',
-      model: 'Les Paul',
-      rentalFee: 300000,
-      availableQuantity: 1,
-    },
-  ],
-  'skill-piano': [
-    {
-      id: 'eq-piano-1',
-      name: 'Yamaha C3',
-      brand: 'Yamaha',
-      model: 'C3',
-      rentalFee: 500000,
-      availableQuantity: 1,
-    },
-  ],
-  'skill-drums': [
-    {
-      id: 'eq-drums-1',
-      name: 'Pearl Export Series',
-      brand: 'Pearl',
-      model: 'Export',
-      rentalFee: 400000,
-      availableQuantity: 1,
-    },
-  ],
-};
-
-const MOCK_INSTRUMENTALISTS_BY_SKILL = {
-  'skill-guitar': [
-    { id: 'inst-guitar-1', name: 'Guitarist A', rating: 4.8 },
-    { id: 'inst-guitar-2', name: 'Guitarist B', rating: 4.9 },
-  ],
-  'skill-piano': [
-    { id: 'inst-piano-1', name: 'Pianist A', rating: 4.9 },
-  ],
-  'skill-drums': [
-    { id: 'inst-drums-1', name: 'Drummer A', rating: 4.7 },
-  ],
-};
+const { Panel } = Collapse;
 
 const PERFORMER_SOURCE = {
   CUSTOMER_SELF: 'CUSTOMER_SELF',
@@ -109,209 +39,133 @@ const PERFORMER_SOURCE = {
 };
 
 const INSTRUMENT_SOURCE = {
-  CUSTOMER_SIDE: 'CUSTOMER_SIDE', // Customer tự mang
-  STUDIO_SIDE: 'STUDIO_SIDE', // Thuê studio
-  ARTIST_SIDE: 'ARTIST_SIDE', // Artist tự mang (chỉ khi INTERNAL_ARTIST)
+  CUSTOMER_SIDE: 'CUSTOMER_SIDE',
+  STUDIO_SIDE: 'STUDIO_SIDE',
 };
 
-export default function RecordingStep3({ data, onComplete }) {
-  const navigate = useNavigate();
-  const [hasInstruments, setHasInstruments] = useState(
-    data?.hasInstruments !== undefined ? data.hasInstruments : false
+export default function RecordingStep3({ data, onComplete, onBack }) {
+  const [hasLiveInstruments, setHasLiveInstruments] = useState(
+    data?.hasLiveInstruments !== undefined ? data.hasLiveInstruments : null
   );
-  const [instruments, setInstruments] = useState(
+  const [availableSkills, setAvailableSkills] = useState([]);
+  const [selectedInstruments, setSelectedInstruments] = useState(
     data?.instruments || []
   );
+  const [loadingSkills, setLoadingSkills] = useState(false);
 
-  const handleHasInstrumentsChange = e => {
-    const value = e.target.checked;
-    setHasInstruments(value);
-    if (!value) {
-      setInstruments([]);
+  const { bookingDate, bookingStartTime, bookingEndTime } = data || {};
+
+  // Fetch available instrument skills
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        setLoadingSkills(true);
+        // Use public endpoint /public/skills (no authentication required)
+        const response = await axiosInstance.get(
+          API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_ALL_SKILLS
+        );
+
+        if (response.data?.status === 'success' && response.data?.data) {
+          // Filter skills with skillType = RECORDING_ARTIST and recordingCategory = INSTRUMENT
+          const instrumentSkills = response.data.data.filter(
+            skill =>
+              skill.skillType === 'RECORDING_ARTIST' &&
+              skill.recordingCategory === 'INSTRUMENT'
+          );
+          setAvailableSkills(instrumentSkills);
+        }
+      } catch (error) {
+        console.error('Error fetching skills:', error);
+        message.error('Không thể tải danh sách nhạc cụ');
+      } finally {
+        setLoadingSkills(false);
+      }
+    };
+
+    fetchSkills();
+  }, []);
+
+  const handleLiveInstrumentsChange = e => {
+    const value = e.target.value;
+    setHasLiveInstruments(value);
+
+    if (value === false) {
+      setSelectedInstruments([]);
     }
   };
 
-  const addInstrument = () => {
-    setInstruments([
-      ...instruments,
-      {
-        id: `inst-${Date.now()}`,
-        skillId: null,
-        performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
-        instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
-        equipmentId: null,
-        specialistId: null,
-      },
-    ]);
+  const handleInstrumentToggle = (skill, checked) => {
+    if (checked) {
+      // Add instrument
+      setSelectedInstruments([
+        ...selectedInstruments,
+        {
+          skillId: skill.skillId,
+          skillName: skill.skillName,
+          performerSource: PERFORMER_SOURCE.CUSTOMER_SELF,
+          specialistId: null,
+          specialistName: null,
+          instrumentSource: INSTRUMENT_SOURCE.CUSTOMER_SIDE,
+          equipmentId: null,
+          equipmentName: null,
+          quantity: 1,
+          rentalFee: 0,
+        },
+      ]);
+    } else {
+      // Remove instrument
+      setSelectedInstruments(
+        selectedInstruments.filter(inst => inst.skillId !== skill.skillId)
+      );
+    }
   };
 
-  const removeInstrument = id => {
-    setInstruments(instruments.filter(inst => inst.id !== id));
-  };
-
-  const updateInstrument = (id, updates) => {
-    setInstruments(
-      instruments.map(inst =>
-        inst.id === id ? { ...inst, ...updates } : inst
+  const updateInstrument = (skillId, updates) => {
+    setSelectedInstruments(
+      selectedInstruments.map(inst =>
+        inst.skillId === skillId ? { ...inst, ...updates } : inst
       )
     );
   };
 
-  const handleSkillChange = (instrumentId, skillId) => {
-    const instrument = instruments.find(inst => inst.id === instrumentId);
-    const updates = { skillId };
-
-    // Reset dependent fields when skill changes
-    if (instrument.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE) {
-      updates.equipmentId = null;
-    }
-    if (instrument.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST) {
-      updates.specialistId = null;
-    }
-
-    updateInstrument(instrumentId, updates);
-  };
-
-  const handlePerformerSourceChange = (instrumentId, performerSource) => {
-    const instrument = instruments.find(inst => inst.id === instrumentId);
-    const updates = { performerSource };
-
-    // Reset specialist if switching to CUSTOMER_SELF
-    if (performerSource === PERFORMER_SOURCE.CUSTOMER_SELF) {
-      updates.specialistId = null;
-      // If was STUDIO_SIDE and artist was bringing, reset to CUSTOMER_SIDE
-      if (instrument.instrumentSource === INSTRUMENT_SOURCE.ARTIST_SIDE) {
-        updates.instrumentSource = INSTRUMENT_SOURCE.CUSTOMER_SIDE;
-        updates.equipmentId = null;
-      }
-    }
-
-    // If switching to INTERNAL_ARTIST and instrument source was CUSTOMER_SIDE,
-    // keep it as is or allow user to choose ARTIST_SIDE
-    if (
-      performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
-      instrument.instrumentSource === INSTRUMENT_SOURCE.CUSTOMER_SIDE
-    ) {
-      // Keep as CUSTOMER_SIDE (user can change to ARTIST_SIDE if needed)
-    }
-
-    updateInstrument(instrumentId, updates);
-  };
-
-  const handleInstrumentSourceChange = (instrumentId, instrumentSource) => {
-    const instrument = instruments.find(inst => inst.id === instrumentId);
-    const updates = { instrumentSource };
-
-    // Reset equipment if switching away from STUDIO_SIDE
-    if (instrumentSource !== INSTRUMENT_SOURCE.STUDIO_SIDE) {
-      updates.equipmentId = null;
-    }
-
-    // Validate: ARTIST_SIDE only available if INTERNAL_ARTIST
-    if (
-      instrumentSource === INSTRUMENT_SOURCE.ARTIST_SIDE &&
-      instrument.performerSource !== PERFORMER_SOURCE.INTERNAL_ARTIST
-    ) {
-      message.warning('Artist can only bring instrument if hiring artist');
-      return;
-    }
-
-    updateInstrument(instrumentId, updates);
-  };
-
-  const handleEquipmentChange = (instrumentId, equipmentId) => {
-    updateInstrument(instrumentId, { equipmentId });
-  };
-
-  const handleSpecialistChange = (instrumentId, specialistId) => {
-    updateInstrument(instrumentId, { specialistId });
-  };
-
-  const validateInstrument = instrument => {
-    if (!instrument.skillId) {
-      return 'Please select instrument skill';
-    }
-
-    if (
-      instrument.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
-      !instrument.equipmentId
-    ) {
-      return 'Please select equipment when renting from studio';
-    }
-
-    if (
-      instrument.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
-      !instrument.specialistId
-    ) {
-      return 'Please select instrumentalist';
-    }
-
-    return null;
-  };
-
   const handleContinue = () => {
-    if (!hasInstruments) {
-      onComplete({
-        hasInstruments: false,
-        instruments: [],
-        instrumentParticipants: [],
-      });
+    // Validation
+    if (hasLiveInstruments === null) {
+      message.error('Vui lòng chọn có sử dụng nhạc cụ live hay không');
       return;
     }
 
-    if (instruments.length === 0) {
-      message.warning('Please add at least one instrument or uncheck "Use live instruments"');
+    if (hasLiveInstruments && selectedInstruments.length === 0) {
+      message.error('Vui lòng chọn ít nhất 1 nhạc cụ');
       return;
     }
 
-    // Validate all instruments
-    const errors = [];
-    instruments.forEach((inst, idx) => {
-      const error = validateInstrument(inst);
-      if (error) {
-        errors.push(`Instrument ${idx + 1}: ${error}`);
+    // Validate each instrument
+    for (const inst of selectedInstruments) {
+      if (
+        inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
+        !inst.specialistId
+      ) {
+        message.error(
+          `Vui lòng chọn instrumentalist cho ${inst.skillName}`
+        );
+        return;
       }
-    });
 
-    if (errors.length > 0) {
-      message.error(errors.join('\n'));
-      return;
+      if (
+        inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
+        !inst.equipmentId
+      ) {
+        message.error(
+          `Vui lòng chọn equipment cho ${inst.skillName}`
+        );
+        return;
+      }
     }
-
-    // Prepare participants data
-    const participants = instruments.map(inst => {
-      const skill = MOCK_SKILLS.find(s => s.id === inst.skillId);
-      const equipment =
-        inst.equipmentId &&
-        MOCK_EQUIPMENT_BY_SKILL[inst.skillId]?.find(e => e.id === inst.equipmentId);
-
-      const participant = {
-        roleType: 'INSTRUMENT',
-        performerSource: inst.performerSource,
-        skillId: inst.skillId,
-        skillName: skill?.name,
-        instrumentSource: inst.instrumentSource,
-        participantFee:
-          inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST ? 500000 : 0, // Mock fee
-        equipmentRentalFee: equipment ? equipment.rentalFee : 0,
-      };
-
-      if (inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST) {
-        participant.specialistId = inst.specialistId;
-      }
-
-      if (inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE && inst.equipmentId) {
-        participant.equipmentId = inst.equipmentId;
-        participant.equipmentName = equipment?.name;
-      }
-
-      return participant;
-    });
 
     onComplete({
-      hasInstruments: true,
-      instruments,
-      instrumentParticipants: participants,
+      hasLiveInstruments,
+      instruments: selectedInstruments,
     });
   };
 
@@ -322,205 +176,385 @@ export default function RecordingStep3({ data, onComplete }) {
           Step 3: Instrument Setup
         </Title>
         <Text className={styles.description}>
-          Will you use live instruments in this recording session?
+          Nhạc cụ nào sẽ được sử dụng trong buổi thu?
         </Text>
       </div>
 
-      <div className={styles.checkboxSection}>
-        <Checkbox
-          checked={hasInstruments}
-          onChange={handleHasInstrumentsChange}
-          className={styles.checkbox}
+      {/* Slot info */}
+      {bookingDate && bookingStartTime && bookingEndTime && (
+        <Alert
+          message="Selected Slot"
+          description={
+            <Space>
+              <Text strong>
+                {new Date(bookingDate).toLocaleDateString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Text>
+              <Text>•</Text>
+              <Text strong>
+                {bookingStartTime} - {bookingEndTime}
+              </Text>
+            </Space>
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+      )}
+
+      {/* Has Live Instruments Section */}
+      <div className={styles.liveInstrumentsSection}>
+        <Text strong style={{ display: 'block', marginBottom: 16 }}>
+          Buổi thu có sử dụng nhạc cụ live không?
+        </Text>
+        <Radio.Group
+          value={hasLiveInstruments}
+          onChange={handleLiveInstrumentsChange}
         >
-          <Text strong>Yes, I will use live instruments</Text>
-        </Checkbox>
+          <Space direction="vertical" size={12}>
+            <Radio value={false}>
+              <Space>
+                <span>Không, chỉ dùng beat/backing track</span>
+                <Tag color="default">No live instruments</Tag>
+              </Space>
+            </Radio>
+            <Radio value={true}>
+              <Space>
+                <ToolOutlined />
+                <span>Có, sử dụng nhạc cụ live</span>
+                <Tag color="blue">Live performance</Tag>
+              </Space>
+            </Radio>
+          </Space>
+        </Radio.Group>
       </div>
 
-      {hasInstruments && (
-        <div className={styles.instrumentsSection}>
-          <div className={styles.sectionHeader}>
-            <Title level={4}>Instruments</Title>
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={addInstrument}
-              className={styles.addButton}
-            >
-              Add Instrument
-            </Button>
-          </div>
-
-          {instruments.length === 0 && (
-            <div className={styles.emptyState}>
-              <Text type="secondary">
-                Click "Add Instrument" to add instruments for this session
-              </Text>
+      {/* Instrument Selection */}
+      {hasLiveInstruments === true && (
+        <div className={styles.instrumentSelectionSection}>
+          {loadingSkills ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin tip="Đang tải danh sách nhạc cụ..." />
             </div>
-          )}
-
-          {instruments.map((instrument, index) => {
-            const skill = MOCK_SKILLS.find(s => s.id === instrument.skillId);
-            const availableEquipment =
-              instrument.skillId
-                ? MOCK_EQUIPMENT_BY_SKILL[instrument.skillId] || []
-                : [];
-            const availableInstrumentalists =
-              instrument.skillId
-                ? MOCK_INSTRUMENTALISTS_BY_SKILL[instrument.skillId] || []
-                : [];
-
-            return (
-              <div key={instrument.id} className={styles.instrumentCard}>
-                <div className={styles.instrumentHeader}>
-                  <Title level={5}>Instrument {index + 1}</Title>
-                  {instruments.length > 1 && (
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeInstrument(instrument.id)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-
-                <div className={styles.instrumentForm}>
-                  {/* Skill Selection - REQUIRED */}
-                  <div className={styles.formItem}>
-                    <Text strong>Instrument Type *</Text>
-                    <Select
-                      placeholder="Select instrument type"
-                      value={instrument.skillId}
-                      onChange={value => handleSkillChange(instrument.id, value)}
-                      style={{ width: '100%' }}
-                      size="large"
-                    >
-                      {MOCK_SKILLS.map(skill => (
-                        <Option key={skill.id} value={skill.id}>
-                          {skill.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  {/* Performer Source */}
-                  <div className={styles.formItem}>
-                    <Text strong>Who will play? *</Text>
-                    <Radio.Group
-                      value={instrument.performerSource}
+          ) : availableSkills.length === 0 ? (
+            <Empty
+              description="Không có nhạc cụ available"
+              style={{ padding: '40px 0' }}
+            />
+          ) : (
+            <>
+              <Text strong style={{ display: 'block', marginBottom: 16 }}>
+                Chọn nhạc cụ:
+              </Text>
+              <div className={styles.skillsGrid}>
+                {availableSkills.map(skill => {
+                  const isSelected = selectedInstruments.some(
+                    inst => inst.skillId === skill.skillId
+                  );
+                  return (
+                    <Checkbox
+                      key={skill.skillId}
+                      checked={isSelected}
                       onChange={e =>
-                        handlePerformerSourceChange(
-                          instrument.id,
-                          e.target.value
-                        )
+                        handleInstrumentToggle(skill, e.target.checked)
                       }
+                      className={styles.skillCheckbox}
                     >
-                      <Space direction="vertical">
-                        <Radio value={PERFORMER_SOURCE.CUSTOMER_SELF}>
-                          I will play myself
-                        </Radio>
-                        <Radio value={PERFORMER_SOURCE.INTERNAL_ARTIST}>
-                          Hire instrumentalist
-                        </Radio>
-                      </Space>
-                    </Radio.Group>
-                  </div>
-
-                  {/* Specialist Selection - if INTERNAL_ARTIST */}
-                  {instrument.performerSource ===
-                    PERFORMER_SOURCE.INTERNAL_ARTIST && (
-                    <div className={styles.formItem}>
-                      <Text strong>Select Instrumentalist *</Text>
-                      <Select
-                        placeholder="Select instrumentalist"
-                        value={instrument.specialistId}
-                        onChange={value =>
-                          handleSpecialistChange(instrument.id, value)
-                        }
-                        style={{ width: '100%' }}
-                        size="large"
-                        disabled={!instrument.skillId}
-                      >
-                        {availableInstrumentalists.map(inst => (
-                          <Option key={inst.id} value={inst.id}>
-                            {inst.name} ({inst.rating}★)
-                          </Option>
-                        ))}
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Instrument Source */}
-                  <div className={styles.formItem}>
-                    <Text strong>Where is the instrument from? *</Text>
-                    <Radio.Group
-                      value={instrument.instrumentSource}
-                      onChange={e =>
-                        handleInstrumentSourceChange(
-                          instrument.id,
-                          e.target.value
-                        )
-                      }
-                    >
-                      <Space direction="vertical">
-                        <Radio value={INSTRUMENT_SOURCE.CUSTOMER_SIDE}>
-                          I will bring my own instrument
-                        </Radio>
-                        <Radio value={INSTRUMENT_SOURCE.STUDIO_SIDE}>
-                          Rent instrument from studio
-                        </Radio>
-                        {instrument.performerSource ===
-                          PERFORMER_SOURCE.INTERNAL_ARTIST && (
-                          <Radio value={INSTRUMENT_SOURCE.ARTIST_SIDE}>
-                            Artist will bring their own instrument
-                          </Radio>
-                        )}
-                      </Space>
-                    </Radio.Group>
-                  </div>
-
-                  {/* Equipment Selection - if STUDIO_SIDE */}
-                  {instrument.instrumentSource ===
-                    INSTRUMENT_SOURCE.STUDIO_SIDE && (
-                    <div className={styles.formItem}>
-                      <Text strong>Select Equipment *</Text>
-                      <Select
-                        placeholder="Select equipment"
-                        value={instrument.equipmentId}
-                        onChange={value =>
-                          handleEquipmentChange(instrument.id, value)
-                        }
-                        style={{ width: '100%' }}
-                        size="large"
-                        disabled={!instrument.skillId}
-                      >
-                        {availableEquipment.map(eq => (
-                          <Option key={eq.id} value={eq.id}>
-                            {eq.name} - {eq.brand} {eq.model} ({eq.rentalFee.toLocaleString()}₫)
-                          </Option>
-                        ))}
-                      </Select>
-                    </div>
-                  )}
-                </div>
+                      {skill.skillName}
+                    </Checkbox>
+                  );
+                })}
               </div>
-            );
-          })}
+
+              {selectedInstruments.length > 0 && (
+                <div className={styles.instrumentConfigSection}>
+                  <Title level={4}>Cấu hình cho từng nhạc cụ:</Title>
+                  <Collapse accordion>
+                    {selectedInstruments.map(instrument => (
+                      <Panel
+                        header={
+                          <Space>
+                            <ToolOutlined />
+                            <Text strong>{instrument.skillName}</Text>
+                            {instrument.specialistId && (
+                              <Tag color="blue">
+                                {instrument.specialistName}
+                              </Tag>
+                            )}
+                            {instrument.equipmentId && (
+                              <Tag color="green">
+                                {instrument.equipmentName}
+                              </Tag>
+                            )}
+                          </Space>
+                        }
+                        key={instrument.skillId}
+                      >
+                        <InstrumentConfig
+                          instrument={instrument}
+                          bookingDate={bookingDate}
+                          bookingStartTime={bookingStartTime}
+                          bookingEndTime={bookingEndTime}
+                          onUpdate={updates =>
+                            updateInstrument(instrument.skillId, updates)
+                          }
+                        />
+                      </Panel>
+                    ))}
+                  </Collapse>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className={styles.actionRow}>
+        <Button size="large" onClick={onBack}>
+          Back to Vocal Setup
+        </Button>
         <Button
           type="primary"
           size="large"
-          icon={<ArrowRightOutlined />}
+          icon={<CheckCircleOutlined />}
           onClick={handleContinue}
+          disabled={hasLiveInstruments === null || loadingSkills}
           className={styles.continueButton}
         >
-          Continue to Summary
+          Continue to Review
         </Button>
       </div>
     </Card>
+  );
+}
+
+// Component for configuring each instrument
+function InstrumentConfig({
+  instrument,
+  bookingDate,
+  bookingStartTime,
+  bookingEndTime,
+  onUpdate,
+}) {
+  const [availableInstrumentalists, setAvailableInstrumentalists] = useState([]);
+  const [availableEquipment, setAvailableEquipment] = useState([]);
+  const [loadingInstrumentalists, setLoadingInstrumentalists] = useState(false);
+  const [loadingEquipment, setLoadingEquipment] = useState(false);
+
+  // Fetch instrumentalists when performer source is INTERNAL_ARTIST
+  useEffect(() => {
+    if (
+      instrument.performerSource !== PERFORMER_SOURCE.INTERNAL_ARTIST ||
+      !bookingDate ||
+      !bookingStartTime ||
+      !bookingEndTime
+    ) {
+      setAvailableInstrumentalists([]);
+      return;
+    }
+
+    const fetchInstrumentalists = async () => {
+      try {
+        setLoadingInstrumentalists(true);
+        const response = await getAvailableArtistsForRequest(
+          bookingDate,
+          bookingStartTime,
+          bookingEndTime,
+          instrument.skillId,
+          'INSTRUMENT',
+          null
+        );
+
+        if (response?.status === 'success' && response?.data) {
+          setAvailableInstrumentalists(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching instrumentalists:', error);
+        message.error('Không thể tải danh sách instrumentalist');
+      } finally {
+        setLoadingInstrumentalists(false);
+      }
+    };
+
+    fetchInstrumentalists();
+  }, [
+    instrument.performerSource,
+    instrument.skillId,
+    bookingDate,
+    bookingStartTime,
+    bookingEndTime,
+  ]);
+
+  // Fetch equipment when instrument source is STUDIO_SIDE
+  useEffect(() => {
+    if (instrument.instrumentSource !== INSTRUMENT_SOURCE.STUDIO_SIDE) {
+      setAvailableEquipment([]);
+      return;
+    }
+
+    const fetchEquipment = async () => {
+      try {
+        setLoadingEquipment(true);
+        const response = await getAllEquipment(
+          instrument.skillId,
+          false, // includeInactive
+          false // includeUnavailable
+        );
+
+        if (response?.status === 'success' && response?.data) {
+          setAvailableEquipment(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching equipment:', error);
+        message.error('Không thể tải danh sách equipment');
+      } finally {
+        setLoadingEquipment(false);
+      }
+    };
+
+    fetchEquipment();
+  }, [instrument.instrumentSource, instrument.skillId]);
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      {/* Performer Source */}
+      <div>
+        <Text strong>Ai sẽ chơi {instrument.skillName}?</Text>
+        <Radio.Group
+          value={instrument.performerSource}
+          onChange={e => {
+            const newSource = e.target.value;
+            onUpdate({
+              performerSource: newSource,
+              specialistId: null,
+              specialistName: null,
+            });
+          }}
+          style={{ marginTop: 8, display: 'block' }}
+        >
+          <Space direction="vertical">
+            <Radio value={PERFORMER_SOURCE.CUSTOMER_SELF}>
+              <Space>
+                <UserOutlined />
+                Tôi tự chơi
+              </Space>
+            </Radio>
+            <Radio value={PERFORMER_SOURCE.INTERNAL_ARTIST}>
+              <Space>
+                <TeamOutlined />
+                Thuê instrumentalist nội bộ
+              </Space>
+            </Radio>
+          </Space>
+        </Radio.Group>
+
+        {/* Instrumentalist Selection */}
+        {instrument.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST && (
+          <div style={{ marginTop: 12, marginLeft: 24 }}>
+            {loadingInstrumentalists ? (
+              <Spin size="small" />
+            ) : availableInstrumentalists.length === 0 ? (
+              <Text type="secondary">Không có instrumentalist available</Text>
+            ) : (
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Chọn instrumentalist"
+                value={instrument.specialistId}
+                onChange={(value, option) => {
+                  onUpdate({
+                    specialistId: value,
+                    specialistName: option.label,
+                  });
+                }}
+                options={availableInstrumentalists.map(artist => ({
+                  value: artist.specialistId,
+                  label: artist.name,
+                  disabled: !artist.isAvailable,
+                }))}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Instrument Source */}
+      <div>
+        <Text strong>Nhạc cụ lấy từ đâu?</Text>
+        <Radio.Group
+          value={instrument.instrumentSource}
+          onChange={e => {
+            const newSource = e.target.value;
+            onUpdate({
+              instrumentSource: newSource,
+              equipmentId: null,
+              equipmentName: null,
+              quantity: 1,
+              rentalFee: 0,
+            });
+          }}
+          style={{ marginTop: 8, display: 'block' }}
+        >
+          <Space direction="vertical">
+            <Radio value={INSTRUMENT_SOURCE.CUSTOMER_SIDE}>
+              Tôi tự mang
+            </Radio>
+            <Radio value={INSTRUMENT_SOURCE.STUDIO_SIDE}>
+              Thuê nhạc cụ của studio
+            </Radio>
+          </Space>
+        </Radio.Group>
+
+        {/* Equipment Selection */}
+        {instrument.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE && (
+          <div style={{ marginTop: 12, marginLeft: 24 }}>
+            {loadingEquipment ? (
+              <Spin size="small" />
+            ) : availableEquipment.length === 0 ? (
+              <Text type="secondary">Không có equipment available</Text>
+            ) : (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Select
+                  style={{ width: '100%' }}
+                  placeholder="Chọn equipment"
+                  value={instrument.equipmentId}
+                  onChange={(value, option) => {
+                    const selectedEq = availableEquipment.find(
+                      eq => eq.equipmentId === value
+                    );
+                    onUpdate({
+                      equipmentId: value,
+                      equipmentName: option.label,
+                      rentalFee: selectedEq?.dailyRentalFee || 0,
+                    });
+                  }}
+                  options={availableEquipment.map(eq => ({
+                    value: eq.equipmentId,
+                    label: `${eq.brand} ${eq.model} - ${eq.equipmentName}`,
+                  }))}
+                />
+                {instrument.equipmentId && (
+                  <Space>
+                    <Text>Số lượng:</Text>
+                    <InputNumber
+                      min={1}
+                      value={instrument.quantity}
+                      onChange={value => onUpdate({ quantity: value })}
+                    />
+                    <Text type="secondary">
+                      • Fee: {instrument.rentalFee?.toLocaleString('vi-VN')} VND
+                    </Text>
+                  </Space>
+                )}
+              </Space>
+            )}
+          </div>
+        )}
+      </div>
+    </Space>
   );
 }

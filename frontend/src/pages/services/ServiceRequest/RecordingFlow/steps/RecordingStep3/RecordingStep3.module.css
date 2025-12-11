@@ -1,8 +1,6 @@
 .card {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .header {
@@ -11,123 +9,102 @@
 }
 
 .title {
-  margin: 0 0 8px 0 !important;
-  color: #333;
+  color: #f97316;
+  margin-bottom: 8px !important;
 }
 
 .description {
-  color: #666;
   font-size: 16px;
+  color: #6b7280;
 }
 
-.checkboxSection {
+/* Live Instruments Section */
+.liveInstrumentsSection {
   margin-bottom: 32px;
   padding: 24px;
-  background: #f9f9f9;
+  background: #f9fafb;
   border-radius: 8px;
 }
 
-.checkbox {
-  font-size: 16px;
-}
-
-.instrumentsSection {
-  margin-top: 32px;
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.sectionHeader h4 {
-  margin: 0 !important;
-}
-
-.addButton {
-  width: auto;
-}
-
-.emptyState {
-  text-align: center;
-  padding: 40px;
-  background: #fafafa;
-  border-radius: 8px;
-  border: 1px dashed #d9d9d9;
-}
-
-.instrumentCard {
-  margin-bottom: 24px;
+/* Instrument Selection Section */
+.instrumentSelectionSection {
+  margin-top: 24px;
   padding: 24px;
-  background: #fafafa;
+  background: #f9fafb;
   border-radius: 8px;
-  border: 1px solid #e8e8e8;
 }
 
-.instrumentHeader {
+.skillsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.skillCheckbox {
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.skillCheckbox:hover {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+.skillCheckbox input[type='checkbox']:checked ~ * {
+  border-color: #f97316;
+  background: #fff7ed;
+}
+
+/* Instrument Config Section */
+.instrumentConfigSection {
+  margin-top: 24px;
+}
+
+.instrumentConfigSection h4 {
+  margin-bottom: 16px;
+}
+
+/* Action Row */
+.actionRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.instrumentHeader h5 {
-  margin: 0 !important;
-}
-
-.instrumentForm {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.formItem {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.actionRow {
   margin-top: 32px;
-  display: flex;
-  justify-content: flex-end;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .continueButton {
-  background: linear-gradient(135deg, #ec8a1c 0%, #d67a16 100%);
-  border: none;
-  height: 48px;
-  padding: 0 32px;
-  font-size: 16px;
-  font-weight: 600;
+  background-color: #f97316 !important;
+  border-color: #f97316 !important;
 }
 
-.continueButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d67a16 0%, #c66a06 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(236, 138, 28, 0.4);
+.continueButton:hover {
+  background-color: #ea580c !important;
+  border-color: #ea580c !important;
 }
 
+.continueButton:disabled {
+  background-color: #d1d5db !important;
+  border-color: #d1d5db !important;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .card {
-    padding: 20px;
-  }
-
-  .sectionHeader {
+  .actionRow {
     flex-direction: column;
-    align-items: flex-start;
     gap: 12px;
   }
 
-  .addButton {
+  .actionRow button {
     width: 100%;
   }
 
-  .instrumentCard {
-    padding: 16px;
+  .skillsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }

@@ -1,142 +1,141 @@
-// RecordingStep2.jsx - Vocal Setup
+// RecordingStep2.jsx - Vocal Setup (Ai hát?)
 import { useState, useEffect } from 'react';
-import { Card, Button, Radio, Typography, message, Space, Tag } from 'antd';
-import { UserOutlined, ArrowRightOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import {
+  Card,
+  Radio,
+  Button,
+  Space,
+  Typography,
+  Alert,
+  List,
+  Avatar,
+  Tag,
+  Checkbox,
+  Spin,
+  Empty,
+  message,
+} from 'antd';
+import {
+  UserOutlined,
+  CheckCircleOutlined,
+  StarOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
+import { getAvailableArtistsForRequest } from '../../../../../../services/studioBookingService';
 import styles from './RecordingStep2.module.css';
 
 const { Title, Text } = Typography;
 
-// Mock data - sẽ thay bằng API call thực tế
-const MOCK_VOCALISTS = [
-  { id: 'vocalist-1', name: 'Nguyễn Văn A', rating: 4.8, genres: ['Pop', 'Ballad'] },
-  { id: 'vocalist-2', name: 'Trần Thị B', rating: 4.9, genres: ['Jazz', 'Soul'] },
-  { id: 'vocalist-3', name: 'Lê Văn C', rating: 4.7, genres: ['Rock', 'Metal'] },
-];
-
-// Enum values
-const VOCAL_CHOICE = {
+const VOCAL_CHOICES = {
   NONE: 'NONE',
   CUSTOMER_SELF: 'CUSTOMER_SELF',
   INTERNAL_ARTIST: 'INTERNAL_ARTIST',
   BOTH: 'BOTH',
 };
 
-export default function RecordingStep2({ data, onComplete }) {
-  const navigate = useNavigate();
+export default function RecordingStep2({ data, onComplete, onBack }) {
   const [vocalChoice, setVocalChoice] = useState(
-    data?.vocalChoice || null
+    data?.vocalChoice || VOCAL_CHOICES.NONE
   );
+  const [availableVocalists, setAvailableVocalists] = useState([]);
   const [selectedVocalists, setSelectedVocalists] = useState(
-    data?.vocalistIds || []
+    data?.selectedVocalists || []
   );
+  const [loadingVocalists, setLoadingVocalists] = useState(false);
 
-  // Check if returning from selection page
+  // Extract slot info from previous step
+  const { bookingDate, bookingStartTime, bookingEndTime } = data || {};
+
+  // Fetch available vocalists when user chooses to hire internal artists
   useEffect(() => {
-    try {
-      const flowDataStr = sessionStorage.getItem('recordingFlowData');
-      if (flowDataStr) {
-        const flowData = JSON.parse(flowDataStr);
-        if (flowData.step2?.vocalistIds && flowData.step2.vocalistIds.length > 0) {
-          setSelectedVocalists(flowData.step2.vocalistIds);
-          // Auto-set choice if not set
-          if (!vocalChoice) {
-            const existingChoice = flowData.step2?.vocalChoice;
-            if (existingChoice === VOCAL_CHOICE.INTERNAL_ARTIST || existingChoice === VOCAL_CHOICE.BOTH) {
-              setVocalChoice(existingChoice);
-            } else {
-              setVocalChoice(VOCAL_CHOICE.INTERNAL_ARTIST);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading vocalist selection:', error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const needsVocalists =
+      vocalChoice === VOCAL_CHOICES.INTERNAL_ARTIST ||
+      vocalChoice === VOCAL_CHOICES.BOTH;
 
-  const handleChoice = value => {
-    setVocalChoice(value);
-    // Reset selected vocalists if choosing "NONE" or "CUSTOMER_SELF"
-    if (value === VOCAL_CHOICE.NONE || value === VOCAL_CHOICE.CUSTOMER_SELF) {
+    if (!needsVocalists || !bookingDate || !bookingStartTime || !bookingEndTime) {
+      setAvailableVocalists([]);
+      return;
+    }
+
+    const fetchVocalists = async () => {
+      try {
+        setLoadingVocalists(true);
+        const response = await getAvailableArtistsForRequest(
+          bookingDate,
+          bookingStartTime,
+          bookingEndTime,
+          null, // skillId = null for vocalists
+          'VOCAL', // roleType
+          null // genres (optional)
+        );
+
+        if (response?.status === 'success' && response?.data) {
+          setAvailableVocalists(response.data);
+        } else {
+          setAvailableVocalists([]);
+          message.warning('Không thể tải danh sách vocalist');
+        }
+      } catch (error) {
+        console.error('Error fetching vocalists:', error);
+        message.error('Lỗi khi tải danh sách vocalist');
+        setAvailableVocalists([]);
+      } finally {
+        setLoadingVocalists(false);
+      }
+    };
+
+    fetchVocalists();
+  }, [vocalChoice, bookingDate, bookingStartTime, bookingEndTime]);
+
+  const handleVocalChoiceChange = e => {
+    const newChoice = e.target.value;
+    setVocalChoice(newChoice);
+
+    // Reset selected vocalists if switching away from hiring options
+    if (
+      newChoice !== VOCAL_CHOICES.INTERNAL_ARTIST &&
+      newChoice !== VOCAL_CHOICES.BOTH
+    ) {
       setSelectedVocalists([]);
     }
   };
 
-  const handleSelectVocalists = () => {
-    // Save callback data to sessionStorage
-    const callbackData = {
-      step: 1,
-      selectedVocalists,
-      vocalChoice,
-    };
-    sessionStorage.setItem(
-      'recordingFlowVocalistCallback',
-      JSON.stringify(callbackData)
+  const handleVocalistSelect = vocalist => {
+    const isSelected = selectedVocalists.some(
+      v => v.specialistId === vocalist.specialistId
     );
 
-    // Navigate to vocalist selection page
-    navigate('/recording-flow/vocalist-selection', {
-      state: {
-        fromFlow: true,
-        step: 1,
-        selectedVocalists,
-        bookingDate: data?.bookingDate,
-        bookingStartTime: data?.bookingStartTime,
-        bookingEndTime: data?.bookingEndTime,
-      },
-    });
+    if (isSelected) {
+      // Remove vocalist from selection
+      setSelectedVocalists(
+        selectedVocalists.filter(v => v.specialistId !== vocalist.specialistId)
+      );
+    } else {
+      // Add vocalist to selection (allow multiple)
+      setSelectedVocalists([...selectedVocalists, vocalist]);
+    }
   };
 
   const handleContinue = () => {
-    if (vocalChoice === null) {
-      message.warning('Please select an option for vocal setup');
-      return;
-    }
-
-    // Validate: If INTERNAL_ARTIST or BOTH, must have selected vocalists
+    // Validation
     if (
-      (vocalChoice === VOCAL_CHOICE.INTERNAL_ARTIST || vocalChoice === VOCAL_CHOICE.BOTH) &&
+      (vocalChoice === VOCAL_CHOICES.INTERNAL_ARTIST ||
+        vocalChoice === VOCAL_CHOICES.BOTH) &&
       selectedVocalists.length === 0
     ) {
-      message.warning('Please select at least one vocalist');
+      message.error('Vui lòng chọn ít nhất 1 vocalist');
       return;
-    }
-
-    // Prepare participants data
-    const participants = [];
-
-    // Add CUSTOMER_SELF vocal participant if applicable
-    if (vocalChoice === VOCAL_CHOICE.CUSTOMER_SELF || vocalChoice === VOCAL_CHOICE.BOTH) {
-      participants.push({
-        roleType: 'VOCAL',
-        performerSource: 'CUSTOMER_SELF',
-        skillId: null, // VOCAL không cần skill_id
-        participantFee: 0,
-      });
-    }
-
-    // Add INTERNAL_ARTIST vocal participants if applicable
-    if (vocalChoice === VOCAL_CHOICE.INTERNAL_ARTIST || vocalChoice === VOCAL_CHOICE.BOTH) {
-      selectedVocalists.forEach((vocalistId, index) => {
-        participants.push({
-          roleType: 'VOCAL',
-          performerSource: 'INTERNAL_ARTIST',
-          specialistId: vocalistId,
-          skillId: null, // VOCAL không cần skill_id
-          participantFee: 500000, // Mock fee - sẽ lấy từ API
-          isPrimary: index === 0,
-        });
-      });
     }
 
     onComplete({
       vocalChoice,
-      vocalistIds: selectedVocalists,
-      vocalParticipants: participants,
+      selectedVocalists,
     });
   };
+
+  const needsVocalistSelection =
+    vocalChoice === VOCAL_CHOICES.INTERNAL_ARTIST ||
+    vocalChoice === VOCAL_CHOICES.BOTH;
 
   return (
     <Card className={styles.card}>
@@ -145,104 +144,240 @@ export default function RecordingStep2({ data, onComplete }) {
           Step 2: Vocal Setup
         </Title>
         <Text className={styles.description}>
-          Who will sing in this recording session?
+          Ai sẽ hát trong buổi thu này?
         </Text>
       </div>
 
-      <div className={styles.choiceSection}>
+      {/* Slot info from previous step */}
+      {bookingDate && bookingStartTime && bookingEndTime && (
+        <Alert
+          message="Selected Slot"
+          description={
+            <Space>
+              <Text strong>
+                {new Date(bookingDate).toLocaleDateString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Text>
+              <Text>•</Text>
+              <Text strong>
+                {bookingStartTime} - {bookingEndTime}
+              </Text>
+            </Space>
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+      )}
+
+      {/* Vocal Choice Section */}
+      <div className={styles.vocalChoiceSection}>
         <Radio.Group
           value={vocalChoice}
-          onChange={e => handleChoice(e.target.value)}
+          onChange={handleVocalChoiceChange}
           className={styles.radioGroup}
         >
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <Radio.Button value={VOCAL_CHOICE.NONE} className={styles.radioButton}>
-              <div className={styles.radioContent}>
-                <div className={styles.radioTitle}>No vocal recording</div>
-                <div className={styles.radioDescription}>
-                  I will not record any vocals in this session
-                </div>
-              </div>
-            </Radio.Button>
+          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Radio value={VOCAL_CHOICES.NONE} className={styles.radioOption}>
+              <Space>
+                <span className={styles.radioLabel}>
+                  Không thu vocal (chỉ nhạc cụ / playback)
+                </span>
+                <Tag color="default">Instrumental only</Tag>
+              </Space>
+            </Radio>
 
-            <Radio.Button value={VOCAL_CHOICE.CUSTOMER_SELF} className={styles.radioButton}>
-              <div className={styles.radioContent}>
-                <div className={styles.radioTitle}>I will sing myself</div>
-                <div className={styles.radioDescription}>
-                  I will perform vocals myself
-                </div>
-              </div>
-            </Radio.Button>
+            <Radio
+              value={VOCAL_CHOICES.CUSTOMER_SELF}
+              className={styles.radioOption}
+            >
+              <Space>
+                <UserOutlined />
+                <span className={styles.radioLabel}>Tôi tự hát</span>
+                <Tag color="green">Self-performance</Tag>
+              </Space>
+            </Radio>
 
-            <Radio.Button value={VOCAL_CHOICE.INTERNAL_ARTIST} className={styles.radioButton}>
-              <div className={styles.radioContent}>
-                <div className={styles.radioTitle}>Hire internal vocalist</div>
-                <div className={styles.radioDescription}>
-                  Choose from our professional vocalists
-                </div>
-              </div>
-            </Radio.Button>
+            <Radio
+              value={VOCAL_CHOICES.INTERNAL_ARTIST}
+              className={styles.radioOption}
+            >
+              <Space>
+                <TeamOutlined />
+                <span className={styles.radioLabel}>
+                  Tôi muốn thuê ca sĩ nội bộ
+                </span>
+                <Tag color="blue">Professional vocalist</Tag>
+              </Space>
+            </Radio>
 
-            <Radio.Button value={VOCAL_CHOICE.BOTH} className={styles.radioButton}>
-              <div className={styles.radioContent}>
-                <div className={styles.radioTitle}>I will sing + hire additional vocalist</div>
-                <div className={styles.radioDescription}>
-                  I will sing and also hire a backing vocalist or duet partner
-                </div>
-              </div>
-            </Radio.Button>
+            <Radio value={VOCAL_CHOICES.BOTH} className={styles.radioOption}>
+              <Space>
+                <TeamOutlined />
+                <span className={styles.radioLabel}>
+                  Tôi tự hát & thuê thêm ca sĩ nội bộ (backing / song ca)
+                </span>
+                <Tag color="purple">Collaboration</Tag>
+              </Space>
+            </Radio>
           </Space>
         </Radio.Group>
       </div>
 
-      {(vocalChoice === VOCAL_CHOICE.INTERNAL_ARTIST || vocalChoice === VOCAL_CHOICE.BOTH) && (
-        <div className={styles.selectionSection}>
-          {selectedVocalists.length > 0 ? (
-            <div className={styles.selectedInfo}>
-              <Text strong>
-                {selectedVocalists.length} vocalist(s) selected
-              </Text>
-              <Button
-                type="link"
-                onClick={handleSelectVocalists}
-                style={{ marginLeft: 8 }}
-              >
-                Change selection
-              </Button>
-              <div style={{ marginTop: 12 }}>
-                <Space wrap>
-                  {selectedVocalists.map((id, idx) => {
-                    const vocalist = MOCK_VOCALISTS.find(v => v.id === id);
-                    return (
-                      <Tag key={idx} color="blue">
-                        {vocalist ? vocalist.name : `Vocalist ${id.slice(0, 8)}`}
-                      </Tag>
-                    );
-                  })}
-                </Space>
-              </div>
+      {/* Vocalist Selection Section */}
+      {needsVocalistSelection && (
+        <div className={styles.vocalistSelectionSection}>
+          <div className={styles.sectionHeader}>
+            <Title level={4}>Chọn Vocalist</Title>
+            <Text type="secondary">
+              {vocalChoice === VOCAL_CHOICES.BOTH
+                ? 'Chọn vocalist để hỗ trợ bạn (backing/song ca)'
+                : 'Chọn vocalist chuyên nghiệp cho buổi thu'}
+            </Text>
+          </div>
+
+          {loadingVocalists ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin tip="Đang tải danh sách vocalist..." />
             </div>
+          ) : availableVocalists.length === 0 ? (
+            <Empty
+              description="Không có vocalist available trong slot này"
+              style={{ padding: '40px 0' }}
+            />
           ) : (
-            <Button
-              type="primary"
-              size="large"
-              icon={<UserOutlined />}
-              onClick={handleSelectVocalists}
-              className={styles.selectButton}
-            >
-              Select Vocalist(s)
-            </Button>
+            <>
+              <Alert
+                message={`Tìm thấy ${availableVocalists.length} vocalist available`}
+                type="success"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+
+              <List
+                dataSource={availableVocalists}
+                renderItem={vocalist => {
+                  const isSelected = selectedVocalists.some(
+                    v => v.specialistId === vocalist.specialistId
+                  );
+                  const isAvailable = vocalist.isAvailable !== false;
+
+                  return (
+                    <List.Item
+                      key={vocalist.specialistId}
+                      className={`${styles.vocalistItem} ${
+                        isSelected ? styles.selected : ''
+                      } ${!isAvailable ? styles.unavailable : ''}`}
+                      onClick={() =>
+                        isAvailable && handleVocalistSelect(vocalist)
+                      }
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          <Avatar
+                            size={64}
+                            src={vocalist.avatarUrl}
+                            icon={<UserOutlined />}
+                          />
+                        }
+                        title={
+                          <Space>
+                            <Text strong>{vocalist.name}</Text>
+                            {isSelected && (
+                              <CheckCircleOutlined
+                                style={{ color: '#52c41a' }}
+                              />
+                            )}
+                            {!isAvailable && (
+                              <Tag color="red">Busy</Tag>
+                            )}
+                          </Space>
+                        }
+                        description={
+                          <Space direction="vertical" size={4}>
+                            {vocalist.role && (
+                              <Text type="secondary">
+                                Role: {vocalist.role}
+                              </Text>
+                            )}
+                            {vocalist.experienceYears && (
+                              <Text type="secondary">
+                                Experience: {vocalist.experienceYears} years
+                              </Text>
+                            )}
+                            {vocalist.genres && vocalist.genres.length > 0 && (
+                              <Space wrap size={4}>
+                                {vocalist.genres.map(genre => (
+                                  <Tag key={genre} size="small">
+                                    {genre}
+                                  </Tag>
+                                ))}
+                              </Space>
+                            )}
+                          </Space>
+                        }
+                      />
+                      <div className={styles.vocalistStats}>
+                        {vocalist.rating && (
+                          <Space>
+                            <StarOutlined style={{ color: '#faad14' }} />
+                            <Text>{vocalist.rating.toFixed(1)}</Text>
+                          </Space>
+                        )}
+                        {vocalist.totalProjects && (
+                          <Text type="secondary">
+                            {vocalist.totalProjects} projects
+                          </Text>
+                        )}
+                      </div>
+                    </List.Item>
+                  );
+                }}
+                className={styles.vocalistList}
+              />
+
+              {selectedVocalists.length > 0 && (
+                <div className={styles.selectedSummary}>
+                  <Text strong>
+                    Selected Vocalist{selectedVocalists.length > 1 ? 's' : ''} ({selectedVocalists.length}):
+                  </Text>
+                  <Space wrap style={{ marginTop: 8 }}>
+                    {selectedVocalists.map(v => (
+                      <Tag
+                        key={v.specialistId}
+                        color="blue"
+                        closable
+                        onClose={() => handleVocalistSelect(v)}
+                      >
+                        {v.name}
+                      </Tag>
+                    ))}
+                  </Space>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className={styles.actionRow}>
+        <Button size="large" onClick={onBack}>
+          Back to Slot Selection
+        </Button>
         <Button
           type="primary"
           size="large"
-          icon={<ArrowRightOutlined />}
+          icon={<CheckCircleOutlined />}
           onClick={handleContinue}
-          disabled={vocalChoice === null}
+          disabled={
+            needsVocalistSelection &&
+            (loadingVocalists || selectedVocalists.length === 0)
+          }
           className={styles.continueButton}
         >
           Continue to Instrument Setup

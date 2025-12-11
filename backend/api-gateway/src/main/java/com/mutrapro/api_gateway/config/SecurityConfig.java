@@ -43,6 +43,7 @@ public class SecurityConfig {
             "/identity/users/verify-email",
             "/identity/users/resend-verification",
             "/identity/users/verification-status",
+            "/specialists/public/**",  // Public specialist endpoints (no authentication required)
             "/*/swagger-ui/**",
             "/*/swagger-ui.html",
             "/*/v3/api-docs/**",
