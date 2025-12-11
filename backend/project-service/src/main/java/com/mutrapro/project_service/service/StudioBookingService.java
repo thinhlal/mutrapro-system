@@ -1093,6 +1093,251 @@ public class StudioBookingService {
     }
     
     /**
+     * Lấy available artists/instrumentalists cho luồng 3 (booking từ service request)
+     * GET /studio-bookings/available-artists-for-request?date={date}&startTime={startTime}&endTime={endTime}&skillId={skillId}&roleType={roleType}
+     * 
+     * Flow: Sau khi chọn slot → hiển thị artists/instrumentalists với:
+     * - Available/Busy status cho slot đó
+     * - Filter theo skillId nếu là INSTRUMENT
+     * - Check conflict từ cả booking_artists và booking_participants
+     * 
+     * LƯU Ý: Luồng 3 không có "preferred" artists vì customer tự chọn
+     * 
+     * @param bookingDate Ngày booking
+     * @param startTime Thời gian bắt đầu
+     * @param endTime Thời gian kết thúc
+     * @param skillId Optional - Skill ID để filter instrumentalists (chỉ dùng khi roleType = INSTRUMENT)
+     * @param roleType Optional - VOCAL hoặc INSTRUMENT (mặc định lấy cả 2)
+     * @param genres Optional - Genres để filter vocalists
+     */
+    @Transactional(readOnly = true)
+    public List<AvailableArtistResponse> getAvailableArtistsForRequest(
+            LocalDate bookingDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            String skillId,
+            String roleType,
+            List<String> genres) {
+        
+        log.info("Getting available artists for request: date={}, time={}-{}, skillId={}, roleType={}, genres={}", 
+            bookingDate, startTime, endTime, skillId, roleType, genres);
+        
+        // 1. Lấy artists từ specialist-service
+        List<Map<String, Object>> allArtists = new java.util.ArrayList<>();
+        
+        // Nếu roleType = INSTRUMENT và có skillId
+        if ("INSTRUMENT".equalsIgnoreCase(roleType) && skillId != null && !skillId.isBlank()) {
+            try {
+                ApiResponse<List<Map<String, Object>>> specialistsResponse = 
+                    specialistServiceFeignClient.getSpecialistsBySkillId(skillId);
+                if (specialistsResponse != null && specialistsResponse.getData() != null) {
+                    allArtists = specialistsResponse.getData();
+                }
+            } catch (Exception e) {
+                log.error("Failed to fetch specialists by skillId from specialist-service: skillId={}, error={}", 
+                    skillId, e.getMessage());
+            }
+        } 
+        // Nếu roleType = VOCAL hoặc không có roleType
+        else if ("VOCAL".equalsIgnoreCase(roleType) || roleType == null || roleType.isBlank()) {
+            try {
+                ApiResponse<List<Map<String, Object>>> vocalistsResponse = 
+                    specialistServiceFeignClient.getVocalists(null, genres);
+                if (vocalistsResponse != null && vocalistsResponse.getData() != null) {
+                    allArtists = vocalistsResponse.getData();
+                }
+            } catch (Exception e) {
+                log.error("Failed to fetch vocalists from specialist-service: {}", e.getMessage());
+            }
+        }
+        // Nếu roleType = INSTRUMENT nhưng không có skillId, lấy tất cả recording artists và filter sau
+        else if ("INSTRUMENT".equalsIgnoreCase(roleType)) {
+            // Fallback: lấy vocalists (có thể có cả instrumentalists) và filter sau
+            try {
+                ApiResponse<List<Map<String, Object>>> vocalistsResponse = 
+                    specialistServiceFeignClient.getVocalists(null, genres);
+                if (vocalistsResponse != null && vocalistsResponse.getData() != null) {
+                    allArtists = vocalistsResponse.getData();
+                    // Filter chỉ lấy những artist có INSTRUMENT_PLAYER role
+                    allArtists = allArtists.stream()
+                        .filter(artist -> {
+                            @SuppressWarnings("unchecked")
+                            List<Object> roles = (List<Object>) artist.get("recordingRoles");
+                            if (roles == null) return false;
+                            return roles.stream()
+                                .anyMatch(role -> "INSTRUMENT_PLAYER".equalsIgnoreCase(role.toString()));
+                        })
+                        .toList();
+                }
+            } catch (Exception e) {
+                log.error("Failed to fetch instrumentalists from specialist-service: {}", e.getMessage());
+            }
+        }
+        
+        // 3. Lấy tất cả specialist IDs để check conflict
+        List<String> allSpecialistIds = allArtists.stream()
+            .map(a -> (String) a.get("specialistId"))
+            .filter(id -> id != null && !id.isBlank())
+            .toList();
+        
+        // 4. Check conflict từ cả booking_artists và booking_participants
+        List<BookingArtist> conflictingArtists = allSpecialistIds.isEmpty() 
+            ? List.of()
+            : bookingArtistRepository.findConflictingBookingsForMultipleArtists(
+                allSpecialistIds,
+                bookingDate,
+                startTime,
+                endTime
+            );
+        
+        List<BookingParticipant> conflictingParticipants = allSpecialistIds.isEmpty()
+            ? List.of()
+            : bookingParticipantRepository.findConflictingBookingsForMultipleSpecialists(
+                allSpecialistIds,
+                bookingDate,
+                startTime,
+                endTime
+            );
+        
+        // Combine conflicts
+        List<String> allConflictingIds = new java.util.ArrayList<>();
+        allConflictingIds.addAll(conflictingArtists.stream()
+            .map(BookingArtist::getSpecialistId)
+            .toList());
+        allConflictingIds.addAll(conflictingParticipants.stream()
+            .map(BookingParticipant::getSpecialistId)
+            .filter(id -> id != null && !id.isBlank())
+            .toList());
+        
+        // 5. Tạo response
+        List<AvailableArtistResponse> artists = new java.util.ArrayList<>();
+        
+        for (Map<String, Object> artist : allArtists) {
+            String specialistId = (String) artist.get("specialistId");
+            if (specialistId == null || specialistId.isBlank()) {
+                continue;
+            }
+            
+            String artistName = (String) artist.getOrDefault("fullName", "Unknown Artist");
+            
+            // Check if artist is busy
+            boolean isBusy = allConflictingIds.contains(specialistId);
+            
+            // Get conflict info
+            BookingArtist artistConflict = conflictingArtists.stream()
+                .filter(ba -> ba.getSpecialistId().equals(specialistId))
+                .findFirst()
+                .orElse(null);
+            
+            BookingParticipant participantConflict = conflictingParticipants.stream()
+                .filter(bp -> specialistId.equals(bp.getSpecialistId()))
+                .findFirst()
+                .orElse(null);
+            
+            LocalTime conflictStartTime = null;
+            LocalTime conflictEndTime = null;
+            if (artistConflict != null) {
+                conflictStartTime = artistConflict.getBooking().getStartTime();
+                conflictEndTime = artistConflict.getBooking().getEndTime();
+            } else if (participantConflict != null) {
+                conflictStartTime = participantConflict.getBooking().getStartTime();
+                conflictEndTime = participantConflict.getBooking().getEndTime();
+            }
+            
+            // Get role
+            String role = "VOCALIST";
+            if (artist.get("recordingRoles") != null) {
+                @SuppressWarnings("unchecked")
+                List<Object> roles = (List<Object>) artist.get("recordingRoles");
+                if (roles != null && !roles.isEmpty()) {
+                    // Nếu có skillId, ưu tiên role liên quan đến skill đó
+                    if (skillId != null && !skillId.isBlank()) {
+                        // Tìm role phù hợp với skillId (có thể cần check skills của artist)
+                        // Tạm thời lấy role đầu tiên
+                        Object firstRole = roles.get(0);
+                        role = firstRole instanceof String 
+                            ? (String) firstRole 
+                            : firstRole.toString();
+                    } else {
+                        // Ưu tiên VOCALIST nếu có
+                        boolean foundVocalist = false;
+                        for (Object roleObj : roles) {
+                            String roleStr = roleObj instanceof String 
+                                ? (String) roleObj 
+                                : roleObj.toString();
+                            if ("VOCALIST".equalsIgnoreCase(roleStr)) {
+                                role = "VOCALIST";
+                                foundVocalist = true;
+                                break;
+                            }
+                        }
+                        if (!foundVocalist) {
+                            Object firstRole = roles.get(0);
+                            role = firstRole instanceof String 
+                                ? (String) firstRole 
+                                : firstRole.toString();
+                        }
+                    }
+                }
+            }
+            
+            // Get skill info
+            String artistSkillId = null;
+            String artistSkillName = null;
+            if (skillId != null && !skillId.isBlank()) {
+                artistSkillId = skillId;
+                // Có thể lấy skillName từ specialist-service nếu cần
+            }
+            
+            // Lấy các thông tin khác
+            String email = (String) artist.getOrDefault("email", null);
+            String avatarUrl = (String) artist.getOrDefault("avatarUrl", null);
+            Integer experienceYears = artist.get("experienceYears") != null 
+                ? ((Number) artist.get("experienceYears")).intValue() 
+                : null;
+            java.math.BigDecimal rating = artist.get("rating") != null
+                ? (artist.get("rating") instanceof java.math.BigDecimal 
+                    ? (java.math.BigDecimal) artist.get("rating")
+                    : new java.math.BigDecimal(artist.get("rating").toString()))
+                : null;
+            Integer totalProjects = artist.get("totalProjects") != null
+                ? ((Number) artist.get("totalProjects")).intValue()
+                : null;
+            
+            @SuppressWarnings("unchecked")
+            List<String> artistGenres = artist.get("genres") != null
+                ? (List<String>) artist.get("genres")
+                : null;
+            
+            artists.add(AvailableArtistResponse.builder()
+                .specialistId(specialistId)
+                .name(artistName)
+                .email(email)
+                .avatarUrl(avatarUrl)
+                .role(role)
+                .genres(artistGenres)
+                .experienceYears(experienceYears)
+                .rating(rating)
+                .totalProjects(totalProjects)
+                .isPreferred(false)
+                .isAvailable(!isBusy)
+                .availabilityStatus(isBusy ? "busy" : "available")
+                .conflictStartTime(conflictStartTime)
+                .conflictEndTime(conflictEndTime)
+                .skillId(artistSkillId)
+                .skillName(artistSkillName)
+                .build());
+        }
+        
+        // Sort: by name
+        artists.sort((a1, a2) -> a1.getName().compareToIgnoreCase(a2.getName()));
+        
+        log.info("Found {} available artists for request: date={}, time={}-{}, roleType={}, skillId={}", 
+            artists.size(), bookingDate, startTime, endTime, roleType, skillId);
+        return artists;
+    }
+    
+    /**
      * Lấy danh sách studio bookings với filter
      * GET /studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
      */

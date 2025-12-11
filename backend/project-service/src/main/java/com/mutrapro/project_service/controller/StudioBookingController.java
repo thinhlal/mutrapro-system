@@ -115,7 +115,7 @@ public class StudioBookingController {
     }
     
     /**
-     * Lấy available artists cho một slot cụ thể
+     * Lấy available artists cho một slot cụ thể (Luồng 2: Booking từ Milestone)
      * GET /studio-bookings/available-artists?milestoneId={milestoneId}&date={date}&startTime={startTime}&endTime={endTime}&genres={genres}&preferredSpecialistIds={ids}
      * 
      * Flow: Sau khi chọn slot → hiển thị artists với preferred artists highlight
@@ -140,6 +140,45 @@ public class StudioBookingController {
         
         return ResponseEntity.ok(ApiResponse.<List<AvailableArtistResponse>>builder()
             .message("Available artists retrieved successfully")
+            .data(artists)
+            .statusCode(HttpStatus.OK.value())
+            .status("success")
+            .build());
+    }
+    
+    /**
+     * Lấy available artists/instrumentalists cho luồng 3 (Booking từ Service Request)
+     * GET /studio-bookings/available-artists-for-request?date={date}&startTime={startTime}&endTime={endTime}&skillId={skillId}&roleType={roleType}&genres={genres}
+     * 
+     * Flow: Sau khi chọn slot → hiển thị artists/instrumentalists với:
+     * - Available/Busy status cho slot đó
+     * - Filter theo skillId nếu là INSTRUMENT
+     * - Check conflict từ cả booking_artists và booking_participants
+     * 
+     * @param date Ngày booking
+     * @param startTime Thời gian bắt đầu
+     * @param endTime Thời gian kết thúc
+     * @param skillId Optional - Skill ID để filter instrumentalists (chỉ dùng khi roleType = INSTRUMENT)
+     * @param roleType Optional - VOCAL hoặc INSTRUMENT (mặc định lấy cả 2)
+     * @param genres Optional - Genres để filter vocalists
+     */
+    @GetMapping("/available-artists-for-request")
+    public ResponseEntity<ApiResponse<List<AvailableArtistResponse>>> getAvailableArtistsForRequest(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam("startTime") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @RequestParam("endTime") @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
+            @RequestParam(value = "skillId", required = false) String skillId,
+            @RequestParam(value = "roleType", required = false) String roleType,
+            @RequestParam(value = "genres", required = false) List<String> genres) {
+        
+        log.info("Getting available artists for request: date={}, time={}-{}, skillId={}, roleType={}, genres={}", 
+            date, startTime, endTime, skillId, roleType, genres);
+        
+        List<AvailableArtistResponse> artists = studioBookingService.getAvailableArtistsForRequest(
+            date, startTime, endTime, skillId, roleType, genres);
+        
+        return ResponseEntity.ok(ApiResponse.<List<AvailableArtistResponse>>builder()
+            .message("Available artists for request retrieved successfully")
             .data(artists)
             .statusCode(HttpStatus.OK.value())
             .status("success")

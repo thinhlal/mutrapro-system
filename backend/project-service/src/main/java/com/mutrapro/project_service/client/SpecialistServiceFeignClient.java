@@ -43,5 +43,14 @@ public interface SpecialistServiceFeignClient {
     ApiResponse<List<Map<String, Object>>> getVocalists(
         @RequestParam(required = false) String gender,
         @RequestParam(required = false) List<String> genres);
+    
+    /**
+     * Lấy danh sách specialists theo skill_id (cho instrumentalists)
+     * GET /public/specialists/by-skill/{skillId}
+     * Public endpoint - không cần authentication
+     */
+    @GetMapping("/public/specialists/by-skill/{skillId}")
+    ApiResponse<List<Map<String, Object>>> getSpecialistsBySkillId(
+        @PathVariable("skillId") String skillId);
 }
 
