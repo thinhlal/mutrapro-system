@@ -57,6 +57,8 @@ app:
       task.issue.reported: task-issue-reported
       contract.notification: contract-notification
       submission.delivered: submission-delivered
+      submission.submitted: submission-submitted
+      submission.rejected: submission-rejected
       revision.requested: revision-requested
       revision.delivered: revision-delivered
       revision.submitted: revision-submitted

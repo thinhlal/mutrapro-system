@@ -245,6 +245,16 @@ public class RevisionRequestService {
                                 ? contract.getContractNumber()
                                 : revisionRequest.getContractId();
                     
+                    // Determine actionUrl based on taskType
+                    String actionUrl = "/transcription/my-tasks"; // default
+                    if (assignment.getTaskType() != null) {
+                        actionUrl = switch (assignment.getTaskType()) {
+                            case transcription -> "/transcription/my-tasks";
+                            case arrangement -> "/arrangement/my-tasks";
+                            case recording_supervision -> "/recording-artist/my-tasks";
+                        };
+                    }
+                    
                     LocalDateTime now = LocalDateTime.now();
                     RevisionRejectedEvent event = RevisionRejectedEvent.builder()
                             .eventId(UUID.randomUUID())
@@ -265,7 +275,7 @@ public class RevisionRequestService {
                                     milestoneName,
                                     rejectionReason != null ? "Lý do: " + rejectionReason : "Vui lòng chỉnh sửa lại."))
                             .referenceType("REVISION_REQUEST")
-                            .actionUrl("/transcription/my-tasks")
+                            .actionUrl(actionUrl)
                             .rejectedAt(now)
                             .timestamp(now)
                             .build();
@@ -519,6 +529,16 @@ public class RevisionRequestService {
                                 ? contract.getContractNumber()
                                 : revisionRequest.getContractId();
                         
+                        // Determine actionUrl based on taskType
+                        String actionUrl = "/transcription/my-tasks"; // default
+                        if (assignment.getTaskType() != null) {
+                            actionUrl = switch (assignment.getTaskType()) {
+                                case transcription -> "/transcription/my-tasks";
+                                case arrangement -> "/arrangement/my-tasks";
+                                case recording_supervision -> "/recording-artist/my-tasks";
+                            };
+                        }
+                        
                         RevisionApprovedEvent event = RevisionApprovedEvent.builder()
                                 .eventId(UUID.randomUUID())
                                 .revisionRequestId(revisionRequestId)
@@ -538,7 +558,7 @@ public class RevisionRequestService {
                                         milestoneName,
                                         revisionRequest.getDescription()))
                                 .referenceType("REVISION_REQUEST")
-                                .actionUrl("/transcription/my-tasks")
+                                .actionUrl(actionUrl)
                                 .approvedAt(now)
                                 .timestamp(now)
                                 .build();

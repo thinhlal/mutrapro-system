@@ -47,6 +47,8 @@ import com.mutrapro.project_service.entity.ContractInstallment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mutrapro.shared.event.SubmissionDeliveredEvent;
+import com.mutrapro.shared.event.SubmissionSubmittedEvent;
+import com.mutrapro.shared.event.SubmissionRejectedEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -206,6 +208,7 @@ public class FileSubmissionService {
         // Không cần update nếu là in_progress (submit lần đầu)
         // autoUpdateRevisionRequestOnFileSubmit() sẽ tự check và return nếu không có
         // revision request IN_REVISION
+        boolean isFirstSubmission = (previousStatus == AssignmentStatus.in_progress);
         if (previousStatus == AssignmentStatus.in_revision || previousStatus == AssignmentStatus.revision_requested) {
             try {
                 revisionRequestService.autoUpdateRevisionRequestOnFileSubmit(assignmentId, submissionId, userId);
@@ -214,6 +217,79 @@ public class FileSubmissionService {
                 log.warn(
                         "Failed to auto-update revision request on file submit: assignmentId={}, submissionId={}, error={}",
                         assignmentId, submissionId, e.getMessage());
+            }
+        }
+        
+        // Gửi event thông báo manager khi specialist submit file lần đầu (không phải revision)
+        if (isFirstSubmission) {
+            try {
+                Contract contract = contractRepository.findById(assignment.getContractId())
+                        .orElseThrow(() -> ContractNotFoundException.byId(assignment.getContractId()));
+                
+                ContractMilestone milestone = null;
+                String milestoneName = "milestone";
+                if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
+                    milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                            .orElse(null);
+                    if (milestone != null && milestone.getName() != null) {
+                        milestoneName = milestone.getName();
+                    }
+                }
+                
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contract.getContractId();
+                
+                SubmissionSubmittedEvent event = SubmissionSubmittedEvent.builder()
+                        .eventId(java.util.UUID.randomUUID())
+                        .submissionId(submissionId)
+                        .submissionName(submittedSubmission.getSubmissionName())
+                        .taskAssignmentId(assignmentId)
+                        .milestoneId(assignment.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .contractId(assignment.getContractId())
+                        .contractNumber(contractLabel)
+                        .specialistId(assignment.getSpecialistId())
+                        .specialistUserId(assignment.getSpecialistUserIdSnapshot())
+                        .managerUserId(contract.getManagerUserId())
+                        .taskType(assignment.getTaskType() != null ? assignment.getTaskType().toString() : null)
+                        .fileCount(filesToSubmit.size())
+                        .title("File đã được submit - cần review")
+                        .content(String.format(
+                                "Specialist đã submit file cho task \"%s\" của milestone \"%s\" trong contract #%s. Vui lòng xem xét và duyệt.",
+                                assignment.getTaskType() != null ? assignment.getTaskType().toString() : "task",
+                                milestoneName,
+                                contractLabel))
+                        .referenceType("SUBMISSION")
+                        .actionUrl("/manager/tasks/" + assignment.getContractId() + "/" + assignmentId)
+                        .submittedAt(submittedSubmission.getSubmittedAt())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+                
+                JsonNode payload = objectMapper.valueToTree(event);
+                java.util.UUID aggregateId;
+                try {
+                    aggregateId = java.util.UUID.fromString(submissionId);
+                } catch (IllegalArgumentException ex) {
+                    aggregateId = java.util.UUID.randomUUID();
+                }
+                
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                        .aggregateId(aggregateId)
+                        .aggregateType("Submission")
+                        .eventType("submission.submitted")
+                        .eventPayload(payload)
+                        .build();
+                
+                outboxEventRepository.save(outboxEvent);
+                log.info(
+                        "Queued SubmissionSubmittedEvent in outbox: eventId={}, submissionId={}, assignmentId={}, managerUserId={}",
+                        event.getEventId(), submissionId, assignmentId, contract.getManagerUserId());
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue SubmissionSubmittedEvent: submissionId={}, assignmentId={}, error={}",
+                        submissionId, assignmentId, e.getMessage(), e);
             }
         }
 
@@ -588,6 +664,87 @@ public class FileSubmissionService {
         if (!hasActiveRevisionRequest) {
             assignment.setStatus(AssignmentStatus.revision_requested);
             taskAssignmentRepository.save(assignment);
+            
+            // Gửi event thông báo specialist khi manager reject submission lần đầu (không phải revision)
+            try {
+                ContractMilestone milestone = null;
+                String milestoneName = "milestone";
+                if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
+                    milestone = contractMilestoneRepository
+                            .findByMilestoneIdAndContractId(assignment.getMilestoneId(), assignment.getContractId())
+                            .orElse(null);
+                    if (milestone != null && milestone.getName() != null) {
+                        milestoneName = milestone.getName();
+                    }
+                }
+                
+                String contractLabel = contract.getContractNumber() != null && !contract.getContractNumber().isBlank()
+                        ? contract.getContractNumber()
+                        : contract.getContractId();
+                
+                // Determine actionUrl based on taskType
+                String actionUrl = "/transcription/my-tasks"; // default
+                if (assignment.getTaskType() != null) {
+                    actionUrl = switch (assignment.getTaskType()) {
+                        case transcription -> "/transcription/my-tasks";
+                        case arrangement -> "/arrangement/my-tasks";
+                        case recording_supervision -> "/recording-artist/my-tasks";
+                    };
+                }
+                
+                SubmissionRejectedEvent event = SubmissionRejectedEvent.builder()
+                        .eventId(java.util.UUID.randomUUID())
+                        .submissionId(submissionId)
+                        .submissionName(submission.getSubmissionName())
+                        .taskAssignmentId(assignment.getAssignmentId())
+                        .milestoneId(assignment.getMilestoneId())
+                        .milestoneName(milestoneName)
+                        .contractId(assignment.getContractId())
+                        .contractNumber(contractLabel)
+                        .specialistId(assignment.getSpecialistId())
+                        .specialistUserId(assignment.getSpecialistUserIdSnapshot())
+                        .managerUserId(userId)
+                        .rejectionReason(reason)
+                        .taskType(assignment.getTaskType() != null ? assignment.getTaskType().toString() : null)
+                        .fileCount(files.size())
+                        .title("Submission đã bị từ chối")
+                        .content(String.format(
+                                "Manager đã từ chối submission \"%s\" cho task \"%s\" của milestone \"%s\" trong contract #%s. %s",
+                                submission.getSubmissionName(),
+                                assignment.getTaskType() != null ? assignment.getTaskType().toString() : "task",
+                                milestoneName,
+                                contractLabel,
+                                reason != null ? "Lý do: " + reason : "Vui lòng chỉnh sửa lại."))
+                        .referenceType("SUBMISSION")
+                        .actionUrl(actionUrl)
+                        .rejectedAt(LocalDateTime.now())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+                
+                JsonNode payload = objectMapper.valueToTree(event);
+                java.util.UUID aggregateId;
+                try {
+                    aggregateId = java.util.UUID.fromString(submissionId);
+                } catch (IllegalArgumentException ex) {
+                    aggregateId = java.util.UUID.randomUUID();
+                }
+                
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                        .aggregateId(aggregateId)
+                        .aggregateType("Submission")
+                        .eventType("submission.rejected")
+                        .eventPayload(payload)
+                        .build();
+                
+                outboxEventRepository.save(outboxEvent);
+                log.info(
+                        "Queued SubmissionRejectedEvent in outbox: eventId={}, submissionId={}, assignmentId={}, specialistUserId={}",
+                        event.getEventId(), submissionId, assignment.getAssignmentId(), assignment.getSpecialistUserIdSnapshot());
+            } catch (Exception e) {
+                // Log error nhưng không fail transaction
+                log.error("Failed to enqueue SubmissionRejectedEvent: submissionId={}, assignmentId={}, error={}",
+                        submissionId, assignment.getAssignmentId(), e.getMessage(), e);
+            }
         } else {
             // Update revision request nếu có
             try {

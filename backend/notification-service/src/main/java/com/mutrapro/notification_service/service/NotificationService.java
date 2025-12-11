@@ -10,6 +10,8 @@ import com.mutrapro.shared.event.ChatRoomCreatedEvent;
 import com.mutrapro.shared.event.RevisionRequestedEvent;
 import com.mutrapro.shared.event.RevisionDeliveredEvent;
 import com.mutrapro.shared.event.RevisionSubmittedEvent;
+import com.mutrapro.shared.event.SubmissionSubmittedEvent;
+import com.mutrapro.shared.event.SubmissionRejectedEvent;
 import com.mutrapro.shared.event.RevisionApprovedEvent;
 import com.mutrapro.shared.event.RevisionRejectedEvent;
 import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
@@ -555,6 +557,83 @@ public class NotificationService {
 
         log.info("Revision submitted notification created: revisionRequestId={}, managerUserId={}",
                 event.getRevisionRequestId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification cho manager khi specialist submit file lần đầu (không phải revision) (Kafka event).
+     */
+    @Transactional
+    public void createSubmissionSubmittedNotification(SubmissionSubmittedEvent event) {
+        if (event.getManagerUserId() == null || event.getManagerUserId().isBlank()) {
+            log.warn("Cannot create submission submitted notification, managerUserId missing: submissionId={}, contractId={}",
+                    event.getSubmissionId(), event.getContractId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "File đã được submit - cần review";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Specialist đã submit file cho task \"%s\" của milestone \"%s\". Vui lòng xem xét và duyệt.",
+                        event.getTaskType() != null ? event.getTaskType() : "task",
+                        event.getMilestoneName() != null ? event.getMilestoneName() : "milestone");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : 
+                "/manager/tasks/" + event.getContractId() + "/" + event.getTaskAssignmentId();
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "SUBMISSION";
+
+        Notification notification = Notification.builder()
+                .userId(event.getManagerUserId())
+                .type(NotificationType.TASK_FILE_UPLOADED)
+                .title(title)
+                .content(content)
+                .referenceId(event.getSubmissionId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getManagerUserId(), saved);
+
+        log.info("Submission submitted notification created: submissionId={}, managerUserId={}",
+                event.getSubmissionId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification cho specialist khi manager reject submission lần đầu (không phải revision) (Kafka event).
+     */
+    @Transactional
+    public void createSubmissionRejectedNotification(SubmissionRejectedEvent event) {
+        if (event.getSpecialistUserId() == null || event.getSpecialistUserId().isBlank()) {
+            log.warn("Cannot create submission rejected notification, specialistUserId missing: submissionId={}, contractId={}",
+                    event.getSubmissionId(), event.getContractId());
+            return;
+        }
+
+        String title = event.getTitle() != null ? event.getTitle() : "Submission đã bị từ chối";
+        String content = event.getContent() != null ? event.getContent() : 
+                String.format("Manager đã từ chối submission \"%s\" cho task \"%s\" của milestone \"%s\". %s",
+                        event.getSubmissionName() != null ? event.getSubmissionName() : "submission",
+                        event.getTaskType() != null ? event.getTaskType() : "task",
+                        event.getMilestoneName() != null ? event.getMilestoneName() : "milestone",
+                        event.getRejectionReason() != null ? "Lý do: " + event.getRejectionReason() : "Vui lòng chỉnh sửa lại.");
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/transcription/my-tasks";
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "SUBMISSION";
+
+        Notification notification = Notification.builder()
+                .userId(event.getSpecialistUserId())
+                .type(NotificationType.SUBMISSION_REJECTED)
+                .title(title)
+                .content(content)
+                .referenceId(event.getSubmissionId())
+                .referenceType(referenceType)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getSpecialistUserId(), saved);
+
+        log.info("Submission rejected notification created: submissionId={}, specialistUserId={}",
+                event.getSubmissionId(), event.getSpecialistUserId());
     }
 
     /**

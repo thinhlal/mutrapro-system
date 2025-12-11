@@ -165,6 +165,66 @@ public class FileController {
                 .body(resource);
     }
     
+    @GetMapping("/preview/{fileId}")
+    @Operation(summary = "Preview file by fileId (requires authentication) - Opens file inline in browser")
+    public ResponseEntity<Resource> previewFile(
+            @Parameter(description = "ID của file")
+            @PathVariable String fileId,
+            Authentication authentication) {
+        log.info("Previewing file with id: {}", fileId);
+        
+        // Lấy user context từ authentication
+        FileAccessService.UserContext userContext = FileAccessService.getUserContext(authentication);
+        
+        // Get file info để lấy tên file và mimeType (với security check)
+        FileInfoResponse fileInfo = fileService.getFileInfo(
+            fileId, 
+            userContext.getUserId(), 
+            userContext.getRoles()
+        );
+        
+        // Download file content từ S3 (với security check)
+        byte[] fileContent = fileService.downloadFile(
+            fileId, 
+            userContext.getUserId(), 
+            userContext.getRoles()
+        );
+        
+        // Tạo Resource từ byte array
+        ByteArrayResource resource = new ByteArrayResource(fileContent);
+        
+        // Set headers cho preview (inline thay vì attachment)
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, 
+                String.format("inline; filename=\"%s\"", fileInfo.getFileName()));
+        
+        // Dùng mimeType thay vì contentType (enum) vì mimeType là MIME type hợp lệ
+        String mimeType = fileInfo.getMimeType();
+        if (mimeType == null || mimeType.isEmpty()) {
+            // Fallback: dựa vào file extension để đoán MIME type
+            String fileName = fileInfo.getFileName().toLowerCase();
+            if (fileName.endsWith(".xml") || fileName.endsWith(".musicxml")) {
+                mimeType = "application/xml";
+            } else if (fileName.endsWith(".mid") || fileName.endsWith(".midi")) {
+                mimeType = "audio/midi";
+            } else if (fileName.endsWith(".pdf")) {
+                mimeType = "application/pdf";
+            } else if (fileName.endsWith(".mp3")) {
+                mimeType = "audio/mpeg";
+            } else if (fileName.endsWith(".wav")) {
+                mimeType = "audio/wav";
+            } else {
+                mimeType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+            }
+        }
+        headers.add(HttpHeaders.CONTENT_TYPE, mimeType);
+        
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(fileContent.length)
+                .body(resource);
+    }
+
     @GetMapping("/{fileId}")
     @Operation(summary = "Get file info by fileId (requires authentication)")
     public ApiResponse<FileInfoResponse> getFileInfo(

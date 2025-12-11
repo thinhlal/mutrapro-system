@@ -70,17 +70,45 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     List<TaskAssignment> findByMilestoneIdIn(Collection<String> milestoneIds);
 
     /**
-     * Find all task assignments for manager with filters and pagination
-     * Filters: contractIds (manager's contracts), status, taskType, keyword
-     * Keyword search: contractId, milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
+     * Find all task assignments for manager with filters and pagination (without keyword search)
+     * Filters: contractIds (manager's contracts), status, taskType
      * Sort: hasIssue DESC, status priority, assignedDate DESC
      */
     @Query("SELECT ta FROM TaskAssignment ta " +
            "WHERE ta.contractId IN :contractIds " +
            "AND (:status IS NULL OR ta.status = :status) " +
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
-           "AND (:keyword IS NULL OR :keyword = '' OR " +
-           "     LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "ORDER BY " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END, " +
+           "ta.assignedDate DESC")
+    Page<TaskAssignment> findAllByManagerWithFilters(
+            @Param("contractIds") List<String> contractIds,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            Pageable pageable);
+
+    /**
+     * Find all task assignments for manager with filters, pagination and keyword search
+     * Filters: contractIds (manager's contracts), status, taskType, keyword
+     * Keyword search: contractId, contractNumber (from Contract), milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
+     * Sort: hasIssue DESC, status priority, assignedDate DESC
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "LEFT JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "WHERE ta.contractId IN :contractIds " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -97,7 +125,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "  ELSE 99 " +
            "END, " +
            "ta.assignedDate DESC")
-    Page<TaskAssignment> findAllByManagerWithFilters(
+    Page<TaskAssignment> findAllByManagerWithFiltersAndKeyword(
             @Param("contractIds") List<String> contractIds,
             @Param("status") AssignmentStatus status,
             @Param("taskType") TaskType taskType,

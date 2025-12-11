@@ -206,11 +206,31 @@ const MilestoneDeliveriesPage = () => {
 
   const handlePreviewFile = async file => {
     try {
+      // Fetch file với authentication header
       const url = `/api/v1/projects/files/preview/${file.fileId}`;
-      window.open(url, '_blank');
+      const response = await axiosInstance.get(url, {
+        responseType: 'blob',
+      });
+
+      // Tạo blob URL từ response
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Mở file trong tab mới
+      const previewWindow = window.open(blobUrl, '_blank');
+      
+      // Cleanup blob URL sau khi window đóng (optional)
+      if (previewWindow) {
+        previewWindow.addEventListener('beforeunload', () => {
+          window.URL.revokeObjectURL(blobUrl);
+        });
+      } else {
+        // Nếu popup bị block, cleanup ngay
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+      }
     } catch (error) {
       console.error('Error previewing file:', error);
-      message.error('Lỗi khi xem file');
+      message.error(error?.response?.data?.message || 'Lỗi khi xem file');
     }
   };
 
@@ -580,17 +600,38 @@ const MilestoneDeliveriesPage = () => {
                                     type="link"
                                     icon={<EyeOutlined />}
                                     size="small"
-                                    onClick={() => {
-                                      if (
-                                        fileId &&
-                                        typeof fileId === 'string'
-                                      ) {
-                                        window.open(
-                                          `/api/v1/projects/files/preview/${fileId}`,
-                                          '_blank'
-                                        );
-                                      } else if (file.url) {
-                                        window.open(file.url, '_blank');
+                                    onClick={async () => {
+                                      try {
+                                        if (fileId && typeof fileId === 'string') {
+                                          // Fetch file với authentication header
+                                          const url = `/api/v1/projects/files/preview/${fileId}`;
+                                          const response = await axiosInstance.get(url, {
+                                            responseType: 'blob',
+                                          });
+
+                                          // Tạo blob URL từ response
+                                          const blob = new Blob([response.data], { 
+                                            type: response.headers['content-type'] || 'application/octet-stream' 
+                                          });
+                                          const blobUrl = window.URL.createObjectURL(blob);
+                                          
+                                          // Mở file trong tab mới
+                                          const previewWindow = window.open(blobUrl, '_blank');
+                                          
+                                          // Cleanup blob URL sau khi window đóng
+                                          if (previewWindow) {
+                                            previewWindow.addEventListener('beforeunload', () => {
+                                              window.URL.revokeObjectURL(blobUrl);
+                                            });
+                                          } else {
+                                            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+                                          }
+                                        } else if (file.url) {
+                                          window.open(file.url, '_blank');
+                                        }
+                                      } catch (error) {
+                                        console.error('Error previewing file:', error);
+                                        message.error(error?.response?.data?.message || 'Lỗi khi xem file');
                                       }
                                     }}
                                   >

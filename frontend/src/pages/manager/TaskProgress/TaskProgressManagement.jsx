@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Table,
   Card,
@@ -176,6 +176,7 @@ export default function TaskProgressManagement() {
   const [selectedIssueTask, setSelectedIssueTask] = useState(null);
   const [cancellingTask, setCancellingTask] = useState(false);
   const navigate = useNavigate();
+  const searchDebounceTimerRef = useRef(null);
 
   const fetchAllTaskAssignments = useCallback(
     async (currentFilters, currentPagination) => {
@@ -194,6 +195,9 @@ export default function TaskProgressManagement() {
         if (currentFilters.search && currentFilters.search.trim()) {
           params.keyword = currentFilters.search.trim();
         }
+        console.log('[TaskProgress] Fetching with params:', params);
+        console.log('[TaskProgress] Current filters state:', currentFilters);
+        console.log('[TaskProgress] Current pagination state:', currentPagination);
         const response = await getAllTaskAssignments(params);
         if (response?.status === 'success' && response.data) {
           const pageData = response.data;
@@ -241,29 +245,80 @@ export default function TaskProgressManagement() {
     []
   );
 
+  // Track xem có phải là lần đầu mount không
+  const isInitialMountRef = useRef(true);
+
+  // Fetch khi filters hoặc pagination thay đổi
   useEffect(() => {
+    // Bỏ qua lần đầu mount (sẽ được handle bởi useEffect khác)
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
+    // Clear search debounce timer nếu có (khi status/taskType/pagination thay đổi)
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current);
+      searchDebounceTimerRef.current = null;
+    }
+
+    // Fetch ngay lập tức (không debounce cho status/taskType/pagination)
+    console.log('[TaskProgress] Filter changed - fetching immediately');
     fetchAllTaskAssignments(filters, pagination);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filters.status,
     filters.taskType,
-    filters.search,
     pagination.page,
     pagination.pageSize,
-    fetchAllTaskAssignments,
   ]);
 
+  // Debounced fetch khi search thay đổi hoặc initial mount
+  useEffect(() => {
+    // Clear timer cũ nếu có
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current);
+      searchDebounceTimerRef.current = null;
+    }
+
+    // Nếu search bị xóa (empty), fetch ngay lập tức không cần debounce
+    const isSearchEmpty = !filters.search || filters.search.trim() === '';
+    const delay = isInitialMountRef.current || isSearchEmpty ? 0 : 500; // Không debounce lần đầu hoặc khi empty
+
+    // Set timer mới
+    searchDebounceTimerRef.current = setTimeout(() => {
+      console.log('[TaskProgress] Search changed - fetching', isSearchEmpty ? 'immediately (empty)' : 'after debounce');
+      fetchAllTaskAssignments(filters, pagination);
+      searchDebounceTimerRef.current = null;
+      isInitialMountRef.current = false;
+    }, delay);
+
+    // Cleanup
+    return () => {
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current);
+        searchDebounceTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search]);
+
   const handleStatusChange = value => {
+    console.log('[TaskProgress] Status changed to:', value);
     setFilters(prev => ({ ...prev, status: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleTaskTypeChange = value => {
+    console.log('[TaskProgress] TaskType changed to:', value);
     setFilters(prev => ({ ...prev, taskType: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleSearchChange = e => {
-    setFilters(prev => ({ ...prev, search: e.target.value }));
+    const value = e.target.value;
+    console.log('[TaskProgress] Search changed to:', value);
+    setFilters(prev => ({ ...prev, search: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 

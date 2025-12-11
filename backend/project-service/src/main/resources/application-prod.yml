@@ -59,6 +59,8 @@ app:
       task.issue.reported: ${KAFKA_TOPIC_TASK_ISSUE_REPORTED:task-issue-reported}
       contract.notification: ${KAFKA_TOPIC_CONTRACT_NOTIFICATION:contract-notification}
       submission.delivered: ${KAFKA_TOPIC_SUBMISSION_DELIVERED:submission-delivered}
+      submission.submitted: ${KAFKA_TOPIC_SUBMISSION_SUBMITTED:submission-submitted}
+      submission.rejected: ${KAFKA_TOPIC_SUBMISSION_REJECTED:submission-rejected}
       revision.requested: ${KAFKA_TOPIC_REVISION_REQUESTED:revision-requested}
       revision.delivered: ${KAFKA_TOPIC_REVISION_DELIVERED:revision-delivered}
       revision.submitted: ${KAFKA_TOPIC_REVISION_SUBMITTED:revision-submitted}

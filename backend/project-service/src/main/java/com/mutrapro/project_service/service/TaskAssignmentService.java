@@ -675,12 +675,90 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Enrich TaskAssignmentResponse với milestone info
+     * Enrich TaskAssignmentResponse với milestone info từ batch-fetched milestones
+     */
+    private TaskAssignmentResponse enrichTaskAssignmentWithMilestones(
+            TaskAssignment assignment,
+            List<ContractMilestone> milestones) {
+        TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
+        
+        if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
+            ContractMilestone milestone = milestones.stream()
+                .filter(m -> assignment.getMilestoneId().equals(m.getMilestoneId()) 
+                          && assignment.getContractId().equals(m.getContractId()))
+                .findFirst()
+                .orElse(null);
+            if (milestone != null) {
+                enrichMilestoneInfoFromCache(response, milestone, assignment.getContractId());
+            }
+        }
+        
+        return response;
+    }
+
+    /**
+     * Enrich TaskAssignmentResponse với milestone info (fetch từ DB - dùng cho single assignment)
      */
     private TaskAssignmentResponse enrichTaskAssignment(TaskAssignment assignment) {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
         enrichMilestoneInfo(response, assignment.getMilestoneId(), assignment.getContractId());
         return response;
+    }
+
+    /**
+     * Enrich milestone info từ cache (không query DB)
+     */
+    private void enrichMilestoneInfoFromCache(
+            TaskAssignmentResponse response, 
+            ContractMilestone milestone,
+            String contractId) {
+        if (response == null || milestone == null) {
+            return;
+        }
+
+        try {
+            // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
+            LocalDateTime estimatedDeadline = null;
+            LocalDateTime actualDeadline = resolveMilestoneDeadline(milestone);
+            LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
+                ? milestone.getPlannedDueDate() 
+                : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
+                    ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
+                    : null);
+            
+            // Chỉ tính estimated deadline khi không có actual và planned
+            if (actualDeadline == null && plannedDeadline == null) {
+                estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
+            }
+            
+            // Fetch arrangement submission nếu có sourceArrangementSubmissionId (gọi từ ContractMilestoneService)
+            TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
+                contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+            
+            TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
+                .milestoneId(milestone.getMilestoneId())
+                .name(milestone.getName())
+                .description(milestone.getDescription())
+                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
+                .contractId(milestone.getContractId())
+                .orderIndex(milestone.getOrderIndex())
+                .plannedStartAt(milestone.getPlannedStartAt())
+                .plannedDueDate(milestone.getPlannedDueDate())
+                .actualStartAt(milestone.getActualStartAt())
+                .actualEndAt(milestone.getActualEndAt())
+                .firstSubmissionAt(milestone.getFirstSubmissionAt())
+                .finalCompletedAt(milestone.getFinalCompletedAt())
+                .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .estimatedDeadline(estimatedDeadline)
+                .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
+                .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
+                .sourceArrangementSubmission(arrangementSubmissionInfo)
+                .build();
+            response.setMilestone(milestoneInfo);
+        } catch (Exception e) {
+            log.warn("Error enriching milestone info for milestoneId={}, contractId={}: {}", 
+                milestone.getMilestoneId(), contractId, e.getMessage());
+        }
     }
 
     private void enrichMilestoneInfo(TaskAssignmentResponse response, String milestoneId, String contractId) {
@@ -1068,38 +1146,76 @@ public class TaskAssignmentService {
         AssignmentStatus statusEnum = null;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             try {
-                statusEnum = AssignmentStatus.valueOf(status.toUpperCase());
+                // Enum values are lowercase with underscores (e.g., accepted_waiting, in_progress)
+                String statusLower = status.toLowerCase();
+                statusEnum = AssignmentStatus.valueOf(statusLower);
+
+                log.debug("Parsed status filter: {} -> {}", status, statusEnum);
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid status filter: {}", status);
+                log.warn("Invalid status filter: {}, error: {}", status, e.getMessage());
             }
         }
 
         TaskType taskTypeEnum = null;
         if (taskType != null && !taskType.isBlank() && !"all".equalsIgnoreCase(taskType)) {
             try {
-                taskTypeEnum = TaskType.valueOf(taskType.toUpperCase());
+                // TaskType enum values are lowercase with underscores (transcription, arrangement, recording_supervision)
+                String taskTypeLower = taskType.toLowerCase();
+                taskTypeEnum = TaskType.valueOf(taskTypeLower);
+
+                log.debug("Parsed taskType filter: {} -> {}", taskType, taskTypeEnum);
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid taskType filter: {}", taskType);
+                log.warn("Invalid taskType filter: {}, error: {}", taskType, e.getMessage());
             }
         }
 
-        // Prepare keyword for search (null or empty means no filter)
+        // Prepare keyword for search
         String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
 
         // Use JPA query with pagination
+        // Use different query depending on whether we have keyword (to avoid unnecessary LEFT JOIN)
         Pageable pageable = PageRequest.of(safePage, safeSize);
-        Page<TaskAssignment> pageResult = 
-            taskAssignmentRepository.findAllByManagerWithFilters(
+        Page<TaskAssignment> pageResult;
+        
+        if (searchKeyword != null && !searchKeyword.isBlank()) {
+            // Use query with JOIN for keyword search (including contractNumber)
+            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeyword(
                 contractIds, 
                 statusEnum, 
                 taskTypeEnum, 
                 searchKeyword, 
                 pageable
             );
+        } else {
+            // Use simpler query without JOIN when no keyword (better performance)
+            pageResult = taskAssignmentRepository.findAllByManagerWithFilters(
+                contractIds, 
+                statusEnum, 
+                taskTypeEnum, 
+                pageable
+            );
+        }
 
-        // Enrich task assignments
-        List<TaskAssignmentResponse> enrichedAssignments = pageResult.getContent().stream()
-            .map(this::enrichTaskAssignment)
+        // Batch fetch milestones trước để tránh N+1 query problem
+        List<TaskAssignment> assignments = pageResult.getContent();
+        final List<ContractMilestone> milestones;
+        if (!assignments.isEmpty()) {
+            // Batch fetch milestones - collect contractIds
+            List<String> contractIdsForMilestones = assignments.stream()
+                .map(TaskAssignment::getContractId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+            
+            // Fetch milestones by contractIds (1 query thay vì N queries)
+            milestones = contractMilestoneRepository.findByContractIdIn(contractIdsForMilestones);
+        } else {
+            milestones = List.of();
+        }
+
+        // Enrich task assignments với batch-fetched milestones
+        List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
+            .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones))
             .collect(Collectors.toList());
 
         // Batch fetch submissions và contracts (mặc định luôn include)
@@ -1318,7 +1434,7 @@ public class TaskAssignmentService {
                 contractLabel,
                 milestoneLabel))
             .referenceType("TASK_ASSIGNMENT")
-            .actionUrl("/transcription/my-tasks")
+            .actionUrl(getTaskActionUrl(assignment.getTaskType()))
             .assignedAt(assignment.getAssignedDate())
             .timestamp(LocalDateTime.now())
             .build();
@@ -1378,7 +1494,7 @@ public class TaskAssignmentService {
                 contractLabel,
                 milestoneLabel))
             .referenceType("TASK_ASSIGNMENT")
-            .actionUrl("/transcription/my-tasks")
+            .actionUrl(getTaskActionUrl(assignment.getTaskType()))
             .timestamp(LocalDateTime.now())
             .build();
 
@@ -1749,6 +1865,20 @@ public class TaskAssignmentService {
         };
     }
 
+
+    /**
+     * Get actionUrl based on taskType for notification routing
+     */
+    private String getTaskActionUrl(TaskType taskType) {
+        if (taskType == null) {
+            return "/transcription/my-tasks"; // default
+        }
+        return switch (taskType) {
+            case transcription -> "/transcription/my-tasks";
+            case arrangement -> "/arrangement/my-tasks";
+            case recording_supervision -> "/recording-artist/my-tasks";
+        };
+    }
 
     /**
      * Lấy danh sách task assignments của specialist hiện tại
@@ -2315,7 +2445,7 @@ public class TaskAssignmentService {
                                     contractLabel,
                                     issueInfo))
                             .referenceType("TASK_ASSIGNMENT")
-                            .actionUrl("/transcription/my-tasks")
+                            .actionUrl(getTaskActionUrl(assignment.getTaskType()))
                             .canceledAt(LocalDateTime.now())
                             .timestamp(LocalDateTime.now())
                             .build();
