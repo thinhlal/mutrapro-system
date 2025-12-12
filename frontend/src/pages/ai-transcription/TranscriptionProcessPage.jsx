@@ -200,7 +200,7 @@ const TranscriptionProcessPage = () => {
               </Text>
 
               <Space className={styles.actionButtons} size="large">
-                <Button
+                {/* <Button
                   type="primary"
                   size="medium"
                   onClick={handleViewSheetMusic}
@@ -208,7 +208,7 @@ const TranscriptionProcessPage = () => {
                   className={styles.viewButton}
                 >
                   {showFlatViewer ? ' Sheet Music Opened' : ' View Sheet Music'}
-                </Button>
+                </Button> */}
                 {outputFormats?.map(format => {
                   const isMidi = format === 'midi';
                   const label =
