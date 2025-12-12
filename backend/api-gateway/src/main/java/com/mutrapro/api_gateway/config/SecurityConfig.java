@@ -39,6 +39,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/actuator/**",
+            "/klang-api/**",  // Klang AI Transcription API proxy (no authentication required, uses kl-api-key header)
             "/identity/auth/**",
             "/identity/users/verify-email",
             "/identity/users/resend-verification",
@@ -134,7 +135,8 @@ public class SecurityConfig {
                 "Content-Type",
                 "Accept",
                 "Authorization",
-                "X-Requested-With"
+                "X-Requested-With",
+                "kl-api-key"  // Klang API key header
         ));
         config.setExposedHeaders(List.of("Authorization"));
 
@@ -180,7 +182,7 @@ public class SecurityConfig {
         String[] paths = new String[PUBLIC_ENDPOINTS.length];
         for (int i = 0; i < PUBLIC_ENDPOINTS.length; i++) {
             String endpoint = PUBLIC_ENDPOINTS[i];
-            if (endpoint.startsWith("/actuator")) {
+            if (endpoint.startsWith("/actuator") || endpoint.startsWith("/klang-api")) {
                 paths[i] = endpoint;
             } else {
                 paths[i] = apiPrefix + endpoint;

@@ -1,4 +1,18 @@
-export const KLANG_BASE_URL = '/klang-api';
+// Klang API Base URL
+// In development: use relative path (Vite proxy handles it)
+// In production: use full API Gateway URL
+const getKlangBaseUrl = () => {
+  if (import.meta.env.DEV) {
+    // Development: use relative path, Vite proxy will handle it
+    return '/klang-api';
+  } else {
+    // Production: use full URL to API Gateway
+    const apiBaseUrl = import.meta.env.VITE_API_BACK_END_ENDPOINT || 'https://api.mutrapro.top';
+    return `${apiBaseUrl}/klang-api`;
+  }
+};
+
+export const KLANG_BASE_URL = getKlangBaseUrl();
 
 // Lấy từ .env hoặc fallback (demo)
 export const KLANG_API_KEY =

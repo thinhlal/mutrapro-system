@@ -81,5 +81,13 @@ spring:
               filters:
                 - StripPrefix=3
 
+            # Klang AI Transcription API Proxy
+            - id: klang-api
+              uri: https://api.klang.io
+              predicates:
+                - Path=/klang-api/**
+              filters:
+                - StripPrefix=1
+
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn

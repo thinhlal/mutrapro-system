@@ -261,7 +261,7 @@ export default function ArrangementQuotePage() {
                   <Descriptions.Item label="Music Genres">
                     <Space wrap>
                       {formData.genres.map((genre, idx) => (
-                        <Tag key={idx} color="blue">
+                        <Tag key={idx}>
                           {getGenreLabel(genre) || genre}
                         </Tag>
                       ))}
@@ -270,7 +270,7 @@ export default function ArrangementQuotePage() {
                 )}
                 {formData.purpose && (
                   <Descriptions.Item label="Purpose">
-                    <Tag color="purple">
+                    <Tag>
                       {getPurposeLabel(formData.purpose) || formData.purpose}
                     </Tag>
                   </Descriptions.Item>
@@ -304,7 +304,7 @@ export default function ArrangementQuotePage() {
                       <Space wrap>
                         {formData.preferredSpecialists.map(
                           (specialist, idx) => (
-                            <Tag key={idx} color="pink">
+                            <Tag key={idx}>
                               {specialist.name ||
                                 `Vocalist ${specialist.specialistId}`}
                             </Tag>
@@ -501,7 +501,7 @@ export default function ArrangementQuotePage() {
                     }
                     type="success"
                     showIcon
-                    icon={<DollarOutlined />}
+                  
                   />
 
                   <Divider style={{ margin: '12px 0' }} />
