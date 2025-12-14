@@ -16,6 +16,143 @@ const RecordingReviewScreen = ({ navigation }) => {
   const [contactPhone, setContactPhone] = useState(contact?.phone || '');
   const [uploading, setUploading] = useState(false);
 
+  // Calculate fees (participant + equipment only)
+  const calculateFees = () => {
+    let participantFee = 0;
+    let equipmentRentalFee = 0;
+    const hours = step1?.durationHours || 2;
+
+    // Vocal fees (when hiring internal vocalists)
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach((vocalist) => {
+        // Use hourlyRate from vocalist data, fallback to 500k if missing
+        const rate = vocalist.hourlyRate || 500000;
+        // Calculate fee = hourlyRate * booking hours (from step1)
+        participantFee += rate * hours;
+      });
+    }
+
+    // Instrument fees
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach((instrument) => {
+        // Performer fee (when hiring internal artist)
+        if (
+          instrument.performerSource === 'INTERNAL_ARTIST' &&
+          instrument.specialistId
+        ) {
+          // Use hourlyRate from instrument data, fallback to 300k if missing
+          const rate = instrument.hourlyRate || 300000;
+          // Calculate fee = hourlyRate * booking hours (from step1)
+          participantFee += rate * hours;
+        }
+
+        // Equipment rental fee (when renting from studio)
+        if (
+          instrument.instrumentSource === 'STUDIO_SIDE' &&
+          instrument.equipmentId
+        ) {
+          const quantity = instrument.quantity || 1;
+          const rentalFee = instrument.rentalFee || 0;
+          // Calculate fee = rentalFee (per hour) x quantity x booking hours
+          equipmentRentalFee += rentalFee * quantity * hours;
+        }
+      });
+    }
+
+    return {
+      participantFee,
+      equipmentRentalFee,
+      totalFee: participantFee + equipmentRentalFee,
+    };
+  };
+
+  const fees = calculateFees();
+
+  // Transform booking data
+  const transformBookingData = () => {
+    const participants = [];
+    const requiredEquipment = [];
+    const hours = step1?.durationHours || 2;
+
+    // Add vocalists from step2
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach((vocalist) => {
+        // Calculate total fee = hourlyRate x hours
+        const hourlyRate = vocalist.hourlyRate || 500000;
+        const totalFee = hourlyRate * hours;
+
+        participants.push({
+          specialistId: vocalist.specialistId,
+          roleType: 'VOCAL',
+          performerSource: 'INTERNAL_ARTIST',
+          participantFee: totalFee, // Send calculated value (hourlyRate x hours)
+        });
+      });
+    }
+
+    // Add customer self vocalist if any
+    if (step2?.vocalChoice === 'CUSTOMER_SELF' || step2?.vocalChoice === 'BOTH') {
+      participants.push({
+        roleType: 'VOCAL',
+        performerSource: 'CUSTOMER_SELF',
+      });
+    }
+
+    // Add instrumentalists and equipment from step3
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach((instrument) => {
+        // Add performer
+        if (instrument.performerSource === 'INTERNAL_ARTIST' && instrument.specialistId) {
+          // Calculate total fee = hourlyRate x hours
+          const hourlyRate = instrument.hourlyRate || 400000;
+          const totalFee = hourlyRate * hours;
+
+          participants.push({
+            specialistId: instrument.specialistId,
+            roleType: 'INSTRUMENT',
+            performerSource: 'INTERNAL_ARTIST',
+            skillId: instrument.skillId,
+            instrumentSource: instrument.instrumentSource,
+            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+            participantFee: totalFee, // Send calculated value (hourlyRate x hours)
+          });
+        } else if (instrument.performerSource === 'CUSTOMER_SELF') {
+          participants.push({
+            roleType: 'INSTRUMENT',
+            performerSource: 'CUSTOMER_SELF',
+            skillId: instrument.skillId,
+            instrumentSource: instrument.instrumentSource,
+            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+          });
+        }
+
+        // Add equipment
+        if (instrument.instrumentSource === 'STUDIO_SIDE' && instrument.equipmentId) {
+          const quantity = instrument.quantity || 1;
+          const rentalFeePerHour = instrument.rentalFee || 0;
+          // Calculate total: rentalFeePerHour x quantity x hours
+          const totalRentalFee = rentalFeePerHour * quantity * hours;
+
+          requiredEquipment.push({
+            equipmentId: instrument.equipmentId,
+            quantity: quantity,
+            rentalFeePerUnit: rentalFeePerHour,
+            totalRentalFee: totalRentalFee, // Send calculated value (rentalFee x quantity x hours)
+          });
+        }
+      });
+    }
+
+    return {
+      bookingDate: step1.bookingDate,
+      startTime: step1.bookingStartTime,
+      endTime: step1.bookingEndTime,
+      durationHours: step1.durationHours,
+      participants,
+      requiredEquipment,
+    };
+  };
+
   const handleSubmit = async () => {
     if (!file) {
       Alert.alert('Validation', 'Please upload a reference file.');
@@ -35,64 +172,8 @@ const RecordingReviewScreen = ({ navigation }) => {
     }
     try {
       setUploading(true);
-      // Build participants from step2/step3
-      const participants = [];
-      const requiredEquipment = [];
-      const hours = step1.durationHours || 2;
-
-      if (step2?.selectedVocalists?.length > 0) {
-        step2.selectedVocalists.forEach((v) => {
-          participants.push({
-            specialistId: v.specialistId,
-            roleType: 'VOCAL',
-            performerSource: 'INTERNAL_ARTIST',
-            participantFee: v.hourlyRate ? v.hourlyRate * hours : undefined,
-          });
-        });
-      }
-      if (step2?.vocalChoice === 'CUSTOMER_SELF' || step2?.vocalChoice === 'BOTH') {
-        participants.push({
-          roleType: 'VOCAL',
-          performerSource: 'CUSTOMER_SELF',
-        });
-      }
-
-      if (step3?.instruments?.length > 0) {
-        step3.instruments.forEach((inst) => {
-          if (inst.performerSource === 'INTERNAL_ARTIST' && inst.specialistId) {
-            const fee = inst.hourlyRate ? inst.hourlyRate * hours : undefined;
-            participants.push({
-              specialistId: inst.specialistId,
-              roleType: 'INSTRUMENT',
-              performerSource: 'INTERNAL_ARTIST',
-              skillId: inst.skillId,
-              instrumentSource: inst.instrumentSource,
-              equipmentId: inst.instrumentSource === 'STUDIO_SIDE' ? inst.equipmentId : null,
-              participantFee: fee,
-            });
-          } else {
-            participants.push({
-              roleType: 'INSTRUMENT',
-              performerSource: 'CUSTOMER_SELF',
-              skillId: inst.skillId,
-              instrumentSource: inst.instrumentSource,
-              equipmentId: inst.instrumentSource === 'STUDIO_SIDE' ? inst.equipmentId : null,
-            });
-          }
-
-          if (inst.instrumentSource === 'STUDIO_SIDE' && inst.equipmentId) {
-            requiredEquipment.push({
-              equipmentId: inst.equipmentId,
-              quantity: inst.quantity || 1,
-              rentalFeePerUnit: inst.rentalFee || 0,
-              totalRentalFee:
-                inst.rentalFee && inst.quantity
-                  ? inst.rentalFee * inst.quantity * hours
-                  : undefined,
-            });
-          }
-        });
-      }
+      // Build participants from step2/step3 using transformBookingData
+      const bookingData = transformBookingData();
 
       const requestData = {
         requestType: 'recording',
@@ -113,15 +194,7 @@ const RecordingReviewScreen = ({ navigation }) => {
         throw new Error('Missing requestId from response');
       }
 
-      const bookingData = {
-        bookingDate: step1.bookingDate,
-        startTime: step1.bookingStartTime,
-        endTime: step1.bookingEndTime,
-        durationHours: step1.durationHours,
-        participants,
-        requiredEquipment,
-      };
-
+      // Use transformed booking data
       await createBookingFromServiceRequest(requestId, bookingData);
 
       Alert.alert('Success', 'Recording request and booking created successfully!', [
@@ -175,7 +248,9 @@ const RecordingReviewScreen = ({ navigation }) => {
   const renderInstruments = () => (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Instruments</Text>
-      {step3?.instruments?.length > 0 ? (
+      {step3?.hasLiveInstruments === false ? (
+        <Text style={styles.text}>No live instruments (beat/backing track only)</Text>
+      ) : step3?.instruments?.length > 0 ? (
         step3.instruments.map((inst) => (
           <View key={inst.instrumentId} style={{ marginBottom: SPACING.xs }}>
             <Text style={styles.text}>
@@ -187,6 +262,11 @@ const RecordingReviewScreen = ({ navigation }) => {
             <Text style={styles.helperText}>
               Source: {inst.instrumentSource === 'STUDIO_SIDE' ? 'Rent studio' : 'Bring my own'}
             </Text>
+            {inst.instrumentSource === 'STUDIO_SIDE' && inst.equipmentId && (
+              <Text style={styles.helperText}>
+                Equipment: {inst.equipmentName || 'N/A'} (Qty: {inst.quantity || 1})
+              </Text>
+            )}
           </View>
         ))
       ) : (
@@ -194,6 +274,114 @@ const RecordingReviewScreen = ({ navigation }) => {
       )}
     </View>
   );
+
+  const renderFeeBreakdown = () => {
+    const hours = step1?.durationHours || 2;
+    const breakdown = [];
+
+    // Vocal fees breakdown
+    if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
+      step2.selectedVocalists.forEach((vocalist) => {
+        const rate = vocalist.hourlyRate || 500000;
+        const fee = rate * hours;
+        breakdown.push({
+          type: 'vocalist',
+          name: vocalist.name || 'Vocalist',
+          rate: rate,
+          hours: hours,
+          fee: fee,
+        });
+      });
+    }
+
+    // Instrument performer fees breakdown
+    if (step3?.instruments && step3.instruments.length > 0) {
+      step3.instruments.forEach((instrument) => {
+        if (
+          instrument.performerSource === 'INTERNAL_ARTIST' &&
+          instrument.specialistId
+        ) {
+          const rate = instrument.hourlyRate || 300000;
+          const fee = rate * hours;
+          breakdown.push({
+            type: 'instrumentalist',
+            name: instrument.specialistName || instrument.instrumentName || 'Instrumentalist',
+            rate: rate,
+            hours: hours,
+            fee: fee,
+          });
+        }
+
+        // Equipment rental breakdown
+        if (
+          instrument.instrumentSource === 'STUDIO_SIDE' &&
+          instrument.equipmentId
+        ) {
+          const quantity = instrument.quantity || 1;
+          const rentalFee = instrument.rentalFee || 0;
+          const fee = rentalFee * quantity * hours;
+          breakdown.push({
+            type: 'equipment',
+            name: instrument.equipmentName || instrument.instrumentName || 'Equipment',
+            rate: rentalFee,
+            quantity: quantity,
+            hours: hours,
+            fee: fee,
+          });
+        }
+      });
+    }
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Estimated Total Fee</Text>
+        <View style={styles.feeRow}>
+          <Text style={styles.feeLabel}>Participant Fee:</Text>
+          <Text style={styles.feeValue}>
+            {fees.participantFee.toLocaleString('vi-VN')} VND
+          </Text>
+        </View>
+        <Text style={styles.feeSubtext}>(Vocalists + Instrumentalists)</Text>
+        <View style={styles.feeRow}>
+          <Text style={styles.feeLabel}>Equipment Fee:</Text>
+          <Text style={styles.feeValue}>
+            {fees.equipmentRentalFee.toLocaleString('vi-VN')} VND
+          </Text>
+        </View>
+        <Text style={styles.feeSubtext}>(Equipment from studio)</Text>
+        <View style={[styles.feeRow, styles.totalFeeRow]}>
+          <Text style={styles.totalFeeLabel}>Total:</Text>
+          <Text style={styles.totalFeeValue}>
+            {fees.totalFee.toLocaleString('vi-VN')} VND
+          </Text>
+        </View>
+        {fees.totalFee === 0 && (
+          <Text style={styles.helperText}>
+            Total fee = 0 VND (You are self-performing)
+          </Text>
+        )}
+        {breakdown.length > 0 && (
+          <View style={{ marginTop: SPACING.md }}>
+            <Text style={[styles.cardTitle, { fontSize: FONT_SIZES.sm, marginBottom: SPACING.xs }]}>
+              Breakdown Details:
+            </Text>
+            {breakdown.map((item, index) => (
+              <View key={index} style={{ marginBottom: SPACING.xs }}>
+                <Text style={styles.text}>
+                  {item.type === 'vocalist' ? '🎤' : item.type === 'instrumentalist' ? '🎸' : '🔧'}{' '}
+                  {item.name}
+                </Text>
+                <Text style={styles.helperText}>
+                  {item.rate.toLocaleString('vi-VN')} VND/hour
+                  {item.quantity ? ` x ${item.quantity} unit(s)` : ''} x {item.hours} hrs = {item.fee.toLocaleString('vi-VN')} VND
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -203,6 +391,7 @@ const RecordingReviewScreen = ({ navigation }) => {
       {renderSummary()}
       {renderVocal()}
       {renderInstruments()}
+      {renderFeeBreakdown()}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Contact</Text>
@@ -303,6 +492,43 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   primaryButtonText: { color: COLORS.white, fontWeight: '700', fontSize: FONT_SIZES.md },
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  feeLabel: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  feeValue: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  feeSubtext: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+  },
+  totalFeeRow: {
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  totalFeeLabel: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.text,
+    fontWeight: '700',
+  },
+  totalFeeValue: {
+    fontSize: FONT_SIZES.lg,
+    color: '#ff4d4f',
+    fontWeight: '700',
+  },
 });
 
 export default RecordingReviewScreen;
