@@ -3,6 +3,37 @@ import { API_ENDPOINTS } from '../config/apiConfig';
 import axiosInstance from '../utils/axiosInstance';
 
 /**
+ * Lấy tất cả skills từ public endpoint
+ * GET /public/skills
+ * Filter skills với skillType = RECORDING_ARTIST và recordingCategory = INSTRUMENT
+ *
+ * @returns {Promise} ApiResponse với danh sách skills
+ */
+export const getAllRecordingInstrumentSkills = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SPECIALISTS.PUBLIC.GET_ALL_SKILLS
+    );
+
+    if (response.data?.status === 'success' && response.data?.data) {
+      // Filter skills with skillType = RECORDING_ARTIST and recordingCategory = INSTRUMENT
+      const instrumentSkills = response.data.data.filter(
+        skill =>
+          skill.skillType === 'RECORDING_ARTIST' &&
+          skill.recordingCategory === 'INSTRUMENT'
+      );
+      return {
+        status: 'success',
+        data: instrumentSkills,
+      };
+    }
+    return { status: 'success', data: [] };
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy danh sách skills' };
+  }
+};
+
+/**
  * Lấy danh sách notation instruments
  * GET /notation-instruments?usage=&includeInactive=
  *
