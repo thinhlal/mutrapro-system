@@ -28,6 +28,7 @@ import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
 import com.mutrapro.shared.dto.TaskStatsResponse;
 import com.mutrapro.project_service.enums.AssignmentStatus;
+import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
 import com.mutrapro.project_service.enums.MilestoneType;
@@ -630,42 +631,107 @@ public class TaskAssignmentService {
         
         // Recording milestone: deadline tính từ booking date, không phải actualStartAt
         if (milestone.getMilestoneType() == MilestoneType.recording) {
-            // Ưu tiên 1: plannedDueDate (đã được tính từ booking date ở ContractService)
-            if (milestone.getPlannedDueDate() != null) {
-                return milestone.getPlannedDueDate();
+            // ⚠️ QUAN TRỌNG: Ưu tiên actualEndAt TRƯỚC booking date
+            // Vì actualEndAt là deadline thực tế (milestone đã completed), không phải ước tính
+            
+            // Ưu tiên 1: actualEndAt (nếu milestone đã completed) - deadline thực tế
+            if (milestone.getActualEndAt() != null) {
+                log.debug("Recording milestone deadline using actualEndAt (milestone completed): milestoneId={}, actualEndAt={}", 
+                    milestone.getMilestoneId(), milestone.getActualEndAt());
+                return milestone.getActualEndAt();
             }
             
-            // Ưu tiên 2: Tính từ booking date nếu có actualStartAt (specialist đã start)
-            if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
+            // Ưu tiên 2: Tính từ booking date (nếu có booking active) - deadline ước tính từ booking
+            // ⚠️ QUAN TRỌNG: Ưu tiên booking date TRƯỚC plannedDueDate
+            // Vì booking date phản ánh thực tế (dựa trên actual completion của arrangement milestone),
+            // trong khi plannedDueDate chỉ là baseline (tính từ cursor khi Start Work)
+            // Nếu arrangement milestone bị revision nhiều, booking date sẽ muộn hơn plannedDueDate
+            // ⚠️ CHỈ dùng booking có status active (TENTATIVE, PENDING, CONFIRMED, IN_PROGRESS)
+            // KHÔNG dùng booking bị CANCELLED, NO_SHOW, hoặc COMPLETED (vì đã xong hoặc không còn hiệu lực)
                 try {
                     Optional<StudioBooking> bookingOpt = 
                         studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
                     
-                    if (bookingOpt.isPresent() && bookingOpt.get().getBookingDate() != null) {
-                        LocalDate bookingDate = bookingOpt.get().getBookingDate();
-                        LocalTime startTime = bookingOpt.get().getStartTime() != null ? 
-                            bookingOpt.get().getStartTime() : LocalTime.of(9, 0);
+                if (bookingOpt.isPresent()) {
+                    StudioBooking booking = bookingOpt.get();
+                    // Chỉ dùng booking có status active (không phải CANCELLED, NO_SHOW, COMPLETED)
+                    List<BookingStatus> activeStatuses = List.of(
+                        BookingStatus.TENTATIVE, BookingStatus.PENDING, 
+                        BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                    
+                    if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                        LocalDate bookingDate = booking.getBookingDate();
+                        LocalTime startTime = booking.getStartTime() != null ? 
+                            booking.getStartTime() : LocalTime.of(8, 0);
                         LocalDateTime bookingDateTime = bookingDate.atTime(startTime);
                         
-                        log.debug("Recording milestone deadline calculated from booking date: milestoneId={}, bookingDate={}, slaDays={}", 
-                            milestone.getMilestoneId(), bookingDate, slaDays);
-                        return bookingDateTime.plusDays(slaDays);
+                        if (slaDays != null && slaDays > 0) {
+                            LocalDateTime deadline = bookingDateTime.plusDays(slaDays);
+                            log.debug("Recording milestone deadline calculated from active booking date: milestoneId={}, bookingId={}, bookingDate={}, status={}, slaDays={}, deadline={}", 
+                                milestone.getMilestoneId(), booking.getBookingId(), bookingDate, booking.getStatus(), slaDays, deadline);
+                            return deadline;
+                        }
+                    } else {
+                        log.debug("Recording milestone has booking but not active (cancelled/completed): milestoneId={}, bookingId={}, status={}, skipping booking date for deadline calculation", 
+                            milestone.getMilestoneId(), booking.getBookingId(), booking.getStatus());
+                    }
                     }
                 } catch (Exception e) {
                     log.error("Error fetching booking for recording milestone deadline: milestoneId={}, error={}", 
                         milestone.getMilestoneId(), e.getMessage());
                 }
-                // Fallback: use actualStartAt if no booking found
-                return milestone.getActualStartAt().plusDays(slaDays);
+            
+            // ⚠️ QUAN TRỌNG: Khi chưa có booking, tính từ actualEndAt của arrangement milestone cuối cùng
+            // Vì nếu arrangement milestone bị revision nhiều, actualEndAt sẽ muộn hơn plannedDueDate
+            // Deadline phải phản ánh thực tế, không phải baseline
+            try {
+                Contract contract = contractRepository.findById(milestone.getContractId()).orElse(null);
+                if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                    List<ContractMilestone> allContractMilestones = contractMilestoneRepository
+                        .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
+                    List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
+                        .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                        .toList();
+                    
+                    if (!arrangementMilestones.isEmpty()) {
+                        ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
+                            .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                            .orElse(null);
+                        
+                        // Nếu arrangement milestone đã completed và đã thanh toán (actualEndAt != null)
+                        // Tính deadline từ actualEndAt + SLA days (phản ánh thực tế)
+                        if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
+                            if (slaDays != null && slaDays > 0) {
+                                LocalDateTime deadline = lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                                log.debug("Recording milestone deadline calculated from last arrangement actualEndAt (no booking yet): milestoneId={}, lastArrangementActualEndAt={}, slaDays={}, deadline={}", 
+                                    milestone.getMilestoneId(), lastArrangementMilestone.getActualEndAt(), slaDays, deadline);
+                                return deadline;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error fetching arrangement milestone for recording deadline: milestoneId={}, error={}", 
+                    milestone.getMilestoneId(), e.getMessage());
             }
             
-            // Ưu tiên 3: actualEndAt
-            if (milestone.getActualEndAt() != null) {
-                return milestone.getActualEndAt();
+            // Ưu tiên 3: plannedDueDate (baseline từ Start Work - chỉ dùng khi arrangement milestone chưa completed)
+            // Fallback khi chưa có booking VÀ arrangement milestone chưa có actualEndAt
+            if (milestone.getPlannedDueDate() != null) {
+                log.debug("Recording milestone deadline using plannedDueDate (baseline, no booking and no arrangement actualEndAt): milestoneId={}, plannedDueDate={}", 
+                    milestone.getMilestoneId(), milestone.getPlannedDueDate());
+                return milestone.getPlannedDueDate();
             }
             
-            // Ưu tiên 4: plannedStartAt + slaDays
+            // Ưu tiên 4: plannedStartAt + slaDays (fallback cuối cùng)
+            // ⚠️ LƯU Ý: Không dùng actualStartAt + SLA vì:
+            // - Với recording milestone, specialist KHÔNG THỂ start task mà không có booking
+            // - Nếu có actualStartAt → đã có booking rồi (không thể start mà không có booking)
+            // - Deadline phải tính từ booking date + SLA (thời điểm recording thực tế), không phải actualStartAt
+            // - actualStartAt là khi specialist start task (có thể trước booking date), không phản ánh thời điểm recording
             if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+                log.debug("Recording milestone deadline using plannedStartAt + SLA (final fallback): milestoneId={}, plannedStartAt={}, slaDays={}", 
+                    milestone.getMilestoneId(), milestone.getPlannedStartAt(), slaDays);
                 return milestone.getPlannedStartAt().plusDays(slaDays);
             }
             
@@ -1014,9 +1080,15 @@ public class TaskAssignmentService {
                         .orElse(null);
                     
                     if (lastArrangementMilestone != null) {
-                        allArrangementsCompleted = 
+                        // Check workStatus: completed hoặc ready_for_payment
+                        // ⚠️ QUAN TRỌNG: Cũng phải check actualEndAt (đã thanh toán) vì đây là điều kiện bắt buộc để tạo booking
+                        // Frontend dùng field này để hiển thị button "Book Studio", nên cần check chính xác
+                        boolean workStatusCompleted = 
                             lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
                             lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
+                        boolean isPaid = lastArrangementMilestone.getActualEndAt() != null;
+                        // Chỉ set true nếu vừa completed/ready_for_payment VÀ đã thanh toán
+                        allArrangementsCompleted = workStatusCompleted && isPaid;
                     } else {
                         allArrangementsCompleted = false;
                     }

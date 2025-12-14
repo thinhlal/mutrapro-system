@@ -56,8 +56,11 @@ public class MilestoneAssignmentSlotResponse {
     String contractStatus;  // signed, active, active_pending_assignment, completed, etc.
 
     // For recording milestones in arrangement_with_recording contracts
-    // Indicates if all arrangement milestones are completed/ready_for_payment
-    Boolean allArrangementsCompleted;  // true if all arrangement milestones are completed/ready_for_payment
+    // Indicates if all arrangement milestones are completed/ready_for_payment AND paid (actualEndAt != null)
+    // ⚠️ QUAN TRỌNG: Field này check cả workStatus VÀ actualEndAt (đã thanh toán)
+    // Đây là điều kiện bắt buộc để tạo booking cho recording milestone
+    // Frontend dùng field này để hiển thị button "Book Studio"
+    Boolean allArrangementsCompleted;  // true if all arrangement milestones are completed/ready_for_payment AND paid (actualEndAt != null)
 }
 
 

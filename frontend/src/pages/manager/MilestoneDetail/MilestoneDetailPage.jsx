@@ -387,7 +387,7 @@ const MilestoneDetailPage = () => {
   }, [workStatus, hasActiveTask, milestoneTasks]);
 
   // Kiểm tra xem có thể hiển thị nút Book Studio không
-  // Chỉ hiện khi: milestone là recording, contract là arrangement_with_recording, và tất cả arrangement milestones đã completed
+  // Chỉ hiện khi: milestone là recording, contract là arrangement_with_recording, và tất cả arrangement milestones đã completed VÀ đã thanh toán (actualEndAt != null)
   const canShowBookStudioButton = useMemo(() => {
     // Chỉ cho recording milestone
     if (milestone?.milestoneType !== 'recording') {
@@ -425,6 +425,13 @@ const MilestoneDetailPage = () => {
 
       if (!allArrangementsCompleted) {
         return false; // Chưa có arrangement milestone nào completed
+      }
+
+      // ⚠️ QUAN TRỌNG: Arrangement milestone cuối cùng phải đã thanh toán (actualEndAt != null)
+      // Backend yêu cầu actualEndAt phải có trước khi cho phép tạo booking
+      const lastArrangementMilestone = arrangementMilestones[arrangementMilestones.length - 1];
+      if (!lastArrangementMilestone.actualEndAt) {
+        return false; // Arrangement milestones chưa thanh toán, chưa thể tạo booking
       }
     }
 

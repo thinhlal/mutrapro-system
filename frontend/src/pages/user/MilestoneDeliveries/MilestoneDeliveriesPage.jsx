@@ -431,11 +431,63 @@ const MilestoneDeliveriesPage = () => {
                   <Text>{milestoneInfo.description}</Text>
                 </Descriptions.Item>
               )}
-              {milestoneInfo.plannedDueDate && (
-                <Descriptions.Item label="Planned Due Date">
-                  {dayjs(milestoneInfo.plannedDueDate).format('DD/MM/YYYY')}
+              {/* Timeline Information */}
+              <Descriptions.Item label="Timeline" span={2}>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  {/* Planned Dates */}
+                  <div>
+                    <Text strong type="secondary" style={{ fontSize: 12 }}>
+                      Thời gian dự kiến:
+                    </Text>
+                    <div style={{ marginTop: 4 }}>
+                      {milestoneInfo.plannedDueDate ? (
+                        <Text>
+                          Hoàn thành: {dayjs(milestoneInfo.plannedDueDate).format('DD/MM/YYYY')}
+                        </Text>
+                      ) : (
+                        <Text type="secondary" italic>Chưa có</Text>
+                      )}
+                    </div>
+                  </div>
+                  {/* Actual Dates */}
+                  {(milestoneInfo.actualStartAt || milestoneInfo.finalCompletedAt || milestoneInfo.actualEndAt) && (
+                    <div>
+                      <Text strong style={{ fontSize: 12 }}>
+                        Thời gian thực tế:
+                      </Text>
+                      <div style={{ marginTop: 4 }}>
+                        {milestoneInfo.actualStartAt && (
+                          <div>
+                            <Text>
+                              Bắt đầu: {dayjs(milestoneInfo.actualStartAt).format('DD/MM/YYYY HH:mm')}
+                            </Text>
+                          </div>
+                        )}
+                        {milestoneInfo.finalCompletedAt && (
+                          <div>
+                            <Text>
+                              Work Completed: {dayjs(milestoneInfo.finalCompletedAt).format('DD/MM/YYYY HH:mm')}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                              (Customer đã chấp nhận work)
+                            </Text>
+                          </div>
+                        )}
+                        {milestoneInfo.actualEndAt && (
+                          <div>
+                            <Text>
+                              Payment Completed: {dayjs(milestoneInfo.actualEndAt).format('DD/MM/YYYY HH:mm')}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                              (Milestone đã được thanh toán)
+                            </Text>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Space>
                 </Descriptions.Item>
-              )}
               <Descriptions.Item label="Total Submissions">
                 <Text strong>{submissions.length}</Text>
               </Descriptions.Item>

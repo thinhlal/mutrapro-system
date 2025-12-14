@@ -406,7 +406,7 @@ const MilestonesPage = () => {
           isArrangementWithRecording &&
           (contractStatus === 'active' ||
             contractStatus === 'active_pending_assignment') &&
-          allArrangementsCompleted && // Tất cả arrangement milestones đã completed
+          allArrangementsCompleted && // Tất cả arrangement milestones đã completed VÀ đã thanh toán (actualEndAt != null)
           milestoneWorkStatus !== 'completed' &&
           milestoneWorkStatus !== 'cancelled' &&
           !record.studioBookingId; // Nếu đã có booking thì không hiện

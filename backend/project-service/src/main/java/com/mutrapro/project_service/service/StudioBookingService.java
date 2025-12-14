@@ -137,7 +137,9 @@ public class StudioBookingService {
      * Validation:
      * 1. Milestone phải là recording type
      * 2. Contract phải là arrangement_with_recording
-     * 3. Arrangement milestone (orderIndex = 1) phải đã accepted (COMPLETED hoặc READY_FOR_PAYMENT)
+     * 3. TẤT CẢ arrangement milestones phải đã accepted (COMPLETED hoặc READY_FOR_PAYMENT) và đã thanh toán (actualEndAt != null)
+     *    - Check tất cả arrangement milestones (không chỉ orderIndex = 1)
+     *    - Arrangement milestone cuối cùng phải có actualEndAt != null (đã thanh toán)
      * 4. Booking date phải trong SLA range của recording milestone
      * 5. Studio phải active
      * 
@@ -216,34 +218,29 @@ public class StudioBookingService {
                         .collect(java.util.stream.Collectors.joining(", "))));
         }
         
-        log.info("All arrangement milestones are completed. Proceeding with recording booking: contractId={}, recordingMilestoneId={}, arrangementCount={}",
-            contract.getContractId(), recordingMilestone.getMilestoneId(), arrangementMilestones.size());
-        
-        // 4. Tính start date và due date thực tế cho recording milestone
-        // Ưu tiên: dùng actualEndAt hoặc finalCompletedAt của arrangement milestone cuối cùng
-        // (vì nếu arrangement bị revision, planned dates có thể không còn chính xác)
+        // ⚠️ QUAN TRỌNG: Check TẤT CẢ arrangement milestones đã có actualEndAt (đã thanh toán)
+        // Lý do: Đảm bảo booking date validation chính xác, không bị lệch nếu customer thanh toán muộn
         ContractMilestone lastArrangementMilestone = arrangementMilestones.get(arrangementMilestones.size() - 1);
         
-        LocalDateTime recordingStartDate;
-        if (lastArrangementMilestone.getFinalCompletedAt() != null) {
-            // Dùng finalCompletedAt (thời điểm customer chấp nhận bản cuối cùng sau mọi revision)
-            recordingStartDate = lastArrangementMilestone.getFinalCompletedAt();
-            log.info("Using finalCompletedAt of last arrangement milestone as recording start date: finalCompletedAt={}",
-                recordingStartDate);
-        } else if (lastArrangementMilestone.getActualEndAt() != null) {
-            // Fallback: dùng actualEndAt
-            recordingStartDate = lastArrangementMilestone.getActualEndAt();
+        if (lastArrangementMilestone.getActualEndAt() == null) {
+            throw new IllegalStateException(
+                String.format("Cannot create booking for recording milestone. " +
+                    "All arrangement milestones must be paid (actualEndAt must be set) before creating booking. " +
+                    "Last arrangement milestone (orderIndex=%d) has not been paid yet (actualEndAt=null). " +
+                    "Please wait for customer to pay arrangement milestones before creating booking.",
+                    lastArrangementMilestone.getOrderIndex()));
+        }
+        
+        log.info("All arrangement milestones are completed and paid. Proceeding with recording booking: contractId={}, recordingMilestoneId={}, arrangementCount={}, lastArrangementActualEndAt={}",
+            contract.getContractId(), recordingMilestone.getMilestoneId(), arrangementMilestones.size(), 
+            lastArrangementMilestone.getActualEndAt());
+        
+        // 4. Tính start date và due date thực tế cho recording milestone
+        // Dùng actualEndAt của arrangement milestone cuối cùng (đã được validate ở trên)
+        // (vì nếu arrangement bị revision, planned dates có thể không còn chính xác)
+        LocalDateTime recordingStartDate = lastArrangementMilestone.getActualEndAt();
             log.info("Using actualEndAt of last arrangement milestone as recording start date: actualEndAt={}",
                 recordingStartDate);
-        } else if (recordingMilestone.getPlannedStartAt() != null) {
-            // Fallback: dùng plannedStartAt nếu chưa có actual dates
-            recordingStartDate = recordingMilestone.getPlannedStartAt();
-            log.warn("Using plannedStartAt as recording start date (no actual dates available): plannedStartAt={}",
-                recordingStartDate);
-        } else {
-            throw new IllegalStateException(
-                "Cannot determine recording milestone start date. Arrangement milestone must have completion date.");
-        }
         
         // Tính due date = start date + SLA days
         Integer recordingSlaDays = recordingMilestone.getMilestoneSlaDays();

@@ -456,7 +456,8 @@ public class FileSubmissionService {
                 .workStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().toString() : null)
                 .plannedDueDate(milestone.getPlannedDueDate())
                 .actualStartAt(milestone.getActualStartAt())
-                .actualEndAt(milestone.getActualEndAt())
+                .finalCompletedAt(milestone.getFinalCompletedAt())  // Thời điểm customer chấp nhận bản cuối cùng
+                .actualEndAt(milestone.getActualEndAt())  // Thời điểm milestone được thanh toán
                 .installmentStatus(installmentStatus)
                 .build();
 

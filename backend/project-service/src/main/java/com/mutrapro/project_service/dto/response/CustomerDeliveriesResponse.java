@@ -59,7 +59,8 @@ public class CustomerDeliveriesResponse {
         String workStatus;  // PLANNED, IN_PROGRESS, WAITING_CUSTOMER, etc.
         LocalDateTime plannedDueDate;
         LocalDateTime actualStartAt;
-        LocalDateTime actualEndAt;
+        LocalDateTime finalCompletedAt;  // Thời điểm customer chấp nhận bản cuối cùng (sau mọi revision)
+        LocalDateTime actualEndAt;  // Thời điểm milestone được thanh toán (nếu có payment)
         String installmentStatus;  // PENDING, DUE, PAID - để frontend check xem đã thanh toán chưa
     }
     
