@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from '../../config/constants';
 import { useRecordingFlow } from '../../context/RecordingFlowContext';
 import { getAvailableArtistsForRequest } from '../../services/studioBookingService';
-import { getNotationInstruments, getNotationInstrumentsByIds } from '../../services/instrumentService';
+import { getAllRecordingInstrumentSkills } from '../../services/instrumentService';
 import { getAllEquipment } from '../../services/equipmentService';
 
 const PERFORMER_SOURCE = {
@@ -27,10 +27,14 @@ const RecordingInstrumentScreen = ({ navigation }) => {
   const { state, update } = useRecordingFlow();
   const { bookingDate, bookingStartTime, bookingEndTime, step3 } = state;
 
+  const [hasLiveInstruments, setHasLiveInstruments] = useState(
+    step3?.hasLiveInstruments !== undefined ? step3.hasLiveInstruments : null
+  );
   const [instruments, setInstruments] = useState(step3?.instruments || []);
   const [loadingArtists, setLoadingArtists] = useState(false);
   const [loadingEquipment, setLoadingEquipment] = useState(false);
-  const [instrumentOptions, setInstrumentOptions] = useState(DEFAULT_INSTRUMENTS);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [instrumentOptions, setInstrumentOptions] = useState([]);
 
   useEffect(() => {
     loadInstrumentOptions();
@@ -38,13 +42,23 @@ const RecordingInstrumentScreen = ({ navigation }) => {
 
   const loadInstrumentOptions = async () => {
     try {
-      const resp = await getNotationInstruments({ usage: 'arrangement' });
+      setLoadingSkills(true);
+      const resp = await getAllRecordingInstrumentSkills();
       if (resp?.status === 'success' && Array.isArray(resp?.data) && resp.data.length > 0) {
-        setInstrumentOptions(resp.data);
+        // Map skills to instrument options format
+        const mapped = resp.data.map(skill => ({
+          instrumentId: skill.skillId,
+          skillId: skill.skillId,
+          instrumentName: skill.skillName,
+        }));
+        setInstrumentOptions(mapped);
         return;
       }
     } catch (error) {
-      console.warn('Using default instrument options');
+      console.error('Error loading instrument skills:', error);
+      Alert.alert('Warning', 'Unable to load instrument list. Using default options.');
+    } finally {
+      setLoadingSkills(false);
     }
     // fallback
     setInstrumentOptions(DEFAULT_INSTRUMENTS);
@@ -284,43 +298,121 @@ const RecordingInstrumentScreen = ({ navigation }) => {
   };
 
   const handleContinue = () => {
-    if (instruments.length === 0) {
-      Alert.alert('Validation', 'Please select at least one instrument.');
+    // Validation
+    if (hasLiveInstruments === null) {
+      Alert.alert('Validation', 'Please choose whether live instruments will be used');
       return;
     }
-    update({ step3: { instruments } });
+
+    if (hasLiveInstruments && instruments.length === 0) {
+      Alert.alert('Validation', 'Please select at least one instrument');
+      return;
+    }
+
+    // Validate each instrument
+    for (const inst of instruments) {
+      if (
+        inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
+        !inst.specialistId
+      ) {
+        Alert.alert('Validation', `Please choose an instrumentalist for ${inst.instrumentName}`);
+        return;
+      }
+
+      if (
+        inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
+        !inst.equipmentId
+      ) {
+        Alert.alert('Validation', `Please choose equipment for ${inst.instrumentName}`);
+        return;
+      }
+    }
+
+    update({
+      step3: {
+        hasLiveInstruments,
+        instruments,
+      },
+    });
     navigation.navigate('RecordingReview');
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Instrument & Equipment</Text>
-      <Text style={styles.subtitle}>Choose instruments, who plays, and equipment source.</Text>
+      <Text style={styles.subtitle}>Which instruments will be used in the session?</Text>
 
+      {/* Has Live Instruments Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Select instruments</Text>
-        <View style={styles.rowWrap}>
-          {instrumentOptions.map((inst) => {
-            const selected = instruments.some((i) => i.instrumentId === inst.instrumentId);
-            return (
-              <TouchableOpacity
-                key={inst.instrumentId}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => toggleInstrument(inst.instrumentId, inst.skillId || inst.instrumentId, inst.instrumentName)}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                  {inst.instrumentName}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <Text style={styles.sectionTitle}>Will the session use live instruments?</Text>
+        <View style={styles.row}>
+          <TouchableOpacity
+            style={[
+              styles.choiceCard,
+              hasLiveInstruments === false && styles.choiceCardSelected,
+            ]}
+            onPress={() => {
+              setHasLiveInstruments(false);
+              setInstruments([]);
+            }}
+          >
+            <Text style={styles.choiceTitle}>No, only beat/backing track</Text>
+            <Text style={styles.choiceDesc}>No live instruments</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.choiceCard,
+              hasLiveInstruments === true && styles.choiceCardSelected,
+            ]}
+            onPress={() => setHasLiveInstruments(true)}
+          >
+            <Text style={styles.choiceTitle}>Yes, use live instruments</Text>
+            <Text style={styles.choiceDesc}>Live performance</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.helperText}>Tap to add/remove instruments.</Text>
       </View>
 
-      {instruments.map((inst) => renderInstrumentCard(inst))}
+      {/* Instrument Selection */}
+      {hasLiveInstruments === true && (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Select instruments</Text>
+            {loadingSkills ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : instrumentOptions.length === 0 ? (
+              <Text style={styles.helperText}>No instruments available</Text>
+            ) : (
+              <>
+                <View style={styles.rowWrap}>
+                  {instrumentOptions.map((inst) => {
+                    const selected = instruments.some((i) => i.instrumentId === inst.instrumentId);
+                    return (
+                      <TouchableOpacity
+                        key={inst.instrumentId}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => toggleInstrument(inst.instrumentId, inst.skillId || inst.instrumentId, inst.instrumentName)}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                          {inst.instrumentName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>Tap to add/remove instruments.</Text>
+              </>
+            )}
+          </View>
 
-      <TouchableOpacity style={styles.primaryButton} onPress={handleContinue}>
+          {instruments.map((inst) => renderInstrumentCard(inst))}
+        </>
+      )}
+
+      <TouchableOpacity
+        style={[styles.primaryButton, (hasLiveInstruments === null || loadingSkills) && { opacity: 0.5 }]}
+        onPress={handleContinue}
+        disabled={hasLiveInstruments === null || loadingSkills}
+      >
         <Text style={styles.primaryButtonText}>Continue</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -335,6 +427,30 @@ const styles = StyleSheet.create({
   section: { marginBottom: SPACING.lg },
   sectionTitle: { fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  choiceCard: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    backgroundColor: COLORS.white,
+    marginBottom: SPACING.sm,
+    flex: 1,
+    minWidth: '45%',
+  },
+  choiceCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '10',
+  },
+  choiceTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  choiceDesc: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
   chip: {
     borderWidth: 1,
     borderColor: COLORS.border,
