@@ -2,13 +2,14 @@
 
 ## 1. identity-service (gộp auth + profile) — Người 1
 **Database**: `identity_db`
-- `users_auth` (user_id, email, password_hash, role, status, email_verified, mfa_enabled)
-- `users` (user_id, full_name, phone, address, is_active, created_at, updated_at)
+- `users_auth` (user_id, email, password_hash, role, status, email_verified, auth_provider, auth_provider_id, has_local_password, password_reset_token_hash, password_reset_token_expires_at)
+- `users` (user_id, full_name, phone, address, avatar_url, is_active, created_at, updated_at)
+- `email_verifications` (email verification OTP)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: đăng nhập, phân quyền, hồ sơ người dùng
-- **API chính**: POST /auth/login, POST /auth/refresh, GET /users/{id}
-- **Events phát**: user.created, user.updated, login.failed
+- **Nhiệm vụ**: đăng nhập, phân quyền, hồ sơ người dùng, email verification
+- **API chính**: POST /auth/login, POST /auth/refresh, GET /users/{id}, POST /auth/verify-email
+- **Events phát**: user.created, user.updated, login.failed, email.verified
 
 ## 2. specialist-service — Người 1 (phần còn lại)
 **Database**: `specialist_db`
@@ -24,52 +25,49 @@
 
 ## 3. request-service (gộp intake + catalog) — Người 2
 **Database**: `request_db`
-- **Intake**: `service_requests`, `request_booking_artists`, `request_booking_equipment`, `request_notation_instruments`
-- **Catalog**: `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix`
-- **Feedback**: `feedback` (phản hồi từ khách hàng)
+- **Intake**: `service_requests`, `request_notation_instruments`
+- **Catalog**: `notation_instruments`, `pricing_matrix`
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: tiếp nhận yêu cầu + lựa chọn; quản lý danh mục dùng chung; feedback
-- **API**: POST /requests, GET /requests/{id}, GET /requests/{id}/booking-selections, GET /catalog/equipment, GET /catalog/notation-instruments, POST /requests/{id}/feedback
-- **Events**: request.created, request.updated, selection.changed, feedback.submitted
+- **Nhiệm vụ**: tiếp nhận yêu cầu + lựa chọn; quản lý danh mục dùng chung
+- **API**: POST /requests, GET /requests/{id}, GET /catalog/notation-instruments
+- **Events**: request.created, request.updated, selection.changed
 
-## 4. project-service (gộp contract + task + revision + file) — Người 2 (phần còn lại)
+## 4. project-service (gộp contract + task + revision + file + studio) — Người 2 (phần còn lại)
 **Database**: `project_db`
 - `contracts` (contract management)
-- `service_sla_defaults` (SLA mặc định theo loại hợp đồng)
-- `payment_milestones` (payment milestones)
+- `contract_milestones` (work milestones)
+- `contract_installments` (payment installments)
+- `contract_sign_sessions` (e-signature sessions)
 - `task_assignments` (task management)
 - `revision_requests` (revision requests)
-- `files` (file management & delivery) - **MOVED FROM file-service**
-- `outbox_events` (event publishing)
-- `consumed_events` (event consumption)
-- **Nhiệm vụ**: hợp đồng, SLA, milestones, task & revisions, file management
-- **API**: POST /contracts, POST /contracts/{id}/sign, POST /tasks, PATCH /tasks/{id}, POST /revisions, PATCH /revisions/{id}, POST /files/upload, POST /files/{id}/deliver, POST /projects/{id}/files/approve
-- **Events**: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed, file.uploaded, file.delivered, file.approved
-
-## 5. studio-service — Người 3
-**Database**: `studio_db`
+- `file_submissions` (file submissions)
+- `files` (file management & delivery)
 - `studios` (studio information)
 - `studio_bookings` (booking management)
+- `booking_artists` (booking artists)
+- `booking_participants` (booking participants)
+- `booking_required_equipment` (booking equipment)
+- `equipment` (equipment catalog)
+- `skill_equipment_mapping` (skill-equipment mapping)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: quản lý studio & booking
-- **API**: POST /bookings, POST /bookings/{id}/confirm (đọc selections từ request-service)
-- **Events**: booking.confirmed, session.completed
+- **Nhiệm vụ**: hợp đồng, milestones, installments, task & revisions, file management, studio bookings
+- **API**: POST /contracts, POST /contracts/{id}/sign, POST /tasks, PATCH /tasks/{id}, POST /revisions, PATCH /revisions/{id}, POST /files/upload, POST /files/{id}/deliver, POST /bookings, POST /bookings/{id}/confirm
+- **Events**: contract.signed, milestone.due, task.assigned|completed, revision.approved|completed, file.uploaded, file.delivered, file.approved, booking.confirmed, session.completed
 
-## 6. billing-service (gộp payment + wallet) — Người 3 (phần còn lại)
+## 5. billing-service (gộp payment + wallet) — Người 3
 **Database**: `billing_db`
 - `wallets` (ví điện tử của người dùng)
 - `wallet_transactions` (lịch sử giao dịch ví)
-- `payments` (payment transactions)
+- `payment_orders` (payment orders for topup)
 - `outbox_events` (event publishing)
 - `consumed_events` (event consumption)
-- **Nhiệm vụ**: ví, giao dịch ví, thanh toán milestone
-- **API**: POST /wallets/{id}/topup, POST /wallets/{id}/debit, POST /payments
+- **Nhiệm vụ**: ví, giao dịch ví, thanh toán topup
+- **API**: POST /wallets/{id}/topup, POST /wallets/{id}/debit, POST /payment-orders
 - **Events**: wallet.debited|refunded, payment.completed|failed
-- **Lưu ý**: FK một chiều payments.wallet_tx_id → wallet_transactions.wallet_tx_id [unique, delete: set null]
 
-## 7. notification-service — Người 4 (tuỳ chọn, có thể gộp)
+## 6. notification-service — Người 4
 **Database**: `notification_db`
 - `notifications` (notification system)
 - `outbox_events` (event publishing)
@@ -150,14 +148,14 @@
 - **Skills**: Spring Boot, Business logic, Event handling, Workflow management
 
 ### Người 3 - Full-stack Developer
-- **Responsibility**: studio-service + billing-service
-- **Focus**: Studio operations, financial transactions
-- **Skills**: Spring Boot, Studio management, Payment integration, Financial logic
+- **Responsibility**: billing-service
+- **Focus**: Financial transactions, wallet management
+- **Skills**: Spring Boot, Payment integration, Financial logic
 
 ### Người 4 - Backend Developer
-- **Responsibility**: notification-service
-- **Focus**: Notifications, communication layer
-- **Skills**: Spring Boot, Message queues, Notification systems
+- **Responsibility**: notification-service + chat-service
+- **Focus**: Notifications, communication layer, chat system
+- **Skills**: Spring Boot, Message queues, Notification systems, Real-time communication
 
 ---
 
@@ -171,17 +169,18 @@
 
 ### Service giữ nguyên:
 - **specialist-service**: Chuyên gia, kỹ năng, demo
-- **studio-service**: Studio operations
 - **notification-service**: Communication layer (optional)
+- **chat-service**: Chat rooms, messages, participants
 
 ### Service được loại bỏ:
 - **file-service**: Đã gộp vào project-service
+- **studio-service**: Đã gộp vào project-service
 
 ### Bảng được di chuyển:
 - `users_auth`, `users` → identity-service (xóa duplicate email, xóa activity_logs và notifications)
-- `service_requests`, `request_*`, `notation_instruments`, `equipment`, `skill_equipment_mapping`, `pricing_matrix`, `feedback` → request-service
-- `contracts`, `service_sla_defaults`, `payment_milestones`, `task_assignments`, `revision_requests`, **`files`** → project-service
-- `wallets`, `wallet_transactions`, `payments` → billing-service (FK một chiều với UNIQUE constraint)
+- `service_requests`, `request_notation_instruments`, `notation_instruments`, `pricing_matrix` → request-service
+- `contracts`, `contract_milestones`, `contract_installments`, `contract_sign_sessions`, `task_assignments`, `revision_requests`, `file_submissions`, `files`, `studios`, `studio_bookings`, `booking_artists`, `booking_participants`, `booking_required_equipment`, `equipment`, `skill_equipment_mapping` → project-service
+- `wallets`, `wallet_transactions`, `payment_orders` → billing-service
 - `notifications` → notification-service (riêng biệt)
 
 ---

@@ -15,20 +15,25 @@
 
 Table notifications {
   notification_id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, note: 'Soft reference to identity-service']
-  title varchar(200) [not null]
-  message text [not null]
-  notification_type notification_type [not null]
+  user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  type notification_type [not null, note: 'Field name is "type", not "notification_type"']
+  title varchar(255) [not null]
+  content text [not null, note: 'Field name is "content", not "message"']
+  reference_id uuid [note: 'Reference to related entity']
+  reference_type varchar(50) [note: 'Type of referenced entity']
+  action_url varchar(500) [note: 'URL for action button']
   is_read boolean [default: false]
+  read_at timestamp [note: 'When notification was read']
   created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
   
-  Note: 'Hệ thống thông báo - Enhanced với notification types mới'
+  Note: '[NOTIFICATION SERVICE] System notifications - Extends BaseEntity'
   
   indexes {
-    user_id
-    is_read
-    notification_type
-    created_at
+    (user_id, created_at DESC)
+    (user_id, is_read)
   }
 }
 
@@ -59,10 +64,10 @@ Table outbox_events {
 
 Table consumed_events {
   event_id uuid [not null]
-  consumer_name text [not null]
-  processed_at timestamptz [not null, default: `now()`]
+  consumer_name varchar(100) [not null]
+  processed_at timestamp [not null, default: `now()`]
   
-  Note: 'Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  Note: '[NOTIFICATION SERVICE] Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
   
   indexes {
     (event_id, consumer_name) [unique, pk]

@@ -1,21 +1,22 @@
-// MuTraPro - ERD theo từng Microservice (Per-Service Databases) - Updated v4.1
+// MuTraPro - ERD theo từng Microservice (Per-Service Databases)
 // Database type: PostgreSQL
-// 7 Services Architecture (File Service merged into Project Service)
+// Architecture: Database per Service pattern
 
 Project MuTraPro_PerService {
   database_type: 'PostgreSQL'
   Note: '''
     ERD nhóm theo từng microservice để dễ theo dõi flow và ownership.
-    Nguyên tắc: mỗi service sở hữu DB riêng; không FK cross-service; dùng soft references qua *_id.
+    Nguyên tắc: mỗi service sở hữu DB riêng; không FK cross-service; dùng soft references qua String ID.
     
-    Services (7):
-    1. identity-service (auth + profile)
-    2. specialist-service 
-    3. request-service (intake + catalog)
-    4. project-service (contract + task + revision + file) ⭐
-    5. studio-service
-    6. billing-service (payment + wallet)
-    7. notification-service
+    Services:
+    1. identity-service (auth + profile + email verification)
+    2. specialist-service (specialists, skills, artist demos)
+    3. request-service (service requests + catalog: notation instruments, pricing matrix)
+    4. project-service (contracts, milestones, tasks, revisions, files, studio bookings, equipment)
+    5. billing-service (wallets, transactions, payment orders)
+    6. chat-service (chat rooms, messages, participants)
+    7. notification-service (notifications)
+    
   '''
 }
 
@@ -148,28 +149,30 @@ Table artist_demos {
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   title varchar(150)
   description text
+  recording_role recording_role [not null]
   skill_id uuid [ref: > skills.skill_id]
-  file_id uuid [note: 'Soft reference to project-service']
-  preview_url varchar(500)
-  is_public boolean [default: true]
-  demo_order integer [default: 1]
-  is_featured boolean [default: false]
-  view_count integer [default: 0]
-  customer_rating decimal(3,2)
-  last_played_at timestamp
-  created_at timestamp [default: `now()`]
+  genres text[] [not null]
+  preview_url varchar(500) [not null]
+  is_public boolean [default: false]
+  is_main_demo boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[SPECIALIST SERVICE] Artist demos - Extends BaseEntity. Demo chính được hiển thị ở avatar trong trang list specialists.'
   
   indexes {
     specialist_id
     is_public
     skill_id
-    is_featured
-    customer_rating
+    genres
+    recording_role
   }
 }
 
 // ==============================
-// 3) REQUEST-SERVICE (request_db) - Gộp intake + catalog + feedback
+// 3) REQUEST-SERVICE (request_db) - Intake + catalog
 // ==============================
 Table service_requests {
   request_id uuid [pk]
@@ -179,48 +182,26 @@ Table service_requests {
   contact_name varchar(100)
   contact_phone varchar(20)
   contact_email varchar(100)
-  music_options jsonb
+  genres text[]
+  purpose varchar(100)
   tempo_percentage decimal(5,2)
+  duration_minutes decimal(10,2)
   has_vocalist boolean [default: false]
+  preferred_specialists jsonb
   external_guest_count integer [default: 0]
   title varchar(200)
   description text [not null]
-  status request_status [default: 'pending']
+  status request_status [default: 'pending', not null]
+  service_price decimal(12,2)
+  instrument_price decimal(12,2)
+  total_price decimal(12,2)
+  currency currency_type
   
   indexes {
     user_id
     manager_user_id
     status
     request_type
-  }
-}
-
-Table request_booking_artists {
-  request_booking_artist_id uuid [pk]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  specialist_id uuid [not null, note: 'Soft reference to specialist-service']
-  role recording_role [not null]
-  skill_id uuid [note: 'Soft reference to specialist-service']
-  
-  indexes {
-    request_id
-    specialist_id
-    (request_id, specialist_id, skill_id) [unique]
-    role
-    skill_id
-  }
-}
-
-Table request_booking_equipment {
-  request_booking_equipment_id uuid [pk]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  equipment_id uuid [not null, note: 'Soft reference to equipment table']
-  quantity integer [default: 1]
-  
-  indexes {
-    request_id
-    equipment_id
-    (request_id, equipment_id) [unique]
   }
 }
 
@@ -304,19 +285,8 @@ Table pricing_matrix {
   }
 }
 
-// Feedback table - MOVED FROM FEEDBACK-SERVICE
-Table feedback {
-  feedback_id uuid [pk]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  user_id uuid [not null, note: 'Soft reference to identity-service']
-  rating integer [not null]
-  comment text
-  feedback_type feedback_type [not null]
-  created_at timestamp [default: `now()`]
-}
-
 // ============================
-// 4) PROJECT-SERVICE (project_db) - Gộp contract + task + revision + file
+// 4) PROJECT-SERVICE (project_db) - Contract + task + revision + file + studio
 // ============================
 Table contracts {
   contract_id uuid [pk]
@@ -337,31 +307,37 @@ Table contracts {
   notes text
   
   // Pricing
-  base_price decimal(12,2) [default: 0]
-  total_price decimal(12,2) [default: 0]
-  currency currency_type [default: 'VND']
-  deposit_percent decimal(5,2) [default: 40.0]
-  deposit_amount decimal(12,2) [default: 0]
-  final_amount decimal(12,2) [default: 0]
-  
-  // Deposit tracking
-  deposit_paid boolean [default: false]
-  deposit_paid_at timestamp
+  total_price decimal(12,2)
+  currency currency_type
+  deposit_percent decimal(5,2)
   
   // Timeline & SLA
   expected_start_date timestamp
-  due_date timestamp
-  sla_days integer [default: 0]
-  auto_due_date boolean [default: true]
+  sla_days integer
   
   // Revision policy
-  free_revisions_included integer [default: 1]
-  additional_revision_fee_vnd decimal(12,2) [default: 0]
+  free_revisions_included integer [default: 1, not null]
+  revision_used_count integer [default: 0, not null]
+  additional_revision_fee_vnd decimal(12,2)
+  revision_deadline_days integer
+  
+  // Deposit tracking
+  deposit_paid_at timestamp
+  
+  // Work tracking
+  work_start_at timestamp
   
   // Snapshot contact info
   name_snapshot varchar(255) [not null]
   phone_snapshot varchar(20) [not null]
   email_snapshot varchar(255) [not null]
+  
+  // Customer action reasons
+  cancellation_reason text
+  
+  // E-Signature fields
+  customer_signature_s3_key text
+  customer_signed_at timestamp
   
   indexes {
     request_id
@@ -371,21 +347,6 @@ Table contracts {
     status
     contract_type
     expires_at
-  }
-}
-
-Table service_sla_defaults {
-  sla_id uuid [pk]
-  contract_type contract_type [not null]
-  min_sla_days integer [not null]
-  max_sla_days integer [not null]
-  default_buffer_days integer [default: 0]
-  is_active boolean [default: true]
-  created_at timestamp [default: `now()`]
-  
-  indexes {
-    contract_type [unique]
-    is_active
   }
 }
 
@@ -480,7 +441,6 @@ Table revision_requests {
   }
 }
 
-// Files table - MOVED FROM FILE-SERVICE
 Table files {
   file_id uuid [pk]
   request_id uuid [note: 'Soft reference to request-service']
@@ -715,13 +675,6 @@ Enum notation_instrument_usage {
   transcription
   arrangement
   both
-}
-
-Enum feedback_type {
-  service_quality
-  communication
-  timeliness
-  overall_experience
 }
 
 Enum contract_type {

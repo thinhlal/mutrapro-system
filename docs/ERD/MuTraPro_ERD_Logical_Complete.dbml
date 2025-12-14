@@ -1,0 +1,1449 @@
+// MuTraPro - LOGICAL ERD COMPLETE
+// Tổng hợp tất cả mối quan hệ giữa các service
+// Annotate rõ service boundaries và relationship types
+// Version: 1.0 - Based on actual entity code
+
+Project MuTraPro_Logical_Complete {
+  database_type: 'PostgreSQL'
+  Note: '''
+    LOGICAL ERD - Tổng hợp tất cả mối quan hệ giữa các microservices
+    
+    Relationship Types:
+    - Solid line (──): JPA relationship trong cùng service (có FK constraint)
+    - Dashed line (┄┄): Soft reference cross-service (không có FK, chỉ String ID)
+    
+    Service Boundaries:
+    - IDENTITY: identity_db
+    - REQUEST: request_db  
+    - PROJECT: project_db
+    - BILLING: billing_db
+    - SPECIALIST: specialist_db
+    - CHAT: chat_db
+    - NOTIFICATION: notification_db
+  '''
+}
+
+// ============================================
+// IDENTITY SERVICE (identity_db)
+// ============================================
+
+Table users_auth {
+  user_id uuid [pk]
+  email varchar(100) [unique, not null]
+  password_hash varchar(255)
+  role user_role [not null]
+  status varchar(20) [default: 'active']
+  email_verified boolean [default: false]
+  auth_provider varchar(32) [default: 'LOCAL']
+  auth_provider_id varchar(128)
+  has_local_password boolean [default: true]
+  password_reset_token_hash varchar(255)
+  password_reset_token_expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[IDENTITY SERVICE] Authentication table'
+}
+
+Table users {
+  user_id uuid [pk]
+  full_name varchar(100) [not null]
+  phone varchar(20)
+  address text
+  avatar_url varchar(500)
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[IDENTITY SERVICE] User profile - 1:1 với users_auth (cùng user_id)'
+}
+
+Table email_verifications {
+  id uuid [pk]
+  user_id uuid [not null, note: 'Soft ref to users_auth']
+  otp_hash varchar(255) [not null]
+  channel varchar(50) [not null]
+  expires_at timestamp [not null]
+  status varchar(20) [not null]
+  resent_of uuid
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[IDENTITY SERVICE] Email verification - 1:N với users_auth (soft ref)'
+}
+
+// ============================================
+// REQUEST SERVICE (request_db)
+// ============================================
+
+Table service_requests {
+  request_id uuid [pk]
+  user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  manager_user_id uuid [note: 'Soft ref to identity-service.users_auth']
+  request_type service_type [not null]
+  contact_name varchar(100)
+  contact_phone varchar(20)
+  contact_email varchar(100)
+  genres text[] [note: 'Array of genres for arrangement']
+  purpose varchar(100) [note: 'Purpose for arrangement']
+  tempo_percentage decimal(5,2) [note: 'Tempo for transcription']
+  duration_minutes decimal(10,2) [note: 'Audio duration for transcription pricing']
+  has_vocalist boolean [default: false]
+  preferred_specialists jsonb [note: 'Array of PreferredSpecialistInfo']
+  external_guest_count integer [default: 0]
+  title varchar(200)
+  description text [not null]
+  status request_status [default: 'pending']
+  service_price decimal(12,2)
+  instrument_price decimal(12,2)
+  total_price decimal(12,2)
+  currency currency_type
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[REQUEST SERVICE] Service request from customer'
+  
+  indexes {
+    user_id
+    manager_user_id
+    status
+    request_type
+  }
+}
+
+Table request_notation_instruments {
+  request_instrument_id uuid [pk]
+  request_id uuid [ref: > service_requests.request_id, not null]
+  instrument_id uuid [ref: > notation_instruments.instrument_id, not null]
+  is_main boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[REQUEST SERVICE] Join table - Many-to-Many: ServiceRequest ↔ NotationInstrument'
+  
+  indexes {
+    request_id
+    instrument_id
+    (request_id, instrument_id) [unique]
+  }
+}
+
+Table notation_instruments {
+  instrument_id uuid [pk]
+  instrument_name varchar(100) [not null]
+  usage notation_instrument_usage [not null]
+  base_price bigint [default: 0]
+  is_active boolean [default: true]
+  image varchar(500)
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[REQUEST SERVICE] Virtual instruments catalog'
+  
+  indexes {
+    instrument_name
+    is_active
+  }
+}
+
+Table pricing_matrix {
+  pricing_id uuid [pk]
+  service_type service_type [not null]
+  unit_type unit_type [not null]
+  base_price decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[REQUEST SERVICE] Pricing configuration'
+  
+  indexes {
+    service_type
+    currency
+    is_active
+  }
+}
+
+// ============================================
+// PROJECT SERVICE (project_db)
+// ============================================
+
+Table contracts {
+  contract_id uuid [pk]
+  request_id uuid [not null, note: 'Soft ref to request-service.service_requests']
+  user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  manager_user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  contract_number varchar(50) [unique, not null]
+  contract_type contract_type [not null]
+  terms_and_conditions text
+  special_clauses text
+  status contract_status [default: 'draft', not null]
+  sent_to_customer_at timestamp
+  customer_reviewed_at timestamp
+  signed_at timestamp
+  expires_at timestamp
+  file_id varchar(36) [note: 'Soft ref to files.file_id']
+  notes text
+  
+  // Pricing
+  total_price decimal(12,2)
+  currency currency_type
+  deposit_percent decimal(5,2)
+  
+  // Timeline & SLA
+  expected_start_date timestamp
+  sla_days integer
+  
+  // Revision policy
+  free_revisions_included integer [default: 1, not null]
+  revision_used_count integer [default: 0, not null]
+  additional_revision_fee_vnd decimal(12,2)
+  revision_deadline_days integer
+  
+  // Deposit tracking
+  deposit_paid_at timestamp
+  
+  // Work tracking
+  work_start_at timestamp
+  
+  // Snapshot thông tin liên hệ
+  name_snapshot varchar(255) [not null]
+  phone_snapshot varchar(20) [not null]
+  email_snapshot varchar(255) [not null]
+  
+  // Customer action reasons
+  cancellation_reason text
+  
+  // E-Signature fields
+  customer_signature_s3_key text
+  customer_signed_at timestamp
+  
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Contract management - Extends BaseEntity. Manager tạo hợp đồng trực tiếp từ request với giá tự động. Revision chỉ áp dụng cho transcription và arrangement tasks, không áp dụng cho recording.'
+  
+  indexes {
+    request_id
+    user_id
+    manager_user_id
+    contract_number [unique]
+    status
+    contract_type
+  }
+}
+
+Table contract_milestones {
+  milestone_id uuid [pk]
+  contract_id uuid [not null, note: 'Soft ref to contracts.contract_id']
+  name varchar(100) [not null]
+  description text
+  order_index integer [not null]
+  milestone_type milestone_type
+  work_status milestone_work_status [default: 'planned', not null]
+  has_payment boolean [default: false, not null]
+  milestone_sla_days integer
+  planned_start_at timestamp
+  planned_due_date timestamp
+  actual_start_at timestamp
+  actual_end_at timestamp
+  first_submission_at timestamp
+  final_completed_at timestamp
+  source_arrangement_milestone_id varchar(36)
+  source_arrangement_submission_id varchar(36)
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Work milestones - Extends BaseEntity, tách biệt với payment installments'
+  
+  indexes {
+    contract_id
+    work_status
+    milestone_type
+    order_index
+  }
+}
+
+Table studio_bookings {
+  booking_id uuid [pk]
+  user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  studio_id uuid [ref: > studios.studio_id, not null]
+  request_id uuid [note: 'Soft ref to request-service.service_requests']
+  contract_id uuid [note: 'Soft ref to contracts.contract_id']
+  milestone_id uuid [note: 'Soft ref to contract_milestones.milestone_id']
+  context studio_booking_context [not null]
+  session_type recording_session_type [not null]
+  booking_date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  status booking_status [default: 'tentative']
+  hold_expires_at timestamp
+  external_guest_count integer [default: 0]
+  duration_hours decimal(5,2) [not null]
+  artist_fee decimal(12,2) [default: 0]
+  equipment_rental_fee decimal(12,2) [default: 0]
+  external_guest_fee decimal(12,2) [default: 0]
+  total_cost decimal(12,2) [default: 0]
+  purpose text
+  special_instructions text
+  notes text
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] Studio booking sessions'
+  
+  indexes {
+    user_id
+    studio_id
+    request_id
+    contract_id
+    milestone_id
+    context
+    session_type
+    booking_date
+    status
+  }
+}
+
+Table studios {
+  studio_id uuid [pk]
+  studio_name varchar(100) [not null]
+  location varchar(255)
+  hourly_rate decimal(12,2) [default: 0]
+  free_external_guests_limit integer [default: 0]
+  extra_guest_fee_per_person decimal(12,2) [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] Studio information'
+}
+
+Table booking_required_equipment {
+  booking_equipment_id uuid [pk]
+  booking_id uuid [ref: > studio_bookings.booking_id, not null]
+  equipment_id uuid [not null, note: 'Soft ref to equipment.equipment_id (same service)']
+  quantity integer [default: 1]
+  rental_fee_per_unit decimal(12,2) [not null]
+  total_rental_fee decimal(12,2) [not null]
+  participant_id uuid [note: 'Soft ref to booking_participants.participant_id']
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] Equipment for booking - 1:N với studio_bookings, soft ref to equipment'
+  
+  indexes {
+    booking_id
+    equipment_id
+    participant_id
+    (booking_id, equipment_id) [unique]
+  }
+}
+
+Table equipment {
+  equipment_id uuid [pk]
+  equipment_name varchar(100) [not null]
+  brand varchar(50)
+  model varchar(100)
+  description text
+  specifications jsonb
+  rental_fee decimal(12,2) [default: 0]
+  total_quantity integer [default: 1]
+  is_active boolean [default: true]
+  image varchar(500)
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] Equipment catalog'
+  
+  indexes {
+    equipment_name
+    brand
+    model
+    (brand, model) [unique]
+    is_active
+  }
+}
+
+Table skill_equipment_mapping {
+  mapping_id uuid [pk]
+  skill_id uuid [not null, note: 'Soft ref to specialist-service.skills.skill_id']
+  equipment_id uuid [ref: > equipment.equipment_id, not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] Mapping skills to equipment - Many-to-Many: Skill ↔ Equipment'
+  
+  indexes {
+    skill_id
+    equipment_id
+    (skill_id, equipment_id) [unique]
+  }
+}
+
+Table task_assignments {
+  assignment_id uuid [pk]
+  contract_id uuid [not null, note: 'Soft ref to contracts.contract_id']
+  specialist_id uuid [not null, note: 'Soft ref to specialist-service.specialists']
+  specialist_name_snapshot varchar(255)
+  specialist_email_snapshot varchar(255)
+  specialist_specialization_snapshot varchar(100)
+  specialist_experience_years_snapshot integer
+  specialist_user_id_snapshot varchar(50)
+  task_type task_type [not null]
+  status assignment_status [default: 'assigned', not null]
+  milestone_id uuid [not null, note: 'Soft ref to contract_milestones.milestone_id']
+  assigned_date timestamp [not null]
+  completed_date timestamp
+  notes text
+  specialist_response_reason text
+  specialist_responded_at timestamp
+  has_issue boolean [default: false, not null]
+  issue_reason text
+  issue_reported_at timestamp
+  studio_booking_id uuid [note: 'Soft ref to studio_bookings.booking_id']
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Task assignments - Extends BaseEntity'
+  
+  indexes {
+    contract_id
+    specialist_id
+    milestone_id
+    (milestone_id, contract_id)
+    status
+    task_type
+  }
+}
+
+Table revision_requests {
+  revision_request_id uuid [pk]
+  contract_id uuid [not null, note: 'Soft ref to contracts.contract_id']
+  milestone_id uuid [note: 'Soft ref to contract_milestones.milestone_id']
+  task_assignment_id uuid [note: 'Soft ref to task_assignments.assignment_id']
+  original_submission_id uuid [note: 'Soft ref to file_submissions.submission_id']
+  revised_submission_id uuid [note: 'Soft ref to file_submissions.submission_id']
+  customer_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  manager_id uuid [note: 'Soft ref to identity-service.users_auth']
+  specialist_id uuid [note: 'Soft ref to specialist-service.specialists']
+  title varchar(255) [not null]
+  description text [not null]
+  manager_note text
+  specialist_note text
+  paid_wallet_tx_id uuid [note: 'Soft ref to billing-service.wallet_transactions.wallet_tx_id']
+  revision_round integer [not null]
+  is_free_revision boolean [default: true, not null]
+  status revision_status [default: 'pending_manager_review', not null]
+  requested_at timestamp [not null]
+  manager_reviewed_at timestamp
+  revision_due_at timestamp
+  assigned_to_specialist_at timestamp
+  specialist_submitted_at timestamp
+  customer_confirmed_at timestamp
+  canceled_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Revision requests - Extends BaseEntity'
+  
+  indexes {
+    contract_id
+    milestone_id
+    task_assignment_id
+    original_submission_id
+    revised_submission_id
+    customer_id
+    manager_id
+    specialist_id
+    status
+    (task_assignment_id, revision_round)
+    paid_wallet_tx_id
+  }
+}
+
+Table file_submissions {
+  submission_id uuid [pk]
+  assignment_id uuid [not null, note: 'Soft ref to task_assignments.assignment_id']
+  revision_request_id uuid [note: 'Soft ref to revision_requests.revision_request_id']
+  submission_name varchar(255)
+  status submission_status [default: 'draft', not null]
+  created_by varchar(255) [not null, note: 'Soft ref to identity-service']
+  created_at timestamp [not null]
+  submitted_at timestamp
+  reviewed_by varchar(255) [note: 'Soft ref to identity-service']
+  reviewed_at timestamp
+  rejection_reason text
+  version integer
+  
+  Note: '[PROJECT SERVICE] File submissions - Does NOT extend BaseEntity'
+  
+  indexes {
+    assignment_id
+    revision_request_id
+    created_by
+    status
+    submitted_at
+  }
+}
+
+Table files {
+  file_id uuid [pk]
+  request_id uuid [note: 'Soft ref to request-service.service_requests']
+  assignment_id uuid [note: 'Soft ref to task_assignments.assignment_id']
+  submission_id uuid [note: 'Soft ref to file_submissions.submission_id']
+  booking_id uuid [note: 'Soft ref to studio_bookings.booking_id']
+  file_name varchar(255) [not null]
+  file_key_s3 varchar(500) [not null]
+  file_size bigint [not null]
+  mime_type varchar(100)
+  file_source file_source_type [not null]
+  content_type content_type [not null]
+  description text
+  upload_date timestamp [not null]
+  created_by uuid [not null, note: 'Soft ref to identity-service']
+  delivered_to_customer boolean [default: false, not null]
+  delivered_at timestamp
+  delivered_by uuid [note: 'Soft ref to identity-service']
+  file_status file_status [default: 'uploaded', not null]
+  rejection_reason text
+  reviewed_by uuid [note: 'Soft ref to identity-service']
+  reviewed_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  created_by_audit varchar(255)
+  updated_by_audit varchar(255)
+  
+  Note: '[PROJECT SERVICE] Files management'
+  
+  indexes {
+    request_id
+    assignment_id
+    submission_id
+    booking_id
+    file_source
+    content_type
+    created_by
+    upload_date
+    delivered_to_customer
+    file_status
+  }
+}
+
+Table contract_installments {
+  installment_id uuid [pk]
+  contract_id uuid [not null, note: 'Soft ref to contracts.contract_id']
+  type installment_type [not null, default: 'deposit']
+  milestone_id varchar(36) [note: 'Soft ref to contract_milestones.milestone_id']
+  label varchar(100) [not null]
+  percent decimal(5,2)
+  due_date timestamp
+  amount decimal(12,2) [not null]
+  currency currency_type [default: 'VND']
+  status installment_status [default: 'pending']
+  gate_condition gate_condition [default: 'before_start']
+  paid_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Payment installments - Extends BaseEntity'
+  
+  indexes {
+    contract_id
+    status
+    type
+    milestone_id
+  }
+}
+
+Table contract_sign_sessions {
+  session_id uuid [pk]
+  contract_id varchar(36) [not null, note: 'Soft ref to contracts.contract_id']
+  user_id varchar(36) [not null, note: 'Soft ref to identity-service.users_auth']
+  signature_temp_base64 text
+  otp_code varchar(10) [not null]
+  expire_at timestamp [not null]
+  attempt_count integer [default: 0, not null]
+  status sign_session_status [default: 'pending', not null]
+  created_at timestamp [not null]
+  updated_at timestamp
+  
+  Note: '[PROJECT SERVICE] E-signature sessions - Does NOT extend BaseEntity'
+  
+  indexes {
+    contract_id
+    user_id
+    expire_at
+    status
+  }
+}
+
+Table booking_artists {
+  booking_artist_id uuid [pk]
+  booking_id uuid [ref: > studio_bookings.booking_id, not null]
+  specialist_id uuid [not null, note: 'Soft ref to specialist-service.specialists']
+  role varchar(50)
+  is_primary boolean [default: false]
+  artist_fee decimal(12,2) [default: 0]
+  skill_id uuid [note: 'Soft ref to specialist-service.skills.skill_id']
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Booking artists - Extends BaseEntity'
+  
+  indexes {
+    booking_id
+    specialist_id
+    (booking_id, specialist_id) [unique]
+  }
+}
+
+Table booking_participants {
+  participant_id uuid [pk]
+  booking_id uuid [ref: > studio_bookings.booking_id, not null]
+  role_type session_role_type [not null]
+  performer_source performer_source [not null]
+  specialist_id varchar(36) [note: 'Soft ref to specialist-service.specialists']
+  skill_id varchar(36) [note: 'Soft ref to specialist-service.skills']
+  instrument_source instrument_source
+  equipment_id varchar(36) [note: 'Soft ref to equipment.equipment_id']
+  participant_fee decimal(12,2) [default: 0]
+  is_primary boolean [default: false]
+  notes text
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[PROJECT SERVICE] Booking participants - Extends BaseEntity'
+  
+  indexes {
+    booking_id
+    skill_id
+    specialist_id
+    equipment_id
+  }
+}
+
+// ============================================
+// BILLING SERVICE (billing_db)
+// ============================================
+
+Table wallets {
+  wallet_id uuid [pk]
+  user_id uuid [unique, not null, note: 'Soft ref to identity-service.users_auth']
+  balance decimal(14,2) [default: 0]
+  currency currency_type [default: 'VND']
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[BILLING SERVICE] User wallet - 1:1 với user'
+  
+  indexes {
+    user_id [unique]
+    currency
+  }
+}
+
+Table wallet_transactions {
+  wallet_tx_id uuid [pk]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  tx_type wallet_tx_type [not null]
+  amount decimal(14,2) [not null]
+  currency currency_type [default: 'VND']
+  balance_before decimal(14,2) [not null]
+  balance_after decimal(14,2) [not null]
+  metadata jsonb
+  contract_id uuid [note: 'Soft ref to project-service.contracts']
+  milestone_id uuid [note: 'Soft ref to project-service.contract_milestones']
+  submission_id uuid [note: 'Soft ref to project-service.file_submissions']
+  booking_id uuid [note: 'Soft ref to project-service.studio_bookings']
+  refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id, unique, note: '1:1 refund relationship']
+  created_at timestamp [not null]
+  
+  Note: '[BILLING SERVICE] Wallet transaction ledger - 1:N với wallets, 1:1 refund relationship'
+  
+  indexes {
+    wallet_id
+    tx_type
+    currency
+    contract_id
+    milestone_id
+    submission_id
+    booking_id
+    refund_of_wallet_tx_id
+    created_at
+  }
+}
+
+Table payment_orders {
+  payment_order_id uuid [pk]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  amount decimal(14,2) [not null]
+  currency currency_type [default: 'VND']
+  status payment_order_status [default: 'pending']
+  sepay_transaction_id varchar(255)
+  virtual_account varchar(255)
+  qr_code_url varchar(1000)
+  callback_data jsonb
+  description text
+  expires_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp
+  completed_at timestamp
+  
+  Note: '[BILLING SERVICE] Payment orders for topup - 1:N với wallets'
+  
+  indexes {
+    wallet_id
+    status
+    virtual_account
+    created_at
+  }
+}
+
+// ============================================
+// SPECIALIST SERVICE (specialist_db)
+// ============================================
+
+Table specialists {
+  specialist_id uuid [pk]
+  user_id uuid [unique, not null, note: 'Soft ref to identity-service.users_auth']
+  full_name_snapshot varchar(255)
+  email_snapshot varchar(255)
+  specialization specialist_type [not null]
+  status specialist_status [default: 'active']
+  experience_years integer [default: 0]
+  max_concurrent_tasks integer [default: 5]
+  portfolio_url varchar(255)
+  bio text
+  rating decimal(3,2) [default: 0]
+  total_projects integer [default: 0]
+  avatar_url varchar(500)
+  gender gender_type
+  recording_roles recording_role[] [note: 'Array for RECORDING_ARTIST']
+  genres text[] [note: 'Array of music genres']
+  credits text[] [note: 'Array of credits']
+  reviews integer [default: 0]
+  hourly_rate decimal(12,2) [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[SPECIALIST SERVICE] Specialist profiles'
+  
+  indexes {
+    user_id [unique]
+    specialization
+    status
+    gender
+  }
+}
+
+Table skills {
+  skill_id uuid [pk]
+  skill_name varchar(100) [unique, not null]
+  skill_type skill_type [not null]
+  recording_category recording_category
+  description text
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[SPECIALIST SERVICE] Skills catalog'
+  
+  indexes {
+    skill_name [unique]
+    is_active
+    skill_type
+    recording_category
+  }
+}
+
+Table specialist_skills {
+  specialist_skill_id uuid [pk]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  skill_id uuid [ref: > skills.skill_id, not null]
+  proficiency_level proficiency_level [not null]
+  years_experience integer [default: 0]
+  last_used_date date
+  is_certified boolean [default: false]
+  certification_details text
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[SPECIALIST SERVICE] Join table - Many-to-Many: Specialist ↔ Skill'
+  
+  indexes {
+    specialist_id
+    skill_id
+    proficiency_level
+    (specialist_id, skill_id) [unique]
+  }
+}
+
+Table artist_demos {
+  demo_id uuid [pk]
+  specialist_id uuid [ref: > specialists.specialist_id, not null]
+  title varchar(150)
+  description text
+  recording_role recording_role [not null]
+  skill_id uuid [ref: > skills.skill_id, note: 'Optional for VOCALIST, required for INSTRUMENT_PLAYER']
+  genres text[] [not null, note: 'Array of genres']
+  preview_url varchar(500) [not null]
+  is_public boolean [default: false]
+  is_main_demo boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[SPECIALIST SERVICE] Artist demos - 1:N với specialists, N:1 với skills (optional)'
+  
+  indexes {
+    specialist_id
+    is_public
+    skill_id
+    genres
+    recording_role
+  }
+}
+
+// ============================================
+// NOTIFICATION SERVICE (notification_db)
+// ============================================
+
+Table notifications {
+  notification_id uuid [pk]
+  user_id uuid [not null, note: 'Soft ref to identity-service.users_auth']
+  type notification_type [not null]
+  title varchar(255) [not null]
+  content text [not null]
+  reference_id uuid
+  reference_type varchar(50)
+  action_url varchar(500)
+  is_read boolean [default: false]
+  read_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[NOTIFICATION SERVICE] System notifications - Extends BaseEntity'
+  
+  indexes {
+    (user_id, created_at DESC)
+    (user_id, is_read)
+  }
+}
+
+// ============================================
+// CHAT SERVICE (chat_db)
+// ============================================
+
+Table chat_rooms {
+  room_id uuid [pk]
+  room_type room_type [not null]
+  context_id varchar(100) [not null, note: 'request_id, contract_id, or user_id pair']
+  room_name varchar(200)
+  description text
+  is_active boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[CHAT SERVICE] Chat rooms'
+  
+  indexes {
+    (room_type, context_id) [unique]
+    context_id
+  }
+}
+
+Table chat_participants {
+  participant_id uuid [pk]
+  room_id uuid [ref: > chat_rooms.room_id, not null]
+  user_id varchar(100) [not null, note: 'Soft ref to identity-service.users_auth']
+  user_name varchar(200)
+  role participant_role [not null]
+  joined_at timestamp [not null]
+  is_active boolean [default: true]
+  left_at timestamp
+  last_seen_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[CHAT SERVICE] Chat participants - 1:N với chat_rooms'
+  
+  indexes {
+    room_id
+    user_id
+    (room_id, user_id) [unique]
+  }
+}
+
+Table chat_messages {
+  message_id uuid [pk]
+  room_id uuid [ref: > chat_rooms.room_id, not null]
+  sender_id varchar(100) [not null, note: 'Soft ref to identity-service.users_auth']
+  sender_name varchar(200)
+  message_type message_type [not null]
+  content text
+  metadata jsonb
+  status message_status [not null]
+  context_type message_context_type [default: 'general']
+  context_id varchar(100) [note: 'milestoneId, submissionId, revisionRequestId']
+  sent_at timestamp [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: '[CHAT SERVICE] Chat messages - 1:N với chat_rooms'
+  
+  indexes {
+    (room_id, sent_at DESC)
+    sender_id
+    status
+    (context_type, context_id)
+  }
+}
+
+// ============================================
+// SHARED PATTERNS (Tất cả service đều có)
+// ============================================
+
+Table outbox_events {
+  event_id uuid [pk]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  trace_id text
+  correlation_id text
+  
+  Note: '[ALL SERVICES] Event publishing - Outbox Pattern (mỗi service có bảng riêng trong DB của mình)'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null]
+  
+  Note: '[ALL SERVICES] Idempotency - PK(event_id, consumer_name) (mỗi service có bảng riêng trong DB của mình)'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// ============================================
+// RELATIONSHIPS SUMMARY - TẤT CẢ MỐI QUAN HỆ
+// ============================================
+
+// ============================================
+// JPA RELATIONSHIPS (CÙNG SERVICE - CÓ FK)
+// ============================================
+
+// IDENTITY SERVICE (identity_db)
+// 1:1 - users_auth ↔ users (cùng user_id, không có FK)
+Ref: users_auth.user_id - users.user_id [note: '1:1 - Same user_id, no FK constraint']
+
+// REQUEST SERVICE (request_db)
+// 1:N - service_requests → request_notation_instruments
+Ref: service_requests.request_id - request_notation_instruments.request_id [note: '1:N - JPA @OneToMany']
+// 1:N - notation_instruments → request_notation_instruments
+Ref: notation_instruments.instrument_id - request_notation_instruments.instrument_id [note: '1:N - JPA @ManyToOne']
+// N:M - service_requests ↔ notation_instruments (qua request_notation_instruments)
+
+// PROJECT SERVICE (project_db)
+// 1:N - contracts → contract_milestones
+Ref: contracts.contract_id - contract_milestones.contract_id [note: '1:N - JPA @OneToMany']
+// 1:N - contracts → contract_installments
+Ref: contracts.contract_id - contract_installments.contract_id [note: '1:N - JPA @OneToMany']
+// 1:N - contracts → contract_sign_sessions
+Ref: contracts.contract_id - contract_sign_sessions.contract_id [note: '1:N - JPA @OneToMany']
+// 1:N - contracts → task_assignments
+Ref: contracts.contract_id - task_assignments.contract_id [note: '1:N - JPA @OneToMany']
+// 1:N - contracts → revision_requests
+Ref: contracts.contract_id - revision_requests.contract_id [note: '1:N - JPA @OneToMany']
+// 1:N - contract_milestones → task_assignments
+Ref: contract_milestones.milestone_id - task_assignments.milestone_id [note: '1:N - JPA @OneToMany']
+// 1:N - contract_milestones → contract_installments (optional)
+Ref: contract_milestones.milestone_id - contract_installments.milestone_id [note: '1:N - Soft ref, optional']
+// 1:N - task_assignments → file_submissions
+Ref: task_assignments.assignment_id - file_submissions.assignment_id [note: '1:N - JPA @OneToMany']
+// 1:N - task_assignments → files (via assignment_id)
+Ref: task_assignments.assignment_id - files.assignment_id [note: '1:N - Soft ref, optional']
+// 1:1 - revision_requests → file_submissions (original_submission_id)
+Ref: revision_requests.original_submission_id - file_submissions.submission_id [note: '1:1 - Soft ref']
+// 1:1 - revision_requests → file_submissions (revised_submission_id)
+Ref: revision_requests.revised_submission_id - file_submissions.submission_id [note: '1:1 - Soft ref']
+// 1:N - revision_requests → file_submissions (via revision_request_id)
+Ref: revision_requests.revision_request_id - file_submissions.revision_request_id [note: '1:N - Soft ref, optional']
+// 1:N - file_submissions → files (via submission_id)
+Ref: file_submissions.submission_id - files.submission_id [note: '1:N - Soft ref, optional']
+// 1:N - studios → studio_bookings
+Ref: studios.studio_id - studio_bookings.studio_id [note: '1:N - JPA @OneToMany']
+// 1:N - studio_bookings → booking_artists
+Ref: studio_bookings.booking_id - booking_artists.booking_id [note: '1:N - JPA @OneToMany']
+// 1:N - studio_bookings → booking_participants
+Ref: studio_bookings.booking_id - booking_participants.booking_id [note: '1:N - JPA @OneToMany']
+// 1:N - studio_bookings → booking_required_equipment
+Ref: studio_bookings.booking_id - booking_required_equipment.booking_id [note: '1:N - JPA @OneToMany']
+// 1:N - studio_bookings → files (via booking_id)
+Ref: studio_bookings.booking_id - files.booking_id [note: '1:N - Soft ref, optional']
+// 1:N - booking_participants → booking_required_equipment (optional)
+Ref: booking_participants.participant_id - booking_required_equipment.participant_id [note: '1:N - Soft ref, optional']
+// 1:N - equipment → skill_equipment_mapping
+Ref: equipment.equipment_id - skill_equipment_mapping.equipment_id [note: '1:N - JPA @OneToMany']
+// 1:N - equipment → booking_required_equipment
+Ref: equipment.equipment_id - booking_required_equipment.equipment_id [note: '1:N - JPA @OneToMany']
+// N:M - skills ↔ equipment (qua skill_equipment_mapping)
+
+// BILLING SERVICE (billing_db)
+// 1:1 - wallets ↔ users_auth (1 user = 1 wallet)
+Ref: wallets.user_id - users_auth.user_id [note: '1:1 - Soft ref, unique constraint']
+// 1:N - wallets → wallet_transactions
+Ref: wallets.wallet_id - wallet_transactions.wallet_id [note: '1:N - JPA @OneToMany']
+// 1:N - wallets → payment_orders
+Ref: wallets.wallet_id - payment_orders.wallet_id [note: '1:N - JPA @OneToMany']
+// 1:1 - wallet_transactions → wallet_transactions (refund relationship, unique)
+Ref: wallet_transactions.refund_of_wallet_tx_id - wallet_transactions.wallet_tx_id [note: '1:1 - JPA self-reference, unique constraint']
+
+// SPECIALIST SERVICE (specialist_db)
+// 1:1 - specialists ↔ users_auth (1 user = 1 specialist)
+Ref: specialists.user_id - users_auth.user_id [note: '1:1 - Soft ref, unique constraint']
+// 1:N - specialists → specialist_skills
+Ref: specialists.specialist_id - specialist_skills.specialist_id [note: '1:N - JPA @OneToMany']
+// 1:N - specialists → artist_demos
+Ref: specialists.specialist_id - artist_demos.specialist_id [note: '1:N - JPA @OneToMany']
+// 1:N - skills → specialist_skills
+Ref: skills.skill_id - specialist_skills.skill_id [note: '1:N - JPA @OneToMany']
+// 1:N - skills → artist_demos (optional)
+Ref: skills.skill_id - artist_demos.skill_id [note: '1:N - JPA @ManyToOne, optional']
+// N:M - specialists ↔ skills (qua specialist_skills)
+
+// CHAT SERVICE (chat_db)
+// 1:N - chat_rooms → chat_participants
+Ref: chat_rooms.room_id - chat_participants.room_id [note: '1:N - JPA @OneToMany']
+// 1:N - chat_rooms → chat_messages
+Ref: chat_rooms.room_id - chat_messages.room_id [note: '1:N - JPA @OneToMany']
+
+// ============================================
+// CROSS-SERVICE SOFT REFERENCES (KHÔNG CÓ FK)
+// ============================================
+
+// REQUEST SERVICE → IDENTITY SERVICE
+// 1:N - users_auth → service_requests (customer)
+Ref: service_requests.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → service_requests (manager)
+Ref: service_requests.manager_user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - users_auth → email_verifications
+Ref: email_verifications.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+
+// PROJECT SERVICE → IDENTITY SERVICE
+// 1:N - users_auth → contracts (customer)
+Ref: contracts.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → contracts (manager)
+Ref: contracts.manager_user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → studio_bookings
+Ref: studio_bookings.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → revision_requests (customer)
+Ref: revision_requests.customer_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → revision_requests (manager)
+Ref: revision_requests.manager_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - users_auth → task_assignments (via specialist_id → user_id)
+Ref: task_assignments.specialist_id - specialists.user_id [note: 'N:1 - Soft ref, indirect via specialist']
+
+// PROJECT SERVICE → REQUEST SERVICE
+// 1:1 - service_requests → contracts
+Ref: contracts.request_id - service_requests.request_id [note: '1:1 - Soft ref, no FK']
+// 1:1 - service_requests → studio_bookings (optional)
+Ref: studio_bookings.request_id - service_requests.request_id [note: '1:1 - Soft ref, no FK, optional']
+
+// PROJECT SERVICE → SPECIALIST SERVICE
+// 1:N - specialists → task_assignments
+Ref: task_assignments.specialist_id - specialists.specialist_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - specialists → revision_requests
+Ref: revision_requests.specialist_id - specialists.specialist_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - specialists → booking_artists
+Ref: booking_artists.specialist_id - specialists.specialist_id [note: 'N:1 - Soft ref, no FK']
+// N:M - skills ↔ equipment (qua skill_equipment_mapping)
+Ref: skill_equipment_mapping.skill_id - skills.skill_id [note: 'N:1 - Soft ref, no FK']
+
+// BILLING SERVICE → IDENTITY SERVICE
+// 1:1 - users_auth → wallets
+Ref: wallets.user_id - users_auth.user_id [note: '1:1 - Soft ref, unique constraint, no FK']
+
+// BILLING SERVICE → PROJECT SERVICE
+// 1:N - contracts → wallet_transactions
+Ref: wallet_transactions.contract_id - contracts.contract_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - contract_milestones → wallet_transactions
+Ref: wallet_transactions.milestone_id - contract_milestones.milestone_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - studio_bookings → wallet_transactions
+Ref: wallet_transactions.booking_id - studio_bookings.booking_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:N - file_submissions → wallet_transactions
+Ref: wallet_transactions.submission_id - file_submissions.submission_id [note: 'N:1 - Soft ref, no FK, optional']
+// 1:1 - wallet_transactions → revision_requests (paid_wallet_tx_id)
+Ref: revision_requests.paid_wallet_tx_id - wallet_transactions.wallet_tx_id [note: '1:1 - Soft ref, no FK, optional']
+
+// SPECIALIST SERVICE → IDENTITY SERVICE
+// 1:1 - users_auth → specialists
+Ref: specialists.user_id - users_auth.user_id [note: '1:1 - Soft ref, unique constraint, no FK']
+
+// CHAT SERVICE → IDENTITY SERVICE
+// 1:N - users_auth → chat_participants
+Ref: chat_participants.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+// 1:N - users_auth → chat_messages
+Ref: chat_messages.sender_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+
+// NOTIFICATION SERVICE → IDENTITY SERVICE
+// 1:N - users_auth → notifications
+Ref: notifications.user_id - users_auth.user_id [note: 'N:1 - Soft ref, no FK']
+
+// PROJECT SERVICE → PROJECT SERVICE (Internal soft refs)
+// 1:N - contracts → files (via file_id - Contract PDF)
+Ref: contracts.file_id - files.file_id [note: '1:1 - Soft ref, optional']
+// 1:N - service_requests → files (via request_id)
+Ref: service_requests.request_id - files.request_id [note: '1:N - Soft ref, optional']
+
+// ============================================
+// ENUMS
+// ============================================
+
+Enum user_role {
+  customer
+  manager
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+  system_admin
+}
+
+Enum service_type {
+  transcription
+  arrangement
+  arrangement_with_recording
+  recording
+}
+
+Enum request_status {
+  pending
+  contract_sent
+  contract_signed
+  approved
+  in_progress
+  completed
+  cancelled
+  rejected
+}
+
+Enum contract_type {
+  transcription
+  arrangement
+  arrangement_with_recording
+  recording
+}
+
+Enum contract_status {
+  draft
+  sent_to_customer
+  customer_reviewed
+  signed
+  expired
+  cancelled
+}
+
+Enum milestone_work_status {
+  planned
+  in_progress
+  completed
+  cancelled
+}
+
+Enum booking_status {
+  tentative
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+Enum studio_booking_context {
+  contract_recording
+  standalone_booking
+  pre_contract_hold
+}
+
+Enum recording_session_type {
+  vocal_only
+  instrument_only
+  both
+}
+
+Enum wallet_tx_type {
+  topup
+  payment
+  refund
+  withdrawal
+  adjustment
+  revision_fee
+}
+
+Enum payment_order_status {
+  pending
+  processing
+  completed
+  failed
+  expired
+  cancelled
+}
+
+Enum specialist_type {
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+}
+
+Enum specialist_status {
+  active
+  inactive
+  suspended
+}
+
+Enum skill_type {
+  transcription
+  arrangement
+  recording_artist
+}
+
+Enum recording_category {
+  vocal
+  instrument
+}
+
+Enum proficiency_level {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+Enum recording_role {
+  vocalist
+  instrument_player
+}
+
+Enum gender_type {
+  male
+  female
+  other
+}
+
+Enum notation_instrument_usage {
+  transcription
+  arrangement
+  both
+}
+
+Enum currency_type {
+  VND
+  USD
+  EUR
+}
+
+Enum unit_type {
+  per_minute
+  per_song
+  per_hour
+  fixed_price
+}
+
+Enum room_type {
+  request
+  contract
+  direct
+}
+
+Enum participant_role {
+  customer
+  manager
+  specialist
+  admin
+}
+
+Enum message_type {
+  text
+  image
+  file
+  system
+}
+
+Enum message_status {
+  sent
+  delivered
+  read
+  failed
+}
+
+Enum message_context_type {
+  general
+  milestone
+  submission
+  revision
+}
+
+Enum revision_status {
+  pending_manager_review
+  in_revision
+  waiting_manager_review
+  approved_pending_delivery
+  waiting_customer_confirm
+  completed
+  rejected
+  canceled
+}
+
+Enum notification_type {
+  task_assignment
+  project_update
+  payment_reminder
+  booking_confirmation
+  deadline_alert
+  system_announcement
+  contract_ready
+  contract_signed
+}
+
+Enum task_type {
+  transcription
+  arrangement
+  recording
+}
+
+Enum assignment_status {
+  assigned
+  accepted_waiting
+  ready_to_start
+  in_progress
+  ready_for_review
+  revision_requested
+  in_revision
+  delivery_pending
+  waiting_customer_review
+  completed
+  cancelled
+}
+
+Enum submission_status {
+  draft
+  pending_review
+  approved
+  rejected
+  delivered
+  customer_accepted
+}
+
+Enum file_source_type {
+  customer_upload
+  task_deliverable
+  studio_recording
+}
+
+Enum content_type {
+  audio
+  sheet_music
+  project_file
+  documentation
+  video
+  archive
+}
+
+Enum file_status {
+  uploaded
+  pending_review
+  approved
+  rejected
+  delivered
+  revision_requested
+}
+
+Enum installment_type {
+  deposit
+  milestone_payment
+  extra_revision
+}
+
+Enum installment_status {
+  pending
+  paid
+  overdue
+  cancelled
+}
+
+Enum gate_condition {
+  before_start
+  after_start
+  on_deliverable
+  on_completion
+}
+
+Enum sign_session_status {
+  pending
+  verified
+  expired
+  failed
+}
+
+Enum session_role_type {
+  vocal
+  instrument
+}
+
+Enum performer_source {
+  customer_self
+  internal_artist
+}
+
+Enum instrument_source {
+  studio_side
+  customer_side
+}
+
+Enum verification_channel {
+  email
+  sms
+}
+
+Enum verification_status {
+  pending
+  verified
+  expired
+  failed
+}
+

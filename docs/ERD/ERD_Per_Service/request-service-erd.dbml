@@ -34,16 +34,29 @@ Table service_requests {
   contact_phone varchar(20)
   contact_email varchar(100)
   
-  music_options jsonb
-  tempo_percentage decimal(5,2)
+  genres text[] [note: 'Array of genres (VD: ["Pop", "Rock"]) cho arrangement']
+  purpose varchar(100) [note: 'Mục đích (VD: "karaoke_cover", "performance") cho arrangement']
+  tempo_percentage decimal(5,2) [note: 'VD: 80.00, 50.00 (tốc độ phát cho transcription)']
   duration_minutes decimal(10,2) [note: 'Độ dài audio file (phút) - dùng để tính giá transcription']
-  has_vocalist boolean [default: false]
-  external_guest_count integer [default: 0]
+  has_vocalist boolean [default: false, note: 'Customer có chọn ca sĩ cho arrangement_with_recording']
+  preferred_specialists jsonb [note: 'Array of PreferredSpecialistInfo - danh sách specialist info mà customer chọn']
+  external_guest_count integer [default: 0, note: 'Số người customer mang theo cho studio booking']
   title varchar(200)
   description text [not null]
-  status request_status [default: 'pending']
+  status request_status [default: 'pending', not null]
   
-  Note: 'Yêu cầu dịch vụ từ khách hàng. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). duration_minutes: độ dài audio file (phút) - dùng để tính giá transcription. has_vocalist: true nếu customer chọn ca sĩ. music_options: NULL cho transcription. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
+  // Pricing
+  service_price decimal(12,2) [note: 'Giá dịch vụ cơ bản (không bao gồm instrument costs)']
+  instrument_price decimal(12,2) [note: 'Tổng giá instruments']
+  total_price decimal(12,2) [note: 'Tổng giá cuối cùng (servicePrice + instrumentPrice)']
+  currency currency_type [note: 'Loại tiền tệ của totalPrice']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: 'Yêu cầu dịch vụ từ khách hàng. Extends BaseEntity. tempo_percentage dùng cho transcription (80% = chậm 20%, 50% = chậm 50%). duration_minutes: độ dài audio file (phút) - dùng để tính giá transcription. has_vocalist: true nếu customer chọn ca sĩ. external_guest_count: số người customer mang theo cho studio booking. contact_*: thông tin cá nhân linh hoạt.'
   
   indexes {
     user_id
@@ -53,46 +66,18 @@ Table service_requests {
   }
 }
 
-Table request_booking_artists {
-  request_booking_artist_id uuid [pk, default: `gen_random_uuid()`]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  specialist_id uuid [not null, note: 'Soft reference to specialist-service']
-  role recording_role [not null]
-  skill_id uuid [note: 'Soft reference to specialist-service']
-  
-  Note: 'Nghệ sĩ customer chọn cho studio booking. Dùng cho luồng 2 (arrangement_with_recording) và luồng 3 (recording).'
-  
-  indexes {
-    request_id
-    specialist_id
-    (request_id, specialist_id, skill_id) [unique]
-    role
-    skill_id
-  }
-}
-
-Table request_booking_equipment {
-  request_booking_equipment_id uuid [pk, default: `gen_random_uuid()`]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  equipment_id uuid [ref: > equipment.equipment_id, not null]
-  quantity integer [default: 1]
-  
-  Note: 'Thiết bị customer chọn cho studio booking. Dùng cho luồng 2 (arrangement_with_recording) và luồng 3 (recording).'
-  
-  indexes {
-    request_id
-    equipment_id
-    (request_id, equipment_id) [unique]
-  }
-}
-
 Table request_notation_instruments {
   request_instrument_id uuid [pk, default: `gen_random_uuid()`]
   request_id uuid [ref: > service_requests.request_id, not null]
   instrument_id uuid [ref: > notation_instruments.instrument_id, not null]
+  is_main boolean [default: false, note: 'true nếu đây là main instrument (cho arrangement)']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
 
-  Note: 'Danh sách nhạc cụ ảo được chọn cho từng request. Dùng chủ yếu cho Arrangement (đa chọn). Luồng 1 Transcription giữ 1 nhạc cụ chính ở service_requests.requested_instrument_id.'
-
+  Note: 'Danh sách nhạc cụ ảo được chọn cho từng request. Dùng chủ yếu cho Arrangement (đa chọn). Many-to-Many: ServiceRequest ↔ NotationInstrument.'
+  
   indexes {
     request_id
     instrument_id
@@ -104,57 +89,20 @@ Table request_notation_instruments {
 Table notation_instruments {
   instrument_id uuid [pk, default: `gen_random_uuid()`]
   instrument_name varchar(100) [not null]
-  usage notation_instrument_usage [default: 'both']
+  usage notation_instrument_usage [not null, default: 'both']
   base_price bigint [default: 0, note: 'Giá cơ bản cho mỗi nhạc cụ (VND)']
   is_active boolean [default: true]
+  image varchar(500) [note: 'Public S3 URL']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
 
-  Note: 'Danh mục nhạc cụ ảo dùng trong ký âm/notation trên máy (không phải thiết bị thật)'
+  Note: 'Danh mục nhạc cụ ảo dùng trong ký âm/notation trên máy (không phải thiết bị thật). Extends BaseEntity.'
 
   indexes {
     instrument_name
     is_active
-  }
-}
-
-Table equipment {
-  equipment_id uuid [pk, default: `gen_random_uuid()`]
-  equipment_name varchar(100) [not null]
-  brand varchar(50)
-  model varchar(100)
-  description text
-  specifications jsonb
-  rental_fee decimal(12,2) [default: 0]
-  
-  total_quantity integer [default: 1]
-  maintenance_quantity integer [default: 0]
-  is_active boolean [default: true]
-  created_at timestamp [default: `now()`]
-  updated_at timestamp [default: `now()`]
-  
-  Note: 'Thiết bị cụ thể: Yamaha C3 Piano, Fender Stratocaster Guitar, Pearl Drum Kit, etc.'
-  
-  indexes {
-    equipment_name
-    brand
-    model
-    (brand, model) [unique]
-    is_active
-    total_quantity
-    maintenance_quantity
-  }
-}
-
-Table skill_equipment_mapping {
-  mapping_id uuid [pk, default: `gen_random_uuid()`]
-  skill_id uuid [not null, note: 'Soft reference to specialist-service']
-  equipment_id uuid [ref: > equipment.equipment_id, not null]
-  
-  Note: 'Mapping skill với equipment phù hợp. Customer tự chọn equipment từ danh sách này. VD: Piano skill → [Yamaha C3, Steinway Model D, Digital Piano]'
-  
-  indexes {
-    skill_id
-    equipment_id
-    (skill_id, equipment_id) [unique]
   }
 }
 
@@ -168,32 +116,15 @@ Table pricing_matrix {
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
   
-  Note: 'Bảng giá chuẩn theo service type và unit type'
+  Note: 'Bảng giá chuẩn theo service type và unit type. Extends BaseEntity.'
   
   indexes {
     service_type
     currency
     is_active
-  }
-}
-
-Table feedback {
-  feedback_id uuid [pk, default: `gen_random_uuid()`]
-  request_id uuid [ref: > service_requests.request_id, not null]
-  user_id uuid [not null, note: 'Soft reference to identity-service']
-  rating integer [not null]
-  comment text
-  feedback_type feedback_type [not null]
-  created_at timestamp [default: `now()`]
-  
-  Note: 'Phản hồi từ khách hàng về service request'
-  
-  indexes {
-    request_id
-    user_id
-    feedback_type
-    created_at
   }
 }
 
@@ -278,11 +209,4 @@ Enum currency_type {
   VND
   USD
   EUR
-}
-
-Enum feedback_type {
-  service_quality
-  communication
-  timeliness
-  overall_experience
 }

@@ -21,14 +21,19 @@
 Table users_auth {
   user_id uuid [pk, default: `gen_random_uuid()`]
   email varchar(100) [unique, not null]
-  password_hash varchar(255) [not null]
+  password_hash varchar(255)
   role user_role [not null]
   status varchar(20) [default: 'active']
   email_verified boolean [default: false]
+  auth_provider varchar(32) [default: 'LOCAL']
+  auth_provider_id varchar(128)
+  has_local_password boolean [default: true]
+  password_reset_token_hash varchar(255)
+  password_reset_token_expires_at timestamp
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Bảng xác thực người dùng - email, password, role, status'
+  Note: 'Bảng xác thực người dùng - email, password, role, status, OAuth support'
   
   indexes {
     email [unique]
@@ -39,15 +44,16 @@ Table users_auth {
 }
 
 Table users {
-  user_id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [pk, note: 'Same as users_auth.user_id - no FK, just same ID']
   full_name varchar(100) [not null]
   phone varchar(20)
   address text
+  avatar_url varchar(500)
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
   updated_at timestamp [default: `now()`]
   
-  Note: 'Thông tin hồ sơ người dùng - email được lấy từ users_auth'
+  Note: 'Thông tin hồ sơ người dùng - 1:1 với users_auth (cùng user_id, không có FK constraint)'
   
   indexes {
     is_active
@@ -77,6 +83,26 @@ Table outbox_events {
     event_type
     occurred_at
     (next_retry_at)
+  }
+}
+
+Table email_verifications {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [not null, note: 'Soft ref to users_auth.user_id']
+  otp_hash varchar(255) [not null]
+  channel varchar(50) [not null]
+  expires_at timestamp [not null]
+  status varchar(20) [not null]
+  resent_of uuid
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Email verification requests - 1:N với users_auth (soft ref)'
+  
+  indexes {
+    user_id
+    status
+    expires_at
   }
 }
 

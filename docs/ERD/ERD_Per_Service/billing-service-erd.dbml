@@ -23,14 +23,15 @@ Table wallets {
   user_id uuid [unique, not null, note: 'Soft reference to identity-service']
   balance decimal(14,2) [default: 0]
   currency currency_type [default: 'VND']
-  status wallet_status [default: 'active']
   created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
   
-  Note: 'Ví điện tử của người dùng. Mỗi user có 1 ví duy nhất.'
+  Note: 'Ví điện tử của người dùng. Mỗi user có 1 ví duy nhất. Extends BaseEntity.'
   
   indexes {
     user_id [unique]
-    status
     currency
   }
 }
@@ -49,11 +50,12 @@ Table wallet_transactions {
   contract_id uuid [note: 'Soft reference to project-service']
   milestone_id uuid [note: 'Soft reference to project-service - contract_milestones']
   booking_id uuid [note: 'Soft reference to project-service']
-  refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id]
+  submission_id uuid [note: 'Soft reference to project-service - file_submissions (optional, for revision fee tracking)']
+  refund_of_wallet_tx_id uuid [ref: > wallet_transactions.wallet_tx_id, unique, note: '1:1 refund relationship - unique constraint']
   
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: `now()`, not null]
   
-  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. Truy vết đến contract/milestone/booking để audit trail đầy đủ.'
+  Note: 'Sổ cái giao dịch ví. Ghi nhận mọi biến động số dư với balance_before/after để audit. Truy vết đến contract/milestone/booking để audit trail đầy đủ. Refund relationship là 1:1 (unique constraint).'
   
   indexes {
     wallet_id
@@ -71,15 +73,33 @@ Table wallet_transactions {
 // Đã được thay thế hoàn toàn bởi contract_milestones trong project-service
 // contract_milestones quản lý cả công việc và thanh toán trong cùng một entity
 
-// Table payments - NOT USED
-// Thông tin payment được lưu trong wallet_transactions.metadata (JSONB)
-// - Topup: metadata.payment_method = "sepay_qr", metadata.sepay_transaction_id, metadata.gateway_response
-// - Payment: metadata.payment_method = "wallet", đã có milestone_id trong wallet_transactions
-// 
-// Table payments {
-//   payment_id uuid [pk, default: `gen_random_uuid()`]
-//   ...
-// }
+Table payment_orders {
+  payment_order_id uuid [pk, default: `gen_random_uuid()`]
+  wallet_id uuid [ref: > wallets.wallet_id, not null]
+  amount decimal(14,2) [not null]
+  currency currency_type [default: 'VND']
+  status payment_order_status [default: 'pending']
+  sepay_transaction_id varchar(255)
+  virtual_account varchar(255)
+  qr_code_url varchar(1000)
+  callback_data jsonb
+  description text
+  expires_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp
+  completed_at timestamp
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: 'Payment orders for topup via SePay - 1:N với wallets'
+  
+  indexes {
+    wallet_id
+    status
+    virtual_account
+    created_at
+  }
+}
 
 Table outbox_events {
   event_id uuid [pk, default: `gen_random_uuid()`]
@@ -127,18 +147,22 @@ Enum currency_type {
   EUR
 }
 
-Enum wallet_status {
-  active
-  locked
-  closed
-}
-
 Enum wallet_tx_type {
   topup
   payment
   refund
   withdrawal
   adjustment
+  revision_fee
+}
+
+Enum payment_order_status {
+  pending
+  processing
+  completed
+  failed
+  expired
+  cancelled
 }
 
 Enum payment_method {

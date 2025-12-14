@@ -77,8 +77,8 @@ public class WalletTransaction {
     String bookingId;  // Soft reference to project-service
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "refund_of_wallet_tx_id")
-    WalletTransaction refundOfWalletTx;  // Reference to original transaction if this is a refund
+    @JoinColumn(name = "refund_of_wallet_tx_id", unique = true)
+    WalletTransaction refundOfWalletTx;  // Reference to original transaction if this is a refund (1-1 relationship)
 
     @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)

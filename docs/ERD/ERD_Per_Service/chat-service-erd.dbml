@@ -1,0 +1,162 @@
+// Chat Service ERD
+// Service: chat-service
+// Database: chat_db
+
+// API Examples:
+// POST /rooms
+//   - Body: { "room_type": "contract", "context_id": "contract-uuid", "room_name": "Contract Discussion" }
+//   - Response: { "room_id": "uuid", "room_name": "Contract Discussion" }
+//
+// POST /rooms/{id}/participants
+//   - Body: { "user_id": "uuid", "role": "customer" }
+//   - Response: { "participant_id": "uuid", "joined_at": "2024-01-15T10:30:00Z" }
+//
+// POST /rooms/{id}/messages
+//   - Body: { "content": "Hello", "message_type": "text" }
+//   - Response: { "message_id": "uuid", "sent_at": "2024-01-15T10:30:00Z" }
+//
+// Events: message.sent, message.delivered, message.read
+
+Table chat_rooms {
+  room_id uuid [pk, default: `gen_random_uuid()`]
+  room_type room_type [not null]
+  context_id varchar(100) [not null, note: 'request_id, contract_id, or user_id pair']
+  room_name varchar(200)
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[CHAT SERVICE] Chat rooms - Extends BaseEntity'
+  
+  indexes {
+    (room_type, context_id) [unique]
+    context_id
+  }
+}
+
+Table chat_participants {
+  participant_id uuid [pk, default: `gen_random_uuid()`]
+  room_id uuid [ref: > chat_rooms.room_id, not null]
+  user_id varchar(100) [not null, note: 'Soft ref to identity-service.users_auth']
+  user_name varchar(200) [note: 'Cached user name']
+  role participant_role [not null]
+  joined_at timestamp [not null]
+  is_active boolean [default: true]
+  left_at timestamp
+  last_seen_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[CHAT SERVICE] Chat participants - 1:N với chat_rooms. Extends BaseEntity'
+  
+  indexes {
+    room_id
+    user_id
+    (room_id, user_id) [unique]
+  }
+}
+
+Table chat_messages {
+  message_id uuid [pk, default: `gen_random_uuid()`]
+  room_id uuid [ref: > chat_rooms.room_id, not null]
+  sender_id varchar(100) [not null, note: 'Soft ref to identity-service.users_auth']
+  sender_name varchar(200) [note: 'Cached sender name']
+  message_type message_type [not null]
+  content text [note: 'Text content hoặc URL của file']
+  metadata jsonb [note: 'File metadata, image dimensions, etc.']
+  status message_status [not null]
+  context_type message_context_type [default: 'general']
+  context_id varchar(100) [note: 'milestoneId, submissionId, revisionRequestId']
+  sent_at timestamp [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[CHAT SERVICE] Chat messages - 1:N với chat_rooms. Extends BaseEntity'
+  
+  indexes {
+    (room_id, sent_at DESC)
+    sender_id
+    status
+    (context_type, context_id)
+  }
+}
+
+Table outbox_events {
+  event_id uuid [pk, default: `gen_random_uuid()`]
+  aggregate_id uuid [not null]
+  aggregate_type text [not null]
+  event_type text [not null]
+  event_payload jsonb [not null]
+  occurred_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  retry_count integer [not null, default: 0]
+  last_error text
+  next_retry_at timestamptz
+  
+  Note: '[CHAT SERVICE] Event publishing'
+  
+  indexes {
+    aggregate_id
+    aggregate_type
+    event_type
+    occurred_at
+    (next_retry_at)
+  }
+}
+
+Table consumed_events {
+  event_id uuid [not null]
+  consumer_name text [not null]
+  processed_at timestamptz [not null, default: `now()`]
+  
+  Note: '[CHAT SERVICE] Idempotency - PK(event_id, consumer_name), INSERT ... ON CONFLICT DO NOTHING'
+  
+  indexes {
+    (event_id, consumer_name) [unique, pk]
+    consumer_name
+    processed_at
+  }
+}
+
+// Enums
+Enum room_type {
+  request
+  contract
+  direct
+}
+
+Enum participant_role {
+  customer
+  manager
+  specialist
+  admin
+}
+
+Enum message_type {
+  text
+  image
+  file
+  system
+}
+
+Enum message_status {
+  sent
+  delivered
+  read
+  failed
+}
+
+Enum message_context_type {
+  general
+  milestone
+  submission
+  revision
+}
+

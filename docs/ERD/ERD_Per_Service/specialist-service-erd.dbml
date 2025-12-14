@@ -14,39 +14,61 @@
 
 Table specialists {
   specialist_id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null, note: 'Soft reference to identity-service']
+  user_id uuid [unique, not null, note: 'Soft reference to identity-service.users_auth']
+  full_name_snapshot varchar(255)
+  email_snapshot varchar(255)
   specialization specialist_type [not null]
+  status specialist_status [default: 'active']
   experience_years integer [default: 0]
-  
-  // Capacity management (simplified)
   max_concurrent_tasks integer [default: 5]
-  
-  // Professional info
   portfolio_url varchar(255)
+  bio text
   rating decimal(3,2) [default: 0.00]
   total_projects integer [default: 0]
   
-  Note: 'Thông tin chuyên gia - current_workload tính động qua view, không lưu để tránh lệch dữ liệu'
+  // RECORDING ARTIST SPECIFIC FIELDS
+  avatar_url varchar(500)
+  gender gender_type
+  recording_roles recording_role[] [note: 'Array for RECORDING_ARTIST']
+  genres text[] [note: 'Array of music genres']
+  credits text[] [note: 'Array of credits']
+  reviews integer [default: 0, note: 'Number of reviews (separate from total_projects)']
+  hourly_rate decimal(12,2) [default: 0, note: 'Hourly rate for recording artists (VND/hour)']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
+  
+  Note: '[SPECIALIST SERVICE] Specialist profiles - Extends BaseEntity'
   
   indexes {
     user_id [unique]
     specialization
-    max_concurrent_tasks
+    status
+    gender
   }
 }
 
 Table skills {
   skill_id uuid [pk, default: `gen_random_uuid()`]
-  skill_name varchar(100) [not null]
+  skill_name varchar(100) [unique, not null]
+  skill_type skill_type [not null]
+  recording_category recording_category [note: 'Optional - chỉ có giá trị khi skill_type = RECORDING_ARTIST']
   description text
   is_active boolean [default: true]
   created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
   
-  Note: 'Kỹ năng cụ thể: Piano, Guitar, Drums, Vocal, Audio Engineering, Logic Pro, etc.'
+  Note: '[SPECIALIST SERVICE] Skills catalog - Extends BaseEntity'
   
   indexes {
     skill_name [unique]
     is_active
+    skill_type
+    recording_category
   }
 }
 
@@ -78,28 +100,25 @@ Table artist_demos {
   specialist_id uuid [ref: > specialists.specialist_id, not null]
   title varchar(150)
   description text
-  skill_id uuid [ref: > skills.skill_id]
-  file_id uuid [not null, note: 'Soft reference to file-service']
-  preview_url varchar(500)
-  is_public boolean [default: true]
-  
-  // Enhanced fields
-  demo_order integer [default: 1]
-  is_featured boolean [default: false]
-  view_count integer [default: 0]
-  customer_rating decimal(3,2)
-  last_played_at timestamp
-  
+  recording_role recording_role [not null, note: 'VOCALIST hoặc INSTRUMENT_PLAYER (bắt buộc)']
+  skill_id uuid [ref: > skills.skill_id, note: 'Optional for VOCALIST, required for INSTRUMENT_PLAYER']
+  genres text[] [not null, note: 'Array of genres - bắt buộc, ít nhất 1 genre']
+  preview_url varchar(500) [not null, note: 'Public S3 URL - customer có thể xem/nghe trực tiếp']
+  is_public boolean [default: false, note: 'Specialist tự chọn public/private']
+  is_main_demo boolean [default: false, note: 'Demo chính - được hiển thị ở avatar trong trang list specialists']
   created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by varchar(255)
+  updated_by varchar(255)
   
-  Note: 'Demo để khách nghe thử giọng/nhạc cụ của nghệ sĩ trước khi booking. Enhanced với tracking và rating.'
+  Note: '[SPECIALIST SERVICE] Artist demos - 1:N với specialists, N:1 với skills (optional). Extends BaseEntity.'
   
   indexes {
     specialist_id
     is_public
     skill_id
-    is_featured
-    customer_rating
+    genres
+    recording_role
   }
 }
 
@@ -144,9 +163,26 @@ Table consumed_events {
 
 // Enums
 Enum specialist_type {
+  transcription_specialist
+  arrangement_specialist
+  recording_artist
+}
+
+Enum specialist_status {
+  active
+  inactive
+  suspended
+}
+
+Enum skill_type {
   transcription
   arrangement
-  recording
+  recording_artist
+}
+
+Enum recording_category {
+  vocal
+  instrument
 }
 
 Enum proficiency_level {
@@ -154,4 +190,15 @@ Enum proficiency_level {
   intermediate
   advanced
   expert
+}
+
+Enum recording_role {
+  vocalist
+  instrument_player
+}
+
+Enum gender_type {
+  male
+  female
+  other
 }
