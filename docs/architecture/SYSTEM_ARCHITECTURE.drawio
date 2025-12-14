@@ -1,0 +1,929 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0" scale="1" border="0" version="29.2.7">
+  <diagram name="Page-1" id="DKKIFMBHPiicJIy6DYPO">
+    <mxGraphModel dx="2937" dy="3204" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="1850" width="3410" x="60" y="-250" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;&lt;b style=&quot;&quot;&gt;&lt;i style=&quot;&quot;&gt;Mutrapro System Overview&lt;/i&gt;&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="230" x="1450" y="-240" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-128" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.456;entryY=0.017;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-111">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="-40" />
+            </Array>
+            <mxPoint x="900" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-11" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-128" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.6171" as="geometry">
+            <mxPoint x="-10" y="133" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-129" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.342;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-114">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="807" y="-10" />
+              <mxPoint x="807" y="330" />
+              <mxPoint x="807" y="330" />
+            </Array>
+            <mxPoint x="1040" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-6" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-129" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.704" y="-1" as="geometry">
+            <mxPoint x="-9" y="6" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-130" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.161;entryY=-0.039;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-116">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="938" y="20" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-3" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-130" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.6647" y="-2" as="geometry">
+            <mxPoint x="12" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-131" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-115">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2260" y="60" />
+              <mxPoint x="1080" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-23" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-131" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.67" y="-1" as="geometry">
+            <mxPoint x="10" y="17" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-132" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-112">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2320" y="110" />
+              <mxPoint x="1728" y="110" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-24" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-132" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.6458" y="1" as="geometry">
+            <mxPoint x="10" y="21" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-133" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-113">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2360" y="140" />
+              <mxPoint x="1871" y="140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-25" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-133" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.624" as="geometry">
+            <mxPoint x="9" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-134" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.118;entryY=-0.033;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-117">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2410" y="160" />
+              <mxPoint x="2060" y="160" />
+              <mxPoint x="2060" y="368" />
+            </Array>
+            <mxPoint x="2030" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-26" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-134" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.5796" y="-3" as="geometry">
+            <mxPoint x="-7" y="2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-1" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="redis-kafka-ws-chat-service">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2329" y="180" />
+              <mxPoint x="2005" y="180" />
+              <mxPoint x="2005" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-1-label" connectable="0" parent="redis-kafka-ws-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="REST(request)" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-request" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="250" />
+              <mxPoint x="1420" y="250" />
+              <mxPoint x="1420" y="210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-request-label" connectable="0" parent="redis-kafka-ws-kafka-request" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-identity" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;entryPerimeter=0;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1128" y="280" />
+              <mxPoint x="1520" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-identity-label" connectable="0" parent="redis-kafka-ws-kafka-identity" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-41" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-16">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2840" y="-40" />
+              <mxPoint x="2840" y="1140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-43" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-41" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Response (JSON)" vertex="1">
+          <mxGeometry relative="1" x="0.6409" y="-4" as="geometry">
+            <mxPoint x="-14" y="14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-42" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-126">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2880" y="-50" />
+              <mxPoint x="2880" y="1420" />
+              <mxPoint x="1670" y="1420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-44" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-42" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Response (JSON)" vertex="1">
+          <mxGeometry relative="1" x="0.3698" y="-1" as="geometry">
+            <mxPoint x="-5" y="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="API Gateway&lt;div&gt;(Spring Cloud Gateway)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="160" width="218" x="2220" y="-110" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-36" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-85">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1920" y="1020" />
+              <mxPoint x="1758" y="1020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-53" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-36" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Presigned URL&lt;div&gt;PUT/GET file&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.142" y="-1" as="geometry">
+            <mxPoint x="-12" y="11" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-37" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1933" y="1120" />
+              <mxPoint x="2810" y="1120" />
+              <mxPoint x="2810" y="-30" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Web App&lt;div&gt;(React SPA)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="1893" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-31" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.842;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-126">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1750" y="1250" />
+              <mxPoint x="1735" y="1250" />
+              <mxPoint x="1735" y="1230" />
+              <mxPoint x="1735" y="1230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-45" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-31" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Tương tác qua trình duyệt" vertex="1">
+          <mxGeometry relative="1" x="-0.4481" as="geometry">
+            <mxPoint x="10" y="9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-32" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-16">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1900" y="1210" />
+              <mxPoint x="1933" y="1210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-46" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-32" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Tương tác qua ứng dụng" vertex="1">
+          <mxGeometry relative="1" x="-0.5715" y="1" as="geometry">
+            <mxPoint x="31" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Người dùng&amp;nbsp;&lt;div&gt;(Customer / Manager / Specialist / Admin / Artist)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="293" x="1708" y="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-81" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#CC6600;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="140" width="770" x="1500" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-33" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-85" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-126">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-50" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-33" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=-90;" value="&lt;span id=&quot;docs-internal-guid-ca33cd5a-7fff-4ef5-6817-2841891f09f9&quot;&gt;&lt;span style=&quot;font-size: 11pt; font-family: Arial, sans-serif; color: rgb(0, 0, 0); background-color: transparent; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-alternates: normal; font-variant-position: normal; font-variant-emoji: normal; vertical-align: baseline; white-space: pre-wrap;&quot;&gt;response &lt;/span&gt;&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.2211" y="-1" as="geometry">
+            <mxPoint x="-9" y="-34" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-34" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-85" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.842;entryY=-0.007;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-16">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1770" y="1000" />
+              <mxPoint x="1960" y="1000" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-51" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-34" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;span id=&quot;docs-internal-guid-ca33cd5a-7fff-4ef5-6817-2841891f09f9&quot;&gt;&lt;span style=&quot;font-size: 11pt; font-family: Arial, sans-serif; color: rgb(0, 0, 0); background-color: transparent; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-alternates: normal; font-variant-position: normal; font-variant-emoji: normal; vertical-align: baseline; white-space: pre-wrap;&quot;&gt;response &lt;/span&gt;&lt;/span&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5777" y="-1" as="geometry">
+            <mxPoint x="-79" y="-53" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-85" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Media Storage&amp;nbsp;&lt;div&gt;(S3 / MinIO)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="1668" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-86" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Email" vertex="1">
+          <mxGeometry height="60" width="120" x="1813" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-87" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;OAuth Provider&lt;/div&gt;&lt;div&gt;(Google / SSO)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="1528" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-88" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Push Provider&lt;div&gt;(FCM / APNs)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="1960" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-107" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;i&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;Hệ thống bên ngoài&lt;/font&gt;&lt;/i&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="287" x="1808" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-111" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Request Service&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="610" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-144" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-112" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fillColor=#ffe6cc;strokeColor=#FF9933;entryX=0.831;entryY=0.048;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-85">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1770" y="830" />
+              <mxPoint x="1768" y="830" />
+            </Array>
+            <mxPoint x="1770" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-157" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-144" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Presigned URL&lt;div&gt;(S3 API)&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.029" y="-1" as="geometry">
+            <mxPoint y="74" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-112" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;File Service&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="1673" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-141" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-125">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1872" y="530" />
+              <mxPoint x="1872" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-145" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF9933;entryX=0.967;entryY=0.071;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-86">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1930" y="830" />
+              <mxPoint x="1929" y="830" />
+            </Array>
+            <mxPoint x="1930" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-158" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-145" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Email / SMS" vertex="1">
+          <mxGeometry relative="1" x="-0.101" y="-1" as="geometry">
+            <mxPoint x="-2" y="110" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-113" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;span style=&quot;font-size: 13px;&quot;&gt;Notification Service&lt;/span&gt;" vertex="1">
+          <mxGeometry height="60" width="117" x="1813" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-kafka-ws-chat-service" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Chat Service&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="1950" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-kafka-ws-redis" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Redis&lt;div&gt;(JWT Blacklist)&lt;/div&gt;&lt;div style=&quot;font-size: 10px;&quot;&gt;TTL = token expiry&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="1165" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Kafka&lt;div&gt;(Message Broker)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="130" x="1455" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-137" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-114" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-120">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="825" y="430" />
+              <mxPoint x="825" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-114" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Specialist Service&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="769.75" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="oauth-flow-1" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" target="5L3-qQeJW3Np8-SqjC85-87">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1913" y="1250" />
+              <mxPoint x="990" y="1250" />
+              <mxPoint x="990" y="910" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-1-label" connectable="0" parent="oauth-flow-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Redirect to OAuth&lt;div&gt;(OIDC - PKCE)&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-2" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-87" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-16">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="880" />
+              <mxPoint x="960" y="1270" />
+              <mxPoint x="1933" y="1270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-2-label" connectable="0" parent="oauth-flow-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="authorization_code" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-3" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=1.005;entryY=0.851;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2580" y="1170" />
+              <mxPoint x="2580" y="30" />
+              <mxPoint x="2439" y="30" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-3-label" connectable="0" parent="oauth-flow-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="POST /auth/outbound/authentication&lt;div&gt;?code=xxx&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-1" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-87">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="1170" />
+              <mxPoint x="1080" y="970" />
+              <mxPoint x="1588" y="970" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-1-label" connectable="0" parent="oauth-flow-mobile-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Redirect to OAuth&lt;div&gt;(OIDC - PKCE)&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-2" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-87" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=0.05;entryY=0.043;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-126">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1620" y="1120" />
+              <mxPoint x="1672" y="1120" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-2-label" connectable="0" parent="oauth-flow-mobile-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="authorization_code" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-3" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=1;entryY=0.75;entryDx=0;entryDy=0;exitX=1;exitY=0.25;exitDx=0;exitDy=0;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1748" y="1050" />
+              <mxPoint x="2680" y="1050" />
+              <mxPoint x="2680" y="10" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-mobile-3-label" connectable="0" parent="oauth-flow-mobile-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="POST /auth/outbound/authentication&lt;div&gt;?code=xxx&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-4" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF9933;entryX=0.175;entryY=0.083;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-87">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1550" y="380" />
+              <mxPoint x="1550" y="830" />
+              <mxPoint x="1549" y="830" />
+            </Array>
+            <mxPoint x="1550" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oauth-flow-4-label" connectable="0" parent="oauth-flow-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Exchange code&lt;div&gt;for tokens&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.111" as="geometry">
+            <mxPoint x="12" y="13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-18" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1106" y="90" />
+              <mxPoint x="2275" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-19" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-18" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.5721" as="geometry">
+            <mxPoint x="-40" y="60" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-redis-api-gateway" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;" target="redis-kafka-ws-redis">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1220" y="-50" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-redis-api-gateway-label" connectable="0" parent="redis-kafka-ws-redis-api-gateway" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Check JWT blacklist" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-redis-identity" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-115" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" target="redis-kafka-ws-redis">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1128" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-redis-identity-label" connectable="0" parent="redis-kafka-ws-redis-identity" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Store JWT blacklist" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-2" y="79" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-115" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font&gt;Identity Service&lt;/font&gt;&lt;div&gt;&lt;font&gt;(Auth / JWT / OIDC)&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="117" x="1070" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-2" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-116" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="970" y="30" />
+            </Array>
+            <mxPoint x="2220" y="30" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-4" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.6995" as="geometry">
+            <mxPoint x="10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-116" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Project Service&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="110" x="920.25" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-142" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-117" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-122">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2130" y="480" />
+              <mxPoint x="2130" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-148" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-117" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#FF9933;" target="5L3-qQeJW3Np8-SqjC85-147">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2060" y="800" />
+              <mxPoint x="2170" y="800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-160" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-148" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Create payment (REST)" vertex="1">
+          <mxGeometry relative="1" x="-0.6209" y="-1" as="geometry">
+            <mxPoint x="11" y="183" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-117" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Billing Service&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;(Payment / Wallet)&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="130" x="2045" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-118" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Request DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="620.25" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-120" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Specialist DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="780" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-121" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Project DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="920.25" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-122" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Billing DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="2090" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-123" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Identity DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="1083.75" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-124" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="File DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="1673" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-125" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Notification DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="1826.75" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-kafka-ws-chat-db" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="Chat DB" vertex="1">
+          <mxGeometry height="60" width="89.5" x="1980" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-project" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-116" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="975" y="320" />
+              <mxPoint x="1488" y="320" />
+              <mxPoint x="1488" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-project-label" connectable="0" parent="redis-kafka-ws-kafka-project" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish/Consume events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-120" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-project-consume" edge="1" parent="1" source="redis-kafka-ws-kafka" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="5L3-qQeJW3Np8-SqjC85-116">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1520" y="210" />
+              <mxPoint x="1520" y="320" />
+              <mxPoint x="975" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-project-consume-label" connectable="0" parent="redis-kafka-ws-kafka-project-consume" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Consume events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="120" y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-notification" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;strokeColor=#b85450;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1840" y="310" />
+              <mxPoint x="1553" y="310" />
+              <mxPoint x="1553" y="210" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-notification-label" connectable="0" parent="redis-kafka-ws-kafka-notification" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Consume events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="76" y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-chat" edge="1" parent="1" source="redis-kafka-ws-chat-service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.75;entryDx=0;entryDy=0;strokeColor=#b85450;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1990" y="250" />
+              <mxPoint x="1640" y="250" />
+              <mxPoint x="1640" y="195" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-chat-label" connectable="0" parent="redis-kafka-ws-kafka-chat" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish/Consume" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-billing" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-117" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" target="redis-kafka-ws-kafka">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2150" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-kafka-billing-label" connectable="0" parent="redis-kafka-ws-kafka-billing" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Publish/Consume events" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="-10" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-35" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1680" y="1011" />
+              <mxPoint x="1682" y="1011" />
+            </Array>
+            <mxPoint x="1682" y="1080" as="sourcePoint" />
+            <mxPoint x="1682" y="890" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-52" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-35" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=-90;" value="Presigned URL&lt;div&gt;PUT/GET file&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.0332" as="geometry">
+            <mxPoint x="-14" y="13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-38" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1630" y="1150" />
+              <mxPoint x="1630" y="1460" />
+              <mxPoint x="2940" y="1460" />
+              <mxPoint x="2940" y="-70" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-39" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-38" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTPS / REST (request)" vertex="1">
+          <mxGeometry relative="1" x="0.4174" y="-4" as="geometry">
+            <mxPoint x="-404" y="516" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-40" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-38" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTPS / REST (request)" vertex="1">
+          <mxGeometry relative="1" x="-0.3229" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-chat-web" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.959;entryY=0.964;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;strokeColor=#82b366;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2500" y="1210" />
+              <mxPoint x="2500" y="50" />
+              <mxPoint x="2429" y="50" />
+            </Array>
+            <mxPoint x="2013" y="1209.999999999999" as="sourcePoint" />
+            <mxPoint x="2369" y="50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-chat-web-label" connectable="0" parent="redis-kafka-ws-websocket-chat-web" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket (STOMP)&lt;div&gt;/api/v1/chat/ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-chat-mobile" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.75;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;strokeColor=#82b366;exitX=1;exitY=0.75;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2790" y="1160" />
+              <mxPoint x="2790" y="-20" />
+            </Array>
+            <mxPoint x="1748" y="1160" as="sourcePoint" />
+            <mxPoint x="2438" y="-20" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-chat-mobile-label" connectable="0" parent="redis-kafka-ws-websocket-chat-mobile" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket (STOMP)&lt;div&gt;/api/v1/chat/ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-notification-web" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.997;entryY=0.629;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;strokeColor=#82b366;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2770" y="1210" />
+              <mxPoint x="2770" y="-9" />
+              <mxPoint x="2437" y="-9" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-notification-web-label" connectable="0" parent="redis-kafka-ws-websocket-notification-web" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket (STOMP)&lt;div&gt;/api/v1/notifications/notifications-ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-notification-mobile" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-126" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#82b366;exitX=1.006;exitY=0.559;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1770" y="1175" />
+              <mxPoint x="1770" y="1070" />
+              <mxPoint x="2460" y="1070" />
+              <mxPoint x="2460" y="120" />
+              <mxPoint x="2390" y="120" />
+            </Array>
+            <mxPoint x="1733.4699999999996" y="1175.3599999999997" as="sourcePoint" />
+            <mxPoint x="2390" y="50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-websocket-notification-mobile-label" connectable="0" parent="redis-kafka-ws-websocket-notification-mobile" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket (STOMP)&lt;div&gt;/api/v1/notifications/notifications-ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-gateway-chat" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;strokeColor=#82b366;" target="redis-kafka-ws-chat-service">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2329" y="200" />
+              <mxPoint x="2005" y="200" />
+              <mxPoint x="2005" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-gateway-chat-label" connectable="0" parent="redis-kafka-ws-gateway-chat" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket Proxy&lt;div&gt;/ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-gateway-notification" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=8 8;strokeColor=#82b366;" target="5L3-qQeJW3Np8-SqjC85-113">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2329" y="200" />
+              <mxPoint x="1871.5" y="200" />
+              <mxPoint x="1871.5" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-gateway-notification-label" connectable="0" parent="redis-kafka-ws-gateway-notification" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="WebSocket Proxy&lt;div&gt;/notifications-ws&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-chat-db-conn" edge="1" parent="1" source="redis-kafka-ws-chat-service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="redis-kafka-ws-chat-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2005" y="480" />
+              <mxPoint x="2005" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-126" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Mobile App&lt;div&gt;(React Native)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="1668" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-136" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-118">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="490" />
+              <mxPoint x="665" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-138" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-116" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-121">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="965" y="520" />
+              <mxPoint x="965" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-139" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.289;entryY=0.032;entryDx=0;entryDy=0;entryPerimeter=0;" target="5L3-qQeJW3Np8-SqjC85-123">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1111" y="510" />
+              <mxPoint x="1110" y="510" />
+            </Array>
+            <mxPoint x="1110.46" y="410" as="sourcePoint" />
+            <mxPoint x="1110" y="600" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-140" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-112" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="5L3-qQeJW3Np8-SqjC85-124">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1730" y="480" />
+              <mxPoint x="1730" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-153" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-147" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#FF9933;" target="5L3-qQeJW3Np8-SqjC85-117">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2250" y="860" />
+              <mxPoint x="2250" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-154" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-153" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="POST /payments/webhook" vertex="1">
+          <mxGeometry relative="1" x="0.0583" y="-2" as="geometry">
+            <mxPoint x="-2" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-147" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Payment Gateway&amp;nbsp;&lt;div&gt;(Sepay / VNPay)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="2110" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-152" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF9933;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="5L3-qQeJW3Np8-SqjC85-88">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1990" y="400" />
+              <mxPoint x="1990" y="820" />
+              <mxPoint x="2020" y="820" />
+            </Array>
+            <mxPoint x="1918" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-159" connectable="0" parent="5L3-qQeJW3Np8-SqjC85-152" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Push tokens / send" vertex="1">
+          <mxGeometry relative="1" x="0.0088" y="-1" as="geometry">
+            <mxPoint y="68" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-167" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=light-dark(#0000FF,#66FFFF);strokeWidth=4;" value="" vertex="1">
+          <mxGeometry height="880" width="2100" x="-570" y="-1100" as="geometry" />
+        </mxCell>
+        <mxCell id="5L3-qQeJW3Np8-SqjC85-168" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;i&gt;&lt;font style=&quot;font-size: 16px;&quot;&gt;Backend&lt;/font&gt;&lt;/i&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="220" x="1455" y="-120" as="geometry" />
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-5" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-114" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1110" />
+              <mxPoint x="2220" />
+            </Array>
+            <mxPoint x="2220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-7" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-5" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.7389" y="1" as="geometry">
+            <mxPoint x="11" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-8" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="-30" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-10" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-8" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.6446" y="1" as="geometry">
+            <mxPoint x="11" y="101" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-15" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.917;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;dashPattern=8 8;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2069.5" y="170" />
+              <mxPoint x="2419.5" y="170" />
+            </Array>
+            <mxPoint x="2069.5" y="370" as="sourcePoint" />
+            <mxPoint x="2419.4060000000004" y="50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-22" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.5731" y="1" as="geometry">
+            <mxPoint x="11" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-16" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-113" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1910" y="150" />
+              <mxPoint x="2370" y="150" />
+            </Array>
+            <mxPoint x="2370" y="50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-21" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-16" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.5949" as="geometry">
+            <mxPoint x="10" y="18" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-17" edge="1" parent="1" source="5L3-qQeJW3Np8-SqjC85-112" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1770" y="120" />
+              <mxPoint x="2330" y="120" />
+              <mxPoint x="2330" y="50" />
+            </Array>
+            <mxPoint x="2330" y="50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-20" connectable="0" parent="p2r-A1ejnvWdKuEc_tlr-17" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="-0.5727" y="1" as="geometry">
+            <mxPoint x="14" y="48" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-chat-response" edge="1" parent="1" source="redis-kafka-ws-chat-service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;" target="5L3-qQeJW3Np8-SqjC85-15">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2005" y="150" />
+              <mxPoint x="2329" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="redis-kafka-ws-chat-response-label" connectable="0" parent="redis-kafka-ws-chat-response" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];rotation=90;" value="Response(JSON)" vertex="1">
+          <mxGeometry relative="1" x="0.5" y="-1" as="geometry">
+            <mxPoint x="10" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2r-A1ejnvWdKuEc_tlr-48" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;b&gt;&lt;i&gt;&lt;font style=&quot;font-size: 16px;&quot;&gt;Frontend&lt;/font&gt;&lt;/i&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="140" x="1748" y="1100" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="370" width="150" x="590" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="370" width="130" x="760" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="370" width="130" x="910.25" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="370" width="130" x="1063.5" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="300" width="130" x="1663" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="300" width="130" x="1808" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="300" width="170" x="2030" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ZRHDCH6IoM1glH0COxRE-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;" value="" vertex="1">
+          <mxGeometry height="300" width="130" x="1930" y="340" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
