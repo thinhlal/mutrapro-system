@@ -68,320 +68,115 @@
 
 ## 2.2 Installation Instruction
 
-### 2.2.1 Prerequisites
+### 2.2.1 Setting up Database
 
-Trước khi cài đặt, đảm bảo các điều kiện sau:
+Install PostgreSQL database by following the guidelines link: [Hướng dẫn tải, cài đặt PostgreSQL cực đơn giản, chi tiết](https://www.postgresql.org/download/)
 
-1. **Server (EC2):**
-   - Ubuntu 20.04 LTS trở lên
-   - Docker 20.10+ đã cài đặt
-   - Docker Compose 2.0+ đã cài đặt
-   - Port 80, 443 đã mở trong Security Group
+**Hoặc sử dụng Railway (Recommended):**
 
-2. **External Services:**
-   - Railway PostgreSQL databases (7 instances) - xem [RAILWAY_DATABASE_SETUP.md](./deployment/RAILWAY_DATABASE_SETUP.md)
-   - Redis Cloud instance
-   - AWS S3 bucket
-   - Gmail SMTP credentials
-   - Google OAuth credentials
+1. Truy cập https://railway.app và đăng ký tài khoản
+2. Tạo 7 PostgreSQL instances (mỗi service 1 database): `identity-db`, `project-db`, `billing-db`, `request-db`, `notification-db`, `specialist-db`, `chat-db`
+3. Lấy connection strings từ Railway dashboard và convert sang JDBC format: `jdbc:postgresql://host:port/database`
 
-3. **Docker Hub Account:**
-   - Tài khoản Docker Hub để push/pull images
+**Chi tiết:** Xem [RAILWAY_DATABASE_SETUP.md](./deployment/RAILWAY_DATABASE_SETUP.md)
 
 ---
 
-### 2.2.2 Installation Steps
+### 2.2.2. Setting up Backend API
 
-#### **Step 1: Setup Server Environment**
+Install Java JDK 21 by following the guidelines link: [Hướng dẫn tải và cài đặt Java JDK](https://www.oracle.com/java/technologies/downloads/)
 
-**1.1. Cài đặt Docker và Docker Compose (nếu chưa có):**
+**Hoặc sử dụng Maven Wrapper (đã có sẵn trong project):**
 
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
+1. **Go to mutrapro-system folder:**
+   ```
+   cd mutrapro-system
+   ```
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+2. **Config your database connection:**
 
-# Add user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
+   Mở file `application-dev.yml` của từng service và cấu hình database connection:
+   
+   Ví dụ: `backend/identity-service/src/main/resources/application-dev.yml`
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:postgresql://your-host:your-port/railway
+       username: postgres
+       password: your_password
+   ```
+   
+   Lặp lại cho tất cả 7 services: `identity-service`, `project-service`, `billing-service`, `request-service`, `notification-service`, `specialist-service`, `chat-service`
 
-# Verify installation
-docker --version
-docker compose version
-```
+3. **Run Project:**
 
-**1.2. Clone project repository:**
+   **Cách 1: Sử dụng Docker Compose (Recommended):**
+   ```bash
+   docker compose up -d kafka
+   docker compose up -d
+   ```
 
-```bash
-mkdir -p ~/projects
-cd ~/projects
-git clone https://github.com/<your-org>/mutrapro-system.git
-cd mutrapro-system
-```
+   **Cách 2: Chạy từng service bằng Maven:**
+   ```bash
+   cd backend/api-gateway
+   ./mvnw spring-boot:run
+   # ... mở terminal mới cho mỗi service
+   ```
 
----
-
-#### **Step 2: Configure Database (Railway)**
-
-**2.1. Setup Railway Databases:**
-
-Tham khảo hướng dẫn chi tiết tại: [RAILWAY_DATABASE_SETUP.md](./deployment/RAILWAY_DATABASE_SETUP.md)
-
-**Tóm tắt:**
-- Tạo 7 PostgreSQL instances trên Railway (mỗi service 1 database)
-- Lấy connection strings từ Railway dashboard
-- Lưu lại thông tin: `DATASOURCE_URL`, `USERNAME`, `PASSWORD`
-
----
-
-#### **Step 3: Configure Environment Variables**
-
-**3.1. Tạo file `.env`:**
-
-```bash
-cd ~/projects/mutrapro-system
-cp env.prod.example .env
-nano .env
-```
-
-**3.2. Điền các giá trị cần thiết:**
-
-```env
-# Docker Hub
-DOCKER_HUB_USERNAME=your-dockerhub-username
-
-# Database URLs (từ Railway)
-IDENTITY_DATASOURCE_URL=jdbc:postgresql://xxx.xxx:xxxxx/railway
-IDENTITY_DATASOURCE_USERNAME=postgres
-IDENTITY_DATASOURCE_PASSWORD=your_password
-# ... (tương tự cho 6 services còn lại)
-
-# Redis
-REDIS_HOST=redis-xxx.xxx.redis-cloud.com
-REDIS_PORT=11105
-REDIS_PASSWORD=your_redis_password
-
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-
-# JWT
-JWT_SECRET=your_super_secret_jwt_key
-
-# AWS S3
-AWS_S3_BUCKET_NAME=mutrapro-dev-files
-AWS_S3_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-
-# Mail
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_app_password
-MAIL_FROM_NAME=MuTraPro
-FRONTEND_URL=https://your-frontend-url
-
-# OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=https://your-frontend-url/authenticate
-
-# Application URLs (QUAN TRỌNG - điền sau khi có EC2 IP)
-API_BASE_URL=http://your-ec2-ip
-CORS_ALLOWED_ORIGINS=http://your-ec2-ip,https://your-frontend-url
-```
-
-**Lưu ý:** Xem file `env.prod.example` để biết đầy đủ các biến môi trường.
+4. **Test the project in the browser by going to the URL:**
+   - API Gateway Swagger: `http://localhost:8080/swagger-ui.html`
+   - Identity Service: `http://localhost:8081/swagger-ui.html`
+   - Project Service: `http://localhost:8082/swagger-ui.html`
+   - ... (tương tự cho các services khác)
 
 ---
 
-#### **Step 4: Build and Push Docker Images (Local Machine)**
+### 2.2.3. Setting up Web Application
 
-**4.1. Đăng nhập Docker Hub:**
+Download the latest version of NodeJS: [Download link](https://nodejs.org/)
 
-```bash
-docker login
-```
+1. **Go to frontend folder:**
+   ```
+   cd mutrapro-system/frontend
+   ```
 
-**4.2. Build và push tất cả services:**
+2. **Run `npm install` in the folder's terminal:**
+   ```bash
+   npm install
+   ```
 
-**Windows PowerShell:**
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1
-```
+3. **Run `npm run dev`:**
+   ```bash
+   npm run dev
+   ```
 
-**Linux/Mac:**
-```bash
-./scripts/build-and-push.sh
-```
+4. **Click on the provided link (the link can be different):**
+   ```
+   VITE v5.4.10 ready in 4586 ms
+   ➜  Local:   http://localhost:5173/
+   ```
 
-**Hoặc build từng service:**
-```bash
-# Ví dụ: API Gateway
-docker build -f backend/api-gateway/Dockerfile -t your-username/api-gateway:latest ./backend
-docker push your-username/api-gateway:latest
-```
-
-**Lưu ý:** Thay `your-username` bằng Docker Hub username của bạn.
+   Truy cập ứng dụng web tại: `http://localhost:5173/`
 
 ---
 
-#### **Step 5: Deploy on EC2**
+### 2.2.4 Setting up Mobile Application
 
-**5.1. Đăng nhập Docker Hub trên EC2 (nếu images là private):**
+1. **Install Expo CLI:**
+   ```bash
+   npm install -g expo-cli
+   ```
 
-```bash
-docker login
-```
+2. **Go to mobile folder và chạy:**
+   ```bash
+   cd mutrapro-system/mobile
+   npm install
+   npm start
+   ```
 
-**5.2. Pull images từ Docker Hub:**
+3. **Scan QR code:**
+   - Cài đặt **Expo Go** app trên điện thoại (iOS/Android)
+   - Mở app và scan QR code hiển thị trong terminal
+   - Hoặc chạy trên emulator/simulator
 
-```bash
-cd ~/projects/mutrapro-system
-docker compose -f docker-compose.prod.hub.yml pull
-```
-
-**5.3. Start tất cả services:**
-
-```bash
-docker compose -f docker-compose.prod.hub.yml up -d
-```
-
-**5.4. Kiểm tra trạng thái:**
-
-```bash
-# Xem status containers
-docker compose -f docker-compose.prod.hub.yml ps
-
-# Kiểm tra health
-curl http://localhost/actuator/health
-curl http://localhost:8080/actuator/health  # API Gateway
-```
-
----
-
-#### **Step 6: Configure AWS Security Group**
-
-**6.1. Mở ports trong AWS Console:**
-
-1. Vào **EC2 → Instances → chọn instance**
-2. Tab **Security → Security Groups → Inbound rules**
-3. Click **Edit inbound rules**
-4. Thêm rules:
-   - **Type:** `HTTP`, **Port:** `80`, **Source:** `0.0.0.0/0`
-   - **Type:** `HTTPS`, **Port:** `443`, **Source:** `0.0.0.0/0` (nếu có SSL)
-   - **Type:** `SSH`, **Port:** `22`, **Source:** `Your-IP/32` (bảo mật)
-
----
-
-#### **Step 7: Verify Installation**
-
-**7.1. Kiểm tra từ server:**
-
-```bash
-# Health check
-curl http://localhost/actuator/health
-
-# Xem logs
-docker compose -f docker-compose.prod.hub.yml logs -f
-```
-
-**7.2. Kiểm tra từ bên ngoài:**
-
-```bash
-# Từ máy local
-curl http://your-ec2-public-ip/actuator/health
-```
-
-**7.3. Truy cập qua trình duyệt:**
-
-```
-http://your-ec2-public-ip
-```
-
----
-
-### 2.2.3 Alternative: Local Build Deployment
-
-Nếu không dùng Docker Hub, có thể build trực tiếp trên EC2:
-
-```bash
-# Build và chạy
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml up -d
-```
-
-**Lưu ý:** Cần cài đặt Java JDK 17+ và Maven trên EC2 để build.
-
----
-
-### 2.2.4 Update Services
-
-Khi có code mới:
-
-**1. Trên Local - Build và Push:**
-```bash
-powershell -ExecutionPolicy Bypass -File scripts/build-and-push.ps1
-```
-
-**2. Trên EC2 - Pull và Restart:**
-```bash
-docker compose -f docker-compose.prod.hub.yml pull
-docker compose -f docker-compose.prod.hub.yml up -d
-```
-
----
-
-### 2.2.5 Useful Commands
-
-**Xem logs:**
-```bash
-docker compose -f docker-compose.prod.hub.yml logs -f
-docker compose -f docker-compose.prod.hub.yml logs -f api-gateway
-```
-
-**Restart service:**
-```bash
-docker compose -f docker-compose.prod.hub.yml restart api-gateway
-```
-
-**Stop services:**
-```bash
-docker compose -f docker-compose.prod.hub.yml stop
-docker compose -f docker-compose.prod.hub.yml down
-```
-
-**Xem resource usage:**
-```bash
-docker stats
-docker system df
-```
-
----
-
-### 2.2.6 Troubleshooting
-
-**Container không start:**
-```bash
-docker compose -f docker-compose.prod.hub.yml logs service-name
-docker inspect mutrapro-api-gateway
-```
-
-**Lỗi kết nối Database:**
-- Kiểm tra `*_DATASOURCE_URL` trong `.env`
-- Kiểm tra Railway Security Group cho phép EC2 IP
-
-**Lỗi kết nối Redis:**
-- Kiểm tra `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` trong `.env`
-- Kiểm tra Redis Cloud cho phép EC2 IP
-
----
-
-### 2.2.7 References
-
-- Chi tiết deploy: [EC2_DEPLOY_GUIDE.md](./deployment/EC2_DEPLOY_GUIDE.md)
-- Build và run: [EC2_BUILD_AND_RUN.md](./deployment/EC2_BUILD_AND_RUN.md)
-- Database setup: [RAILWAY_DATABASE_SETUP.md](./deployment/RAILWAY_DATABASE_SETUP.md)
+**Chi tiết:** Xem [SETUP.md](../../mobile/SETUP.md) và [GOOGLE_OAUTH_SETUP.md](../../mobile/GOOGLE_OAUTH_SETUP.md)
