@@ -26,6 +26,8 @@ II. Release Package & User Guides	4
 
 2.2 Installation Instruction	4
 
+2.3 Limitations & Exclusions	4
+
 3. User Manual	4
 
 3.1 Overview	4
@@ -265,6 +267,128 @@ sudo docker compose -f docker-compose.prod.yml up -d
    - Mở port 80 (HTTP)
    - Mở port 443 (HTTPS)
    - Mở port 22 (SSH) - chỉ cho phép IP của bạn
+
+---
+
+#### 2.3 Limitations & Exclusions
+
+##### **2.3.1 System Limitations**
+
+**Technical Limitations:**
+
+1. **Recording Session Management:**
+   - ❌ Reschedule recording session: Hệ thống chưa hỗ trợ tính năng reschedule (hoãn/đổi lịch) cho recording session. Trong trường hợp cần thay đổi lịch, Manager phải tạo booking mới.
+   - ❌ Automatic conflict detection: Hệ thống chưa tự động phát hiện xung đột lịch khi customer đặt nhiều booking cùng thời gian.
+
+2. **File Upload Limitations:**
+   - ⚠️ Maximum file size: 100MB per file
+   - ⚠️ Supported formats: 
+     - Audio: MP3, WAV, FLAC, OGG, M4A
+     - Notation: MusicXML, XML, MIDI, PDF
+   - ⚠️ Batch upload: Hỗ trợ upload nhiều files, nhưng không hỗ trợ upload folder structure
+
+3. **Payment Integration:**
+   - ⚠️ Payment gateway: Hiện tại chỉ hỗ trợ Sepay (VietQR). Chưa tích hợp với các payment gateway khác như VNPay, Momo, PayPal.
+   - ⚠️ Refund processing: Refund được xử lý thủ công bởi admin, chưa tự động hóa hoàn toàn.
+
+4. **Real-time Features:**
+   - ⚠️ Chat system: Sử dụng WebSocket, nhưng không hỗ trợ voice/video call trong ứng dụng.
+   - ⚠️ Notifications: Email notifications được gửi qua Gmail SMTP. Push notifications cho mobile app đang trong giai đoạn phát triển.
+
+5. **Scalability:**
+   - ⚠️ Database: Sử dụng PostgreSQL trên Railway (free tier có giới hạn). Production cần upgrade plan cao hơn.
+   - ⚠️ File Storage: Sử dụng AWS S3, có chi phí theo usage. Không có giới hạn storage trong code, nhưng phụ thuộc vào AWS account limits.
+
+**Functional Limitations:**
+
+1. **Workflow Limitations:**
+   - ⚠️ Revision process: Hệ thống hỗ trợ tối đa số lần revision được định nghĩa trong contract. Revision quá số lần quy định sẽ tính phí bổ sung.
+   - ⚠️ Milestone dependencies: Các milestones phải hoàn thành tuần tự, không thể skip hoặc thay đổi thứ tự.
+
+2. **Studio Booking:**
+   - ⚠️ Equipment availability: Hệ thống kiểm tra equipment availability dựa trên booking schedule, nhưng chưa có real-time inventory tracking.
+   - ⚠️ External guests: Chỉ hỗ trợ tracking số lượng external guests, không có quản lý chi tiết thông tin từng guest.
+
+3. **Specialist Management:**
+   - ⚠️ Skill matching: Hệ thống match specialist dựa trên skills, nhưng chưa có AI/recommendation engine để suggest specialist tốt nhất.
+   - ⚠️ Availability: Specialist phải manually update availability, chưa có auto-detect từ calendar integration.
+
+**Platform Limitations:**
+
+1. **Mobile Application:**
+   - ⚠️ iOS Support: iOS app đang trong giai đoạn beta, có thể có một số tính năng chưa hoàn thiện.
+   - ⚠️ Offline Mode: Mobile app không hỗ trợ offline mode. Cần kết nối internet để sử dụng.
+
+2. **Browser Compatibility:**
+   - ✅ Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+   - ❌ Internet Explorer: Không hỗ trợ
+   - ❌ Older browsers: Không hỗ trợ các trình duyệt cũ hơn phiên bản đã nêu
+
+##### **2.3.2 Exclusions (Out of Scope)**
+
+Các tính năng sau **KHÔNG được bao gồm** trong phiên bản hiện tại:
+
+1. **Advanced Features:**
+   - ❌ AI-powered music analysis và auto-transcription
+   - ❌ Real-time collaboration tools (multi-user editing)
+   - ❌ Music notation editor tích hợp trong web app
+   - ❌ Audio editing tools trong hệ thống
+   - ❌ Version control cho music files (git-like system)
+
+2. **Integration Features:**
+   - ❌ Calendar integration (Google Calendar, Outlook)
+   - ❌ CRM integration (Salesforce, HubSpot)
+   - ❌ Accounting software integration (QuickBooks, Xero)
+   - ❌ Social media integration (Facebook, Instagram)
+   - ❌ Music streaming platform integration (Spotify, Apple Music)
+
+3. **Advanced Analytics:**
+   - ❌ Business intelligence dashboard
+   - ❌ Revenue forecasting
+   - ❌ Customer behavior analytics
+   - ❌ Specialist performance metrics dashboard
+
+4. **Security & Compliance:**
+   - ❌ Two-factor authentication (2FA) - Chưa có trong phiên bản hiện tại
+   - ❌ SSO (Single Sign-On) integration
+   - ❌ GDPR compliance features (data export, right to be forgotten)
+   - ❌ SOC 2 compliance
+
+5. **Localization:**
+   - ⚠️ Multi-language: Hiện tại chỉ hỗ trợ tiếng Việt
+   - ❌ Multi-currency: Chỉ hỗ trợ VND
+
+6. **Mobile Features:**
+   - ❌ Mobile payment integration
+   - ❌ Mobile file preview (chỉ hỗ trợ download)
+   - ❌ Mobile push notifications (đang phát triển)
+
+##### **2.3.3 Known Issues**
+
+Một số vấn đề đã được xác định và đang được xử lý:
+
+1. **Performance:**
+   - ⚠️ Large file upload: Upload files lớn (>50MB) có thể mất thời gian, đặc biệt trên kết nối internet chậm.
+   - ⚠️ Search functionality: Tìm kiếm trên nhiều records (>1000) có thể chậm.
+
+2. **User Experience:**
+   - ⚠️ Error messages: Một số error messages chưa được localize đầy đủ, có thể hiển thị bằng tiếng Anh.
+   - ⚠️ Loading states: Một số thao tác chưa có loading indicator rõ ràng.
+
+3. **Data Consistency:**
+   - ⚠️ Event-driven architecture: Trong một số edge cases, có thể xảy ra eventual consistency delay giữa các services.
+
+##### **2.3.4 Future Roadmap**
+
+Các tính năng đang được lên kế hoạch cho các phiên bản tương lai:
+
+- ✅ Push notifications cho mobile app
+- ✅ Two-factor authentication (2FA)
+- ✅ Advanced analytics dashboard
+- ✅ Multi-language support (English)
+- ✅ Calendar integration
+- ✅ Improved file preview capabilities
+- ✅ Real-time inventory tracking cho studio equipment
 
 ---
 

@@ -1,0 +1,2321 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0" version="29.2.7" pages="4">
+  <diagram name="ScreenFlow01_Transcription" id="ScreenFlow01">
+    <mxGraphModel dx="3756" dy="1808" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="Start" vertex="1">
+          <mxGeometry height="39" width="60" x="570" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="homePage" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Home Page" vertex="1">
+          <mxGeometry height="54" width="139" x="531" y="89" as="geometry" />
+        </mxCell>
+        <mxCell id="login" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Login" vertex="1">
+          <mxGeometry height="54" width="98" x="472" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="register" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Register" vertex="1">
+          <mxGeometry height="54" width="118" x="620" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="loginSuccessful" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Login Successful?" vertex="1">
+          <mxGeometry height="170" width="170" x="515" y="297" as="geometry" />
+        </mxCell>
+        <mxCell id="customerDashboard" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer Dashboard" vertex="1">
+          <mxGeometry height="54" width="207" x="104" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDashboard" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Dashboard" vertex="1">
+          <mxGeometry height="54" width="199" x="453" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistDashboard" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Specialist Dashboard" vertex="1">
+          <mxGeometry height="54" width="208" x="1067" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="createTranscriptionRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Transcription Request" vertex="1">
+          <mxGeometry height="78" width="260" x="80" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadAudioModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Audio Modal" vertex="1">
+          <mxGeometry height="39" width="208" x="106" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="selectNotationInstrument" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Notation Instrument" vertex="1">
+          <mxGeometry height="54" width="254" x="182" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="enterContactInfo" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Enter Contact Information" vertex="1">
+          <mxGeometry height="54" width="248" x="106" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="submitRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Submit Request" vertex="1">
+          <mxGeometry height="54" width="171" x="354" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="requestPending" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Pending" vertex="1">
+          <mxGeometry height="54" width="177" x="121.5" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Request" vertex="1">
+          <mxGeometry height="54" width="156" x="544" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="assignRequestToSelf" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Assign Request to Self" vertex="1">
+          <mxGeometry height="54" width="200" x="544" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="requestDetail" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Detail" vertex="1">
+          <mxGeometry height="54" width="164" x="498.5" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="createContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Contract" vertex="1">
+          <mxGeometry height="54" width="175" x="625" y="962" as="geometry" />
+        </mxCell>
+        <mxCell id="contractDetailModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Contract Detail Modal" vertex="1">
+          <mxGeometry height="39" width="226" x="553" y="1062" as="geometry" />
+        </mxCell>
+        <mxCell id="setSLA" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Set SLA" vertex="1">
+          <mxGeometry height="54" width="113" x="644" y="1162" as="geometry" />
+        </mxCell>
+        <mxCell id="calculatePricing" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Calculate Pricing" vertex="1">
+          <mxGeometry height="54" width="181" x="481.5" y="1262" as="geometry" />
+        </mxCell>
+        <mxCell id="sendContractToCustomer" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Send Contract to Customer" vertex="1">
+          <mxGeometry height="54" width="254" x="573.5" y="1362" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View Contract" vertex="1">
+          <mxGeometry height="54" width="234" x="436" y="1462" as="geometry" />
+        </mxCell>
+        <mxCell id="viewContractModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View Contract Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="604" y="1572" as="geometry" />
+        </mxCell>
+        <mxCell id="approveContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Approve Contract" vertex="1">
+          <mxGeometry height="54" width="180" x="411" y="1662" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptContract" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Accept Contract?" vertex="1">
+          <mxGeometry height="176" width="176" x="401" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="signContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Sign Contract" vertex="1">
+          <mxGeometry height="54" width="156" x="703" y="1884" as="geometry" />
+        </mxCell>
+        <mxCell id="requestChangeContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Request Change Contract" vertex="1">
+          <mxGeometry height="54" width="220" x="154" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelContract" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cancel Contract" vertex="1">
+          <mxGeometry height="54" width="173" x="154" y="1862" as="geometry" />
+        </mxCell>
+        <mxCell id="depositPaymentModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deposit Payment Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="504" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="walletBalanceSufficient" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Wallet Balance Sufficient?" vertex="1">
+          <mxGeometry height="170" width="200" x="654" y="2023" as="geometry" />
+        </mxCell>
+        <mxCell id="topUpWallet" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Top Up Wallet" vertex="1">
+          <mxGeometry height="54" width="180" x="453" y="2166" as="geometry" />
+        </mxCell>
+        <mxCell id="processDepositPayment" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Deposit Payment" vertex="1">
+          <mxGeometry height="54" width="237" x="625" y="2255.5" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActivePending" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (active_pending_assignment)" vertex="1">
+          <mxGeometry height="54" width="300" x="531" y="2338" as="geometry" />
+        </mxCell>
+        <mxCell id="managerAssignSpecialist" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Assign Specialist" vertex="1">
+          <mxGeometry height="54" width="241" x="710" y="2420" as="geometry" />
+        </mxCell>
+        <mxCell id="selectSpecialist" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Specialist" vertex="1">
+          <mxGeometry height="54" width="177" x="528.5" y="2510" as="geometry" />
+        </mxCell>
+        <mxCell id="assignTaskModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Assign Task Modal" vertex="1">
+          <mxGeometry height="39" width="190" x="710" y="2584" as="geometry" />
+        </mxCell>
+        <mxCell id="taskAssigned" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Assigned" vertex="1">
+          <mxGeometry height="54" width="156" x="554" y="2684" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistAcceptTask" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Accept Task" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2784" as="geometry" />
+        </mxCell>
+        <mxCell id="managerStartWork" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Start Work" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2884" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActive" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (status: active)" vertex="1">
+          <mxGeometry height="54" width="250" x="529" y="2984" as="geometry" />
+        </mxCell>
+        <mxCell id="viewAssignedTask" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Assigned Task" vertex="1">
+          <mxGeometry height="54" width="194" x="854" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="taskDetail" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Detail" vertex="1">
+          <mxGeometry height="54" width="138" x="882" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistStartTask" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Start Task" vertex="1">
+          <mxGeometry height="54" width="200" x="882" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadAudioFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Download Audio File" vertex="1">
+          <mxGeometry height="54" width="205" x="837" y="966" as="geometry" />
+        </mxCell>
+        <mxCell id="performTranscription" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Perform Transcription" vertex="1">
+          <mxGeometry height="54" width="215" x="832" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadNotationModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Notation Modal" vertex="1">
+          <mxGeometry height="39" width="234" x="823" y="1182" as="geometry" />
+        </mxCell>
+        <mxCell id="fileUploaded" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Uploaded" vertex="1">
+          <mxGeometry height="54" width="159" x="860" y="1270" as="geometry" />
+        </mxCell>
+        <mxCell id="submitFilesForReview" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Submit Files for Review" vertex="1">
+          <mxGeometry height="54" width="220" x="860" y="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review File" vertex="1">
+          <mxGeometry height="54" width="206" x="836" y="1470" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewFileModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="842" y="1594" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmission" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Approve Submission?" vertex="1">
+          <mxGeometry height="158" width="158" x="860" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmissionAction" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Approve Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1286" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="rejectSubmission" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Reject Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="842" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="fileApproved" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Approved" vertex="1">
+          <mxGeometry height="54" width="158" x="1391" y="1802" as="geometry" />
+        </mxCell>
+        <mxCell id="fileRejected" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Rejected" vertex="1">
+          <mxGeometry height="54" width="155" x="1082" y="1840" as="geometry" />
+        </mxCell>
+        <mxCell id="enterRejectionReasonModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Enter Rejection Reason Modal" vertex="1">
+          <mxGeometry height="63" width="277" x="1052.5" y="1548" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistViewRejectionReason" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist View Rejection Reason" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1670" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistFixAndResubmit" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Fix and Resubmit Files" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1540" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDeliverFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Deliver File" vertex="1">
+          <mxGeometry height="54" width="207" x="1385" y="1902" as="geometry" />
+        </mxCell>
+        <mxCell id="deliverFileModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deliver File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="1116" y="2022" as="geometry" />
+        </mxCell>
+        <mxCell id="fileDeliveredToCustomer" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Delivered to Customer" vertex="1">
+          <mxGeometry height="54" width="252" x="1256" y="2112" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View File" vertex="1">
+          <mxGeometry height="54" width="198" x="1124" y="2212" as="geometry" />
+        </mxCell>
+        <mxCell id="viewFileModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View File Modal" vertex="1">
+          <mxGeometry height="39" width="175" x="1145" y="2309.5" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptSubmission" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Accept Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1123" y="2373" as="geometry" />
+        </mxCell>
+        <mxCell id="customerSatisfied" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Customer Satisfied?" vertex="1">
+          <mxGeometry height="194" width="194" x="1124" y="2450" as="geometry" />
+        </mxCell>
+        <mxCell id="requestFinalPayment" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Final Payment" vertex="1">
+          <mxGeometry height="54" width="223" x="1266" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="createRevisionRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Revision Request" vertex="1">
+          <mxGeometry height="54" width="232" x="971" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionRequestModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Request Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="969" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionPending" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Revision Pending" vertex="1">
+          <mxGeometry height="54" width="179" x="998" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewRevision" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review Revision" vertex="1">
+          <mxGeometry height="54" width="238" x="968" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewRevisionModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review Revision Modal" vertex="1">
+          <mxGeometry height="39" width="231" x="972" y="3048" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionApproved" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Approved?" vertex="1">
+          <mxGeometry height="190" width="190" x="993" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="managerApproveRevision" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Approve Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="1605" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="managerRejectRevision" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Manager Reject Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="993" y="3397" as="geometry" />
+        </mxCell>
+        <mxCell id="freeRevisionAvailable" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Free Revision Available?" vertex="1">
+          <mxGeometry height="224" width="224" x="1530" y="2474" as="geometry" />
+        </mxCell>
+        <mxCell id="payRevisionFeeModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Pay Revision Fee Modal" vertex="1">
+          <mxGeometry height="39" width="236" x="1530" y="2770" as="geometry" />
+        </mxCell>
+        <mxCell id="processRevisionPayment" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Revision Payment" vertex="1">
+          <mxGeometry height="54" width="242" x="1530" y="2870" as="geometry" />
+        </mxCell>
+        <mxCell id="finalPaymentModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Final Payment Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="1266" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="processFinalPayment" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Final Payment" vertex="1">
+          <mxGeometry height="54" width="219" x="1265" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="contractCompleted" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Completed" vertex="1">
+          <mxGeometry height="54" width="205" x="1272" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceFeedbackModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Service Feedback Modal" vertex="1">
+          <mxGeometry height="39" width="244" x="1253" y="3048" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="End" vertex="1">
+          <mxGeometry height="39" width="51" x="1349" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" edge="1" parent="1" source="start" target="homePage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" edge="1" parent="1" source="homePage" target="login">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" edge="1" parent="1" source="homePage" target="register">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" edge="1" parent="1" source="login" target="loginSuccessful">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" edge="1" parent="1" source="register" target="loginSuccessful">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" edge="1" parent="1" source="loginSuccessful" target="customerDashboard" value="Customer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" edge="1" parent="1" source="loginSuccessful" target="managerDashboard" value="Manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge8" edge="1" parent="1" source="loginSuccessful" target="specialistDashboard" value="Specialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge9" edge="1" parent="1" source="customerDashboard" target="createTranscriptionRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge10" edge="1" parent="1" source="createTranscriptionRequest" target="uploadAudioModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge11" edge="1" parent="1" source="uploadAudioModal" target="selectNotationInstrument">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge12" edge="1" parent="1" source="selectNotationInstrument" target="enterContactInfo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge13" edge="1" parent="1" source="enterContactInfo" target="submitRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge14" edge="1" parent="1" source="submitRequest" target="requestPending">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge15" edge="1" parent="1" source="managerDashboard" target="viewRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge16" edge="1" parent="1" source="viewRequest" target="assignRequestToSelf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge17" edge="1" parent="1" source="assignRequestToSelf" target="requestDetail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge18" edge="1" parent="1" source="requestDetail" target="createContract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge19" edge="1" parent="1" source="createContract" target="contractDetailModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge20" edge="1" parent="1" source="contractDetailModal" target="setSLA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge21" edge="1" parent="1" source="setSLA" target="calculatePricing">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge22" edge="1" parent="1" source="calculatePricing" target="sendContractToCustomer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge23" edge="1" parent="1" source="sendContractToCustomer" target="customerViewContract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge24" edge="1" parent="1" source="customerViewContract" target="viewContractModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge25" edge="1" parent="1" source="viewContractModal" target="approveContract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge26" edge="1" parent="1" source="approveContract" target="acceptContract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge27" edge="1" parent="1" source="acceptContract" target="signContract" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge28" edge="1" parent="1" source="acceptContract" target="requestChangeContract" value="Request Change">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge29" edge="1" parent="1" source="acceptContract" target="cancelContract" value="Cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge30" edge="1" parent="1" source="signContract" target="depositPaymentModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge31" edge="1" parent="1" source="depositPaymentModal" target="walletBalanceSufficient">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge32" edge="1" parent="1" source="walletBalanceSufficient" target="processDepositPayment" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge33" edge="1" parent="1" source="walletBalanceSufficient" target="topUpWallet" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge34" edge="1" parent="1" source="topUpWallet" target="processDepositPayment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge35" edge="1" parent="1" source="processDepositPayment" target="contractActivePending">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge36" edge="1" parent="1" source="contractActivePending" target="managerAssignSpecialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge37" edge="1" parent="1" source="managerAssignSpecialist" target="selectSpecialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge38" edge="1" parent="1" source="selectSpecialist" target="assignTaskModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge39" edge="1" parent="1" source="assignTaskModal" target="taskAssigned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge40" edge="1" parent="1" source="taskAssigned" target="specialistAcceptTask">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge41" edge="1" parent="1" source="specialistAcceptTask" target="managerStartWork">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge42" edge="1" parent="1" source="managerStartWork" target="contractActive">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge43" edge="1" parent="1" source="specialistDashboard" target="viewAssignedTask">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge44" edge="1" parent="1" source="viewAssignedTask" target="taskDetail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge45" edge="1" parent="1" source="taskDetail" target="specialistStartTask">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge46" edge="1" parent="1" source="specialistStartTask" target="downloadAudioFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge47" edge="1" parent="1" source="downloadAudioFile" target="performTranscription">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge48" edge="1" parent="1" source="performTranscription" target="uploadNotationModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge49" edge="1" parent="1" source="uploadNotationModal" target="fileUploaded">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge50" edge="1" parent="1" source="fileUploaded" target="submitFilesForReview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge51" edge="1" parent="1" source="submitFilesForReview" target="managerReviewFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge52" edge="1" parent="1" source="managerReviewFile" target="reviewFileModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge53" edge="1" parent="1" source="reviewFileModal" target="approveSubmission">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge54" edge="1" parent="1" source="approveSubmission" target="approveSubmissionAction" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge55" edge="1" parent="1" source="approveSubmission" target="rejectSubmission" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge56" edge="1" parent="1" source="approveSubmissionAction" target="fileApproved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge57" edge="1" parent="1" source="fileApproved" target="managerDeliverFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge58" edge="1" parent="1" source="managerDeliverFile" target="deliverFileModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge59" edge="1" parent="1" source="deliverFileModal" target="fileDeliveredToCustomer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge60" edge="1" parent="1" source="fileDeliveredToCustomer" target="customerViewFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge61" edge="1" parent="1" source="customerViewFile" target="viewFileModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge62" edge="1" parent="1" source="viewFileModal" target="acceptSubmission">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge63" edge="1" parent="1" source="acceptSubmission" target="customerSatisfied">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge64" edge="1" parent="1" source="customerSatisfied" target="requestFinalPayment" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge65" edge="1" parent="1" source="customerSatisfied" target="createRevisionRequest" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge66" edge="1" parent="1" source="createRevisionRequest" target="revisionRequestModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge67" edge="1" parent="1" source="revisionRequestModal" target="revisionPending">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge68" edge="1" parent="1" source="revisionPending" target="managerReviewRevision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge69" edge="1" parent="1" source="managerReviewRevision" target="reviewRevisionModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge70" edge="1" parent="1" source="reviewRevisionModal" target="revisionApproved">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge71" edge="1" parent="1" source="revisionApproved" target="managerApproveRevision" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge72" edge="1" parent="1" source="revisionApproved" target="managerRejectRevision" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge73" edge="1" parent="1" source="rejectSubmission" target="fileRejected">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge74" edge="1" parent="1" source="fileRejected" style="exitX=0.517;exitY=0.098;exitDx=0;exitDy=0;exitPerimeter=0;" target="enterRejectionReasonModal">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1180" y="1810" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge75" edge="1" parent="1" source="enterRejectionReasonModal" target="specialistViewRejectionReason">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge76" edge="1" parent="1" source="specialistViewRejectionReason" target="specialistFixAndResubmit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge77" edge="1" parent="1" source="specialistFixAndResubmit" target="uploadNotationModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge78" edge="1" parent="1" source="requestFinalPayment" target="finalPaymentModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge79" edge="1" parent="1" source="finalPaymentModal" target="processFinalPayment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge80" edge="1" parent="1" source="processFinalPayment" target="contractCompleted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge81" edge="1" parent="1" source="contractCompleted" target="serviceFeedbackModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge82" edge="1" parent="1" source="serviceFeedbackModal" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge83" edge="1" parent="1" source="freeRevisionAvailable" target="payRevisionFeeModal" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge84" edge="1" parent="1" source="payRevisionFeeModal" target="processRevisionPayment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge85" edge="1" parent="1" source="processRevisionPayment" style="entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="revisionPending">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="2920" />
+              <mxPoint x="1130" y="2920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge86" edge="1" parent="1" source="managerApproveRevision" target="uploadNotationModal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1940" y="2590" />
+              <mxPoint x="1790" y="1920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge87" edge="1" parent="1" source="requestChangeContract" target="requestPending">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge88" edge="1" parent="1" source="cancelContract" target="end">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="3090" />
+              <mxPoint x="880" y="3100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="ScreenFlow02_Arrangement" id="ScreenFlow02">
+    <mxGraphModel dx="2683" dy="1291" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start2" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="Start" vertex="1">
+          <mxGeometry height="39" width="60" x="570" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="homePage2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Home Page" vertex="1">
+          <mxGeometry height="54" width="139" x="531" y="89" as="geometry" />
+        </mxCell>
+        <mxCell id="login2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Login" vertex="1">
+          <mxGeometry height="54" width="98" x="472" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="register2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Register" vertex="1">
+          <mxGeometry height="54" width="118" x="620" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="loginSuccessful2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Login Successful?" vertex="1">
+          <mxGeometry height="170" width="170" x="515" y="297" as="geometry" />
+        </mxCell>
+        <mxCell id="customerDashboard2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer Dashboard" vertex="1">
+          <mxGeometry height="54" width="207" x="104" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDashboard2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Dashboard" vertex="1">
+          <mxGeometry height="54" width="199" x="453" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistDashboard2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Specialist Dashboard" vertex="1">
+          <mxGeometry height="54" width="208" x="1067" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="createArrangementRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Arrangement Request" vertex="1">
+          <mxGeometry height="78" width="260" x="80" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadNotationModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Notation Modal" vertex="1">
+          <mxGeometry height="39" width="208" x="106" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="selectArrangementInstruments" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Arrangement Instruments" vertex="1">
+          <mxGeometry height="54" width="254" x="182" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="enterMusicOptions" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Enter Music Options" vertex="1">
+          <mxGeometry height="54" width="200" x="182" y="970" as="geometry" />
+        </mxCell>
+        <mxCell id="enterContactInfo2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Enter Contact Information" vertex="1">
+          <mxGeometry height="54" width="248" x="106" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="submitRequest2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Submit Request" vertex="1">
+          <mxGeometry height="54" width="171" x="354" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="requestPending2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Pending" vertex="1">
+          <mxGeometry height="54" width="177" x="121.5" y="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRequest2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Request" vertex="1">
+          <mxGeometry height="54" width="156" x="544" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="assignRequestToSelf2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Assign Request to Self" vertex="1">
+          <mxGeometry height="54" width="200" x="544" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="requestDetail2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Detail" vertex="1">
+          <mxGeometry height="54" width="164" x="498.5" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="createContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Contract" vertex="1">
+          <mxGeometry height="54" width="175" x="625" y="962" as="geometry" />
+        </mxCell>
+        <mxCell id="contractDetailModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Contract Detail Modal" vertex="1">
+          <mxGeometry height="39" width="226" x="553" y="1062" as="geometry" />
+        </mxCell>
+        <mxCell id="setSLA2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Set SLA" vertex="1">
+          <mxGeometry height="54" width="113" x="644" y="1162" as="geometry" />
+        </mxCell>
+        <mxCell id="calculatePricing2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Calculate Pricing" vertex="1">
+          <mxGeometry height="54" width="181" x="481.5" y="1262" as="geometry" />
+        </mxCell>
+        <mxCell id="sendContractToCustomer2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Send Contract to Customer" vertex="1">
+          <mxGeometry height="54" width="254" x="573.5" y="1362" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View Contract" vertex="1">
+          <mxGeometry height="54" width="234" x="436" y="1462" as="geometry" />
+        </mxCell>
+        <mxCell id="viewContractModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View Contract Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="604" y="1572" as="geometry" />
+        </mxCell>
+        <mxCell id="approveContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Approve Contract" vertex="1">
+          <mxGeometry height="54" width="180" x="411" y="1662" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptContract2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Accept Contract?" vertex="1">
+          <mxGeometry height="176" width="176" x="401" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="signContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Sign Contract" vertex="1">
+          <mxGeometry height="54" width="156" x="703" y="1884" as="geometry" />
+        </mxCell>
+        <mxCell id="requestChangeContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Request Change Contract" vertex="1">
+          <mxGeometry height="54" width="220" x="154" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelContract2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cancel Contract" vertex="1">
+          <mxGeometry height="54" width="173" x="154" y="1862" as="geometry" />
+        </mxCell>
+        <mxCell id="depositPaymentModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deposit Payment Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="504" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="walletBalanceSufficient2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Wallet Balance Sufficient?" vertex="1">
+          <mxGeometry height="170" width="200" x="654" y="2023" as="geometry" />
+        </mxCell>
+        <mxCell id="topUpWallet2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Top Up Wallet" vertex="1">
+          <mxGeometry height="54" width="180" x="453" y="2166" as="geometry" />
+        </mxCell>
+        <mxCell id="processDepositPayment2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Deposit Payment" vertex="1">
+          <mxGeometry height="54" width="237" x="625" y="2255.5" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActivePending2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (active_pending_assignment)" vertex="1">
+          <mxGeometry height="54" width="300" x="531" y="2338" as="geometry" />
+        </mxCell>
+        <mxCell id="managerAssignSpecialist2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Assign Specialist" vertex="1">
+          <mxGeometry height="54" width="241" x="710" y="2420" as="geometry" />
+        </mxCell>
+        <mxCell id="selectSpecialist2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Specialist" vertex="1">
+          <mxGeometry height="54" width="177" x="528.5" y="2510" as="geometry" />
+        </mxCell>
+        <mxCell id="assignTaskModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Assign Task Modal" vertex="1">
+          <mxGeometry height="39" width="190" x="710" y="2584" as="geometry" />
+        </mxCell>
+        <mxCell id="taskAssigned2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Assigned" vertex="1">
+          <mxGeometry height="54" width="156" x="554" y="2684" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistAcceptTask2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Accept Task" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2784" as="geometry" />
+        </mxCell>
+        <mxCell id="managerStartWork2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Start Work" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2884" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActive2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (status: active)" vertex="1">
+          <mxGeometry height="54" width="250" x="529" y="2984" as="geometry" />
+        </mxCell>
+        <mxCell id="viewAssignedTask2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Assigned Task" vertex="1">
+          <mxGeometry height="54" width="194" x="854" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="taskDetail2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Detail" vertex="1">
+          <mxGeometry height="54" width="138" x="882" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistStartTask2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Start Task" vertex="1">
+          <mxGeometry height="54" width="200" x="882" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadNotationFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Download Notation File" vertex="1">
+          <mxGeometry height="54" width="205" x="837" y="966" as="geometry" />
+        </mxCell>
+        <mxCell id="performArrangement" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Perform Arrangement" vertex="1">
+          <mxGeometry height="54" width="215" x="832" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadArrangementModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Arrangement Modal" vertex="1">
+          <mxGeometry height="39" width="234" x="823" y="1182" as="geometry" />
+        </mxCell>
+        <mxCell id="fileUploaded2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Uploaded" vertex="1">
+          <mxGeometry height="54" width="159" x="860" y="1270" as="geometry" />
+        </mxCell>
+        <mxCell id="submitFilesForReview2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Submit Files for Review" vertex="1">
+          <mxGeometry height="54" width="220" x="860" y="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewFile2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review File" vertex="1">
+          <mxGeometry height="54" width="206" x="836" y="1470" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewFileModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="842" y="1594" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmission2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Approve Submission?" vertex="1">
+          <mxGeometry height="158" width="158" x="860" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmissionAction2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Approve Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1286" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="rejectSubmission2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Reject Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="842" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="fileApproved2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Approved" vertex="1">
+          <mxGeometry height="54" width="158" x="1391" y="1802" as="geometry" />
+        </mxCell>
+        <mxCell id="fileRejected2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Rejected" vertex="1">
+          <mxGeometry height="54" width="155" x="1082" y="1840" as="geometry" />
+        </mxCell>
+        <mxCell id="enterRejectionReasonModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Enter Rejection Reason Modal" vertex="1">
+          <mxGeometry height="63" width="277" x="1052.5" y="1548" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistViewRejectionReason2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist View Rejection Reason" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1670" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistFixAndResubmit2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Fix and Resubmit Files" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1540" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDeliverFile2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Deliver File" vertex="1">
+          <mxGeometry height="54" width="207" x="1385" y="1902" as="geometry" />
+        </mxCell>
+        <mxCell id="deliverFileModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deliver File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="1116" y="2022" as="geometry" />
+        </mxCell>
+        <mxCell id="fileDeliveredToCustomer2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Delivered to Customer" vertex="1">
+          <mxGeometry height="54" width="252" x="1256" y="2112" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewFile2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View File" vertex="1">
+          <mxGeometry height="54" width="198" x="1124" y="2212" as="geometry" />
+        </mxCell>
+        <mxCell id="viewFileModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View File Modal" vertex="1">
+          <mxGeometry height="39" width="175" x="1145" y="2309.5" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptSubmission2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Accept Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1123" y="2373" as="geometry" />
+        </mxCell>
+        <mxCell id="customerSatisfied2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Customer Satisfied?" vertex="1">
+          <mxGeometry height="194" width="194" x="1124" y="2450" as="geometry" />
+        </mxCell>
+        <mxCell id="requestFinalPayment2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Final Payment" vertex="1">
+          <mxGeometry height="54" width="223" x="1266" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="createRevisionRequest2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Revision Request" vertex="1">
+          <mxGeometry height="54" width="232" x="971" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionRequestModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Request Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="969" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionPending2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Revision Pending" vertex="1">
+          <mxGeometry height="54" width="179" x="998" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewRevision2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review Revision" vertex="1">
+          <mxGeometry height="54" width="238" x="968" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewRevisionModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review Revision Modal" vertex="1">
+          <mxGeometry height="39" width="231" x="972" y="3048" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionApproved2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Approved?" vertex="1">
+          <mxGeometry height="190" width="190" x="993" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="managerApproveRevision2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Approve Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="1605" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="managerRejectRevision2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Manager Reject Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="993" y="3397" as="geometry" />
+        </mxCell>
+        <mxCell id="freeRevisionAvailable2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Free Revision Available?" vertex="1">
+          <mxGeometry height="224" width="224" x="1530" y="2474" as="geometry" />
+        </mxCell>
+        <mxCell id="payRevisionFeeModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Pay Revision Fee Modal" vertex="1">
+          <mxGeometry height="39" width="236" x="1530" y="2770" as="geometry" />
+        </mxCell>
+        <mxCell id="processRevisionPayment2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Revision Payment" vertex="1">
+          <mxGeometry height="54" width="242" x="1530" y="2870" as="geometry" />
+        </mxCell>
+        <mxCell id="finalPaymentModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Final Payment Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="1266" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="processFinalPayment2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Final Payment" vertex="1">
+          <mxGeometry height="54" width="219" x="1265" y="2840" as="geometry" />
+        </mxCell>
+        <mxCell id="contractCompleted2" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Completed" vertex="1">
+          <mxGeometry height="54" width="205" x="1272" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceFeedbackModal2" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Service Feedback Modal" vertex="1">
+          <mxGeometry height="39" width="244" x="1253" y="3048" as="geometry" />
+        </mxCell>
+        <mxCell id="end2" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="End" vertex="1">
+          <mxGeometry height="39" width="51" x="1349" y="3137" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_1" edge="1" parent="1" source="start2" target="homePage2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_2" edge="1" parent="1" source="homePage2" target="login2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_3" edge="1" parent="1" source="homePage2" target="register2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_4" edge="1" parent="1" source="login2" target="loginSuccessful2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_5" edge="1" parent="1" source="register2" target="loginSuccessful2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_6" edge="1" parent="1" source="loginSuccessful2" target="customerDashboard2" value="Customer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_7" edge="1" parent="1" source="loginSuccessful2" target="managerDashboard2" value="Manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_8" edge="1" parent="1" source="loginSuccessful2" target="specialistDashboard2" value="Specialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_9" edge="1" parent="1" source="customerDashboard2" target="createArrangementRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_10" edge="1" parent="1" source="createArrangementRequest" target="uploadNotationModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_11" edge="1" parent="1" source="uploadNotationModal2" target="selectArrangementInstruments">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_12" edge="1" parent="1" source="selectArrangementInstruments" target="enterMusicOptions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_13" edge="1" parent="1" source="enterMusicOptions" target="enterContactInfo2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_14" edge="1" parent="1" source="enterContactInfo2" target="submitRequest2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_15" edge="1" parent="1" source="submitRequest2" target="requestPending2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_16" edge="1" parent="1" source="managerDashboard2" target="viewRequest2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_17" edge="1" parent="1" source="viewRequest2" target="assignRequestToSelf2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_18" edge="1" parent="1" source="assignRequestToSelf2" target="requestDetail2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_19" edge="1" parent="1" source="requestDetail2" target="createContract2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_20" edge="1" parent="1" source="createContract2" target="contractDetailModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_21" edge="1" parent="1" source="contractDetailModal2" target="setSLA2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_22" edge="1" parent="1" source="setSLA2" target="calculatePricing2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_23" edge="1" parent="1" source="calculatePricing2" target="sendContractToCustomer2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_24" edge="1" parent="1" source="sendContractToCustomer2" target="customerViewContract2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_25" edge="1" parent="1" source="customerViewContract2" target="viewContractModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_26" edge="1" parent="1" source="viewContractModal2" target="approveContract2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_27" edge="1" parent="1" source="approveContract2" target="acceptContract2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_28" edge="1" parent="1" source="acceptContract2" target="signContract2" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_29" edge="1" parent="1" source="acceptContract2" target="requestChangeContract2" value="Request Change">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_30" edge="1" parent="1" source="acceptContract2" target="cancelContract2" value="Cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_31" edge="1" parent="1" source="signContract2" target="depositPaymentModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_32" edge="1" parent="1" source="depositPaymentModal2" target="walletBalanceSufficient2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_33" edge="1" parent="1" source="walletBalanceSufficient2" target="processDepositPayment2" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_34" edge="1" parent="1" source="walletBalanceSufficient2" target="topUpWallet2" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_35" edge="1" parent="1" source="topUpWallet2" target="processDepositPayment2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_36" edge="1" parent="1" source="processDepositPayment2" target="contractActivePending2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_37" edge="1" parent="1" source="contractActivePending2" target="managerAssignSpecialist2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_38" edge="1" parent="1" source="managerAssignSpecialist2" target="selectSpecialist2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_39" edge="1" parent="1" source="selectSpecialist2" target="assignTaskModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_40" edge="1" parent="1" source="assignTaskModal2" target="taskAssigned2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_41" edge="1" parent="1" source="taskAssigned2" target="specialistAcceptTask2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_42" edge="1" parent="1" source="specialistAcceptTask2" target="managerStartWork2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_43" edge="1" parent="1" source="managerStartWork2" target="contractActive2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_44" edge="1" parent="1" source="specialistDashboard2" target="viewAssignedTask2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_45" edge="1" parent="1" source="viewAssignedTask2" target="taskDetail2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_46" edge="1" parent="1" source="taskDetail2" target="specialistStartTask2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_47" edge="1" parent="1" source="specialistStartTask2" target="downloadNotationFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_48" edge="1" parent="1" source="downloadNotationFile" target="performArrangement">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_49" edge="1" parent="1" source="performArrangement" target="uploadArrangementModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_50" edge="1" parent="1" source="uploadArrangementModal" target="fileUploaded2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_51" edge="1" parent="1" source="fileUploaded2" target="submitFilesForReview2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_52" edge="1" parent="1" source="submitFilesForReview2" target="managerReviewFile2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_53" edge="1" parent="1" source="managerReviewFile2" target="reviewFileModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_54" edge="1" parent="1" source="reviewFileModal2" target="approveSubmission2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_55" edge="1" parent="1" source="approveSubmission2" target="approveSubmissionAction2" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_56" edge="1" parent="1" source="approveSubmission2" target="rejectSubmission2" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_57" edge="1" parent="1" source="approveSubmissionAction2" target="fileApproved2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_58" edge="1" parent="1" source="fileApproved2" target="managerDeliverFile2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_59" edge="1" parent="1" source="managerDeliverFile2" target="deliverFileModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_60" edge="1" parent="1" source="deliverFileModal2" target="fileDeliveredToCustomer2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_61" edge="1" parent="1" source="fileDeliveredToCustomer2" target="customerViewFile2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_62" edge="1" parent="1" source="customerViewFile2" target="viewFileModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_63" edge="1" parent="1" source="viewFileModal2" target="acceptSubmission2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_64" edge="1" parent="1" source="acceptSubmission2" target="customerSatisfied2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_65" edge="1" parent="1" source="customerSatisfied2" target="requestFinalPayment2" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_66" edge="1" parent="1" source="customerSatisfied2" target="createRevisionRequest2" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_67" edge="1" parent="1" source="createRevisionRequest2" target="revisionRequestModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_68" edge="1" parent="1" source="revisionRequestModal2" target="revisionPending2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_69" edge="1" parent="1" source="revisionPending2" target="managerReviewRevision2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_70" edge="1" parent="1" source="managerReviewRevision2" target="reviewRevisionModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_71" edge="1" parent="1" source="reviewRevisionModal2" target="revisionApproved2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_72" edge="1" parent="1" source="revisionApproved2" target="managerApproveRevision2" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_73" edge="1" parent="1" source="revisionApproved2" target="managerRejectRevision2" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_74" edge="1" parent="1" source="rejectSubmission2" target="fileRejected2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_75" edge="1" parent="1" source="fileRejected2" style="exitX=0.517;exitY=0.098;exitDx=0;exitDy=0;exitPerimeter=0;" target="enterRejectionReasonModal2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1180" y="1810" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge2_76" edge="1" parent="1" source="enterRejectionReasonModal2" target="specialistViewRejectionReason2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_77" edge="1" parent="1" source="specialistViewRejectionReason2" target="specialistFixAndResubmit2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_78" edge="1" parent="1" style="entryX=0.939;entryY=0.8;entryDx=0;entryDy=0;entryPerimeter=0;" target="uploadArrangementModal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1160" y="1240" />
+              <mxPoint x="1060" y="1230" />
+            </Array>
+            <mxPoint x="1815.730245231608" y="1548" as="sourcePoint" />
+            <mxPoint x="1125.5021276595744" y="1209.9854255319149" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge2_79" edge="1" parent="1" source="requestFinalPayment2" target="finalPaymentModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_80" edge="1" parent="1" source="finalPaymentModal2" target="processFinalPayment2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_81" edge="1" parent="1" source="processFinalPayment2" target="contractCompleted2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_82" edge="1" parent="1" source="contractCompleted2" target="serviceFeedbackModal2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_83" edge="1" parent="1" source="serviceFeedbackModal2" target="end2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_84" edge="1" parent="1" source="freeRevisionAvailable2" target="payRevisionFeeModal2" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_85" edge="1" parent="1" source="payRevisionFeeModal2" target="processRevisionPayment2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_86" edge="1" parent="1" source="processRevisionPayment2" style="entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="revisionPending2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="2920" />
+              <mxPoint x="1130" y="2920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge2_87" edge="1" parent="1" source="managerApproveRevision2" target="uploadArrangementModal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1940" y="2590" />
+              <mxPoint x="1790" y="1920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge2_88" edge="1" parent="1" source="requestChangeContract2" target="requestPending2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2_89" edge="1" parent="1" source="cancelContract2" target="end2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="3090" />
+              <mxPoint x="880" y="3100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="ScreenFlow03_ArrangementWithRecording" id="ScreenFlow03">
+    <mxGraphModel dx="9390" dy="4520" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="2000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start3" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="Start" vertex="1">
+          <mxGeometry height="39" width="60" x="570" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="homePage3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Home Page" vertex="1">
+          <mxGeometry height="54" width="139" x="531" y="89" as="geometry" />
+        </mxCell>
+        <mxCell id="login3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Login" vertex="1">
+          <mxGeometry height="54" width="98" x="472" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="register3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Register" vertex="1">
+          <mxGeometry height="54" width="118" x="620" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="loginSuccessful3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Login Successful?" vertex="1">
+          <mxGeometry height="170" width="170" x="515" y="297" as="geometry" />
+        </mxCell>
+        <mxCell id="customerDashboard3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer Dashboard" vertex="1">
+          <mxGeometry height="54" width="207" x="104" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDashboard3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Dashboard" vertex="1">
+          <mxGeometry height="54" width="199" x="453" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistDashboard3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Specialist Dashboard" vertex="1">
+          <mxGeometry height="54" width="208" x="1067" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="createArrangementRecordingRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Arrangement + Recording Request" vertex="1">
+          <mxGeometry height="78" width="320" x="60" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadNotationModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Notation Modal" vertex="1">
+          <mxGeometry height="39" width="208" x="106" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="selectArrangementInstruments3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Arrangement Instruments" vertex="1">
+          <mxGeometry height="54" width="254" x="182" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="enterMusicOptions3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Enter Music Options" vertex="1">
+          <mxGeometry height="54" width="200" x="182" y="970" as="geometry" />
+        </mxCell>
+        <mxCell id="selectVocalist" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Vocalist (max 2)" vertex="1">
+          <mxGeometry height="54" width="220" x="182" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="enterContactInfo3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Enter Contact Information" vertex="1">
+          <mxGeometry height="54" width="248" x="106" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="submitRequest3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Submit Request" vertex="1">
+          <mxGeometry height="54" width="171" x="282" y="1280" as="geometry" />
+        </mxCell>
+        <mxCell id="requestPending3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Pending" vertex="1">
+          <mxGeometry height="54" width="177" x="121.5" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRequest3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Request" vertex="1">
+          <mxGeometry height="54" width="156" x="544" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="assignRequestToSelf3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Assign Request to Self" vertex="1">
+          <mxGeometry height="54" width="200" x="544" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="requestDetail3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Detail" vertex="1">
+          <mxGeometry height="54" width="164" x="498.5" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="createContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Contract" vertex="1">
+          <mxGeometry height="54" width="175" x="625" y="962" as="geometry" />
+        </mxCell>
+        <mxCell id="contractDetailModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Contract Detail Modal" vertex="1">
+          <mxGeometry height="39" width="226" x="553" y="1062" as="geometry" />
+        </mxCell>
+        <mxCell id="setSLA3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Set SLA" vertex="1">
+          <mxGeometry height="54" width="113" x="644" y="1162" as="geometry" />
+        </mxCell>
+        <mxCell id="calculatePricing3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Calculate Pricing" vertex="1">
+          <mxGeometry height="54" width="181" x="481.5" y="1262" as="geometry" />
+        </mxCell>
+        <mxCell id="sendContractToCustomer3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Send Contract to Customer" vertex="1">
+          <mxGeometry height="54" width="254" x="573.5" y="1362" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View Contract" vertex="1">
+          <mxGeometry height="54" width="234" x="436" y="1462" as="geometry" />
+        </mxCell>
+        <mxCell id="viewContractModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View Contract Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="604" y="1572" as="geometry" />
+        </mxCell>
+        <mxCell id="approveContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Approve Contract" vertex="1">
+          <mxGeometry height="54" width="180" x="411" y="1662" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptContract3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Accept Contract?" vertex="1">
+          <mxGeometry height="176" width="176" x="401" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="signContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Sign Contract" vertex="1">
+          <mxGeometry height="54" width="156" x="703" y="1884" as="geometry" />
+        </mxCell>
+        <mxCell id="requestChangeContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Request Change Contract" vertex="1">
+          <mxGeometry height="54" width="220" x="154" y="1762" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelContract3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cancel Contract" vertex="1">
+          <mxGeometry height="54" width="173" x="154" y="1862" as="geometry" />
+        </mxCell>
+        <mxCell id="depositPaymentModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deposit Payment Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="504" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="walletBalanceSufficient3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Wallet Balance Sufficient?" vertex="1">
+          <mxGeometry height="170" width="200" x="654" y="2023" as="geometry" />
+        </mxCell>
+        <mxCell id="topUpWallet3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Top Up Wallet" vertex="1">
+          <mxGeometry height="54" width="180" x="453" y="2166" as="geometry" />
+        </mxCell>
+        <mxCell id="processDepositPayment3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Deposit Payment" vertex="1">
+          <mxGeometry height="54" width="237" x="625" y="2255.5" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActivePending3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (active_pending_assignment)" vertex="1">
+          <mxGeometry height="54" width="300" x="531" y="2338" as="geometry" />
+        </mxCell>
+        <mxCell id="managerAssignSpecialist3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Assign Specialist" vertex="1">
+          <mxGeometry height="54" width="241" x="710" y="2420" as="geometry" />
+        </mxCell>
+        <mxCell id="selectSpecialist3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Select Specialist" vertex="1">
+          <mxGeometry height="54" width="177" x="528.5" y="2510" as="geometry" />
+        </mxCell>
+        <mxCell id="assignTaskModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Assign Task Modal" vertex="1">
+          <mxGeometry height="39" width="190" x="710" y="2584" as="geometry" />
+        </mxCell>
+        <mxCell id="taskAssigned3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Assigned" vertex="1">
+          <mxGeometry height="54" width="156" x="554" y="2684" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistAcceptTask3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Accept Task" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2784" as="geometry" />
+        </mxCell>
+        <mxCell id="managerStartWork3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Start Work" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2884" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActive3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (status: active)" vertex="1">
+          <mxGeometry height="54" width="250" x="529" y="2984" as="geometry" />
+        </mxCell>
+        <mxCell id="viewAssignedTask3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Assigned Task" vertex="1">
+          <mxGeometry height="54" width="194" x="854" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="taskDetail3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Detail" vertex="1">
+          <mxGeometry height="54" width="138" x="882" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistStartTask3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Start Task" vertex="1">
+          <mxGeometry height="54" width="200" x="882" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="downloadNotationFile3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Download Notation File" vertex="1">
+          <mxGeometry height="54" width="205" x="837" y="966" as="geometry" />
+        </mxCell>
+        <mxCell id="performArrangement3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Perform Arrangement" vertex="1">
+          <mxGeometry height="54" width="215" x="832" y="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadArrangementModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Upload Arrangement Modal" vertex="1">
+          <mxGeometry height="39" width="234" x="823" y="1182" as="geometry" />
+        </mxCell>
+        <mxCell id="fileUploaded3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Uploaded" vertex="1">
+          <mxGeometry height="54" width="159" x="860" y="1270" as="geometry" />
+        </mxCell>
+        <mxCell id="submitFilesForReview3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Submit Files for Review" vertex="1">
+          <mxGeometry height="54" width="220" x="860" y="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewFile3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review File" vertex="1">
+          <mxGeometry height="54" width="206" x="836" y="1470" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewFileModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="842" y="1594" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmission3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Approve Submission?" vertex="1">
+          <mxGeometry height="158" width="158" x="860" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="approveSubmissionAction3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Approve Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1286" y="1692" as="geometry" />
+        </mxCell>
+        <mxCell id="rejectSubmission3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Reject Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="842" y="1984" as="geometry" />
+        </mxCell>
+        <mxCell id="fileApproved3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Approved" vertex="1">
+          <mxGeometry height="54" width="158" x="1391" y="1802" as="geometry" />
+        </mxCell>
+        <mxCell id="fileRejected3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Rejected" vertex="1">
+          <mxGeometry height="54" width="155" x="1082" y="1840" as="geometry" />
+        </mxCell>
+        <mxCell id="enterRejectionReasonModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Enter Rejection Reason Modal" vertex="1">
+          <mxGeometry height="63" width="277" x="1052.5" y="1548" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistViewRejectionReason3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist View Rejection Reason" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1670" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistFixAndResubmit3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Fix and Resubmit Files" vertex="1">
+          <mxGeometry height="54" width="280" x="1670" y="1540" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDeliverFile3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Deliver File" vertex="1">
+          <mxGeometry height="54" width="207" x="1385" y="1902" as="geometry" />
+        </mxCell>
+        <mxCell id="deliverFileModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deliver File Modal" vertex="1">
+          <mxGeometry height="39" width="194" x="1116" y="2022" as="geometry" />
+        </mxCell>
+        <mxCell id="fileDeliveredToCustomer3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="File Delivered to Customer" vertex="1">
+          <mxGeometry height="54" width="252" x="1256" y="2112" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewFile3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View File" vertex="1">
+          <mxGeometry height="54" width="198" x="979" y="2100" as="geometry" />
+        </mxCell>
+        <mxCell id="viewFileModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View File Modal" vertex="1">
+          <mxGeometry height="39" width="175" x="990.5" y="2193" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptSubmission3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Accept Submission" vertex="1">
+          <mxGeometry height="54" width="200" x="1207" y="2193" as="geometry" />
+        </mxCell>
+        <mxCell id="arrangementSatisfied" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Arrangement Satisfied?" vertex="1">
+          <mxGeometry height="194" width="194" x="1116" y="2300" as="geometry" />
+        </mxCell>
+        <mxCell id="proceedToStudioBooking" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Proceed to Studio Booking" vertex="1">
+          <mxGeometry height="54" width="240" x="1266" y="2544" as="geometry" />
+        </mxCell>
+        <mxCell id="managerCreateStudioBooking" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Create Studio Booking" vertex="1">
+          <mxGeometry height="54" width="280" x="1266" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="selectStudio" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Studio" vertex="1">
+          <mxGeometry height="54" width="180" x="1306" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="selectDateAndTime" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Date and Time" vertex="1">
+          <mxGeometry height="54" width="220" x="1286" y="2844" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingDetailsModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Booking Details Modal" vertex="1">
+          <mxGeometry height="39" width="220" x="1286" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="confirmBooking" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Confirm Booking" vertex="1">
+          <mxGeometry height="54" width="200" x="1296" y="3044" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingConfirmed" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Booking Confirmed" vertex="1">
+          <mxGeometry height="54" width="200" x="1296" y="3144" as="geometry" />
+        </mxCell>
+        <mxCell id="performRecordingSession" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Perform Recording Session" vertex="1">
+          <mxGeometry height="54" width="240" x="1296" y="3244" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadRecordingModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Upload Recording Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="1296" y="3344" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingFileUploaded" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording File Uploaded" vertex="1">
+          <mxGeometry height="54" width="240" x="1296" y="3444" as="geometry" />
+        </mxCell>
+        <mxCell id="submitRecordingForReview" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Submit Files for Review" vertex="1">
+          <mxGeometry height="54" width="220" x="1306" y="3544" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewRecordingFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Review Recording File" vertex="1">
+          <mxGeometry height="54" width="280" x="1286" y="3644" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewRecordingModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Review Recording Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="1286" y="3744" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingApproved" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording Approved?" vertex="1">
+          <mxGeometry height="170" width="200" x="1660" y="3200" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingApprovedAction" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording Approved" vertex="1">
+          <mxGeometry height="54" width="200" x="2030" y="2890" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingRejected" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Recording Rejected" vertex="1">
+          <mxGeometry height="54" width="200" x="1610" y="3875" as="geometry" />
+        </mxCell>
+        <mxCell id="enterRejectionReasonModalRecording" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Enter Rejection Reason Modal" vertex="1">
+          <mxGeometry height="63" width="277" x="882" y="3710" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDeliverRecordingFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Deliver Recording File" vertex="1">
+          <mxGeometry height="54" width="280" x="2030" y="2990" as="geometry" />
+        </mxCell>
+        <mxCell id="deliverRecordingFileModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Deliver Recording File Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="2030" y="3090" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingFileDeliveredToCustomer" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording File Delivered to Customer" vertex="1">
+          <mxGeometry height="54" width="320" x="2000" y="3190" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewRecordingFile" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Customer View Recording File" vertex="1">
+          <mxGeometry height="54" width="260" x="2020" y="3290" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRecordingFileModal" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="View Recording File Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="2020" y="3390" as="geometry" />
+        </mxCell>
+        <mxCell id="createRevisionRequest3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Revision Request" vertex="1">
+          <mxGeometry height="54" width="232" x="971" y="2544" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionRequestModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Request Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="969" y="2644" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionPending3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Revision Pending" vertex="1">
+          <mxGeometry height="54" width="179" x="998" y="2744" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewRevision3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Review Revision" vertex="1">
+          <mxGeometry height="54" width="238" x="968" y="2844" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewRevisionModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Review Revision Modal" vertex="1">
+          <mxGeometry height="39" width="231" x="972" y="2944" as="geometry" />
+        </mxCell>
+        <mxCell id="revisionApproved3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Revision Approved?" vertex="1">
+          <mxGeometry height="190" width="190" x="993" y="3037" as="geometry" />
+        </mxCell>
+        <mxCell id="managerApproveRevision3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Approve Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="1500" y="3075" as="geometry" />
+        </mxCell>
+        <mxCell id="managerRejectRevision3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Manager Reject Revision Request" vertex="1">
+          <mxGeometry height="54" width="280" x="993" y="3297" as="geometry" />
+        </mxCell>
+        <mxCell id="freeRevisionAvailable3" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Free Revision Available?" vertex="1">
+          <mxGeometry height="224" width="224" x="1530" y="2474" as="geometry" />
+        </mxCell>
+        <mxCell id="payRevisionFeeModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Pay Revision Fee Modal" vertex="1">
+          <mxGeometry height="39" width="236" x="1530" y="2770" as="geometry" />
+        </mxCell>
+        <mxCell id="processRevisionPayment3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Revision Payment" vertex="1">
+          <mxGeometry height="54" width="242" x="1530" y="2870" as="geometry" />
+        </mxCell>
+        <mxCell id="requestFinalPayment3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Final Payment" vertex="1">
+          <mxGeometry height="54" width="223" x="2020" y="3490" as="geometry" />
+        </mxCell>
+        <mxCell id="finalPaymentModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Final Payment Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="2020" y="3590" as="geometry" />
+        </mxCell>
+        <mxCell id="processFinalPayment3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Final Payment" vertex="1">
+          <mxGeometry height="54" width="219" x="2019" y="3690" as="geometry" />
+        </mxCell>
+        <mxCell id="contractCompleted3" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Completed" vertex="1">
+          <mxGeometry height="54" width="205" x="2026" y="3790" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceFeedbackModal3" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Service Feedback Modal" vertex="1">
+          <mxGeometry height="39" width="244" x="2007" y="3890" as="geometry" />
+        </mxCell>
+        <mxCell id="end3" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="End" vertex="1">
+          <mxGeometry height="39" width="51" x="2103" y="3983" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_1" edge="1" parent="1" source="start3" target="homePage3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_2" edge="1" parent="1" source="homePage3" target="login3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_3" edge="1" parent="1" source="homePage3" target="register3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_4" edge="1" parent="1" source="login3" target="loginSuccessful3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_5" edge="1" parent="1" source="register3" target="loginSuccessful3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_6" edge="1" parent="1" source="loginSuccessful3" target="customerDashboard3" value="Customer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_7" edge="1" parent="1" source="loginSuccessful3" target="managerDashboard3" value="Manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_8" edge="1" parent="1" source="loginSuccessful3" target="specialistDashboard3" value="Specialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_9" edge="1" parent="1" source="customerDashboard3" target="createArrangementRecordingRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_10" edge="1" parent="1" source="createArrangementRecordingRequest" target="uploadNotationModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_11" edge="1" parent="1" source="uploadNotationModal3" target="selectArrangementInstruments3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_12" edge="1" parent="1" source="selectArrangementInstruments3" target="enterMusicOptions3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_13" edge="1" parent="1" source="enterMusicOptions3" target="selectVocalist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_14" edge="1" parent="1" source="selectVocalist" target="enterContactInfo3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_15" edge="1" parent="1" source="enterContactInfo3" target="submitRequest3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_16" edge="1" parent="1" source="submitRequest3" target="requestPending3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_17" edge="1" parent="1" source="managerDashboard3" target="viewRequest3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_18" edge="1" parent="1" source="viewRequest3" target="assignRequestToSelf3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_19" edge="1" parent="1" source="assignRequestToSelf3" target="requestDetail3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_20" edge="1" parent="1" source="requestDetail3" target="createContract3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_21" edge="1" parent="1" source="createContract3" target="contractDetailModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_22" edge="1" parent="1" source="contractDetailModal3" target="setSLA3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_23" edge="1" parent="1" source="setSLA3" target="calculatePricing3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_24" edge="1" parent="1" source="calculatePricing3" target="sendContractToCustomer3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_25" edge="1" parent="1" source="sendContractToCustomer3" target="customerViewContract3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_26" edge="1" parent="1" source="customerViewContract3" target="viewContractModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_27" edge="1" parent="1" source="viewContractModal3" target="approveContract3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_28" edge="1" parent="1" source="approveContract3" target="acceptContract3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_29" edge="1" parent="1" source="acceptContract3" target="signContract3" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_30" edge="1" parent="1" source="acceptContract3" target="requestChangeContract3" value="Request Change">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_31" edge="1" parent="1" source="acceptContract3" target="cancelContract3" value="Cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_32" edge="1" parent="1" source="signContract3" target="depositPaymentModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_33" edge="1" parent="1" source="depositPaymentModal3" target="walletBalanceSufficient3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_34" edge="1" parent="1" source="walletBalanceSufficient3" target="processDepositPayment3" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_35" edge="1" parent="1" source="walletBalanceSufficient3" target="topUpWallet3" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_36" edge="1" parent="1" source="topUpWallet3" target="processDepositPayment3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_37" edge="1" parent="1" source="processDepositPayment3" target="contractActivePending3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_38" edge="1" parent="1" source="contractActivePending3" target="managerAssignSpecialist3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_39" edge="1" parent="1" source="managerAssignSpecialist3" target="selectSpecialist3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_40" edge="1" parent="1" source="selectSpecialist3" target="assignTaskModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_41" edge="1" parent="1" source="assignTaskModal3" target="taskAssigned3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_42" edge="1" parent="1" source="taskAssigned3" target="specialistAcceptTask3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_43" edge="1" parent="1" source="specialistAcceptTask3" target="managerStartWork3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_44" edge="1" parent="1" source="managerStartWork3" target="contractActive3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_45" edge="1" parent="1" source="specialistDashboard3" target="viewAssignedTask3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_46" edge="1" parent="1" source="viewAssignedTask3" target="taskDetail3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_47" edge="1" parent="1" source="taskDetail3" target="specialistStartTask3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_48" edge="1" parent="1" source="specialistStartTask3" target="downloadNotationFile3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_49" edge="1" parent="1" source="downloadNotationFile3" target="performArrangement3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_50" edge="1" parent="1" source="performArrangement3" target="uploadArrangementModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_51" edge="1" parent="1" source="uploadArrangementModal3" target="fileUploaded3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_52" edge="1" parent="1" source="fileUploaded3" target="submitFilesForReview3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_53" edge="1" parent="1" source="submitFilesForReview3" target="managerReviewFile3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_54" edge="1" parent="1" source="managerReviewFile3" target="reviewFileModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_55" edge="1" parent="1" source="reviewFileModal3" target="approveSubmission3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_56" edge="1" parent="1" source="approveSubmission3" target="approveSubmissionAction3" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_57" edge="1" parent="1" source="approveSubmission3" target="rejectSubmission3" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_58" edge="1" parent="1" source="approveSubmissionAction3" target="fileApproved3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_59" edge="1" parent="1" source="fileApproved3" target="managerDeliverFile3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_60" edge="1" parent="1" source="managerDeliverFile3" target="deliverFileModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_61" edge="1" parent="1" source="deliverFileModal3" target="fileDeliveredToCustomer3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_62" edge="1" parent="1" source="fileDeliveredToCustomer3" target="customerViewFile3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_63" edge="1" parent="1" source="customerViewFile3" target="viewFileModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_64" edge="1" parent="1" source="viewFileModal3" target="acceptSubmission3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_65" edge="1" parent="1" source="acceptSubmission3" target="arrangementSatisfied">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_66" edge="1" parent="1" source="arrangementSatisfied" target="proceedToStudioBooking" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_67" edge="1" parent="1" source="arrangementSatisfied" target="createRevisionRequest3" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_68" edge="1" parent="1" source="proceedToStudioBooking" target="managerCreateStudioBooking">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_69" edge="1" parent="1" source="managerCreateStudioBooking" target="selectStudio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_70" edge="1" parent="1" source="selectStudio" target="selectDateAndTime">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_71" edge="1" parent="1" source="selectDateAndTime" target="bookingDetailsModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_72" edge="1" parent="1" source="bookingDetailsModal" target="confirmBooking">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_73" edge="1" parent="1" source="confirmBooking" target="bookingConfirmed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_74" edge="1" parent="1" source="bookingConfirmed" target="performRecordingSession">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_75" edge="1" parent="1" source="performRecordingSession" target="uploadRecordingModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_76" edge="1" parent="1" source="uploadRecordingModal" target="recordingFileUploaded">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_77" edge="1" parent="1" source="recordingFileUploaded" target="submitRecordingForReview">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_78" edge="1" parent="1" source="submitRecordingForReview" target="managerReviewRecordingFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_79" edge="1" parent="1" source="managerReviewRecordingFile" target="reviewRecordingModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_80" edge="1" parent="1" source="reviewRecordingModal" target="recordingApproved">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1620" y="3740" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_81" edge="1" parent="1" source="recordingApproved" target="recordingApprovedAction" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_82" edge="1" parent="1" source="recordingApproved" target="recordingRejected" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_83" edge="1" parent="1" source="recordingApprovedAction" target="managerDeliverRecordingFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_84" edge="1" parent="1" source="managerDeliverRecordingFile" target="deliverRecordingFileModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_85" edge="1" parent="1" source="deliverRecordingFileModal" target="recordingFileDeliveredToCustomer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_86" edge="1" parent="1" source="recordingFileDeliveredToCustomer" target="customerViewRecordingFile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_87" edge="1" parent="1" source="customerViewRecordingFile" target="viewRecordingFileModal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_88" edge="1" parent="1" source="viewRecordingFileModal" target="requestFinalPayment3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_89" edge="1" parent="1" source="requestFinalPayment3" target="finalPaymentModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_90" edge="1" parent="1" source="finalPaymentModal3" target="processFinalPayment3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_91" edge="1" parent="1" source="processFinalPayment3" target="contractCompleted3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_92" edge="1" parent="1" source="contractCompleted3" target="serviceFeedbackModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_93" edge="1" parent="1" source="serviceFeedbackModal3" target="end3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_94" edge="1" parent="1" source="recordingRejected" target="enterRejectionReasonModalRecording">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_95" edge="1" parent="1" source="enterRejectionReasonModalRecording" target="uploadRecordingModal">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1027" y="3660" />
+              <mxPoint x="1180" y="3440" />
+              <mxPoint x="1300" y="3370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_96" edge="1" parent="1" source="createRevisionRequest3" target="revisionRequestModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_97" edge="1" parent="1" source="revisionRequestModal3" target="revisionPending3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_98" edge="1" parent="1" source="revisionPending3" target="managerReviewRevision3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_99" edge="1" parent="1" source="managerReviewRevision3" target="reviewRevisionModal3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_100" edge="1" parent="1" source="reviewRevisionModal3" target="revisionApproved3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_101" edge="1" parent="1" source="revisionApproved3" target="managerApproveRevision3" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_102" edge="1" parent="1" source="revisionApproved3" target="managerRejectRevision3" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_103" edge="1" parent="1" source="managerApproveRevision3" target="uploadArrangementModal3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1940" y="2590" />
+              <mxPoint x="1790" y="1920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_104" edge="1" parent="1" source="freeRevisionAvailable3" target="payRevisionFeeModal3" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_105" edge="1" parent="1" source="payRevisionFeeModal3" target="processRevisionPayment3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_106" edge="1" parent="1" source="processRevisionPayment3" style="entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" target="revisionPending3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="2920" />
+              <mxPoint x="1130" y="2920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_107" edge="1" parent="1" source="rejectSubmission3" target="fileRejected3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_108" edge="1" parent="1" source="fileRejected3" style="exitX=0.517;exitY=0.098;exitDx=0;exitDy=0;exitPerimeter=0;" target="enterRejectionReasonModal3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1180" y="1810" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_109" edge="1" parent="1" source="enterRejectionReasonModal3" target="specialistViewRejectionReason3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_110" edge="1" parent="1" source="specialistViewRejectionReason3" target="specialistFixAndResubmit3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_111" edge="1" parent="1" source="specialistFixAndResubmit3" style="exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="uploadArrangementModal3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1750" y="1510" />
+              <mxPoint x="950" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge3_112" edge="1" parent="1" source="requestChangeContract3" target="requestPending3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3_113" edge="1" parent="1" source="cancelContract3" target="end3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="3090" />
+              <mxPoint x="690" y="4020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="ScreenFlow04_RecordingOnly" id="ScreenFlow04">
+    <mxGraphModel dx="4695" dy="2260" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="2000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start4" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="Start" vertex="1">
+          <mxGeometry height="39" width="60" x="570" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="homePage4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Home Page" vertex="1">
+          <mxGeometry height="54" width="139" x="531" y="89" as="geometry" />
+        </mxCell>
+        <mxCell id="login4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Login" vertex="1">
+          <mxGeometry height="54" width="98" x="472" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="register4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Register" vertex="1">
+          <mxGeometry height="54" width="118" x="620" y="193" as="geometry" />
+        </mxCell>
+        <mxCell id="loginSuccessful4" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Login Successful?" vertex="1">
+          <mxGeometry height="170" width="170" x="515" y="297" as="geometry" />
+        </mxCell>
+        <mxCell id="customerDashboard4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer Dashboard" vertex="1">
+          <mxGeometry height="54" width="207" x="104" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDashboard4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Dashboard" vertex="1">
+          <mxGeometry height="54" width="199" x="453" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistDashboard4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Specialist Dashboard" vertex="1">
+          <mxGeometry height="54" width="208" x="1067" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="createRecordingOnlyRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Recording Only Request" vertex="1">
+          <mxGeometry height="78" width="280" x="60" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="chooseBookingDateTime" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Choose Booking Date/Time" vertex="1">
+          <mxGeometry height="54" width="240" x="60" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="selectVocalSetup" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Vocal Setup" vertex="1">
+          <mxGeometry height="54" width="200" x="60" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="vocalSetupDecision" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Vocal Setup Type?" vertex="1">
+          <mxGeometry height="200" width="200" x="40" y="990" as="geometry" />
+        </mxCell>
+        <mxCell id="selectVocalist4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Vocalist" vertex="1">
+          <mxGeometry height="54" width="180" x="280" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="selectInstrumentSetup" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Instrument Setup" vertex="1">
+          <mxGeometry height="54" width="220" x="60" y="1240" as="geometry" />
+        </mxCell>
+        <mxCell id="hasLiveInstruments" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Has Live Instruments?" vertex="1">
+          <mxGeometry height="170" width="200" x="40" y="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="selectInstrumentSkills" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Instrument Skills" vertex="1">
+          <mxGeometry height="54" width="220" x="280" y="1350" as="geometry" />
+        </mxCell>
+        <mxCell id="configureEachInstrument" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Configure Each Instrument" vertex="1">
+          <mxGeometry height="54" width="240" x="280" y="1450" as="geometry" />
+        </mxCell>
+        <mxCell id="whoPlaysDecision" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Who plays?" vertex="1">
+          <mxGeometry height="150" width="150" x="210" y="1520" as="geometry" />
+        </mxCell>
+        <mxCell id="equipmentSourceDecision" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Equipment source?" vertex="1">
+          <mxGeometry height="150" width="180" x="450" y="1518" as="geometry" />
+        </mxCell>
+        <mxCell id="selectEquipment" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Equipment" vertex="1">
+          <mxGeometry height="54" width="180" x="720" y="1550" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadReferenceFiles" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Upload Reference Files (Required)" vertex="1">
+          <mxGeometry height="54" width="280" x="8.5" y="1740" as="geometry" />
+        </mxCell>
+        <mxCell id="viewPriceEstimation" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="View Price Estimation" vertex="1">
+          <mxGeometry height="54" width="220" x="60" y="1860" as="geometry" />
+        </mxCell>
+        <mxCell id="enterServiceRequestInfo" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Enter Service Request Information" vertex="1">
+          <mxGeometry height="54" width="280" x="60" y="1960" as="geometry" />
+        </mxCell>
+        <mxCell id="submitServiceRequest" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Submit Service Request" vertex="1">
+          <mxGeometry height="54" width="220" x="60" y="2060" as="geometry" />
+        </mxCell>
+        <mxCell id="requestPending4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Pending" vertex="1">
+          <mxGeometry height="54" width="177" x="60" y="2160" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRequest4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Request" vertex="1">
+          <mxGeometry height="54" width="156" x="544" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="assignRequestToSelf4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Assign Request to Self" vertex="1">
+          <mxGeometry height="54" width="200" x="544" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="requestDetail4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Detail" vertex="1">
+          <mxGeometry height="54" width="164" x="498.5" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="validateReferenceFiles" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Validate Reference Files" vertex="1">
+          <mxGeometry height="54" width="240" x="498.5" y="962" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewBookingDetails" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Review Booking Details" vertex="1">
+          <mxGeometry height="54" width="240" x="498.5" y="1062" as="geometry" />
+        </mxCell>
+        <mxCell id="createContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Create Contract" vertex="1">
+          <mxGeometry height="54" width="175" x="625" y="1162" as="geometry" />
+        </mxCell>
+        <mxCell id="contractDetailModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Contract Detail Modal" vertex="1">
+          <mxGeometry height="39" width="226" x="553" y="1262" as="geometry" />
+        </mxCell>
+        <mxCell id="setSLA4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Set SLA" vertex="1">
+          <mxGeometry height="54" width="113" x="644" y="1362" as="geometry" />
+        </mxCell>
+        <mxCell id="calculatePricing4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Calculate Pricing" vertex="1">
+          <mxGeometry height="54" width="181" x="481.5" y="1462" as="geometry" />
+        </mxCell>
+        <mxCell id="sendContractToCustomer4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Send Contract to Customer" vertex="1">
+          <mxGeometry height="54" width="254" x="616.5" y="1650" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Customer View Contract" vertex="1">
+          <mxGeometry height="54" width="234" x="360" y="1751" as="geometry" />
+        </mxCell>
+        <mxCell id="viewContractModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="View Contract Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="604" y="1772" as="geometry" />
+        </mxCell>
+        <mxCell id="approveContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Approve Contract" vertex="1">
+          <mxGeometry height="54" width="180" x="411" y="1862" as="geometry" />
+        </mxCell>
+        <mxCell id="acceptContract4" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Accept Contract?" vertex="1">
+          <mxGeometry height="176" width="176" x="603" y="1940" as="geometry" />
+        </mxCell>
+        <mxCell id="signContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Sign Contract" vertex="1">
+          <mxGeometry height="54" width="156" x="912" y="2066" as="geometry" />
+        </mxCell>
+        <mxCell id="requestChangeContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Request Change Contract" vertex="1">
+          <mxGeometry height="54" width="220" x="360" y="1966" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelContract4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Cancel Contract" vertex="1">
+          <mxGeometry height="54" width="173" x="270" y="2140" as="geometry" />
+        </mxCell>
+        <mxCell id="depositPaymentModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Deposit Payment Modal" vertex="1">
+          <mxGeometry height="39" width="238" x="604" y="2178.79" as="geometry" />
+        </mxCell>
+        <mxCell id="walletBalanceSufficient4" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Wallet Balance Sufficient?" vertex="1">
+          <mxGeometry height="170" width="200" x="754" y="2217.79" as="geometry" />
+        </mxCell>
+        <mxCell id="topUpWallet4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#fff2cc;strokeColor=#d6b656;" value="Top Up Wallet" vertex="1">
+          <mxGeometry height="54" width="180" x="553" y="2360.79" as="geometry" />
+        </mxCell>
+        <mxCell id="processDepositPayment4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Deposit Payment" vertex="1">
+          <mxGeometry height="54" width="237" x="725" y="2450.29" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActivePending4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (active_pending_assignment)" vertex="1">
+          <mxGeometry height="54" width="300" x="631" y="2532.79" as="geometry" />
+        </mxCell>
+        <mxCell id="managerAssignSpecialist4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Manager Assign Specialist" vertex="1">
+          <mxGeometry height="54" width="241" x="710" y="2620" as="geometry" />
+        </mxCell>
+        <mxCell id="selectArrangementSpecialist" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Select Arrangement Specialist" vertex="1">
+          <mxGeometry height="54" width="240" x="628.5" y="2714.79" as="geometry" />
+        </mxCell>
+        <mxCell id="assignTaskModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Assign Task Modal" vertex="1">
+          <mxGeometry height="39" width="190" x="710" y="2784" as="geometry" />
+        </mxCell>
+        <mxCell id="taskAssigned4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Assigned" vertex="1">
+          <mxGeometry height="54" width="156" x="654" y="2878.79" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistAcceptTask4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Accept Task" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="2984" as="geometry" />
+        </mxCell>
+        <mxCell id="managerStartWork4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Start Work" vertex="1">
+          <mxGeometry height="54" width="200" x="554" y="3084" as="geometry" />
+        </mxCell>
+        <mxCell id="contractActive4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Active (status: active)" vertex="1">
+          <mxGeometry height="54" width="250" x="529" y="3184" as="geometry" />
+        </mxCell>
+        <mxCell id="viewAssignedTask4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="View Assigned Task" vertex="1">
+          <mxGeometry height="54" width="194" x="854" y="654" as="geometry" />
+        </mxCell>
+        <mxCell id="taskDetail4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Task Detail" vertex="1">
+          <mxGeometry height="54" width="138" x="882" y="758" as="geometry" />
+        </mxCell>
+        <mxCell id="specialistStartTask4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Specialist Start Task" vertex="1">
+          <mxGeometry height="54" width="200" x="882" y="862" as="geometry" />
+        </mxCell>
+        <mxCell id="performRecordingSession4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Perform Recording Session" vertex="1">
+          <mxGeometry height="54" width="240" x="837" y="966" as="geometry" />
+        </mxCell>
+        <mxCell id="uploadRecordingModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Upload Recording Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="837" y="1066" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingFileUploaded4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording File Uploaded" vertex="1">
+          <mxGeometry height="54" width="240" x="837" y="1166" as="geometry" />
+        </mxCell>
+        <mxCell id="submitRecordingForReview4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Submit Files for Review" vertex="1">
+          <mxGeometry height="54" width="220" x="847" y="1266" as="geometry" />
+        </mxCell>
+        <mxCell id="managerReviewRecordingFile4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Review Recording File" vertex="1">
+          <mxGeometry height="54" width="280" x="827" y="1366" as="geometry" />
+        </mxCell>
+        <mxCell id="reviewRecordingModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Review Recording Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="827" y="1466" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingApproved4" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording Approved?" vertex="1">
+          <mxGeometry height="170" width="200" x="940" y="1566" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingApprovedAction4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording Approved" vertex="1">
+          <mxGeometry height="54" width="200" x="1213" y="1566" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingRejected4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Recording Rejected" vertex="1">
+          <mxGeometry height="54" width="200" x="890" y="1780" as="geometry" />
+        </mxCell>
+        <mxCell id="enterRejectionReasonModalRecording4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#f8cecc;strokeColor=#b85450;" value="Enter Rejection Reason Modal" vertex="1">
+          <mxGeometry height="63" width="277" x="827" y="1876" as="geometry" />
+        </mxCell>
+        <mxCell id="managerDeliverRecordingFile4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Manager Deliver Recording File" vertex="1">
+          <mxGeometry height="54" width="280" x="1213" y="1666" as="geometry" />
+        </mxCell>
+        <mxCell id="deliverRecordingFileModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Deliver Recording File Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="1213" y="1766" as="geometry" />
+        </mxCell>
+        <mxCell id="recordingFileDeliveredToCustomer4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Recording File Delivered to Customer" vertex="1">
+          <mxGeometry height="54" width="320" x="1173" y="1862" as="geometry" />
+        </mxCell>
+        <mxCell id="customerViewRecordingFile4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="Customer View Recording File" vertex="1">
+          <mxGeometry height="54" width="260" x="1203" y="1966" as="geometry" />
+        </mxCell>
+        <mxCell id="viewRecordingFileModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;fillColor=#d5e8d4;strokeColor=#82b366;" value="View Recording File Modal" vertex="1">
+          <mxGeometry height="39" width="240" x="1203" y="2066" as="geometry" />
+        </mxCell>
+        <mxCell id="requestFinalPayment4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Request Final Payment" vertex="1">
+          <mxGeometry height="54" width="223" x="1203" y="2166" as="geometry" />
+        </mxCell>
+        <mxCell id="finalPaymentModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Final Payment Modal" vertex="1">
+          <mxGeometry height="39" width="216" x="1203" y="2266" as="geometry" />
+        </mxCell>
+        <mxCell id="processFinalPayment4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Process Final Payment" vertex="1">
+          <mxGeometry height="54" width="219" x="1202" y="2366" as="geometry" />
+        </mxCell>
+        <mxCell id="contractCompleted4" parent="1" style="whiteSpace=wrap;strokeWidth=2;fontSize=19;" value="Contract Completed" vertex="1">
+          <mxGeometry height="54" width="205" x="1209" y="2466" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceFeedbackModal4" parent="1" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=19;" value="Service Feedback Modal" vertex="1">
+          <mxGeometry height="39" width="244" x="1190" y="2566" as="geometry" />
+        </mxCell>
+        <mxCell id="end4" parent="1" style="rounded=1;whiteSpace=wrap;arcSize=50;strokeWidth=2;fontSize=19;" value="End" vertex="1">
+          <mxGeometry height="39" width="51" x="1286" y="2659" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_1" edge="1" parent="1" source="start4" target="homePage4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_2" edge="1" parent="1" source="homePage4" target="login4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_3" edge="1" parent="1" source="homePage4" target="register4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_4" edge="1" parent="1" source="login4" target="loginSuccessful4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_5" edge="1" parent="1" source="register4" target="loginSuccessful4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_6" edge="1" parent="1" source="loginSuccessful4" target="customerDashboard4" value="Customer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_7" edge="1" parent="1" source="loginSuccessful4" target="managerDashboard4" value="Manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_8" edge="1" parent="1" source="loginSuccessful4" target="specialistDashboard4" value="Specialist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_9" edge="1" parent="1" source="customerDashboard4" target="createRecordingOnlyRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_10" edge="1" parent="1" source="createRecordingOnlyRequest" target="chooseBookingDateTime">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_11" edge="1" parent="1" source="chooseBookingDateTime" target="selectVocalSetup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_12" edge="1" parent="1" source="selectVocalSetup" target="vocalSetupDecision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_13" edge="1" parent="1" source="vocalSetupDecision" target="selectVocalist4" value="INTERNAL_ARTIST">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_14" edge="1" parent="1" source="vocalSetupDecision" target="selectInstrumentSetup" value="NONE/CUSTOMER_SELF/BOTH">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_15" edge="1" parent="1" source="selectVocalist4" target="selectInstrumentSetup">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_16" edge="1" parent="1" source="selectInstrumentSetup" target="hasLiveInstruments">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_17" edge="1" parent="1" source="hasLiveInstruments" target="selectInstrumentSkills" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_18" edge="1" parent="1" source="hasLiveInstruments" target="uploadReferenceFiles" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_19" edge="1" parent="1" source="selectInstrumentSkills" target="configureEachInstrument">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_20" edge="1" parent="1" source="configureEachInstrument" target="whoPlaysDecision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_21" edge="1" parent="1" source="whoPlaysDecision" target="equipmentSourceDecision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_22" edge="1" parent="1" source="equipmentSourceDecision" target="selectEquipment" value="STUDIO_SIDE">
+          <mxGeometry relative="1" x="-1" y="-109" as="geometry">
+            <mxPoint x="-85" y="-16" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_23" edge="1" parent="1" source="equipmentSourceDecision" target="uploadReferenceFiles" value="CUSTOMER_SIDE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_24" edge="1" parent="1" source="selectEquipment" target="uploadReferenceFiles">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="1700" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_25" edge="1" parent="1" source="uploadReferenceFiles" target="viewPriceEstimation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_26" edge="1" parent="1" source="viewPriceEstimation" target="enterServiceRequestInfo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_27" edge="1" parent="1" source="enterServiceRequestInfo" target="submitServiceRequest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_28" edge="1" parent="1" source="submitServiceRequest" target="requestPending4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_29" edge="1" parent="1" source="managerDashboard4" target="viewRequest4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_30" edge="1" parent="1" source="viewRequest4" target="assignRequestToSelf4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_31" edge="1" parent="1" source="assignRequestToSelf4" target="requestDetail4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_32" edge="1" parent="1" source="requestDetail4" target="validateReferenceFiles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_33" edge="1" parent="1" source="validateReferenceFiles" target="reviewBookingDetails">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_34" edge="1" parent="1" source="reviewBookingDetails" target="createContract4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_35" edge="1" parent="1" source="createContract4" target="contractDetailModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_36" edge="1" parent="1" source="contractDetailModal4" target="setSLA4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_37" edge="1" parent="1" source="setSLA4" target="calculatePricing4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_38" edge="1" parent="1" source="calculatePricing4" target="sendContractToCustomer4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_39" edge="1" parent="1" source="sendContractToCustomer4" target="customerViewContract4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_40" edge="1" parent="1" source="customerViewContract4" target="viewContractModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_41" edge="1" parent="1" source="viewContractModal4" target="approveContract4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_42" edge="1" parent="1" source="approveContract4" target="acceptContract4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_43" edge="1" parent="1" target="signContract4" value="Yes">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="2060" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_44" edge="1" parent="1" source="acceptContract4" target="requestChangeContract4" value="Request Change">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_45" edge="1" parent="1" source="acceptContract4" target="cancelContract4" value="Cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_46" edge="1" parent="1" source="signContract4" target="depositPaymentModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_47" edge="1" parent="1" source="depositPaymentModal4" target="walletBalanceSufficient4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_48" edge="1" parent="1" source="walletBalanceSufficient4" target="processDepositPayment4" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_49" edge="1" parent="1" source="walletBalanceSufficient4" target="topUpWallet4" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_50" edge="1" parent="1" source="topUpWallet4" target="processDepositPayment4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_51" edge="1" parent="1" source="processDepositPayment4" target="contractActivePending4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_52" edge="1" parent="1" source="contractActivePending4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="881.2743902439024" y="2614.79" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_53" edge="1" parent="1" target="selectArrangementSpecialist">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="881.3599999999992" y="2668.79" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_54" edge="1" parent="1" source="selectArrangementSpecialist">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="850.9867256637158" y="2778.79" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_55" edge="1" parent="1" target="taskAssigned4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="873.618604651163" y="2817.79" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_56" edge="1" parent="1" source="taskAssigned4" target="specialistAcceptTask4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_57" edge="1" parent="1" source="specialistAcceptTask4" target="managerStartWork4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_58" edge="1" parent="1" source="managerStartWork4" target="contractActive4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_59" edge="1" parent="1" source="specialistDashboard4" target="viewAssignedTask4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_60" edge="1" parent="1" source="viewAssignedTask4" target="taskDetail4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_61" edge="1" parent="1" source="taskDetail4" target="specialistStartTask4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_62" edge="1" parent="1" source="specialistStartTask4" target="performRecordingSession4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_63" edge="1" parent="1" source="performRecordingSession4" target="uploadRecordingModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_64" edge="1" parent="1" source="uploadRecordingModal4" target="recordingFileUploaded4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_65" edge="1" parent="1" source="recordingFileUploaded4" target="submitRecordingForReview4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_66" edge="1" parent="1" source="submitRecordingForReview4" target="managerReviewRecordingFile4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_67" edge="1" parent="1" source="managerReviewRecordingFile4" target="reviewRecordingModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_68" edge="1" parent="1" source="reviewRecordingModal4" target="recordingApproved4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_69" edge="1" parent="1" source="recordingApproved4" target="recordingApprovedAction4" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_70" edge="1" parent="1" source="recordingApproved4" target="recordingRejected4" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_71" edge="1" parent="1" source="recordingApprovedAction4" target="managerDeliverRecordingFile4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_72" edge="1" parent="1" source="managerDeliverRecordingFile4" target="deliverRecordingFileModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_73" edge="1" parent="1" source="deliverRecordingFileModal4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1340.488372093023" y="1866" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_74" edge="1" parent="1" target="customerViewRecordingFile4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1340.3000000000002" y="1920" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_75" edge="1" parent="1" source="customerViewRecordingFile4" target="viewRecordingFileModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_76" edge="1" parent="1" source="viewRecordingFileModal4" target="requestFinalPayment4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_77" edge="1" parent="1" source="requestFinalPayment4" target="finalPaymentModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_78" edge="1" parent="1" source="finalPaymentModal4" target="processFinalPayment4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_79" edge="1" parent="1" source="processFinalPayment4" target="contractCompleted4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_80" edge="1" parent="1" source="contractCompleted4" target="serviceFeedbackModal4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_81" edge="1" parent="1" source="serviceFeedbackModal4" target="end4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_82" edge="1" parent="1" source="recordingRejected4" target="enterRejectionReasonModalRecording4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_83" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1070" y="1895.75" />
+              <mxPoint x="1200" y="1480" />
+              <mxPoint x="1067" y="1077.75" />
+            </Array>
+            <mxPoint x="1075.5" y="1900.25" as="sourcePoint" />
+            <mxPoint x="1067" y="1078.25" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge4_84" edge="1" parent="1" source="requestChangeContract4" target="requestPending4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4_85" edge="1" parent="1" source="cancelContract4" target="end4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="370" y="3070" />
+              <mxPoint x="890" y="3050" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

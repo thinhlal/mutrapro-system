@@ -2187,3 +2187,451 @@ File này giờ chỉ chứa placeholder, phù hợp để commit vào Git mà k
 
 ---
 
+_**User (2025-12-14 10:01Z)**_
+
+.2 Limitations & Exclusions
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+
+
+---
+
+
+Đang tìm các tài liệu liên quan để xác định phần "2.2 Limitations & Exclusions":
+
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="codebase_search">
+<details>
+                <summary>Tool use: **codebase_search** • Searched codebase "Limitations Exclusions hạn chế loại trừ" • **15** results</summary>
+            
+| File | Lines |
+|------|-------|
+| `backend/specialist-service/src/main/java/com/mutrapro/specialist_service/service/SpecialistLookupService.java` | L44-78 |
+| `backend/project-service/src/main/java/com/mutrapro/project_service/service/FileService.java` | L504-548 |
+| `backend/request-service/src/main/java/com/mutrapro/request_service/entity/ServiceRequest.java` | L27-82 |
+| `docs/workflows/BOOKING_LOGIC_ANALYSIS.md` | L59 |
+| `docs/workflows/BOOKING_LOGIC_FINAL.md` | L58-112 |
+| `backend/request-service/src/main/java/com/mutrapro/request_service/service/ServiceRequestService.java` | L221-259 |
+| `docs/workflows/BOOKING_LOGIC_FINAL.md` | L61 |
+| `backend/specialist-service/src/main/java/com/mutrapro/specialist_service/entity/ArtistDemo.java` | L9-82 |
+| `backend/request-service/src/main/java/com/mutrapro/request_service/dto/request/CreateServiceRequestRequest.java` | L53 |
+| `backend/specialist-service/src/main/java/com/mutrapro/specialist_service/service/SpecialistProfileService.java` | L392-435 |
+| `docs/workflows/WORKFLOW_4_RECORDING_ONLY_STEP_BY_STEP.md` | L323-369 |
+| `docs/workflows/EQUIPMENT_SKILL_MAPPING.md` | L51 |
+| `docs/workflows/VOCAL_INSTRUMENT_SKILL_LOGIC.md` | L40 |
+| `backend/specialist-service/src/main/java/com/mutrapro/specialist_service/entity/Specialist.java` | L26-95 |
+| `frontend/src/pages/specialist/TaskDetailPage/SpecialistTaskDetailPage.jsx` | L2844-2899 |
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="glob_file_search">
+<details>
+<summary>Tool use: **glob_file_search** • Searched codebase "*.md" • **25** results in **1** directory</summary>
+
+Directory: **e:\SEP_DoAn\mutrapro-system\docs** (25 files)
+
+| File |
+|------|
+| `INSTALLATION_GUIDE.md` |
+| `ERD\Table_Descriptions.md` |
+| `ERD\ERD_Per_Service\database-per-service.md` |
+| `workflows\WORKFLOW_4_RECORDING_ONLY_STEP_BY_STEP.md` |
+| `workflows\WORKFLOW_3_ARRANGEMENT_WITH_RECORDING_STEP_BY_STEP.md` |
+| `workflows\WORKFLOW_2_ARRANGEMENT_STEP_BY_STEP.md` |
+| `workflows\WORKFLOW_1_TRANSCRIPTION_STEP_BY_STEP.md` |
+| `REPORT6_INSTALLATION_INSTRUCTION.md` |
+| `deployment\RAILWAY_DATABASE_SETUP.md` |
+| `workflows\BOOKING_IMPLEMENTATION_ROADMAP.md` |
+| `workflows\BOOKING_LOGIC_FINAL.md` |
+| `workflows\VOCAL_INSTRUMENT_SKILL_LOGIC.md` |
+| `workflows\BOOKING_LOGIC_ANALYSIS.md` |
+| `workflows\EQUIPMENT_SKILL_MAPPING.md` |
+| `workflows\SKILL_VS_INSTRUMENT_NAME.md` |
+| `deployment\EC2_BUILD_AND_RUN.md` |
+| `Report_6_Software_User_Guides.md` |
+| `deployment\EC2_DEPLOY_GUIDE.md` |
+| `workflows\CONTRACT_CREATION_FLOW.md` |
+| `workflows\3_LUONG_WORKFLOW_SUMMARY.md` |
+| `deployment\EC2_DEPLOY_COMMANDS.md` |
+| `workflows\MILESTONE_WORKFLOW_DETAILED.md` |
+| `workflows\REFACTOR_PAYMENT_MILESTONES.md` |
+| `workflows\3_LUONG_WORKFLOW_TEXT.md` |
+| `workflows\MuTraPro_UseCase_Diagram.md` |
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: docs/INSTALLATION_GUIDE.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Đang kiểm tra các file tài liệu để xác định nơi thêm phần "2.2 Limitations & Exclusions":
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: docs/Report_6_Software_User_Guides.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "^##?\s*2\." in "docs" • 6 matches</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `docs\INSTALLATION_GUIDE.md` | `# 2. Installation Guides` | L1 |
+| `docs\INSTALLATION_GUIDE.md` | `## 2.1 System Requirements` | L3 |
+| `docs\INSTALLATION_GUIDE.md` | `## 2.2 Installation Instruction` | L69 |
+| `docs\ERD\ERD_Per_Service\database-per-service.md` | `## 2. specialist-service — Người 1 (phần còn lại)` | L14 |
+| `docs\REPORT6_INSTALLATION_INSTRUCTION.md` | `## 2.2 Installation Instruction` | L1 |
+| `docs\deployment\EC2_DEPLOY_COMMANDS.md` | `# 2. Health check pass` | L367 |
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Đang kiểm tra cấu trúc đầy đủ của phần 2 trong Report để xác định vị trí chèn phần "Limitations & Exclusions":
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: docs/Report_6_Software_User_Guides.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="grep">
+<details>
+<summary>Tool use: **grep** • Grep for "Limitation|limitation|Exclusion|exclusion" in "docs" • 1 match</summary>
+
+Output mode: content
+
+
+| File | Content | Line |
+|------|------|------|
+| `docs\Report_6_Software_User_Guides.md` | `\| 8 \| Issues List \| Known issues and limitations \| v3.0 \|` | L75 |
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Xem phần cuối của phần 2 trong Report để xác định vị trí chèn phần "Limitations & Exclusions":
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: docs/Report_6_Software_User_Guides.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="codebase_search">
+<details>
+                <summary>Tool use: **codebase_search** • Searched codebase "What are the known limitations or constraints of the MuTraPro system?" • **15** results</summary>
+            
+| File | Lines |
+|------|-------|
+| `docs/workflows/WORKFLOW_4_RECORDING_ONLY_STEP_BY_STEP.md` | L323-369 |
+| `docs/workflows/3_LUONG_WORKFLOW_SUMMARY.md` | L76 |
+| `docs/deployment/RAILWAY_DATABASE_SETUP.md` | L61 |
+| `docs/workflows/MuTraPro_UseCase_Diagram.md` | L32 |
+| `docs/workflows/BOOKING_LOGIC_ANALYSIS.md` | L579-615 |
+| `docs/workflows/3_LUONG_WORKFLOW_TEXT.md` | L51 |
+| `docs/workflows/BOOKING_LOGIC_ANALYSIS.md` | L52-106 |
+| `docs/ERD/ERD_Per_Service/ERD_PerService.dbml` | L58 |
+| `event-driven-architecture.md` | L54 |
+| `docs/workflows/WORKFLOW_4_RECORDING_ONLY_STEP_BY_STEP.md` | L367-392 |
+| `docs/ERD/Table_Descriptions.md` | L29 |
+| `docs/workflows/BOOKING_LOGIC_ANALYSIS.md` | L59 |
+| `docs/workflows/MuTraPro_UseCase_Diagram.md` | L416-440 |
+| `deliverables/README.md` | L58 |
+| `deliverables/02_modules/02_configuration/THIRD_PARTY_APIS.md` | L86 |
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Thêm phần "2.3 Limitations & Exclusions" vào Report sau phần 2.2:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: docs/Report_6_Software_User_Guides.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: docs/Report_6_Software_User_Guides.md</summary>
+
+**Chunk 1**
+Lines added: 122, lines removed: undefined
+
+```diff
+@@ -267,4 +267,126 @@
+     - Mở port 22 (SSH) - chỉ cho phép IP của bạn
+  
++ ---
++ 
++ #### 2.3 Limitations &amp; Exclusions
++ 
++ ##### **2.3.1 System Limitations**
++ 
++ **Technical Limitations:**
++ 
++ 1. **Recording Session Management:**
++    - ❌ Reschedule recording session: Hệ thống chưa hỗ trợ tính năng reschedule (hoãn/đổi lịch) cho recording session. Trong trường hợp cần thay đổi lịch, Manager phải tạo booking mới.
++    - ❌ Automatic conflict detection: Hệ thống chưa tự động phát hiện xung đột lịch khi customer đặt nhiều booking cùng thời gian.
++ 
++ 2. **File Upload Limitations:**
++    - ⚠️ Maximum file size: 100MB per file
++    - ⚠️ Supported formats: 
++      - Audio: MP3, WAV, FLAC, OGG, M4A
++      - Notation: MusicXML, XML, MIDI, PDF
++    - ⚠️ Batch upload: Hỗ trợ upload nhiều files, nhưng không hỗ trợ upload folder structure
++ 
++ 3. **Payment Integration:**
++    - ⚠️ Payment gateway: Hiện tại chỉ hỗ trợ Sepay (VietQR). Chưa tích hợp với các payment gateway khác như VNPay, Momo, PayPal.
++    - ⚠️ Refund processing: Refund được xử lý thủ công bởi admin, chưa tự động hóa hoàn toàn.
++ 
++ 4. **Real-time Features:**
++    - ⚠️ Chat system: Sử dụng WebSocket, nhưng không hỗ trợ voice/video call trong ứng dụng.
++    - ⚠️ Notifications: Email notifications được gửi qua Gmail SMTP. Push notifications cho mobile app đang trong giai đoạn phát triển.
++ 
++ 5. **Scalability:**
++    - ⚠️ Database: Sử dụng PostgreSQL trên Railway (free tier có giới hạn). Production cần upgrade plan cao hơn.
++    - ⚠️ File Storage: Sử dụng AWS S3, có chi phí theo usage. Không có giới hạn storage trong code, nhưng phụ thuộc vào AWS account limits.
++ 
++ **Functional Limitations:**
++ 
++ 1. **Workflow Limitations:**
++    - ⚠️ Revision process: Hệ thống hỗ trợ tối đa số lần revision được định nghĩa trong contract. Revision quá số lần quy định sẽ tính phí bổ sung.
++    - ⚠️ Milestone dependencies: Các milestones phải hoàn thành tuần tự, không thể skip hoặc thay đổi thứ tự.
++ 
++ 2. **Studio Booking:**
++    - ⚠️ Equipment availability: Hệ thống kiểm tra equipment availability dựa trên booking schedule, nhưng chưa có real-time inventory tracking.
++    - ⚠️ External guests: Chỉ hỗ trợ tracking số lượng external guests, không có quản lý chi tiết thông tin từng guest.
++ 
++ 3. **Specialist Management:**
++    - ⚠️ Skill matching: Hệ thống match specialist dựa trên skills, nhưng chưa có AI/recommendation engine để suggest specialist tốt nhất.
++    - ⚠️ Availability: Specialist phải manually update availability, chưa có auto-detect từ calendar integration.
++ 
++ **Platform Limitations:**
++ 
++ 1. **Mobile Application:**
++    - ⚠️ iOS Support: iOS app đang trong giai đoạn beta, có thể có một số tính năng chưa hoàn thiện.
++    - ⚠️ Offline Mode: Mobile app không hỗ trợ offline mode. Cần kết nối internet để sử dụng.
++ 
++ 2. **Browser Compatibility:**
++    - ✅ Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
++    - ❌ Internet Explorer: Không hỗ trợ
++    - ❌ Older browsers: Không hỗ trợ các trình duyệt cũ hơn phiên bản đã nêu
++ 
++ ##### **2.3.2 Exclusions (Out of Scope)**
++ 
++ Các tính năng sau **KHÔNG được bao gồm** trong phiên bản hiện tại:
++ 
++ 1. **Advanced Features:**
++    - ❌ AI-powered music analysis và auto-transcription
++    - ❌ Real-time collaboration tools (multi-user editing)
++    - ❌ Music notation editor tích hợp trong web app
++    - ❌ Audio editing tools trong hệ thống
++    - ❌ Version control cho music files (git-like system)
++ 
++ 2. **Integration Features:**
++    - ❌ Calendar integration (Google Calendar, Outlook)
++    - ❌ CRM integration (Salesforce, HubSpot)
++    - ❌ Accounting software integration (QuickBooks, Xero)
++    - ❌ Social media integration (Facebook, Instagram)
++    - ❌ Music streaming platform integration (Spotify, Apple Music)
++ 
++ 3. **Advanced Analytics:**
++    - ❌ Business intelligence dashboard
++    - ❌ Revenue forecasting
++    - ❌ Customer behavior analytics
++    - ❌ Specialist performance metrics dashboard
++ 
++ 4. **Security &amp; Compliance:**
++    - ❌ Two-factor authentication (2FA) - Chưa có trong phiên bản hiện tại
++    - ❌ SSO (Single Sign-On) integration
++    - ❌ GDPR compliance features (data export, right to be forgotten)
++    - ❌ SOC 2 compliance
++ 
++ 5. **Localization:**
++    - ⚠️ Multi-language: Hiện tại chỉ hỗ trợ tiếng Việt
++    - ❌ Multi-currency: Chỉ hỗ trợ VND
++ 
++ 6. **Mobile Features:**
++    - ❌ Mobile payment integration
++    - ❌ Mobile file preview (chỉ hỗ trợ download)
++    - ❌ Mobile push notifications (đang phát triển)
++ 
++ ##### **2.3.3 Known Issues**
++ 
++ Một số vấn đề đã được xác định và đang được xử lý:
++ 
++ 1. **Performance:**
++    - ⚠️ Large file upload: Upload files lớn (&gt;50MB) có thể mất thời gian, đặc biệt trên kết nối internet chậm.
++    - ⚠️ Search functionality: Tìm kiếm trên nhiều records (&gt;1000) có thể chậm.
++ 
++ 2. **User Experience:**
++    - ⚠️ Error messages: Một số error messages chưa được localize đầy đủ, có thể hiển thị bằng tiếng Anh.
++    - ⚠️ Loading states: Một số thao tác chưa có loading indicator rõ ràng.
++ 
++ 3. **Data Consistency:**
++    - ⚠️ Event-driven architecture: Trong một số edge cases, có thể xảy ra eventual consistency delay giữa các services.
++ 
++ ##### **2.3.4 Future Roadmap**
++ 
++ Các tính năng đang được lên kế hoạch cho các phiên bản tương lai:
++ 
++ - ✅ Push notifications cho mobile app
++ - ✅ Two-factor authentication (2FA)
++ - ✅ Advanced analytics dashboard
++ - ✅ Multi-language support (English)
++ - ✅ Calendar integration
++ - ✅ Improved file preview capabilities
++ - ✅ Real-time inventory tracking cho studio equipment
++ 
+  ---
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+
+
+---
+
+
+Cập nhật mục lục để thêm phần 2.3:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: docs/Report_6_Software_User_Guides.md</summary>
+
+**Chunk 1**
+Lines added: 2, lines removed: undefined
+
+```diff
+@@ -26,4 +26,6 @@
+  
+  2.2 Installation Instruction	4
++ 
++ 2.3 Limitations &amp; Exclusions	4
+  
+  3. User Manual	4
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `docs/Report_6_Software_User_Guides.md`
+
+Lint results
+
+
+**No lint errors found**
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+
+Đã thêm phần **"2.3 Limitations & Exclusions"** vào Report. Phần này gồm:
+
+### **2.3.1 System Limitations**
+- **Technical Limitations**: Recording session management, file upload limits, payment integration, real-time features, scalability
+- **Functional Limitations**: Workflow limitations, studio booking constraints, specialist management
+- **Platform Limitations**: Mobile app limitations, browser compatibility
+
+### **2.3.2 Exclusions (Out of Scope)**
+- Các tính năng không được bao gồm: AI features, integrations, advanced analytics, security features, localization
+
+### **2.3.3 Known Issues**
+- Các vấn đề đã biết: performance, user experience, data consistency
+
+### **2.3.4 Future Roadmap**
+- Các tính năng đang được lên kế hoạch
+
+Đã cập nhật mục lục. Phần này nằm sau "2.2 Installation Instruction" và trước "3. User Manual". Nếu cần điều chỉnh hoặc thay đổi số thứ tự, cho biết.
+
+---
+
