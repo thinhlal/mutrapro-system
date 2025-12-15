@@ -26,6 +26,8 @@ Thư mục này chứa:
 │   └── THIRD_PARTY_LIBRARIES.md # Danh sách thư viện, framework
 └── 04_modules_list/              # Danh sách các modules
     └── MODULES_OVERVIEW.md       # Tổng quan các modules
+└── 05_business_rules/            # Business Rules
+    └── BUSINESS_RULES.md         # Tất cả các quy tắc nghiệp vụ
 ```
 
 ---
@@ -65,7 +67,11 @@ Thư mục này chứa:
 - [DEMO_ACCOUNTS.md](02_configuration/DEMO_ACCOUNTS.md) - Tài khoản demo
 
 ### 2. Hướng dẫn cài đặt
+- **[COMPLETE_SETUP_GUIDE.md](03_installation_guide/COMPLETE_SETUP_GUIDE.md)** ⭐ - Hướng dẫn tổng hợp từng bước (Railway + Redis Cloud + Kafka Docker) - **KHUYẾN NGHỊ**
 - [INSTALLATION_GUIDE.md](03_installation_guide/INSTALLATION_GUIDE.md) - Hướng dẫn chi tiết
+- [DOCKER_MODE_GUIDE.md](03_installation_guide/DOCKER_MODE_GUIDE.md) - Chạy bằng Docker
+- [DEVELOPMENT_MODE_GUIDE.md](03_installation_guide/DEVELOPMENT_MODE_GUIDE.md) - Chạy development mode
+- [QUICK_START.md](03_installation_guide/QUICK_START.md) - Hướng dẫn nhanh
 - [THIRD_PARTY_LIBRARIES.md](03_installation_guide/THIRD_PARTY_LIBRARIES.md) - Thư viện, framework
 
 ### 3. Database
@@ -73,6 +79,9 @@ Thư mục này chứa:
 
 ### 4. Modules
 - [MODULES_OVERVIEW.md](04_modules_list/MODULES_OVERVIEW.md) - Tổng quan các modules
+
+### 5. Business Rules
+- **[BUSINESS_RULES.md](05_business_rules/BUSINESS_RULES.md)** ⭐ - Tất cả các quy tắc nghiệp vụ (95 rules)
 
 ---
 
@@ -88,14 +97,16 @@ Thư mục này chứa:
 ## 🚀 BẮT ĐẦU NHANH
 
 ### Cho người mới bắt đầu:
-1. **Đọc [QUICK_START.md](03_installation_guide/QUICK_START.md)** - Hướng dẫn từng bước chi tiết
-2. Làm theo checklist và các bước cài đặt
+1. **Đọc [COMPLETE_SETUP_GUIDE.md](03_installation_guide/COMPLETE_SETUP_GUIDE.md)** - Hướng dẫn tổng hợp từng bước (Railway + Redis Cloud + Kafka Docker)
+2. Hoặc [QUICK_START.md](03_installation_guide/QUICK_START.md) - Hướng dẫn nhanh
+3. Làm theo checklist và các bước cài đặt
 
 ### Cho người đã có kinh nghiệm:
-1. Đọc [INSTALLATION_GUIDE.md](03_installation_guide/INSTALLATION_GUIDE.md)
-2. Cấu hình file `.env` theo [CONFIGURATION.md](02_configuration/CONFIGURATION.md)
-3. Chạy scripts demo data trong `01_database_scripts/`
-4. Đăng nhập với tài khoản trong [DEMO_ACCOUNTS.md](02_configuration/DEMO_ACCOUNTS.md)
+1. **Đọc [COMPLETE_SETUP_GUIDE.md](03_installation_guide/COMPLETE_SETUP_GUIDE.md)** - Hướng dẫn tổng hợp (Railway + Redis Cloud + Kafka Docker)
+2. Hoặc [INSTALLATION_GUIDE.md](03_installation_guide/INSTALLATION_GUIDE.md) - Hướng dẫn chi tiết
+3. Cấu hình file `.env` theo [CONFIGURATION.md](02_configuration/CONFIGURATION.md)
+4. Chạy scripts demo data trong `01_database_scripts/`
+5. Đăng nhập với tài khoản trong [DEMO_ACCOUNTS.md](02_configuration/DEMO_ACCOUNTS.md)
 
 ---
 
