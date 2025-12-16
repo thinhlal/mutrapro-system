@@ -5709,3 +5709,29 @@ Code đã sạch và đúng logic.
 
 ---
 
+_**User (2025-12-16 08:29Z)**_
+
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/vercel/path0/frontend/src/pages/manager/TaskDetail/TaskDetailPage.jsx:1668:18: ERROR: Expected ")" but found "{"
+file: /vercel/path0/frontend/src/pages/manager/TaskDetail/TaskDetailPage.jsx:1668:18
+Expected ")" but found "{"
+1666 |                        </Descriptions.Item>
+1667 |                      )}
+1668 |                    {studioBooking.notes && (
+     |                    ^
+1669 |                      <Descriptions.Item label="Notes" span={2}>
+1670 |                        <Text>{studioBooking.notes}</Text>
+
+---
+
+_**Agent (model default, mode Agent)**_
+
+
+
+---
+
+
+
+---
+
