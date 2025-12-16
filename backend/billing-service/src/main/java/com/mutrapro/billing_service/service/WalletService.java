@@ -7,6 +7,7 @@ import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
+import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
 import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.Wallet;
@@ -720,6 +721,32 @@ public class WalletService {
         }
 
         return transactions.map(walletMapper::toResponse);
+    }
+
+    /**
+     * Aggregate basic wallet and transaction statistics for admin dashboard.
+     */
+    @Transactional(readOnly = true)
+    public WalletStatisticsResponse getWalletStatisticsForAdmin() {
+        long totalWallets = walletRepository.count();
+        BigDecimal totalBalance = walletRepository.sumAllBalances();
+
+        long totalTransactions = walletTransactionRepository.count();
+
+        Map<WalletTxType, Long> transactionsByType = new HashMap<>();
+        for (WalletTxType type : WalletTxType.values()) {
+            long count = walletTransactionRepository.countByTxType(type);
+            if (count > 0) {
+                transactionsByType.put(type, count);
+            }
+        }
+
+        return WalletStatisticsResponse.builder()
+                .totalWallets(totalWallets)
+                .totalBalance(totalBalance)
+                .totalTransactions(totalTransactions)
+                .transactionsByType(transactionsByType)
+                .build();
     }
 
     /**

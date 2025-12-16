@@ -1,6 +1,7 @@
 package com.mutrapro.billing_service.controller;
 
 import com.mutrapro.billing_service.dto.response.WalletResponse;
+import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
 import com.mutrapro.billing_service.enums.WalletTxType;
 import com.mutrapro.billing_service.service.WalletService;
@@ -113,6 +114,19 @@ public class AdminWalletController {
         return ApiResponse.<PageResponse<WalletTransactionResponse>>builder()
                 .message("Transactions retrieved successfully")
                 .data(pageResponse)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @GetMapping("/statistics")
+    @Operation(summary = "Lấy thống kê tổng quan về wallets và transactions (Admin only)")
+    public ApiResponse<WalletStatisticsResponse> getWalletStatistics() {
+        log.info("Admin getting wallet statistics");
+        WalletStatisticsResponse stats = walletService.getWalletStatisticsForAdmin();
+        return ApiResponse.<WalletStatisticsResponse>builder()
+                .message("Wallet statistics retrieved successfully")
+                .data(stats)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();

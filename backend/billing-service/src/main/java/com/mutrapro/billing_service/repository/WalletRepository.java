@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Repository
@@ -31,5 +32,8 @@ public interface WalletRepository extends JpaRepository<Wallet, String> {
     Page<Wallet> findAllByUserId(
             @Param("userId") String userId,
             org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(w.balance), 0) FROM Wallet w")
+    BigDecimal sumAllBalances();
 }
 

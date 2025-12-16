@@ -6,6 +6,7 @@ import com.mutrapro.request_service.enums.ServiceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,5 +72,14 @@ public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, 
     Page<ServiceRequest> findByUserIdAndRequestType(String userId, ServiceType requestType, Pageable pageable);
     
     Page<ServiceRequest> findByUserIdAndStatusAndRequestType(String userId, RequestStatus status, ServiceType requestType, Pageable pageable);
+
+    // --- Aggregation helpers for admin statistics ---
+
+    long countByStatus(RequestStatus status);
+
+    long countByRequestType(ServiceType requestType);
+
+    @Query("SELECT COUNT(sr) FROM ServiceRequest sr WHERE sr.status = :status AND sr.requestType = :type")
+    long countByStatusAndRequestType(RequestStatus status, ServiceType type);
 }
 
