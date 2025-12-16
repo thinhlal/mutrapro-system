@@ -178,10 +178,10 @@ const TaskDetailPage = () => {
   const [artistsInfo, setArtistsInfo] = useState({});
   const [loadingArtists, setLoadingArtists] = useState(false);
 
-  const loadArtistsInfo = useCallback(async artists => {
+  const loadArtistsInfo = useCallback(async participants => {
     try {
       setLoadingArtists(true);
-      const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
+      const specialistIds = participants.map(p => p.specialistId).filter(Boolean);
 
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
@@ -229,9 +229,10 @@ const TaskDetailPage = () => {
           const booking = response.data;
           setStudioBooking(booking);
 
-          // Load thông tin artists nếu có
-          if (booking.artists && booking.artists.length > 0) {
-            loadArtistsInfo(booking.artists);
+          // Load thông tin artists nếu có (từ participants với performerSource = INTERNAL_ARTIST)
+          const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+          if (internalArtists.length > 0) {
+            loadArtistsInfo(internalArtists);
           }
         } else {
           setStudioBooking(null);
@@ -1540,8 +1541,9 @@ const TaskDetailPage = () => {
                       <Tag color="blue">{studioBooking.sessionType}</Tag>
                     </Descriptions.Item>
                   )}
-                  {studioBooking.artists &&
-                    studioBooking.artists.length > 0 && (
+                  {(() => {
+                    const internalArtists = studioBooking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+                    return internalArtists.length > 0 && (
                       <Descriptions.Item label="Artists" span={2}>
                         {loadingArtists ? (
                           <Spin />
@@ -1551,9 +1553,9 @@ const TaskDetailPage = () => {
                             size="small"
                             style={{ width: '100%' }}
                           >
-                            {studioBooking.artists.map((artist, idx) => {
+                            {internalArtists.map((participant, idx) => {
                               const specialistInfo =
-                                artistsInfo[artist.specialistId];
+                                artistsInfo[participant.specialistId];
                               return (
                                 <Card
                                   key={idx}
@@ -1585,7 +1587,7 @@ const TaskDetailPage = () => {
                                           <Text strong>
                                             {specialistInfo?.fullName || 'N/A'}
                                           </Text>
-                                          {artist.isPrimary && (
+                                          {participant.isPrimary && (
                                             <Tag color="gold">Primary</Tag>
                                           )}
                                         </Space>
@@ -1602,13 +1604,13 @@ const TaskDetailPage = () => {
                                     <Space>
                                       <Text strong>Specialist ID:</Text>
                                       <Text
-                                        copyable={{ text: artist.specialistId }}
+                                        copyable={{ text: participant.specialistId }}
                                         style={{
                                           fontFamily: 'monospace',
                                           fontSize: '12px',
                                         }}
                                       >
-                                        {artist.specialistId?.substring(0, 8)}
+                                        {participant.specialistId?.substring(0, 8)}
                                         ...
                                       </Text>
                                     </Space>
@@ -1616,16 +1618,16 @@ const TaskDetailPage = () => {
                                       <Text strong>Role:</Text>
                                       <Tag
                                         color={
-                                          artist.role === 'VOCALIST'
+                                          participant.roleType === 'VOCAL'
                                             ? 'orange'
                                             : 'blue'
                                         }
                                       >
-                                        {artist.role === 'VOCALIST'
+                                        {participant.roleType === 'VOCAL'
                                           ? 'Vocal'
-                                          : artist.role === 'INSTRUMENT_PLAYER'
+                                          : participant.roleType === 'INSTRUMENT'
                                             ? 'Instrument'
-                                            : artist.role || 'N/A'}
+                                            : participant.roleType || 'N/A'}
                                       </Tag>
                                     </Space>
                                     {specialistInfo?.primaryTag && (

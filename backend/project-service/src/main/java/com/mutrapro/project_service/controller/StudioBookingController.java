@@ -153,7 +153,7 @@ public class StudioBookingController {
      * Flow: Sau khi chọn slot → hiển thị artists/instrumentalists với:
      * - Available/Busy status cho slot đó
      * - Filter theo skillId nếu là INSTRUMENT
-     * - Check conflict từ cả booking_artists và booking_participants
+     * - Check conflict từ booking_participants (chỉ check INTERNAL_ARTIST)
      * 
      * @param date Ngày booking
      * @param startTime Thời gian bắt đầu

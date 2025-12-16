@@ -210,13 +210,14 @@ const MyStudioBookings = () => {
       key: 'role',
       width: 120,
       render: (_, record) => {
-        // Luồng 2 (CONTRACT_RECORDING): lấy từ artists
-        if (record.artists && record.artists.length > 0) {
-          const myArtist = record.artists[0];
-          return myArtist?.role ? <Tag>{myArtist.role}</Tag> : 'N/A';
+        // Lấy từ participants với performerSource = INTERNAL_ARTIST
+        const internalArtists = record?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+        if (internalArtists.length > 0) {
+          const myParticipant = internalArtists[0];
+          return myParticipant?.roleType ? <Tag>{myParticipant.roleType}</Tag> : 'N/A';
         }
         
-        // Luồng 3 (PRE_CONTRACT_HOLD): lấy từ participants
+        // Fallback: lấy từ participants (cho luồng 3)
         if (record.participants && record.participants.length > 0) {
           // Tìm participant với isPrimary = true hoặc lấy participant đầu tiên
           const myParticipant = record.participants.find(p => p.isPrimary) || record.participants[0];
@@ -231,7 +232,8 @@ const MyStudioBookings = () => {
       key: 'participantsCount',
       width: 120,
       render: (_, record) => {
-        const count = (record.artists?.length || 0) + (record.participants?.length || 0);
+        // Chỉ đếm participants (artists đã được gộp vào participants)
+        const count = record.participants?.length || 0;
         return count > 0 ? `${count} người` : 'N/A';
       },
     },

@@ -49,8 +49,7 @@ public class StudioBookingResponse {
     String notes;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
-    List<BookingArtistResponse> artists;  // Danh sách artists tham gia booking (cho luồng 2)
-    List<BookingParticipantInfo> participants;  // Danh sách participants (cho luồng 3 - recording from request)
+    List<BookingParticipantInfo> participants;  // Danh sách participants (cho tất cả luồng)
     List<BookingEquipmentInfo> requiredEquipment;  // Danh sách equipment (cho luồng 3)
     
     // Arrangement submission info (cho recording milestones)

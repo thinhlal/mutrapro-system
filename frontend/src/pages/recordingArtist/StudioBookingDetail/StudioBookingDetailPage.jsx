@@ -73,7 +73,8 @@ const StudioBookingDetailPage = () => {
   }, [bookingId]);
 
   useEffect(() => {
-    if (booking?.artists && booking.artists.length > 0) {
+    const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+    if (internalArtists.length > 0) {
       loadArtistsInfo();
     }
   }, [booking]);
@@ -108,8 +109,9 @@ const StudioBookingDetailPage = () => {
   const loadArtistsInfo = async () => {
     try {
       setLoadingArtists(true);
-      const artistIds = booking.artists
-        .map(a => a.specialistId)
+      const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+      const artistIds = internalArtists
+        .map(p => p.specialistId)
         .filter(Boolean);
       const infoPromises = artistIds.map(id =>
         getSpecialistById(id).catch(err => {
@@ -303,17 +305,19 @@ const StudioBookingDetailPage = () => {
           </Descriptions>
 
           {/* Artists Information (CONTRACT_RECORDING) */}
-          {booking.artists && booking.artists.length > 0 && (
-            <div>
-              <Title level={4}>Artists (Contract Recording)</Title>
-              <Spin spinning={loadingArtists}>
-                <Space
-                  direction="vertical"
-                  size="middle"
-                  style={{ width: '100%' }}
-                >
-                  {booking.artists.map((artist, index) => {
-                    const specialistInfo = artistsInfo[artist.specialistId];
+          {(() => {
+            const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+            return internalArtists.length > 0 && (
+              <div>
+                <Title level={4}>Artists (Contract Recording)</Title>
+                <Spin spinning={loadingArtists}>
+                  <Space
+                    direction="vertical"
+                    size="middle"
+                    style={{ width: '100%' }}
+                  >
+                    {internalArtists.map((participant, index) => {
+                      const specialistInfo = artistsInfo[participant.specialistId];
                     return (
                       <Card key={index} size="small">
                         <Space
@@ -343,15 +347,15 @@ const StudioBookingDetailPage = () => {
                           </Space>
                           <Space>
                             <Text type="secondary">Role:</Text>
-                            <Tag>{artist.role || 'N/A'}</Tag>
+                            <Tag>{participant.roleType || 'N/A'}</Tag>
                           </Space>
-                          {artist.isPrimary && (
+                          {participant.isPrimary && (
                             <Tag color="gold">Primary Artist</Tag>
                           )}
-                          {artist.artistFee != null && artist.artistFee > 0 && (
+                          {participant.participantFee != null && participant.participantFee > 0 && (
                             <div>
                               <Text type="secondary">Fee: </Text>
-                              <Text strong>{artist.artistFee.toLocaleString('vi-VN')} ₫</Text>
+                              <Text strong>{participant.participantFee.toLocaleString('vi-VN')} ₫</Text>
                             </div>
                           )}
                         </Space>

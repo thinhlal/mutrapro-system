@@ -1,16 +1,17 @@
 package com.mutrapro.project_service.service;
 
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
-import com.mutrapro.project_service.entity.BookingArtist;
+import com.mutrapro.project_service.entity.BookingParticipant;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.FileSourceType;
+import com.mutrapro.project_service.enums.PerformerSource;
 import com.mutrapro.project_service.exception.FileAccessDeniedException;
 import com.mutrapro.project_service.exception.FileNotFoundException;
-import com.mutrapro.project_service.repository.BookingArtistRepository;
+import com.mutrapro.project_service.repository.BookingParticipantRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
@@ -42,7 +43,7 @@ public class FileAccessService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
-    BookingArtistRepository bookingArtistRepository;
+    BookingParticipantRepository bookingParticipantRepository;
     StudioBookingRepository studioBookingRepository;
     SpecialistServiceFeignClient specialistServiceFeignClient;
 
@@ -345,11 +346,12 @@ public class FileAccessService {
                 
                 if (studioBooking != null) {
                     // Check xem recording artist có được book vào studio booking này không
-                    List<BookingArtist> bookingArtists = bookingArtistRepository
-                            .findByBookingBookingId(studioBooking.getBookingId());
+                    List<BookingParticipant> bookingParticipants = bookingParticipantRepository
+                            .findByBooking_BookingId(studioBooking.getBookingId());
                     
-                    boolean isBooked = bookingArtists.stream()
-                            .anyMatch(ba -> specialistId.equals(ba.getSpecialistId()));
+                    boolean isBooked = bookingParticipants.stream()
+                            .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                            .anyMatch(bp -> specialistId.equals(bp.getSpecialistId()));
                     
                     if (isBooked) {
                         log.debug("Recording artist {} (specialistId={}) is booked in studio booking {} for recording milestone {} linked to arrangement submission {}", 

@@ -136,9 +136,10 @@ const StudioBookingDetailPage = () => {
           loadMilestoneTasks(booking.contractId, booking.milestoneId);
         }
 
-        // Load thông tin artists nếu có
-        if (booking.artists && booking.artists.length > 0) {
-          loadArtistsInfo(booking.artists);
+        // Load thông tin artists nếu có (từ participants với performerSource = INTERNAL_ARTIST)
+        const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+        if (internalArtists.length > 0) {
+          loadArtistsInfo(internalArtists);
         }
       } else {
         throw new Error(response?.message || 'Booking not found');
@@ -200,10 +201,10 @@ const StudioBookingDetailPage = () => {
     }
   };
 
-  const loadArtistsInfo = async artists => {
+  const loadArtistsInfo = async participants => {
     try {
       setLoadingArtists(true);
-      const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
+      const specialistIds = participants.map(p => p.specialistId).filter(Boolean);
 
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
@@ -832,19 +833,21 @@ const StudioBookingDetailPage = () => {
               </Descriptions.Item>
             )}
 
-          {/* Artists (cho luồng 2) */}
-          {bookingDetail.artists && bookingDetail.artists.length > 0 && (
-            <Descriptions.Item label="Artists" span={2}>
-              {loadingArtists ? (
-                <Spin />
-              ) : (
-                <Space
-                  direction="vertical"
-                  size="small"
-                  style={{ width: '100%' }}
-                >
-                  {bookingDetail.artists.map((artist, idx) => {
-                    const specialistInfo = artistsInfo[artist.specialistId];
+          {/* Artists (từ participants với performerSource = INTERNAL_ARTIST) */}
+          {(() => {
+            const internalArtists = bookingDetail?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+            return internalArtists.length > 0 && (
+              <Descriptions.Item label="Artists" span={2}>
+                {loadingArtists ? (
+                  <Spin />
+                ) : (
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%' }}
+                  >
+                    {internalArtists.map((participant, idx) => {
+                      const specialistInfo = artistsInfo[participant.specialistId];
                     return (
                       <Card key={idx} size="small" style={{ marginBottom: 8 }}>
                         <Space
@@ -870,7 +873,7 @@ const StudioBookingDetailPage = () => {
                                 <Text strong>
                                   {specialistInfo?.fullName || 'N/A'}
                                 </Text>
-                                {artist.isPrimary && (
+                                {participant.isPrimary && (
                                   <Tag color="gold">Primary</Tag>
                                 )}
                               </Space>
@@ -887,27 +890,27 @@ const StudioBookingDetailPage = () => {
                           <Space>
                             <Text strong>Specialist ID:</Text>
                             <Text
-                              copyable={{ text: artist.specialistId }}
+                              copyable={{ text: participant.specialistId }}
                               style={{
                                 fontFamily: 'monospace',
                                 fontSize: '12px',
                               }}
                             >
-                              {artist.specialistId?.substring(0, 8)}...
+                              {participant.specialistId?.substring(0, 8)}...
                             </Text>
                           </Space>
                           <Space>
                             <Text strong>Role:</Text>
                             <Tag
                               color={
-                                artist.role === 'VOCALIST' ? 'orange' : 'blue'
+                                participant.roleType === 'VOCAL' ? 'orange' : 'blue'
                               }
                             >
-                              {artist.role === 'VOCALIST'
+                              {participant.roleType === 'VOCAL'
                                 ? 'Vocal'
-                                : artist.role === 'INSTRUMENT_PLAYER'
+                                : participant.roleType === 'INSTRUMENT'
                                   ? 'Instrument'
-                                  : artist.role || 'N/A'}
+                                  : participant.roleType || 'N/A'}
                             </Tag>
                           </Space>
                           {specialistInfo && (
@@ -942,7 +945,8 @@ const StudioBookingDetailPage = () => {
                 </Space>
               )}
             </Descriptions.Item>
-          )}
+            );
+          })()}
 
           {/* Participants (cho luồng 3: PRE_CONTRACT_HOLD - recording requests) */}
           {bookingDetail.participants && bookingDetail.participants.length > 0 && (
