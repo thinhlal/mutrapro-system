@@ -132,5 +132,7 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     
     // Check if transaction already has refund
     Optional<WalletTransaction> findByRefundOfWalletTx_WalletTxId(String walletTxId);
+
+    long countByTxType(WalletTxType txType);
 }
 
