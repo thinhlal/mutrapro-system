@@ -16,7 +16,10 @@ import java.time.LocalDateTime;
     @Index(name = "idx_task_assignments_milestone_id", columnList = "milestone_id"),
     @Index(name = "idx_task_assignments_milestone_contract", columnList = "milestone_id, contract_id"),
     @Index(name = "idx_task_assignments_status", columnList = "status"),
-    @Index(name = "idx_task_assignments_task_type", columnList = "task_type")
+    @Index(name = "idx_task_assignments_task_type", columnList = "task_type"),
+    // Composite index để tối ưu query filter và sort (contract_id, status, task_type, has_issue, assigned_date)
+    @Index(name = "idx_task_assignments_contract_status_type", columnList = "contract_id, status, task_type"),
+    @Index(name = "idx_task_assignments_sort", columnList = "has_issue, status, assigned_date")
 })
 @Getter
 @Setter
@@ -33,6 +36,16 @@ public class TaskAssignment extends BaseEntity<String> {
 
     @Column(name = "contract_id", nullable = false)
     String contractId;  // Foreign key to contracts.contract_id
+    
+    // Contract snapshots - để tránh fetch Contract trong list view
+    @Column(name = "contract_number_snapshot", length = 100)
+    String contractNumberSnapshot;
+    
+    @Column(name = "contract_name_snapshot", length = 500)
+    String contractNameSnapshot;
+    
+    @Column(name = "contract_created_at_snapshot")
+    LocalDateTime contractCreatedAtSnapshot;
 
     @Column(name = "specialist_id", nullable = false)
     String specialistId;  // Soft reference to specialist-service
@@ -94,5 +107,9 @@ public class TaskAssignment extends BaseEntity<String> {
     // Link to studio booking (cho recording tasks)
     @Column(name = "studio_booking_id")
     String studioBookingId; // Soft reference to studio_bookings.booking_id (nullable - có thể null lúc mới tạo task)
+    
+    // Progress percentage - tính ở backend và update khi submission thay đổi (0-100)
+    @Column(name = "progress_percentage")
+    Integer progressPercentage;
 }
 

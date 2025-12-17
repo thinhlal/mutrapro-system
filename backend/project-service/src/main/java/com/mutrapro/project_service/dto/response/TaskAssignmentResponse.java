@@ -57,6 +57,12 @@ public class TaskAssignmentResponse {
     // Link to studio booking (for recording tasks)
     String studioBookingId;  // Soft reference to studio_bookings.booking_id (nullable)
 
+    // Progress percentage - tính ở backend và update khi submission thay đổi (0-100)
+    Integer progressPercentage;
+    
+    // Has pending review submission - để frontend check mà không cần fetch submissions
+    Boolean hasPendingReview;
+
     // Request info (nested) - chỉ các field quan trọng cho specialist
     RequestInfo request;
 

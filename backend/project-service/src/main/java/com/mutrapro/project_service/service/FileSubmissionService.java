@@ -84,6 +84,7 @@ public class FileSubmissionService {
     RevisionRequestRepository revisionRequestRepository;
     StudioBookingRepository studioBookingRepository;
     ContractService contractService;
+    TaskAssignmentService taskAssignmentService;
     ObjectMapper objectMapper;
     FileSubmissionMapper fileSubmissionMapper;
 
@@ -205,6 +206,15 @@ public class FileSubmissionService {
         // Update assignment status to ready_for_review
         assignment.setStatus(AssignmentStatus.ready_for_review);
         taskAssignmentRepository.save(assignment);
+        
+        // Update progress percentage cho assignment
+        try {
+            taskAssignmentService.updateProgressForAssignment(assignmentId);
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.warn("Failed to update progress for assignment: assignmentId={}, error={}", 
+                assignmentId, e.getMessage());
+        }
 
         // Chỉ update revision request nếu assignment đang ở trạng thái in_revision
         // (customer revision)
@@ -680,6 +690,15 @@ public class FileSubmissionService {
         }
 
         log.info("Approved submission: submissionId={}, fileCount={}", submissionId, files.size());
+        
+        // Update progress percentage cho assignment
+        try {
+            taskAssignmentService.updateProgressForAssignment(assignment.getAssignmentId());
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.warn("Failed to update progress for assignment: assignmentId={}, error={}", 
+                assignment.getAssignmentId(), e.getMessage());
+        }
 
         return toResponse(saved);
     }
@@ -852,6 +871,15 @@ public class FileSubmissionService {
         }
 
         log.info("Rejected submission: submissionId={}, reason={}", submissionId, reason);
+        
+        // Update progress percentage cho assignment
+        try {
+            taskAssignmentService.updateProgressForAssignment(assignment.getAssignmentId());
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.warn("Failed to update progress for assignment: assignmentId={}, error={}", 
+                assignment.getAssignmentId(), e.getMessage());
+        }
 
         return toResponse(saved);
     }
@@ -1018,6 +1046,15 @@ public class FileSubmissionService {
 
         } else {
             throw ValidationException.invalidAction(action, "'accept' or 'request_revision'");
+        }
+        
+        // Update progress percentage cho assignment
+        try {
+            taskAssignmentService.updateProgressForAssignment(assignment.getAssignmentId());
+        } catch (Exception e) {
+            // Log error nhưng không fail transaction
+            log.warn("Failed to update progress for assignment: assignmentId={}, error={}", 
+                assignment.getAssignmentId(), e.getMessage());
         }
 
         return toResponse(submission);

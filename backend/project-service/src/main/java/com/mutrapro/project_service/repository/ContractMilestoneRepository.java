@@ -23,6 +23,8 @@ public interface ContractMilestoneRepository extends JpaRepository<ContractMiles
 
     List<ContractMilestone> findByContractIdIn(List<String> contractIds);
     
+    List<ContractMilestone> findByMilestoneIdIn(List<String> milestoneIds);
+    
     List<ContractMilestone> findBySourceArrangementSubmissionId(String sourceArrangementSubmissionId);
 }
 

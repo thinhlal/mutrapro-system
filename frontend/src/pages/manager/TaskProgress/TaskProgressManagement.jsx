@@ -348,133 +348,12 @@ export default function TaskProgressManagement() {
     return contractsMap[contractId] || null;
   };
 
-  // Calculate progress percentage
-  // Logic: Tính theo submission status thay vì file status
-  // - assigned, accepted_waiting, ready_to_start: 0% (chưa bắt đầu)
-  // - cancelled: 0% (đã hủy)
-  // - completed: 100% (hoàn thành)
-  // - in_progress: tính theo submissions
-  //   - Chưa có submission: 25%
-  //   - Có submission approved: 75%
-  //   - Có submission pending_review: 50%
-  //   - Có submission rejected/revision_requested: 40%
-  //   - Có submission draft: 30%
-  // - ready_for_review: có submission pending_review → 75% (sau khi revision xong và submit lại)
-  // - revision_requested: có submission rejected/revision_requested → 40%
-  const calculateProgress = record => {
-    const status = record.status?.toLowerCase();
-
-    // Status ban đầu - chưa bắt đầu
-    if (
-      status === 'assigned' ||
-      status === 'accepted_waiting' ||
-      status === 'ready_to_start'
-    ) {
-      return 0;
-    }
-
-    // Task đã hủy
-    if (status === 'cancelled') {
-      return 0;
-    }
-
-    // Task hoàn thành
-    if (status === 'completed') {
-      return 100;
-    }
-
-    // Lấy submissions để tính progress
-    const submissions = taskSubmissionsMap[record.assignmentId] || [];
-
-    // ready_for_review: đã submit lại và chờ duyệt (sau khi revision)
-    if (status === 'ready_for_review') {
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      // Nếu đã có submission pending_review sau revision → 75% (cao hơn in_revision vì đã submit lại)
-      // Nếu chưa có → 50% (trường hợp hiếm)
-      return hasPendingReview ? 75 : 50;
-    }
-
-    // revision_requested: có submission rejected hoặc revision_requested
-    if (status === 'revision_requested') {
-      const hasRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'rejected'
-      );
-      const hasRevisionRequested = submissions.some(
-        s => s.status?.toLowerCase() === 'revision_requested'
-      );
-      return hasRejected || hasRevisionRequested ? 40 : 0;
-    }
-
-    // in_revision: đang chỉnh sửa lại (đã có submission trước đó, đang làm lại)
-    if (status === 'in_revision') {
-      // Đã có submission trước đó và đang chỉnh sửa lại
-      // Progress cao hơn vì đã làm được phần lớn công việc
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      const hasDraft = submissions.some(
-        s => s.status?.toLowerCase() === 'draft'
-      );
-      // Nếu có submission pending_review trong revision → 70%
-      // Nếu có draft → 60%
-      // Mặc định → 60% (đang làm lại)
-      if (hasPendingReview) return 70;
-      if (hasDraft) return 60;
-      return 60;
-    }
-
-    // waiting_customer_review: đã giao cho customer, chờ review
-    if (status === 'waiting_customer_review') {
-      // Đã hoàn thành và giao cho customer, chờ customer review
-      // Progress rất cao vì đã hoàn thành công việc
-      return 90;
-    }
-
-    // in_progress: tính dựa trên submissions
-    if (status === 'in_progress') {
-      if (submissions.length === 0) {
-        // Chưa có submission nào
-        return 25;
-      }
-
-      // Kiểm tra submission status cao nhất (theo thứ tự ưu tiên)
-      const hasCustomerAccepted = submissions.some(
-        s => s.status?.toLowerCase() === 'customer_accepted'
-      );
-      const hasCustomerRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'customer_rejected'
-      );
-      const hasApproved = submissions.some(
-        s => s.status?.toLowerCase() === 'approved'
-      );
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      const hasRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'rejected'
-      );
-      const hasRevisionRequested = submissions.some(
-        s => s.status?.toLowerCase() === 'revision_requested'
-      );
-      const hasDraft = submissions.some(
-        s => s.status?.toLowerCase() === 'draft'
-      );
-
-      // Ưu tiên: customer_accepted > approved > pending_review > customer_rejected/rejected/revision_requested > draft
-      if (hasCustomerAccepted) return 95; // Đã được customer accept, gần hoàn thành
-      if (hasApproved) return 75;
-      if (hasPendingReview) return 50;
-      if (hasCustomerRejected || hasRejected || hasRevisionRequested) return 40; // Customer đã reject, cần revision
-      if (hasDraft) return 30;
-
-      // Có submission nhưng status không rõ
-      return 30;
-    }
-
-    return 0;
+  // Sử dụng progressPercentage từ backend (đã được tính sẵn)
+  const getProgress = record => {
+    // Nếu null/undefined thì default 0
+    return record.progressPercentage ?? 0;
   };
+
 
   // Render specialist cell
   const renderSpecialistCell = record => {
@@ -658,7 +537,7 @@ export default function TaskProgressManagement() {
       key: 'progress',
       width: 120,
       render: (_, record) => {
-        const percent = calculateProgress(record);
+        const percent = getProgress(record);
         return (
           <Progress
             percent={percent}
@@ -697,10 +576,8 @@ export default function TaskProgressManagement() {
         const now = dayjs();
         // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
         const hasFirstSubmission = !!record.milestone?.firstSubmissionAt;
-        const submissions = taskSubmissionsMap[record.assignmentId] || [];
-        const hasPendingReview = submissions.some(
-          s => s.status?.toLowerCase() === 'pending_review'
-        );
+        // Dùng hasPendingReview từ backend thay vì check submissions
+        const hasPendingReview = record.hasPendingReview === true;
         const shouldHideDeadlineWarning =
           hasFirstSubmission || hasPendingReview;
         const isFirstSubmissionLate = record.milestone?.firstSubmissionLate === true;
@@ -943,7 +820,7 @@ export default function TaskProgressManagement() {
         <Row gutter={[16, 16]}>
           <Col xs={24} md={8}>
             <Input
-              placeholder="Tìm contract / milestone / specialist"
+              placeholder="Tìm theo: Contract ID, Contract Number, Contract Name, Milestone ID, Specialist ID, Specialist Name"
               value={filters.search}
               onChange={handleSearchChange}
               allowClear

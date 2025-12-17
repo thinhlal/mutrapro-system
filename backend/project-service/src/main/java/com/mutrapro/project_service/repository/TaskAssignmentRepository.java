@@ -112,6 +112,8 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
            "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -130,6 +132,78 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "ta.assignedDate DESC")
     Page<TaskAssignment> findAllByManagerWithFiltersAndKeyword(
             @Param("contractIds") List<String> contractIds,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    /**
+     * Find all task assignments for manager with filters and pagination (optimized - JOIN Contract directly)
+     * Filters: managerUserId, contractStatus, assignmentStatus, taskType
+     * Sort: hasIssue DESC, status priority, assignedDate DESC
+     * Tối ưu: Không cần fetch contracts trước, JOIN trực tiếp trong query
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "ORDER BY " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END, " +
+           "ta.assignedDate DESC")
+    Page<TaskAssignment> findAllByManagerWithFiltersOptimized(
+            @Param("managerUserId") String managerUserId,
+            @Param("contractStatuses") List<com.mutrapro.project_service.enums.ContractStatus> contractStatuses,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            Pageable pageable);
+
+    /**
+     * Find all task assignments for manager with filters, pagination and keyword search (optimized - JOIN Contract directly)
+     * Filters: managerUserId, contractStatus, assignmentStatus, taskType, keyword
+     * Keyword search: contractId, contractNumber (from Contract), milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
+     * Sort: hasIssue DESC, status priority, assignedDate DESC
+     * Tối ưu: Không cần fetch contracts trước, JOIN trực tiếp trong query
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistUserIdSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END, " +
+           "ta.assignedDate DESC")
+    Page<TaskAssignment> findAllByManagerWithFiltersAndKeywordOptimized(
+            @Param("managerUserId") String managerUserId,
+            @Param("contractStatuses") List<com.mutrapro.project_service.enums.ContractStatus> contractStatuses,
             @Param("status") AssignmentStatus status,
             @Param("taskType") TaskType taskType,
             @Param("keyword") String keyword,
