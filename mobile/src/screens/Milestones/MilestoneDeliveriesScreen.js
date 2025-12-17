@@ -641,6 +641,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                     size={18}
                                     color={COLORS.primary}
                                   />
+                                  <Text style={styles.fileActionText}>Preview</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                   style={styles.fileActionButton}
@@ -653,6 +654,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                     size={18}
                                     color={COLORS.primary}
                                   />
+                                  <Text style={styles.fileActionText}>Download</Text>
                                 </TouchableOpacity>
                               </View>
                             </View>
@@ -735,9 +737,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                     <View style={styles.filesContainer}>
                       {submission.files.map((file, index) => (
                         <View key={index} style={styles.fileRow}>
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <FileItem file={file} />
-                          </View>
+                          <FileItem file={file} />
                           <View style={styles.fileActions}>
                             <TouchableOpacity
                               style={styles.fileActionButton}
@@ -748,6 +748,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                 size={18}
                                 color={COLORS.primary}
                               />
+                              <Text style={styles.fileActionText}>Preview</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={styles.fileActionButton}
@@ -760,6 +761,7 @@ const MilestoneDeliveriesScreen = ({ navigation, route }) => {
                                 size={18}
                                 color={COLORS.primary}
                               />
+                              <Text style={styles.fileActionText}>Download</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -1465,20 +1467,24 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   fileRow: {
-    flexDirection: "row",
-    alignItems: "center",
     marginBottom: SPACING.sm,
-    gap: SPACING.xs,
     width: "100%",
-    minWidth: 0,
   },
   fileActions: {
     flexDirection: "row",
-    flexShrink: 0,
-    gap: SPACING.xs / 2,
+    marginTop: SPACING.xs,
+    gap: SPACING.sm,
   },
   fileActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: SPACING.xs,
+    gap: SPACING.xs / 2,
+  },
+  fileActionText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   actionButtons: {
     flexDirection: "row",
