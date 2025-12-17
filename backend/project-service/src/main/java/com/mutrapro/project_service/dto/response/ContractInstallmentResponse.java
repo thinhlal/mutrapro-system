@@ -37,6 +37,16 @@ public class ContractInstallmentResponse {
     LocalDateTime dueDate;
     
     BigDecimal amount;
+
+    // Late discount audit fields (nullable when not applicable)
+    BigDecimal paidAmount;
+    BigDecimal lateDiscountPercent;
+    BigDecimal lateDiscountAmount;
+    Long lateHours;
+    Integer graceHours;
+    String discountReason;
+    String discountPolicyVersion;
+    LocalDateTime discountAppliedAt;
     
     CurrencyType currency;
     

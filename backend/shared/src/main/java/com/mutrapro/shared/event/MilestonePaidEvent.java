@@ -25,5 +25,14 @@ public class MilestonePaidEvent implements Serializable {
     private BigDecimal amount;
     private String currency;  // VND, USD, etc.
     private LocalDateTime timestamp;
+
+    // Optional late discount audit fields (policy v1)
+    private BigDecimal baseAmount;
+    private BigDecimal lateDiscountPercent;
+    private BigDecimal lateDiscountAmount;
+    private Long lateHours;
+    private Integer graceHours;
+    private String discountReason; // e.g. LATE_DELIVERY
+    private String discountPolicyVersion;
 }
 

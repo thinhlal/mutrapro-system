@@ -719,6 +719,37 @@ const MilestoneDetailPage = () => {
                               </Text>
                             )}
                           </Text>
+                          {/* SLA status tags */}
+                          <div style={{ marginTop: 4 }}>
+                            {(() => {
+                              const hasFirstSubmission = !!milestone.firstSubmissionAt;
+                              const isFirstSubmissionLate = milestone.firstSubmissionLate === true;
+                              const isFirstSubmissionOnTime =
+                                hasFirstSubmission && milestone.firstSubmissionLate === false;
+                              const overdueNow = milestone.overdueNow;
+                              const isCompleted =
+                                milestone.workStatus?.toLowerCase() === 'completed';
+                              const isPendingReview =
+                                milestone.workStatus?.toLowerCase() === 'ready_for_payment';
+                              const shouldHideOverdueWarning = hasFirstSubmission || isPendingReview;
+                              const isOverdue =
+                                !shouldHideOverdueWarning &&
+                                overdueNow === true &&
+                                !isCompleted;
+
+                              return (
+                                <>
+                                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                                  {isFirstSubmissionLate && (
+                                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                                  )}
+                                  {isFirstSubmissionOnTime && (
+                                    <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
                         </Space>
                       </div>
                       <div>

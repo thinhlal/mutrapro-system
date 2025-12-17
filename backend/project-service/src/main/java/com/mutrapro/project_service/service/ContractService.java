@@ -7,9 +7,11 @@ import com.mutrapro.shared.event.ContractNotificationEvent;
 import com.mutrapro.project_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.MilestonePaymentQuoteResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.project_service.config.LateDiscountPolicyProperties;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractInstallment;
 import com.mutrapro.project_service.entity.ContractMilestone;
@@ -58,6 +60,7 @@ import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.ChatSystemMessageEvent;
+import com.mutrapro.shared.event.MilestonePaidEvent;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.entity.StudioBooking;
@@ -102,6 +105,7 @@ public class ContractService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     ContractInstallmentRepository contractInstallmentRepository;
+    LateDiscountPolicyProperties lateDiscountPolicyProperties;
     ContractMapper contractMapper;
     ContractMilestoneMapper contractMilestoneMapper;
     RequestServiceFeignClient requestServiceFeignClient;
@@ -597,6 +601,43 @@ public class ContractService {
         }
         
         return response;
+    }
+
+    /**
+     * Quote the payable amount for a milestone installment, including late discount breakdown (if applicable).
+     * Used by FE to show breakdown at Pay, and by billing-service to charge the correct amount.
+     */
+    @Transactional(readOnly = true)
+    public MilestonePaymentQuoteResponse getMilestonePaymentQuote(String contractId, String milestoneId) {
+        // Quick check: if SYSTEM_ADMIN, skip access check to save time
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Skip access check for SYSTEM_ADMIN (internal service calls)
+        if (!isSystemAdmin) {
+            checkContractAccess(contract);
+        }
+
+        ContractMilestone milestone = contractMilestoneRepository
+            .findByMilestoneIdAndContractId(milestoneId, contractId)
+            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
+
+        ContractInstallment installment = contractInstallmentRepository
+            .findByContractIdAndMilestoneId(contractId, milestoneId)
+            .orElseThrow(() -> ContractInstallmentNotFoundException.forMilestone(milestoneId, contractId));
+
+        // Only load all milestones if needed for targetDeadline calculation (workflow 3)
+        List<ContractMilestone> allMilestones = null;
+        if (contract.getContractType() == ContractType.arrangement_with_recording 
+            && milestone.getMilestoneType() == MilestoneType.recording) {
+            allMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+        }
+
+        return buildMilestonePaymentQuote(contract, milestone, installment, allMilestones);
     }
     
     
@@ -1713,7 +1754,16 @@ public class ContractService {
      * @param paidAt Thời điểm thanh toán
      */
     @Transactional
-    public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, LocalDateTime paidAt) {
+    public void handleMilestonePaid(MilestonePaidEvent event) {
+        if (event == null) {
+            throw new IllegalArgumentException("MilestonePaidEvent must not be null");
+        }
+        String contractId = event.getContractId();
+        String milestoneId = event.getMilestoneId();
+        Integer orderIndex = event.getOrderIndex();
+        LocalDateTime paidAt = event.getPaidAt();
+        BigDecimal paidAmount = event.getAmount();
+
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
@@ -1745,9 +1795,19 @@ public class ContractService {
             throw MilestonePaymentException.milestoneNotCompleted(contractId, milestoneId, orderIndex, workStatus);
         }
 
-        // Update installment status
+        // Update installment status + audit amount/discount (if provided)
         installment.setStatus(InstallmentStatus.PAID);
         installment.setPaidAt(paidAt);
+        installment.setPaidAmount(paidAmount);
+        installment.setLateDiscountPercent(event.getLateDiscountPercent());
+        installment.setLateDiscountAmount(event.getLateDiscountAmount());
+        installment.setLateHours(event.getLateHours());
+        installment.setGraceHours(event.getGraceHours());
+        installment.setDiscountReason(event.getDiscountReason());
+        installment.setDiscountPolicyVersion(event.getDiscountPolicyVersion());
+        if (event.getLateDiscountAmount() != null || event.getLateDiscountPercent() != null) {
+            installment.setDiscountAppliedAt(paidAt != null ? paidAt : LocalDateTime.now());
+        }
         contractInstallmentRepository.save(installment);
         log.info("Updated milestone installment to PAID: contractId={}, installmentId={}, milestoneId={}", 
             contractId, installment.getInstallmentId(), milestoneId);
@@ -1770,20 +1830,20 @@ public class ContractService {
                     ? contract.getContractNumber()
                     : contractId;
             
-            MilestonePaidNotificationEvent event = MilestonePaidNotificationEvent.builder()
+            MilestonePaidNotificationEvent notificationEvent = MilestonePaidNotificationEvent.builder()
                     .eventId(UUID.randomUUID())
                     .contractId(contractId)
                     .contractNumber(contractLabel)
                     .milestoneId(milestoneId)
                     .milestoneName(milestone.getName())
                     .managerUserId(contract.getManagerUserId())
-                    .amount(installment.getAmount())
+                    .amount(paidAmount != null ? paidAmount : installment.getAmount())
                     .currency(contract.getCurrency() != null ? contract.getCurrency().toString() : "VND")
                     .title("Milestone đã được thanh toán")
                     .content(String.format("Customer đã thanh toán milestone \"%s\" cho contract #%s. Số tiền: %s %s", 
                             milestone.getName(), 
                             contractLabel,
-                            installment.getAmount().toPlainString(),
+                            (paidAmount != null ? paidAmount : installment.getAmount()).toPlainString(),
                             contract.getCurrency() != null ? contract.getCurrency().toString() : "VND"))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
@@ -1791,7 +1851,7 @@ public class ContractService {
                     .timestamp(LocalDateTime.now())
                     .build();
             
-            JsonNode payload = objectMapper.valueToTree(event);
+            JsonNode payload = objectMapper.valueToTree(notificationEvent);
             UUID aggregateId;
             try {
                 aggregateId = UUID.fromString(contractId);
@@ -1808,7 +1868,7 @@ public class ContractService {
             
             outboxEventRepository.save(outboxEvent);
             log.info("Queued MilestonePaidNotificationEvent in outbox: eventId={}, contractId={}, milestoneId={}, managerUserId={}", 
-                    event.getEventId(), contractId, milestoneId, contract.getManagerUserId());
+                    notificationEvent.getEventId(), contractId, milestoneId, contract.getManagerUserId());
         } catch (Exception e) {
             // Log error nhưng không fail transaction
             log.error("Failed to enqueue MilestonePaidNotificationEvent: contractId={}, milestoneId={}, error={}", 
@@ -1820,7 +1880,7 @@ public class ContractService {
             "💰 Customer đã thanh toán milestone \"%s\" cho contract #%s.\nSố tiền: %s %s",
             milestone.getName(),
             contract.getContractNumber(),
-            installment.getAmount().toPlainString(),
+            (paidAmount != null ? paidAmount : installment.getAmount()).toPlainString(),
             contract.getCurrency() != null ? contract.getCurrency() : "VND"
         );
         publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), systemMessage);
@@ -1871,7 +1931,7 @@ public class ContractService {
                     ? contract.getContractNumber()
                     : contractId;
                 
-                ContractNotificationEvent event = ContractNotificationEvent.builder()
+                ContractNotificationEvent contractNotificationEvent = ContractNotificationEvent.builder()
                         .eventId(UUID.randomUUID())
                         .contractId(contractId)
                         .contractNumber(contractLabel)
@@ -1885,9 +1945,9 @@ public class ContractService {
                         .timestamp(LocalDateTime.now())
                         .build();
                 
-                publishToOutbox(event, contractId, "Contract", "contract.notification");
+                publishToOutbox(contractNotificationEvent, contractId, "Contract", "contract.notification");
                 log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
-                        event.getEventId(), contractId, contract.getManagerUserId());
+                        contractNotificationEvent.getEventId(), contractId, contract.getManagerUserId());
             } catch (Exception e) {
                 // Log error nhưng không fail transaction
                 log.error("Failed to enqueue all milestones paid notification: userId={}, contractId={}, error={}", 
@@ -2209,12 +2269,127 @@ public class ContractService {
             .percent(installment.getPercent())
             .dueDate(installment.getDueDate())
             .amount(installment.getAmount())
+            .paidAmount(installment.getPaidAmount())
+            .lateDiscountPercent(installment.getLateDiscountPercent())
+            .lateDiscountAmount(installment.getLateDiscountAmount())
+            .lateHours(installment.getLateHours())
+            .graceHours(installment.getGraceHours())
+            .discountReason(installment.getDiscountReason())
+            .discountPolicyVersion(installment.getDiscountPolicyVersion())
+            .discountAppliedAt(installment.getDiscountAppliedAt())
             .currency(installment.getCurrency())
             .status(installment.getStatus())
             .gateCondition(installment.getGateCondition())
             .paidAt(installment.getPaidAt())
             .createdAt(installment.getCreatedAt())
             .updatedAt(installment.getUpdatedAt())
+            .build();
+    }
+
+    private MilestonePaymentQuoteResponse buildMilestonePaymentQuote(
+        Contract contract,
+        ContractMilestone milestone,
+        ContractInstallment installment,
+        List<ContractMilestone> allMilestones
+    ) {
+        BigDecimal baseAmount = installment != null ? installment.getAmount() : null;
+        String currency = (installment != null && installment.getCurrency() != null)
+            ? installment.getCurrency().name()
+            : (contract != null && contract.getCurrency() != null ? contract.getCurrency().name() : null);
+
+        LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+        LocalDateTime firstSubmissionAt = milestone != null ? milestone.getFirstSubmissionAt() : null;
+
+        // Cache policy values once to avoid repeated null checks
+        Integer graceHours = 6; // default
+        BigDecimal tier0To24Percent = new BigDecimal("5");
+        BigDecimal tier24To72Percent = new BigDecimal("10");
+        BigDecimal tierOver72Percent = new BigDecimal("20");
+        BigDecimal capPercent = new BigDecimal("20");
+        String policyVersion = "late_discount_v1";
+        
+        if (lateDiscountPolicyProperties != null) {
+            if (lateDiscountPolicyProperties.getGraceHours() != null) {
+                graceHours = lateDiscountPolicyProperties.getGraceHours();
+            }
+            if (lateDiscountPolicyProperties.getTier0To24HoursPercent() != null) {
+                tier0To24Percent = lateDiscountPolicyProperties.getTier0To24HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getTier24To72HoursPercent() != null) {
+                tier24To72Percent = lateDiscountPolicyProperties.getTier24To72HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getTierOver72HoursPercent() != null) {
+                tierOver72Percent = lateDiscountPolicyProperties.getTierOver72HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getCapPercent() != null) {
+                capPercent = lateDiscountPolicyProperties.getCapPercent();
+            }
+            if (lateDiscountPolicyProperties.getPolicyVersion() != null) {
+                policyVersion = lateDiscountPolicyProperties.getPolicyVersion();
+            }
+        }
+
+        Long lateHours = null;
+        BigDecimal discountPercent = null;
+        BigDecimal discountAmount = null;
+        BigDecimal payableAmount = baseAmount;
+
+        if (baseAmount != null
+            && baseAmount.compareTo(BigDecimal.ZERO) > 0
+            && targetDeadline != null
+            && firstSubmissionAt != null) {
+
+            LocalDateTime deadlineWithGrace = targetDeadline.plusHours(graceHours);
+            if (firstSubmissionAt.isAfter(deadlineWithGrace)) {
+                long lateMinutes = java.time.Duration.between(deadlineWithGrace, firstSubmissionAt).toMinutes();
+                lateHours = (long) Math.ceil(lateMinutes / 60.0);
+
+                // Apply tiered discount based on late duration:
+                // - 0-24 hours (inclusive): tier0To24Percent (e.g., 5%)
+                // - >24-72 hours (inclusive): tier24To72Percent (e.g., 10%)
+                // - >72 hours: tierOver72Percent (e.g., 20%)
+                if (lateMinutes <= 24L * 60L) {
+                    discountPercent = tier0To24Percent;
+                } else if (lateMinutes <= 72L * 60L) {
+                    discountPercent = tier24To72Percent;
+                } else {
+                    discountPercent = tierOver72Percent;
+                }
+
+                // Apply cap
+                if (discountPercent.compareTo(capPercent) > 0) {
+                    discountPercent = capPercent;
+                }
+
+                if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+                    discountAmount = baseAmount
+                        .multiply(discountPercent)
+                        .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    payableAmount = baseAmount.subtract(discountAmount);
+                    if (payableAmount.compareTo(BigDecimal.ZERO) < 0) {
+                        payableAmount = BigDecimal.ZERO;
+                    }
+                }
+            } else {
+                lateHours = 0L;
+            }
+        }
+
+        return MilestonePaymentQuoteResponse.builder()
+            .contractId(contract != null ? contract.getContractId() : null)
+            .milestoneId(milestone != null ? milestone.getMilestoneId() : null)
+            .installmentId(installment != null ? installment.getInstallmentId() : null)
+            .currency(currency)
+            .baseAmount(baseAmount)
+            .lateDiscountPercent(discountPercent)
+            .lateDiscountAmount(discountAmount)
+            .payableAmount(payableAmount)
+            .lateHours(lateHours)
+            .graceHours(graceHours)
+            .policyVersion(policyVersion)
+            .targetDeadline(targetDeadline)
+            .firstSubmissionAt(firstSubmissionAt)
+            .computedAt(LocalDateTime.now())
             .build();
     }
     

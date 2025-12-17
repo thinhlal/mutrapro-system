@@ -54,6 +54,20 @@ app:
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees
       payment.order.completed.notification: ${KAFKA_TOPIC_PAYMENT_ORDER_COMPLETED_NOTIFICATION:payment-order-completed-notification} # Notification khi payment order completed
 
+# Project Service Configuration (for Feign client)
+project:
+  service:
+    base-url: ${PROJECT_SERVICE_BASE_URL:http://project-service:8082}
+
+# Feign Client Configuration (timeout settings)
+feign:
+  client:
+    config:
+      project-service:
+        connectTimeout: ${FEIGN_CONNECT_TIMEOUT:2000}  # 2 seconds connection timeout
+        readTimeout: ${FEIGN_READ_TIMEOUT:3000}        # 3 seconds read timeout
+        loggerLevel: basic                             # Log basic request/response info
+
 # Management & Actuator
 management:
   endpoints:

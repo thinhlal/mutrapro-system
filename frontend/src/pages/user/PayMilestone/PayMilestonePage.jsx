@@ -21,7 +21,7 @@ import {
   CreditCardOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
-import { getContractById } from '../../../services/contractService';
+import { getContractById, getMilestonePaymentQuote } from '../../../services/contractService';
 import {
   getOrCreateMyWallet,
   payMilestone,
@@ -32,6 +32,23 @@ import dayjs from 'dayjs';
 import { useDocumentTitle } from '../../../hooks';
 
 const { Title, Text } = Typography;
+
+/**
+ * Format số giờ thành ngày và giờ (ví dụ: 141h -> "5 ngày 21 giờ" hoặc "6 ngày")
+ */
+const formatLateHours = (hours) => {
+  if (hours == null || hours <= 0) return '';
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  
+  if (days === 0) {
+    return `${hours} hours`;
+  } else if (remainingHours === 0) {
+    return `${days} days`;
+  } else {
+    return `${days} days ${remainingHours} hours`;
+  }
+};
 
 const PayMilestonePage = () => {
   useDocumentTitle('Pay Milestone');
@@ -45,6 +62,8 @@ const PayMilestonePage = () => {
   const [paying, setPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('wallet');
   const [topupModalVisible, setTopupModalVisible] = useState(false);
+  const [paymentQuote, setPaymentQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [topupForm] = Form.useForm();
 
   // Get milestoneId or orderIndex from location state or URL params
@@ -59,6 +78,7 @@ const PayMilestonePage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setPaymentQuote(null);
 
       // Load contract
       const contractResponse = await getContractById(contractId);
@@ -161,10 +181,27 @@ const PayMilestonePage = () => {
           }
 
           if (foundMilestone && foundInstallment) {
-            setTargetMilestone({
+            const nextTarget = {
               ...foundMilestone,
               installment: foundInstallment,
-            });
+            };
+            setTargetMilestone(nextTarget);
+
+            // Load payment quote (late discount breakdown) from backend
+            if (nextTarget?.milestoneId) {
+              try {
+                setQuoteLoading(true);
+                const quoteResp = await getMilestonePaymentQuote(contractId, nextTarget.milestoneId);
+                if (quoteResp?.status === 'success' && quoteResp?.data) {
+                  setPaymentQuote(quoteResp.data);
+                }
+              } catch (e) {
+                console.warn('Failed to load payment quote:', e);
+                setPaymentQuote(null);
+              } finally {
+                setQuoteLoading(false);
+              }
+            }
           } else {
             message.warning('No milestone payment available');
             navigate(`/contracts/${contractId}`);
@@ -212,10 +249,19 @@ const PayMilestonePage = () => {
     }
 
     const installment = targetMilestone.installment;
-    const installmentAmount = parseFloat(installment.amount);
+    const baseAmount = parseFloat(installment.amount);
+    if (quoteLoading) {
+      message.info('Đang tải thông tin thanh toán, vui lòng thử lại sau vài giây.');
+      return;
+    }
+    if (!paymentQuote?.payableAmount) {
+      message.error('Không lấy được số tiền cần thanh toán. Vui lòng tải lại trang.');
+      return;
+    }
+    const payableAmount = parseFloat(paymentQuote.payableAmount);
     const walletBalance = parseFloat(wallet.balance || 0);
 
-    if (walletBalance < installmentAmount) {
+    if (walletBalance < payableAmount) {
       message.warning(
         'Insufficient wallet balance. Please top up your wallet first.'
       );
@@ -228,7 +274,6 @@ const PayMilestonePage = () => {
 
       // Call pay milestone API
       const response = await payMilestone(wallet.walletId, {
-        amount: installmentAmount,
         currency: installment.currency || contract?.currency || 'VND',
         contractId: contractId,
         milestoneId: targetMilestone.milestoneId,
@@ -308,8 +353,12 @@ const PayMilestonePage = () => {
 
   const installment = targetMilestone?.installment;
   const milestoneAmount = installment ? parseFloat(installment.amount) : 0;
+  const payableAmount = paymentQuote?.payableAmount != null
+    ? parseFloat(paymentQuote.payableAmount)
+    : milestoneAmount;
   const walletBalance = parseFloat(wallet?.balance || 0);
-  const hasEnoughBalance = walletBalance >= milestoneAmount;
+  const hasEnoughBalance = walletBalance >= payableAmount;
+  const canPayNow = !quoteLoading && paymentQuote?.payableAmount != null;
 
   return (
     <div className={styles.page}>
@@ -352,7 +401,7 @@ const PayMilestonePage = () => {
             <Descriptions.Item label="Amount">
               <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
                 {formatCurrency(
-                  milestoneAmount,
+                  payableAmount,
                   installment?.currency || contract?.currency || 'VND'
                 )}
               </Text>
@@ -362,6 +411,38 @@ const PayMilestonePage = () => {
                 </Text>
               )}
             </Descriptions.Item>
+            {/* Discount breakdown (if any) */}
+            {quoteLoading ? (
+              <Descriptions.Item label="Late Discount">
+                <Text type="secondary" italic>
+                  Loading...
+                </Text>
+              </Descriptions.Item>
+            ) : paymentQuote?.lateDiscountAmount != null &&
+                parseFloat(paymentQuote.lateDiscountAmount || 0) > 0 ? (
+              <>
+                <Descriptions.Item label="Base Amount">
+                  {formatCurrency(
+                    milestoneAmount,
+                    installment?.currency || contract?.currency || 'VND'
+                  )}
+                </Descriptions.Item>
+                <Descriptions.Item label="Late Discount">
+                  <Text type="danger">
+                    -{formatCurrency(
+                      parseFloat(paymentQuote.lateDiscountAmount),
+                      installment?.currency || contract?.currency || 'VND'
+                    )}
+                    {paymentQuote?.lateDiscountPercent != null
+                      ? ` (${paymentQuote.lateDiscountPercent}%)`
+                      : ''}
+                    {paymentQuote?.lateHours != null && paymentQuote.lateHours > 0
+                      ? ` · late ${formatLateHours(paymentQuote.lateHours)}${paymentQuote?.graceHours != null ? ` (grace ${formatLateHours(paymentQuote.graceHours)})` : ''}`
+                      : ''}
+                  </Text>
+                </Descriptions.Item>
+              </>
+            ) : null}
             {installment?.dueDate && (
               <Descriptions.Item label="Due Date">
                 {dayjs(installment.dueDate).format('DD/MM/YYYY HH:mm')}
@@ -394,7 +475,7 @@ const PayMilestonePage = () => {
                     <Text type="danger">
                       (Insufficient balance. Need{' '}
                       {formatCurrency(
-                        milestoneAmount - walletBalance,
+                        payableAmount - walletBalance,
                         wallet.currency
                       )}{' '}
                       more)
@@ -442,13 +523,13 @@ const PayMilestonePage = () => {
               icon={<DollarOutlined />}
               onClick={handlePay}
               loading={paying}
-              disabled={paymentMethod === 'wallet' && !hasEnoughBalance}
+              disabled={!canPayNow || (paymentMethod === 'wallet' && !hasEnoughBalance)}
               block
               className={styles.payButton}
             >
               {paymentMethod === 'wallet' && !hasEnoughBalance
                 ? 'Insufficient Balance - Top Up Required'
-                : `Pay ${formatCurrency(milestoneAmount, contract?.currency || 'VND')}`}
+                : `Pay ${formatCurrency(payableAmount, contract?.currency || 'VND')}`}
             </Button>
           </div>
         </Card>
@@ -468,7 +549,7 @@ const PayMilestonePage = () => {
           <Form form={topupForm} layout="vertical" onFinish={handleTopup}>
             <Alert
               message="Top Up Required"
-              description={`You need to top up at least ${formatCurrency(milestoneAmount - walletBalance, wallet?.currency || 'VND')} to complete this payment.`}
+              description={`You need to top up at least ${formatCurrency(payableAmount - walletBalance, wallet?.currency || 'VND')} to complete this payment.`}
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}

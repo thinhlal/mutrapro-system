@@ -55,6 +55,31 @@ public class ContractInstallment extends BaseEntity<String> {
     @Column(name = "amount", precision = 12, scale = 2, nullable = false)
     BigDecimal amount;
 
+    // --- Late discount audit fields (applied at pay time) ---
+    @Column(name = "paid_amount", precision = 12, scale = 2)
+    BigDecimal paidAmount;
+
+    @Column(name = "late_discount_percent", precision = 5, scale = 2)
+    BigDecimal lateDiscountPercent;
+
+    @Column(name = "late_discount_amount", precision = 12, scale = 2)
+    BigDecimal lateDiscountAmount;
+
+    @Column(name = "late_hours")
+    Long lateHours;
+
+    @Column(name = "grace_hours")
+    Integer graceHours;
+
+    @Column(name = "discount_reason", length = 50)
+    String discountReason;
+
+    @Column(name = "discount_policy_version", length = 50)
+    String discountPolicyVersion;
+
+    @Column(name = "discount_applied_at")
+    LocalDateTime discountAppliedAt;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "currency", nullable = false, length = 10)

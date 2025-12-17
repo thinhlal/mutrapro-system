@@ -465,7 +465,7 @@ const MilestoneDeliveriesPage = () => {
                     </div>
                   </div>
                   {/* Actual Dates */}
-                  {(milestoneInfo.actualStartAt || milestoneInfo.finalCompletedAt || milestoneInfo.actualEndAt) && (
+                  {(milestoneInfo.actualStartAt || milestoneInfo.firstSubmissionAt || milestoneInfo.finalCompletedAt || milestoneInfo.actualEndAt) && (
                     <div>
                       <Text strong style={{ fontSize: 12 }}>
                         Thời gian thực tế:
@@ -475,6 +475,16 @@ const MilestoneDeliveriesPage = () => {
                           <div>
                             <Text>
                               Bắt đầu: {dayjs(milestoneInfo.actualStartAt).format('DD/MM/YYYY HH:mm')}
+                            </Text>
+                          </div>
+                        )}
+                        {milestoneInfo.firstSubmissionAt && (
+                          <div>
+                            <Text>
+                              Nộp bản đầu tiên: {dayjs(milestoneInfo.firstSubmissionAt).format('DD/MM/YYYY HH:mm')}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                              (Lần đầu specialist giao work)
                             </Text>
                           </div>
                         )}

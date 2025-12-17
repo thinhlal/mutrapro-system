@@ -6,6 +6,8 @@ import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
+import com.mutrapro.billing_service.client.ProjectServiceFeignClient;
+import com.mutrapro.billing_service.dto.response.MilestonePaymentQuoteResponse;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
@@ -57,6 +59,7 @@ public class WalletService {
     WalletMapper walletMapper;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
+    ProjectServiceFeignClient projectServiceFeignClient;
 
     /**
      * Lấy hoặc tạo wallet cho user hiện tại
@@ -354,6 +357,30 @@ public class WalletService {
     public WalletTransactionResponse payMilestone(String walletId, PayMilestoneRequest request) {
         String userId = getCurrentUserId();
 
+        MilestonePaymentQuoteResponse quote = null;
+        try {
+            var quoteResp = projectServiceFeignClient.getMilestonePaymentQuote(
+                request.getContractId(),
+                request.getMilestoneId()
+            );
+            quote = quoteResp != null ? quoteResp.getData() : null;
+        } catch (Exception e) {
+            log.error("Failed to fetch milestone payment quote (strict mode): contractId={}, milestoneId={}, error={}, cause={}",
+                request.getContractId(), request.getMilestoneId(), e.getMessage(), 
+                e.getCause() != null ? e.getCause().getMessage() : "N/A", e);
+        }
+
+        if (quote != null && quote.getInstallmentId() != null && request.getInstallmentId() != null
+            && !quote.getInstallmentId().equals(request.getInstallmentId())) {
+            throw new IllegalArgumentException("InstallmentId mismatch for milestone payment");
+        }
+
+        // Strict mode: never trust FE-provided amount. Must charge the authoritative payableAmount from project-service.
+        if (quote == null || quote.getPayableAmount() == null || quote.getPayableAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Unable to resolve payable amount for this milestone. Please try again later.");
+        }
+        BigDecimal amountToPay = quote.getPayableAmount();
+
         // Lấy wallet với lock để tránh race condition
         Wallet wallet = walletRepository.findByIdWithLock(walletId)
                 .orElseThrow(() -> WalletNotFoundException.byId(walletId));
@@ -363,15 +390,12 @@ public class WalletService {
             throw UnauthorizedWalletAccessException.create(walletId);
         }
 
-        // Validate amount
-        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw InvalidAmountException.forDebit(request.getAmount());
-        }
+        // Ignore request.amount entirely (amount is computed from quote).
 
         // Kiểm tra số dư
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+        if (wallet.getBalance().compareTo(amountToPay) < 0) {
             throw InsufficientBalanceException.create(
-                    walletId, wallet.getBalance(), request.getAmount());
+                    walletId, wallet.getBalance(), amountToPay);
         }
 
         // Validate currency
@@ -382,7 +406,7 @@ public class WalletService {
 
         // Tính toán số dư mới
         BigDecimal balanceBefore = wallet.getBalance();
-        BigDecimal balanceAfter = balanceBefore.subtract(request.getAmount());
+        BigDecimal balanceAfter = balanceBefore.subtract(amountToPay);
 
         // Cập nhật số dư ví
         wallet.setBalance(balanceAfter);
@@ -390,16 +414,24 @@ public class WalletService {
 
         // Tạo transaction record
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("debit_amount", request.getAmount().toString());
+        metadata.put("debit_amount", amountToPay.toString());
         metadata.put("currency", currency.name());
         metadata.put("payment_method", "wallet");
         metadata.put("installment_id", request.getInstallmentId());
         metadata.put("payment_type", "MILESTONE");
+        if (quote != null) {
+            if (quote.getBaseAmount() != null) metadata.put("base_amount", quote.getBaseAmount().toString());
+            if (quote.getLateDiscountPercent() != null) metadata.put("late_discount_percent", quote.getLateDiscountPercent().toString());
+            if (quote.getLateDiscountAmount() != null) metadata.put("late_discount_amount", quote.getLateDiscountAmount().toString());
+            if (quote.getLateHours() != null) metadata.put("late_hours", quote.getLateHours().toString());
+            if (quote.getGraceHours() != null) metadata.put("grace_hours", quote.getGraceHours().toString());
+            if (quote.getPolicyVersion() != null) metadata.put("discount_policy_version", quote.getPolicyVersion());
+        }
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
                 .txType(WalletTxType.milestone_payment)
-                .amount(request.getAmount())
+                .amount(amountToPay)
                 .currency(currency)
                 .balanceBefore(balanceBefore)
                 .balanceAfter(balanceAfter)
@@ -416,15 +448,29 @@ public class WalletService {
             LocalDateTime paidAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
+
+            String discountReason = null;
+            if (quote != null && quote.getLateDiscountAmount() != null
+                && quote.getLateDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+                discountReason = "LATE_DELIVERY";
+            }
+
             MilestonePaidEvent event = MilestonePaidEvent.builder()
                 .eventId(eventId)
                 .contractId(request.getContractId())
                 .milestoneId(request.getMilestoneId())
                 .orderIndex(request.getOrderIndex())
                 .paidAt(paidAt)
-                .amount(request.getAmount())
+                .amount(amountToPay)
                 .currency(currency.name())
                 .timestamp(LocalDateTime.now())
+                .baseAmount(quote != null ? quote.getBaseAmount() : null)
+                .lateDiscountPercent(quote != null ? quote.getLateDiscountPercent() : null)
+                .lateDiscountAmount(quote != null ? quote.getLateDiscountAmount() : null)
+                .lateHours(quote != null ? quote.getLateHours() : null)
+                .graceHours(quote != null ? quote.getGraceHours() : null)
+                .discountReason(discountReason)
+                .discountPolicyVersion(quote != null ? quote.getPolicyVersion() : null)
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -445,7 +491,7 @@ public class WalletService {
         }
 
         log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}, balanceBefore={}, balanceAfter={}",
-                walletId, request.getContractId(), request.getMilestoneId(), request.getAmount(), balanceBefore, balanceAfter);
+                walletId, request.getContractId(), request.getMilestoneId(), amountToPay, balanceBefore, balanceAfter);
 
         return walletMapper.toResponse(savedTransaction);
     }

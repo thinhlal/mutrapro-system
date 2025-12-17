@@ -71,6 +71,13 @@ app:
       milestone.ready.for.payment.notification: ${KAFKA_TOPIC_MILESTONE_READY_FOR_PAYMENT_NOTIFICATION:milestone-ready-for-payment-notification}
       billing.revision.fee.refunded: ${KAFKA_TOPIC_BILLING_REVISION_FEE_REFUNDED:billing-revision-fee-refunded} # New topic for refunded revision fees
       chat.system.message: ${KAFKA_TOPIC_CHAT_SYSTEM_MESSAGE:chat-system-message-events}
+  late-discount:
+    policy-version: ${LATE_DISCOUNT_POLICY_VERSION:late_discount_v1}
+    grace-hours: ${LATE_DISCOUNT_GRACE_HOURS:6}
+    tier0-to24-hours-percent: ${LATE_DISCOUNT_TIER_0_24_PERCENT:5}
+    tier24-to72-hours-percent: ${LATE_DISCOUNT_TIER_24_72_PERCENT:10}
+    tier-over72-hours-percent: ${LATE_DISCOUNT_TIER_OVER_72_PERCENT:20}
+    cap-percent: ${LATE_DISCOUNT_CAP_PERCENT:20}
 
 # Request Service Configuration
 request:

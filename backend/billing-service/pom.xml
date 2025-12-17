@@ -109,6 +109,12 @@
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
 
+		<!-- OpenFeign for internal service-to-service calls (e.g., project-service payment quotes) -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+
 		<!-- Spring Boot Actuator for health checks and monitoring -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

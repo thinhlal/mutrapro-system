@@ -1364,6 +1364,36 @@ const SpecialistTaskDetailPage = () => {
                           'Chưa có'
                         )}
                       </div>
+                      {/* SLA status tags */}
+                      <div style={{ marginTop: 4 }}>
+                        {(() => {
+                          const hasFirstSubmission = !!task.milestone?.firstSubmissionAt;
+                          const isFirstSubmissionLate = task.milestone?.firstSubmissionLate === true;
+                          const isFirstSubmissionOnTime =
+                            hasFirstSubmission && task.milestone?.firstSubmissionLate === false;
+                          const overdueNow = task.milestone?.overdueNow;
+                          const isPendingReview =
+                            task.status?.toLowerCase() === 'ready_for_review' ||
+                            task.status?.toLowerCase() === 'waiting_customer_review';
+                          const shouldHideOverdueWarning = hasFirstSubmission || isPendingReview;
+                          const isOverdue =
+                            !shouldHideOverdueWarning &&
+                            overdueNow === true &&
+                            task.status?.toLowerCase() !== 'completed';
+
+                          return (
+                            <>
+                              {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                              {isFirstSubmissionLate && (
+                                <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                              )}
+                              {isFirstSubmissionOnTime && (
+                                <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
                     <div>
                       <Text strong type="secondary">

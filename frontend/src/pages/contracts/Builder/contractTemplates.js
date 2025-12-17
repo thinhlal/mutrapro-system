@@ -43,20 +43,28 @@ Party A agrees to provide professional music transcription services, converting 
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
-5. INTELLECTUAL PROPERTY
+5. LATE DELIVERY DISCOUNT POLICY
+- If Party A delivers work after the milestone deadline (with a 6-hour grace period), Party B will receive an automatic discount on the milestone payment:
+  * Late delivery within 0-24 hours after grace period: 5% discount
+  * Late delivery within 24-72 hours after grace period: 10% discount
+  * Late delivery over 72 hours after grace period: 20% discount (maximum)
+- The discount is calculated based on the first submission time and is automatically applied at payment time.
+- This policy applies to all milestone payments and is designed to ensure timely delivery.
+
+6. INTELLECTUAL PROPERTY
 - Party B retains all rights to the original audio recording.
 - Party A retains rights to the transcription work until full payment is received.
 - Upon full payment, Party B receives full rights to use the transcription.
 
-6. CONFIDENTIALITY
+7. CONFIDENTIALITY
 - Party A agrees to maintain confidentiality of all materials provided by Party B.
 - Party A will not share, distribute, or use the transcription for any purpose other than delivery to Party B.
 
-7. LIABILITY
+8. LIABILITY
 - Party A is not responsible for errors in transcription if the source audio is unclear or incomplete.
 - Party A's liability is limited to the contract value.
 
-8. TERMINATION
+9. TERMINATION
 - Either party may terminate this contract with 7 days written notice.
 - In case of termination, Party B will pay for work completed to date.`,
 
@@ -86,15 +94,15 @@ Party A agrees to provide professional music arrangement services, creating musi
 - Party A retains rights to the arrangement work until full payment is received.
 - Upon full payment, Party B receives full rights to use the arrangement.
 
-6. CONFIDENTIALITY
+7. CONFIDENTIALITY
 - Party A agrees to maintain confidentiality of all materials provided by Party B.
 - Party A will not share, distribute, or use the arrangement for any purpose other than delivery to Party B.
 
-7. LIABILITY
+8. LIABILITY
 - Party A is not responsible for copyright issues if Party B does not own the rights to the original material.
 - Party A's liability is limited to the contract value.
 
-8. TERMINATION
+9. TERMINATION
 - Either party may terminate this contract with 14 days written notice.
 - In case of termination, Party B will pay for work completed to date.`,
 
@@ -124,20 +132,28 @@ Party A agrees to provide professional music arrangement and recording services,
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
-5. INTELLECTUAL PROPERTY
+5. LATE DELIVERY DISCOUNT POLICY
+- If Party A delivers work after the milestone deadline (with a 6-hour grace period), Party B will receive an automatic discount on the milestone payment:
+  * Late delivery within 0-24 hours after grace period: 5% discount
+  * Late delivery within 24-72 hours after grace period: 10% discount
+  * Late delivery over 72 hours after grace period: 20% discount (maximum)
+- The discount is calculated based on the first submission time and is automatically applied at payment time.
+- This policy applies to all milestone payments and is designed to ensure timely delivery.
+
+6. INTELLECTUAL PROPERTY
 - Party B retains all rights to the original composition/materials.
 - Party A retains rights to the arrangement and recording until full payment is received.
 - Upon full payment, Party B receives full rights to use the arrangement and recording.
 
-6. CONFIDENTIALITY
+7. CONFIDENTIALITY
 - Party A agrees to maintain confidentiality of all materials provided by Party B.
 - Party A will not share, distribute, or use the arrangement/recording for any purpose other than delivery to Party B.
 
-7. LIABILITY
+8. LIABILITY
 - Party A is not responsible for copyright issues if Party B does not own the rights to the original material.
 - Party A's liability is limited to the contract value.
 
-8. TERMINATION
+9. TERMINATION
 - Either party may terminate this contract with 14 days written notice.
 - In case of termination, Party B will pay for work completed to date.`,
 
@@ -167,15 +183,15 @@ Party A agrees to provide professional music recording services in a studio sett
 - Party A retains rights to the recording until full payment is received.
 - Upon full payment, Party B receives full rights to use the recording.
 
-6. CONFIDENTIALITY
+7. CONFIDENTIALITY
 - Party A agrees to maintain confidentiality of all materials provided by Party B.
 - Party A will not share, distribute, or use the recording for any purpose other than delivery to Party B.
 
-7. LIABILITY
+8. LIABILITY
 - Party A is not responsible for performance quality if Party B's performers are not prepared.
 - Party A's liability is limited to the contract value.
 
-8. TERMINATION
+9. TERMINATION
 - Either party may terminate this contract with 7 days written notice.
 - In case of termination, Party B will pay for work completed to date.`,
 
@@ -211,15 +227,15 @@ Party A agrees to provide comprehensive music services including:
 - Party A retains rights to all work until full payment is received.
 - Upon full payment, Party B receives full rights to use all deliverables.
 
-6. CONFIDENTIALITY
+7. CONFIDENTIALITY
 - Party A agrees to maintain confidentiality of all materials provided by Party B.
 - Party A will not share, distribute, or use any deliverables for any purpose other than delivery to Party B.
 
-7. LIABILITY
+8. LIABILITY
 - Party A is not responsible for copyright issues if Party B does not own the rights to the original material.
 - Party A's liability is limited to the contract value.
 
-8. TERMINATION
+9. TERMINATION
 - Either party may terminate this contract with 14 days written notice.
 - In case of termination, Party B will pay for work completed to date.`,
   };

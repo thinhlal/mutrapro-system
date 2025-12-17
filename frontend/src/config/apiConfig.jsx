@@ -146,6 +146,9 @@ export const API_ENDPOINTS = {
     // GET /api/v1/projects/contracts/{contractId}/milestones/{milestoneId}
     GET_MILESTONE_BY_ID: (contractId, milestoneId) =>
       `${PROJECT_PATH}/contracts/${contractId}/milestones/${milestoneId}`,
+    // GET /api/v1/projects/contracts/{contractId}/milestones/{milestoneId}/payment-quote
+    GET_MILESTONE_PAYMENT_QUOTE: (contractId, milestoneId) =>
+      `${PROJECT_PATH}/contracts/${contractId}/milestones/${milestoneId}/payment-quote`,
   },
 
   // === Task Assignment Management ===

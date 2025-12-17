@@ -2282,11 +2282,27 @@ const ContractDetailPage = () => {
                                   strong
                                   style={{ fontSize: 16, color: '#1890ff' }}
                                 >
-                                  {targetInstallment.amount?.toLocaleString()}{' '}
+                                  {(targetInstallment.paidAmount ?? targetInstallment.amount)?.toLocaleString()}{' '}
                                   {targetInstallment.currency ||
                                     contract?.currency ||
                                     'VND'}
                                 </Text>
+                                {targetInstallment?.paidAmount != null &&
+                                  targetInstallment?.lateDiscountAmount != null &&
+                                  Number(targetInstallment.lateDiscountAmount) > 0 && (
+                                    <div style={{ marginTop: 4 }}>
+                                      <Text type="danger" style={{ fontSize: 12 }}>
+                                        Late discount: -
+                                        {Number(targetInstallment.lateDiscountAmount).toLocaleString()}{' '}
+                                        {targetInstallment.currency ||
+                                          contract?.currency ||
+                                          'VND'}
+                                        {targetInstallment.lateDiscountPercent != null
+                                          ? ` (${targetInstallment.lateDiscountPercent}%)`
+                                          : ''}
+                                      </Text>
+                                    </div>
+                                  )}
                                 {targetInstallment.percent && (
                                   <div>
                                     <Text
@@ -3474,3 +3490,4 @@ const ContractDetailPage = () => {
 };
 
 export default ContractDetailPage;
+

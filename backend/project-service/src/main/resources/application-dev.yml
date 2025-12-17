@@ -69,6 +69,13 @@ app:
       milestone.ready.for.payment.notification: milestone-ready-for-payment-notification
       billing.revision.fee.refunded: billing-revision-fee-refunded # New topic for refunded revision fees
       chat.system.message: chat-system-message-events
+  late-discount:
+    policy-version: late_discount_v1
+    grace-hours: 6
+    tier0-to24-hours-percent: 5
+    tier24-to72-hours-percent: 10
+    tier-over72-hours-percent: 20
+    cap-percent: 20
 
 # Request Service Configuration
 request:
