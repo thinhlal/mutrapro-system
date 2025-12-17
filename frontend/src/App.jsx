@@ -68,7 +68,7 @@ import InstrumentalistSelectionPage from './pages/services/ServiceRequest/Record
 import EquipmentSelectionPage from './pages/services/ServiceRequest/RecordingFlow/pages/EquipmentSelectionPage';
 
 // Work Pages
-import NotationEditor from './pages/work/NotationEditor/NotationEditor';
+import SmoosicEditorPage from './pages/work/SmoosicEditorPage/SmoosicEditorPage';
 import Tasks from './pages/work/Tasks/Task';
 
 // Transcription Pages
@@ -388,7 +388,7 @@ function App() {
                   'ARRANGEMENT',
                 ]}
               >
-                <NotationEditor />
+                <SmoosicEditorPage />
               </ProtectedRoute>
             }
           />
@@ -568,7 +568,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="edit-tool" replace />} />
-            <Route path="edit-tool" element={<NotationEditor />} />
+            <Route path="edit-tool" element={<SmoosicEditorPage />} />
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route
               path="my-tasks/:taskId"
