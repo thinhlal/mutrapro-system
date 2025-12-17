@@ -55,6 +55,7 @@ app:
       task.assignment.ready.to.start: task-assignment-ready-to-start
       task.assignment.canceled: task-assignment-canceled
       task.issue.reported: task-issue-reported
+      task.deadline.reminder: task-deadline-reminder
       contract.notification: contract-notification
       submission.delivered: submission-delivered
       submission.submitted: submission-submitted

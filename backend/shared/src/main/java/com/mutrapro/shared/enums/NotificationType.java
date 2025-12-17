@@ -22,6 +22,7 @@ public enum NotificationType {
     TASK_ASSIGNMENT_READY_TO_START, // Task assignment đã sẵn sàng để specialist bắt đầu làm (milestone đã unlock)
     TASK_ASSIGNMENT_CANCELED,   // Task assignment bị specialist hoặc manager cancel
     TASK_ISSUE_REPORTED,        // Specialist báo issue / không kịp deadline cho task
+    TASK_DEADLINE_REMINDER,     // Nhắc hạn task (sắp đến deadline)
     TASK_FILE_UPLOADED,         // Specialist đã upload file output cho task
     SUBMISSION_DELIVERED,       // Submission đã được gửi cho customer
     SUBMISSION_REJECTED,        // Submission bị manager reject, specialist cần chỉnh sửa lại
