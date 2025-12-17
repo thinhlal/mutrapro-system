@@ -54,6 +54,7 @@ import com.mutrapro.project_service.exception.TaskAssignmentNotBelongToContractE
 import com.mutrapro.project_service.exception.TaskAssignmentNoIssueException;
 import com.mutrapro.project_service.exception.SpecialistNotFoundException;
 import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
+import com.mutrapro.project_service.exception.SpecialistSlaWindowFullException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
@@ -1657,6 +1658,44 @@ public class TaskAssignmentService {
         return null;
     }
 
+    private int countOpenTasksInSlaWindowForSpecialist(String specialistId, String contractId, String milestoneId) {
+        if (specialistId == null || specialistId.isBlank()
+            || contractId == null || contractId.isBlank()
+            || milestoneId == null || milestoneId.isBlank()) {
+            return 0;
+        }
+
+        LocalDateTime slaWindowStart = calculateSlaWindowStartInternal(contractId, milestoneId);
+        LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(contractId, milestoneId);
+
+        // Nếu không tính được window => coi như 0 (không block), consistent với getTaskStats()
+        if (slaWindowStart == null || slaWindowEnd == null) {
+            return 0;
+        }
+
+        List<TaskAssignment> tasks = taskAssignmentRepository.findBySpecialistId(specialistId);
+        return (int) tasks.stream()
+            .filter(task -> isOpenStatus(task.getStatus()))
+            .map(this::resolveTaskDeadline)
+            .filter(deadline -> deadline != null
+                && !deadline.isBefore(slaWindowStart)
+                && !deadline.isAfter(slaWindowEnd))
+            .count();
+    }
+
+    private void enforceSlaWindowCapacity(
+            String specialistId,
+            Integer maxConcurrentTasks,
+            String contractId,
+            String milestoneId) {
+        int max = maxConcurrentTasks != null && maxConcurrentTasks > 0 ? maxConcurrentTasks : 1;
+        int tasksInWindow = countOpenTasksInSlaWindowForSpecialist(specialistId, contractId, milestoneId);
+        if (tasksInWindow >= max) {
+            throw SpecialistSlaWindowFullException.create(
+                specialistId, tasksInWindow, max, contractId, milestoneId);
+        }
+    }
+
     /**
      * Lấy chi tiết task assignment
      */
@@ -1812,6 +1851,10 @@ public class TaskAssignmentService {
             log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
             throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
         }
+
+        // Enforce backend rule: SLA window full => không cho assign
+        Integer maxConcurrentTasks = asInteger(specialistData.get("maxConcurrentTasks"));
+        enforceSlaWindowCapacity(request.getSpecialistId(), maxConcurrentTasks, contractId, request.getMilestoneId());
         
         // Với recording_supervision task, tự động tìm và link studio booking (nếu đã có)
         String studioBookingId = null;
@@ -1901,23 +1944,34 @@ public class TaskAssignmentService {
         
         // Update fields
         if (request.getSpecialistId() != null) {
-            assignment.setSpecialistId(request.getSpecialistId());
+            String newSpecialistId = request.getSpecialistId();
             Map<String, Object> specialistData;
             try {
                 ApiResponse<Map<String, Object>> specialistResponse =
-                    specialistServiceFeignClient.getSpecialistById(request.getSpecialistId());
+                    specialistServiceFeignClient.getSpecialistById(newSpecialistId);
                 if (specialistResponse == null
                     || !"success".equalsIgnoreCase(specialistResponse.getStatus())
                     || specialistResponse.getData() == null) {
-                    throw SpecialistNotFoundException.byId(request.getSpecialistId());
+                    throw SpecialistNotFoundException.byId(newSpecialistId);
                 }
                 specialistData = specialistResponse.getData();
             } catch (SpecialistNotFoundException ex) {
                 throw ex;
             } catch (Exception ex) {
-                log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
-                throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
+                log.error("Failed to fetch specialist info for ID {}: {}", newSpecialistId, ex.getMessage());
+                throw FailedToFetchSpecialistException.create(newSpecialistId, ex.getMessage(), ex);
             }
+
+            // Enforce backend rule only when changing specialist
+            if (!newSpecialistId.equals(assignment.getSpecialistId())) {
+                String milestoneIdForCheck = request.getMilestoneId() != null && !request.getMilestoneId().isBlank()
+                    ? request.getMilestoneId()
+                    : assignment.getMilestoneId();
+                Integer maxConcurrentTasks = asInteger(specialistData.get("maxConcurrentTasks"));
+                enforceSlaWindowCapacity(newSpecialistId, maxConcurrentTasks, contractId, milestoneIdForCheck);
+            }
+
+            assignment.setSpecialistId(newSpecialistId);
             assignment.setSpecialistNameSnapshot(asString(specialistData.get("fullName")));
             assignment.setSpecialistEmailSnapshot(asString(specialistData.get("email")));
             assignment.setSpecialistSpecializationSnapshot(asString(specialistData.get("specialization")));
