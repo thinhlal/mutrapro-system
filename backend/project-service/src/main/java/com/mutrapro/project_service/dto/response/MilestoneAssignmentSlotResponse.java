@@ -31,11 +31,17 @@ public class MilestoneAssignmentSlotResponse {
     String milestoneType;  // transcription, arrangement, recording
     LocalDateTime plannedStartAt;
     LocalDateTime plannedDueDate;
+    LocalDateTime targetDeadline;  // Deadline mục tiêu/hard deadline do backend tính (workflow 3 vs 4)
+    LocalDateTime estimatedDeadline;  // Deadline ước tính khi chưa có target/planned (contract chưa Start Work)
     LocalDateTime actualStartAt;
     LocalDateTime actualEndAt;  // Thời điểm milestone thực tế kết thúc (khi thanh toán)
     LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
     LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     Integer milestoneSlaDays;
+    // Computed SLA status (see ContractMilestoneResponse for semantics)
+    Boolean firstSubmissionLate;
+    // Computed at query time: overdue when not yet submitted
+    Boolean overdueNow;
     String milestoneWorkStatus;  // PLANNED, READY_TO_START, IN_PROGRESS, WAITING_CUSTOMER, READY_FOR_PAYMENT, COMPLETED, CANCELLED
 
     String assignmentId;

@@ -37,6 +37,12 @@ public class ContractMilestoneResponse {
     Boolean hasPayment;  // Milestone này có installment tương ứng không
     
     Integer milestoneSlaDays;  // SLA ngày cho milestone này
+
+    LocalDateTime targetDeadline;  // Deadline mục tiêu/hard deadline do backend tính (workflow 3 vs 4)
+
+    // Deadline ước tính (khi contract chưa Start Work và chưa có plannedStartAt/plannedDueDate)
+    // FE dùng để hiển thị "Estimated" thay vì tự tính lại.
+    LocalDateTime estimatedDeadline;
     
     LocalDateTime plannedStartAt;  // BE tính khi contract có start date
     
@@ -47,6 +53,22 @@ public class ContractMilestoneResponse {
     LocalDateTime actualEndAt;     // Thời điểm milestone thực tế kết thúc
 
     LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
+
+    /**
+     * SLA status (computed):
+     * - null: thiếu dữ liệu để kết luận (vd: thiếu targetDeadline)
+     * - true: first submission trễ (firstSubmissionAt > targetDeadline)
+     * - false: first submission đúng hạn (firstSubmissionAt <= targetDeadline)
+     */
+    Boolean firstSubmissionLate;
+
+    /**
+     * Overdue at query time (computed):
+     * - null: thiếu dữ liệu để kết luận (vd: thiếu targetDeadline)
+     * - true: chưa có firstSubmissionAt và now > targetDeadline
+     * - false: còn hạn hoặc đã có firstSubmissionAt
+     */
+    Boolean overdueNow;
 
     LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
     

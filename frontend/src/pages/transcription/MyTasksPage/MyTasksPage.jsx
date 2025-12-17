@@ -119,42 +119,13 @@ function getPlannedDeadline(milestone) {
     return new Date(milestone.plannedDueDate);
   }
 
-  // Fallback: plannedStartAt + milestoneSlaDays
-  const plannedStart = getPlannedStartDate(milestone);
-  const slaDays = milestone?.milestoneSlaDays;
-  if (plannedStart && slaDays != null && slaDays > 0) {
-    const dueDate = new Date(plannedStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-
   return null;
 }
 
 function getActualDeadline(milestone, studioBooking = null) {
-  // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-  if (
-    milestone?.milestoneType?.toLowerCase() === 'recording' &&
-    studioBooking?.bookingDate &&
-    milestone?.milestoneSlaDays
-  ) {
-    const bookingDate = new Date(studioBooking.bookingDate);
-    if (!Number.isFinite(bookingDate.getTime())) return null;
-    const due = new Date(bookingDate);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
-  
-  // Other milestones: SLA tính từ khi bắt đầu làm việc (actualStartAt)
-  if (!milestone) return null;
-  const actualStart = getActualStartDate(milestone);
-  const slaDays = milestone.milestoneSlaDays;
-  if (actualStart && slaDays != null && slaDays > 0) {
-    const dueDate = new Date(actualStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-  return null;
+  if (!milestone?.targetDeadline) return null;
+  const d = new Date(milestone.targetDeadline);
+  return Number.isFinite(d.getTime()) ? d : null;
 }
 
 /**
@@ -471,7 +442,7 @@ const MyTasksPage = ({ onOpenTask }) => {
       },
       {
         title: 'Milestone Deadline',
-        dataIndex: ['milestone', 'plannedDueDate'],
+        dataIndex: ['milestone', 'targetDeadline'],
         key: 'milestoneDeadline',
         width: 190,
         render: (_, record) => {
@@ -501,18 +472,21 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isCompleted =
             record.status?.toLowerCase() === 'completed' ||
             record.status?.toLowerCase() === 'cancelled';
-          // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc đã pending review manager (ready_for_review) thì không hiện cảnh báo deadline nữa
-          const hasFirstSubmission = record?.milestone?.firstSubmissionAt;
+          // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+          const hasFirstSubmission = !!record?.milestone?.firstSubmissionAt;
           const isPendingReview =
             status === 'ready_for_review' ||
             status === 'waiting_customer_review';
           const shouldHideDeadlineWarning =
             hasFirstSubmission || isPendingReview;
+          const isFirstSubmissionLate = record?.milestone?.firstSubmissionLate === true;
+          const isFirstSubmissionOnTime =
+            hasFirstSubmission && record?.milestone?.firstSubmissionLate === false;
+          const overdueNow = record?.milestone?.overdueNow;
           const isOverdue =
             !shouldHideDeadlineWarning &&
             !isCompleted &&
-            displayDeadline &&
-            displayDeadline.getTime() < now.getTime();
+            overdueNow === true;
           const daysDiff = displayDeadline
             ? Math.floor(
                 (displayDeadline.getTime() - now.getTime()) /
@@ -522,6 +496,7 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isNearDeadline =
             !shouldHideDeadlineWarning &&
             !isOverdue &&
+            overdueNow === false &&
             daysDiff !== null &&
             daysDiff <= 3 &&
             daysDiff >= 0;
@@ -534,7 +509,7 @@ const MyTasksPage = ({ onOpenTask }) => {
             <Space direction="vertical" size={0}>
               {showActual && (
                 <>
-                  <Text strong>Actual</Text>
+                  <Text strong>Target</Text>
                   <Text>
                     Deadline: {formatDateTime(actualDeadline)}
                     {record.milestone?.milestoneSlaDays && (
@@ -546,6 +521,12 @@ const MyTasksPage = ({ onOpenTask }) => {
                   </Text>
                   {isOverdue && <Tag color="red">Quá hạn</Tag>}
                   {isNearDeadline && <Tag color="orange">Sắp hạn</Tag>}
+                  {isFirstSubmissionLate && (
+                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                  )}
+                  {isFirstSubmissionOnTime && (
+                    <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                  )}
                   <Divider dashed style={{ margin: '4px 0' }} />
                 </>
               )}

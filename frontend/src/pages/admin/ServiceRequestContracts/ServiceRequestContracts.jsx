@@ -407,7 +407,7 @@ export default function ServiceRequestContracts() {
               (a, b) => (b.orderIndex || 0) - (a.orderIndex || 0)
             );
             const lastMilestone = sortedMilestones[0];
-            return lastMilestone?.plannedDueDate || null;
+            return lastMilestone?.targetDeadline || null;
           }
           return null;
         };

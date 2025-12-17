@@ -127,69 +127,21 @@ const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
 const getPlannedDeadlineDayjs = milestone => {
-  if (!milestone) return null;
-  if (milestone.plannedDueDate) {
-    return dayjs(milestone.plannedDueDate);
-  }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    return dayjs(milestone.plannedStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
-  }
-  return null;
+  if (!milestone?.plannedDueDate) return null;
+  const d = dayjs(milestone.plannedDueDate);
+  return d.isValid() ? d : null;
 };
 
 const getActualDeadlineDayjs = milestone => {
-  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-    return null;
-  }
-  return dayjs(milestone.actualStartAt).add(
-    Number(milestone.milestoneSlaDays || 0),
-    'day'
-  );
+  if (!milestone?.targetDeadline) return null;
+  const d = dayjs(milestone.targetDeadline);
+  return d.isValid() ? d : null;
 };
 
-const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
-  if (!milestone) return null;
-  const slaDays = Number(milestone.milestoneSlaDays || 0);
-  if (!slaDays) return null;
-
-  const plannedStart = getPlannedStartDayjs(milestone);
-  if (plannedStart) {
-    return plannedStart.add(slaDays, 'day');
-  }
-
-  const orderIndex = milestone.orderIndex;
-  if (!orderIndex || orderIndex <= 1) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousMilestone =
-    contractMilestones.find(
-      item =>
-        item &&
-        item.orderIndex === orderIndex - 1 &&
-        (item.contractId
-          ? item.contractId === (milestone.contractId || item.contractId)
-          : true)
-    ) || null;
-
-  if (!previousMilestone) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousDeadline =
-    getActualDeadlineDayjs(previousMilestone) ||
-    getPlannedDeadlineDayjs(previousMilestone) ||
-    getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
-
-  if (!previousDeadline) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  return previousDeadline.add(slaDays, 'day');
+const getEstimatedDeadlineDayjs = (milestone, _contractMilestones = []) => {
+  if (!milestone?.estimatedDeadline) return null;
+  const d = dayjs(milestone.estimatedDeadline);
+  return d.isValid() ? d : null;
 };
 
 const formatDateTime = value =>
@@ -756,7 +708,7 @@ const MilestoneDetailPage = () => {
                   return (
                     <Space direction="vertical" size="small">
                       <div>
-                        <Text strong>Actual</Text>
+                        <Text strong>Target</Text>
                         <Space direction="vertical" size={0}>
                           <Text>Start: {formatDateTime(actualStart)}</Text>
                           <Text>

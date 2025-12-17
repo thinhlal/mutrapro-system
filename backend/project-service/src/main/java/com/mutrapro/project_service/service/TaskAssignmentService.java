@@ -71,7 +71,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -443,7 +442,9 @@ public class TaskAssignmentService {
 
     private LocalDateTime resolveMilestoneDeadlineWithFallback(
             ContractMilestone milestone, Contract contract, String contractId) {
-        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        // SLA window end / deadline dùng để check workload phải là deadline mục tiêu (hard/target),
+        // không dùng actualEndAt (mốc hoàn thành) để tránh "deadline = lúc xong".
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone);
         if (deadline != null) {
             return deadline;
         }
@@ -520,7 +521,12 @@ public class TaskAssignmentService {
         }
         
         // Tính plannedStartAt của milestone hiện tại = plannedDueDate của milestone trước đó
-        LocalDateTime previousPlannedDueDate = resolveMilestoneDeadline(previousMilestone);
+        LocalDateTime previousPlannedDueDate = null;
+        if (previousMilestone.getPlannedDueDate() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedDueDate();
+        } else if (previousMilestone.getPlannedStartAt() != null && previousMilestone.getMilestoneSlaDays() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedStartAt().plusDays(previousMilestone.getMilestoneSlaDays());
+        }
         if (previousPlannedDueDate != null) {
             return previousPlannedDueDate;
         }
@@ -604,8 +610,8 @@ public class TaskAssignmentService {
             return null;
         }
         
-        // Thử dùng resolveMilestoneDeadline trước (nếu có actual/planned dates)
-        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        // Thử dùng deadline mục tiêu (hard/target) trước (nếu có planned/booking/arrangement-paid)
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone);
         if (deadline != null) {
             return deadline;
         }
@@ -624,132 +630,94 @@ public class TaskAssignmentService {
         return null;
     }
 
-    private LocalDateTime resolveMilestoneDeadline(ContractMilestone milestone) {
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) để FE check trễ hẹn + tính SLA window workload.
+     *
+     * QUAN TRỌNG:
+     * - Không trả về actualEndAt (vì đó là mốc hoàn thành/thanh toán, không phải deadline mục tiêu).
+     * - Recording milestone:
+     *   - Workflow 3 (arrangement_with_recording): hard deadline = last arrangement actualEndAt (paid) + SLA days (booking không dời deadline)
+     *   - Workflow 4 (recording-only): deadline = bookingDate(+startTime) + SLA days
+     */
+    private LocalDateTime resolveMilestoneTargetDeadline(ContractMilestone milestone) {
         if (milestone == null) {
             return null;
         }
         Integer slaDays = milestone.getMilestoneSlaDays();
-        
-        // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-        if (milestone.getMilestoneType() == MilestoneType.recording) {
-            // ⚠️ QUAN TRỌNG: Ưu tiên actualEndAt TRƯỚC booking date
-            // Vì actualEndAt là deadline thực tế (milestone đã completed), không phải ước tính
-            
-            // Ưu tiên 1: actualEndAt (nếu milestone đã completed) - deadline thực tế
-            if (milestone.getActualEndAt() != null) {
-                log.debug("Recording milestone deadline using actualEndAt (milestone completed): milestoneId={}, actualEndAt={}", 
-                    milestone.getMilestoneId(), milestone.getActualEndAt());
-                return milestone.getActualEndAt();
-            }
-            
-            // Ưu tiên 2: Tính từ booking date (nếu có booking active) - deadline ước tính từ booking
-            // ⚠️ QUAN TRỌNG: Ưu tiên booking date TRƯỚC plannedDueDate
-            // Vì booking date phản ánh thực tế (dựa trên actual completion của arrangement milestone),
-            // trong khi plannedDueDate chỉ là baseline (tính từ cursor khi Start Work)
-            // Nếu arrangement milestone bị revision nhiều, booking date sẽ muộn hơn plannedDueDate
-            // ⚠️ CHỈ dùng booking có status active (TENTATIVE, PENDING, CONFIRMED, IN_PROGRESS)
-            // KHÔNG dùng booking bị CANCELLED, NO_SHOW, hoặc COMPLETED (vì đã xong hoặc không còn hiệu lực)
-                try {
-                    Optional<StudioBooking> bookingOpt = 
-                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
-                    
-                if (bookingOpt.isPresent()) {
-                    StudioBooking booking = bookingOpt.get();
-                    // Chỉ dùng booking có status active (không phải CANCELLED, NO_SHOW, COMPLETED)
-                    List<BookingStatus> activeStatuses = List.of(
-                        BookingStatus.TENTATIVE, BookingStatus.PENDING, 
-                        BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
-                    
-                    if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
-                        LocalDate bookingDate = booking.getBookingDate();
-                        LocalTime startTime = booking.getStartTime() != null ? 
-                            booking.getStartTime() : LocalTime.of(8, 0);
-                        LocalDateTime bookingDateTime = bookingDate.atTime(startTime);
-                        
-                        if (slaDays != null && slaDays > 0) {
-                            LocalDateTime deadline = bookingDateTime.plusDays(slaDays);
-                            log.debug("Recording milestone deadline calculated from active booking date: milestoneId={}, bookingId={}, bookingDate={}, status={}, slaDays={}, deadline={}", 
-                                milestone.getMilestoneId(), booking.getBookingId(), bookingDate, booking.getStatus(), slaDays, deadline);
-                            return deadline;
-                        }
-                    } else {
-                        log.debug("Recording milestone has booking but not active (cancelled/completed): milestoneId={}, bookingId={}, status={}, skipping booking date for deadline calculation", 
-                            milestone.getMilestoneId(), booking.getBookingId(), booking.getStatus());
-                    }
-                    }
-                } catch (Exception e) {
-                    log.error("Error fetching booking for recording milestone deadline: milestoneId={}, error={}", 
-                        milestone.getMilestoneId(), e.getMessage());
-                }
-            
-            // ⚠️ QUAN TRỌNG: Khi chưa có booking, tính từ actualEndAt của arrangement milestone cuối cùng
-            // Vì nếu arrangement milestone bị revision nhiều, actualEndAt sẽ muộn hơn plannedDueDate
-            // Deadline phải phản ánh thực tế, không phải baseline
-            try {
-                Contract contract = contractRepository.findById(milestone.getContractId()).orElse(null);
-                if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
-                    List<ContractMilestone> allContractMilestones = contractMilestoneRepository
-                        .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
-                    List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
-                        .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                        .toList();
-                    
-                    if (!arrangementMilestones.isEmpty()) {
-                        ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
-                            .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                            .orElse(null);
-                        
-                        // Nếu arrangement milestone đã completed và đã thanh toán (actualEndAt != null)
-                        // Tính deadline từ actualEndAt + SLA days (phản ánh thực tế)
-                        if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
-                            if (slaDays != null && slaDays > 0) {
-                                LocalDateTime deadline = lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
-                                log.debug("Recording milestone deadline calculated from last arrangement actualEndAt (no booking yet): milestoneId={}, lastArrangementActualEndAt={}, slaDays={}, deadline={}", 
-                                    milestone.getMilestoneId(), lastArrangementMilestone.getActualEndAt(), slaDays, deadline);
-                                return deadline;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error fetching arrangement milestone for recording deadline: milestoneId={}, error={}", 
-                    milestone.getMilestoneId(), e.getMessage());
-            }
-            
-            // Ưu tiên 3: plannedDueDate (baseline từ Start Work - chỉ dùng khi arrangement milestone chưa completed)
-            // Fallback khi chưa có booking VÀ arrangement milestone chưa có actualEndAt
-            if (milestone.getPlannedDueDate() != null) {
-                log.debug("Recording milestone deadline using plannedDueDate (baseline, no booking and no arrangement actualEndAt): milestoneId={}, plannedDueDate={}", 
-                    milestone.getMilestoneId(), milestone.getPlannedDueDate());
-                return milestone.getPlannedDueDate();
-            }
-            
-            // Ưu tiên 4: plannedStartAt + slaDays (fallback cuối cùng)
-            // ⚠️ LƯU Ý: Không dùng actualStartAt + SLA vì:
-            // - Với recording milestone, specialist KHÔNG THỂ start task mà không có booking
-            // - Nếu có actualStartAt → đã có booking rồi (không thể start mà không có booking)
-            // - Deadline phải tính từ booking date + SLA (thời điểm recording thực tế), không phải actualStartAt
-            // - actualStartAt là khi specialist start task (có thể trước booking date), không phản ánh thời điểm recording
-            if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
-                log.debug("Recording milestone deadline using plannedStartAt + SLA (final fallback): milestoneId={}, plannedStartAt={}, slaDays={}", 
-                    milestone.getMilestoneId(), milestone.getPlannedStartAt(), slaDays);
-                return milestone.getPlannedStartAt().plusDays(slaDays);
-            }
-            
+        if (slaDays == null || slaDays <= 0) {
             return null;
         }
-        
-        // Other milestones: logic cũ
-        if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
-            return milestone.getActualStartAt().plusDays(slaDays);
+
+        // Recording milestone: special rules by contract type
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            Contract contract = null;
+            try {
+                contract = contractRepository.findById(milestone.getContractId()).orElse(null);
+            } catch (Exception e) {
+                log.warn("Failed to fetch contract for recording target deadline: milestoneId={}, error={}",
+                    milestone.getMilestoneId(), e.getMessage());
+            }
+
+            // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
+            if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                try {
+                    List<ContractMilestone> allContractMilestones = contractMilestoneRepository
+                        .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
+                    ContractMilestone lastArrangementMilestone = allContractMilestones.stream()
+                        .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                        .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                        .orElse(null);
+
+                    if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
+                        return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                    }
+                } catch (Exception e) {
+                    log.error("Error calculating recording target deadline for arrangement_with_recording: milestoneId={}, error={}",
+                        milestone.getMilestoneId(), e.getMessage());
+                }
+                // If arrangement not paid yet => fallback to planned
+            } else if (contract != null && contract.getContractType() == ContractType.recording) {
+                // Workflow 4 (recording-only): prefer booking date if active
+                try {
+                    Optional<StudioBooking> bookingOpt =
+                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                    if (bookingOpt.isPresent()) {
+                        StudioBooking booking = bookingOpt.get();
+                        List<BookingStatus> activeStatuses = List.of(
+                            BookingStatus.TENTATIVE, BookingStatus.PENDING,
+                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                        if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                            LocalTime startTime = booking.getStartTime() != null
+                                ? booking.getStartTime()
+                                : LocalTime.of(8, 0);
+                            LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                            return startAt.plusDays(slaDays);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching booking for recording target deadline: milestoneId={}, error={}",
+                        milestone.getMilestoneId(), e.getMessage());
+                }
+            }
+
+            // Fallback for recording: planned dates (baseline)
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            if (milestone.getPlannedStartAt() != null) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            return null;
         }
-        if (milestone.getActualEndAt() != null) {
-            return milestone.getActualEndAt();
+
+        // Other milestones: target deadline is based on actualStartAt (once started), otherwise planned
+        if (milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt().plusDays(slaDays);
         }
         if (milestone.getPlannedDueDate() != null) {
             return milestone.getPlannedDueDate();
         }
-        if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+        if (milestone.getPlannedStartAt() != null) {
             return milestone.getPlannedStartAt().plusDays(slaDays);
         }
         return null;
@@ -768,6 +736,17 @@ public class TaskAssignmentService {
         String key = assignment.getMilestoneId() + ":" + assignment.getContractId();
         ContractMilestone milestone = milestoneCache.get(key);
         if (milestone != null) {
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
+            Boolean firstSubmissionLate = null;
+            Boolean overdueNow = null;
+            if (targetDeadline != null) {
+                if (milestone.getFirstSubmissionAt() != null) {
+                    firstSubmissionLate = milestone.getFirstSubmissionAt().isAfter(targetDeadline);
+                    overdueNow = false;
+                } else {
+                    overdueNow = LocalDateTime.now().isAfter(targetDeadline);
+                }
+            }
             TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
                 .milestoneId(milestone.getMilestoneId())
                 .name(milestone.getName())
@@ -781,6 +760,10 @@ public class TaskAssignmentService {
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
+                .targetDeadline(targetDeadline)
+                .firstSubmissionLate(firstSubmissionLate)
+                .overdueNow(overdueNow)
                 .build();
             response.setMilestone(milestoneInfo);
         }
@@ -835,15 +818,15 @@ public class TaskAssignmentService {
         try {
             // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
             LocalDateTime estimatedDeadline = null;
-            LocalDateTime actualDeadline = resolveMilestoneDeadline(milestone);
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
             LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
                 ? milestone.getPlannedDueDate() 
                 : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
                     ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
                     : null);
             
-            // Chỉ tính estimated deadline khi không có actual và planned
-            if (actualDeadline == null && plannedDeadline == null) {
+            // Chỉ tính estimated deadline khi không có target và planned
+            if (targetDeadline == null && plannedDeadline == null) {
                 estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
             }
             
@@ -865,7 +848,18 @@ public class TaskAssignmentService {
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .targetDeadline(targetDeadline)
                 .estimatedDeadline(estimatedDeadline)
+                .firstSubmissionLate(
+                    (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                        ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                        : null
+                )
+                .overdueNow(
+                    targetDeadline != null
+                        ? (milestone.getFirstSubmissionAt() == null && LocalDateTime.now().isAfter(targetDeadline))
+                        : null
+                )
                 .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
                 .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
                 .sourceArrangementSubmission(arrangementSubmissionInfo)
@@ -889,15 +883,15 @@ public class TaskAssignmentService {
             if (milestone != null) {
                 // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
                 LocalDateTime estimatedDeadline = null;
-                LocalDateTime actualDeadline = resolveMilestoneDeadline(milestone);
+                LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
                 LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
                     ? milestone.getPlannedDueDate() 
                     : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
                         ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
                         : null);
                 
-                // Chỉ tính estimated deadline khi không có actual và planned
-                if (actualDeadline == null && plannedDeadline == null) {
+                // Chỉ tính estimated deadline khi không có target và planned
+                if (targetDeadline == null && plannedDeadline == null) {
                     estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
                 }
                 
@@ -919,7 +913,18 @@ public class TaskAssignmentService {
                     .firstSubmissionAt(milestone.getFirstSubmissionAt())
                     .finalCompletedAt(milestone.getFinalCompletedAt())
                     .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                    .targetDeadline(targetDeadline)
                     .estimatedDeadline(estimatedDeadline)
+                    .firstSubmissionLate(
+                        (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                            ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                            : null
+                    )
+                    .overdueNow(
+                        targetDeadline != null
+                            ? (milestone.getFirstSubmissionAt() == null && LocalDateTime.now().isAfter(targetDeadline))
+                            : null
+                    )
                     .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
                     .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
                     .sourceArrangementSubmission(arrangementSubmissionInfo)
@@ -1098,6 +1103,26 @@ public class TaskAssignmentService {
                 }
             }
 
+            // Target deadline (hard/target) for FE display (with fallback before Start Work)
+            LocalDateTime targetDeadline = resolveMilestoneDeadlineWithFallback(
+                milestone, contract, contract.getContractId());
+
+            // Estimated deadline riêng (chỉ khi chưa có target/planned)
+            LocalDateTime estimatedDeadline = null;
+            try {
+                LocalDateTime targetNoFallback = resolveMilestoneTargetDeadline(milestone);
+                LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null
+                    ? milestone.getPlannedDueDate()
+                    : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
+                        ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
+                        : null);
+                if (targetNoFallback == null && plannedDeadline == null) {
+                    estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contract.getContractId());
+                }
+            } catch (Exception ignored) {
+                // keep estimatedDeadline = null
+            }
+
             MilestoneAssignmentSlotResponse slot = MilestoneAssignmentSlotResponse.builder()
                 .contractId(contract.getContractId())
                 .contractNumber(contract.getContractNumber())
@@ -1112,11 +1137,23 @@ public class TaskAssignmentService {
                 .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
                 .plannedStartAt(milestone.getPlannedStartAt())
                 .plannedDueDate(milestone.getPlannedDueDate())
+                .targetDeadline(targetDeadline)
+                .estimatedDeadline(estimatedDeadline)
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .firstSubmissionLate(
+                    (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                        ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                        : null
+                )
+                .overdueNow(
+                    targetDeadline != null
+                        ? (milestone.getFirstSubmissionAt() == null && LocalDateTime.now().isAfter(targetDeadline))
+                        : null
+                )
                 .milestoneWorkStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().name() : null)
                 .assignmentId(assignment != null ? assignment.getAssignmentId() : null)
                 .taskType(assignment != null ? assignment.getTaskType() : null)
@@ -2808,5 +2845,4 @@ public class TaskAssignmentService {
         throw UserNotAuthenticatedException.create();
     }
 }
-
 

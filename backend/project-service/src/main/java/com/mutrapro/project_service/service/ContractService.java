@@ -21,6 +21,7 @@ import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.GateCondition;
 import com.mutrapro.project_service.enums.InstallmentStatus;
 import com.mutrapro.project_service.enums.InstallmentType;
+import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
@@ -84,6 +85,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -527,6 +529,38 @@ public class ContractService {
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
         
         ContractMilestoneResponse response = contractMilestoneMapper.toResponse(milestone);
+
+        // Populate target deadline (hard/target) for FE
+        try {
+            List<ContractMilestone> allMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+            response.setTargetDeadline(targetDeadline);
+
+            // Estimated deadline chỉ khi chưa có target/planned
+            LocalDateTime plannedDeadline = resolveMilestonePlannedDeadline(milestone);
+            if (targetDeadline == null && plannedDeadline == null) {
+                response.setEstimatedDeadline(calculateEstimatedDeadlineForMilestone(milestone, contract, allMilestones));
+            }
+
+            // Computed SLA status (first submission vs target deadline)
+            if (targetDeadline != null) {
+                LocalDateTime firstSubmissionAt = milestone.getFirstSubmissionAt();
+                if (firstSubmissionAt != null) {
+                    response.setFirstSubmissionLate(firstSubmissionAt.isAfter(targetDeadline));
+                    response.setOverdueNow(false);
+                } else {
+                    response.setFirstSubmissionLate(null);
+                    response.setOverdueNow(LocalDateTime.now().isAfter(targetDeadline));
+                }
+            } else {
+                response.setFirstSubmissionLate(null);
+                response.setOverdueNow(null);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate targetDeadline for milestone: contractId={}, milestoneId={}, error={}",
+                contractId, milestoneId, e.getMessage());
+        }
         
         // Enrich với arrangement submission nếu là recording milestone
         if (milestone.getMilestoneType() == MilestoneType.recording) {
@@ -578,8 +612,47 @@ public class ContractService {
         List<ContractMilestone> milestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(response.getContractId());
         
+        Contract contract = null;
+        try {
+            contract = contractRepository.findById(response.getContractId()).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch contract when enriching milestones: contractId={}, error={}",
+                response.getContractId(), e.getMessage());
+        }
+
+        Contract finalContract = contract;
         List<ContractMilestoneResponse> milestoneResponses = milestones.stream()
-            .map(contractMilestoneMapper::toResponse)
+            .map(m -> {
+                ContractMilestoneResponse r = contractMilestoneMapper.toResponse(m);
+                try {
+                    LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(m, finalContract, milestones);
+                    r.setTargetDeadline(targetDeadline);
+
+                    // Estimated deadline chỉ khi chưa có target/planned
+                    LocalDateTime plannedDeadline = resolveMilestonePlannedDeadline(m);
+                    if (targetDeadline == null && plannedDeadline == null) {
+                        r.setEstimatedDeadline(calculateEstimatedDeadlineForMilestone(m, finalContract, milestones));
+                    }
+
+                    // Computed SLA status (first submission vs target deadline)
+                    if (targetDeadline != null) {
+                        LocalDateTime firstSubmissionAt = m.getFirstSubmissionAt();
+                        if (firstSubmissionAt != null) {
+                            r.setFirstSubmissionLate(firstSubmissionAt.isAfter(targetDeadline));
+                            r.setOverdueNow(false);
+                        } else {
+                            r.setFirstSubmissionLate(null);
+                            r.setOverdueNow(LocalDateTime.now().isAfter(targetDeadline));
+                        }
+                    } else {
+                        r.setFirstSubmissionLate(null);
+                        r.setOverdueNow(null);
+                    }
+                } catch (Exception ignored) {
+                    // keep response without targetDeadline
+                }
+                return r;
+            })
             .collect(Collectors.toList());
         
         response.setMilestones(milestoneResponses);
@@ -595,6 +668,157 @@ public class ContractService {
         response.setInstallments(installmentResponses);
         
         return response;
+    }
+
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) cho milestone.
+     *
+     * QUAN TRỌNG:
+     * - Không trả về actualEndAt (vì đó là mốc hoàn thành/thanh toán, không phải deadline mục tiêu).
+     * - Recording milestone:
+     *   - arrangement_with_recording: hard deadline = last arrangement actualEndAt (paid) + SLA days (booking không dời deadline)
+     *   - recording-only: deadline = bookingDate(+startTime) + SLA days
+     */
+    private LocalDateTime resolveMilestonePlannedDeadline(ContractMilestone milestone) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (slaDays != null && slaDays > 0 && milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) cho milestone.
+     * - Có thể truyền allContractMilestones để tránh query lặp (đặc biệt workflow 3).
+     */
+    private LocalDateTime resolveMilestoneTargetDeadline(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allContractMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+
+        // Recording milestone: special rules
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                // Workflow 3: hard deadline = last arrangement actualEndAt (paid) + SLA (ignore booking)
+                List<ContractMilestone> all = allContractMilestones != null
+                    ? allContractMilestones
+                    : contractMilestoneRepository.findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
+                ContractMilestone lastArrangement = all.stream()
+                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                    .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                    .orElse(null);
+                if (lastArrangement != null && lastArrangement.getActualEndAt() != null) {
+                    return lastArrangement.getActualEndAt().plusDays(slaDays);
+                }
+                // If arrangement not paid yet => fallback planned
+            } else if (contract != null && contract.getContractType() == ContractType.recording) {
+                // Workflow 4: booking date (+ startTime) + SLA
+                Optional<StudioBooking> bookingOpt = studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                if (bookingOpt.isPresent()) {
+                    StudioBooking booking = bookingOpt.get();
+                    List<BookingStatus> activeStatuses = List.of(
+                        BookingStatus.TENTATIVE, BookingStatus.PENDING,
+                        BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                    if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                        LocalTime startTime = booking.getStartTime() != null ? booking.getStartTime() : LocalTime.of(8, 0);
+                        LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                        return startAt.plusDays(slaDays);
+                    }
+                }
+            }
+
+            // Fallback for recording: planned dates
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            if (milestone.getPlannedStartAt() != null) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            return null;
+        }
+
+        // Other milestones: target deadline is based on actualStartAt (once started), otherwise planned
+        if (milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt().plusDays(slaDays);
+        }
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    private LocalDateTime calculateEstimatedPlannedStartAtForMilestone(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer orderIndex = milestone.getOrderIndex();
+        if (orderIndex == null || orderIndex <= 1) {
+            return LocalDateTime.now();
+        }
+        if (allMilestones == null || allMilestones.isEmpty()) {
+            return LocalDateTime.now();
+        }
+        ContractMilestone previous = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == orderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        if (previous == null) {
+            return LocalDateTime.now();
+        }
+        LocalDateTime prevEstimatedDeadline = calculateEstimatedDeadlineForMilestone(previous, contract, allMilestones);
+        if (prevEstimatedDeadline != null) {
+            return prevEstimatedDeadline;
+        }
+        LocalDateTime prevEstimatedStart = calculateEstimatedPlannedStartAtForMilestone(previous, contract, allMilestones);
+        Integer prevSla = previous.getMilestoneSlaDays();
+        if (prevEstimatedStart != null && prevSla != null && prevSla > 0) {
+            return prevEstimatedStart.plusDays(prevSla);
+        }
+        return LocalDateTime.now();
+    }
+
+    private LocalDateTime calculateEstimatedDeadlineForMilestone(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+
+        // Ưu tiên: nếu đã resolve được targetDeadline (booking / arrangement-paid / planned / actualStartAt)
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+        if (deadline != null) {
+            return deadline;
+        }
+
+        LocalDateTime estimatedStart = calculateEstimatedPlannedStartAtForMilestone(milestone, contract, allMilestones);
+        return estimatedStart != null ? estimatedStart.plusDays(slaDays) : null;
     }
     
     /**
@@ -1857,7 +2081,9 @@ public class ContractService {
     
     /**
      * Tính plannedStartAt/plannedDueDate cho toàn bộ milestones dựa trên expectedStartDate (baseline cố định).
-     * Đặc biệt: Recording milestone sẽ tính từ booking date thay vì cursor hiện tại
+     * Đặc biệt:
+     * - Recording-only contracts: Recording milestone planned dates tính từ booking date (vì booking có trước)
+     * - Arrangement+Recording contracts: Recording milestone planned dates KHÔNG phụ thuộc booking (booking không được làm dời milestone window)
      * @param unlockFirstMilestone nếu true, set milestone đầu tiên thành READY_TO_START
      */
     private void calculatePlannedDatesForAllMilestones(String contractId, LocalDateTime contractStartAt, boolean unlockFirstMilestone) {
@@ -1869,11 +2095,23 @@ public class ContractService {
         }
 
         LocalDateTime cursor = contractStartAt;
+        ContractType contractType = null;
+        try {
+            contractType = contractRepository.findById(contractId).map(Contract::getContractType).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch contract type when calculating planned dates: contractId={}, error={}",
+                contractId, e.getMessage());
+        }
+
+        // Chỉ recording-only contract mới dùng booking date để set planned dates cho recording milestone
+        final boolean useBookingForRecordingPlannedDates = contractType == ContractType.recording;
         for (ContractMilestone milestone : milestones) {
             Integer slaDays = milestone.getMilestoneSlaDays();
             
-            // Recording milestone: planned dates tính từ booking date
-            if (milestone.getMilestoneType() == MilestoneType.recording) {
+            // Recording milestone:
+            // - recording-only: planned dates tính từ booking date
+            // - arrangement_with_recording: planned dates tính từ cursor baseline
+            if (milestone.getMilestoneType() == MilestoneType.recording && useBookingForRecordingPlannedDates) {
                 boolean usedBookingDate = false;
                 try {
                     Optional<StudioBooking> bookingOpt = 

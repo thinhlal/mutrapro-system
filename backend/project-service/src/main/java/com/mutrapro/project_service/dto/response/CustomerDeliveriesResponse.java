@@ -57,7 +57,20 @@ public class CustomerDeliveriesResponse {
         String description;
         String milestoneType;  // transcription, arrangement, recording
         String workStatus;  // PLANNED, IN_PROGRESS, WAITING_CUSTOMER, etc.
+        // Baseline (plan) - kept for backward compatibility
         LocalDateTime plannedDueDate;
+
+        // Deadline mục tiêu/hard deadline do backend tính (workflow 3 vs 4)
+        LocalDateTime targetDeadline;
+
+        // Lúc specialist giao bản đầu tiên (để check SLA milestone)
+        LocalDateTime firstSubmissionAt;
+
+        // Computed SLA status: true if firstSubmissionAt > targetDeadline; false if <=; null if cannot decide
+        Boolean firstSubmissionLate;
+
+        // Computed at query time: overdue when not yet submitted (firstSubmissionAt == null && now > targetDeadline)
+        Boolean overdueNow;
         LocalDateTime actualStartAt;
         LocalDateTime finalCompletedAt;  // Thời điểm customer chấp nhận bản cuối cùng (sau mọi revision)
         LocalDateTime actualEndAt;  // Thời điểm milestone được thanh toán (nếu có payment)

@@ -1011,10 +1011,10 @@ export default function TaskAssignmentWorkspace() {
                               {dayjs(item.plannedStartAt).format('YYYY-MM-DD')}
                             </span>
                           )}
-                          {item.plannedDueDate && (
+                          {item.targetDeadline && (
                             <span>
                               <Text type="secondary">Due: </Text>
-                              {dayjs(item.plannedDueDate).format('YYYY-MM-DD')}
+                              {dayjs(item.targetDeadline).format('YYYY-MM-DD')}
                             </span>
                           )}
                           {item.milestoneSlaDays && (

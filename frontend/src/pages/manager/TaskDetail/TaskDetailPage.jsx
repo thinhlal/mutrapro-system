@@ -675,74 +675,21 @@ const TaskDetailPage = () => {
     milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
   const getPlannedDeadlineDayjs = milestone => {
-    if (!milestone) return null;
-    if (milestone.plannedDueDate) {
-      return dayjs(milestone.plannedDueDate);
-    }
-    if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-      return dayjs(milestone.plannedStartAt).add(
-        Number(milestone.milestoneSlaDays || 0),
-        'day'
-      );
-    }
-    return null;
+    if (!milestone?.plannedDueDate) return null;
+    const d = dayjs(milestone.plannedDueDate);
+    return d.isValid() ? d : null;
   };
 
   const getActualDeadlineDayjs = milestone => {
-    // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-    if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-      return null;
-    }
-    return dayjs(milestone.actualStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
+    if (!milestone?.targetDeadline) return null;
+    const d = dayjs(milestone.targetDeadline);
+    return d.isValid() ? d : null;
   };
 
-  const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
-    if (!milestone) return null;
-    const slaDays = Number(milestone.milestoneSlaDays || 0);
-    if (!slaDays) return null;
-
-    // Ưu tiên 1: Nếu có plannedStartAt thì dùng nó
-    const plannedStart = getPlannedStartDayjs(milestone);
-    if (plannedStart) {
-      return plannedStart.add(slaDays, 'day');
-    }
-
-    // Ưu tiên 2: Nếu là milestone đầu tiên (orderIndex <= 1) thì dùng thời gian hiện tại
-    const orderIndex = milestone.orderIndex;
-    if (!orderIndex || orderIndex <= 1) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Ưu tiên 3: Tìm milestone trước đó để tính deadline
-    const previousMilestone =
-      contractMilestones.find(
-        item =>
-          item &&
-          item.orderIndex === orderIndex - 1 &&
-          (item.contractId
-            ? item.contractId === (milestone.contractId || item.contractId)
-            : true)
-      ) || null;
-
-    if (!previousMilestone) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Tính deadline của milestone trước đó
-    const previousDeadline =
-      getActualDeadlineDayjs(previousMilestone) ||
-      getPlannedDeadlineDayjs(previousMilestone) ||
-      getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
-
-    if (!previousDeadline) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Deadline của milestone hiện tại = deadline của milestone trước + SLA days
-    return previousDeadline.add(slaDays, 'day');
+  const getEstimatedDeadlineDayjs = (milestone, _contractMilestones = []) => {
+    if (!milestone?.estimatedDeadline) return null;
+    const d = dayjs(milestone.estimatedDeadline);
+    return d.isValid() ? d : null;
   };
 
   const calculateDaysRemaining = deadlineDayjs => {
@@ -1267,20 +1214,25 @@ const TaskDetailPage = () => {
                     : plannedDaysDiff !== null
                       ? plannedDaysDiff
                       : estimatedDaysDiff;
-                // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
-                const hasFirstSubmission = task.milestone?.firstSubmissionAt;
+
+                // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+                const hasFirstSubmission = !!task.milestone?.firstSubmissionAt;
                 const hasPendingReview = submissions.some(
                   s => s.status?.toLowerCase() === 'pending_review'
                 );
-                const shouldHideDeadlineWarning =
-                  hasFirstSubmission || hasPendingReview;
+                const isFirstSubmissionLate = task.milestone?.firstSubmissionLate === true;
+                const isFirstSubmissionOnTime =
+                  hasFirstSubmission && task.milestone?.firstSubmissionLate === false;
+
+                const overdueNow = task.milestone?.overdueNow;
+                const shouldHideDeadlineWarning = hasFirstSubmission || hasPendingReview;
                 const isOverdue =
                   !shouldHideDeadlineWarning &&
-                  daysDiff !== null &&
-                  daysDiff < 0 &&
+                  overdueNow === true &&
                   task.status !== 'completed';
                 const isNearDeadline =
                   !shouldHideDeadlineWarning &&
+                  overdueNow === false &&
                   daysDiff !== null &&
                   daysDiff <= 3 &&
                   daysDiff >= 0 &&
@@ -1292,11 +1244,11 @@ const TaskDetailPage = () => {
                     size="small"
                     style={{ width: '100%' }}
                   >
-                    {/* Actual Deadline */}
+                    {/* Target/SLA Deadline */}
                     {actualDeadline && (
                       <div>
                         <Space>
-                          <Text strong>Actual Deadline:</Text>
+                          <Text strong>Target Deadline:</Text>
                           <Text
                             type={
                               isOverdue && actualDaysDiff !== null
@@ -1335,6 +1287,12 @@ const TaskDetailPage = () => {
                                 </Tag>
                               )}
                             </>
+                          )}
+                          {isFirstSubmissionLate && (
+                            <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                          )}
+                          {isFirstSubmissionOnTime && (
+                            <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
                           )}
                         </Space>
                       </div>

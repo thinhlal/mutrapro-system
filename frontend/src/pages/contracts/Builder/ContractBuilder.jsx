@@ -294,7 +294,7 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
                   (Auto: = Contract SLA)
                 </span>
               ) : (
-              <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt và plannedDueDate khi contract có start date">
+              <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt/plannedDueDate (baseline) khi contract có start date, và trả thêm targetDeadline (deadline mục tiêu) để hiển thị/check SLA nhất quán.">
                 <QuestionCircleOutlined
                   style={{
                     color: '#1890ff',
@@ -1806,7 +1806,7 @@ const ContractBuilder = () => {
                     label={
                       <span>
                         SLA Days (Service Level Agreement){' '}
-                        <Tooltip title="Total number of SLA days for all milestones. Due date will be calculated from the last milestone's plannedDueDate after payments are made">
+                        <Tooltip title="Total number of SLA days for all milestones. Due date shown in the system uses the last milestone's targetDeadline (backend-computed).">
                           <QuestionCircleOutlined
                             style={{ color: '#1890ff', cursor: 'help' }}
                           />

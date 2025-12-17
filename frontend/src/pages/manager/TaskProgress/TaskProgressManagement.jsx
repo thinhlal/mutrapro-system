@@ -106,28 +106,15 @@ const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
 const getPlannedDeadlineDayjs = milestone => {
-  if (!milestone) return null;
-  if (milestone.plannedDueDate) {
-    return dayjs(milestone.plannedDueDate);
-  }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    return dayjs(milestone.plannedStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
-  }
-  return null;
+  if (!milestone?.plannedDueDate) return null;
+  const d = dayjs(milestone.plannedDueDate);
+  return d.isValid() ? d : null;
 };
 
 const getActualDeadlineDayjs = milestone => {
-  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-    return null;
-  }
-  return dayjs(milestone.actualStartAt).add(
-    Number(milestone.milestoneSlaDays || 0),
-    'day'
-  );
+  if (!milestone?.targetDeadline) return null;
+  const d = dayjs(milestone.targetDeadline);
+  return d.isValid() ? d : null;
 };
 
 const getTaskCompletionDate = task =>
@@ -708,24 +695,28 @@ export default function TaskProgressManagement() {
         }
 
         const now = dayjs();
-        // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
-        const hasFirstSubmission = record.milestone?.firstSubmissionAt;
+        // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+        const hasFirstSubmission = !!record.milestone?.firstSubmissionAt;
         const submissions = taskSubmissionsMap[record.assignmentId] || [];
         const hasPendingReview = submissions.some(
           s => s.status?.toLowerCase() === 'pending_review'
         );
         const shouldHideDeadlineWarning =
           hasFirstSubmission || hasPendingReview;
+        const isFirstSubmissionLate = record.milestone?.firstSubmissionLate === true;
+        const isFirstSubmissionOnTime =
+          hasFirstSubmission && record.milestone?.firstSubmissionLate === false;
+        const overdueNow = record.milestone?.overdueNow;
         const isOverdue =
           !shouldHideDeadlineWarning &&
-          actualDeadline &&
-          actualDeadline.isBefore(now) &&
+          overdueNow === true &&
           record.status !== 'completed';
         const diffDays = actualDeadline
           ? actualDeadline.diff(now, 'day')
           : null;
         const isNearDeadline =
           !shouldHideDeadlineWarning &&
+          overdueNow === false &&
           diffDays !== null &&
           diffDays <= 3 &&
           diffDays >= 0 &&
@@ -739,7 +730,7 @@ export default function TaskProgressManagement() {
             {/* Hiển thị Actual nếu có */}
             {actualDeadline && (
               <>
-                <Text strong>Actual</Text>
+                <Text strong>Target</Text>
                 <Space direction="vertical" size={0}>
                   {actualStart && (
                     <Text type="secondary" style={{ fontSize: 11 }}>
@@ -773,6 +764,16 @@ export default function TaskProgressManagement() {
                   {isNearDeadline && (
                     <Tag color="orange" size="small">
                       Sắp hạn
+                    </Tag>
+                  )}
+                  {isFirstSubmissionLate && (
+                    <Tag color="red" size="small">
+                      Nộp trễ (bản đầu)
+                    </Tag>
+                  )}
+                  {isFirstSubmissionOnTime && (
+                    <Tag color="green" size="small">
+                      Nộp đúng hạn (bản đầu)
                     </Tag>
                   )}
                 </Space>
@@ -1072,7 +1073,7 @@ export default function TaskProgressManagement() {
                   return (
                     <Space direction="vertical" size="small">
                       <div>
-                        <Text strong>Actual</Text>
+                        <Text strong>Target</Text>
                         <Space direction="vertical" size={0}>
                           <Text type="secondary" style={{ fontSize: 11 }}>
                             Start:{' '}

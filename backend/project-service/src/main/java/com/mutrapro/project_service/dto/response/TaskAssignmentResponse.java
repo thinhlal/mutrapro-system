@@ -128,7 +128,12 @@ public class TaskAssignmentResponse {
         LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
         LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
         Integer milestoneSlaDays;
+        LocalDateTime targetDeadline;  // Deadline mục tiêu/hard deadline do backend tính (workflow 3 vs 4)
         LocalDateTime estimatedDeadline;  // Deadline ước tính khi chưa có actual/planned (tính từ deadline milestone trước đó + slaDays)
+        // Computed SLA status: true if firstSubmissionAt > targetDeadline; false if <=; null if cannot decide
+        Boolean firstSubmissionLate;
+        // Computed at query time: overdue when not yet submitted (firstSubmissionAt == null && now > targetDeadline)
+        Boolean overdueNow;
         
         // Source arrangement info (cho recording milestone)
         String sourceArrangementMilestoneId;  // ID của arrangement milestone tạo ra recording milestone này

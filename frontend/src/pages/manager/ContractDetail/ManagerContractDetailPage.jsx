@@ -1102,17 +1102,17 @@ const ManagerContractDetailPage = () => {
               : 'Not scheduled (will be set when work starts)'}{' '}
             | Due Date:{' '}
             {(() => {
-              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              // Get due date from last milestone's targetDeadline (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
                 const lastMilestone =
                   contract.milestones[contract.milestones.length - 1];
-                if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format(
+                if (lastMilestone?.targetDeadline) {
+                  return dayjs(lastMilestone.targetDeadline).format(
                     'YYYY-MM-DD'
                   );
                 }
               }
-              // No plannedDueDate yet (not calculated)
+              // No targetDeadline yet
               return 'N/A';
             })()}
           </PdfText>
@@ -1609,19 +1609,19 @@ const ManagerContractDetailPage = () => {
               </Descriptions.Item>
             )}
             {(() => {
-              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              // Get due date from last milestone's targetDeadline (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
                 const lastMilestone =
                   contract.milestones[contract.milestones.length - 1];
-                if (lastMilestone?.plannedDueDate) {
+                if (lastMilestone?.targetDeadline) {
                   return (
                     <Descriptions.Item label="Due Date">
-                      {dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD')}
+                      {dayjs(lastMilestone.targetDeadline).format('YYYY-MM-DD')}
                     </Descriptions.Item>
                   );
                 }
               }
-              // No plannedDueDate yet (not calculated)
+              // No targetDeadline yet
               return (
                 <Descriptions.Item label="Due Date">
                   <Text type="secondary" italic>

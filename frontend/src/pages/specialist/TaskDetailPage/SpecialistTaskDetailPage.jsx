@@ -150,26 +150,9 @@ function getTaskTypeLabel(taskType) {
 }
 
 function getActualDeadline(milestone, studioBooking = null) {
-  // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-  if (
-    milestone?.milestoneType?.toLowerCase() === 'recording' &&
-    studioBooking?.bookingDate &&
-    milestone?.milestoneSlaDays
-  ) {
-    const bookingDate = new Date(studioBooking.bookingDate);
-    if (!Number.isFinite(bookingDate.getTime())) return null;
-    const due = new Date(bookingDate);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
-  
-  // Other milestones: SLA tính từ khi bắt đầu làm việc (actualStartAt)
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) return null;
-  const start = new Date(milestone.actualStartAt);
-  if (!Number.isFinite(start.getTime())) return null;
-  const due = new Date(start);
-  due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-  return due;
+  if (!milestone?.targetDeadline) return null;
+  const d = new Date(milestone.targetDeadline);
+  return Number.isFinite(d.getTime()) ? d : null;
 }
 
 function getPlannedDeadline(milestone) {
@@ -180,84 +163,7 @@ function getPlannedDeadline(milestone) {
       return due;
     }
   }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    const start = new Date(milestone.plannedStartAt);
-    if (!Number.isFinite(start.getTime())) return null;
-    const due = new Date(start);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
   return null;
-}
-
-const fallbackDeadlineCache = new Map();
-
-function getFallbackDeadline(milestone, allTasks = []) {
-  if (!milestone) return null;
-  const slaDays = milestone.milestoneSlaDays;
-  if (slaDays == null || slaDays <= 0) return null;
-
-  const plannedStart = milestone.plannedStartAt
-    ? new Date(milestone.plannedStartAt)
-    : null;
-  if (plannedStart && Number.isFinite(plannedStart.getTime())) {
-    const dueDate = new Date(plannedStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-
-  const cacheKey = milestone.milestoneId;
-  if (fallbackDeadlineCache.has(cacheKey)) {
-    return fallbackDeadlineCache.get(cacheKey);
-  }
-
-  const orderIndex = milestone.orderIndex;
-  if (!orderIndex || orderIndex === 1) {
-    const now = new Date();
-    const due = new Date(now);
-    due.setDate(due.getDate() + Number(slaDays));
-    fallbackDeadlineCache.set(cacheKey, due);
-    return due;
-  }
-
-  const contractId =
-    milestone.contractId ||
-    allTasks.find(t => t.milestone?.milestoneId === milestone.milestoneId)
-      ?.contractId;
-  if (contractId && allTasks.length > 0) {
-    const previousTask = allTasks.find(
-      t =>
-        t.contractId === contractId &&
-        t.milestone?.orderIndex === orderIndex - 1
-    );
-    if (previousTask?.milestone) {
-      const previousMilestone = previousTask.milestone;
-      // Note: previousTask có thể là recording, nhưng chúng ta không có studioBooking của previous task ở đây
-      // Frontend không cần quá chính xác cho fallback deadline của milestone phụ thuộc
-      const previousActualDeadline = getActualDeadline(previousMilestone, null);
-      const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
-      const previousFallbackDeadline = getFallbackDeadline(
-        previousMilestone,
-        allTasks
-      );
-      const previousDeadline =
-        previousActualDeadline ||
-        previousPlannedDeadline ||
-        previousFallbackDeadline;
-      if (previousDeadline) {
-        const dueDate = new Date(previousDeadline);
-        dueDate.setDate(dueDate.getDate() + Number(slaDays));
-        fallbackDeadlineCache.set(cacheKey, dueDate);
-        return dueDate;
-      }
-    }
-  }
-
-  const now = new Date();
-  const due = new Date(now);
-  due.setDate(due.getDate() + Number(slaDays));
-  fallbackDeadlineCache.set(cacheKey, due);
-  return due;
 }
 
 // ---------------- Component ----------------
@@ -333,15 +239,18 @@ const SpecialistTaskDetailPage = () => {
     const actual = getActualDeadline(task.milestone, studioBooking);
     const planned = getPlannedDeadline(task.milestone);
     const estimated =
-      !actual && !planned
-        ? getFallbackDeadline(task.milestone, contractTasks)
+      !actual && !planned && task.milestone?.estimatedDeadline
+        ? (() => {
+            const d = new Date(task.milestone.estimatedDeadline);
+            return Number.isFinite(d.getTime()) ? d : null;
+          })()
         : null;
     return {
       actualDeadline: actual,
       plannedDeadline: planned,
       estimatedDeadline: estimated,
     };
-  }, [task, contractTasks, studioBooking]);
+  }, [task, studioBooking]);
 
   const loadTaskFiles = useCallback(async assignmentId => {
     if (!assignmentId) return;
@@ -525,7 +434,6 @@ const SpecialistTaskDetailPage = () => {
           setRequest(taskData.request);
         }
 
-        fallbackDeadlineCache.clear();
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
 
@@ -1441,7 +1349,7 @@ const SpecialistTaskDetailPage = () => {
                 {task.milestone ? (
                   <Space direction="vertical" size={4}>
                     <div>
-                      <Text strong>Actual</Text>
+                      <Text strong>Target</Text>
                       <div>
                         {actualDeadline ? (
                           <>

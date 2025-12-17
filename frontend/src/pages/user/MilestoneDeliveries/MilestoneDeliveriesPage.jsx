@@ -440,13 +440,28 @@ const MilestoneDeliveriesPage = () => {
                       Thời gian dự kiến:
                     </Text>
                     <div style={{ marginTop: 4 }}>
-                      {milestoneInfo.plannedDueDate ? (
+                      {milestoneInfo.targetDeadline ? (
                         <Text>
-                          Hoàn thành: {dayjs(milestoneInfo.plannedDueDate).format('DD/MM/YYYY')}
+                          Hoàn thành: {dayjs(milestoneInfo.targetDeadline).format('DD/MM/YYYY')}
                         </Text>
                       ) : (
                         <Text type="secondary" italic>Chưa có</Text>
                       )}
+                    </div>
+                    {/* SLA status (backend-computed): first submission on-time/late */}
+                    <div style={{ marginTop: 8 }}>
+                      {milestoneInfo.firstSubmissionAt &&
+                        milestoneInfo.firstSubmissionLate != null && (
+                          <Tag color={milestoneInfo.firstSubmissionLate ? 'red' : 'green'}>
+                            {milestoneInfo.firstSubmissionLate
+                              ? 'Nộp trễ (bản đầu)'
+                              : 'Nộp đúng hạn (bản đầu)'}
+                          </Tag>
+                        )}
+                      {!milestoneInfo.firstSubmissionAt &&
+                        milestoneInfo.overdueNow === true && (
+                          <Tag color="red">Quá hạn (chưa nộp)</Tag>
+                        )}
                     </div>
                   </div>
                   {/* Actual Dates */}

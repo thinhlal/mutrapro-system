@@ -39,6 +39,7 @@ Party A agrees to provide professional music transcription services, converting 
 - Deposit: ${depositPercent}% of total price due upon contract signing.
 - Work will not start automatically upon signing or deposit payment. The actual work start date will be scheduled by MuTraPro's manager after internal task assignment and explicit "Start Work" confirmation in the system.
 - SLA and planned deadlines are calculated from the scheduled work start date, not from the contract signing date.
+- For the Recording milestone (Arrangement + Recording), the milestone deadline is a hard deadline and is calculated from the Arrangement completion/payment date (actual end date) + the Recording milestone SLA days. Studio booking must be scheduled within this milestone window and does not extend the milestone deadline.
 - Remaining payments will be divided into milestones as specified in the contract.
 - Payment method: Bank transfer or as agreed.
 
