@@ -140,6 +140,14 @@ const TASK_TYPE_OPTIONS = [
   { label: 'Recording Supervision', value: 'RECORDING_SUPERVISION' },
 ];
 
+const PROGRESS_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Chưa bắt đầu (0%)', value: '0' },
+  { label: 'Đang làm (1-74%)', value: '1-74' },
+  { label: 'Gần hoàn thành (75-99%)', value: '75-99' },
+  { label: 'Hoàn thành (100%)', value: '100' },
+];
+
 export default function TaskProgressManagement() {
   const [taskAssignments, setTaskAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -147,6 +155,7 @@ export default function TaskProgressManagement() {
     search: '',
     status: 'all',
     taskType: 'all',
+    progress: 'all',
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -178,6 +187,23 @@ export default function TaskProgressManagement() {
         }
         if (currentFilters.taskType !== 'all') {
           params.taskType = currentFilters.taskType;
+        }
+        if (currentFilters.progress !== 'all') {
+          // Parse progress range: '0', '1-74', '75-99', '100'
+          const progressValue = currentFilters.progress;
+          if (progressValue === '0') {
+            params.minProgress = 0;
+            params.maxProgress = 0;
+          } else if (progressValue === '100') {
+            params.minProgress = 100;
+            params.maxProgress = 100;
+          } else if (progressValue === '1-74') {
+            params.minProgress = 1;
+            params.maxProgress = 74;
+          } else if (progressValue === '75-99') {
+            params.minProgress = 75;
+            params.maxProgress = 99;
+          }
         }
         if (currentFilters.search && currentFilters.search.trim()) {
           params.keyword = currentFilters.search.trim();
@@ -256,6 +282,7 @@ export default function TaskProgressManagement() {
   }, [
     filters.status,
     filters.taskType,
+    filters.progress,
     pagination.page,
     pagination.pageSize,
   ]);
@@ -299,6 +326,12 @@ export default function TaskProgressManagement() {
   const handleTaskTypeChange = value => {
     console.log('[TaskProgress] TaskType changed to:', value);
     setFilters(prev => ({ ...prev, taskType: value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleProgressChange = value => {
+    console.log('[TaskProgress] Progress changed to:', value);
+    setFilters(prev => ({ ...prev, progress: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -818,7 +851,7 @@ export default function TaskProgressManagement() {
 
       <Card className={styles.filterCard}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={10}>
             <Input
               placeholder="Tìm theo: Contract ID, Contract Number, Contract Name, Milestone ID, Specialist ID, Specialist Name"
               value={filters.search}
@@ -826,7 +859,7 @@ export default function TaskProgressManagement() {
               allowClear
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={4}>
             <Select
               value={filters.status}
               options={STATUS_OPTIONS}
@@ -834,12 +867,21 @@ export default function TaskProgressManagement() {
               style={{ width: '100%' }}
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={4}>
             <Select
               value={filters.taskType}
               options={TASK_TYPE_OPTIONS}
               onChange={handleTaskTypeChange}
               style={{ width: '100%' }}
+            />
+          </Col>
+          <Col xs={24} md={4}>
+            <Select
+              value={filters.progress}
+              options={PROGRESS_OPTIONS}
+              onChange={handleProgressChange}
+              style={{ width: '100%' }}
+              placeholder="Lọc theo tiến độ"
             />
           </Col>
         </Row>

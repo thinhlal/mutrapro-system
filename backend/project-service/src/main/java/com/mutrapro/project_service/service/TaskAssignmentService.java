@@ -1425,12 +1425,14 @@ public class TaskAssignmentService {
             String status,
             String taskType,
             String keyword,
+            Integer minProgress,
+            Integer maxProgress,
             int page,
             int size) {
         
         long totalStartTime = System.currentTimeMillis();
-        log.info("[Performance] ===== getAllTaskAssignments STARTED - status={}, taskType={}, keyword={}, page={}, size={} =====", 
-            status, taskType, keyword, page, size);
+        log.info("[Performance] ===== getAllTaskAssignments STARTED - status={}, taskType={}, keyword={}, minProgress={}, maxProgress={}, page={}, size={} =====", 
+            status, taskType, keyword, minProgress, maxProgress, page, size);
 
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
@@ -1477,6 +1479,17 @@ public class TaskAssignmentService {
 
         // Prepare keyword for search
         String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        
+        // Validate progress range
+        Integer validMinProgress = (minProgress != null && minProgress >= 0 && minProgress <= 100) ? minProgress : null;
+        Integer validMaxProgress = (maxProgress != null && maxProgress >= 0 && maxProgress <= 100) ? maxProgress : null;
+        if (validMinProgress != null && validMaxProgress != null && validMinProgress > validMaxProgress) {
+            log.warn("Invalid progress range: minProgress={} > maxProgress={}, ignoring progress filter", 
+                validMinProgress, validMaxProgress);
+            validMinProgress = null;
+            validMaxProgress = null;
+        }
+        
         log.info("[Performance] Step 1.7 - Parse filters: {}ms", System.currentTimeMillis() - step1_7Start);
 
         Pageable pageable = PageRequest.of(safePage, safeSize);
@@ -1490,7 +1503,9 @@ public class TaskAssignmentService {
                 allowedContractStatuses,
                 statusEnum, 
                 taskTypeEnum, 
-                searchKeyword, 
+                searchKeyword,
+                validMinProgress,
+                validMaxProgress,
                 pageable
             );
         } else {
@@ -1499,7 +1514,9 @@ public class TaskAssignmentService {
                 managerUserId,
                 allowedContractStatuses,
                 statusEnum, 
-                taskTypeEnum, 
+                taskTypeEnum,
+                validMinProgress,
+                validMaxProgress,
                 pageable
             );
         }

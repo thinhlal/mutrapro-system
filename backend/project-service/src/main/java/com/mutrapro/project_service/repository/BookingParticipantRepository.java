@@ -19,6 +19,12 @@ public interface BookingParticipantRepository extends JpaRepository<BookingParti
     List<BookingParticipant> findByBooking_BookingId(String bookingId);
     
     /**
+     * Batch fetch participants cho nhiều bookings (tối ưu performance)
+     */
+    @Query("SELECT bp FROM BookingParticipant bp WHERE bp.booking.bookingId IN :bookingIds")
+    List<BookingParticipant> findByBooking_BookingIdIn(@Param("bookingIds") List<String> bookingIds);
+    
+    /**
      * Lấy participants theo role type
      */
     List<BookingParticipant> findByBooking_BookingIdAndRoleType(String bookingId, String roleType);

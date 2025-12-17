@@ -139,7 +139,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
 
     /**
      * Find all task assignments for manager with filters and pagination (optimized - JOIN Contract directly)
-     * Filters: managerUserId, contractStatus, assignmentStatus, taskType
+     * Filters: managerUserId, contractStatus, assignmentStatus, taskType, progressPercentage
      * Sort: hasIssue DESC, status priority, assignedDate DESC
      * Tối ưu: Không cần fetch contracts trước, JOIN trực tiếp trong query
      */
@@ -149,6 +149,8 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "AND c.status IN :contractStatuses " +
            "AND (:status IS NULL OR ta.status = :status) " +
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
            "ORDER BY " +
            "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
            "CASE ta.status " +
@@ -166,11 +168,13 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
             @Param("contractStatuses") List<com.mutrapro.project_service.enums.ContractStatus> contractStatuses,
             @Param("status") AssignmentStatus status,
             @Param("taskType") TaskType taskType,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
             Pageable pageable);
 
     /**
      * Find all task assignments for manager with filters, pagination and keyword search (optimized - JOIN Contract directly)
-     * Filters: managerUserId, contractStatus, assignmentStatus, taskType, keyword
+     * Filters: managerUserId, contractStatus, assignmentStatus, taskType, keyword, progressPercentage
      * Keyword search: contractId, contractNumber (from Contract), milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
      * Sort: hasIssue DESC, status priority, assignedDate DESC
      * Tối ưu: Không cần fetch contracts trước, JOIN trực tiếp trong query
@@ -181,6 +185,8 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "AND c.status IN :contractStatuses " +
            "AND (:status IS NULL OR ta.status = :status) " +
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
            "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -207,6 +213,8 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
             @Param("status") AssignmentStatus status,
             @Param("taskType") TaskType taskType,
             @Param("keyword") String keyword,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
             Pageable pageable);
 }
 

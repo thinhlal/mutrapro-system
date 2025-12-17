@@ -67,8 +67,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -778,46 +781,60 @@ public class StudioBookingService {
     
     /**
      * Map StudioBooking entity sang StudioBookingResponse
+     * Tối ưu: Batch fetch specialist info để tránh N+1 query
      */
     private StudioBookingResponse mapToResponse(StudioBooking booking) {
         // Lấy danh sách participants (tất cả luồng - cả luồng 2 và luồng 3)
         List<BookingParticipant> bookingParticipants = bookingParticipantRepository.findByBooking_BookingId(booking.getBookingId());
+        
+        // Tối ưu: Batch fetch specialist info cho tất cả unique specialistIds
+        Set<String> uniqueSpecialistIds = bookingParticipants.stream()
+                .map(BookingParticipant::getSpecialistId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+        
+        Map<String, Map<String, Object>> specialistInfoMap = new HashMap<>();
+        for (String specialistId : uniqueSpecialistIds) {
+            try {
+                ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getPublicSpecialistById(specialistId);
+                if (response != null && "success".equals(response.getStatus()) && response.getData() != null) {
+                    specialistInfoMap.put(specialistId, response.getData());
+                }
+            } catch (Exception e) {
+                // Giảm log level từ WARN xuống DEBUG cho lỗi JWT expired (client-side error)
+                log.debug("Failed to fetch specialist info for specialistId={}: {}", specialistId, e.getMessage());
+            }
+        }
+        
         List<StudioBookingResponse.BookingParticipantInfo> participants = bookingParticipants.stream()
             .map(p -> {
                 String specialistName = null;
                 String skillName = null;
                 
-                // Enrich specialist name từ specialist-service (public endpoint)
-                if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
-                    try {
-                        ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getPublicSpecialistById(p.getSpecialistId());
-                        if (response != null && "success".equals(response.getStatus()) && response.getData() != null) {
-                            Map<String, Object> data = response.getData();
-                            
-                            // Response structure: { specialist: {...}, skills: [...], demos: [...] }
-                            @SuppressWarnings("unchecked")
-                            Map<String, Object> specialist = (Map<String, Object>) data.get("specialist");
-                            if (specialist != null) {
-                                specialistName = (String) specialist.get("fullName");
-                            }
-                            
-                            // Lấy skill name nếu là INSTRUMENT
-                            if (p.getSkillId() != null && data.get("skills") != null) {
-                                @SuppressWarnings("unchecked")
-                                List<Map<String, Object>> skills = (List<Map<String, Object>>) data.get("skills");
-                                for (Map<String, Object> skill : skills) {
-                                    if (p.getSkillId().equals(skill.get("skillId"))) {
-                                        skillName = (String) skill.get("skillName");
-                                        break;
-                                    }
-                                }
+                // Lấy specialist info từ map đã fetch sẵn
+                Map<String, Object> specialistData = specialistInfoMap.get(p.getSpecialistId());
+                if (specialistData != null) {
+                    // Response structure: { specialist: {...}, skills: [...], demos: [...] }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> specialist = (Map<String, Object>) specialistData.get("specialist");
+                    if (specialist != null) {
+                        specialistName = (String) specialist.get("fullName");
+                    }
+                    
+                    // Lấy skill name nếu là INSTRUMENT
+                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
+                        for (Map<String, Object> skill : skills) {
+                            if (p.getSkillId().equals(skill.get("skillId"))) {
+                                skillName = (String) skill.get("skillName");
+                                break;
                             }
                         }
-                    } catch (Exception e) {
-                        log.warn("Failed to fetch specialist info for participantId={}, specialistId={}: {}", 
-                            p.getParticipantId(), p.getSpecialistId(), e.getMessage());
-                        specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
                     }
+                } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
+                    // Fallback nếu không fetch được
+                    specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
                 }
                 
                 return StudioBookingResponse.BookingParticipantInfo.builder()
@@ -842,6 +859,108 @@ public class StudioBookingService {
                 // Fetch equipment name từ Equipment entity
                 Equipment equipment = equipmentRepository.findById(eq.getEquipmentId()).orElse(null);
                 String equipmentName = equipment != null ? equipment.getEquipmentName() : "Unknown Equipment";
+                
+                return StudioBookingResponse.BookingEquipmentInfo.builder()
+                    .equipmentId(eq.getEquipmentId())
+                    .equipmentName(equipmentName)
+                    .quantity(eq.getQuantity())
+                    .rentalFeePerUnit(eq.getRentalFeePerUnit())
+                    .totalRentalFee(eq.getTotalRentalFee())
+                    .build();
+            })
+            .toList();
+        
+        return StudioBookingResponse.builder()
+            .bookingId(booking.getBookingId())
+            .userId(booking.getUserId())
+            .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
+            .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+            .requestId(booking.getRequestId())
+            .contractId(booking.getContractId())
+            .milestoneId(booking.getMilestoneId())
+            .context(booking.getContext())
+            .sessionType(booking.getSessionType())
+            .bookingDate(booking.getBookingDate())
+            .startTime(booking.getStartTime())
+            .endTime(booking.getEndTime())
+            .status(booking.getStatus())
+            .holdExpiresAt(booking.getHoldExpiresAt())
+            .externalGuestCount(booking.getExternalGuestCount())
+            .durationHours(booking.getDurationHours())
+            .artistFee(booking.getArtistFee())
+            .equipmentRentalFee(booking.getEquipmentRentalFee())
+            .externalGuestFee(booking.getExternalGuestFee())
+            .totalCost(booking.getTotalCost())
+            .purpose(booking.getPurpose())
+            .specialInstructions(booking.getSpecialInstructions())
+            .notes(booking.getNotes())
+            .createdAt(booking.getCreatedAt())
+            .updatedAt(booking.getUpdatedAt())
+            .participants(participants)
+            .requiredEquipment(requiredEquipment)
+            .build();
+    }
+    
+    /**
+     * Map StudioBooking entity sang StudioBookingResponse với caches đã fetch sẵn (tối ưu performance)
+     */
+    private StudioBookingResponse mapToResponseWithCaches(
+            StudioBooking booking,
+            List<BookingParticipant> bookingParticipants,
+            List<BookingRequiredEquipment> bookingEquipments,
+            Map<String, Map<String, Object>> specialistInfoMap,
+            Map<String, String> equipmentNameMap) {
+        
+        List<StudioBookingResponse.BookingParticipantInfo> participants = bookingParticipants.stream()
+            .map(p -> {
+                String specialistName = null;
+                String skillName = null;
+                
+                // Lấy specialist info từ map đã fetch sẵn
+                Map<String, Object> specialistData = specialistInfoMap.get(p.getSpecialistId());
+                if (specialistData != null) {
+                    // Response structure: { specialist: {...}, skills: [...], demos: [...] }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> specialist = (Map<String, Object>) specialistData.get("specialist");
+                    if (specialist != null) {
+                        specialistName = (String) specialist.get("fullName");
+                    }
+                    
+                    // Lấy skill name nếu là INSTRUMENT
+                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
+                        for (Map<String, Object> skill : skills) {
+                            if (p.getSkillId().equals(skill.get("skillId"))) {
+                                skillName = (String) skill.get("skillName");
+                                break;
+                            }
+                        }
+                    }
+                } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
+                    // Fallback nếu không fetch được
+                    specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
+                }
+                
+                return StudioBookingResponse.BookingParticipantInfo.builder()
+                    .participantId(p.getParticipantId())
+                    .specialistId(p.getSpecialistId())
+                    .specialistName(specialistName)
+                    .roleType(p.getRoleType() != null ? p.getRoleType().name() : null)
+                    .performerSource(p.getPerformerSource() != null ? p.getPerformerSource().name() : null)
+                    .skillId(p.getSkillId())
+                    .skillName(skillName)
+                    .instrumentSource(p.getInstrumentSource() != null ? p.getInstrumentSource().name() : null)
+                    .equipmentId(p.getEquipmentId())
+                    .participantFee(p.getParticipantFee())
+                    .build();
+            })
+            .toList();
+        
+        List<StudioBookingResponse.BookingEquipmentInfo> requiredEquipment = bookingEquipments.stream()
+            .map(eq -> {
+                // Lấy equipment name từ map đã fetch sẵn
+                String equipmentName = equipmentNameMap.getOrDefault(eq.getEquipmentId(), "Unknown Equipment");
                 
                 return StudioBookingResponse.BookingEquipmentInfo.builder()
                     .equipmentId(eq.getEquipmentId())
@@ -1390,9 +1509,15 @@ public class StudioBookingService {
     /**
      * Lấy danh sách studio bookings với filter
      * GET /studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
+     * Tối ưu: Batch fetch tất cả participants, equipment, và specialist info để tránh N+1 query
      */
     @Transactional(readOnly = true)
     public List<StudioBookingResponse> getStudioBookings(String contractId, String milestoneId, String status) {
+        long startTime = System.currentTimeMillis();
+        log.info("[Performance] ===== getStudioBookings STARTED - contractId={}, milestoneId={}, status={} =====", 
+            contractId, milestoneId, status);
+        
+        long step1Start = System.currentTimeMillis();
         List<StudioBooking> bookings;
         
         if (milestoneId != null && !milestoneId.isBlank()) {
@@ -1407,7 +1532,10 @@ public class StudioBookingService {
             // Lấy tất cả - cần eager load studio
             bookings = studioBookingRepository.findAll();
         }
+        log.info("[Performance] Step 1 - Fetch bookings: {}ms (found {} bookings)", 
+            System.currentTimeMillis() - step1Start, bookings.size());
         
+        long step2Start = System.currentTimeMillis();
         // Eager load studio để tránh LazyInitializationException
         bookings.forEach(booking -> {
             if (booking.getStudio() != null) {
@@ -1415,7 +1543,10 @@ public class StudioBookingService {
                 booking.getStudio().getStudioName(); // Trigger lazy load trong transaction
             }
         });
+        log.info("[Performance] Step 2 - Eager load studios: {}ms", 
+            System.currentTimeMillis() - step2Start);
         
+        long step3Start = System.currentTimeMillis();
         // Filter theo status nếu có
         if (status != null && !status.isBlank()) {
             try {
@@ -1427,11 +1558,62 @@ public class StudioBookingService {
                 log.warn("Invalid booking status: {}", status);
             }
         }
+        log.info("[Performance] Step 3 - Filter by status: {}ms (after filter: {} bookings)", 
+            System.currentTimeMillis() - step3Start, bookings.size());
         
-        // Convert sang response (trong cùng transaction)
-        return bookings.stream()
-            .map(this::mapToResponse)
+        if (bookings.isEmpty()) {
+            log.info("[Performance] ===== getStudioBookings COMPLETED in {}ms (TOTAL) =====", 
+                System.currentTimeMillis() - startTime);
+            return List.of();
+        }
+        
+        // Tối ưu: Bỏ qua fetch participants, equipment, và specialist info cho list view
+        // List view không hiển thị participants và equipment, chỉ detail page mới cần
+        // Điều này giảm đáng kể số queries và data transfer (Step 4, 5, 6, 7 đã bỏ)
+        
+        long step4Start = System.currentTimeMillis();
+        // Convert sang response (không có participants và equipment cho list view)
+        List<StudioBookingResponse> responses = bookings.stream()
+            .map(booking -> {
+                // Build response không có participants và equipment (tối ưu cho list view)
+                return StudioBookingResponse.builder()
+                    .bookingId(booking.getBookingId())
+                    .userId(booking.getUserId())
+                    .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
+                    .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+                    .requestId(booking.getRequestId())
+                    .contractId(booking.getContractId())
+                    .milestoneId(booking.getMilestoneId())
+                    .context(booking.getContext())
+                    .sessionType(booking.getSessionType())
+                    .bookingDate(booking.getBookingDate())
+                    .startTime(booking.getStartTime())
+                    .endTime(booking.getEndTime())
+                    .status(booking.getStatus())
+                    .holdExpiresAt(booking.getHoldExpiresAt())
+                    .externalGuestCount(booking.getExternalGuestCount())
+                    .durationHours(booking.getDurationHours())
+                    .artistFee(booking.getArtistFee())
+                    .equipmentRentalFee(booking.getEquipmentRentalFee())
+                    .externalGuestFee(booking.getExternalGuestFee())
+                    .totalCost(booking.getTotalCost())
+                    .purpose(booking.getPurpose())
+                    .specialInstructions(booking.getSpecialInstructions())
+                    .notes(booking.getNotes())
+                    .createdAt(booking.getCreatedAt())
+                    .updatedAt(booking.getUpdatedAt())
+                    .participants(null) // Không cần cho list view
+                    .requiredEquipment(null) // Không cần cho list view
+                    .build();
+            })
             .toList();
+        log.info("[Performance] Step 4 - Map to response: {}ms (mapped {} responses)", 
+            System.currentTimeMillis() - step4Start, responses.size());
+        
+        log.info("[Performance] ===== getStudioBookings COMPLETED in {}ms (TOTAL) =====", 
+            System.currentTimeMillis() - startTime);
+        
+        return responses;
     }
     
     /**
