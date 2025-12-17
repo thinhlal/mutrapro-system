@@ -6,6 +6,7 @@ import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
 import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
 import com.mutrapro.shared.event.TaskIssueReportedEvent;
+import com.mutrapro.project_service.dto.projection.ContractBasicInfo;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -642,11 +643,13 @@ public class TaskAssignmentService {
      * 
      * Version có cache để tránh N+1 query (dùng trong batch operations)
      */
+    
     private LocalDateTime resolveMilestoneTargetDeadlineWithCache(
             ContractMilestone milestone,
             Map<String, Contract> contractsForDeadline,
             Map<String, StudioBooking> bookingsByMilestoneId,
-            Map<String, List<ContractMilestone>> milestonesByContractId) {
+            Map<String, List<ContractMilestone>> milestonesByContractId,
+            Map<String, ContractMilestone> lastArrangementMilestoneByContractId) {
         if (milestone == null) {
             return null;
         }
@@ -663,45 +666,22 @@ public class TaskAssignmentService {
 
             // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
             if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
-                try {
-                    List<ContractMilestone> allContractMilestones = milestonesByContractId != null
-                        ? milestonesByContractId.get(milestone.getContractId())
-                        : null;
-                    
-                    if (allContractMilestones == null) {
-                        // Fallback: query nếu không có trong cache (trường hợp hiếm)
-                        allContractMilestones = contractMilestoneRepository
-                            .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
-                    }
-                    
-                    ContractMilestone lastArrangementMilestone = allContractMilestones != null
-                        ? allContractMilestones.stream()
-                            .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                            .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                            .orElse(null)
-                        : null;
-
-                    if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
-                        return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
-                    }
-                } catch (Exception e) {
-                    log.error("Error calculating recording target deadline for arrangement_with_recording: milestoneId={}, error={}",
-                        milestone.getMilestoneId(), e.getMessage());
+                // Tối ưu: Chỉ dùng cache đã filter sẵn, bỏ các fallback để tránh chậm
+                // Note: lastArrangementMilestoneByContractId luôn được tạo ở Step 4, nên không cần check null
+                ContractMilestone lastArrangementMilestone = lastArrangementMilestoneByContractId != null
+                    ? lastArrangementMilestoneByContractId.get(milestone.getContractId())
+                    : null;
+                
+                // Nếu có last arrangement milestone và đã thanh toán (actualEndAt != null)
+                if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
+                    return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
                 }
-                // If arrangement not paid yet => fallback to planned
+                // If arrangement not paid yet (actualEndAt == null) hoặc không có arrangement milestone => fallback to planned
             } else if (contract != null && contract.getContractType() == ContractType.recording) {
                 // Workflow 4 (recording-only): prefer booking date if active
-                try {
-                    StudioBooking booking = bookingsByMilestoneId != null
-                        ? bookingsByMilestoneId.get(milestone.getMilestoneId())
-                        : null;
-                    
-                    if (booking == null) {
-                        // Fallback: query nếu không có trong cache (trường hợp hiếm)
-                        Optional<StudioBooking> bookingOpt = studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
-                        booking = bookingOpt.orElse(null);
-                    }
-                    
+                // Tối ưu: Chỉ dùng cache, bỏ fallback query để tránh chậm
+                if (bookingsByMilestoneId != null) {
+                    StudioBooking booking = bookingsByMilestoneId.get(milestone.getMilestoneId());
                     if (booking != null) {
                         List<BookingStatus> activeStatuses = List.of(
                             BookingStatus.TENTATIVE, BookingStatus.PENDING,
@@ -714,9 +694,6 @@ public class TaskAssignmentService {
                             return startAt.plusDays(slaDays);
                         }
                     }
-                } catch (Exception e) {
-                    log.error("Error fetching booking for recording target deadline: milestoneId={}, error={}",
-                        milestone.getMilestoneId(), e.getMessage());
                 }
             }
 
@@ -1049,11 +1026,17 @@ public class TaskAssignmentService {
             int page,
             int size) {
 
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] ===== getMilestoneAssignmentSlots STARTED - contractId={}, status={}, keyword={}, onlyUnassigned={}, page={}, size={} =====",
+            contractId, status, keyword, onlyUnassigned, page, size);
+
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
         String managerUserId = getCurrentUserId();
         List<Contract> contracts;
+        
+        long step1Start = System.currentTimeMillis();
 
         if (contractId != null && !contractId.isBlank()) {
             Contract contract = contractRepository.findById(contractId)
@@ -1072,18 +1055,38 @@ public class TaskAssignmentService {
                 contracts = List.of(); // Contract chưa signed hoặc đã bị cancel/reject, không hiển thị milestones
             }
         } else {
-            contracts = contractRepository.findByManagerUserId(managerUserId);
-            // Filter lấy contracts đã signed, active hoặc completed
-            contracts = contracts.stream()
-                .filter(c -> {
-                    ContractStatus contractStatus = c.getStatus();
-                    return contractStatus == ContractStatus.signed ||
-                           contractStatus == ContractStatus.active_pending_assignment || 
-                           contractStatus == ContractStatus.active ||
-                           contractStatus == ContractStatus.completed;
+            // Tối ưu: Filter ở database level thay vì fetch tất cả rồi filter ở memory
+            // Tối ưu thêm: Dùng projection query để chỉ fetch các field cần thiết (giảm data transfer)
+            List<ContractStatus> allowedStatuses = List.of(
+                ContractStatus.signed,
+                ContractStatus.active_pending_assignment,
+                ContractStatus.active,
+                ContractStatus.completed
+            );
+            List<ContractBasicInfo> contractBasicInfos = 
+                contractRepository.findBasicInfoByManagerUserIdAndStatusIn(managerUserId, allowedStatuses);
+            
+            // Convert projection to Contract objects (chỉ với các field cần thiết)
+            // Note: Contract extends BaseEntity, createdAt is inherited
+            contracts = contractBasicInfos.stream()
+                .<Contract>map(info -> {
+                    Contract contract = Contract.builder()
+                        .contractId(info.getContractId())
+                        .contractNumber(info.getContractNumber())
+                        .contractType(info.getContractType())
+                        .nameSnapshot(info.getNameSnapshot())
+                        .status(info.getStatus())
+                        .build();
+                    // Set createdAt from BaseEntity (if available)
+                    if (info.getCreatedAt() != null) {
+                        contract.setCreatedAt(info.getCreatedAt());
+                    }
+                    return contract;
                 })
                 .collect(Collectors.toList());
         }
+        log.info("[Performance] Step 1 - Fetch contracts: {}ms (found {} contracts)", 
+            System.currentTimeMillis() - step1Start, contracts.size());
 
         if (contracts.isEmpty()) {
             return MilestoneAssignmentSlotsResult.builder()
@@ -1108,7 +1111,10 @@ public class TaskAssignmentService {
             .collect(Collectors.toMap(Contract::getContractId, c -> c));
         List<String> contractIds = new ArrayList<>(contractMap.keySet());
 
+        long step2Start = System.currentTimeMillis();
         List<ContractMilestone> milestones = contractMilestoneRepository.findByContractIdIn(contractIds);
+        log.info("[Performance] Step 2 - Fetch milestones: {}ms (found {} milestones from {} contracts)", 
+            System.currentTimeMillis() - step2Start, milestones.size(), contractIds.size());
         if (milestones.isEmpty()) {
             return MilestoneAssignmentSlotsResult.builder()
                 .page(PageResponse.<MilestoneAssignmentSlotResponse>builder()
@@ -1131,14 +1137,62 @@ public class TaskAssignmentService {
             .map(ContractMilestone::getMilestoneId)
             .collect(Collectors.toList());
 
+        long step3Start = System.currentTimeMillis();
         List<TaskAssignment> assignments = taskAssignmentRepository.findByMilestoneIdIn(milestoneIds);
         Map<String, TaskAssignment> assignmentMap = assignments.stream()
             .collect(Collectors.groupingBy(TaskAssignment::getMilestoneId,
                 Collectors.collectingAndThen(Collectors.toList(), this::pickLatestAssignment)));
+        log.info("[Performance] Step 3 - Fetch assignments: {}ms (found {} assignments from {} milestones)", 
+            System.currentTimeMillis() - step3Start, assignments.size(), milestoneIds.size());
 
+        // Batch fetch tất cả milestones của contracts để tránh N+1 query khi check allArrangementsCompleted
+        long step4Start = System.currentTimeMillis();
+        // Sort milestones theo orderIndex một lần để tránh sort lại trong loop
+        Map<String, List<ContractMilestone>> allMilestonesByContractId = contractMilestoneRepository
+            .findByContractIdIn(contractIds)
+            .stream()
+            .collect(Collectors.groupingBy(
+                ContractMilestone::getContractId,
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    list -> list.stream()
+                        .sorted(Comparator.comparing(ContractMilestone::getOrderIndex))
+                        .collect(Collectors.toList())
+                )
+            ));
+        
+        // Cache arrangement milestones đã filter sẵn để tránh filter lại trong loop
+        Map<String, ContractMilestone> lastArrangementMilestoneByContractId = new HashMap<>();
+        for (Map.Entry<String, List<ContractMilestone>> entry : allMilestonesByContractId.entrySet()) {
+            ContractMilestone lastArrangement = entry.getValue().stream()
+                .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                .orElse(null);
+            if (lastArrangement != null) {
+                lastArrangementMilestoneByContractId.put(entry.getKey(), lastArrangement);
+            }
+        }
+        
+        log.info("[Performance] Step 4 - Batch fetch all milestones for contracts: {}ms ({} contracts, {} with arrangements)", 
+            System.currentTimeMillis() - step4Start, contractIds.size(), lastArrangementMilestoneByContractId.size());
+
+        // Cache LocalDateTime.now() để tránh gọi nhiều lần trong loop
+        final LocalDateTime now = LocalDateTime.now();
+
+        long step5Start = System.currentTimeMillis();
         List<MilestoneAssignmentSlotResponse> slots = new ArrayList<>();
+        
+        // Performance tracking cho từng phần
+        long timeFiltering = 0;
+        long timeTargetDeadline = 0;
+        long timeBuilding = 0;
+        int filteredCount = 0;
+        int targetDeadlineCount = 0;
+        int builtCount = 0;
 
         for (ContractMilestone milestone : milestones) {
+            long itemStart = System.currentTimeMillis();
+            
             Contract contract = contractMap.get(milestone.getContractId());
             if (contract == null) {
                 continue;
@@ -1163,63 +1217,54 @@ public class TaskAssignmentService {
             if (!matchesStatusFilter(milestone, assignment, status)) {
                 continue;
             }
+            
+            long filterEnd = System.currentTimeMillis();
+            timeFiltering += (filterEnd - itemStart);
+            filteredCount++;
 
             // Check if last arrangement milestone is completed (for recording milestones)
-            // Chỉ cần check milestone arrangement cuối cùng (gần nhất với recording milestone)
-            // Vì milestones unlock tuần tự, nếu milestone cuối cùng đã completed thì các milestone trước đó cũng đã completed
+            // Tối ưu: Dùng cache đã filter sẵn, không cần filter lại
             Boolean allArrangementsCompleted = null;
             if (milestone.getMilestoneType() == MilestoneType.recording && 
                 contract.getContractType() == ContractType.arrangement_with_recording) {
-                List<ContractMilestone> allContractMilestones = contractMilestoneRepository
-                    .findByContractIdOrderByOrderIndexAsc(contract.getContractId());
-                List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
-                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                    .toList();
+                // Dùng cache đã filter sẵn (không cần filter lại)
+                ContractMilestone lastArrangementMilestone = lastArrangementMilestoneByContractId
+                    .get(contract.getContractId());
                 
-                if (!arrangementMilestones.isEmpty()) {
-                    // Lấy milestone arrangement cuối cùng (có orderIndex cao nhất)
-                    ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
-                        .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                        .orElse(null);
-                    
-                    if (lastArrangementMilestone != null) {
-                        // Check workStatus: completed hoặc ready_for_payment
-                        // ⚠️ QUAN TRỌNG: Cũng phải check actualEndAt (đã thanh toán) vì đây là điều kiện bắt buộc để tạo booking
-                        // Frontend dùng field này để hiển thị button "Book Studio", nên cần check chính xác
-                        boolean workStatusCompleted = 
-                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
-                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
-                        boolean isPaid = lastArrangementMilestone.getActualEndAt() != null;
-                        // Chỉ set true nếu vừa completed/ready_for_payment VÀ đã thanh toán
-                        allArrangementsCompleted = workStatusCompleted && isPaid;
-                    } else {
-                        allArrangementsCompleted = false;
-                    }
+                if (lastArrangementMilestone != null) {
+                    // Check workStatus: completed hoặc ready_for_payment
+                    // ⚠️ QUAN TRỌNG: Cũng phải check actualEndAt (đã thanh toán) vì đây là điều kiện bắt buộc để tạo booking
+                    // Frontend dùng field này để hiển thị button "Book Studio", nên cần check chính xác
+                    boolean workStatusCompleted = 
+                        lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
+                        lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
+                    boolean isPaid = lastArrangementMilestone.getActualEndAt() != null;
+                    // Chỉ set true nếu vừa completed/ready_for_payment VÀ đã thanh toán
+                    allArrangementsCompleted = workStatusCompleted && isPaid;
                 } else {
                     allArrangementsCompleted = false; // Không có arrangement milestone
                 }
             }
 
-            // Target deadline (hard/target) for FE display (with fallback before Start Work)
-            LocalDateTime targetDeadline = resolveMilestoneDeadlineWithFallback(
-                milestone, contract, contract.getContractId());
+            // Target deadline (hard/target) for FE display
+            // Tối ưu: Dùng cache thay vì query DB (tránh N+1 query)
+            // resolveMilestoneTargetDeadlineWithCache đã xử lý đầy đủ các trường hợp và fallback
+            long deadlineStart = System.currentTimeMillis();
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadlineWithCache(
+                milestone,
+                contractMap,
+                null, // bookingsByMilestoneId - không cần cho list view, có thể null
+                allMilestonesByContractId,
+                lastArrangementMilestoneByContractId); // Cache đã filter sẵn
+            long deadlineEnd = System.currentTimeMillis();
+            timeTargetDeadline += (deadlineEnd - deadlineStart);
+            targetDeadlineCount++;
 
-            // Estimated deadline riêng (chỉ khi chưa có target/planned)
+            // Bỏ tính estimated deadline (tránh N+1 query)
+            // Frontend có thể tính đơn giản từ plannedStartAt + SLA nếu cần
             LocalDateTime estimatedDeadline = null;
-            try {
-                LocalDateTime targetNoFallback = resolveMilestoneTargetDeadline(milestone);
-                LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null
-                    ? milestone.getPlannedDueDate()
-                    : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
-                        ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
-                        : null);
-                if (targetNoFallback == null && plannedDeadline == null) {
-                    estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contract.getContractId());
-                }
-            } catch (Exception ignored) {
-                // keep estimatedDeadline = null
-            }
 
+            long buildStart = System.currentTimeMillis();
             MilestoneAssignmentSlotResponse slot = MilestoneAssignmentSlotResponse.builder()
                 .contractId(contract.getContractId())
                 .contractNumber(contract.getContractNumber())
@@ -1248,7 +1293,7 @@ public class TaskAssignmentService {
                 )
                 .overdueNow(
                     targetDeadline != null
-                        ? (milestone.getFirstSubmissionAt() == null && LocalDateTime.now().isAfter(targetDeadline))
+                        ? (milestone.getFirstSubmissionAt() == null && now.isAfter(targetDeadline))
                         : null
                 )
                 .milestoneWorkStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().name() : null)
@@ -1265,9 +1310,19 @@ public class TaskAssignmentService {
                 .studioBookingId(assignment != null ? assignment.getStudioBookingId() : null)
                 .allArrangementsCompleted(allArrangementsCompleted)
                 .build();
+            long buildEnd = System.currentTimeMillis();
+            timeBuilding += (buildEnd - buildStart);
+            builtCount++;
 
             slots.add(slot);
         }
+        log.info("[Performance] Step 5 - Build slots: {}ms (built {} slots from {} milestones)", 
+            System.currentTimeMillis() - step5Start, slots.size(), milestones.size());
+        log.info("[Performance] Step 5.1 - Filtering: {}ms ({} items)", timeFiltering, filteredCount);
+        log.info("[Performance] Step 5.2 - Target deadline calculation: {}ms ({} items, avg: {}ms/item)", 
+            timeTargetDeadline, targetDeadlineCount, targetDeadlineCount > 0 ? timeTargetDeadline / targetDeadlineCount : 0);
+        log.info("[Performance] Step 5.3 - Building response objects: {}ms ({} items, avg: {}ms/item)", 
+            timeBuilding, builtCount, builtCount > 0 ? timeBuilding / builtCount : 0);
 
         // Tạo map contractNumber -> contractCreatedAt để sort contracts theo thời gian tạo
         // Đảm bảo cùng contractNumber có cùng contractCreatedAt
@@ -1283,6 +1338,7 @@ public class TaskAssignmentService {
         // 1. Theo contractCreatedAt DESC (contract mới nhất lên trước) - dùng map để đảm bảo cùng contractNumber có cùng value
         // 2. Theo contractNumber để group cùng contract lại (secondary sort)
         // 3. Theo milestoneOrderIndex trong cùng contract
+        long step6Start = System.currentTimeMillis();
         slots.sort(Comparator
             .comparing((MilestoneAssignmentSlotResponse slot) -> 
                 contractCreatedAtMap.getOrDefault(
@@ -1297,6 +1353,7 @@ public class TaskAssignmentService {
             .thenComparing((MilestoneAssignmentSlotResponse slot) -> 
                 Optional.ofNullable(slot.getPlannedDueDate())
                     .orElseGet(() -> Optional.ofNullable(slot.getActualEndAt()).orElse(LocalDateTime.MAX))));
+        log.info("[Performance] Step 6 - Sort slots: {}ms", System.currentTimeMillis() - step6Start);
 
         if (keyword != null && !keyword.isBlank()) {
             String lowerKeyword = keyword.toLowerCase();
@@ -1311,6 +1368,7 @@ public class TaskAssignmentService {
                 .collect(Collectors.toList());
         }
 
+        long step7Start = System.currentTimeMillis();
         long totalUnassigned = slots.stream()
             .filter(slot -> slot.getAssignmentId() == null
                 || slot.getAssignmentStatus() == null
@@ -1322,7 +1380,10 @@ public class TaskAssignmentService {
         long totalCompleted = slots.stream()
             .filter(slot -> "completed".equalsIgnoreCase(slot.getAssignmentStatus()))
             .count();
+        log.info("[Performance] Step 7 - Calculate totals: {}ms (unassigned={}, inProgress={}, completed={})", 
+            System.currentTimeMillis() - step7Start, totalUnassigned, totalInProgress, totalCompleted);
 
+        long step8Start = System.currentTimeMillis();
         int totalElements = slots.size();
         int totalPages = (int) Math.ceil(totalElements / (double) safeSize);
         int fromIndex = Math.min(safePage * safeSize, totalElements);
@@ -1342,6 +1403,11 @@ public class TaskAssignmentService {
                 .hasNext(totalPages == 0 ? false : safePage < totalPages - 1)
                 .hasPrevious(safePage > 0)
                 .build();
+        log.info("[Performance] Step 8 - Paginate: {}ms (page={}, size={}, total={})", 
+            System.currentTimeMillis() - step8Start, safePage, safeSize, totalElements);
+
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] ===== getMilestoneAssignmentSlots COMPLETED in {}ms (TOTAL) =====", totalTime);
 
         return MilestoneAssignmentSlotsResult.builder()
             .page(pageResponse)
