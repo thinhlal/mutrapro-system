@@ -199,6 +199,14 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       - KAFKA_CONSUMER_GROUP_ID=${KAFKA_CONSUMER_GROUP_ID:-billing-service}
       - JWT_SIGNER_KEY=${JWT_SECRET}
+      # AWS S3 Configuration (cho file storage - match với application-prod.yml)
+      - AWS_S3_ENABLED=${AWS_S3_ENABLED:-true}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-mutrapro-prod-files}
+      - AWS_S3_REGION=${AWS_S3_REGION:-ap-southeast-1}
+      - AWS_S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - AWS_S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      # Service URLs (match với application-prod.yml)
+      - PROJECT_SERVICE_BASE_URL=${PROJECT_SERVICE_BASE_URL:-http://project-service:8082}
       # Kafka Topic Names (match với application-prod.yml - có default values)
       - KAFKA_TOPIC_BILLING_DEPOSIT_PAID=${KAFKA_TOPIC_BILLING_DEPOSIT_PAID:-billing-deposit-paid}
       - KAFKA_TOPIC_BILLING_MILESTONE_PAID=${KAFKA_TOPIC_BILLING_MILESTONE_PAID:-billing-milestone-paid}
