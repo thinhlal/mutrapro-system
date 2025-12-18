@@ -37,7 +37,12 @@ body {
   height: 100vh !important;
   overflow: hidden !important;
   background: var(--mtp-bg-primary) !important;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+  font-family:
+    'Inter',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif !important;
 }
 
 #smoo {
@@ -50,7 +55,11 @@ body {
 /* ===== Top Toolbar ===== */
 body .controls-top,
 body .control-bar {
-  background: linear-gradient(180deg, var(--mtp-bg-tertiary) 0%, var(--mtp-bg-secondary) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    var(--mtp-bg-tertiary) 0%,
+    var(--mtp-bg-secondary) 100%
+  ) !important;
   border-bottom: 1px solid var(--mtp-border) !important;
   padding: 6px 12px !important;
   min-height: 56px !important;
@@ -316,8 +325,8 @@ body .buttonContainer button.btn-primary:hover {
 }
 
 /* ===== Form Inputs ===== */
-body .smoControl input[type="text"],
-body .smoControl input[type="number"],
+body .smoControl input[type='text'],
+body .smoControl input[type='number'],
 body .smoControl select,
 body .attributeModal input,
 body .attributeModal select,
@@ -328,7 +337,9 @@ body input.rockerInput {
   color: var(--mtp-text) !important;
   padding: 8px 12px !important;
   font-size: 13px !important;
-  transition: border-color var(--mtp-transition), box-shadow var(--mtp-transition) !important;
+  transition:
+    border-color var(--mtp-transition),
+    box-shadow var(--mtp-transition) !important;
 }
 
 body .smoControl input:focus,
@@ -347,7 +358,7 @@ body .attributeModal label {
 }
 
 /* Checkbox styling */
-body .smoControl input[type="checkbox"] {
+body .smoControl input[type='checkbox'] {
   accent-color: var(--mtp-primary) !important;
 }
 
@@ -477,8 +488,8 @@ body.showAttributeDialog .overlay {
 }
 
 /* ===== Icons ===== */
-body [class^="icon-"],
-body [class*=" icon-"],
+body [class^='icon-'],
+body [class*=' icon-'],
 body .icon {
   color: inherit !important;
 }
@@ -537,12 +548,12 @@ body .draganime {
     max-width: 60px !important;
     padding: 8px 4px !important;
   }
-  
+
   body .controls-left .ribbonButtonContainer button span.left-text,
   body #controls-left button span.left-text {
     display: none !important;
   }
-  
+
   body .controls-left .ribbonButtonContainer button,
   body #controls-left button {
     max-width: 50px !important;
@@ -554,7 +565,7 @@ body .draganime {
 /* ===== Ensure score selection highlight works ===== */
 body .vf-selection,
 body .selected-element,
-body [class*="selection"] {
+body [class*='selection'] {
   /* Don't override selection styles - keep Smoosic defaults */
 }
 
@@ -592,7 +603,7 @@ body .titleText {
   font-size: 0 !important;
 }
 body .titleText::after {
-  content: "Mutrapro x Smoosic" !important;
+  content: 'Mutrapro x Smoosic' !important;
   font-size: 14px !important;
   font-weight: 600 !important;
 }

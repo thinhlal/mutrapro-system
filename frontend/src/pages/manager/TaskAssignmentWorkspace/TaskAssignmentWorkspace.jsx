@@ -1131,7 +1131,9 @@ export default function TaskAssignmentWorkspace() {
                             <Tag color="purple">
                               SLA: {item.tasksInSlaWindow ?? 0}
                             </Tag>
-                            {slaFull && !active && <Tag color="red">SLA Full</Tag>}
+                            {slaFull && !active && (
+                              <Tag color="red">SLA Full</Tag>
+                            )}
                             {item.totalProjects > 0 && (
                               <Tag color="geekblue">
                                 Projects: {item.totalProjects}
@@ -1262,7 +1264,9 @@ export default function TaskAssignmentWorkspace() {
                   loading={assigning}
                   onClick={handleAssign}
                   disabled={
-                    !selectedMilestoneId || !selectedSpecialist || selectedSlaFull
+                    !selectedMilestoneId ||
+                    !selectedSpecialist ||
+                    selectedSlaFull
                   }
                   block
                 >

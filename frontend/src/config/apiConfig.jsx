@@ -206,7 +206,14 @@ export const API_ENDPOINTS = {
     GET_AVAILABLE_ARTISTS: (milestoneId, date, startTime, endTime) =>
       `${PROJECT_PATH}/studio-bookings/available-artists?milestoneId=${milestoneId}&date=${date}&startTime=${startTime}&endTime=${endTime}`,
     // GET /studio-bookings/available-artists-for-request?date={date}&startTime={startTime}&endTime={endTime}&skillId={skillId}&roleType={roleType}&genres={genres}
-    GET_AVAILABLE_ARTISTS_FOR_REQUEST: (date, startTime, endTime, skillId, roleType, genres) => {
+    GET_AVAILABLE_ARTISTS_FOR_REQUEST: (
+      date,
+      startTime,
+      endTime,
+      skillId,
+      roleType,
+      genres
+    ) => {
       const params = new URLSearchParams();
       params.append('date', date);
       params.append('startTime', startTime);
@@ -230,7 +237,8 @@ export const API_ENDPOINTS = {
     // GET /studio-bookings/{bookingId}
     GET_BY_ID: bookingId => `${PROJECT_PATH}/studio-bookings/${bookingId}`,
     // GET /studio-bookings/by-request/{requestId}
-    GET_BY_REQUEST_ID: requestId => `${PROJECT_PATH}/studio-bookings/by-request/${requestId}`,
+    GET_BY_REQUEST_ID: requestId =>
+      `${PROJECT_PATH}/studio-bookings/by-request/${requestId}`,
     // GET /studio-bookings/my-bookings (for recording artist)
     MY_BOOKINGS: `${PROJECT_PATH}/studio-bookings/my-bookings`,
   },

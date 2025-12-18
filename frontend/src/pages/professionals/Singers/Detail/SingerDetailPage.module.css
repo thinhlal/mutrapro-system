@@ -366,7 +366,8 @@
 }
 
 .audioPlayerWrapper :global(audio::-webkit-media-controls-current-time-display),
-.audioPlayerWrapper :global(audio::-webkit-media-controls-time-remaining-display) {
+.audioPlayerWrapper
+  :global(audio::-webkit-media-controls-time-remaining-display) {
   color: #2c3e50;
   font-weight: 500;
   font-size: 12px;

@@ -21,7 +21,10 @@ import {
   CreditCardOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
-import { getContractById, getMilestonePaymentQuote } from '../../../services/contractService';
+import {
+  getContractById,
+  getMilestonePaymentQuote,
+} from '../../../services/contractService';
 import {
   getOrCreateMyWallet,
   payMilestone,
@@ -36,11 +39,11 @@ const { Title, Text } = Typography;
 /**
  * Format số giờ thành ngày và giờ (ví dụ: 141h -> "5 ngày 21 giờ" hoặc "6 ngày")
  */
-const formatLateHours = (hours) => {
+const formatLateHours = hours => {
   if (hours == null || hours <= 0) return '';
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
-  
+
   if (days === 0) {
     return `${hours} hours`;
   } else if (remainingHours === 0) {
@@ -191,7 +194,10 @@ const PayMilestonePage = () => {
             if (nextTarget?.milestoneId) {
               try {
                 setQuoteLoading(true);
-                const quoteResp = await getMilestonePaymentQuote(contractId, nextTarget.milestoneId);
+                const quoteResp = await getMilestonePaymentQuote(
+                  contractId,
+                  nextTarget.milestoneId
+                );
                 if (quoteResp?.status === 'success' && quoteResp?.data) {
                   setPaymentQuote(quoteResp.data);
                 }
@@ -251,15 +257,21 @@ const PayMilestonePage = () => {
     const installment = targetMilestone.installment;
     const baseAmount = parseFloat(installment.amount);
     if (quoteLoading) {
-      message.info('Đang tải thông tin thanh toán, vui lòng thử lại sau vài giây.');
+      message.info(
+        'Đang tải thông tin thanh toán, vui lòng thử lại sau vài giây.'
+      );
       return;
     }
     if (!paymentQuote?.payableAmount) {
-      message.error('Không lấy được số tiền cần thanh toán. Vui lòng tải lại trang.');
+      message.error(
+        'Không lấy được số tiền cần thanh toán. Vui lòng tải lại trang.'
+      );
       return;
     }
     const payableAmount = parseFloat(paymentQuote.payableAmount);
-    const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const availableBalance =
+      wallet?.availableBalance ??
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
     const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < payableAmount) {
@@ -354,10 +366,13 @@ const PayMilestonePage = () => {
 
   const installment = targetMilestone?.installment;
   const milestoneAmount = installment ? parseFloat(installment.amount) : 0;
-  const payableAmount = paymentQuote?.payableAmount != null
-    ? parseFloat(paymentQuote.payableAmount)
-    : milestoneAmount;
-  const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const payableAmount =
+    paymentQuote?.payableAmount != null
+      ? parseFloat(paymentQuote.payableAmount)
+      : milestoneAmount;
+  const availableBalance =
+    wallet?.availableBalance ??
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
   const walletBalance = parseFloat(availableBalance);
   const hasEnoughBalance = walletBalance >= payableAmount;
   const canPayNow = !quoteLoading && paymentQuote?.payableAmount != null;
@@ -421,7 +436,7 @@ const PayMilestonePage = () => {
                 </Text>
               </Descriptions.Item>
             ) : paymentQuote?.lateDiscountAmount != null &&
-                parseFloat(paymentQuote.lateDiscountAmount || 0) > 0 ? (
+              parseFloat(paymentQuote.lateDiscountAmount || 0) > 0 ? (
               <>
                 <Descriptions.Item label="Base Amount">
                   {formatCurrency(
@@ -431,14 +446,16 @@ const PayMilestonePage = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Late Discount">
                   <Text type="danger">
-                    -{formatCurrency(
+                    -
+                    {formatCurrency(
                       parseFloat(paymentQuote.lateDiscountAmount),
                       installment?.currency || contract?.currency || 'VND'
                     )}
                     {paymentQuote?.lateDiscountPercent != null
                       ? ` (${paymentQuote.lateDiscountPercent}%)`
                       : ''}
-                    {paymentQuote?.lateHours != null && paymentQuote.lateHours > 0
+                    {paymentQuote?.lateHours != null &&
+                    paymentQuote.lateHours > 0
                       ? ` · late ${formatLateHours(paymentQuote.lateHours)}${paymentQuote?.graceHours != null ? ` (grace ${formatLateHours(paymentQuote.graceHours)})` : ''}`
                       : ''}
                   </Text>
@@ -525,7 +542,9 @@ const PayMilestonePage = () => {
               icon={<DollarOutlined />}
               onClick={handlePay}
               loading={paying}
-              disabled={!canPayNow || (paymentMethod === 'wallet' && !hasEnoughBalance)}
+              disabled={
+                !canPayNow || (paymentMethod === 'wallet' && !hasEnoughBalance)
+              }
               block
               className={styles.payButton}
             >

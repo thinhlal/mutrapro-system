@@ -197,7 +197,10 @@ function UserMenu() {
                     <span className={styles.walletLoading}>...</span>
                   ) : (
                     formatCurrency(
-                      wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                      wallet?.availableBalance ??
+                        (wallet?.balance
+                          ? wallet.balance - (wallet.holdBalance || 0)
+                          : 0),
                       wallet.currency
                     )
                   )}

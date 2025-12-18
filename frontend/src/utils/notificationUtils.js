@@ -24,9 +24,9 @@ export const convertNotificationActionUrl = actionUrl => {
   // Convert specialist routes based on user role
   // Map specialist roles to their corresponding route prefixes
   const roleToRoutePrefix = {
-    'TRANSCRIPTION': '/transcription',
-    'ARRANGEMENT': '/arrangement',
-    'RECORDING_ARTIST': '/recording-artist',
+    TRANSCRIPTION: '/transcription',
+    ARRANGEMENT: '/arrangement',
+    RECORDING_ARTIST: '/recording-artist',
   };
 
   // Check if actionUrl is a specialist my-tasks route
@@ -52,7 +52,9 @@ export const convertNotificationActionUrl = actionUrl => {
       // This handles cases where old notifications have wrong actionUrl
       if (shouldConvert && pathAfterRoute) {
         const convertedUrl = roleToRoutePrefix[userRole] + pathAfterRoute;
-        console.log(`[NotificationUtils] Converting actionUrl from ${actionUrl} to ${convertedUrl} (userRole: ${userRole})`);
+        console.log(
+          `[NotificationUtils] Converting actionUrl from ${actionUrl} to ${convertedUrl} (userRole: ${userRole})`
+        );
         return convertedUrl;
       }
     }

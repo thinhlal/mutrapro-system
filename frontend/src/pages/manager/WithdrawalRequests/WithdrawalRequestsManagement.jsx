@@ -118,14 +118,16 @@ const WithdrawalRequestsManagement = () => {
       setBankList(banks);
     } catch (error) {
       console.error('Error loading bank list:', error);
-      message.warning('Không thể tải danh sách ngân hàng. Vui lòng nhập thủ công.');
+      message.warning(
+        'Không thể tải danh sách ngân hàng. Vui lòng nhập thủ công.'
+      );
     } finally {
       setLoadingBanks(false);
     }
   };
 
   // Mask bank account number (show last 4 digits)
-  const maskBankAccount = (accountNumber) => {
+  const maskBankAccount = accountNumber => {
     if (!accountNumber) return 'N/A';
     if (accountNumber.length <= 4) return accountNumber;
     return '****' + accountNumber.slice(-4);
@@ -211,7 +213,9 @@ const WithdrawalRequestsManagement = () => {
         setAdminNote('');
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi từ chối withdrawal request');
+        message.error(
+          response?.message || 'Lỗi khi từ chối withdrawal request'
+        );
       }
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
@@ -223,7 +227,7 @@ const WithdrawalRequestsManagement = () => {
     }
   };
 
-  const handleComplete = async (values) => {
+  const handleComplete = async values => {
     if (!selectedRequest) {
       message.warning('Không tìm thấy withdrawal request');
       return;
@@ -235,7 +239,8 @@ const WithdrawalRequestsManagement = () => {
     }
 
     // Check if amount is different and reason is required
-    const amountDiff = parseFloat(values.paidAmount) - parseFloat(selectedRequest.amount);
+    const amountDiff =
+      parseFloat(values.paidAmount) - parseFloat(selectedRequest.amount);
     if (Math.abs(amountDiff) > 0.01 && !amountDifferenceReason.trim()) {
       message.warning('Vui lòng nhập lý do lệch số tiền');
       return;
@@ -297,7 +302,9 @@ const WithdrawalRequestsManagement = () => {
         setRejectionReason('');
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi đánh dấu withdrawal thất bại');
+        message.error(
+          response?.message || 'Lỗi khi đánh dấu withdrawal thất bại'
+        );
       }
     } catch (error) {
       console.error('Error failing withdrawal:', error);
@@ -309,7 +316,7 @@ const WithdrawalRequestsManagement = () => {
     }
   };
 
-  const loadProofImage = async (request) => {
+  const loadProofImage = async request => {
     if (!request.proofUrl) {
       setProofImageUrl(null);
       return;
@@ -329,7 +336,7 @@ const WithdrawalRequestsManagement = () => {
     }
   };
 
-  const handleViewProof = async (request) => {
+  const handleViewProof = async request => {
     if (!request.proofUrl) {
       message.warning('Không có proof file');
       return;
@@ -346,12 +353,12 @@ const WithdrawalRequestsManagement = () => {
     }
   };
 
-  const formatDateTime = (dateString) => {
+  const formatDateTime = dateString => {
     if (!dateString) return 'N/A';
     return dayjs(dateString).format('DD/MM/YYYY HH:mm');
   };
 
-  const formatPriceDisplay = (amount) => {
+  const formatPriceDisplay = amount => {
     if (!amount) return 'N/A';
     return formatPrice(amount);
   };
@@ -362,21 +369,21 @@ const WithdrawalRequestsManagement = () => {
       dataIndex: 'withdrawalRequestId',
       key: 'withdrawalRequestId',
       width: 150,
-      render: (id) => <Text code>{id?.substring(0, 8)}...</Text>,
+      render: id => <Text code>{id?.substring(0, 8)}...</Text>,
     },
     {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
       width: 150,
-      render: (id) => <Text>{id?.substring(0, 8)}...</Text>,
+      render: id => <Text>{id?.substring(0, 8)}...</Text>,
     },
     {
       title: 'Số tiền',
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
-      render: (amount) => <Text strong>{formatPriceDisplay(amount)}</Text>,
+      render: amount => <Text strong>{formatPriceDisplay(amount)}</Text>,
     },
     {
       title: 'Ngân hàng',
@@ -399,7 +406,7 @@ const WithdrawalRequestsManagement = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status) => (
+      render: status => (
         <Tag color={WITHDRAWAL_STATUS_COLORS[status]}>
           {WITHDRAWAL_STATUS_LABELS[status] || status}
         </Tag>
@@ -410,7 +417,7 @@ const WithdrawalRequestsManagement = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
-      render: (date) => formatDateTime(date),
+      render: date => formatDateTime(date),
     },
     {
       title: 'Actions',
@@ -551,7 +558,7 @@ const WithdrawalRequestsManagement = () => {
               pageSize: pagination.pageSize,
               total: pagination.total,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng: ${total} requests`,
+              showTotal: total => `Tổng: ${total} requests`,
               onChange: (page, pageSize) => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
@@ -593,7 +600,7 @@ const WithdrawalRequestsManagement = () => {
               <TextArea
                 rows={3}
                 value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
+                onChange={e => setAdminNote(e.target.value)}
                 placeholder="Nhập ghi chú nếu có..."
               />
             </div>
@@ -625,11 +632,13 @@ const WithdrawalRequestsManagement = () => {
               </Descriptions.Item>
             </Descriptions>
             <div>
-              <Text strong>Lý do từ chối <Text type="danger">*</Text>:</Text>
+              <Text strong>
+                Lý do từ chối <Text type="danger">*</Text>:
+              </Text>
               <TextArea
                 rows={3}
                 value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
+                onChange={e => setRejectionReason(e.target.value)}
                 placeholder="Nhập lý do từ chối..."
                 required
               />
@@ -639,7 +648,7 @@ const WithdrawalRequestsManagement = () => {
               <TextArea
                 rows={2}
                 value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
+                onChange={e => setAdminNote(e.target.value)}
                 placeholder="Nhập ghi chú nếu có..."
               />
             </div>
@@ -678,8 +687,15 @@ const WithdrawalRequestsManagement = () => {
             }}
           >
             {/* Thông tin nhận tiền (masked) */}
-            <Card size="small" style={{ marginBottom: 16, background: '#f5f5f5' }}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Card
+              size="small"
+              style={{ marginBottom: 16, background: '#f5f5f5' }}
+            >
+              <Space
+                direction="vertical"
+                size="small"
+                style={{ width: '100%' }}
+              >
                 <Text strong>Thông tin nhận tiền:</Text>
                 <Descriptions column={1} size="small" bordered>
                   <Descriptions.Item label="Ngân hàng nhận">
@@ -688,15 +704,23 @@ const WithdrawalRequestsManagement = () => {
                   <Descriptions.Item label="Số TK nhận">
                     <Space>
                       <Text code>
-                        {showFullAccountNumber 
-                          ? selectedRequest.bankAccountNumber 
+                        {showFullAccountNumber
+                          ? selectedRequest.bankAccountNumber
                           : maskBankAccount(selectedRequest.bankAccountNumber)}
                       </Text>
                       <Button
                         type="link"
                         size="small"
-                        icon={showFullAccountNumber ? <EyeInvisibleOutlined /> : <EyeOutlinedIcon />}
-                        onClick={() => setShowFullAccountNumber(!showFullAccountNumber)}
+                        icon={
+                          showFullAccountNumber ? (
+                            <EyeInvisibleOutlined />
+                          ) : (
+                            <EyeOutlinedIcon />
+                          )
+                        }
+                        onClick={() =>
+                          setShowFullAccountNumber(!showFullAccountNumber)
+                        }
                       >
                         {showFullAccountNumber ? 'Ẩn' : 'Xem đầy đủ'}
                       </Button>
@@ -706,7 +730,9 @@ const WithdrawalRequestsManagement = () => {
                         icon={<CopyOutlined />}
                         onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(selectedRequest.bankAccountNumber);
+                            await navigator.clipboard.writeText(
+                              selectedRequest.bankAccountNumber
+                            );
                             message.success('Đã copy số tài khoản!');
                           } catch (error) {
                             message.error('Lỗi khi copy số tài khoản');
@@ -737,11 +763,15 @@ const WithdrawalRequestsManagement = () => {
                 {
                   validator: (_, value) => {
                     if (!value) return Promise.resolve();
-                    const diff = Math.abs(parseFloat(value) - parseFloat(selectedRequest.amount));
+                    const diff = Math.abs(
+                      parseFloat(value) - parseFloat(selectedRequest.amount)
+                    );
                     if (diff > 0.01) {
                       // If amount is different, require reason
                       if (!amountDifferenceReason.trim()) {
-                        return Promise.reject(new Error('Vui lòng nhập lý do lệch số tiền'));
+                        return Promise.reject(
+                          new Error('Vui lòng nhập lý do lệch số tiền')
+                        );
                       }
                     }
                     return Promise.resolve();
@@ -752,17 +782,23 @@ const WithdrawalRequestsManagement = () => {
               <InputNumber
                 style={{ width: '100%' }}
                 min={0}
-                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                formatter={value =>
+                  `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                }
+                parser={value => value.replace(/\$\s?|(,*)/g, '')}
                 placeholder="Nhập số tiền đã chuyển"
-                onChange={(value) => {
-                  const diff = Math.abs(parseFloat(value || 0) - parseFloat(selectedRequest.amount));
+                onChange={value => {
+                  const diff = Math.abs(
+                    parseFloat(value || 0) - parseFloat(selectedRequest.amount)
+                  );
                   if (diff > 0.01) {
                     // Show warning if different
-                    completeForm.setFields([{
-                      name: 'paidAmount',
-                      errors: [],
-                    }]);
+                    completeForm.setFields([
+                      {
+                        name: 'paidAmount',
+                        errors: [],
+                      },
+                    ]);
                   }
                 }}
               />
@@ -771,7 +807,11 @@ const WithdrawalRequestsManagement = () => {
             {/* Lý do lệch số tiền (conditional) */}
             {(() => {
               const paidAmount = completeForm.getFieldValue('paidAmount');
-              const diff = paidAmount ? Math.abs(parseFloat(paidAmount) - parseFloat(selectedRequest.amount)) : 0;
+              const diff = paidAmount
+                ? Math.abs(
+                    parseFloat(paidAmount) - parseFloat(selectedRequest.amount)
+                  )
+                : 0;
               if (diff > 0.01) {
                 return (
                   <Form.Item
@@ -782,7 +822,7 @@ const WithdrawalRequestsManagement = () => {
                     <TextArea
                       rows={3}
                       value={amountDifferenceReason}
-                      onChange={(e) => setAmountDifferenceReason(e.target.value)}
+                      onChange={e => setAmountDifferenceReason(e.target.value)}
                       placeholder="Ví dụ: Phí chuyển khoản, Chuyển thiếu do hạn mức, Chuyển dư..."
                       required
                     />
@@ -803,8 +843,12 @@ const WithdrawalRequestsManagement = () => {
                 showSearch
                 loading={loadingBanks}
                 filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase()) ||
-                  (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                  (option?.label ?? '')
+                    .toLowerCase()
+                    .includes(input.toLowerCase()) ||
+                  (option?.value ?? '')
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
                 }
                 options={bankList.map(bank => ({
                   value: bank.code || bank.shortName || bank.name,
@@ -835,11 +879,15 @@ const WithdrawalRequestsManagement = () => {
               help="Chấp nhận: .jpg, .png, .pdf (tối đa 10MB). Không upload ảnh có lộ thông tin không cần thiết."
             >
               <Upload
-                beforeUpload={(file) => {
+                beforeUpload={file => {
                   // Check file type
-                  const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf';
+                  const isValidType =
+                    file.type.startsWith('image/') ||
+                    file.type === 'application/pdf';
                   if (!isValidType) {
-                    message.error('Chỉ cho phép upload file ảnh (.jpg, .png) hoặc PDF!');
+                    message.error(
+                      'Chỉ cho phép upload file ảnh (.jpg, .png) hoặc PDF!'
+                    );
                     return Upload.LIST_IGNORE;
                   }
                   // Check size (max 10MB)
@@ -852,7 +900,7 @@ const WithdrawalRequestsManagement = () => {
                   // Preview for images only
                   if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
-                    reader.onload = (e) => setProofPreview(e.target.result);
+                    reader.onload = e => setProofPreview(e.target.result);
                     reader.readAsDataURL(file);
                   } else {
                     setProofPreview(null);
@@ -863,11 +911,17 @@ const WithdrawalRequestsManagement = () => {
                   setProofFile(null);
                   setProofPreview(null);
                 }}
-                fileList={proofFile ? [{
-                  uid: proofFile.uid || '-1',
-                  name: proofFile.name,
-                  status: 'done',
-                }] : []}
+                fileList={
+                  proofFile
+                    ? [
+                        {
+                          uid: proofFile.uid || '-1',
+                          name: proofFile.name,
+                          status: 'done',
+                        },
+                      ]
+                    : []
+                }
                 maxCount={1}
                 accept="image/*,.pdf"
               >
@@ -898,11 +952,12 @@ const WithdrawalRequestsManagement = () => {
                 <input
                   type="checkbox"
                   checked={confirmComplete}
-                  onChange={(e) => setConfirmComplete(e.target.checked)}
+                  onChange={e => setConfirmComplete(e.target.checked)}
                   style={{ marginRight: 8 }}
                 />
                 <Text>
-                  Tôi xác nhận đã chuyển khoản thành công. Hành động này không thể sửa.
+                  Tôi xác nhận đã chuyển khoản thành công. Hành động này không
+                  thể sửa.
                 </Text>
               </Space>
             </Form.Item>
@@ -933,11 +988,13 @@ const WithdrawalRequestsManagement = () => {
               </Descriptions.Item>
             </Descriptions>
             <div>
-              <Text strong>Lý do thất bại <Text type="danger">*</Text>:</Text>
+              <Text strong>
+                Lý do thất bại <Text type="danger">*</Text>:
+              </Text>
               <TextArea
                 rows={4}
                 value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
+                onChange={e => setRejectionReason(e.target.value)}
                 placeholder="Nhập lý do thất bại (ví dụ: Chuyển nhầm tài khoản, Lỗi hệ thống ngân hàng...)"
                 required
               />
@@ -959,14 +1016,17 @@ const WithdrawalRequestsManagement = () => {
           }
         }}
         footer={[
-          <Button key="close" onClick={() => {
-            setDetailModalVisible(false);
-            setSelectedRequest(null);
-            if (proofImageUrl) {
-              window.URL.revokeObjectURL(proofImageUrl);
-              setProofImageUrl(null);
-            }
-          }}>
+          <Button
+            key="close"
+            onClick={() => {
+              setDetailModalVisible(false);
+              setSelectedRequest(null);
+              if (proofImageUrl) {
+                window.URL.revokeObjectURL(proofImageUrl);
+                setProofImageUrl(null);
+              }
+            }}
+          >
             Đóng
           </Button>,
         ]}
@@ -977,7 +1037,9 @@ const WithdrawalRequestsManagement = () => {
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <Descriptions bordered column={2} size="small">
                 <Descriptions.Item label="Request ID" span={2}>
-                  <Text code copyable>{selectedRequest.withdrawalRequestId}</Text>
+                  <Text code copyable>
+                    {selectedRequest.withdrawalRequestId}
+                  </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="User ID">
                   <Text code>{selectedRequest.userId}</Text>
@@ -995,7 +1057,8 @@ const WithdrawalRequestsManagement = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
                   <Tag color={WITHDRAWAL_STATUS_COLORS[selectedRequest.status]}>
-                    {WITHDRAWAL_STATUS_LABELS[selectedRequest.status] || selectedRequest.status}
+                    {WITHDRAWAL_STATUS_LABELS[selectedRequest.status] ||
+                      selectedRequest.status}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày tạo">
@@ -1035,7 +1098,9 @@ const WithdrawalRequestsManagement = () => {
                     </Descriptions.Item>
                     {selectedRequest.rejectionReason && (
                       <Descriptions.Item label="Lý do từ chối" span={2}>
-                        <Text type="danger">{selectedRequest.rejectionReason}</Text>
+                        <Text type="danger">
+                          {selectedRequest.rejectionReason}
+                        </Text>
                       </Descriptions.Item>
                     )}
                   </>
@@ -1053,9 +1118,11 @@ const WithdrawalRequestsManagement = () => {
                         <Text strong style={{ color: '#52c41a' }}>
                           {formatPriceDisplay(selectedRequest.paidAmount)}
                         </Text>
-                        {parseFloat(selectedRequest.paidAmount) !== parseFloat(selectedRequest.amount) && (
+                        {parseFloat(selectedRequest.paidAmount) !==
+                          parseFloat(selectedRequest.amount) && (
                           <Text type="secondary" style={{ marginLeft: 8 }}>
-                            (Yêu cầu: {formatPriceDisplay(selectedRequest.amount)})
+                            (Yêu cầu:{' '}
+                            {formatPriceDisplay(selectedRequest.amount)})
                           </Text>
                         )}
                       </Descriptions.Item>
@@ -1067,12 +1134,16 @@ const WithdrawalRequestsManagement = () => {
                     )}
                     {selectedRequest.bankRef && (
                       <Descriptions.Item label="Mã tham chiếu ngân hàng">
-                        <Text code copyable>{selectedRequest.bankRef}</Text>
+                        <Text code copyable>
+                          {selectedRequest.bankRef}
+                        </Text>
                       </Descriptions.Item>
                     )}
                     {selectedRequest.txnCode && (
                       <Descriptions.Item label="Mã giao dịch">
-                        <Text code copyable>{selectedRequest.txnCode}</Text>
+                        <Text code copyable>
+                          {selectedRequest.txnCode}
+                        </Text>
                       </Descriptions.Item>
                     )}
                   </>
@@ -1087,7 +1158,9 @@ const WithdrawalRequestsManagement = () => {
                     </Descriptions.Item>
                     {selectedRequest.failureReason && (
                       <Descriptions.Item label="Lý do thất bại" span={2}>
-                        <Text type="danger">{selectedRequest.failureReason}</Text>
+                        <Text type="danger">
+                          {selectedRequest.failureReason}
+                        </Text>
                       </Descriptions.Item>
                     )}
                   </>
@@ -1101,7 +1174,9 @@ const WithdrawalRequestsManagement = () => {
                 )}
                 {selectedRequest.walletTxId && (
                   <Descriptions.Item label="Transaction ID" span={2}>
-                    <Text code copyable>{selectedRequest.walletTxId}</Text>
+                    <Text code copyable>
+                      {selectedRequest.walletTxId}
+                    </Text>
                   </Descriptions.Item>
                 )}
               </Descriptions>
@@ -1162,4 +1237,3 @@ const WithdrawalRequestsManagement = () => {
 };
 
 export default WithdrawalRequestsManagement;
-

@@ -1,5 +1,10 @@
 import { Button, Tooltip } from 'antd';
-import { RiseOutlined, FallOutlined, MoreOutlined, DollarOutlined } from '@ant-design/icons';
+import {
+  RiseOutlined,
+  FallOutlined,
+  MoreOutlined,
+  DollarOutlined,
+} from '@ant-design/icons';
 import { Tiny } from '@ant-design/plots';
 import { motion } from 'framer-motion';
 import styles from './Dashboard.module.css';
@@ -12,7 +17,12 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
     { key: 'services', label: 'From Services', ...data.fromServices },
   ];
 
-  const prevLabel = timeRange === 'today' ? 'yesterday' : timeRange === '7d' ? 'prev 7d' : 'prev 30d';
+  const prevLabel =
+    timeRange === 'today'
+      ? 'yesterday'
+      : timeRange === '7d'
+        ? 'prev 7d'
+        : 'prev 30d';
 
   return (
     <motion.div
@@ -27,7 +37,11 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
           <span>Revenue Summary ({timeRange})</span>
         </div>
         <Tooltip title="View details">
-          <Button type="text" icon={<MoreOutlined />} className={styles.revenueMoreBtn} />
+          <Button
+            type="text"
+            icon={<MoreOutlined />}
+            className={styles.revenueMoreBtn}
+          />
         </Tooltip>
       </div>
 
@@ -38,10 +52,16 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
             <div key={metric.key} className={styles.revenueMetric}>
               <div className={styles.metricContent}>
                 <span className={styles.metricLabel}>{metric.label}</span>
-                <span className={styles.metricValue}>{formatCurrency(metric.value)}</span>
-                <div className={`${styles.metricTrend} ${isPositive ? styles.trendPositive : styles.trendNegative}`}>
+                <span className={styles.metricValue}>
+                  {formatCurrency(metric.value)}
+                </span>
+                <div
+                  className={`${styles.metricTrend} ${isPositive ? styles.trendPositive : styles.trendNegative}`}
+                >
                   {isPositive ? <RiseOutlined /> : <FallOutlined />}
-                  <span>{formatPercent(metric.trend)} vs {prevLabel}</span>
+                  <span>
+                    {formatPercent(metric.trend)} vs {prevLabel}
+                  </span>
                 </div>
               </div>
               <div className={styles.metricSparkline}>
@@ -53,10 +73,14 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
                   width={80}
                   smooth
                   areaStyle={{ fill: 'rgba(255,255,255,0.3)' }}
-                  line={{ style: { stroke: 'rgba(255,255,255,0.8)', lineWidth: 2 } }}
+                  line={{
+                    style: { stroke: 'rgba(255,255,255,0.8)', lineWidth: 2 },
+                  }}
                 />
               </div>
-              {idx < metrics.length - 1 && <div className={styles.metricDivider} />}
+              {idx < metrics.length - 1 && (
+                <div className={styles.metricDivider} />
+              )}
             </div>
           );
         })}
@@ -66,4 +90,3 @@ const RevenueSummaryCard = ({ data, timeRange }) => {
 };
 
 export default RevenueSummaryCard;
-

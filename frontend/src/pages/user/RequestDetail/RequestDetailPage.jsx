@@ -101,7 +101,7 @@ const RequestDetailPage = () => {
   useEffect(() => {
     const loadBooking = async () => {
       if (!requestId || request?.requestType !== 'recording') return;
-      
+
       try {
         setLoadingBooking(true);
         const response = await getBookingByRequestId(requestId);
@@ -426,55 +426,59 @@ const RequestDetailPage = () => {
             </Descriptions.Item>
 
             {/* Right column - Instruments */}
-            {request.requestType !== 'recording' 
-            && (request.instruments && request.instruments.length > 0) ||
-            (request.instrumentIds && request.instrumentIds.length > 0) && (
-              <Descriptions.Item label="Instruments">
-                <Space wrap>
-                  {request.instruments && request.instruments.length > 0
-                    ? request.instruments.map((inst, idx) => {
-                        const isMain = inst.isMain === true;
-                        const isArrangement =
-                          request.requestType === 'arrangement' ||
-                          request.requestType === 'arrangement_with_recording';
-                        return (
-                          <Tag
-                            key={inst.instrumentId || idx}
-                            color={isMain && isArrangement ? 'gold' : 'purple'}
-                            icon={
-                              isMain && isArrangement ? <StarFilled /> : null
-                            }
-                          >
-                            {inst.instrumentName || inst.name || inst}
-                            {isMain && isArrangement && ' (Main)'}
-                          </Tag>
-                        );
-                      })
-                    : request.instrumentIds.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        return inst ? (
-                          <Tag key={id} color="purple">
-                            {inst.instrumentName}
-                          </Tag>
-                        ) : (
-                          <Tag key={id} color="default">
-                            {id}
-                          </Tag>
-                        );
-                      })}
-                </Space>
-              </Descriptions.Item>
-            )}
+            {(request.requestType !== 'recording' &&
+              request.instruments &&
+              request.instruments.length > 0) ||
+              (request.instrumentIds && request.instrumentIds.length > 0 && (
+                <Descriptions.Item label="Instruments">
+                  <Space wrap>
+                    {request.instruments && request.instruments.length > 0
+                      ? request.instruments.map((inst, idx) => {
+                          const isMain = inst.isMain === true;
+                          const isArrangement =
+                            request.requestType === 'arrangement' ||
+                            request.requestType ===
+                              'arrangement_with_recording';
+                          return (
+                            <Tag
+                              key={inst.instrumentId || idx}
+                              color={
+                                isMain && isArrangement ? 'gold' : 'purple'
+                              }
+                              icon={
+                                isMain && isArrangement ? <StarFilled /> : null
+                              }
+                            >
+                              {inst.instrumentName || inst.name || inst}
+                              {isMain && isArrangement && ' (Main)'}
+                            </Tag>
+                          );
+                        })
+                      : request.instrumentIds.map(id => {
+                          const inst = instrumentsData.find(
+                            i => i.instrumentId === id
+                          );
+                          return inst ? (
+                            <Tag key={id} color="purple">
+                              {inst.instrumentName}
+                            </Tag>
+                          ) : (
+                            <Tag key={id} color="default">
+                              {id}
+                            </Tag>
+                          );
+                        })}
+                  </Space>
+                </Descriptions.Item>
+              ))}
 
             <Descriptions.Item label="Contact Name">
               {request.contactName || 'N/A'}
             </Descriptions.Item>
 
             {/* Service Price - hidden for recording */}
-            {request.requestType !== 'recording' && (
-              request.servicePrice ? (
+            {request.requestType !== 'recording' &&
+              (request.servicePrice ? (
                 <Descriptions.Item label="Service Price">
                   {formatPrice(request.servicePrice, request.currency || 'VND')}
                 </Descriptions.Item>
@@ -482,16 +486,15 @@ const RequestDetailPage = () => {
                 <Descriptions.Item label="Service Price">
                   <span style={{ color: '#999' }}>N/A</span>
                 </Descriptions.Item>
-              )
-            )}
+              ))}
 
             <Descriptions.Item label="Contact Email">
               {request.contactEmail || 'N/A'}
             </Descriptions.Item>
 
             {/* Instruments Price - hidden for recording */}
-            {request.requestType !== 'recording' && (
-              request.instrumentPrice && request.instrumentPrice > 0 ? (
+            {request.requestType !== 'recording' &&
+              (request.instrumentPrice && request.instrumentPrice > 0 ? (
                 <Descriptions.Item label="Instruments Price">
                   {formatPrice(
                     request.instrumentPrice,
@@ -502,16 +505,15 @@ const RequestDetailPage = () => {
                 <Descriptions.Item label="Instruments Price">
                   <span style={{ color: '#999' }}>N/A</span>
                 </Descriptions.Item>
-              )
-            )}
+              ))}
 
             <Descriptions.Item label="Phone Number">
               {request.contactPhone || 'N/A'}
             </Descriptions.Item>
 
             {/* Total Price - hidden for recording (uses booking totalCost) */}
-            {request.requestType !== 'recording' && (
-              request.totalPrice ? (
+            {request.requestType !== 'recording' &&
+              (request.totalPrice ? (
                 <Descriptions.Item label="Total Price">
                   <Tag color="green">
                     {formatPrice(request.totalPrice, request.currency || 'VND')}
@@ -521,8 +523,7 @@ const RequestDetailPage = () => {
                 <Descriptions.Item label="Total Price">
                   <span style={{ color: '#999' }}>N/A</span>
                 </Descriptions.Item>
-              )
-            )}
+              ))}
           </Descriptions>
 
           {/* Second part: single column for remaining items */}
@@ -660,8 +661,8 @@ const RequestDetailPage = () => {
 
         {/* Studio Booking Section - only for recording requests */}
         {request.requestType === 'recording' && (
-          <Card 
-            title="🎙️ Studio Booking Information" 
+          <Card
+            title="🎙️ Studio Booking Information"
             style={{ marginTop: '1.5rem' }}
             loading={loadingBooking}
           >
@@ -672,7 +673,7 @@ const RequestDetailPage = () => {
                     {booking.bookingDate}
                   </Descriptions.Item>
                 )}
-                {(booking.startTime && booking.endTime) && (
+                {booking.startTime && booking.endTime && (
                   <Descriptions.Item label="🕒 Time Slot">
                     {booking.startTime} - {booking.endTime}
                   </Descriptions.Item>
@@ -684,22 +685,32 @@ const RequestDetailPage = () => {
                 )}
                 {booking.status && (
                   <Descriptions.Item label="Status">
-                    <Tag color={
-                      booking.status === 'CONFIRMED' ? 'green' : 
-                      booking.status === 'TENTATIVE' ? 'orange' : 
-                      'default'
-                    }>
+                    <Tag
+                      color={
+                        booking.status === 'CONFIRMED'
+                          ? 'green'
+                          : booking.status === 'TENTATIVE'
+                            ? 'orange'
+                            : 'default'
+                      }
+                    >
                       {booking.status}
                     </Tag>
                   </Descriptions.Item>
                 )}
-                
+
                 {booking.participants && booking.participants.length > 0 && (
                   <Descriptions.Item label="👥 Participants" span={2}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
                       {booking.participants.map((p, index) => (
                         <div key={index}>
-                          <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}>
+                          <Tag
+                            color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}
+                          >
                             {p.roleType}
                           </Tag>
                           {p.specialistName || 'Self'}
@@ -713,38 +724,51 @@ const RequestDetailPage = () => {
                     </Space>
                   </Descriptions.Item>
                 )}
-                
-                {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
-                  <Descriptions.Item label="🎸 Equipment" span={2}>
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      {booking.requiredEquipment.map((eq, index) => (
-                        <div key={index}>
-                          {eq.equipmentName || 'Equipment'} x {eq.quantity}
-                          {eq.totalRentalFee && (
-                            <span style={{ marginLeft: 8, color: '#666' }}>
-                              - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </Space>
-                  </Descriptions.Item>
-                )}
-                
+
+                {booking.requiredEquipment &&
+                  booking.requiredEquipment.length > 0 && (
+                    <Descriptions.Item label="🎸 Equipment" span={2}>
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: '100%' }}
+                      >
+                        {booking.requiredEquipment.map((eq, index) => (
+                          <div key={index}>
+                            {eq.equipmentName || 'Equipment'} x {eq.quantity}
+                            {eq.totalRentalFee && (
+                              <span style={{ marginLeft: 8, color: '#666' }}>
+                                - {eq.totalRentalFee.toLocaleString('vi-VN')}{' '}
+                                VND
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </Space>
+                    </Descriptions.Item>
+                  )}
+
                 {booking.artistFee && booking.artistFee > 0 && (
                   <Descriptions.Item label="💰 Participant Fee">
                     {booking.artistFee.toLocaleString('vi-VN')} VND
                   </Descriptions.Item>
                 )}
-                {booking.equipmentRentalFee && booking.equipmentRentalFee > 0 && (
-                  <Descriptions.Item label="🔧 Equipment Fee">
-                    {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
-                  </Descriptions.Item>
-                )}
+                {booking.equipmentRentalFee &&
+                  booking.equipmentRentalFee > 0 && (
+                    <Descriptions.Item label="🔧 Equipment Fee">
+                      {booking.equipmentRentalFee.toLocaleString('vi-VN')} VND
+                    </Descriptions.Item>
+                  )}
                 {booking.totalCost && (
                   <Descriptions.Item label="💵 Total Cost" span={2}>
                     <Space>
-                      <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f' }}>
+                      <span
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 'bold',
+                          color: '#ff4d4f',
+                        }}
+                      >
                         {booking.totalCost.toLocaleString('vi-VN')} VND
                       </span>
                     </Space>

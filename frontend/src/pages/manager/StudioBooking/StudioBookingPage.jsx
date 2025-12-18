@@ -367,8 +367,9 @@ const StudioBookingPage = () => {
                 // Nếu có milestone, chỉ cho chọn ngày trong milestone window (backend-computed)
                 // Booking phải nằm trong window này, và window không được FE tự tính lại.
                 if (milestone?.targetDeadline) {
-                  const milestoneEnd = dayjs(milestone.targetDeadline)
-                    .endOf('day');
+                  const milestoneEnd = dayjs(milestone.targetDeadline).endOf(
+                    'day'
+                  );
                   return current > milestoneEnd;
                 }
 

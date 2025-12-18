@@ -205,8 +205,7 @@ export default function RecordingFlowController() {
               step3: flowData.step3 || {},
             }}
             onBack={handlePrev}
-            onSubmit={() => {
-            }}
+            onSubmit={() => {}}
           />
         );
       default:

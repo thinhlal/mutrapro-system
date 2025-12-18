@@ -254,6 +254,10 @@ export const getMyWithdrawalRequests = async (filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách withdrawal requests' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách withdrawal requests',
+      }
+    );
   }
 };

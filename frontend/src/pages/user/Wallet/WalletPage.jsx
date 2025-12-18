@@ -74,14 +74,17 @@ const WalletContent = () => {
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('transactions');
   const [withdrawalRequests, setWithdrawalRequests] = useState([]);
-  const [withdrawalRequestsLoading, setWithdrawalRequestsLoading] = useState(false);
-  const [withdrawalRequestsPagination, setWithdrawalRequestsPagination] = useState({
-    current: 1,
-    pageSize: 20,
-    total: 0,
-  });
+  const [withdrawalRequestsLoading, setWithdrawalRequestsLoading] =
+    useState(false);
+  const [withdrawalRequestsPagination, setWithdrawalRequestsPagination] =
+    useState({
+      current: 1,
+      pageSize: 20,
+      total: 0,
+    });
   const [withdrawalStatusFilter, setWithdrawalStatusFilter] = useState(null);
-  const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState(null);
+  const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] =
+    useState(null);
   const [withdrawalDetailVisible, setWithdrawalDetailVisible] = useState(false);
   const [filters, setFilters] = useState({
     txType: null,
@@ -158,7 +161,9 @@ const WalletContent = () => {
       setBankList(banks);
     } catch (error) {
       console.error('Error loading bank list:', error);
-      message.warning('Không thể tải danh sách ngân hàng. Vui lòng nhập thủ công.');
+      message.warning(
+        'Không thể tải danh sách ngân hàng. Vui lòng nhập thủ công.'
+      );
     } finally {
       setLoadingBanks(false);
     }
@@ -189,7 +194,12 @@ const WalletContent = () => {
       loadWithdrawalRequests();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, withdrawalStatusFilter, withdrawalRequestsPagination.current, withdrawalRequestsPagination.pageSize]);
+  }, [
+    activeTab,
+    withdrawalStatusFilter,
+    withdrawalRequestsPagination.current,
+    withdrawalRequestsPagination.pageSize,
+  ]);
 
   // Load withdrawal requests
   const loadWithdrawalRequests = async () => {
@@ -258,7 +268,9 @@ const WalletContent = () => {
       });
 
       if (response?.status === 'success') {
-        message.success('Yêu cầu rút tiền đã được gửi thành công! Yêu cầu của bạn đang chờ manager duyệt.');
+        message.success(
+          'Yêu cầu rút tiền đã được gửi thành công! Yêu cầu của bạn đang chờ manager duyệt.'
+        );
         setWithdrawModalVisible(false);
         withdrawForm.resetFields();
         await loadWallet();
@@ -622,12 +634,12 @@ const WalletContent = () => {
     FAILED: 'Thất bại',
   };
 
-  const formatDateTime = (dateString) => {
+  const formatDateTime = dateString => {
     if (!dateString) return 'N/A';
     return dayjs(dateString).format('DD/MM/YYYY HH:mm');
   };
 
-  const formatPriceDisplay = (amount) => {
+  const formatPriceDisplay = amount => {
     if (!amount) return 'N/A';
     return formatCurrency(amount, wallet?.currency || 'VND');
   };
@@ -638,14 +650,14 @@ const WalletContent = () => {
       dataIndex: 'withdrawalRequestId',
       key: 'withdrawalRequestId',
       width: 150,
-      render: (id) => <Text code>{id?.substring(0, 8)}...</Text>,
+      render: id => <Text code>{id?.substring(0, 8)}...</Text>,
     },
     {
       title: 'Số tiền',
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
-      render: (amount) => <Text strong>{formatPriceDisplay(amount)}</Text>,
+      render: amount => <Text strong>{formatPriceDisplay(amount)}</Text>,
     },
     {
       title: 'Ngân hàng',
@@ -668,7 +680,7 @@ const WalletContent = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status) => (
+      render: status => (
         <Tag color={WITHDRAWAL_STATUS_COLORS[status]}>
           {WITHDRAWAL_STATUS_LABELS[status] || status}
         </Tag>
@@ -679,7 +691,7 @@ const WalletContent = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
-      render: (date) => formatDateTime(date),
+      render: date => formatDateTime(date),
     },
     {
       title: 'Actions',
@@ -725,7 +737,10 @@ const WalletContent = () => {
               <div className={WalletPageStyles.balanceAmount}>
                 <Text className={WalletPageStyles.balanceValue}>
                   {formatCurrency(
-                    wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                    wallet?.availableBalance ??
+                      (wallet?.balance
+                        ? wallet.balance - (wallet.holdBalance || 0)
+                        : 0),
                     wallet?.currency || 'VND'
                   )}
                 </Text>
@@ -733,8 +748,9 @@ const WalletContent = () => {
               {wallet?.holdBalance > 0 && (
                 <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
                   <Text type="secondary">
-                    Total: {formatCurrency(wallet.balance, wallet.currency)} | 
-                    On Hold: {formatCurrency(wallet.holdBalance, wallet.currency)}
+                    Total: {formatCurrency(wallet.balance, wallet.currency)} |
+                    On Hold:{' '}
+                    {formatCurrency(wallet.holdBalance, wallet.currency)}
                   </Text>
                 </div>
               )}
@@ -828,7 +844,14 @@ const WalletContent = () => {
                   ),
                   children: (
                     <>
-                      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          marginBottom: 16,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
                         <div style={{ flex: 1 }}>
                           {/* Filters */}
                           <Row gutter={[16, 16]}>
@@ -838,7 +861,9 @@ const WalletContent = () => {
                                 allowClear
                                 style={{ width: '100%' }}
                                 value={filters.txType}
-                                onChange={value => handleFilterChange('txType', value)}
+                                onChange={value =>
+                                  handleFilterChange('txType', value)
+                                }
                               >
                                 <Option value="topup">Nạp tiền</Option>
                                 <Option value="payment">Thanh toán</Option>
@@ -851,7 +876,9 @@ const WalletContent = () => {
                                 <Option value="recording_booking_payment">
                                   Thanh toán đặt phòng thu âm
                                 </Option>
-                                <Option value="revision_fee">Phí chỉnh sửa</Option>
+                                <Option value="revision_fee">
+                                  Phí chỉnh sửa
+                                </Option>
                                 <Option value="refund">Hoàn tiền</Option>
                                 <Option value="withdrawal">Rút tiền</Option>
                                 <Option value="adjustment">Điều chỉnh</Option>
@@ -899,7 +926,10 @@ const WalletContent = () => {
                             pageSizeOptions: ['10', '20', '50', '100'],
                           }}
                           onChange={handleTableChange}
-                          scroll={{ x: 'max-content', y: 'calc(100vh - 450px)' }}
+                          scroll={{
+                            x: 'max-content',
+                            y: 'calc(100vh - 450px)',
+                          }}
                         />
                       )}
                     </>
@@ -915,7 +945,14 @@ const WalletContent = () => {
                   ),
                   children: (
                     <>
-                      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          marginBottom: 16,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
                         <Select
                           placeholder="Lọc theo status"
                           allowClear
@@ -949,14 +986,20 @@ const WalletContent = () => {
                           pageSize: withdrawalRequestsPagination.pageSize,
                           total: withdrawalRequestsPagination.total,
                           showSizeChanger: true,
-                          showTotal: (total) => `Tổng: ${total} requests`,
+                          showTotal: total => `Tổng: ${total} requests`,
                           onChange: (page, pageSize) => {
-                            setWithdrawalRequestsPagination({ ...withdrawalRequestsPagination, current: page, pageSize });
+                            setWithdrawalRequestsPagination({
+                              ...withdrawalRequestsPagination,
+                              current: page,
+                              pageSize,
+                            });
                           },
                         }}
                         scroll={{ x: 1000 }}
                         locale={{
-                          emptyText: <Empty description="Không có withdrawal request nào" />,
+                          emptyText: (
+                            <Empty description="Không có withdrawal request nào" />
+                          ),
                         }}
                       />
                     </>
@@ -1026,7 +1069,7 @@ const WalletContent = () => {
           setWithdrawModalVisible(false);
           withdrawForm.resetFields();
         }}
-        afterOpenChange={(open) => {
+        afterOpenChange={open => {
           if (open && bankList.length === 0) {
             loadBankList();
           }
@@ -1051,7 +1094,11 @@ const WalletContent = () => {
               {
                 validator: (_, value) => {
                   if (!value) return Promise.resolve();
-                  const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+                  const availableBalance =
+                    wallet?.availableBalance ??
+                    (wallet?.balance
+                      ? wallet.balance - (wallet.holdBalance || 0)
+                      : 0);
                   if (value > availableBalance) {
                     return Promise.reject(
                       new Error(
@@ -1075,7 +1122,12 @@ const WalletContent = () => {
               }
               parser={value => value.replace(/\$\s?|(,*)/g, '')}
               min={10000}
-              max={wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : undefined)}
+              max={
+                wallet?.availableBalance ??
+                (wallet?.balance
+                  ? wallet.balance - (wallet.holdBalance || 0)
+                  : undefined)
+              }
               size="large"
             />
           </Form.Item>
@@ -1084,13 +1136,13 @@ const WalletContent = () => {
             label="Số tài khoản ngân hàng"
             name="bankAccountNumber"
             rules={[
-              { required: true, message: 'Vui lòng nhập số tài khoản ngân hàng' },
+              {
+                required: true,
+                message: 'Vui lòng nhập số tài khoản ngân hàng',
+              },
             ]}
           >
-            <Input
-              placeholder="Nhập số tài khoản ngân hàng"
-              size="large"
-            />
+            <Input placeholder="Nhập số tài khoản ngân hàng" size="large" />
           </Form.Item>
 
           <Form.Item
@@ -1104,8 +1156,12 @@ const WalletContent = () => {
               loading={loadingBanks}
               showSearch
               filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase()) ||
-                (option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                (option?.label ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase()) ||
+                (option?.value ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
               }
               options={bankList.map(bank => ({
                 value: bank.shortName || bank.name,
@@ -1492,97 +1548,144 @@ const WalletContent = () => {
                           </Descriptions.Item>
                         )}
                         {/* Withdrawal Request Information */}
-                        {selectedTransaction.txType === 'withdrawal' && selectedTransaction.metadata && (
-                          <>
-                            {selectedTransaction.metadata.withdrawal_request_id && (
-                              <Descriptions.Item label="Mã yêu cầu rút tiền">
-                                <Text code copyable>
-                                  {selectedTransaction.metadata.withdrawal_request_id}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.bank_name && (
-                              <Descriptions.Item label="Ngân hàng nhận">
-                                <Text strong>{selectedTransaction.metadata.bank_name}</Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.account_holder_name && (
-                              <Descriptions.Item label="Chủ tài khoản">
-                                <Text>{selectedTransaction.metadata.account_holder_name}</Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.bank_account_number && (
-                              <Descriptions.Item label="Số tài khoản nhận">
-                                <Text code>
-                                  {(() => {
-                                    const accountNumber = selectedTransaction.metadata.bank_account_number;
-                                    if (accountNumber && accountNumber.length > 4) {
-                                      return '****' + accountNumber.slice(-4);
+                        {selectedTransaction.txType === 'withdrawal' &&
+                          selectedTransaction.metadata && (
+                            <>
+                              {selectedTransaction.metadata
+                                .withdrawal_request_id && (
+                                <Descriptions.Item label="Mã yêu cầu rút tiền">
+                                  <Text code copyable>
+                                    {
+                                      selectedTransaction.metadata
+                                        .withdrawal_request_id
                                     }
-                                    return accountNumber;
-                                  })()}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.provider && (
-                              <Descriptions.Item label="Kênh chuyển">
-                                <Tag color="blue">{selectedTransaction.metadata.provider}</Tag>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.bank_ref && (
-                              <Descriptions.Item label="Mã tham chiếu ngân hàng">
-                                <Text code copyable>
-                                  {selectedTransaction.metadata.bank_ref}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.txn_code && (
-                              <Descriptions.Item label="Mã giao dịch">
-                                <Text code copyable>
-                                  {selectedTransaction.metadata.txn_code}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.paid_amount && 
-                             selectedTransaction.metadata.withdrawal_amount &&
-                             parseFloat(selectedTransaction.metadata.paid_amount) !== parseFloat(selectedTransaction.metadata.withdrawal_amount) && (
-                              <Descriptions.Item label="Số tiền đã chuyển">
-                                <Text strong style={{ color: '#1890ff' }}>
-                                  {formatCurrency(
-                                    parseFloat(selectedTransaction.metadata.paid_amount),
-                                    selectedTransaction.currency
-                                  )}
-                                </Text>
-                                <Text type="secondary" style={{ marginLeft: 8 }}>
-                                  (Yêu cầu: {formatCurrency(
-                                    parseFloat(selectedTransaction.metadata.withdrawal_amount),
-                                    selectedTransaction.currency
-                                  )})
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.note && (
-                              <Descriptions.Item label="Ghi chú">
-                                <Text type="secondary">{selectedTransaction.metadata.note}</Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.admin_note && (
-                              <Descriptions.Item label="Ghi chú từ Admin/Manager">
-                                <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                                  {selectedTransaction.metadata.admin_note}
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                            {selectedTransaction.metadata.proof_s3_key && (
-                              <Descriptions.Item label="Biên lai chuyển khoản">
-                                <Tag color="green">Đã tải lên</Tag>
-                                <Text type="secondary" style={{ fontSize: '12px', marginLeft: 8 }}>
-                                  (Chỉ Admin/Manager có thể xem)
-                                </Text>
-                              </Descriptions.Item>
-                            )}
-                          </>
-                        )}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.bank_name && (
+                                <Descriptions.Item label="Ngân hàng nhận">
+                                  <Text strong>
+                                    {selectedTransaction.metadata.bank_name}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata
+                                .account_holder_name && (
+                                <Descriptions.Item label="Chủ tài khoản">
+                                  <Text>
+                                    {
+                                      selectedTransaction.metadata
+                                        .account_holder_name
+                                    }
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata
+                                .bank_account_number && (
+                                <Descriptions.Item label="Số tài khoản nhận">
+                                  <Text code>
+                                    {(() => {
+                                      const accountNumber =
+                                        selectedTransaction.metadata
+                                          .bank_account_number;
+                                      if (
+                                        accountNumber &&
+                                        accountNumber.length > 4
+                                      ) {
+                                        return '****' + accountNumber.slice(-4);
+                                      }
+                                      return accountNumber;
+                                    })()}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.provider && (
+                                <Descriptions.Item label="Kênh chuyển">
+                                  <Tag color="blue">
+                                    {selectedTransaction.metadata.provider}
+                                  </Tag>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.bank_ref && (
+                                <Descriptions.Item label="Mã tham chiếu ngân hàng">
+                                  <Text code copyable>
+                                    {selectedTransaction.metadata.bank_ref}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.txn_code && (
+                                <Descriptions.Item label="Mã giao dịch">
+                                  <Text code copyable>
+                                    {selectedTransaction.metadata.txn_code}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.paid_amount &&
+                                selectedTransaction.metadata
+                                  .withdrawal_amount &&
+                                parseFloat(
+                                  selectedTransaction.metadata.paid_amount
+                                ) !==
+                                  parseFloat(
+                                    selectedTransaction.metadata
+                                      .withdrawal_amount
+                                  ) && (
+                                  <Descriptions.Item label="Số tiền đã chuyển">
+                                    <Text strong style={{ color: '#1890ff' }}>
+                                      {formatCurrency(
+                                        parseFloat(
+                                          selectedTransaction.metadata
+                                            .paid_amount
+                                        ),
+                                        selectedTransaction.currency
+                                      )}
+                                    </Text>
+                                    <Text
+                                      type="secondary"
+                                      style={{ marginLeft: 8 }}
+                                    >
+                                      (Yêu cầu:{' '}
+                                      {formatCurrency(
+                                        parseFloat(
+                                          selectedTransaction.metadata
+                                            .withdrawal_amount
+                                        ),
+                                        selectedTransaction.currency
+                                      )}
+                                      )
+                                    </Text>
+                                  </Descriptions.Item>
+                                )}
+                              {selectedTransaction.metadata.note && (
+                                <Descriptions.Item label="Ghi chú">
+                                  <Text type="secondary">
+                                    {selectedTransaction.metadata.note}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.admin_note && (
+                                <Descriptions.Item label="Ghi chú từ Admin/Manager">
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontStyle: 'italic' }}
+                                  >
+                                    {selectedTransaction.metadata.admin_note}
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                              {selectedTransaction.metadata.proof_s3_key && (
+                                <Descriptions.Item label="Biên lai chuyển khoản">
+                                  <Tag color="green">Đã tải lên</Tag>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: '12px', marginLeft: 8 }}
+                                  >
+                                    (Chỉ Admin/Manager có thể xem)
+                                  </Text>
+                                </Descriptions.Item>
+                              )}
+                            </>
+                          )}
                       </>
                     )}
                   </Descriptions>
@@ -1603,10 +1706,13 @@ const WalletContent = () => {
             setSelectedWithdrawalRequest(null);
           }}
           footer={[
-            <Button key="close" onClick={() => {
-              setWithdrawalDetailVisible(false);
-              setSelectedWithdrawalRequest(null);
-            }}>
+            <Button
+              key="close"
+              onClick={() => {
+                setWithdrawalDetailVisible(false);
+                setSelectedWithdrawalRequest(null);
+              }}
+            >
               Đóng
             </Button>,
           ]}
@@ -1617,12 +1723,19 @@ const WalletContent = () => {
               <Text code>{selectedWithdrawalRequest.withdrawalRequestId}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={WITHDRAWAL_STATUS_COLORS[selectedWithdrawalRequest.status]}>
-                {WITHDRAWAL_STATUS_LABELS[selectedWithdrawalRequest.status] || selectedWithdrawalRequest.status}
+              <Tag
+                color={
+                  WITHDRAWAL_STATUS_COLORS[selectedWithdrawalRequest.status]
+                }
+              >
+                {WITHDRAWAL_STATUS_LABELS[selectedWithdrawalRequest.status] ||
+                  selectedWithdrawalRequest.status}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Số tiền">
-              <Text strong>{formatPriceDisplay(selectedWithdrawalRequest.amount)}</Text>
+              <Text strong>
+                {formatPriceDisplay(selectedWithdrawalRequest.amount)}
+              </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Currency">
               <Tag>{selectedWithdrawalRequest.currency}</Tag>
@@ -1675,7 +1788,9 @@ const WalletContent = () => {
                 </Descriptions.Item>
                 {selectedWithdrawalRequest.paidAmount && (
                   <Descriptions.Item label="Paid Amount">
-                    <Text strong>{formatPriceDisplay(selectedWithdrawalRequest.paidAmount)}</Text>
+                    <Text strong>
+                      {formatPriceDisplay(selectedWithdrawalRequest.paidAmount)}
+                    </Text>
                   </Descriptions.Item>
                 )}
                 {selectedWithdrawalRequest.provider && (

@@ -103,7 +103,11 @@ export const getWithdrawalRequests = async (filters = {}) => {
     const response = await axiosInstance.get(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách withdrawal requests' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách withdrawal requests',
+      }
+    );
   }
 };
 
@@ -115,7 +119,10 @@ export const getWithdrawalRequests = async (filters = {}) => {
  * @param {string} adminNote - Ghi chú của admin (optional)
  * @returns {Promise} ApiResponse với WithdrawalRequestResponse
  */
-export const approveWithdrawal = async (withdrawalRequestId, adminNote = null) => {
+export const approveWithdrawal = async (
+  withdrawalRequestId,
+  adminNote = null
+) => {
   try {
     const params = new URLSearchParams();
     if (adminNote) params.append('adminNote', adminNote);
@@ -124,7 +131,9 @@ export const approveWithdrawal = async (withdrawalRequestId, adminNote = null) =
     const response = await axiosInstance.post(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi duyệt withdrawal request' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi duyệt withdrawal request' }
+    );
   }
 };
 
@@ -137,7 +146,11 @@ export const approveWithdrawal = async (withdrawalRequestId, adminNote = null) =
  * @param {string} adminNote - Ghi chú của admin (optional)
  * @returns {Promise} ApiResponse với WithdrawalRequestResponse
  */
-export const rejectWithdrawal = async (withdrawalRequestId, rejectionReason, adminNote = null) => {
+export const rejectWithdrawal = async (
+  withdrawalRequestId,
+  rejectionReason,
+  adminNote = null
+) => {
   try {
     const params = new URLSearchParams();
     params.append('rejectionReason', rejectionReason);
@@ -147,7 +160,9 @@ export const rejectWithdrawal = async (withdrawalRequestId, rejectionReason, adm
     const response = await axiosInstance.post(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi từ chối withdrawal request' };
+    throw (
+      error.response?.data || { message: 'Lỗi khi từ chối withdrawal request' }
+    );
   }
 };
 
@@ -167,7 +182,8 @@ export const rejectWithdrawal = async (withdrawalRequestId, rejectionReason, adm
 export const completeWithdrawal = async (withdrawalRequestId, data = {}) => {
   try {
     const formData = new FormData();
-    if (data.paidAmount !== undefined) formData.append('paidAmount', data.paidAmount);
+    if (data.paidAmount !== undefined)
+      formData.append('paidAmount', data.paidAmount);
     if (data.provider) formData.append('provider', data.provider);
     if (data.bankRef) formData.append('bankRef', data.bankRef);
     if (data.txnCode) formData.append('txnCode', data.txnCode);
@@ -205,7 +221,11 @@ export const failWithdrawal = async (withdrawalRequestId, failureReason) => {
     const response = await axiosInstance.post(url);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi đánh dấu withdrawal thất bại' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi đánh dấu withdrawal thất bại',
+      }
+    );
   }
 };
 
@@ -216,7 +236,7 @@ export const failWithdrawal = async (withdrawalRequestId, failureReason) => {
  * @param {string} withdrawalRequestId - ID của withdrawal request
  * @returns {Promise} Blob của file ảnh
  */
-export const downloadProofFile = async (withdrawalRequestId) => {
+export const downloadProofFile = async withdrawalRequestId => {
   try {
     const response = await axiosInstance.get(
       API_ENDPOINTS.ADMIN_WALLET.DOWNLOAD_PROOF(withdrawalRequestId),

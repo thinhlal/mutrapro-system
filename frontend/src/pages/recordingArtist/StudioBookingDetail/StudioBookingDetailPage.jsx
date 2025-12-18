@@ -73,7 +73,10 @@ const StudioBookingDetailPage = () => {
   }, [bookingId]);
 
   useEffect(() => {
-    const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+    const internalArtists =
+      booking?.participants?.filter(
+        p => p.performerSource === 'INTERNAL_ARTIST'
+      ) || [];
     if (internalArtists.length > 0) {
       loadArtistsInfo();
     }
@@ -109,7 +112,10 @@ const StudioBookingDetailPage = () => {
   const loadArtistsInfo = async () => {
     try {
       setLoadingArtists(true);
-      const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+      const internalArtists =
+        booking?.participants?.filter(
+          p => p.performerSource === 'INTERNAL_ARTIST'
+        ) || [];
       const artistIds = internalArtists
         .map(p => p.specialistId)
         .filter(Boolean);
@@ -166,7 +172,10 @@ const StudioBookingDetailPage = () => {
           const specialistResponse = await getSpecialistById(
             recordingTask.specialistId
           );
-          if (specialistResponse?.status === 'success' && specialistResponse?.data) {
+          if (
+            specialistResponse?.status === 'success' &&
+            specialistResponse?.data
+          ) {
             setSupervisor({
               ...recordingTask,
               specialistInfo: specialistResponse.data,
@@ -246,15 +255,24 @@ const StudioBookingDetailPage = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Context">
-              <Tag color={
-                booking.context === 'CONTRACT_RECORDING' ? 'blue' :
-                  booking.context === 'PRE_CONTRACT_HOLD' ? 'orange' :
-                    booking.context === 'STANDALONE_BOOKING' ? 'green' : 'default'
-              }>
-                {booking.context === 'CONTRACT_RECORDING' ? 'Contract Recording' :
-                  booking.context === 'PRE_CONTRACT_HOLD' ? 'Pre-Contract Hold' :
-                    booking.context === 'STANDALONE_BOOKING' ? 'Standalone Booking' :
-                      booking.context || 'N/A'}
+              <Tag
+                color={
+                  booking.context === 'CONTRACT_RECORDING'
+                    ? 'blue'
+                    : booking.context === 'PRE_CONTRACT_HOLD'
+                      ? 'orange'
+                      : booking.context === 'STANDALONE_BOOKING'
+                        ? 'green'
+                        : 'default'
+                }
+              >
+                {booking.context === 'CONTRACT_RECORDING'
+                  ? 'Contract Recording'
+                  : booking.context === 'PRE_CONTRACT_HOLD'
+                    ? 'Pre-Contract Hold'
+                    : booking.context === 'STANDALONE_BOOKING'
+                      ? 'Standalone Booking'
+                      : booking.context || 'N/A'}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày booking">
@@ -305,89 +323,126 @@ const StudioBookingDetailPage = () => {
           </Descriptions>
 
           {/* Artists Information (CONTRACT_RECORDING) */}
-          {(() => {
-            const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
-            return internalArtists.length > 0 && (
-              <div>
-                <Title level={4}>Artists (Contract Recording)</Title>
-                <Spin spinning={loadingArtists}>
-                  <Space
-                    direction="vertical"
-                    size="middle"
-                    style={{ width: '100%' }}
-                  >
-                    {internalArtists.map((participant, index) => {
-                      const specialistInfo = artistsInfo[participant.specialistId];
-                      return (
-                        <Card key={index} size="small">
-                          <Space
-                            direction="vertical"
-                            size="small"
-                            style={{ width: '100%' }}
-                          >
-                            <Space>
-                              <Avatar src={specialistInfo?.avatarUrl} size={40}>
-                                {specialistInfo?.fullNameSnapshot?.[0] || 'A'}
-                              </Avatar>
-                              <div>
+          {() => {
+            const internalArtists =
+              booking?.participants?.filter(
+                p => p.performerSource === 'INTERNAL_ARTIST'
+              ) || [];
+            return (
+              internalArtists.length > 0 && (
+                <div>
+                  <Title level={4}>Artists (Contract Recording)</Title>
+                  <Spin spinning={loadingArtists}>
+                    <Space
+                      direction="vertical"
+                      size="middle"
+                      style={{ width: '100%' }}
+                    >
+                      {internalArtists.map((participant, index) => {
+                        const specialistInfo =
+                          artistsInfo[participant.specialistId];
+                        return (
+                          <Card key={index} size="small">
+                            <Space
+                              direction="vertical"
+                              size="small"
+                              style={{ width: '100%' }}
+                            >
+                              <Space>
+                                <Avatar
+                                  src={specialistInfo?.avatarUrl}
+                                  size={40}
+                                >
+                                  {specialistInfo?.fullNameSnapshot?.[0] || 'A'}
+                                </Avatar>
                                 <div>
-                                  <Text strong>
-                                    {specialistInfo?.fullNameSnapshot || 'N/A'}
-                                  </Text>
+                                  <div>
+                                    <Text strong>
+                                      {specialistInfo?.fullNameSnapshot ||
+                                        'N/A'}
+                                    </Text>
+                                  </div>
+                                  <div>
+                                    <Text
+                                      type="secondary"
+                                      style={{ fontSize: '12px' }}
+                                    >
+                                      {specialistInfo?.emailSnapshot || 'N/A'}
+                                    </Text>
+                                  </div>
                                 </div>
-                                <div>
-                                  <Text
-                                    type="secondary"
-                                    style={{ fontSize: '12px' }}
-                                  >
-                                    {specialistInfo?.emailSnapshot || 'N/A'}
-                                  </Text>
-                                </div>
-                              </div>
+                              </Space>
+                              <Space>
+                                <Text type="secondary">Role:</Text>
+                                <Tag>{participant.roleType || 'N/A'}</Tag>
+                              </Space>
+                              {participant.isPrimary && (
+                                <Tag color="gold">Primary Artist</Tag>
+                              )}
+                              {participant.participantFee != null &&
+                                participant.participantFee > 0 && (
+                                  <div>
+                                    <Text type="secondary">Fee: </Text>
+                                    <Text strong>
+                                      {participant.participantFee.toLocaleString(
+                                        'vi-VN'
+                                      )}{' '}
+                                      ₫
+                                    </Text>
+                                  </div>
+                                )}
                             </Space>
-                            <Space>
-                              <Text type="secondary">Role:</Text>
-                              <Tag>{participant.roleType || 'N/A'}</Tag>
-                            </Space>
-                            {participant.isPrimary && (
-                              <Tag color="gold">Primary Artist</Tag>
-                            )}
-                            {participant.participantFee != null && participant.participantFee > 0 && (
-                              <div>
-                                <Text type="secondary">Fee: </Text>
-                                <Text strong>{participant.participantFee.toLocaleString('vi-VN')} ₫</Text>
-                              </div>
-                            )}
-                          </Space>
-                        </Card>
-                      );
-                    })}
-                  </Space>
-                </Spin>
-              </div>
-            )
-          }
-          )}
+                          </Card>
+                        );
+                      })}
+                    </Space>
+                  </Spin>
+                </div>
+              )
+            );
+          }}
           {/* Participants Information (PRE_CONTRACT_HOLD, STANDALONE_BOOKING) */}
           {booking.participants && booking.participants.length > 0 && (
             <div>
               <Title level={4}>👥 Participants</Title>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: '100%' }}
+              >
                 {booking.participants.map((participant, index) => (
                   <Card key={index} size="small">
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
                       <Space>
-                        <Text strong>{participant.specialistName || participant.specialistId || 'N/A'}</Text>
-                        {participant.isPrimary && <Tag color="gold">Primary</Tag>}
+                        <Text strong>
+                          {participant.specialistName ||
+                            participant.specialistId ||
+                            'N/A'}
+                        </Text>
+                        {participant.isPrimary && (
+                          <Tag color="gold">Primary</Tag>
+                        )}
                       </Space>
                       <Space wrap>
                         <div>
                           <Text type="secondary">Role: </Text>
-                          <Tag color="blue">{participant.roleType || 'N/A'}</Tag>
+                          <Tag color="blue">
+                            {participant.roleType || 'N/A'}
+                          </Tag>
                         </div>
                         <div>
                           <Text type="secondary">Source: </Text>
-                          <Tag color={participant.performerSource === 'INTERNAL_ARTIST' ? 'green' : 'orange'}>
+                          <Tag
+                            color={
+                              participant.performerSource === 'INTERNAL_ARTIST'
+                                ? 'green'
+                                : 'orange'
+                            }
+                          >
                             {participant.performerSource || 'N/A'}
                           </Tag>
                         </div>
@@ -398,17 +453,29 @@ const StudioBookingDetailPage = () => {
                           </div>
                         )}
                       </Space>
-                      {participant.participantFee != null && participant.participantFee > 0 && (
-                        <div>
-                          <Text type="secondary">Fee: </Text>
-                          <Text strong style={{ color: '#1890ff' }}>
-                            {participant.participantFee.toLocaleString('vi-VN')} ₫
-                          </Text>
-                          <Text type="secondary" style={{ marginLeft: 8, fontSize: '12px' }}>
-                            ({booking.durationHours}h × {(participant.participantFee / booking.durationHours).toLocaleString('vi-VN')} ₫/h)
-                          </Text>
-                        </div>
-                      )}
+                      {participant.participantFee != null &&
+                        participant.participantFee > 0 && (
+                          <div>
+                            <Text type="secondary">Fee: </Text>
+                            <Text strong style={{ color: '#1890ff' }}>
+                              {participant.participantFee.toLocaleString(
+                                'vi-VN'
+                              )}{' '}
+                              ₫
+                            </Text>
+                            <Text
+                              type="secondary"
+                              style={{ marginLeft: 8, fontSize: '12px' }}
+                            >
+                              ({booking.durationHours}h ×{' '}
+                              {(
+                                participant.participantFee /
+                                booking.durationHours
+                              ).toLocaleString('vi-VN')}{' '}
+                              ₫/h)
+                            </Text>
+                          </div>
+                        )}
                     </Space>
                   </Card>
                 ))}
@@ -417,52 +484,87 @@ const StudioBookingDetailPage = () => {
           )}
 
           {/* Required Equipment */}
-          {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
-            <div>
-              <Title level={4}>🎸 Required Equipment</Title>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                {booking.requiredEquipment.map((equipment, index) => (
-                  <Card key={index} size="small">
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <Text strong>{equipment.equipmentName || equipment.equipmentId || 'N/A'}</Text>
-                      <Space wrap>
-                        <div>
-                          <Text type="secondary">Quantity: </Text>
-                          <Tag color="cyan">{equipment.quantity || 1}</Tag>
-                        </div>
-                        {equipment.rentalFeePerUnit != null && (
+          {booking.requiredEquipment &&
+            booking.requiredEquipment.length > 0 && (
+              <div>
+                <Title level={4}>🎸 Required Equipment</Title>
+                <Space
+                  direction="vertical"
+                  size="middle"
+                  style={{ width: '100%' }}
+                >
+                  {booking.requiredEquipment.map((equipment, index) => (
+                    <Card key={index} size="small">
+                      <Space
+                        direction="vertical"
+                        size="small"
+                        style={{ width: '100%' }}
+                      >
+                        <Text strong>
+                          {equipment.equipmentName ||
+                            equipment.equipmentId ||
+                            'N/A'}
+                        </Text>
+                        <Space wrap>
                           <div>
-                            <Text type="secondary">Fee/Unit: </Text>
-                            <Text>{equipment.rentalFeePerUnit.toLocaleString('vi-VN')} ₫/h</Text>
+                            <Text type="secondary">Quantity: </Text>
+                            <Tag color="cyan">{equipment.quantity || 1}</Tag>
                           </div>
-                        )}
+                          {equipment.rentalFeePerUnit != null && (
+                            <div>
+                              <Text type="secondary">Fee/Unit: </Text>
+                              <Text>
+                                {equipment.rentalFeePerUnit.toLocaleString(
+                                  'vi-VN'
+                                )}{' '}
+                                ₫/h
+                              </Text>
+                            </div>
+                          )}
+                        </Space>
+                        {equipment.totalRentalFee != null &&
+                          equipment.totalRentalFee > 0 && (
+                            <div>
+                              <Text type="secondary">Total Fee: </Text>
+                              <Text strong style={{ color: '#1890ff' }}>
+                                {equipment.totalRentalFee.toLocaleString(
+                                  'vi-VN'
+                                )}{' '}
+                                ₫
+                              </Text>
+                              <Text
+                                type="secondary"
+                                style={{ marginLeft: 8, fontSize: '12px' }}
+                              >
+                                ({equipment.quantity} × {booking.durationHours}h
+                                ×{' '}
+                                {equipment.rentalFeePerUnit.toLocaleString(
+                                  'vi-VN'
+                                )}{' '}
+                                ₫/h)
+                              </Text>
+                            </div>
+                          )}
                       </Space>
-                      {equipment.totalRentalFee != null && equipment.totalRentalFee > 0 && (
-                        <div>
-                          <Text type="secondary">Total Fee: </Text>
-                          <Text strong style={{ color: '#1890ff' }}>
-                            {equipment.totalRentalFee.toLocaleString('vi-VN')} ₫
-                          </Text>
-                          <Text type="secondary" style={{ marginLeft: 8, fontSize: '12px' }}>
-                            ({equipment.quantity} × {booking.durationHours}h × {equipment.rentalFeePerUnit.toLocaleString('vi-VN')} ₫/h)
-                          </Text>
-                        </div>
-                      )}
-                    </Space>
-                  </Card>
-                ))}
-              </Space>
-            </div>
-          )}
+                    </Card>
+                  ))}
+                </Space>
+              </div>
+            )}
 
           {/* Recording Supervisor (cho recording bookings) */}
-          {(booking?.context === 'PRE_CONTRACT_HOLD' || booking?.context === 'CONTRACT_RECORDING') && (
+          {(booking?.context === 'PRE_CONTRACT_HOLD' ||
+            booking?.context === 'CONTRACT_RECORDING') && (
             <div>
               <Title level={4}>🎙️ Recording Supervisor</Title>
               <Spin spinning={loadingSupervisor}>
                 {supervisor ? (
                   <Card size="small">
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
                       <Space>
                         <Avatar
                           src={supervisor.specialistInfo?.avatarUrl}
@@ -472,12 +574,14 @@ const StudioBookingDetailPage = () => {
                         <div>
                           <div>
                             <Text strong style={{ fontSize: '16px' }}>
-                              {supervisor.specialistInfo?.fullNameSnapshot || 'N/A'}
+                              {supervisor.specialistInfo?.fullNameSnapshot ||
+                                'N/A'}
                             </Text>
                           </div>
                           <div>
                             <Text type="secondary" style={{ fontSize: '12px' }}>
-                              {supervisor.specialistInfo?.emailSnapshot || 'N/A'}
+                              {supervisor.specialistInfo?.emailSnapshot ||
+                                'N/A'}
                             </Text>
                           </div>
                         </div>
@@ -485,19 +589,28 @@ const StudioBookingDetailPage = () => {
                       <Space wrap>
                         <div>
                           <Text type="secondary">Task Status: </Text>
-                          <Tag color={
-                            supervisor.status === 'completed' ? 'success' :
-                              supervisor.status === 'in_progress' ? 'processing' :
-                                supervisor.status === 'ready_to_start' ? 'blue' :
-                                  'default'
-                          }>
+                          <Tag
+                            color={
+                              supervisor.status === 'completed'
+                                ? 'success'
+                                : supervisor.status === 'in_progress'
+                                  ? 'processing'
+                                  : supervisor.status === 'ready_to_start'
+                                    ? 'blue'
+                                    : 'default'
+                            }
+                          >
                             {supervisor.status?.toUpperCase().replace('_', ' ')}
                           </Tag>
                         </div>
                         {supervisor.plannedStartAt && (
                           <div>
                             <Text type="secondary">Planned Start: </Text>
-                            <Text>{dayjs(supervisor.plannedStartAt).format('DD/MM/YYYY HH:mm')}</Text>
+                            <Text>
+                              {dayjs(supervisor.plannedStartAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
+                            </Text>
                           </div>
                         )}
                       </Space>
@@ -526,14 +639,20 @@ const StudioBookingDetailPage = () => {
                       borderRadius: 4,
                     }}
                   >
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
                       {requestFiles.map((file, idx) => (
                         <Button
                           key={idx}
                           type="link"
                           size="small"
                           icon={<FileOutlined />}
-                          onClick={() => downloadFileHelper(file.fileId, file.fileName)}
+                          onClick={() =>
+                            downloadFileHelper(file.fileId, file.fileName)
+                          }
                           style={{ padding: 0, height: 'auto' }}
                         >
                           {file.fileName}

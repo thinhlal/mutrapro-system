@@ -170,13 +170,16 @@ const ContractDetailPage = () => {
         setBookingData(null);
         return;
       }
-      
+
       try {
         setLoadingBooking(true);
         const response = await getBookingByRequestId(contract.requestId);
         if (response?.status === 'success' && response.data) {
           setBookingData(response.data);
-          console.log('Loaded booking data for recording contract:', response.data);
+          console.log(
+            'Loaded booking data for recording contract:',
+            response.data
+          );
         }
       } catch (error) {
         console.error('Error loading booking:', error);
@@ -2282,22 +2285,33 @@ const ContractDetailPage = () => {
                                   strong
                                   style={{ fontSize: 16, color: '#1890ff' }}
                                 >
-                                  {(targetInstallment.paidAmount ?? targetInstallment.amount)?.toLocaleString()}{' '}
+                                  {(
+                                    targetInstallment.paidAmount ??
+                                    targetInstallment.amount
+                                  )?.toLocaleString()}{' '}
                                   {targetInstallment.currency ||
                                     contract?.currency ||
                                     'VND'}
                                 </Text>
                                 {targetInstallment?.paidAmount != null &&
-                                  targetInstallment?.lateDiscountAmount != null &&
-                                  Number(targetInstallment.lateDiscountAmount) > 0 && (
+                                  targetInstallment?.lateDiscountAmount !=
+                                    null &&
+                                  Number(targetInstallment.lateDiscountAmount) >
+                                    0 && (
                                     <div style={{ marginTop: 4 }}>
-                                      <Text type="danger" style={{ fontSize: 12 }}>
+                                      <Text
+                                        type="danger"
+                                        style={{ fontSize: 12 }}
+                                      >
                                         Late discount: -
-                                        {Number(targetInstallment.lateDiscountAmount).toLocaleString()}{' '}
+                                        {Number(
+                                          targetInstallment.lateDiscountAmount
+                                        ).toLocaleString()}{' '}
                                         {targetInstallment.currency ||
                                           contract?.currency ||
                                           'VND'}
-                                        {targetInstallment.lateDiscountPercent != null
+                                        {targetInstallment.lateDiscountPercent !=
+                                        null
                                           ? ` (${targetInstallment.lateDiscountPercent}%)`
                                           : ''}
                                       </Text>
@@ -2618,10 +2632,10 @@ const ContractDetailPage = () => {
                                 .join(', ')}
                             </p>
                           )}
+                      </>
+                    )}
                   </>
                 )}
-              </>
-            )}
 
               {/* Studio Booking Information for Recording */}
               {contract?.contractType === 'recording' && bookingData && (
@@ -2781,37 +2795,39 @@ const ContractDetailPage = () => {
                                 Recording Participants:
                               </td>
                             </tr>
-                            {bookingData.participants.map((participant, index) => (
-                              <tr key={`participant-${index}`}>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  • {participant.specialistName || 'Unnamed'}{' '}
-                                  ({participant.roleType}) -{' '}
-                                  {participant.participantFee?.toLocaleString()} VND/giờ
-                                  × {bookingData.durationHours} giờ
-                                </td>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  {(
-                                    (participant.participantFee || 0) *
-                                    (bookingData.durationHours || 1)
-                                  ).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
+                            {bookingData.participants.map(
+                              (participant, index) => (
+                                <tr key={`participant-${index}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    • {participant.specialistName || 'Unnamed'}{' '}
+                                    ({participant.roleType}) -{' '}
+                                    {participant.participantFee?.toLocaleString()}{' '}
+                                    VND/giờ × {bookingData.durationHours} giờ
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {(
+                                      (participant.participantFee || 0) *
+                                      (bookingData.durationHours || 1)
+                                    ).toLocaleString()}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                             <tr>
                               <td
                                 style={{
@@ -2864,38 +2880,40 @@ const ContractDetailPage = () => {
                                 Studio Equipment Rental:
                               </td>
                             </tr>
-                            {bookingData.requiredEquipment.map((equipment, index) => (
-                              <tr key={`equipment-${index}`}>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  • {equipment.equipmentName || 'Unnamed'} ×{' '}
-                                  {equipment.quantity} -{' '}
-                                  {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
-                                  VND/giờ × {bookingData.durationHours} giờ
-                                </td>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  {(
-                                    (equipment.rentalFeePerUnit || 0) *
-                                    (equipment.quantity || 1) *
-                                    (bookingData.durationHours || 1)
-                                  ).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
+                            {bookingData.requiredEquipment.map(
+                              (equipment, index) => (
+                                <tr key={`equipment-${index}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    • {equipment.equipmentName || 'Unnamed'} ×{' '}
+                                    {equipment.quantity} -{' '}
+                                    {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
+                                    VND/giờ × {bookingData.durationHours} giờ
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {(
+                                      (equipment.rentalFeePerUnit || 0) *
+                                      (equipment.quantity || 1) *
+                                      (bookingData.durationHours || 1)
+                                    ).toLocaleString()}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                             <tr>
                               <td
                                 style={{
@@ -3490,4 +3508,3 @@ const ContractDetailPage = () => {
 };
 
 export default ContractDetailPage;
-

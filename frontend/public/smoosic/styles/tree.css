@@ -15,7 +15,7 @@ ul.tree {
 }
 
 ul.tree ul {
-  margin-left: 1.0em;
+  margin-left: 1em;
 }
 
 ul.tree li {
@@ -23,7 +23,7 @@ ul.tree li {
   border-left: thin solid #000;
   color: #369;
   font-weight: bold;
-  line-height:1.5em;
+  line-height: 1.5em;
 }
 
 ul.tree li:last-child {
@@ -39,7 +39,7 @@ ul.tree li:before {
   margin-right: 0.1em;
   vertical-align: top;
   border-bottom: thin solid #000;
-  content: "";
+  content: '';
   display: inline-block;
 }
 ul.tree li {
@@ -48,15 +48,15 @@ ul.tree li {
 }
 
 ul.tree span.file-type {
-  margin-left:8px;
+  margin-left: 8px;
 }
 
 ul.tree li:last-child:before {
   border-left: thin solid #000;
 }
 
-ul.tree li.selected>a {
-  background: #CDFEAA;
+ul.tree li.selected > a {
+  background: #cdfeaa;
 }
 
 li.collapsed ul {
@@ -64,11 +64,11 @@ li.collapsed ul {
 }
 a:focus {
   border-bottom: 1px solid;
-  background: #BAE498;
+  background: #bae498;
 }
 
 a:hover {
-  background: #AAFE9E;
+  background: #aafe9e;
 }
 
 ul.tree button.expander {
@@ -78,6 +78,7 @@ ul.tree button.expander {
   height: 20px;
 }
 
-ul.tree button.expander.expanded, ul.tree button.expander.collapsed {
+ul.tree button.expander.expanded,
+ul.tree button.expander.collapsed {
   display: inline-block;
 }

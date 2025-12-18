@@ -381,7 +381,8 @@ const MilestoneDetailPage = () => {
 
       // ⚠️ QUAN TRỌNG: Arrangement milestone cuối cùng phải đã thanh toán (actualEndAt != null)
       // Backend yêu cầu actualEndAt phải có trước khi cho phép tạo booking
-      const lastArrangementMilestone = arrangementMilestones[arrangementMilestones.length - 1];
+      const lastArrangementMilestone =
+        arrangementMilestones[arrangementMilestones.length - 1];
       if (!lastArrangementMilestone.actualEndAt) {
         return false; // Arrangement milestones chưa thanh toán, chưa thể tạo booking
       }
@@ -722,16 +723,22 @@ const MilestoneDetailPage = () => {
                           {/* SLA status tags */}
                           <div style={{ marginTop: 4 }}>
                             {(() => {
-                              const hasFirstSubmission = !!milestone.firstSubmissionAt;
-                              const isFirstSubmissionLate = milestone.firstSubmissionLate === true;
+                              const hasFirstSubmission =
+                                !!milestone.firstSubmissionAt;
+                              const isFirstSubmissionLate =
+                                milestone.firstSubmissionLate === true;
                               const isFirstSubmissionOnTime =
-                                hasFirstSubmission && milestone.firstSubmissionLate === false;
+                                hasFirstSubmission &&
+                                milestone.firstSubmissionLate === false;
                               const overdueNow = milestone.overdueNow;
                               const isCompleted =
-                                milestone.workStatus?.toLowerCase() === 'completed';
+                                milestone.workStatus?.toLowerCase() ===
+                                'completed';
                               const isPendingReview =
-                                milestone.workStatus?.toLowerCase() === 'ready_for_payment';
-                              const shouldHideOverdueWarning = hasFirstSubmission || isPendingReview;
+                                milestone.workStatus?.toLowerCase() ===
+                                'ready_for_payment';
+                              const shouldHideOverdueWarning =
+                                hasFirstSubmission || isPendingReview;
                               const isOverdue =
                                 !shouldHideOverdueWarning &&
                                 overdueNow === true &&
@@ -744,7 +751,9 @@ const MilestoneDetailPage = () => {
                                     <Tag color="red">Nộp trễ (bản đầu)</Tag>
                                   )}
                                   {isFirstSubmissionOnTime && (
-                                    <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                                    <Tag color="green">
+                                      Nộp đúng hạn (bản đầu)
+                                    </Tag>
                                   )}
                                 </>
                               );

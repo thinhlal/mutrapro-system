@@ -7,7 +7,8 @@ const getKlangBaseUrl = () => {
     return '/klang-api';
   } else {
     // Production: use full URL to API Gateway
-    const apiBaseUrl = import.meta.env.VITE_API_BACK_END_ENDPOINT || 'https://api.mutrapro.top';
+    const apiBaseUrl =
+      import.meta.env.VITE_API_BACK_END_ENDPOINT || 'https://api.mutrapro.top';
     return `${apiBaseUrl}/klang-api`;
   }
 };

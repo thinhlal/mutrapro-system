@@ -1,34 +1,44 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-		<meta charset="utf-8">
-		<title>Smoosic Editor</title>
-		<link href="../styles/fonts.css" rel="stylesheet">
-        <link href="../styles/media.css" rel="stylesheet">
-        <link href="../styles/ribbon.css" rel="stylesheet">
-        <link href="../styles/dialogs.css" rel="stylesheet">
-        <link href="../styles/menus.css" rel="stylesheet">
-        <link href="../styles/piano.css" rel="stylesheet">
-        <link href="../styles/tree.css" rel="stylesheet">
-        <script type="text/javascript" src="https://smoosic.github.io/vexflow_smoosic/releases/vexflow-debug.js"></script>
-        <!-- script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js" integrity="sha512-uVSVjE7zYsGz4ag0HEzfugJ78oHCI1KhdkivjQro8ABL/PRiEO4ROwvrolYAcZnky0Fl/baWKYilQfWvESliRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script -->
-        <!-- script type="text/javascript" src="../../../vex_smoosic/vexflow_smoosic/build/vexflow-debug.js"></script -->
-        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.slim.js" ></script>
-        <script type="text/javascript" src="../jszip.js"></script>
-		<script type="text/javascript" src="../smoosic.js" ></script>
+  <head>
+    <meta charset="utf-8" />
+    <title>Smoosic Editor</title>
+    <link href="../styles/fonts.css" rel="stylesheet" />
+    <link href="../styles/media.css" rel="stylesheet" />
+    <link href="../styles/ribbon.css" rel="stylesheet" />
+    <link href="../styles/dialogs.css" rel="stylesheet" />
+    <link href="../styles/menus.css" rel="stylesheet" />
+    <link href="../styles/piano.css" rel="stylesheet" />
+    <link href="../styles/tree.css" rel="stylesheet" />
+    <script
+      type="text/javascript"
+      src="https://smoosic.github.io/vexflow_smoosic/releases/vexflow-debug.js"
+    ></script>
+    <!-- script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js" integrity="sha512-uVSVjE7zYsGz4ag0HEzfugJ78oHCI1KhdkivjQro8ABL/PRiEO4ROwvrolYAcZnky0Fl/baWKYilQfWvESliRA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script -->
+    <!-- script type="text/javascript" src="../../../vex_smoosic/vexflow_smoosic/build/vexflow-debug.js"></script -->
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.3.1.slim.js"
+    ></script>
+    <script type="text/javascript" src="../jszip.js"></script>
+    <script type="text/javascript" src="../smoosic.js"></script>
     <script type="text/javascript">
-           document.addEventListener("DOMContentLoaded", function (event) {
-               var config = { smoPath: '..', mode: 'translate', language: 'de', scoreDomContainer: 'smoo' };
-               Smo.SuiApplication.configure(config);
-           });
-       </script>
-</head>
-<body>
-  <!-- <sub id="link-hdr"><a href="https://github.com/Smoosic/smoosic">Github site</a> | 
+      document.addEventListener('DOMContentLoaded', function (event) {
+        var config = {
+          smoPath: '..',
+          mode: 'translate',
+          language: 'de',
+          scoreDomContainer: 'smoo',
+        };
+        Smo.SuiApplication.configure(config);
+      });
+    </script>
+  </head>
+  <body>
+    <!-- <sub id="link-hdr"><a href="https://github.com/Smoosic/smoosic">Github site</a> | 
     <a href="https://smoosic.github.io/Smoosic/changes.md">change notes</a> |
      <a href="https://smoosic.github.io/Smoosic/release/html/smoosic.html">application</a><button class="close-header"><span class="icon icon-cross"></span></button>
     </sub> -->
-<div id="smoo"> 
-</div>
-</body>
+    <div id="smoo"></div>
+  </body>
 </html>

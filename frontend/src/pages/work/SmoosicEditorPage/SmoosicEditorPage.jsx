@@ -15,7 +15,8 @@ const SmoosicEditorPage = () => {
 
     const handleLoad = () => {
       try {
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        const iframeDoc =
+          iframe.contentDocument || iframe.contentWindow?.document;
         if (iframeDoc) {
           // Add theme CSS link
           const themeLink = iframeDoc.createElement('link');
@@ -28,7 +29,9 @@ const SmoosicEditorPage = () => {
         }
       } catch (e) {
         // Cross-origin restriction - theme CSS already linked in index.html
-        console.log('Smoosic iframe loaded (same-origin styling applied via index.html)');
+        console.log(
+          'Smoosic iframe loaded (same-origin styling applied via index.html)'
+        );
       }
     };
 

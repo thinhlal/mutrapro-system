@@ -1,58 +1,59 @@
-
-
 .control-bar {
-  display:flex;
-  flex:1 1 auto;
+  display: flex;
+  flex: 1 1 auto;
 }
 .controls-top {
-	min-height:50px;
-	margin-bottom:3px;
-	background-color: #fff;
-	background:transparent;
-	display:flex;
+  min-height: 50px;
+  margin-bottom: 3px;
+  background-color: #fff;
+  background: transparent;
+  display: flex;
   flex: 1 1 auto;
-	flex-flow:row wrap;
-  justify-content:left;
-  align-content:center;
+  flex-flow: row wrap;
+  justify-content: left;
+  align-content: center;
 }
 
 .control-bar .titleText {
-  display:flex;
+  display: flex;
   color: #fff !important;
-  flex:60px;
-  justify-content:center;
-  align-self:center;
+  flex: 60px;
+  justify-content: center;
+  align-self: center;
 }
 
-@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
 
 body.refresh-1 #refresh span.icon {
   animation: spin 4s linear infinite;
 }
 
-body.refresh-1 #refresh  {
+body.refresh-1 #refresh {
   background: #deeedd;
 }
 
-.ribbonButtonContainer[data-group="debug"] {
-    display:none;
+.ribbonButtonContainer[data-group='debug'] {
+  display: none;
 }
 
 .ribbonButtonContainer button.expander span.left-text .text-span {
-    font-size:1.6em;
-    left:18%;
+  font-size: 1.6em;
+  left: 18%;
 }
-
-
 
 .ribbonButtonContainer.expanded-more button.expander span.left-text .text-span {
-    display:none;
+  display: none;
 }
 .ribbonButtonContainer button.expander span.icon-circle-left {
-    display:none;
+  display: none;
 }
 .collapseContainer.expanded-more button.expander span.icon-circle-left {
-    display:block;
+  display: block;
 }
 
 .collapseContainer button.collapseParent {
@@ -60,35 +61,34 @@ body.refresh-1 #refresh  {
 }
 
 div.ribbonButtonContainer.expanded {
-	margin-right:5px;
+  margin-right: 5px;
 }
 
 .controls-left {
-	margin-top: 33px;
-	background-color: #fff;
-	background:transparent;
-	display:flex;
+  margin-top: 33px;
+  background-color: #fff;
+  background: transparent;
+  display: flex;
   flex: 1 1 auto;
-	flex-direction:column;
-  padding:10px;
+  flex-direction: column;
+  padding: 10px;
 }
 
-
 .controls-left .ribbonButtonContainer {
-  display:flex;
+  display: flex;
 }
 
 .controls-left div.ribbonButtonContainer button {
-  display:flex;
+  display: flex;
   flex: 1 1 0;
   max-width: 160px;
   height: 25px;
-	padding-left: 3px;
-	font-family:serif;
-	font-size:1em;
+  padding-left: 3px;
+  font-family: serif;
+  font-size: 1em;
   border-radius: 5px;
-  border:1px solid #33f;
-  padding-top:2px;
+  border: 1px solid #33f;
+  padding-top: 2px;
 }
 
 #noteMenu span.icon {
@@ -96,7 +96,7 @@ div.ribbonButtonContainer.expanded {
   float: right;
 }
 .controls-left button span.left-text {
-  flex:1 1 auto;
+  flex: 1 1 auto;
 }
 
 .controls-left .ribbonButtonContainer button span.ribbon-button-hotkey {
@@ -104,19 +104,19 @@ div.ribbonButtonContainer.expanded {
   padding: 0 10px;
 }
 
-.controls-left button,.controls-top button {
-	background-color:#fff;
+.controls-left button,
+.controls-top button {
+  background-color: #fff;
 }
 
-.controls-top button
- {
-	padding: 5px 0;
-	border: 1px #44e solid;
-	position:relative;
+.controls-top button {
+  padding: 5px 0;
+  border: 1px #44e solid;
+  position: relative;
   font-size: 0.7em;
-  border-radius:5px;
-	min-width: 50px;
-	height:50px;
+  border-radius: 5px;
+  min-width: 50px;
+  height: 50px;
 }
 .controls-top button.button-wide {
   font-size: 1em;
@@ -130,7 +130,7 @@ button.hover-text .ribbon-button-hotkey {
 #controls-left .nav-item {
   min-width: 150px;
 }
-button.hover-text:hover .ribbon-button-text.icon, 
+button.hover-text:hover .ribbon-button-text.icon,
 body.alt-key button.hover-text .ribbon-button-text.icon {
   display: none;
 }
@@ -140,20 +140,22 @@ body.alt-key button.hover-text .ribbon-button-hotkey {
 }
 
 .controls-top div {
-	display:inline-block;
+  display: inline-block;
 }
 
-.controls-left  button:hover,controls-left button:focus,
-.controls-top  button:hover,controls-left button:focus{
-	border:2px blue solid;
-	border-radius:3px;
-	opacity:0.7;
+.controls-left button:hover,
+controls-left button:focus,
+.controls-top button:hover,
+controls-left button:focus {
+  border: 2px blue solid;
+  border-radius: 3px;
+  opacity: 0.7;
 }
 
 .controls-top .text-span {
-	position:absolute;
-	top: 30%;
-	left: 10px;
+  position: absolute;
+  top: 30%;
+  left: 10px;
 }
 .controls-top .ribbonButtonContainer .text-span .icon-bravura {
   display: block;
@@ -166,84 +168,96 @@ body.alt-key button.hover-text .ribbon-button-hotkey {
   font-family: sans-serif;
 }
 .controls-top button.beams .ribbon-button-hotkey {
-    font-size:0.6em;
+  font-size: 0.6em;
 }
 
 .controls-top button.textButton {
-    font-size:1.2em;
+  font-size: 1.2em;
 }
 
-.controls-top button.duration.expanded.tuplet span.ribbon-button-hotkey  {
-	font-size:1em;
+.controls-top button.duration.expanded.tuplet span.ribbon-button-hotkey {
+  font-size: 1em;
   padding-left: 7px;
 }
 .controls-top button.duration.expanded span.ribbon-button-text.icon {
-	font-size:2.2em;
-	top:25%;
+  font-size: 2.2em;
+  top: 25%;
 }
 
 .controls-top button.duration span.ribbon-button-text,
 .controls-top button.repetext span.ribbon-button-text {
-	font-size:1.6em;
+  font-size: 1.6em;
 }
 
 .controls-top button.repetext {
-	font-style:italic;
+  font-style: italic;
 }
 .controls-top button.duration span.ribbon-button-hotkey {
-	font-size:1.6em;
+  font-size: 1.6em;
 }
 
 button.addChord .left-text .icon {
-	left:2em;
+  left: 2em;
 }
 
-.ribbonButtonContainer button.player{
-    width:55px;
+.ribbonButtonContainer button.player {
+  width: 55px;
 }
 
 .controls-top .ribbonButtonContainer button.player span.ribbon-button-text {
-    top:25%;
+  top: 25%;
 }
 #controls-left .text-span {
   margin-right: 10px;
 }
-button#MicrotoneButtons  {
-    width:35px;
+button#MicrotoneButtons {
+  width: 35px;
 }
 
 .hide {
-    display:none;
+  display: none;
 }
 
-.ribbonButtonContainer[data-group="quickButtons"] {
-    margin-left:10px;
+.ribbonButtonContainer[data-group='quickButtons'] {
+  margin-left: 10px;
 }
-.ribbonButtonContainer[data-group="quickButtons"] button {
-    width:35px;
-    height:40px;
+.ribbonButtonContainer[data-group='quickButtons'] button {
+  width: 35px;
+  height: 40px;
 }
-.ribbonButtonContainer[data-group="quickButtons"] .button-wide button {
+.ribbonButtonContainer[data-group='quickButtons'] .button-wide button {
   font-size: 1.2em;
 }
-.ribbonButtonContainer[data-group="quickButtons"] .button-wide button .icon {
+.ribbonButtonContainer[data-group='quickButtons'] .button-wide button .icon {
   font-size: 2em;
 }
 .controls-top .ribbonButtonContainer .ribbon-button-text.icon-smo.icon {
   position: absolute;
-  top:8px;
-  left:12px;
+  top: 8px;
+  left: 12px;
 }
-.controls-top .ribbonButtonContainer .button-wide .ribbon-button-text.icon-smo.icon, 
-.controls-top .ribbonButtonContainer .button-wide .ribbon-button-text.icon-bravura.icon {
+.controls-top
+  .ribbonButtonContainer
+  .button-wide
+  .ribbon-button-text.icon-smo.icon,
+.controls-top
+  .ribbonButtonContainer
+  .button-wide
+  .ribbon-button-text.icon-bravura.icon {
   right: 5px;
-  left:inherit;
-  bottom:inherit;
+  left: inherit;
+  bottom: inherit;
 }
-.controls-top .ribbonButtonContainer .button-wide .ribbon-button-text.icon-bravura.icon {
+.controls-top
+  .ribbonButtonContainer
+  .button-wide
+  .ribbon-button-text.icon-bravura.icon {
   top: 0;
 }
-.controls-top .ribbonButtonContainer .button-wide .ribbon-button-text.icon-smo.icon {
+.controls-top
+  .ribbonButtonContainer
+  .button-wide
+  .ribbon-button-text.icon-smo.icon {
   top: 5px;
 }
 .controls-top .ribbonButtonContainer .left-text {
@@ -258,26 +272,26 @@ button#MicrotoneButtons  {
 }
 
 .controls-top button.articulation {
-	width:50px;
+  width: 50px;
 }
 
 .controls-top button.articulation span.ribbon-button-text.icon {
-	top:30%;
+  top: 30%;
 }
 
 .controls-top button.selection-icon span.ribbon-button-text.icon {
-	top:30%;
-	left: 20%;
+  top: 30%;
+  left: 20%;
 }
 
 .controls-top button.articulation span.ribbon-button-text.icon:before {
-	font-size:1.8em;
+  font-size: 1.8em;
 }
 .controls-top button.selection-icon {
-	width:50px;
+  width: 50px;
 }
 .controls-top button.selection-icon span.ribbon-button-text.icon:before {
-	font-size: 2.2em;
+  font-size: 2.2em;
 }
 .ribbon-button-hotkey {
   display: none;
@@ -285,203 +299,212 @@ button#MicrotoneButtons  {
 button.select-part-button .ribbon-button-hotkey {
   display: inline-block;
 }
-.ribbonButtonContainer[data-group="quickButtons"] button.button-wide {
-  width:100px;
+.ribbonButtonContainer[data-group='quickButtons'] button.button-wide {
+  width: 100px;
 }
-.controls-top .ribbonButtonContainer[data-group="quickButtons"] .select-part-button {
+.controls-top
+  .ribbonButtonContainer[data-group='quickButtons']
+  .select-part-button {
   width: 120px;
 }
-.controls-top .ribbonButtonContainer[data-group="quickButtons"] .select-part-button .ribbon-button-text {
+.controls-top
+  .ribbonButtonContainer[data-group='quickButtons']
+  .select-part-button
+  .ribbon-button-text {
   position: absolute;
   left: 5px;
 }
-.controls-top .ribbonButtonContainer[data-group="quickButtons"] .select-part-button .ribbon-button-hotkey {
+.controls-top
+  .ribbonButtonContainer[data-group='quickButtons']
+  .select-part-button
+  .ribbon-button-hotkey {
   right: 15px;
 }
-.ribbonButtonContainer[data-group="microtone"] {
-    font-size:1.5em;
+.ribbonButtonContainer[data-group='microtone'] {
+  font-size: 1.5em;
 }
 #addDynamicsMenu {
-	font-size:.9em;
+  font-size: 0.9em;
 }
 #addDynamicsMenu .left-text {
-	left:0;
-	top:20%;
+  left: 0;
+  top: 20%;
 }
 #TextButtons {
-    font-size:1.2em;
+  font-size: 1.2em;
 }
 
-#TextButtons .ribbon-button-text{
-    top:15%;
-    left:18%;
+#TextButtons .ribbon-button-text {
+  top: 15%;
+  left: 18%;
 }
 
 #lyrics {
-    width:65px;
+  width: 65px;
 }
 
 #fermataButton .icon {
-    left:20%;
-    font-size:1.4em;
+  left: 20%;
+  font-size: 1.4em;
 }
 
 #clefAddRemove .icon {
-    font-size:0.7em;
-    top:18%;
+  font-size: 0.7em;
+  top: 18%;
 }
 
 .controls-top .collapseContainer .ribbonButtonContainerMore {
-    display:none;
+  display: none;
 }
 
 .controls-top div.collapseContainer.expanded-more .ribbonButtonContainerMore {
-    display:inline-block;
+  display: inline-block;
 }
 
 .ribbonButtonContainer .icon.staves.expanded {
-    width:55px;
-    font-size:1.6em;
+  width: 55px;
+  font-size: 1.6em;
 }
 
 .ribbonButtonContainer .icon.staves.expanded .left-text span.icon {
-    left:20%;
+  left: 20%;
 }
 
-.ribbonButtonContainer .icon.staves.expanded .left-text span.icon.icon-treble  {
-    left:25%;
+.ribbonButtonContainer .icon.staves.expanded .left-text span.icon.icon-treble {
+  left: 25%;
 }
 
-#clefMoveUp .icon,#clefMoveDown .icon{
-    font-size:0.7em;
-    top:18%;
+#clefMoveUp .icon,
+#clefMoveDown .icon {
+  font-size: 0.7em;
+  top: 18%;
 }
 
 #StaveButtons span.icon {
-    font-size:1.6em;
-    top:0;
-    left:20%;
+  font-size: 1.6em;
+  top: 0;
+  left: 20%;
 }
 
-#articulationButtons  .icon-articulation{
-	left:30%;
+#articulationButtons .icon-articulation {
+  left: 30%;
 }
 #ArticulationButtons .icon-articulation:before {
-	font-size:2.4em;
+  font-size: 2.4em;
 }
 
-.controls-top button.duration,.controls-top button.measure,
-.controls-top button.repetext,.controls-top button.textButton,
-.controls-top button.beams
- {
-	width:55px;
+.controls-top button.duration,
+.controls-top button.measure,
+.controls-top button.repetext,
+.controls-top button.textButton,
+.controls-top button.beams {
+  width: 55px;
 }
 
 .controls-top button.beams {
-    font-size:1.2em;
+  font-size: 1.2em;
 }
 
 #toggleBeamDirection {
-    width:75px;
+  width: 75px;
 }
 
 #beamSelections {
-    width:115px;
+  width: 115px;
 }
 
 #toggleBeamDirection .left-text,
 #beamSelections .left-text,
 #breakBeam .left-text {
-    font-size: 1.6em;
-    position: absolute;
-    top: 20%;
-    left: 0;
+  font-size: 1.6em;
+  position: absolute;
+  top: 20%;
+  left: 0;
 }
 
-[data-group="voices"] .expanded .icon {
-    font-size:1.7em;
+[data-group='voices'] .expanded .icon {
+  font-size: 1.7em;
 }
 
 .v1-active #V1Button {
-    background-color:green;
+  background-color: green;
 }
 .v2-active #V2Button {
-    background-color:green;
+  background-color: green;
 }
 .v3-active #V3Button {
-    background-color:green;
+  background-color: green;
 }
 .v4-active #V4Button {
-    background-color:green;
+  background-color: green;
 }
 
-
-
 .controls-top button.addChord {
-	width:55px;
+  width: 55px;
 }
 
 .controls-top button.addChord.dirdown {
-	width:70px;
+  width: 70px;
 }
 
 #CreateChordButtons {
-    width:45px;
+  width: 45px;
 }
 #CreateChordButtons .left-text {
-	font-size:1.6em;
-    position:absolute;
-    top:20%;
-    left:25%;
+  font-size: 1.6em;
+  position: absolute;
+  top: 20%;
+  left: 25%;
 }
 #CreateChordButtons span.ribbon-button-text {
-	position:absolute;
-	left:30%;
-	top:30%;
+  position: absolute;
+  left: 30%;
+  top: 30%;
 }
 
 #NavigationButtons.expandedChildren {
-	font-size: 1.4em;
-	width: 50px;
-	left: 0;
+  font-size: 1.4em;
+  width: 50px;
+  left: 0;
 }
 li.nav-item:hover {
   background: var(--bs-gray-200);
 }
-.expanded .ribbonButtonContainer button.graceIcon   {
-    width:60px;
-	font-size:1.6em;
+.expanded .ribbonButtonContainer button.graceIcon {
+  width: 60px;
+  font-size: 1.6em;
 }
-#AddGraceNote .ribbon-button-hotkey,#RemoveGraceNote .ribbon-button-hotkey {
-    font-size:0.5em;
+#AddGraceNote .ribbon-button-hotkey,
+#RemoveGraceNote .ribbon-button-hotkey {
+  font-size: 0.5em;
 }
 
-
-#ToggleAccidental .ribbon-button-hotkey,#ToggleCourtesy .ribbon-button-hotkey  {
-	font-size:0.7em;
+#ToggleAccidental .ribbon-button-hotkey,
+#ToggleCourtesy .ribbon-button-hotkey {
+  font-size: 0.7em;
 }
 
 .controls-left button.icon span.icon:before,
-.controls-top button.icon span.icon:before{
-	font-size:1.6em;
+.controls-top button.icon span.icon:before {
+  font-size: 1.6em;
 }
 .controls-left .articulations button span.ribbon-button-text {
-	font-size:2em;
+  font-size: 2em;
 }
 .controls-top .collapseContainer .expandedChildren {
-	font-size: 1.2em;
-	height: 55px;
-	top: -15px;
+  font-size: 1.2em;
+  height: 55px;
+  top: -15px;
 }
 
 .controls-left .collapseContainer .expandedChildren {
-	font-size: 1.2em;
-	text-align:left;
-	padding: 0;
-	width: 80px;
-	left: -5px;
+  font-size: 1.2em;
+  text-align: left;
+  padding: 0;
+  width: 80px;
+  left: -5px;
 }
 
 .control-bar .collapsed {
-	display:none;
+  display: none;
 }

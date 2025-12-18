@@ -146,9 +146,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.performerSource === PERFORMER_SOURCE.INTERNAL_ARTIST &&
         !inst.specialistId
       ) {
-        message.error(
-          `Please choose an instrumentalist for ${inst.skillName}`
-        );
+        message.error(`Please choose an instrumentalist for ${inst.skillName}`);
         return;
       }
 
@@ -156,9 +154,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         inst.instrumentSource === INSTRUMENT_SOURCE.STUDIO_SIDE &&
         !inst.equipmentId
       ) {
-        message.error(
-          `Please choose equipment for ${inst.skillName}`
-        );
+        message.error(`Please choose equipment for ${inst.skillName}`);
         return;
       }
     }
@@ -270,7 +266,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
                 })}
               </div>
 
-                  {selectedInstruments.length > 0 && (
+              {selectedInstruments.length > 0 && (
                 <div className={styles.instrumentConfigSection}>
                   <Title level={4}>Configure each instrument:</Title>
                   <Collapse accordion>
@@ -341,7 +337,9 @@ function InstrumentConfig({
   bookingEndTime,
   onUpdate,
 }) {
-  const [availableInstrumentalists, setAvailableInstrumentalists] = useState([]);
+  const [availableInstrumentalists, setAvailableInstrumentalists] = useState(
+    []
+  );
   const [availableEquipment, setAvailableEquipment] = useState([]);
   const [loadingInstrumentalists, setLoadingInstrumentalists] = useState(false);
   const [loadingEquipment, setLoadingEquipment] = useState(false);
@@ -440,8 +438,7 @@ function InstrumentConfig({
           <Space direction="vertical">
             <Radio value={PERFORMER_SOURCE.CUSTOMER_SELF}>
               <Space>
-                <UserOutlined />
-                I will play
+                <UserOutlined />I will play
               </Space>
             </Radio>
             <Radio value={PERFORMER_SOURCE.INTERNAL_ARTIST}>

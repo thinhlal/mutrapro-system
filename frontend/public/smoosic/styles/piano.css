@@ -1,34 +1,34 @@
-
-
 .piano-container {
-	display:flex;
-  justify-content:center;
+  display: flex;
+  justify-content: center;
 }
 #keyId-C4 {
-	fill:#ddffee;
+  fill: #ddffee;
 }
 #keyId-C4.glow-key {
-	fill:#33ccaa;
+  fill: #33ccaa;
 }
 
 .piano-container {
-	display:none;
+  display: none;
 }
 
-.key-left-ctrl,.key-right-ctrl {
-  display:flex;
+.key-left-ctrl,
+.key-right-ctrl {
+  display: flex;
 }
 
-.key-left-ctrl button,.key-right-ctrl button {
-  display:flex;
+.key-left-ctrl button,
+.key-right-ctrl button {
+  display: flex;
   flex: auto;
-  justify-content:center;
+  justify-content: center;
 }
 
 .key-right-ctrl button.close {
-  color:red;
-  width:25px;
-  height:25px;
+  color: red;
+  width: 25px;
+  height: 25px;
   flex: 0 1 auto;
 }
 
@@ -37,14 +37,13 @@
 .key-right-ctrl .icon-duration_grow_dot,
 .key-right-ctrl .icon-duration_less_dot,
 .key-left-ctrl button span,
-.piano-keys button.key-ctrl span
-  {
-  font-size:1.5em;
+.piano-keys button.key-ctrl span {
+  font-size: 1.5em;
 }
 
 .piano-container button {
   background: #fff;
-  border-radius:5px;
+  border-radius: 5px;
 }
 
 .piano-container button:hover {
@@ -57,48 +56,47 @@
 }
 
 .piano-container button.piano-ctrl {
-  width:50px;
-  height:30px;
+  width: 50px;
+  height: 30px;
 }
 .piano-container .piano-keys button {
-  width:30px;
+  width: 30px;
 }
 
 body.show-piano .piano-container {
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
 }
 
 .piano-keys {
-	display:flex;
-  justify-content:center;
+  display: flex;
+  justify-content: center;
 }
 
-
 .black-key {
-	stroke:#000;
+  stroke: #000;
 }
 
 .white-key {
-	fill:#fff;
-	stroke:#000;
+  fill: #fff;
+  stroke: #000;
 }
 .white-key.glow-key {
-	fill:#aad;
+  fill: #aad;
 }
 .white-key.pressed-key {
-	fill:#33d;
+  fill: #33d;
 }
 .white-key.pressed-key + text {
   stroke: #fff;
 }
 
 .black-key.pressed-key {
-	fill:#bbd;
+  fill: #bbd;
 }
 .black-key.glow-key {
-	fill:#aad;
+  fill: #aad;
 }
 .note-text {
-	font-size:.7em;
+  font-size: 0.7em;
 }

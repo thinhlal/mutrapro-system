@@ -160,15 +160,19 @@ const PaymentSuccessPage = () => {
                 <Descriptions.Item label="Số dư khả dụng">
                   <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
                     {formatCurrency(
-                      wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                      wallet?.availableBalance ??
+                        (wallet?.balance
+                          ? wallet.balance - (wallet.holdBalance || 0)
+                          : 0),
                       wallet.currency
                     )}
                   </Text>
                   {wallet?.holdBalance > 0 && (
                     <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
                       <Text type="secondary">
-                        Tổng: {formatCurrency(wallet.balance, wallet.currency)} | 
-                        Đang giữ: {formatCurrency(wallet.holdBalance, wallet.currency)}
+                        Tổng: {formatCurrency(wallet.balance, wallet.currency)}{' '}
+                        | Đang giữ:{' '}
+                        {formatCurrency(wallet.holdBalance, wallet.currency)}
                       </Text>
                     </div>
                   )}

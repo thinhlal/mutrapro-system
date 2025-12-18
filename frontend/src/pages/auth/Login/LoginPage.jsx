@@ -183,8 +183,7 @@ function LoginPage() {
             </div>
 
             <div className={styles.optionsRow}>
-              <label className={styles.checkboxLabel}>
-              </label>
+              <label className={styles.checkboxLabel}></label>
               <button
                 type="button"
                 className={styles.textButton}

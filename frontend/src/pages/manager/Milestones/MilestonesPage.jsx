@@ -454,10 +454,11 @@ const MilestonesPage = () => {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-          Milestones Management
+            Milestones Management
           </Title>
           <Text type="secondary">
-          List of milestones and tasks. Click "View Details" to manage the tasks of a milestone.
+            List of milestones and tasks. Click "View Details" to manage the
+            tasks of a milestone.
           </Text>
         </div>
         <Button

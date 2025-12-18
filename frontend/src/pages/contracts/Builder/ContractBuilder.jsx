@@ -98,16 +98,22 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
     if (contractType === 'recording') {
       // Auto-set hasPayment = true
       form.setFieldValue(['milestones', field.name, 'hasPayment'], true);
-      
+
       // Auto-update paymentPercent khi depositPercent thay đổi
       if (depositPercent !== undefined) {
         const expectedPaymentPercent = 100 - depositPercent;
-        form.setFieldValue(['milestones', field.name, 'paymentPercent'], expectedPaymentPercent);
+        form.setFieldValue(
+          ['milestones', field.name, 'paymentPercent'],
+          expectedPaymentPercent
+        );
       }
-      
+
       // Auto-update milestoneSlaDays = contract slaDays
       if (contractSlaDays !== undefined) {
-        form.setFieldValue(['milestones', field.name, 'milestoneSlaDays'], contractSlaDays);
+        form.setFieldValue(
+          ['milestones', field.name, 'milestoneSlaDays'],
+          contractSlaDays
+        );
       }
     }
   }, [contractType, depositPercent, contractSlaDays, form, field.name]);
@@ -252,7 +258,13 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
               <span>
                 Payment Percent (%)
                 {contractType === 'recording' && (
-                  <span style={{ marginLeft: 8, color: '#999', fontWeight: 'normal' }}>
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      color: '#999',
+                      fontWeight: 'normal',
+                    }}
+                  >
                     (Auto: 100% - Deposit)
                   </span>
                 )}
@@ -294,14 +306,14 @@ const MilestoneItem = ({ field, form, onRemove, index }) => {
                   (Auto: = Contract SLA)
                 </span>
               ) : (
-              <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt/plannedDueDate (baseline) khi contract có start date, và trả thêm targetDeadline (deadline mục tiêu) để hiển thị/check SLA nhất quán.">
-                <QuestionCircleOutlined
-                  style={{
-                    color: '#1890ff',
-                    cursor: 'help',
-                  }}
-                />
-              </Tooltip>
+                <Tooltip title="Số ngày SLA cho milestone này. BE sẽ tính plannedStartAt/plannedDueDate (baseline) khi contract có start date, và trả thêm targetDeadline (deadline mục tiêu) để hiển thị/check SLA nhất quán.">
+                  <QuestionCircleOutlined
+                    style={{
+                      color: '#1890ff',
+                      cursor: 'help',
+                    }}
+                  />
+                </Tooltip>
               )}
             </span>
           }
@@ -580,27 +592,36 @@ const ContractBuilder = () => {
 
         // Map ServiceType to ContractType
         const contractType = mapServiceTypeToContractType(request.requestType);
-        
+
         // For recording requests, get totalPrice from booking totalCost and save booking data
         let totalPrice = request.totalPrice || 0;
         if (request.requestType === 'recording') {
           try {
             const bookingResponse = await getBookingByRequestId(requestId);
             if (bookingResponse?.status === 'success' && bookingResponse.data) {
-              setBookingData(bookingResponse.data);  // Save booking data to display
+              setBookingData(bookingResponse.data); // Save booking data to display
               if (bookingResponse.data.totalCost) {
                 totalPrice = bookingResponse.data.totalCost;
-                console.log('Using booking totalCost for recording contract:', totalPrice);
+                console.log(
+                  'Using booking totalCost for recording contract:',
+                  totalPrice
+                );
               }
             } else {
-              console.warn('No booking found for recording request, using request totalPrice:', totalPrice);
+              console.warn(
+                'No booking found for recording request, using request totalPrice:',
+                totalPrice
+              );
             }
           } catch (error) {
-            console.warn('Failed to fetch booking for recording request:', error);
+            console.warn(
+              'Failed to fetch booking for recording request:',
+              error
+            );
             // Fallback to request.totalPrice
           }
         }
-        
+
         const depositPercent = 40;
         const defaultSlaDays = getDefaultSlaDays(contractType);
         const defaultRevisionDeadlineDays =
@@ -1629,65 +1650,135 @@ const ContractBuilder = () => {
                   size="small"
                 />
               )}
-              
+
               {/* Studio Booking Info - only for recording requests */}
-              {bookingData && serviceRequest?.requestType === 'recording' && !isEditMode && (
-                <Collapse
-                  defaultActiveKey={['booking']}
-                  style={{ marginBottom: 16 }}
-                  items={[
-                    {
-                      key: 'booking',
-                      label: <span style={{ fontWeight: 500 }}>🎙️ Studio Booking Information</span>,
-                      children: (
-                        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                          {bookingData.bookingDate && (
-                            <div>
-                              <strong>📅 Date:</strong> {bookingData.bookingDate} | {bookingData.startTime} - {bookingData.endTime} ({bookingData.durationHours}h)
-                            </div>
-                          )}
-                          {bookingData.status && (
-                            <div>
-                              <strong>Status:</strong> <Tag color={bookingData.status === 'CONFIRMED' ? 'green' : 'orange'}>{bookingData.status}</Tag>
-                            </div>
-                          )}
-                          {bookingData.participants && bookingData.participants.length > 0 && (
-                            <div>
-                              <strong>👥 Participants ({bookingData.participants.length}):</strong>
-                              <div style={{ marginLeft: 16, marginTop: 4 }}>
-                                {bookingData.participants.map((p, idx) => (
-                                  <div key={idx} style={{ fontSize: '13px' }}>
-                                    • <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'} size="small">{p.roleType}</Tag>
-                                    {p.specialistName || 'Self'} - {p.participantFee?.toLocaleString('vi-VN')} VND
-                                  </div>
-                                ))}
+              {bookingData &&
+                serviceRequest?.requestType === 'recording' &&
+                !isEditMode && (
+                  <Collapse
+                    defaultActiveKey={['booking']}
+                    style={{ marginBottom: 16 }}
+                    items={[
+                      {
+                        key: 'booking',
+                        label: (
+                          <span style={{ fontWeight: 500 }}>
+                            🎙️ Studio Booking Information
+                          </span>
+                        ),
+                        children: (
+                          <Space
+                            direction="vertical"
+                            size="small"
+                            style={{ width: '100%' }}
+                          >
+                            {bookingData.bookingDate && (
+                              <div>
+                                <strong>📅 Date:</strong>{' '}
+                                {bookingData.bookingDate} |{' '}
+                                {bookingData.startTime} - {bookingData.endTime}{' '}
+                                ({bookingData.durationHours}h)
                               </div>
-                            </div>
-                          )}
-                          {bookingData.requiredEquipment && bookingData.requiredEquipment.length > 0 && (
-                            <div>
-                              <strong>🎸 Equipment ({bookingData.requiredEquipment.length}):</strong>
-                              <div style={{ marginLeft: 16, marginTop: 4 }}>
-                                {bookingData.requiredEquipment.map((eq, idx) => (
-                                  <div key={idx} style={{ fontSize: '13px' }}>
-                                    • {eq.equipmentName} x {eq.quantity} - {eq.totalRentalFee?.toLocaleString('vi-VN')} VND
-                                  </div>
-                                ))}
+                            )}
+                            {bookingData.status && (
+                              <div>
+                                <strong>Status:</strong>{' '}
+                                <Tag
+                                  color={
+                                    bookingData.status === 'CONFIRMED'
+                                      ? 'green'
+                                      : 'orange'
+                                  }
+                                >
+                                  {bookingData.status}
+                                </Tag>
                               </div>
+                            )}
+                            {bookingData.participants &&
+                              bookingData.participants.length > 0 && (
+                                <div>
+                                  <strong>
+                                    👥 Participants (
+                                    {bookingData.participants.length}):
+                                  </strong>
+                                  <div style={{ marginLeft: 16, marginTop: 4 }}>
+                                    {bookingData.participants.map((p, idx) => (
+                                      <div
+                                        key={idx}
+                                        style={{ fontSize: '13px' }}
+                                      >
+                                        •{' '}
+                                        <Tag
+                                          color={
+                                            p.roleType === 'VOCAL'
+                                              ? 'blue'
+                                              : 'purple'
+                                          }
+                                          size="small"
+                                        >
+                                          {p.roleType}
+                                        </Tag>
+                                        {p.specialistName || 'Self'} -{' '}
+                                        {p.participantFee?.toLocaleString(
+                                          'vi-VN'
+                                        )}{' '}
+                                        VND
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            {bookingData.requiredEquipment &&
+                              bookingData.requiredEquipment.length > 0 && (
+                                <div>
+                                  <strong>
+                                    🎸 Equipment (
+                                    {bookingData.requiredEquipment.length}):
+                                  </strong>
+                                  <div style={{ marginLeft: 16, marginTop: 4 }}>
+                                    {bookingData.requiredEquipment.map(
+                                      (eq, idx) => (
+                                        <div
+                                          key={idx}
+                                          style={{ fontSize: '13px' }}
+                                        >
+                                          • {eq.equipmentName} x {eq.quantity} -{' '}
+                                          {eq.totalRentalFee?.toLocaleString(
+                                            'vi-VN'
+                                          )}{' '}
+                                          VND
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            <div
+                              style={{
+                                borderTop: '1px solid #f0f0f0',
+                                paddingTop: 8,
+                                marginTop: 8,
+                              }}
+                            >
+                              <strong>💵 Total Booking Cost:</strong>
+                              <span
+                                style={{
+                                  fontSize: '16px',
+                                  fontWeight: 'bold',
+                                  color: '#ff4d4f',
+                                  marginLeft: 8,
+                                }}
+                              >
+                                {bookingData.totalCost?.toLocaleString('vi-VN')}{' '}
+                                VND
+                              </span>
                             </div>
-                          )}
-                          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8, marginTop: 8 }}>
-                            <strong>💵 Total Booking Cost:</strong> 
-                            <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#ff4d4f', marginLeft: 8 }}>
-                              {bookingData.totalCost?.toLocaleString('vi-VN')} VND
-                            </span>
-                          </div>
-                        </Space>
-                      ),
-                    },
-                  ]}
-                />
-              )}
+                          </Space>
+                        ),
+                      },
+                    ]}
+                  />
+                )}
               {isEditMode && existingContract && (
                 <Alert
                   message={`Editing contract: ${existingContract.contractNumber || existingContract.contractId}`}
@@ -1989,7 +2080,9 @@ const ContractBuilder = () => {
                                       const milestones =
                                         form.getFieldValue('milestones') || [];
                                       const newOrderIndex = fields.length + 1;
-                                      const depositPercent = form.getFieldValue('deposit_percent') || 0;
+                                      const depositPercent =
+                                        form.getFieldValue('deposit_percent') ||
+                                        0;
 
                                       const newMilestone = {
                                         name: '',
@@ -2009,13 +2102,16 @@ const ContractBuilder = () => {
                                       ) {
                                         newMilestone.milestoneType =
                                           contractType; // transcription, arrangement, recording
-                                        
+
                                         // Với recording contract (1 milestone duy nhất), auto-set payment
                                         if (contractType === 'recording') {
                                           newMilestone.hasPayment = true;
-                                          newMilestone.paymentPercent = 100 - depositPercent;
-                                          newMilestone.name = 'Recording Session';
-                                          newMilestone.description = 'Complete recording service as specified in booking details';
+                                          newMilestone.paymentPercent =
+                                            100 - depositPercent;
+                                          newMilestone.name =
+                                            'Recording Session';
+                                          newMilestone.description =
+                                            'Complete recording service as specified in booking details';
                                         }
                                       }
                                       // Với arrangement_with_recording, user sẽ tự chọn milestoneType
@@ -2025,10 +2121,15 @@ const ContractBuilder = () => {
                                     }}
                                     block
                                     icon={<PlusOutlined />}
-                                    disabled={contractType === 'recording' && fields.length >= 1}
+                                    disabled={
+                                      contractType === 'recording' &&
+                                      fields.length >= 1
+                                    }
                                   >
                                     Add Milestone
-                                    {contractType === 'recording' && fields.length >= 1 && ' (Recording contract chỉ có 1 milestone)'}
+                                    {contractType === 'recording' &&
+                                      fields.length >= 1 &&
+                                      ' (Recording contract chỉ có 1 milestone)'}
                                   </Button>
                                 </Form.Item>
                               </>
@@ -2381,23 +2482,32 @@ const ContractBuilder = () => {
                             )}
                         </>
                       )}
-                      
+
                       {/* Recording-specific fields: Studio Booking Summary */}
-                      {serviceRequest.requestType === 'recording' && bookingData && (
-                        <>
-                          <h4 style={{ marginTop: '16px', marginBottom: '8px' }}>Studio Booking Details</h4>
-                          {bookingData.bookingDate && (
-                            <p>
-                              <strong>Booking Date & Time:</strong> {bookingData.bookingDate}, {bookingData.startTime} - {bookingData.endTime} ({bookingData.durationHours} hours)
-                            </p>
-                          )}
-                          {bookingData.status && (
-                            <p>
-                              <strong>Booking Status:</strong> {bookingData.status}
+                      {serviceRequest.requestType === 'recording' &&
+                        bookingData && (
+                          <>
+                            <h4
+                              style={{ marginTop: '16px', marginBottom: '8px' }}
+                            >
+                              Studio Booking Details
+                            </h4>
+                            {bookingData.bookingDate && (
+                              <p>
+                                <strong>Booking Date & Time:</strong>{' '}
+                                {bookingData.bookingDate},{' '}
+                                {bookingData.startTime} - {bookingData.endTime}{' '}
+                                ({bookingData.durationHours} hours)
                               </p>
                             )}
-                        </>
-                      )}
+                            {bookingData.status && (
+                              <p>
+                                <strong>Booking Status:</strong>{' '}
+                                {bookingData.status}
+                              </p>
+                            )}
+                          </>
+                        )}
                     </>
                   )}
 
@@ -2410,7 +2520,8 @@ const ContractBuilder = () => {
                     (serviceRequest.requestType === 'arrangement' ||
                       serviceRequest.requestType ===
                         'arrangement_with_recording')) ||
-                  (serviceRequest?.requestType === 'recording' && bookingData)) && (
+                  (serviceRequest?.requestType === 'recording' &&
+                    bookingData)) && (
                   <div
                     style={{
                       marginBottom: '16px',
@@ -2536,109 +2647,138 @@ const ContractBuilder = () => {
                           )}
 
                         {/* Recording: Participants */}
-                        {serviceRequest?.requestType === 'recording' && bookingData?.participants && bookingData.participants.length > 0 && (
-                          <>
-                            <tr>
-                              <td
-                                colSpan={2}
-                                style={{
-                                  border: '1px solid #000',
-                                  padding: '8px',
-                                  fontWeight: 'bold',
-                                  backgroundColor: '#f0f0f0',
-                                }}
-                              >
-                                Recording Participants:
-                              </td>
-                            </tr>
-                            {bookingData.participants.map((p, idx) => {
-                              // Calculate hourly rate from participantFee / durationHours
-                              const hourlyRate = bookingData.durationHours > 0 
-                                ? (p.participantFee / bookingData.durationHours) 
-                                : 0;
-                              
-                              return (
-                                <tr key={`participant-${idx}`}>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      paddingLeft: '24px',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {p.roleType}: {p.specialistName || 'Self'}
-                                    <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
-                                      ({hourlyRate.toLocaleString('vi-VN')} VND/hour × {bookingData.durationHours}h)
-                                    </div>
-                                  </td>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      textAlign: 'right',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {p.participantFee?.toLocaleString?.() ?? p.participantFee}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </>
-                        )}
-                        
+                        {serviceRequest?.requestType === 'recording' &&
+                          bookingData?.participants &&
+                          bookingData.participants.length > 0 && (
+                            <>
+                              <tr>
+                                <td
+                                  colSpan={2}
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#f0f0f0',
+                                  }}
+                                >
+                                  Recording Participants:
+                                </td>
+                              </tr>
+                              {bookingData.participants.map((p, idx) => {
+                                // Calculate hourly rate from participantFee / durationHours
+                                const hourlyRate =
+                                  bookingData.durationHours > 0
+                                    ? p.participantFee /
+                                      bookingData.durationHours
+                                    : 0;
+
+                                return (
+                                  <tr key={`participant-${idx}`}>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        paddingLeft: '24px',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {p.roleType}: {p.specialistName || 'Self'}
+                                      <div
+                                        style={{
+                                          color: '#666',
+                                          fontSize: '12px',
+                                          marginTop: '4px',
+                                        }}
+                                      >
+                                        ({hourlyRate.toLocaleString('vi-VN')}{' '}
+                                        VND/hour × {bookingData.durationHours}h)
+                                      </div>
+                                    </td>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        textAlign: 'right',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {p.participantFee?.toLocaleString?.() ??
+                                        p.participantFee}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </>
+                          )}
+
                         {/* Recording: Equipment */}
-                        {serviceRequest?.requestType === 'recording' && bookingData?.requiredEquipment && bookingData.requiredEquipment.length > 0 && (
-                          <>
-                            <tr>
-                              <td
-                                colSpan={2}
-                                style={{
-                                  border: '1px solid #000',
-                                  padding: '8px',
-                                  fontWeight: 'bold',
-                                  backgroundColor: '#f0f0f0',
-                                }}
-                              >
-                                Studio Equipment Rental:
-                              </td>
-                            </tr>
-                            {bookingData.requiredEquipment.map((eq, idx) => {
-                              // Calculate rental fee per hour from totalRentalFee / (quantity * durationHours)
-                              const rentalFeePerHour = (bookingData.durationHours > 0 && eq.quantity > 0)
-                                ? (eq.totalRentalFee / (eq.quantity * bookingData.durationHours))
-                                : 0;
-                              
-                              return (
-                                <tr key={`equipment-${idx}`}>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      paddingLeft: '24px',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {eq.equipmentName} (Qty: {eq.quantity})
-                                    <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
-                                      ({rentalFeePerHour.toLocaleString('vi-VN')} VND/hour × {eq.quantity} × {bookingData.durationHours}h)
-                                    </div>
-                                  </td>
-                                  <td
-                                    style={{
-                                      border: '1px solid #000',
-                                      padding: '8px',
-                                      textAlign: 'right',
-                                      backgroundColor: '#fff',
-                                    }}
-                                  >
-                                    {eq.totalRentalFee?.toLocaleString?.() ?? eq.totalRentalFee}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </>
+                        {serviceRequest?.requestType === 'recording' &&
+                          bookingData?.requiredEquipment &&
+                          bookingData.requiredEquipment.length > 0 && (
+                            <>
+                              <tr>
+                                <td
+                                  colSpan={2}
+                                  style={{
+                                    border: '1px solid #000',
+                                    padding: '8px',
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#f0f0f0',
+                                  }}
+                                >
+                                  Studio Equipment Rental:
+                                </td>
+                              </tr>
+                              {bookingData.requiredEquipment.map((eq, idx) => {
+                                // Calculate rental fee per hour from totalRentalFee / (quantity * durationHours)
+                                const rentalFeePerHour =
+                                  bookingData.durationHours > 0 &&
+                                  eq.quantity > 0
+                                    ? eq.totalRentalFee /
+                                      (eq.quantity * bookingData.durationHours)
+                                    : 0;
+
+                                return (
+                                  <tr key={`equipment-${idx}`}>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        paddingLeft: '24px',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {eq.equipmentName} (Qty: {eq.quantity})
+                                      <div
+                                        style={{
+                                          color: '#666',
+                                          fontSize: '12px',
+                                          marginTop: '4px',
+                                        }}
+                                      >
+                                        (
+                                        {rentalFeePerHour.toLocaleString(
+                                          'vi-VN'
+                                        )}{' '}
+                                        VND/hour × {eq.quantity} ×{' '}
+                                        {bookingData.durationHours}h)
+                                      </div>
+                                    </td>
+                                    <td
+                                      style={{
+                                        border: '1px solid #000',
+                                        padding: '8px',
+                                        textAlign: 'right',
+                                        backgroundColor: '#fff',
+                                      }}
+                                    >
+                                      {eq.totalRentalFee?.toLocaleString?.() ??
+                                        eq.totalRentalFee}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </>
                           )}
 
                         {/* Instruments */}

@@ -58,12 +58,17 @@ export const getContractById = async contractId => {
 export const getMilestonePaymentQuote = async (contractId, milestoneId) => {
   try {
     const response = await axiosInstance.get(
-      API_ENDPOINTS.CONTRACTS.GET_MILESTONE_PAYMENT_QUOTE(contractId, milestoneId)
+      API_ENDPOINTS.CONTRACTS.GET_MILESTONE_PAYMENT_QUOTE(
+        contractId,
+        milestoneId
+      )
     );
     return response.data;
   } catch (error) {
     throw (
-      error.response?.data || { message: 'Lỗi khi lấy thông tin quote thanh toán milestone' }
+      error.response?.data || {
+        message: 'Lỗi khi lấy thông tin quote thanh toán milestone',
+      }
     );
   }
 };

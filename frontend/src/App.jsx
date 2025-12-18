@@ -550,10 +550,7 @@ function App() {
               path="notation-instruments"
               element={<NotationInstruments />}
             />
-            <Route
-              path="equipment"
-              element={<EquipmentManagement />}
-            />
+            <Route path="equipment" element={<EquipmentManagement />} />
             <Route path="specialists" element={<SpecialistManagement />} />
             <Route path="skills" element={<SkillManagement />} />
             <Route path="demos" element={<DemoManagement />} />

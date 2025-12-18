@@ -66,7 +66,7 @@ const EquipmentManagement = () => {
     setSelectedEquipment(equipment);
     setModalVisible(true);
     setEditLoading(true);
-    
+
     // Fetch equipment detail to get skillIds
     try {
       const response = await getEquipmentById(equipment.equipmentId);
@@ -164,7 +164,7 @@ const EquipmentManagement = () => {
   };
 
   // Format currency
-  const formatCurrency = (amount) => {
+  const formatCurrency = amount => {
     if (!amount) return '0';
     return new Intl.NumberFormat('vi-VN').format(amount);
   };
@@ -238,7 +238,9 @@ const EquipmentManagement = () => {
       key: 'quantity',
       width: 150,
       render: (_, record) => (
-        <Tooltip title={`Total: ${record.totalQuantity}, Available: ${record.availableQuantity}`}>
+        <Tooltip
+          title={`Total: ${record.totalQuantity}, Available: ${record.availableQuantity}`}
+        >
           <span>
             {record.availableQuantity || 0} / {record.totalQuantity || 0}
           </span>
@@ -266,7 +268,8 @@ const EquipmentManagement = () => {
       ],
       onFilter: (value, record) => {
         if (value === 'inactive') return !record.isActive;
-        if (value === 'unavailable') return record.isActive && record.availableQuantity === 0;
+        if (value === 'unavailable')
+          return record.isActive && record.availableQuantity === 0;
         return record.isActive && record.availableQuantity > 0;
       },
     },
@@ -280,7 +283,9 @@ const EquipmentManagement = () => {
           type="link"
           icon={<EditOutlined />}
           onClick={() => handleEdit(record)}
-          loading={editLoading && selectedEquipment?.equipmentId === record.equipmentId}
+          loading={
+            editLoading && selectedEquipment?.equipmentId === record.equipmentId
+          }
         >
           Edit
         </Button>
@@ -348,4 +353,3 @@ const EquipmentManagement = () => {
 };
 
 export default EquipmentManagement;
-

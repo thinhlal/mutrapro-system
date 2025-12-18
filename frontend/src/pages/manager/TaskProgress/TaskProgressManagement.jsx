@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   Table,
   Card,
@@ -210,7 +216,10 @@ export default function TaskProgressManagement() {
         }
         console.log('[TaskProgress] Fetching with params:', params);
         console.log('[TaskProgress] Current filters state:', currentFilters);
-        console.log('[TaskProgress] Current pagination state:', currentPagination);
+        console.log(
+          '[TaskProgress] Current pagination state:',
+          currentPagination
+        );
         const response = await getAllTaskAssignments(params);
         if (response?.status === 'success' && response.data) {
           const pageData = response.data;
@@ -301,7 +310,10 @@ export default function TaskProgressManagement() {
 
     // Set timer mới
     searchDebounceTimerRef.current = setTimeout(() => {
-      console.log('[TaskProgress] Search changed - fetching', isSearchEmpty ? 'immediately (empty)' : 'after debounce');
+      console.log(
+        '[TaskProgress] Search changed - fetching',
+        isSearchEmpty ? 'immediately (empty)' : 'after debounce'
+      );
       fetchAllTaskAssignments(filters, pagination);
       searchDebounceTimerRef.current = null;
       isInitialMountRef.current = false;
@@ -386,7 +398,6 @@ export default function TaskProgressManagement() {
     // Nếu null/undefined thì default 0
     return record.progressPercentage ?? 0;
   };
-
 
   // Render specialist cell
   const renderSpecialistCell = record => {
@@ -613,7 +624,8 @@ export default function TaskProgressManagement() {
         const hasPendingReview = record.hasPendingReview === true;
         const shouldHideDeadlineWarning =
           hasFirstSubmission || hasPendingReview;
-        const isFirstSubmissionLate = record.milestone?.firstSubmissionLate === true;
+        const isFirstSubmissionLate =
+          record.milestone?.firstSubmissionLate === true;
         const isFirstSubmissionOnTime =
           hasFirstSubmission && record.milestone?.firstSubmissionLate === false;
         const overdueNow = record.milestone?.overdueNow;
@@ -833,11 +845,11 @@ export default function TaskProgressManagement() {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-          Task Management
+            Task Management
           </Title>
           <Text type="secondary">
-          List of all tasks. Click "View Details" to see detailed task information.
-            tiết task.
+            List of all tasks. Click "View Details" to see detailed task
+            information. tiết task.
           </Text>
         </div>
         <Button

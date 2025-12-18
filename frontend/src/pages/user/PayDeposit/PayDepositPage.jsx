@@ -132,7 +132,9 @@ const PayDepositPage = () => {
     }
 
     const depositAmount = parseFloat(depositInstallment.amount);
-    const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const availableBalance =
+      wallet?.availableBalance ??
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
     const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < depositAmount) {
@@ -221,7 +223,9 @@ const PayDepositPage = () => {
   }
 
   const depositAmount = parseFloat(depositInstallment.amount);
-  const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const availableBalance =
+    wallet?.availableBalance ??
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
   const walletBalance = parseFloat(availableBalance);
   const hasEnoughBalance = walletBalance >= depositAmount;
   const isDepositPaid = depositInstallment.status === 'PAID';

@@ -352,7 +352,9 @@ const SpecialistTaskDetailPage = () => {
   const loadArtistsInfo = useCallback(async participants => {
     try {
       setLoadingArtists(true);
-      const specialistIds = participants.map(p => p.specialistId).filter(Boolean);
+      const specialistIds = participants
+        .map(p => p.specialistId)
+        .filter(Boolean);
 
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
@@ -401,7 +403,10 @@ const SpecialistTaskDetailPage = () => {
           setStudioBooking(booking);
 
           // Load thông tin artists nếu có
-          const internalArtists = booking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+          const internalArtists =
+            booking?.participants?.filter(
+              p => p.performerSource === 'INTERNAL_ARTIST'
+            ) || [];
           if (internalArtists.length > 0) {
             loadArtistsInfo(internalArtists);
           }
@@ -1367,15 +1372,20 @@ const SpecialistTaskDetailPage = () => {
                       {/* SLA status tags */}
                       <div style={{ marginTop: 4 }}>
                         {(() => {
-                          const hasFirstSubmission = !!task.milestone?.firstSubmissionAt;
-                          const isFirstSubmissionLate = task.milestone?.firstSubmissionLate === true;
+                          const hasFirstSubmission =
+                            !!task.milestone?.firstSubmissionAt;
+                          const isFirstSubmissionLate =
+                            task.milestone?.firstSubmissionLate === true;
                           const isFirstSubmissionOnTime =
-                            hasFirstSubmission && task.milestone?.firstSubmissionLate === false;
+                            hasFirstSubmission &&
+                            task.milestone?.firstSubmissionLate === false;
                           const overdueNow = task.milestone?.overdueNow;
                           const isPendingReview =
                             task.status?.toLowerCase() === 'ready_for_review' ||
-                            task.status?.toLowerCase() === 'waiting_customer_review';
-                          const shouldHideOverdueWarning = hasFirstSubmission || isPendingReview;
+                            task.status?.toLowerCase() ===
+                              'waiting_customer_review';
+                          const shouldHideOverdueWarning =
+                            hasFirstSubmission || isPendingReview;
                           const isOverdue =
                             !shouldHideOverdueWarning &&
                             overdueNow === true &&
@@ -1548,150 +1558,160 @@ const SpecialistTaskDetailPage = () => {
                           </Descriptions.Item>
                         )}
                         {(() => {
-                          const internalArtists = studioBooking?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
-                          return internalArtists.length > 0 && (
-                            <Descriptions.Item label="Artists" span={2}>
-                              {loadingArtists ? (
-                                <Spin />
-                              ) : (
-                                <Space
-                                  direction="vertical"
-                                  size="small"
-                                  style={{ width: '100%' }}
-                                >
-                                  {internalArtists.map((participant, idx) => {
-                                    const specialistInfo =
-                                      artistsInfo[participant.specialistId];
-                                    return (
-                                      <Card
-                                        key={idx}
-                                        size="small"
-                                        style={{ marginBottom: 8 }}
-                                      >
-                                        <Space
-                                          direction="vertical"
+                          const internalArtists =
+                            studioBooking?.participants?.filter(
+                              p => p.performerSource === 'INTERNAL_ARTIST'
+                            ) || [];
+                          return (
+                            internalArtists.length > 0 && (
+                              <Descriptions.Item label="Artists" span={2}>
+                                {loadingArtists ? (
+                                  <Spin />
+                                ) : (
+                                  <Space
+                                    direction="vertical"
+                                    size="small"
+                                    style={{ width: '100%' }}
+                                  >
+                                    {internalArtists.map((participant, idx) => {
+                                      const specialistInfo =
+                                        artistsInfo[participant.specialistId];
+                                      return (
+                                        <Card
+                                          key={idx}
                                           size="small"
-                                          style={{ width: '100%' }}
+                                          style={{ marginBottom: 8 }}
                                         >
-                                          <Space>
-                                            {specialistInfo?.avatarUrl && (
-                                              <img
-                                                src={specialistInfo.avatarUrl}
-                                                alt={
-                                                  specialistInfo.fullName ||
-                                                  'Artist'
-                                                }
-                                                style={{
-                                                  width: 40,
-                                                  height: 40,
-                                                  borderRadius: '50%',
-                                                  objectFit: 'cover',
-                                                }}
-                                              />
-                                            )}
-                                            <Space
-                                              direction="vertical"
-                                              size={0}
-                                            >
-                                              <Space>
-                                                <Text strong>
-                                                  {specialistInfo?.fullName ||
-                                                    'N/A'}
-                                                </Text>
-                                                {participant.isPrimary && (
-                                                  <Tag color="gold">
-                                                    Primary
-                                                  </Tag>
-                                                )}
-                                              </Space>
-                                              {specialistInfo?.email && (
-                                                <Text
-                                                  type="secondary"
-                                                  style={{ fontSize: '12px' }}
-                                                >
-                                                  {specialistInfo.email}
-                                                </Text>
+                                          <Space
+                                            direction="vertical"
+                                            size="small"
+                                            style={{ width: '100%' }}
+                                          >
+                                            <Space>
+                                              {specialistInfo?.avatarUrl && (
+                                                <img
+                                                  src={specialistInfo.avatarUrl}
+                                                  alt={
+                                                    specialistInfo.fullName ||
+                                                    'Artist'
+                                                  }
+                                                  style={{
+                                                    width: 40,
+                                                    height: 40,
+                                                    borderRadius: '50%',
+                                                    objectFit: 'cover',
+                                                  }}
+                                                />
                                               )}
-                                            </Space>
-                                          </Space>
-                                          <Space>
-                                            <Text strong>Specialist ID:</Text>
-                                            <Text
-                                              copyable={{
-                                                text: participant.specialistId,
-                                              }}
-                                              style={{
-                                                fontFamily: 'monospace',
-                                                fontSize: '12px',
-                                              }}
-                                            >
-                                              {participant.specialistId?.substring(
-                                                0,
-                                                8
-                                              )}
-                                              ...
-                                            </Text>
-                                          </Space>
-                                          <Space>
-                                            <Text strong>Role:</Text>
-                                            <Tag
-                                              color={
-                                                participant.roleType === 'VOCAL'
-                                                  ? 'orange'
-                                                  : 'blue'
-                                              }
-                                            >
-                                              {participant.roleType === 'VOCAL'
-                                                ? 'Vocal'
-                                                : participant.roleType ===
-                                                    'INSTRUMENT'
-                                                  ? 'Instrument'
-                                                  : participant.roleType || 'N/A'}
-                                            </Tag>
-                                          </Space>
-                                          {specialistInfo && (
-                                            <>
-                                              {specialistInfo.experienceYears && (
+                                              <Space
+                                                direction="vertical"
+                                                size={0}
+                                              >
                                                 <Space>
                                                   <Text strong>
-                                                    Experience:
+                                                    {specialistInfo?.fullName ||
+                                                      'N/A'}
                                                   </Text>
-                                                  <Text>
-                                                    {
-                                                      specialistInfo.experienceYears
-                                                    }{' '}
-                                                    years
-                                                  </Text>
+                                                  {participant.isPrimary && (
+                                                    <Tag color="gold">
+                                                      Primary
+                                                    </Tag>
+                                                  )}
                                                 </Space>
-                                              )}
-                                              {specialistInfo.genres &&
-                                                specialistInfo.genres.length >
-                                                  0 && (
-                                                  <Space wrap>
-                                                    <Text strong>Genres:</Text>
-                                                    {specialistInfo.genres.map(
-                                                      (genre, gIdx) => (
-                                                        <Tag
-                                                          key={gIdx}
-                                                          color="purple"
-                                                        >
-                                                          {genre}
-                                                        </Tag>
-                                                      )
-                                                    )}
+                                                {specialistInfo?.email && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: '12px' }}
+                                                  >
+                                                    {specialistInfo.email}
+                                                  </Text>
+                                                )}
+                                              </Space>
+                                            </Space>
+                                            <Space>
+                                              <Text strong>Specialist ID:</Text>
+                                              <Text
+                                                copyable={{
+                                                  text: participant.specialistId,
+                                                }}
+                                                style={{
+                                                  fontFamily: 'monospace',
+                                                  fontSize: '12px',
+                                                }}
+                                              >
+                                                {participant.specialistId?.substring(
+                                                  0,
+                                                  8
+                                                )}
+                                                ...
+                                              </Text>
+                                            </Space>
+                                            <Space>
+                                              <Text strong>Role:</Text>
+                                              <Tag
+                                                color={
+                                                  participant.roleType ===
+                                                  'VOCAL'
+                                                    ? 'orange'
+                                                    : 'blue'
+                                                }
+                                              >
+                                                {participant.roleType ===
+                                                'VOCAL'
+                                                  ? 'Vocal'
+                                                  : participant.roleType ===
+                                                      'INSTRUMENT'
+                                                    ? 'Instrument'
+                                                    : participant.roleType ||
+                                                      'N/A'}
+                                              </Tag>
+                                            </Space>
+                                            {specialistInfo && (
+                                              <>
+                                                {specialistInfo.experienceYears && (
+                                                  <Space>
+                                                    <Text strong>
+                                                      Experience:
+                                                    </Text>
+                                                    <Text>
+                                                      {
+                                                        specialistInfo.experienceYears
+                                                      }{' '}
+                                                      years
+                                                    </Text>
                                                   </Space>
                                                 )}
-                                            </>
-                                          )}
-                                        </Space>
-                                      </Card>
-                                    );
-                                  })}
-                                </Space>
-                              )}
-                            </Descriptions.Item>
-                            );
-                          })()}
+                                                {specialistInfo.genres &&
+                                                  specialistInfo.genres.length >
+                                                    0 && (
+                                                    <Space wrap>
+                                                      <Text strong>
+                                                        Genres:
+                                                      </Text>
+                                                      {specialistInfo.genres.map(
+                                                        (genre, gIdx) => (
+                                                          <Tag
+                                                            key={gIdx}
+                                                            color="purple"
+                                                          >
+                                                            {genre}
+                                                          </Tag>
+                                                        )
+                                                      )}
+                                                    </Space>
+                                                  )}
+                                              </>
+                                            )}
+                                          </Space>
+                                        </Card>
+                                      );
+                                    })}
+                                  </Space>
+                                )}
+                              </Descriptions.Item>
+                            )
+                          );
+                        })()}
                         {studioBooking.notes && (
                           <Descriptions.Item label="Notes" span={2}>
                             <Text type="secondary">{studioBooking.notes}</Text>
@@ -1865,22 +1885,25 @@ const SpecialistTaskDetailPage = () => {
                 let bookingStatusMessage = '';
                 let daysUntilBooking = null;
                 let bookingDateFormatted = '';
-                
+
                 console.log('=== BOOKING VALIDATION START ===');
                 console.log('hasStudioBooking:', hasStudioBooking);
                 console.log('studioBooking:', studioBooking);
                 console.log('hasStartButton:', hasStartButton);
                 console.log('task.status:', task?.status);
-                
-                if (hasStudioBooking && studioBooking) { // ← BỎ điều kiện hasStartButton
+
+                if (hasStudioBooking && studioBooking) {
+                  // ← BỎ điều kiện hasStartButton
                   // Chỉ validate khi hasStartButton = true (ready_to_start)
                   // Nhưng vẫn hiển thị booking info cho mọi status
                   const bookingStatus = studioBooking.status;
                   console.log('📌 Booking Status =', bookingStatus);
-                  
+
                   // Tính toán booking date và countdown (luôn tính để hiển thị)
                   if (studioBooking.bookingDate) {
-                    const bookingDate = dayjs(studioBooking.bookingDate).startOf('day');
+                    const bookingDate = dayjs(
+                      studioBooking.bookingDate
+                    ).startOf('day');
                     const today = dayjs().startOf('day');
                     daysUntilBooking = bookingDate.diff(today, 'day');
                     bookingDateFormatted = `${studioBooking.bookingDate} | ${studioBooking.startTime || 'N/A'} - ${studioBooking.endTime || 'N/A'}`;
@@ -1892,33 +1915,42 @@ const SpecialistTaskDetailPage = () => {
                   // Chỉ validate cho nút "Start Task" khi hasStartButton = true
                   if (hasStartButton) {
                     console.log('📌 VALIDATE FOR START BUTTON');
-                    
+
                     // Check 1: Booking Status
-                  // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
-                  if (
-                    bookingStatus !== 'CONFIRMED' &&
-                    bookingStatus !== 'IN_PROGRESS' &&
-                    bookingStatus !== 'COMPLETED'
-                  ) {
-                    canStartWithBooking = false;
-                    bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
-                      console.log('❌ CHECK 1 FAILED: Status không hợp lệ →', bookingStatus);
-                      console.log('   canStartWithBooking =', canStartWithBooking);
+                    // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                    if (
+                      bookingStatus !== 'CONFIRMED' &&
+                      bookingStatus !== 'IN_PROGRESS' &&
+                      bookingStatus !== 'COMPLETED'
+                    ) {
+                      canStartWithBooking = false;
+                      bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
+                      console.log(
+                        '❌ CHECK 1 FAILED: Status không hợp lệ →',
+                        bookingStatus
+                      );
+                      console.log(
+                        '   canStartWithBooking =',
+                        canStartWithBooking
+                      );
                       console.log('   message =', bookingStatusMessage);
                     } else {
                       console.log('✅ CHECK 1 PASSED: Status hợp lệ');
                     }
-                    
+
                     // Check 2: Thời gian
                     if (studioBooking.bookingDate && canStartWithBooking) {
                       console.log('📌 CHECK 2: Thời gian');
-                      
+
                       // Quá sớm: > 7 ngày trước booking date
                       if (daysUntilBooking > 7) {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Chưa thể bắt đầu task. Recording session sẽ diễn ra vào ${bookingDateFormatted}. Bạn có thể bắt đầu task trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`;
                         console.log('❌ CHECK 2 FAILED: Quá sớm (> 7 ngày)');
-                        console.log('   canStartWithBooking =', canStartWithBooking);
+                        console.log(
+                          '   canStartWithBooking =',
+                          canStartWithBooking
+                        );
                         console.log('   message =', bookingStatusMessage);
                       }
                       // Quá muộn: > 1 ngày sau booking date
@@ -1926,24 +1958,35 @@ const SpecialistTaskDetailPage = () => {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày (${bookingDateFormatted}). Vui lòng liên hệ Manager nếu cần hỗ trợ.`;
                         console.log('❌ CHECK 2 FAILED: Quá muộn (< -1 ngày)');
-                        console.log('   canStartWithBooking =', canStartWithBooking);
+                        console.log(
+                          '   canStartWithBooking =',
+                          canStartWithBooking
+                        );
                         console.log('   message =', bookingStatusMessage);
                       } else {
-                        console.log('✅ CHECK 2 PASSED: Trong khoảng -1 đến 7 ngày');
+                        console.log(
+                          '✅ CHECK 2 PASSED: Trong khoảng -1 đến 7 ngày'
+                        );
                       }
                     } else if (!studioBooking.bookingDate) {
                       console.log('⚠️ CHECK 2 SKIPPED: Không có bookingDate');
                     } else if (!canStartWithBooking) {
-                      console.log('⚠️ CHECK 2 SKIPPED: canStartWithBooking đã false từ CHECK 1');
+                      console.log(
+                        '⚠️ CHECK 2 SKIPPED: canStartWithBooking đã false từ CHECK 1'
+                      );
                     }
                   } else {
-                    console.log('⚠️ VALIDATION SKIPPED: hasStartButton = false (task status không phải ready_to_start)');
-                    console.log('   → Booking info vẫn được tính toán để hiển thị');
+                    console.log(
+                      '⚠️ VALIDATION SKIPPED: hasStartButton = false (task status không phải ready_to_start)'
+                    );
+                    console.log(
+                      '   → Booking info vẫn được tính toán để hiển thị'
+                    );
                   }
                 } else {
                   console.log('⚠️ VALIDATION SKIPPED: Không có booking data');
                 }
-                
+
                 console.log('=== FINAL RESULT ===');
                 console.log('canStartWithBooking:', canStartWithBooking);
                 console.log('bookingStatusMessage:', bookingStatusMessage);
@@ -2092,47 +2135,69 @@ const SpecialistTaskDetailPage = () => {
                           showIcon
                         />
                       )}
-                      
+
                       {/* Hiển thị booking info nếu có - CHỈ KHI CHƯA START TASK */}
-                      {hasStudioBooking && 
-                        studioBooking && 
-                        bookingDateFormatted && 
-                        (status === 'ready_to_start' || status === 'accepted_waiting') && (
-                        <Alert
-                          message={`🎙️ Recording Session: ${bookingDateFormatted}`}
-                          description={
-                            daysUntilBooking !== null && (
-                              <span>
-                                {daysUntilBooking > 0 && (
-                                  <span>
-                                    Còn <strong>{daysUntilBooking} ngày</strong> đến ngày thu âm.
-                                    {daysUntilBooking <= 7 && ' Bạn đã có thể bắt đầu task!'}
-                                  </span>
-                                )}
-                                {daysUntilBooking === 0 && (
-                                  <span><strong>Hôm nay là ngày thu âm!</strong> Sẵn sàng bắt đầu task.</span>
-                                )}
-                                {daysUntilBooking < 0 && daysUntilBooking >= -1 && (
-                                  <span>Ngày thu âm đã qua {Math.abs(daysUntilBooking)} ngày. Vẫn có thể bắt đầu task.</span>
-                                )}
-                                {studioBooking.durationHours && (
-                                  <span> • Thời lượng: {studioBooking.durationHours}h</span>
-                                )}
-                                {studioBooking.status && (
-                                  <span> • Trạng thái: {studioBooking.status}</span>
-                                )}
-                              </span>
-                            )
-                          }
-                          type={
-                            canStartWithBooking && daysUntilBooking !== null && daysUntilBooking <= 7 && daysUntilBooking >= -1
-                              ? 'success'
-                              : 'info'
-                          }
-                          showIcon
-                        />
-                      )}
-                      
+                      {hasStudioBooking &&
+                        studioBooking &&
+                        bookingDateFormatted &&
+                        (status === 'ready_to_start' ||
+                          status === 'accepted_waiting') && (
+                          <Alert
+                            message={`🎙️ Recording Session: ${bookingDateFormatted}`}
+                            description={
+                              daysUntilBooking !== null && (
+                                <span>
+                                  {daysUntilBooking > 0 && (
+                                    <span>
+                                      Còn{' '}
+                                      <strong>{daysUntilBooking} ngày</strong>{' '}
+                                      đến ngày thu âm.
+                                      {daysUntilBooking <= 7 &&
+                                        ' Bạn đã có thể bắt đầu task!'}
+                                    </span>
+                                  )}
+                                  {daysUntilBooking === 0 && (
+                                    <span>
+                                      <strong>Hôm nay là ngày thu âm!</strong>{' '}
+                                      Sẵn sàng bắt đầu task.
+                                    </span>
+                                  )}
+                                  {daysUntilBooking < 0 &&
+                                    daysUntilBooking >= -1 && (
+                                      <span>
+                                        Ngày thu âm đã qua{' '}
+                                        {Math.abs(daysUntilBooking)} ngày. Vẫn
+                                        có thể bắt đầu task.
+                                      </span>
+                                    )}
+                                  {studioBooking.durationHours && (
+                                    <span>
+                                      {' '}
+                                      • Thời lượng:{' '}
+                                      {studioBooking.durationHours}h
+                                    </span>
+                                  )}
+                                  {studioBooking.status && (
+                                    <span>
+                                      {' '}
+                                      • Trạng thái: {studioBooking.status}
+                                    </span>
+                                  )}
+                                </span>
+                              )
+                            }
+                            type={
+                              canStartWithBooking &&
+                              daysUntilBooking !== null &&
+                              daysUntilBooking <= 7 &&
+                              daysUntilBooking >= -1
+                                ? 'success'
+                                : 'info'
+                            }
+                            showIcon
+                          />
+                        )}
+
                       {hasStudioBooking &&
                         !canStartWithBooking &&
                         bookingStatusMessage && (

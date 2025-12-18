@@ -211,19 +211,32 @@ const MyStudioBookings = () => {
       width: 120,
       render: (_, record) => {
         // Lấy từ participants với performerSource = INTERNAL_ARTIST
-        const internalArtists = record?.participants?.filter(p => p.performerSource === 'INTERNAL_ARTIST') || [];
+        const internalArtists =
+          record?.participants?.filter(
+            p => p.performerSource === 'INTERNAL_ARTIST'
+          ) || [];
         if (internalArtists.length > 0) {
           const myParticipant = internalArtists[0];
-          return myParticipant?.roleType ? <Tag>{myParticipant.roleType}</Tag> : 'N/A';
+          return myParticipant?.roleType ? (
+            <Tag>{myParticipant.roleType}</Tag>
+          ) : (
+            'N/A'
+          );
         }
-        
+
         // Fallback: lấy từ participants (cho luồng 3)
         if (record.participants && record.participants.length > 0) {
           // Tìm participant với isPrimary = true hoặc lấy participant đầu tiên
-          const myParticipant = record.participants.find(p => p.isPrimary) || record.participants[0];
-          return myParticipant?.roleType ? <Tag>{myParticipant.roleType}</Tag> : 'N/A';
+          const myParticipant =
+            record.participants.find(p => p.isPrimary) ||
+            record.participants[0];
+          return myParticipant?.roleType ? (
+            <Tag>{myParticipant.roleType}</Tag>
+          ) : (
+            'N/A'
+          );
         }
-        
+
         return 'N/A';
       },
     },
@@ -251,9 +264,8 @@ const MyStudioBookings = () => {
       dataIndex: 'totalCost',
       key: 'totalCost',
       width: 130,
-      render: cost => (
-        cost != null ? `${cost.toLocaleString('vi-VN')} ₫` : 'N/A'
-      ),
+      render: cost =>
+        cost != null ? `${cost.toLocaleString('vi-VN')} ₫` : 'N/A',
     },
     {
       title: 'Actions',
