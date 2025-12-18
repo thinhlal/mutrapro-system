@@ -259,11 +259,12 @@ const PayMilestonePage = () => {
       return;
     }
     const payableAmount = parseFloat(paymentQuote.payableAmount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < payableAmount) {
       message.warning(
-        'Insufficient wallet balance. Please top up your wallet first.'
+        'Insufficient available balance. Please top up your wallet first.'
       );
       setTopupModalVisible(true);
       return;
@@ -356,7 +357,8 @@ const PayMilestonePage = () => {
   const payableAmount = paymentQuote?.payableAmount != null
     ? parseFloat(paymentQuote.payableAmount)
     : milestoneAmount;
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance = wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasEnoughBalance = walletBalance >= payableAmount;
   const canPayNow = !quoteLoading && paymentQuote?.payableAmount != null;
 

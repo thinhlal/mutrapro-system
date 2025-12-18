@@ -15,6 +15,7 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface WalletMapper {
     
+    @Mapping(target = "availableBalance", expression = "java(wallet.getAvailableBalance())")
     WalletResponse toResponse(Wallet wallet);
     
     @Mapping(target = "walletId", source = "wallet.walletId")

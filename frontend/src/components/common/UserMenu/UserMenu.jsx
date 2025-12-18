@@ -190,13 +190,16 @@ function UserMenu() {
               <div className={styles.walletBalanceSection}>
                 <div className={styles.walletBalanceHeader}>
                   <WalletOutlined className={styles.walletIcon} />
-                  <span className={styles.walletLabel}>Wallet balance</span>
+                  <span className={styles.walletLabel}>Available balance</span>
                 </div>
                 <div className={styles.walletBalanceAmount}>
                   {walletLoading ? (
                     <span className={styles.walletLoading}>...</span>
                   ) : (
-                    formatCurrency(wallet.balance, wallet.currency)
+                    formatCurrency(
+                      wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                      wallet.currency
+                    )
                   )}
                 </div>
               </div>

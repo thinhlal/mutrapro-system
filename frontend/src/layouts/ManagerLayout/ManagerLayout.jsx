@@ -13,6 +13,7 @@ import {
   MessageOutlined,
   EditOutlined,
   CalendarOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -57,6 +58,11 @@ const menuItems = [
     key: '/manager/studio-bookings',
     icon: <CalendarOutlined />,
     label: <Link to="/manager/studio-bookings">Studio Bookings</Link>,
+  },
+  {
+    key: '/manager/withdrawal-requests',
+    icon: <DollarOutlined />,
+    label: <Link to="/manager/withdrawal-requests">Withdrawal Requests</Link>,
   },
   {
     key: '/manager/chat',

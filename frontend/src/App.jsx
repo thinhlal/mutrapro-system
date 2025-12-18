@@ -112,6 +112,7 @@ import RevisionRequestsManagement from './pages/manager/RevisionRequests/Revisio
 import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
+import WithdrawalRequestsManagement from './pages/manager/WithdrawalRequests/WithdrawalRequestsManagement';
 import MyStudioBookings from './pages/recordingArtist/MyStudioBookings/MyStudioBookings';
 import RecordingArtistStudioBookingDetailPage from './pages/recordingArtist/StudioBookingDetail/StudioBookingDetailPage';
 
@@ -516,6 +517,10 @@ function App() {
               path="revision-requests"
               element={<RevisionRequestsManagement />}
             />
+            <Route
+              path="withdrawal-requests"
+              element={<WithdrawalRequestsManagement />}
+            />
             <Route path="chat" element={<ManagerChatPage />} />
             <Route path="chat/:roomId" element={<ManagerChatPage />} />
           </Route>
@@ -533,6 +538,10 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="wallets" element={<WalletManagement />} />
+            <Route
+              path="withdrawal-requests"
+              element={<WithdrawalRequestsManagement />}
+            />
             <Route
               path="service-requests"
               element={<ServiceRequestManagement />}

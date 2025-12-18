@@ -292,19 +292,44 @@ export const API_ENDPOINTS = {
     // POST /api/v1/billing/wallets/{walletId}/debit/revision-fee
     PAY_REVISION_FEE: walletId =>
       `${BILLING_PATH}/wallets/${walletId}/debit/revision-fee`,
+    // POST /api/v1/billing/wallets/{walletId}/withdraw
+    WITHDRAW: walletId => `${BILLING_PATH}/wallets/${walletId}/withdraw`,
     // GET /api/v1/billing/wallets/{walletId}/transactions
     GET_TRANSACTIONS: walletId =>
       `${BILLING_PATH}/wallets/${walletId}/transactions`,
     // GET /api/v1/billing/wallets/me/transactions
     GET_MY_TRANSACTIONS: `${BILLING_PATH}/wallets/me/transactions`,
-    // === Admin Wallet Management ===
+    // GET /api/v1/billing/wallets/me/withdrawal-requests
+    GET_MY_WITHDRAWAL_REQUESTS: `${BILLING_PATH}/wallets/me/withdrawal-requests`,
+  },
+  // === Admin Wallet Management ===
+  ADMIN_WALLET: {
     // GET /api/v1/billing/admin/wallets
-    ADMIN_GET_ALL: `${BILLING_PATH}/admin/wallets`,
+    GET_ALL: `${BILLING_PATH}/admin/wallets`,
     // GET /api/v1/billing/admin/wallets/{walletId}
-    ADMIN_GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
+    GET_BY_ID: walletId => `${BILLING_PATH}/admin/wallets/${walletId}`,
     // GET /api/v1/billing/admin/wallets/{walletId}/transactions
-    ADMIN_GET_TRANSACTIONS: walletId =>
+    GET_TRANSACTIONS: walletId =>
       `${BILLING_PATH}/admin/wallets/${walletId}/transactions`,
+    // GET /api/v1/billing/admin/wallets/statistics
+    GET_STATISTICS: `${BILLING_PATH}/admin/wallets/statistics`,
+    // GET /api/v1/billing/admin/wallets/withdrawal-requests
+    GET_WITHDRAWAL_REQUESTS: `${BILLING_PATH}/admin/wallets/withdrawal-requests`,
+    // POST /api/v1/billing/admin/wallets/withdrawal-requests/{id}/approve
+    APPROVE_WITHDRAWAL: id =>
+      `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/approve`,
+    // POST /api/v1/billing/admin/wallets/withdrawal-requests/{id}/reject
+    REJECT_WITHDRAWAL: id =>
+      `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/reject`,
+    // POST /api/v1/billing/admin/wallets/withdrawal-requests/{id}/complete
+    COMPLETE_WITHDRAWAL: id =>
+      `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/complete`,
+    // POST /api/v1/billing/admin/wallets/withdrawal-requests/{id}/fail
+    FAIL_WITHDRAWAL: id =>
+      `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/fail`,
+    // GET /api/v1/billing/admin/wallets/withdrawal-requests/{id}/proof
+    DOWNLOAD_PROOF: id =>
+      `${BILLING_PATH}/admin/wallets/withdrawal-requests/${id}/proof`,
   },
 
   // === Request Service (Quản lý Notation, Requests) ===

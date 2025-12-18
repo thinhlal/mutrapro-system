@@ -89,3 +89,12 @@ sepay:
     expiry:
       minutes: 30
     prefix: MTP-TOPUP  # Prefix cho mã đơn hàng trong nội dung chuyển khoản
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    bucket-name: mutrapro-dev-files
+    region: ap-southeast-1
+    access-key: AKIAZ24ITCMNFIY2Z3VX
+    secret-key: 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

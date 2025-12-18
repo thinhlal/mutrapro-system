@@ -30,7 +30,7 @@ public interface RevisionRequestRepository extends JpaRepository<RevisionRequest
 
     // Find all revision requests by manager ID
     List<RevisionRequest> findByManagerId(String managerId);
-    
+
     // Find revision requests by manager ID and status (tối ưu: filter ở database level)
     List<RevisionRequest> findByManagerIdAndStatus(String managerId, RevisionRequestStatus status);
 

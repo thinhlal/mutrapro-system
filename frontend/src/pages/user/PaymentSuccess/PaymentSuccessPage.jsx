@@ -157,10 +157,21 @@ const PaymentSuccessPage = () => {
                 </Descriptions.Item>
               )}
               {wallet && (
-                <Descriptions.Item label="Số dư ví hiện tại">
+                <Descriptions.Item label="Số dư khả dụng">
                   <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
-                    {formatCurrency(wallet.balance, wallet.currency)}
+                    {formatCurrency(
+                      wallet?.availableBalance ?? (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0),
+                      wallet.currency
+                    )}
                   </Text>
+                  {wallet?.holdBalance > 0 && (
+                    <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                      <Text type="secondary">
+                        Tổng: {formatCurrency(wallet.balance, wallet.currency)} | 
+                        Đang giữ: {formatCurrency(wallet.holdBalance, wallet.currency)}
+                      </Text>
+                    </div>
+                  )}
                 </Descriptions.Item>
               )}
             </Descriptions>

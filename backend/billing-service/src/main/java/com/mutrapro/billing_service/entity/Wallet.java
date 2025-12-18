@@ -34,8 +34,19 @@ public class Wallet extends BaseEntity<String> {
     BigDecimal balance = BigDecimal.ZERO;
 
     @Builder.Default
+    @Column(name = "hold_balance", nullable = false, precision = 14, scale = 2)
+    BigDecimal holdBalance = BigDecimal.ZERO;  // Số tiền đang bị hold (cho withdrawal requests)
+
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "currency", nullable = false, length = 10)
     CurrencyType currency = CurrencyType.VND;
+
+    /**
+     * Tính số dư khả dụng (available = balance - holdBalance)
+     */
+    public BigDecimal getAvailableBalance() {
+        return balance.subtract(holdBalance);
+    }
 }
 

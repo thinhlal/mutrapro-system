@@ -814,27 +814,27 @@ public class StudioBookingService {
                 // Lấy specialist info từ map đã fetch sẵn
                 Map<String, Object> specialistData = specialistInfoMap.get(p.getSpecialistId());
                 if (specialistData != null) {
-                    // Response structure: { specialist: {...}, skills: [...], demos: [...] }
-                    @SuppressWarnings("unchecked")
+                            // Response structure: { specialist: {...}, skills: [...], demos: [...] }
+                            @SuppressWarnings("unchecked")
                     Map<String, Object> specialist = (Map<String, Object>) specialistData.get("specialist");
-                    if (specialist != null) {
-                        specialistName = (String) specialist.get("fullName");
-                    }
-                    
-                    // Lấy skill name nếu là INSTRUMENT
-                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
-                        for (Map<String, Object> skill : skills) {
-                            if (p.getSkillId().equals(skill.get("skillId"))) {
-                                skillName = (String) skill.get("skillName");
-                                break;
+                            if (specialist != null) {
+                                specialistName = (String) specialist.get("fullName");
                             }
-                        }
-                    }
+                            
+                            // Lấy skill name nếu là INSTRUMENT
+                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
+                                @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
+                                for (Map<String, Object> skill : skills) {
+                                    if (p.getSkillId().equals(skill.get("skillId"))) {
+                                        skillName = (String) skill.get("skillName");
+                                        break;
+                                    }
+                                }
+                            }
                 } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
                     // Fallback nếu không fetch được
-                    specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
+                        specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
                 }
                 
                 return StudioBookingResponse.BookingParticipantInfo.builder()
