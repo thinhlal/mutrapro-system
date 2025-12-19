@@ -334,7 +334,8 @@ export default function ContractsManagement() {
       title: 'Contract No',
       dataIndex: 'contractNumber',
       key: 'contractNumber',
-      width: 190,
+      width: 150,
+      ellipsis: true,
       render: (v, r) => (
         <Space direction="vertical" size={0}>
           <Text strong>{v}</Text>
@@ -349,35 +350,54 @@ export default function ContractsManagement() {
     {
       title: 'Customer / Service',
       key: 'customer',
+      width: 180,
+      ellipsis: true,
       render: (_, r) => (
         <div>
           <Text>{r.nameSnapshot || 'N/A'}</Text>
           <div className={styles.sub}>{getServiceName(r.contractType)}</div>
         </div>
       ),
-      width: 200,
     },
     {
       title: 'Type',
       dataIndex: 'contractType',
       key: 'contractType',
-      width: 170,
+      width: 150,
+      ellipsis: true,
       filters: CONTRACT_TYPES.map(x => ({ text: x.label, value: x.value })),
       onFilter: (val, rec) =>
         (rec.contractType?.toLowerCase() || '') === val.toLowerCase(),
-      render: v => <Tag color="processing">{getServiceName(v)}</Tag>,
+      render: v => {
+        const serviceName = getServiceName(v);
+        return (
+          <Tooltip title={serviceName}>
+            <div style={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Tag color="processing" style={{ maxWidth: '100%', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {serviceName}
+              </Tag>
+            </div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 230,
+      width: 200,
+      ellipsis: true,
       render: v => {
         const statusLower = v?.toLowerCase() || 'draft';
+        const statusLabel = statusText[statusLower] || statusLower.toUpperCase();
         return (
-          <Tag color={statusColor[statusLower] || 'default'}>
-            {statusText[statusLower] || statusLower.toUpperCase()}
-          </Tag>
+          <Tooltip title={statusLabel}>
+            <div style={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Tag color={statusColor[statusLower] || 'default'} style={{ maxWidth: '100%', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {statusLabel}
+              </Tag>
+            </div>
+          </Tooltip>
         );
       },
       filters: CONTRACT_STATUS.map(x => ({ text: x.label, value: x.value })),
@@ -388,7 +408,7 @@ export default function ContractsManagement() {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 140,
+      width: 120,
       render: v => dayjs(v).format('YYYY-MM-DD'),
       sorter: (a, b) =>
         dayjs(a.createdAt).valueOf() - dayjs(b.createdAt).valueOf(),
@@ -396,7 +416,7 @@ export default function ContractsManagement() {
     {
       title: 'Price',
       key: 'price',
-      width: 170,
+      width: 150,
       render: (_, r) => (
         <div>
           <div>
@@ -416,7 +436,7 @@ export default function ContractsManagement() {
     {
       title: 'Timeline',
       key: 'timeline',
-      width: 200,
+      width: 180,
       render: (_, r) => (
         <div className={styles.timeline}>
           <div>
@@ -454,8 +474,7 @@ export default function ContractsManagement() {
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 170,
+      width: 140,
       render: (_, r) => {
         const statusLower = r.status?.toLowerCase() || '';
         const isDraft = statusLower === 'draft';
@@ -830,7 +849,6 @@ export default function ContractsManagement() {
             bordered
             size="middle"
             pagination={{ pageSize: 8, showSizeChanger: false }}
-            scroll={{ x: 1000 }}
             loading={loading}
           />
         )}

@@ -197,6 +197,7 @@ const NotationInstruments = () => {
     {
       title: 'Status',
       dataIndex: 'active',
+      width: 150,
       key: 'active',
       render: active => (
         <Tag color={active ? 'success' : 'error'}>

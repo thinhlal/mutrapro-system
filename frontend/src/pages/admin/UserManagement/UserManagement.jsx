@@ -146,22 +146,24 @@ const UserManagement = () => {
   const columns = [
     {
       title: 'Full Name',
-      width: 200,
+      width: 150,
       dataIndex: 'fullName',
       key: 'fullName',
       sorter: (a, b) => (a.fullName || '').localeCompare(b.fullName || ''),
+      ellipsis: true,
     },
     {
       title: 'Email',
-      width: 250,
+      width: 200,
       dataIndex: 'email',
       key: 'email',
       sorter: (a, b) => a.email.localeCompare(b.email),
+      ellipsis: true,
     },
     {
       title: 'Role',
       dataIndex: 'role',
-      width: 140,
+      width: 130,
       key: 'role',
       render: role => (
         <Tag color={getRoleColor(role)}>{getRoleDisplayName(role)}</Tag>
@@ -178,10 +180,10 @@ const UserManagement = () => {
     },
     {
       title: 'Status',
-      width: 180,
+      width: 150,
       key: 'status',
       render: (_, record) => (
-        <Space>
+        <Space direction="vertical" size="small">
           <Tag color={record.active ? 'success' : 'error'}>
             {record.active ? 'Active' : 'Inactive'}
           </Tag>
@@ -191,16 +193,16 @@ const UserManagement = () => {
         </Space>
       ),
     },
-    {
-      title: 'Phone',
-      width: 140,
-      dataIndex: 'phone',
-      key: 'phone',
-    },
+    // {
+    //   title: 'Phone',
+    //   width: 140,
+    //   dataIndex: 'phone',
+    //   key: 'phone',
+    // },
     {
       title: 'Auth Provider',
       dataIndex: 'authProvider',
-      width: 140,
+      width: 120,
       key: 'authProvider',
       render: provider => (
         <Tag color={provider === 'LOCAL' ? 'default' : 'blue'}>{provider}</Tag>
@@ -209,10 +211,9 @@ const UserManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 250,
+      width: 120,
       render: (_, record) => (
-        <Space>
+        <Space direction="vertical" size="small">
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -271,7 +272,6 @@ const UserManagement = () => {
             showSizeChanger: true,
             showTotal: total => `Total ${total} users`,
           }}
-          scroll={{ x: 1200 }}
         />
       </Card>
 

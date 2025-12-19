@@ -146,18 +146,22 @@ const SkillManagement = () => {
       title: 'Skill ID',
       dataIndex: 'skillId',
       key: 'skillId',
-      width: 200,
+      width: 150,
+      ellipsis: true,
     },
     {
       title: 'Skill Name',
       dataIndex: 'skillName',
       key: 'skillName',
+      width: 200,
+      ellipsis: true,
       sorter: (a, b) => (a.skillName || '').localeCompare(b.skillName || ''),
     },
     {
       title: 'Skill Type',
       dataIndex: 'skillType',
       key: 'skillType',
+      width: 130,
       render: skillType => {
         const typeColors = {
           TRANSCRIPTION: 'blue',
@@ -186,12 +190,14 @@ const SkillManagement = () => {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
+      width: 200,
       ellipsis: true,
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
+      width: 100,
       render: isActive => (
         <Tag color={isActive ? 'green' : 'red'}>
           {isActive ? 'Active' : 'Inactive'}
@@ -207,15 +213,15 @@ const SkillManagement = () => {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 150,
       render: date => (date ? new Date(date).toLocaleString() : 'N/A'),
     },
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 200,
+      width: 120,
       render: (_, record) => (
-        <Space>
+        <Space direction="vertical" size="small">
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -276,7 +282,6 @@ const SkillManagement = () => {
             showSizeChanger: true,
             showTotal: total => `Total ${total} skills`,
           }}
-          scroll={{ x: 1200 }}
         />
       </Card>
 
