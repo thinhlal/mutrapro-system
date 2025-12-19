@@ -122,5 +122,10 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
      */
     @Query("SELECT c.requestId FROM Contract c WHERE c.contractId = :contractId")
     Optional<String> findRequestIdByContractId(@Param("contractId") String contractId);
+
+    // --- Aggregation helpers for admin statistics ---
+    long countByStatus(ContractStatus status);
+
+    long countByContractType(ContractType contractType);
 }
 

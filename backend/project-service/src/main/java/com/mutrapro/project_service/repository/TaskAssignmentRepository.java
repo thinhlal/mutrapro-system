@@ -131,5 +131,10 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
             @Param("taskType") TaskType taskType,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    // --- Aggregation helpers for admin statistics ---
+    long countByStatus(AssignmentStatus status);
+
+    long countByTaskType(TaskType taskType);
 }
 
