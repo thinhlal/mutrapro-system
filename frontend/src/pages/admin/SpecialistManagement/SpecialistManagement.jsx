@@ -222,18 +222,21 @@ const SpecialistManagement = () => {
       title: 'Specialist ID',
       dataIndex: 'specialistId',
       key: 'specialistId',
-      width: 200,
+      width: 150,
+      ellipsis: true,
     },
     {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
-      width: 200,
+      width: 150,
+      ellipsis: true,
     },
     {
       title: 'Specialization',
       dataIndex: 'specialization',
       key: 'specialization',
+      width: 130,
       render: specialization => (
         <Tag color={getSpecializationColor(specialization)}>
           {getSpecializationDisplayName(specialization)}
@@ -248,6 +251,7 @@ const SpecialistManagement = () => {
     },
     {
       title: 'Status',
+      width: 120,
       dataIndex: 'status',
       key: 'status',
       render: status => (
@@ -264,10 +268,12 @@ const SpecialistManagement = () => {
       title: 'Max Concurrent Tasks',
       dataIndex: 'maxConcurrentTasks',
       key: 'maxConcurrentTasks',
+      width: 140,
       align: 'center',
     },
     {
       title: 'Rating',
+      width: 100,
       dataIndex: 'rating',
       key: 'rating',
       align: 'center',
@@ -275,6 +281,7 @@ const SpecialistManagement = () => {
     },
     {
       title: 'Total Projects',
+      width: 120,
       dataIndex: 'totalProjects',
       key: 'totalProjects',
       align: 'center',
@@ -282,10 +289,9 @@ const SpecialistManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 300,
+      width: 120,
       render: (_, record) => (
-        <Space>
+        <Space direction="vertical" size="small">
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -367,7 +373,6 @@ const SpecialistManagement = () => {
             showSizeChanger: true,
             showTotal: total => `Total ${total} specialists`,
           }}
-          scroll={{ x: 1400 }}
         />
       </Card>
 

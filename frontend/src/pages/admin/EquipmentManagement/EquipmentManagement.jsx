@@ -208,11 +208,15 @@ const EquipmentManagement = () => {
       title: 'Equipment Name',
       dataIndex: 'equipmentName',
       key: 'equipmentName',
+      width: 200,
+      ellipsis: true,
       sorter: (a, b) => a.equipmentName.localeCompare(b.equipmentName),
     },
     {
       title: 'Brand / Model',
       key: 'brandModel',
+      width: 180,
+      ellipsis: true,
       render: (_, record) => (
         <span>
           {record.brand && record.model
@@ -236,7 +240,8 @@ const EquipmentManagement = () => {
     {
       title: 'Quantity',
       key: 'quantity',
-      width: 150,
+      width: 120,
+      align: 'center',
       render: (_, record) => (
         <Tooltip
           title={`Total: ${record.totalQuantity}, Available: ${record.availableQuantity}`}
@@ -251,6 +256,7 @@ const EquipmentManagement = () => {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
+      width: 120,
       render: (isActive, record) => {
         const available = record.availableQuantity > 0;
         if (!isActive) {
@@ -276,8 +282,7 @@ const EquipmentManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 120,
+      width: 100,
       render: (_, record) => (
         <Button
           type="link"
@@ -330,7 +335,6 @@ const EquipmentManagement = () => {
             showSizeChanger: true,
             showTotal: total => `Total ${total} equipment`,
           }}
-          scroll={{ x: 1200 }}
         />
       </Card>
 
