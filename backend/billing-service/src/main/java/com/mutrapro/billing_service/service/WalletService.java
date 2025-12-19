@@ -30,9 +30,16 @@ import org.springframework.web.multipart.MultipartFile;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
 import com.mutrapro.billing_service.exception.InsufficientBalanceException;
 import com.mutrapro.billing_service.exception.InvalidAmountException;
+import com.mutrapro.billing_service.exception.InvalidProofFileException;
+import com.mutrapro.billing_service.exception.InvalidTransactionTypeException;
+import com.mutrapro.billing_service.exception.InvalidWithdrawalStatusException;
+import com.mutrapro.billing_service.exception.ProofFileDownloadException;
+import com.mutrapro.billing_service.exception.ProofFileUploadException;
+import com.mutrapro.billing_service.exception.TransactionAlreadyRefundedException;
 import com.mutrapro.billing_service.exception.UnauthorizedWalletAccessException;
 import com.mutrapro.billing_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.billing_service.exception.WalletNotFoundException;
+import com.mutrapro.billing_service.exception.WithdrawalRequestNotFoundException;
 import com.mutrapro.billing_service.mapper.WalletMapper;
 import com.mutrapro.billing_service.repository.WalletRepository;
 import com.mutrapro.billing_service.repository.WalletTransactionRepository;
@@ -708,11 +715,12 @@ public class WalletService {
 
         // Lấy withdrawal request
         WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
-                .orElseThrow(() -> new RuntimeException("Withdrawal request not found: " + withdrawalRequestId));
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
 
         // Kiểm tra status
         if (request.getStatus() != WithdrawalStatus.PENDING_REVIEW) {
-            throw new RuntimeException("Withdrawal request is not pending review. Current status: " + request.getStatus());
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.PENDING_REVIEW);
         }
 
         // Update withdrawal request: PENDING_REVIEW → APPROVED (tiền vẫn hold)
@@ -737,11 +745,12 @@ public class WalletService {
 
         // Lấy withdrawal request
         WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
-                .orElseThrow(() -> new RuntimeException("Withdrawal request not found: " + withdrawalRequestId));
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
 
         // Kiểm tra status
         if (request.getStatus() != WithdrawalStatus.PENDING_REVIEW) {
-            throw new RuntimeException("Withdrawal request is not pending review. Current status: " + request.getStatus());
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.PENDING_REVIEW);
         }
 
         // Lấy wallet với lock để release hold
@@ -787,11 +796,12 @@ public class WalletService {
 
         // Lấy withdrawal request
         WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
-                .orElseThrow(() -> new RuntimeException("Withdrawal request not found: " + withdrawalRequestId));
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
 
         // Kiểm tra status
         if (request.getStatus() != WithdrawalStatus.APPROVED && request.getStatus() != WithdrawalStatus.PROCESSING) {
-            throw new RuntimeException("Withdrawal request is not approved/processing. Current status: " + request.getStatus());
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.APPROVED, WithdrawalStatus.PROCESSING);
         }
 
         // Lấy wallet với lock để tránh race condition
@@ -820,7 +830,7 @@ public class WalletService {
                 if (!isValidType) {
                     log.error("Invalid proof file type: requestId={}, contentType={}, fileName={}", 
                         withdrawalRequestId, contentType, fileName);
-                    throw new RuntimeException("Proof file must be an image (JPEG, PNG) or PDF");
+                    throw InvalidProofFileException.invalidType(fileName, contentType);
                 }
 
                 // Validate file size (max 10MB)
@@ -828,7 +838,7 @@ public class WalletService {
                 if (proofFile.getSize() > maxSize) {
                     log.error("Proof file size exceeds limit: requestId={}, size={}, maxSize={}", 
                         withdrawalRequestId, proofFile.getSize(), maxSize);
-                    throw new RuntimeException("Proof file size exceeds 10MB limit");
+                    throw InvalidProofFileException.exceedsSizeLimit(fileName, proofFile.getSize(), maxSize);
                 }
 
                 // Upload to S3 private folder (không public, cần authentication để download)
@@ -842,9 +852,12 @@ public class WalletService {
                         "withdrawal-proofs"  // folder: withdrawal-proofs/
                 );
                 log.info("Proof file uploaded to S3 successfully: requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
+            } catch (InvalidProofFileException e) {
+                // Re-throw validation exceptions as-is
+                throw e;
             } catch (Exception e) {
                 log.error("Error uploading proof file: requestId={}, error={}", withdrawalRequestId, e.getMessage(), e);
-                throw new RuntimeException("Failed to upload proof file: " + e.getMessage(), e);
+                throw ProofFileUploadException.create(withdrawalRequestId, proofFile.getOriginalFilename(), e);
             }
         } else {
             log.warn("No proof file provided: requestId={}, proofFile={}", withdrawalRequestId, proofFile);
@@ -938,11 +951,12 @@ public class WalletService {
 
         // Lấy withdrawal request
         WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
-                .orElseThrow(() -> new RuntimeException("Withdrawal request not found: " + withdrawalRequestId));
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
 
         // Kiểm tra status
         if (request.getStatus() != WithdrawalStatus.APPROVED && request.getStatus() != WithdrawalStatus.PROCESSING) {
-            throw new RuntimeException("Withdrawal request is not approved/processing. Current status: " + request.getStatus());
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.APPROVED, WithdrawalStatus.PROCESSING);
         }
 
         // Lấy wallet với lock để release hold
@@ -978,7 +992,7 @@ public class WalletService {
     @Transactional(readOnly = true)
     public WithdrawalRequest getWithdrawalRequestById(String withdrawalRequestId) {
         return withdrawalRequestRepository.findById(withdrawalRequestId)
-                .orElseThrow(() -> new RuntimeException("Withdrawal request not found: " + withdrawalRequestId));
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
     }
 
     /**
@@ -990,7 +1004,7 @@ public class WalletService {
             return s3Service.downloadFile(proofS3Key);
         } catch (Exception e) {
             log.error("Error downloading proof file from S3: key={}, error={}", proofS3Key, e.getMessage(), e);
-            throw new RuntimeException("Failed to download proof file: " + e.getMessage(), e);
+            throw ProofFileDownloadException.create(proofS3Key, e);
         }
     }
 
@@ -1256,12 +1270,13 @@ public class WalletService {
         
         // Verify đây là revision_fee transaction
         if (originalTx.getTxType() != WalletTxType.revision_fee) {
-            throw new RuntimeException("Transaction is not a revision fee: " + paidWalletTxId + ", type: " + originalTx.getTxType());
+            throw InvalidTransactionTypeException.forOperation(
+                paidWalletTxId, originalTx.getTxType(), WalletTxType.revision_fee);
         }
         
         // Verify chưa được refund
         if (walletTransactionRepository.findByRefundOfWalletTx_WalletTxId(paidWalletTxId).isPresent()) {
-            throw new RuntimeException("Transaction already refunded: " + paidWalletTxId);
+            throw TransactionAlreadyRefundedException.create(paidWalletTxId);
         }
         
         // Lấy wallet và lock để tránh race condition
