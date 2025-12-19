@@ -807,20 +807,33 @@ public class WalletService {
         // Upload proof file to S3 private folder (nếu có)
         String proofS3Key = null;
         if (proofFile != null && !proofFile.isEmpty()) {
+            log.info("Processing proof file: requestId={}, fileName={}, contentType={}, size={}", 
+                withdrawalRequestId, proofFile.getOriginalFilename(), proofFile.getContentType(), proofFile.getSize());
             try {
-                // Validate file type (chỉ cho phép image)
+                // Validate file type (cho phép image và PDF)
                 String contentType = proofFile.getContentType();
-                if (contentType == null || !contentType.startsWith("image/")) {
-                    throw new RuntimeException("Proof file must be an image (JPEG, PNG, etc.)");
+                String fileName = proofFile.getOriginalFilename() != null ? proofFile.getOriginalFilename().toLowerCase() : "";
+                boolean isValidType = (contentType != null && (contentType.startsWith("image/") || contentType.equals("application/pdf"))) ||
+                                     fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || 
+                                     fileName.endsWith(".png") || fileName.endsWith(".pdf");
+                
+                if (!isValidType) {
+                    log.error("Invalid proof file type: requestId={}, contentType={}, fileName={}", 
+                        withdrawalRequestId, contentType, fileName);
+                    throw new RuntimeException("Proof file must be an image (JPEG, PNG) or PDF");
                 }
 
                 // Validate file size (max 10MB)
                 long maxSize = 10 * 1024 * 1024; // 10MB
                 if (proofFile.getSize() > maxSize) {
+                    log.error("Proof file size exceeds limit: requestId={}, size={}, maxSize={}", 
+                        withdrawalRequestId, proofFile.getSize(), maxSize);
                     throw new RuntimeException("Proof file size exceeds 10MB limit");
                 }
 
                 // Upload to S3 private folder (không public, cần authentication để download)
+                log.info("Uploading proof file to S3: requestId={}, fileName={}, contentType={}, size={}", 
+                    withdrawalRequestId, proofFile.getOriginalFilename(), contentType, proofFile.getSize());
                 proofS3Key = s3Service.uploadFileAndReturnKey(
                         proofFile.getInputStream(),
                         proofFile.getOriginalFilename(),
@@ -828,11 +841,13 @@ public class WalletService {
                         proofFile.getSize(),
                         "withdrawal-proofs"  // folder: withdrawal-proofs/
                 );
-                log.info("Proof file uploaded to S3 (private): requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
+                log.info("Proof file uploaded to S3 successfully: requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
             } catch (Exception e) {
-                log.error("Error uploading proof file: {}", e.getMessage(), e);
+                log.error("Error uploading proof file: requestId={}, error={}", withdrawalRequestId, e.getMessage(), e);
                 throw new RuntimeException("Failed to upload proof file: " + e.getMessage(), e);
             }
+        } else {
+            log.warn("No proof file provided: requestId={}, proofFile={}", withdrawalRequestId, proofFile);
         }
 
         // Tính toán số dư mới: trừ từ balance và release hold
@@ -870,6 +885,10 @@ public class WalletService {
         }
         if (proofS3Key != null && !proofS3Key.isBlank()) {
             metadata.put("proof_s3_key", proofS3Key);
+            log.info("Proof S3 key added to metadata: requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
+        } else {
+            log.warn("Proof S3 key is null or blank: requestId={}, proofFile={}, proofS3Key={}", 
+                withdrawalRequestId, proofFile != null ? "exists" : "null", proofS3Key);
         }
         if (request.getNote() != null && !request.getNote().isBlank()) {
             metadata.put("note", request.getNote());

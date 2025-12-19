@@ -97,7 +97,6 @@ const WithdrawalRequestsManagement = () => {
   const [proofPreview, setProofPreview] = useState(null);
   const [bankList, setBankList] = useState([]);
   const [loadingBanks, setLoadingBanks] = useState(false);
-  const [amountDifferenceReason, setAmountDifferenceReason] = useState('');
   const [confirmComplete, setConfirmComplete] = useState(false);
   const [showFullAccountNumber, setShowFullAccountNumber] = useState(false);
 
@@ -238,14 +237,6 @@ const WithdrawalRequestsManagement = () => {
       return;
     }
 
-    // Check if amount is different and reason is required
-    const amountDiff =
-      parseFloat(values.paidAmount) - parseFloat(selectedRequest.amount);
-    if (Math.abs(amountDiff) > 0.01 && !amountDifferenceReason.trim()) {
-      message.warning('Vui lòng nhập lý do lệch số tiền');
-      return;
-    }
-
     try {
       setActionLoading(true);
       const response = await completeWithdrawal(
@@ -255,8 +246,8 @@ const WithdrawalRequestsManagement = () => {
           provider: values.provider,
           bankRef: values.bankRef || values.txnCode, // Use bankRef or txnCode
           txnCode: values.txnCode,
-        },
-        proofFile
+          proofFile: proofFile,
+        }
       );
 
       if (response?.status === 'success') {
@@ -266,7 +257,6 @@ const WithdrawalRequestsManagement = () => {
         completeForm.resetFields();
         setProofFile(null);
         setProofPreview(null);
-        setAmountDifferenceReason('');
         setConfirmComplete(false);
         await loadWithdrawalRequests();
       } else {
@@ -667,7 +657,6 @@ const WithdrawalRequestsManagement = () => {
           completeForm.resetFields();
           setProofFile(null);
           setProofPreview(null);
-          setAmountDifferenceReason('');
           setConfirmComplete(false);
           setShowFullAccountNumber(false);
         }}
@@ -760,23 +749,6 @@ const WithdrawalRequestsManagement = () => {
               name="paidAmount"
               rules={[
                 { required: true, message: 'Vui lòng nhập số tiền đã chuyển' },
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    const diff = Math.abs(
-                      parseFloat(value) - parseFloat(selectedRequest.amount)
-                    );
-                    if (diff > 0.01) {
-                      // If amount is different, require reason
-                      if (!amountDifferenceReason.trim()) {
-                        return Promise.reject(
-                          new Error('Vui lòng nhập lý do lệch số tiền')
-                        );
-                      }
-                    }
-                    return Promise.resolve();
-                  },
-                },
               ]}
             >
               <InputNumber
@@ -803,34 +775,6 @@ const WithdrawalRequestsManagement = () => {
                 }}
               />
             </Form.Item>
-
-            {/* Lý do lệch số tiền (conditional) */}
-            {(() => {
-              const paidAmount = completeForm.getFieldValue('paidAmount');
-              const diff = paidAmount
-                ? Math.abs(
-                    parseFloat(paidAmount) - parseFloat(selectedRequest.amount)
-                  )
-                : 0;
-              if (diff > 0.01) {
-                return (
-                  <Form.Item
-                    label="Lý do lệch số tiền"
-                    required
-                    help="Bắt buộc khi số tiền chuyển khác số tiền yêu cầu"
-                  >
-                    <TextArea
-                      rows={3}
-                      value={amountDifferenceReason}
-                      onChange={e => setAmountDifferenceReason(e.target.value)}
-                      placeholder="Ví dụ: Phí chuyển khoản, Chuyển thiếu do hạn mức, Chuyển dư..."
-                      required
-                    />
-                  </Form.Item>
-                );
-              }
-              return null;
-            })()}
 
             <Form.Item
               label="Ngân hàng chuyển (From bank)"

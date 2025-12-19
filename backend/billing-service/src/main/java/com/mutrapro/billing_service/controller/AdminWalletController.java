@@ -213,8 +213,10 @@ public class AdminWalletController {
             @RequestParam(required = false) String txnCode,
             @Parameter(description = "File ảnh/biên lai chuyển tiền (JPEG, PNG, max 10MB, optional)")
             @RequestParam(required = false) MultipartFile proofFile) {
-        log.info("Admin/Manager completing withdrawal: requestId={}, paidAmount={}, provider={}, bankRef={}, txnCode={}, hasProofFile={}", 
-            withdrawalRequestId, paidAmount, provider, bankRef, txnCode, proofFile != null && !proofFile.isEmpty());
+        log.info("Admin/Manager completing withdrawal: requestId={}, paidAmount={}, provider={}, bankRef={}, txnCode={}, hasProofFile={}, proofFileSize={}", 
+            withdrawalRequestId, paidAmount, provider, bankRef, txnCode, 
+            proofFile != null && !proofFile.isEmpty(), 
+            proofFile != null ? proofFile.getSize() : 0);
         WalletTransactionResponse transaction = walletService.completeWithdrawal(
                 withdrawalRequestId, paidAmount, provider, bankRef, txnCode, proofFile);
         return ApiResponse.<WalletTransactionResponse>builder()

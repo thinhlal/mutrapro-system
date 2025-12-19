@@ -187,7 +187,13 @@ export const completeWithdrawal = async (withdrawalRequestId, data = {}) => {
     if (data.provider) formData.append('provider', data.provider);
     if (data.bankRef) formData.append('bankRef', data.bankRef);
     if (data.txnCode) formData.append('txnCode', data.txnCode);
-    if (data.proofFile) formData.append('proofFile', data.proofFile);
+    if (data.proofFile) {
+      // Ensure we're sending the actual File object
+      const fileToSend = data.proofFile.originFileObj || data.proofFile;
+      formData.append('proofFile', fileToSend);
+    } else {
+      console.log('No proof file provided');
+    }
 
     const response = await axiosInstance.post(
       API_ENDPOINTS.ADMIN_WALLET.COMPLETE_WITHDRAWAL(withdrawalRequestId),
