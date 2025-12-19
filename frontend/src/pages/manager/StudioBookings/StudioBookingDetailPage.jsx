@@ -273,7 +273,9 @@ const StudioBookingDetailPage = () => {
     return (
       <div className={styles.container}>
         <Card>
-          <Spin size="large" />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+            <Spin size="large" />
+          </div>
         </Card>
       </div>
     );

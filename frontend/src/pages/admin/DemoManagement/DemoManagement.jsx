@@ -94,24 +94,28 @@ const DemoManagement = () => {
       title: 'Demo ID',
       dataIndex: 'demoId',
       key: 'demoId',
-      width: 200,
+      width: 150,
+      ellipsis: true,
     },
     {
       title: 'Specialist ID',
       dataIndex: 'specialistId',
       key: 'specialistId',
-      width: 200,
+      width: 150,
+      ellipsis: true,
     },
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
+      width: 200,
       ellipsis: true,
     },
     {
       title: 'Skill',
       dataIndex: ['skill', 'skillName'],
       key: 'skill',
+      width: 120,
       render: (skillName, record) =>
         skillName ? <Tag color="blue">{skillName}</Tag> : 'N/A',
     },
@@ -119,7 +123,7 @@ const DemoManagement = () => {
       title: 'Public',
       dataIndex: 'isPublic',
       key: 'isPublic',
-      width: 180,
+      width: 100,
       align: 'center',
       render: isPublic => (
         <Tag color={isPublic ? 'green' : 'red'}>
@@ -135,10 +139,9 @@ const DemoManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      fixed: 'right',
-      width: 230,
+      width: 120,
       render: (_, record) => (
-        <Space>
+        <Space direction="vertical" size="small">
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -186,7 +189,6 @@ const DemoManagement = () => {
             showSizeChanger: true,
             showTotal: total => `Total ${total} demos`,
           }}
-          scroll={{ x: 1400 }}
         />
       </Card>
 

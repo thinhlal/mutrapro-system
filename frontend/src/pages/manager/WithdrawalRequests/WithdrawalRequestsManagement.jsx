@@ -359,26 +359,28 @@ const WithdrawalRequestsManagement = () => {
       dataIndex: 'withdrawalRequestId',
       key: 'withdrawalRequestId',
       width: 150,
+      ellipsis: true,
       render: id => <Text code>{id?.substring(0, 8)}...</Text>,
     },
     {
       title: 'User ID',
       dataIndex: 'userId',
       key: 'userId',
-      width: 150,
+      width: 120,
+      ellipsis: true,
       render: id => <Text>{id?.substring(0, 8)}...</Text>,
     },
     {
       title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
-      width: 120,
+      width: 130,
       render: amount => <Text strong>{formatPriceDisplay(amount)}</Text>,
     },
     {
       title: 'Bank',
       key: 'bank',
-      width: 200,
+      width: 180,
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <Text strong>{record.bankName}</Text>
@@ -395,7 +397,7 @@ const WithdrawalRequestsManagement = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 130,
       render: status => (
         <Tag color={WITHDRAWAL_STATUS_COLORS[status]}>
           {WITHDRAWAL_STATUS_LABELS[status] || status}
@@ -406,18 +408,17 @@ const WithdrawalRequestsManagement = () => {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
+      width: 130,
       render: date => formatDateTime(date),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 250,
-      fixed: 'right',
+      width: 120,
       render: (_, record) => {
         const status = record.status;
         return (
-          <Space>
+          <Space direction="vertical" size="small">
             {status === 'PENDING_REVIEW' && (
               <>
                 <Button
@@ -429,6 +430,7 @@ const WithdrawalRequestsManagement = () => {
                     setAdminNote('');
                     setApproveModalVisible(true);
                   }}
+                  block
                 >
                   Approve
                 </Button>
@@ -442,6 +444,7 @@ const WithdrawalRequestsManagement = () => {
                     setAdminNote('');
                     setRejectModalVisible(true);
                   }}
+                  block
                 >
                   Reject
                 </Button>
@@ -460,6 +463,7 @@ const WithdrawalRequestsManagement = () => {
                     setProofPreview(null);
                     setCompleteModalVisible(true);
                   }}
+                  block
                 >
                   Complete
                 </Button>
@@ -472,6 +476,7 @@ const WithdrawalRequestsManagement = () => {
                     setRejectionReason('');
                     setFailModalVisible(true);
                   }}
+                  block
                 >
                   Fail
                 </Button>
@@ -490,6 +495,7 @@ const WithdrawalRequestsManagement = () => {
                   setProofImageUrl(null);
                 }
               }}
+              block
             >
               Details
             </Button>
@@ -553,7 +559,6 @@ const WithdrawalRequestsManagement = () => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
             }}
-            scroll={{ x: 1200 }}
           />
         </Space>
       </Card>
