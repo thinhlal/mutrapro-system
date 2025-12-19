@@ -8,8 +8,7 @@ import {
   InputNumber,
   Alert,
   Form,
-  Row,
-  Col,
+  Table,
 } from 'antd';
 import {
   InboxOutlined,
@@ -33,6 +32,13 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
+const formatPrice = (price = 0) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(price);
+};
+
 const SERVICE_LABELS = {
   transcription: 'Transcription (Sound → Sheet)',
   arrangement: 'Arrangement',
@@ -52,6 +58,7 @@ export default function TranscriptionUploader({
   const [adjustedDurationMinutes, setAdjustedDurationMinutes] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [instrumentError, setInstrumentError] = useState('');
   const navigate = useNavigate();
 
   // Instrument selection
@@ -79,6 +86,39 @@ export default function TranscriptionUploader({
     }
     return [];
   }, [serviceType, getInstrumentsByUsage, instrumentsData]);
+
+  // Prepare table data for selected instruments
+  const instrumentTableData = useMemo(() => {
+    if (!selectedInstruments || selectedInstruments.length === 0) {
+      return [];
+    }
+    return selectedInstruments.map(id => {
+      const inst = instrumentsData.find(i => i.instrumentId === id);
+      if (!inst) return null;
+      return {
+        key: id,
+        instrumentId: id,
+        instrumentName: inst.instrumentName || 'Unknown',
+        basePrice: inst.basePrice || 0,
+      };
+    }).filter(Boolean);
+  }, [selectedInstruments, instrumentsData]);
+
+  // Table columns for instruments
+  const instrumentTableColumns = [
+    {
+      title: 'Instrument Name',
+      dataIndex: 'instrumentName',
+      key: 'instrumentName',
+    },
+    {
+      title: 'Price',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      align: 'right',
+      render: (price) => formatPrice(price),
+    },
+  ];
 
   // Track previous values to avoid unnecessary updates
   const prevTempoRef = useRef(null);
@@ -176,6 +216,7 @@ export default function TranscriptionUploader({
 
   const handleInstrumentSelect = instrumentIds => {
     setSelectedInstruments([instrumentIds]);
+    setInstrumentError(''); // Clear error when instrument is selected
     setInstrumentModalVisible(false);
   };
 
@@ -240,7 +281,7 @@ export default function TranscriptionUploader({
     }
 
     // Validate instruments - transcription chỉ chọn được 1 nhạc cụ
-    const instrumentIds = formData.instrumentIds;
+    const instrumentIds = selectedInstruments || formData?.instrumentIds;
     const isInstrumentIdsValid =
       instrumentIds !== undefined &&
       instrumentIds !== null &&
@@ -248,18 +289,19 @@ export default function TranscriptionUploader({
       instrumentIds.length === 1;
 
     if (!isInstrumentIdsValid) {
-      setErrorMessage('Please choose a musical instrument.');
-      // Scroll to error message
+      setInstrumentError('Please choose a musical instrument.');
+      // Scroll to instrument selection
       setTimeout(() => {
-        const errorElement = document.getElementById(
-          'transcription-error-alert'
-        );
-        if (errorElement) {
-          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const instrumentElement = document.getElementById('quote-uploader');
+        if (instrumentElement) {
+          instrumentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 100);
       return;
     }
+    
+    // Clear instrument error if valid
+    setInstrumentError('');
 
     // Validate duration - phải là số dương
     if (!adjustedDurationMinutes || adjustedDurationMinutes <= 0) {
@@ -338,64 +380,35 @@ export default function TranscriptionUploader({
                 </Tag>
               </Form.Item>
 
-              <Form.Item label="Select Instrument" required>
-                <Row gutter={16} align="middle">
-                  <Col xs={24} sm={24} md={12}>
-                    <Button
-                      type="primary"
-                      icon={<SelectOutlined />}
-                      onClick={() => setInstrumentModalVisible(true)}
-                      size="large"
-                      block
-                      loading={instrumentsLoading}
-                    >
-                      {selectedInstruments.length > 0
-                        ? `${selectedInstruments.length} instrument(s) selected`
-                        : 'Select Instruments'}
-                    </Button>
-                  </Col>
+              <Form.Item
+                label="Select Instrument"
+                required
+                validateStatus={instrumentError ? 'error' : ''}
+                help={instrumentError || ''}
+              >
+                <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                  <Button
+                    type="primary"
+                    icon={<SelectOutlined />}
+                    onClick={() => setInstrumentModalVisible(true)}
+                    size="large"
+                    block
+                    loading={instrumentsLoading}
+                  >
+                    {selectedInstruments.length > 0
+                      ? `${selectedInstruments.length} instrument(s) selected`
+                      : 'Select Instrument'}
+                  </Button>
                   {selectedInstruments.length > 0 && (
-                    <Col xs={24} sm={24} md={12}>
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          textAlign: 'center',
-                          justifyContent: 'flex-start',
-                          gap: '8px',
-                        }}
-                      >
-                        {selectedInstruments.map(id => {
-                          const inst = instrumentsData.find(
-                            i => i.instrumentId === id
-                          );
-                          return inst ? (
-                            <Tag
-                              key={id}
-                              color="blue"
-                              style={{
-                                fontSize: 14,
-                                padding: '4px 12px',
-                                height: '40px',
-                                width: '100%',
-                                display: 'flex',
-                                textAlign: 'center',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                margin: 0,
-                                lineHeight: '32px',
-                              }}
-                            >
-                              {inst.instrumentName}
-                            </Tag>
-                          ) : null;
-                        })}
-                      </div>
-                    </Col>
+                    <Table
+                      columns={instrumentTableColumns}
+                      dataSource={instrumentTableData}
+                      pagination={false}
+                      size="middle"
+                      bordered
+                    />
                   )}
-                </Row>
+                </Space>
               </Form.Item>
             </Form>
           </div>

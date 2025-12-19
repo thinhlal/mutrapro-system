@@ -8,9 +8,9 @@ import {
   message,
   Form,
   Select,
-  Row,
-  Col,
   Radio,
+  Alert,
+  Table,
 } from 'antd';
 import {
   InboxOutlined,
@@ -39,6 +39,13 @@ const { Dragger } = Upload;
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
+const formatPrice = (price = 0) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(price);
+};
+
 export default function ArrangementWithRecordingUploader({
   serviceType = 'arrangement_with_recording',
   formData,
@@ -47,6 +54,10 @@ export default function ArrangementWithRecordingUploader({
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [fileError, setFileError] = useState('');
+  const [instrumentError, setInstrumentError] = useState('');
+  const [mainInstrumentError, setMainInstrumentError] = useState('');
+  const [formDataError, setFormDataError] = useState('');
   const navigate = useNavigate();
 
   // Instrument selection
@@ -157,6 +168,95 @@ export default function ArrangementWithRecordingUploader({
     return getInstrumentsByUsage('arrangement');
   }, [getInstrumentsByUsage, instrumentsData]);
 
+  // Prepare table data for selected instruments
+  const instrumentTableData = useMemo(() => {
+    if (!selectedInstruments || selectedInstruments.length === 0) {
+      return [];
+    }
+    return selectedInstruments.map(id => {
+      const inst = instrumentsData.find(i => i.instrumentId === id);
+      if (!inst) return null;
+      return {
+        key: id,
+        instrumentId: id,
+        instrumentName: inst.instrumentName || 'Unknown',
+        basePrice: inst.basePrice || 0,
+        isMain: id === mainInstrumentId,
+      };
+    }).filter(Boolean);
+  }, [selectedInstruments, instrumentsData, mainInstrumentId]);
+
+  // Table columns for instruments
+  const instrumentTableColumns = [
+    {
+      title: 'Instrument Name',
+      dataIndex: 'instrumentName',
+      key: 'instrumentName',
+      render: (text, record) => (
+        <Space>
+          {text}
+          {record.isMain && (
+            <Tag color="gold" icon={<StarFilled />}>
+              Main
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: 'Price',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      align: 'right',
+      render: (price) => formatPrice(price),
+    },
+  ];
+
+  // Prepare table data for selected vocalists
+  const vocalistTableData = useMemo(() => {
+    if (!preferredVocalists || preferredVocalists.length === 0) {
+      return [];
+    }
+    return preferredVocalists.map((vocalist, index) => {
+      const vocalistId =
+        typeof vocalist === 'object' ? vocalist.id : vocalist;
+      const vocalistName =
+        typeof vocalist === 'object'
+          ? vocalist.name
+          : `Vocalist ${vocalist}`;
+      return {
+        key: vocalistId || index,
+        vocalistId: vocalistId,
+        vocalistName: vocalistName,
+      };
+    });
+  }, [preferredVocalists]);
+
+  // Table columns for vocalists
+  const vocalistTableColumns = [
+    {
+      title: 'Vocalist Name',
+      dataIndex: 'vocalistName',
+      key: 'vocalistName',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      align: 'right',
+      render: (_, record) => (
+        <Button
+          type="link"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveVocalist(record.vocalistId)}
+          size="small"
+        >
+          Remove
+        </Button>
+      ),
+    },
+  ];
+
   // Track previous values to avoid unnecessary updates
   const prevGenresRef = useRef(null);
   const prevPurposeRef = useRef(null);
@@ -211,6 +311,20 @@ export default function ArrangementWithRecordingUploader({
   // Handle form values change
   const handleFormValuesChange = useCallback(
     (changedValues, allValues) => {
+      // Clear form validation errors when user changes values
+      if (changedValues.musicGenres || changedValues.musicPurpose) {
+        form.setFields([
+          {
+            name: 'musicGenres',
+            errors: [],
+          },
+          {
+            name: 'musicPurpose',
+            errors: [],
+          },
+        ]);
+      }
+
       if (onFormDataChange && formData && hasInitializedRef.current) {
         const newGenres = allValues.musicGenres || [];
         const newPurpose = allValues.musicPurpose || null;
@@ -244,8 +358,19 @@ export default function ArrangementWithRecordingUploader({
       selectedInstruments,
       mainInstrumentId,
       preferredVocalists,
+      form,
     ]
   );
+
+  // Clear formData error when formData is updated
+  useEffect(() => {
+    if (formData && formData.title && formData.description && formData.contactName && formData.contactPhone && formData.contactEmail) {
+      // Check if description is long enough
+      if (formData.description.trim().length >= 10) {
+        setFormDataError('');
+      }
+    }
+  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail]);
 
   // Update formData when instruments change
   useEffect(() => {
@@ -304,14 +429,17 @@ export default function ArrangementWithRecordingUploader({
 
   const handleInstrumentSelect = instrumentIds => {
     setSelectedInstruments(instrumentIds);
+    setInstrumentError(''); // Clear error when instruments are selected
     // Nếu mainInstrumentId không còn trong danh sách, reset nó
     if (mainInstrumentId && !instrumentIds.includes(mainInstrumentId)) {
       setMainInstrumentId(null);
+      setMainInstrumentError('');
     }
   };
 
   const handleMainInstrumentChange = mainId => {
     setMainInstrumentId(mainId);
+    setMainInstrumentError(''); // Clear error when main instrument is selected
     // Cập nhật formData ngay lập tức
     if (onFormDataChange && formData) {
       const currentGenres = form.getFieldValue('musicGenres') || [];
@@ -483,40 +611,108 @@ export default function ArrangementWithRecordingUploader({
     }
 
     setFile(f);
+    setFileError(''); // Clear error when file is selected
   };
 
   const clearFile = () => {
     setFile(null);
+    setFileError('');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Reset all errors
+    setFileError('');
+    setInstrumentError('');
+    setMainInstrumentError('');
+    setFormDataError('');
+
+    let hasError = false;
+    const missingFields = [];
+
+    // Validate file
     if (!file) {
-      message.warning('Please upload the original notation file.');
+      setFileError('Please upload your original notation file.');
+      hasError = true;
+    }
+
+    // Validate form data - check each required field
+    if (!formData) {
+      setFormDataError('Please fill in all required information in the form above before submitting.');
+      hasError = true;
+      // Scroll to form
+      setTimeout(() => {
+        const formElement = document.getElementById('request-service-form');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
       return;
     }
 
-    // Validate form data
-    if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Please fill in all the form information above.');
-      return;
+    // Check each required field
+    if (!formData.title || formData.title.trim() === '') {
+      missingFields.push('Title');
+    }
+    if (!formData.description || formData.description.trim() === '') {
+      missingFields.push('Description');
+    }
+    if (!formData.contactName || formData.contactName.trim() === '') {
+      missingFields.push('Contact Name');
+    }
+    if (!formData.contactPhone || formData.contactPhone.trim() === '') {
+      missingFields.push('Contact Phone');
+    }
+    if (!formData.contactEmail || formData.contactEmail.trim() === '') {
+      missingFields.push('Contact Email');
+    }
+
+    // Validate description length
+    if (formData.description && formData.description.trim().length < 10) {
+      missingFields.push('Description (must be at least 10 characters)');
+    }
+
+    if (missingFields.length > 0) {
+      const fieldsList = missingFields.join(', ');
+      setFormDataError(`Please fill in the following required fields: ${fieldsList}`);
+      hasError = true;
+      // Scroll to form
+      setTimeout(() => {
+        const formElement = document.getElementById('request-service-form');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+
+    // Validate form fields (genres, purpose)
+    try {
+      await form.validateFields(['musicGenres', 'musicPurpose']);
+    } catch (errorInfo) {
+      hasError = true;
+      // Scroll to first error field
+      if (errorInfo.errorFields && errorInfo.errorFields.length > 0) {
+        const firstErrorField = errorInfo.errorFields[0];
+        const fieldName = firstErrorField.name[0];
+        form.scrollToField(fieldName);
+      }
     }
 
     // Validate instruments
-    if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
-      message.warning('Please select at least one instrument.');
-      return;
+    if (!selectedInstruments || selectedInstruments.length === 0) {
+      setInstrumentError('Please select at least one instrument.');
+      hasError = true;
     }
 
     // Validate main instrument (required for arrangement)
     // Ưu tiên dùng formData.mainInstrumentId, nếu không có thì dùng mainInstrumentId state
     // Nếu vẫn null và chỉ có 1 instrument, tự động set làm main
-    let finalMainInstrumentId = formData.mainInstrumentId || mainInstrumentId;
+    let finalMainInstrumentId = formData?.mainInstrumentId || mainInstrumentId;
     if (
       !finalMainInstrumentId &&
-      formData.instrumentIds &&
-      formData.instrumentIds.length === 1
+      selectedInstruments &&
+      selectedInstruments.length === 1
     ) {
-      finalMainInstrumentId = formData.instrumentIds[0];
+      finalMainInstrumentId = selectedInstruments[0];
       console.log(
         'Auto-setting main instrument (only 1 selected):',
         finalMainInstrumentId
@@ -524,7 +720,19 @@ export default function ArrangementWithRecordingUploader({
     }
 
     if (!finalMainInstrumentId) {
-      message.warning('Please select the main instrument for arrangement.');
+      setMainInstrumentError('Please select a main instrument for your arrangement.');
+      hasError = true;
+    }
+
+    // If there are errors, stop submission
+    if (hasError) {
+      // Scroll to file upload area if file error
+      if (!file) {
+        const fileUploadElement = document.getElementById('arrangement-with-recording-uploader');
+        if (fileUploadElement) {
+          fileUploadElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
       return;
     }
 
@@ -574,6 +782,18 @@ export default function ArrangementWithRecordingUploader({
           </div>
         </div>
 
+        {/* Form Data Error Alert */}
+        {formDataError && (
+          <Alert
+            message={formDataError}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setFormDataError('')}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         {/* Service Type, Music Genres, Purpose, and Instrument Selection */}
         <div style={{ marginTop: 24, marginBottom: 16 }}>
           <Form
@@ -591,6 +811,12 @@ export default function ArrangementWithRecordingUploader({
               label="Music Genres"
               name="musicGenres"
               tooltip="Select one or more music genres for arrangement"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please select at least one music genre.',
+                },
+              ]}
             >
               <Select
                 mode="multiple"
@@ -605,6 +831,12 @@ export default function ArrangementWithRecordingUploader({
               label="Purpose"
               name="musicPurpose"
               tooltip="What is the purpose of this arrangement?"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please select the purpose of this arrangement.',
+                },
+              ]}
             >
               <Select
                 size="large"
@@ -614,57 +846,35 @@ export default function ArrangementWithRecordingUploader({
               />
             </Form.Item>
 
-            <Form.Item label="Select Instruments (Multiple)" required>
-              <Row gutter={16} align="middle">
-                <Col xs={24} sm={24} md={12}>
-                  <Button
-                    type="primary"
-                    icon={<SelectOutlined />}
-                    onClick={() => setInstrumentModalVisible(true)}
-                    size="large"
-                    block
-                    loading={instrumentsLoading}
-                  >
-                    {selectedInstruments.length > 0
-                      ? `Selected ${selectedInstruments.length} instruments`
-                      : 'Select instruments'}
-                  </Button>
-                </Col>
+            <Form.Item
+              label="Select Instruments (Multiple)"
+              required
+              validateStatus={instrumentError || mainInstrumentError ? 'error' : ''}
+              help={instrumentError || mainInstrumentError || ''}
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                <Button
+                  type="primary"
+                  icon={<SelectOutlined />}
+                  onClick={() => setInstrumentModalVisible(true)}
+                  size="large"
+                  block
+                  loading={instrumentsLoading}
+                >
+                  {selectedInstruments.length > 0
+                    ? `${selectedInstruments.length} instrument(s) selected`
+                    : 'Select Instruments'}
+                </Button>
                 {selectedInstruments.length > 0 && (
-                  <Col xs={24} sm={24} md={12}>
-                    <div
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {selectedInstruments.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        const isMain = id === mainInstrumentId;
-                        return inst ? (
-                          <Tag
-                            key={id}
-                            color={isMain ? 'gold' : 'blue'}
-                            icon={isMain ? <StarFilled /> : null}
-                            style={{
-                              fontSize: 14,
-                              padding: '4px 12px',
-                            }}
-                          >
-                            {inst.instrumentName}
-                            {isMain && ' (Main)'}
-                          </Tag>
-                        ) : null;
-                      })}
-                    </div>
-                  </Col>
+                  <Table
+                    columns={instrumentTableColumns}
+                    dataSource={instrumentTableData}
+                    pagination={false}
+                    size="middle"
+                    bordered
+                  />
                 )}
-              </Row>
+              </Space>
             </Form.Item>
 
             {/* Vocalist Preference (Optional) */}
@@ -711,31 +921,14 @@ export default function ArrangementWithRecordingUploader({
                   </Button>
 
                   {preferredVocalists.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <Space wrap>
-                        {preferredVocalists.map((vocalist, index) => {
-                          const vocalistId =
-                            typeof vocalist === 'object'
-                              ? vocalist.id
-                              : vocalist;
-                          const vocalistName =
-                            typeof vocalist === 'object'
-                              ? vocalist.name
-                              : `Vocalist ${vocalist}`;
-                          return (
-                            <Tag
-                              key={vocalistId}
-                              color="blue"
-                              closable
-                              onClose={() => handleRemoveVocalist(vocalistId)}
-                              style={{ fontSize: 14, padding: '4px 12px' }}
-                            >
-                              {vocalistName}
-                            </Tag>
-                          );
-                        })}
-                      </Space>
-                    </div>
+                    <Table
+                      columns={vocalistTableColumns}
+                      dataSource={vocalistTableData}
+                      pagination={false}
+                      size="middle"
+                      bordered
+                      rowKey="vocalistId"
+                    />
                   )}
 
                   <div
@@ -773,6 +966,14 @@ export default function ArrangementWithRecordingUploader({
               </p>
               <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
             </Dragger>
+            {fileError && (
+              <Alert
+                message={fileError}
+                type="error"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
           </div>
         )}
 

@@ -8,8 +8,8 @@ import {
   message,
   Form,
   Select,
-  Row,
-  Col,
+  Alert,
+  Table,
 } from 'antd';
 import {
   InboxOutlined,
@@ -40,6 +40,13 @@ const SERVICE_LABELS = {
 const toSize = (bytes = 0) =>
   bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : '—';
 
+const formatPrice = (price = 0) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(price);
+};
+
 export default function ArrangementUploader({
   variant = 'pure',
   serviceType,
@@ -49,6 +56,10 @@ export default function ArrangementUploader({
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [fileError, setFileError] = useState('');
+  const [instrumentError, setInstrumentError] = useState('');
+  const [mainInstrumentError, setMainInstrumentError] = useState('');
+  const [formDataError, setFormDataError] = useState('');
   const navigate = useNavigate();
 
   // Instrument selection
@@ -87,6 +98,50 @@ export default function ArrangementUploader({
     }
     return [];
   }, [serviceType, variant, getInstrumentsByUsage, instrumentsData]);
+
+  // Prepare table data for selected instruments
+  const instrumentTableData = useMemo(() => {
+    if (!selectedInstruments || selectedInstruments.length === 0) {
+      return [];
+    }
+    return selectedInstruments.map(id => {
+      const inst = instrumentsData.find(i => i.instrumentId === id);
+      if (!inst) return null;
+      return {
+        key: id,
+        instrumentId: id,
+        instrumentName: inst.instrumentName || 'Unknown',
+        basePrice: inst.basePrice || 0,
+        isMain: id === mainInstrumentId,
+      };
+    }).filter(Boolean);
+  }, [selectedInstruments, instrumentsData, mainInstrumentId]);
+
+  // Table columns for instruments
+  const instrumentTableColumns = [
+    {
+      title: 'Instrument Name',
+      dataIndex: 'instrumentName',
+      key: 'instrumentName',
+      render: (text, record) => (
+        <Space>
+          {text}
+          {record.isMain && (
+            <Tag color="gold" icon={<StarFilled />}>
+              Main
+            </Tag>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: 'Price',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      align: 'right',
+      render: (price) => formatPrice(price),
+    },
+  ];
 
   // Track previous values to avoid unnecessary updates
   const prevGenresRef = useRef(null);
@@ -142,6 +197,20 @@ export default function ArrangementUploader({
   // Handle form values change
   const handleFormValuesChange = useCallback(
     (changedValues, allValues) => {
+      // Clear form validation errors when user changes values
+      if (changedValues.musicGenres || changedValues.musicPurpose) {
+        form.setFields([
+          {
+            name: 'musicGenres',
+            errors: [],
+          },
+          {
+            name: 'musicPurpose',
+            errors: [],
+          },
+        ]);
+      }
+
       if (onFormDataChange && formData && hasInitializedRef.current) {
         const newGenres = allValues.musicGenres || [];
         const newPurpose = allValues.musicPurpose || null;
@@ -165,8 +234,18 @@ export default function ArrangementUploader({
         }
       }
     },
-    [onFormDataChange, formData, selectedInstruments]
+    [onFormDataChange, formData, selectedInstruments, form, mainInstrumentId]
   );
+
+  // Clear formData error when formData is updated
+  useEffect(() => {
+    if (formData && formData.title && formData.description && formData.contactName && formData.contactPhone && formData.contactEmail) {
+      // Check if description is long enough
+      if (formData.description.trim().length >= 10) {
+        setFormDataError('');
+      }
+    }
+  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail]);
 
   // Update formData when instruments change
   useEffect(() => {
@@ -192,14 +271,17 @@ export default function ArrangementUploader({
 
   const handleInstrumentSelect = instrumentIds => {
     setSelectedInstruments(instrumentIds);
+    setInstrumentError(''); // Clear error when instruments are selected
     // Nếu mainInstrumentId không còn trong danh sách, reset nó
     if (mainInstrumentId && !instrumentIds.includes(mainInstrumentId)) {
       setMainInstrumentId(null);
+      setMainInstrumentError('');
     }
   };
 
   const handleMainInstrumentChange = mainId => {
     setMainInstrumentId(mainId);
+    setMainInstrumentError(''); // Clear error when main instrument is selected
     // Cập nhật formData ngay lập tức
     if (onFormDataChange && formData) {
       const currentGenres = form.getFieldValue('musicGenres') || [];
@@ -224,34 +306,114 @@ export default function ArrangementUploader({
     }
 
     setFile(f);
+    setFileError(''); // Clear error when file is selected
     // Arrangement only accepts notation files (MusicXML/MIDI/PDF), not audio
   };
 
   const clearFile = () => {
     setFile(null);
+    setFileError('');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Reset all errors
+    setFileError('');
+    setInstrumentError('');
+    setMainInstrumentError('');
+    setFormDataError('');
+
+    let hasError = false;
+    const missingFields = [];
+
+    // Validate file
     if (!file) {
-      message.warning('Please upload your original notation.');
+      setFileError('Please upload your original notation file.');
+      hasError = true;
+    }
+
+    // Validate form data - check each required field
+    if (!formData) {
+      setFormDataError('Please fill in all required information in the form above before submitting.');
+      hasError = true;
+      // Scroll to form
+      setTimeout(() => {
+        const formElement = document.getElementById('request-service-form');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
       return;
     }
 
-    // Validate form data
-    if (!formData || !formData.title || !formData.contactName) {
-      message.warning('Please fill in the form above before submitting.');
-      return;
+    // Check each required field
+    if (!formData.title || formData.title.trim() === '') {
+      missingFields.push('Title');
+    }
+    if (!formData.description || formData.description.trim() === '') {
+      missingFields.push('Description');
+    }
+    if (!formData.contactName || formData.contactName.trim() === '') {
+      missingFields.push('Contact Name');
+    }
+    if (!formData.contactPhone || formData.contactPhone.trim() === '') {
+      missingFields.push('Contact Phone');
+    }
+    if (!formData.contactEmail || formData.contactEmail.trim() === '') {
+      missingFields.push('Contact Email');
+    }
+
+    // Validate description length
+    if (formData.description && formData.description.trim().length < 10) {
+      missingFields.push('Description (must be at least 10 characters)');
+    }
+
+    if (missingFields.length > 0) {
+      const fieldsList = missingFields.join(', ');
+      setFormDataError(`Please fill in the following required fields: ${fieldsList}`);
+      hasError = true;
+      // Scroll to form
+      setTimeout(() => {
+        const formElement = document.getElementById('request-service-form');
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+
+    // Validate form fields (genres, purpose)
+    try {
+      await form.validateFields(['musicGenres', 'musicPurpose']);
+    } catch (errorInfo) {
+      hasError = true;
+      // Scroll to first error field
+      if (errorInfo.errorFields && errorInfo.errorFields.length > 0) {
+        const firstErrorField = errorInfo.errorFields[0];
+        const fieldName = firstErrorField.name[0];
+        form.scrollToField(fieldName);
+      }
     }
 
     // Validate instruments
-    if (!formData.instrumentIds || formData.instrumentIds.length === 0) {
-      message.warning('Please select at least one instrument.');
-      return;
+    if (!selectedInstruments || selectedInstruments.length === 0) {
+      setInstrumentError('Please select at least one instrument.');
+      hasError = true;
     }
 
     // Validate main instrument (required for arrangement)
-    if (!formData.mainInstrumentId || !mainInstrumentId) {
-      message.warning('Please select a main instrument for your arrangement.');
+    if (!mainInstrumentId) {
+      setMainInstrumentError('Please select a main instrument for your arrangement.');
+      hasError = true;
+    }
+
+    // If there are errors, stop submission
+    if (hasError) {
+      // Scroll to file upload area if file error
+      if (!file) {
+        const fileUploadElement = document.getElementById('arrangement-uploader');
+        if (fileUploadElement) {
+          fileUploadElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
       return;
     }
 
@@ -303,6 +465,18 @@ export default function ArrangementUploader({
           </div>
         </div>
 
+        {/* Form Data Error Alert */}
+        {formDataError && (
+          <Alert
+            message={formDataError}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setFormDataError('')}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         {/* Service Type, Music Genres, Purpose, and Instrument Selection */}
         <div style={{ marginTop: 24, marginBottom: 16 }}>
           <Form
@@ -325,6 +499,12 @@ export default function ArrangementUploader({
               label="Music Genres"
               name="musicGenres"
               tooltip="Select one or more music genres for your arrangement"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please select at least one music genre.',
+                },
+              ]}
             >
               <Select
                 mode="multiple"
@@ -339,6 +519,12 @@ export default function ArrangementUploader({
               label="Purpose"
               name="musicPurpose"
               tooltip="What is the purpose of this arrangement?"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please select the purpose of this arrangement.',
+                },
+              ]}
             >
               <Select
                 size="large"
@@ -348,57 +534,35 @@ export default function ArrangementUploader({
               />
             </Form.Item>
 
-            <Form.Item label="Select Instruments (Multiple)" required>
-              <Row gutter={16} align="middle">
-                <Col xs={24} sm={24} md={12}>
-                  <Button
-                    type="primary"
-                    icon={<SelectOutlined />}
-                    onClick={() => setInstrumentModalVisible(true)}
-                    size="large"
-                    block
-                    loading={instrumentsLoading}
-                  >
-                    {selectedInstruments.length > 0
-                      ? `${selectedInstruments.length} instrument(s) selected`
-                      : 'Select Instruments'}
-                  </Button>
-                </Col>
+            <Form.Item
+              label="Select Instruments (Multiple)"
+              required
+              validateStatus={instrumentError || mainInstrumentError ? 'error' : ''}
+              help={instrumentError || mainInstrumentError || ''}
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                <Button
+                  type="primary"
+                  icon={<SelectOutlined />}
+                  onClick={() => setInstrumentModalVisible(true)}
+                  size="large"
+                  block
+                  loading={instrumentsLoading}
+                >
+                  {selectedInstruments.length > 0
+                    ? `${selectedInstruments.length} instrument(s) selected`
+                    : 'Select Instruments'}
+                </Button>
                 {selectedInstruments.length > 0 && (
-                  <Col xs={24} sm={24} md={12}>
-                    <div
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {selectedInstruments.map(id => {
-                        const inst = instrumentsData.find(
-                          i => i.instrumentId === id
-                        );
-                        const isMain = id === mainInstrumentId;
-                        return inst ? (
-                          <Tag
-                            key={id}
-                            color={isMain ? 'gold' : 'blue'}
-                            icon={isMain ? <StarFilled /> : null}
-                            style={{
-                              fontSize: 14,
-                              padding: '4px 12px',
-                            }}
-                          >
-                            {inst.instrumentName}
-                            {isMain && ' (Main)'}
-                          </Tag>
-                        ) : null;
-                      })}
-                    </div>
-                  </Col>
+                  <Table
+                    columns={instrumentTableColumns}
+                    dataSource={instrumentTableData}
+                    pagination={false}
+                    size="middle"
+                    bordered
+                  />
                 )}
-              </Row>
+              </Space>
             </Form.Item>
           </Form>
         </div>
@@ -420,6 +584,14 @@ export default function ArrangementUploader({
               <p className="ant-upload-text">Drag & drop your notation here</p>
               <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
             </Dragger>
+            {fileError && (
+              <Alert
+                message={fileError}
+                type="error"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
           </div>
         )}
 
