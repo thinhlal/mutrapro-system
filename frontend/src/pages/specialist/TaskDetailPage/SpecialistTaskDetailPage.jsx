@@ -1425,16 +1425,19 @@ const SpecialistTaskDetailPage = () => {
                         })()}
                       </div>
                     </div>
-                    <div>
-                      <Text strong type="secondary">
-                        Planned
-                      </Text>
-                      <Text type="secondary">
-                        {plannedDeadline
-                          ? formatDateTime(plannedDeadline)
-                          : 'Chưa có'}
-                      </Text>
-                    </div>
+                    {/* Chỉ hiển thị Planned khi không có Target */}
+                    {!actualDeadline && (
+                      <div>
+                        <Text strong type="secondary">
+                          Planned
+                        </Text>
+                        <Text type="secondary">
+                          {plannedDeadline
+                            ? formatDateTime(plannedDeadline)
+                            : 'Chưa có'}
+                        </Text>
+                      </div>
+                    )}
                     {estimatedDeadline && (
                       <div>
                         <Text strong type="warning">
@@ -1444,7 +1447,7 @@ const SpecialistTaskDetailPage = () => {
                           {formatDateTime(estimatedDeadline)}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          (Ước tính khi chưa Start Work)
+                          (Estimated when not started)
                         </Text>
                       </div>
                     )}

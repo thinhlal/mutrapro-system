@@ -514,19 +514,24 @@ const MyTasksPage = ({ onOpenTask }) => {
                   <Divider dashed style={{ margin: '4px 0' }} />
                 </>
               )}
-              <Text strong type={showActual ? 'secondary' : undefined}>
-                {isEstimated ? 'Estimated' : 'Planned'}
-              </Text>
-              {plannedDeadline ? (
-                <Text type="secondary">
-                  Deadline: {formatDateTime(plannedDeadline)}
-                </Text>
-              ) : estimatedDeadline ? (
-                <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                  Deadline: {formatDateTime(estimatedDeadline)} (ước tính)
-                </Text>
-              ) : (
-                <Text type="secondary">-</Text>
+              {/* Chỉ hiển thị Planned/Estimated khi không có Target */}
+              {!showActual && (
+                <>
+                  <Text strong type={showActual ? 'secondary' : undefined}>
+                    {isEstimated ? 'Estimated' : 'Planned'}
+                  </Text>
+                  {plannedDeadline ? (
+                    <Text type="secondary">
+                      Deadline: {formatDateTime(plannedDeadline)}
+                    </Text>
+                  ) : estimatedDeadline ? (
+                    <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                      Deadline: {formatDateTime(estimatedDeadline)} (ước tính)
+                    </Text>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </>
               )}
               {isEstimated && (
                 <Tag color="default" size="small">

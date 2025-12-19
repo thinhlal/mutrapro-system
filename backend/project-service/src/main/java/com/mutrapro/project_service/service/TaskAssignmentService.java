@@ -1474,15 +1474,9 @@ public class TaskAssignmentService {
             Integer maxProgress,
             int page,
             int size) {
-        
-        long totalStartTime = System.currentTimeMillis();
-        log.info("[Performance] ===== getAllTaskAssignments STARTED - status={}, taskType={}, keyword={}, minProgress={}, maxProgress={}, page={}, size={} =====", 
-            status, taskType, keyword, minProgress, maxProgress, page, size);
-
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
-        long step1Start = System.currentTimeMillis();
         String managerUserId = getCurrentUserId();
         
         List<ContractStatus> allowedContractStatuses = List.of(
@@ -1491,11 +1485,7 @@ public class TaskAssignmentService {
             ContractStatus.active,
             ContractStatus.completed
         );
-        log.info("[Performance] Step 1 - Prepare managerUserId and contractStatuses: {}ms", 
-            System.currentTimeMillis() - step1Start);
-
         // Parse filters
-        long step1_7Start = System.currentTimeMillis();
         AssignmentStatus statusEnum = null;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
             try {
@@ -1535,12 +1525,9 @@ public class TaskAssignmentService {
             validMaxProgress = null;
         }
         
-        log.info("[Performance] Step 1.7 - Parse filters: {}ms", System.currentTimeMillis() - step1_7Start);
-
         Pageable pageable = PageRequest.of(safePage, safeSize);
         Page<TaskAssignment> pageResult;
         
-        long step2Start = System.currentTimeMillis();
         if (searchKeyword != null && !searchKeyword.isBlank()) {
             // Use optimized query with JOIN for keyword search (including contractNumber)
             pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeywordOptimized(
@@ -1565,13 +1552,10 @@ public class TaskAssignmentService {
                 pageable
             );
         }
-        log.info("[Performance] Step 2 - Query task assignments (optimized with JOIN): {}ms (found {} assignments, total: {})", 
-            System.currentTimeMillis() - step2Start, pageResult.getContent().size(), pageResult.getTotalElements());
+        List<TaskAssignment> assignments = pageResult.getContent();
 
         // Batch fetch milestones trước để tránh N+1 query problem
-        List<TaskAssignment> assignments = pageResult.getContent();
         final List<ContractMilestone> milestones;
-        long step3Start = System.currentTimeMillis();
         if (!assignments.isEmpty()) {
             // Tối ưu: Fetch milestones bằng milestoneIds thay vì contractIds (nhanh hơn nhiều)
             List<String> milestoneIds = assignments.stream()
@@ -1583,30 +1567,19 @@ public class TaskAssignmentService {
             // Fetch milestones by milestoneIds (1 query thay vì N queries, và nhanh hơn findByContractIdIn)
             if (!milestoneIds.isEmpty()) {
                 milestones = contractMilestoneRepository.findByMilestoneIdIn(milestoneIds);
-                log.info("[Performance] Step 3 - Fetch milestones: {}ms (fetched {} milestones from {} milestoneIds)", 
-                    System.currentTimeMillis() - step3Start, milestones.size(), milestoneIds.size());
             } else {
                 milestones = List.of();
-                log.info("[Performance] Step 3 - Fetch milestones: {}ms (no milestoneIds)", 
-                    System.currentTimeMillis() - step3Start);
             }
         } else {
             milestones = List.of();
-            log.info("[Performance] Step 3 - Fetch milestones: {}ms (no assignments)", 
-                System.currentTimeMillis() - step3Start);
         }
 
 
-        long step4Start = System.currentTimeMillis();
         // Cache LocalDateTime.now() để tránh gọi nhiều lần trong loop
         final LocalDateTime now = LocalDateTime.now();
         List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
             .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones, now))
             .collect(Collectors.toList());
-        log.info("[Performance] Step 4 - Enrich assignments: {}ms (enriched {} assignments)", 
-            System.currentTimeMillis() - step4Start, enrichedAssignments.size());
-
-        long step5Start = System.currentTimeMillis();
         List<String> assignmentIds = enrichedAssignments.stream()
             .map(TaskAssignmentResponse::getAssignmentId)
             .filter(Objects::nonNull)
@@ -1624,7 +1597,7 @@ public class TaskAssignmentService {
                     (existing, replacement) -> true // Nếu có nhiều pending submissions, vẫn là true
                 ));
         }
-        
+
         // Set hasPendingReview cho mỗi assignment
         for (TaskAssignmentResponse response : enrichedAssignments) {
             if (response.getAssignmentId() != null) {
@@ -1632,12 +1605,9 @@ public class TaskAssignmentService {
                 response.setSubmissions(List.of());
             }
         }
-        log.info("[Performance] Step 5 - Set hasPendingReview flag: {}ms (checked {} assignments)", 
-            System.currentTimeMillis() - step5Start, assignmentIds.size());
 
         // Tối ưu: Sử dụng contract snapshots từ TaskAssignment thay vì fetch Contract
         // Chỉ fetch contracts nếu cần revisionDeadlineDays (có thể null trong snapshot)
-        long step6Start = System.currentTimeMillis();
         Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
         for (TaskAssignment assignment : assignments) {
             if (assignment.getContractId() != null && !contractsMap.containsKey(assignment.getContractId())) {
@@ -1652,49 +1622,14 @@ public class TaskAssignmentService {
                         .build());
             }
         }
-        log.info("[Performance] Step 6 - Build contractsMap from snapshots: {}ms ({} contracts, NO DB QUERY)", 
-            System.currentTimeMillis() - step6Start, contractsMap.size());
 
         // Attach contracts to responses (submissions đã được set trong Step 5)
-        long step7Start = System.currentTimeMillis();
         for (TaskAssignmentResponse response : enrichedAssignments) {
             if (response.getContractId() != null) {
                 response.setContract(contractsMap.get(response.getContractId()));
             }
         }
-        log.info("[Performance] Step 7 - Attach contracts: {}ms", 
-            System.currentTimeMillis() - step7Start);
 
-        // Sort theo logic tương tự getMilestoneAssignmentSlots:
-        // 1. Theo contractCreatedAt DESC (contract mới nhất lên trước)
-        // 2. Theo contractNumber để group cùng contract lại
-        // 3. Theo milestoneOrderIndex trong cùng contract
-        long step8Start = System.currentTimeMillis();
-        enrichedAssignments.sort(Comparator
-            .comparing((TaskAssignmentResponse response) -> {
-                if (response.getContract() != null && response.getContract().getContractCreatedAt() != null) {
-                    return response.getContract().getContractCreatedAt();
-                }
-                return LocalDateTime.MIN;
-            }, Comparator.reverseOrder()) // DESC: contract mới nhất lên trước (primary sort)
-            .thenComparing((TaskAssignmentResponse response) -> {
-                if (response.getContract() != null && response.getContract().getContractNumber() != null) {
-                    return response.getContract().getContractNumber();
-                }
-                return "";
-            }) // Group cùng contract lại (secondary sort)
-            .thenComparing((TaskAssignmentResponse response) -> {
-                if (response.getMilestone() != null && response.getMilestone().getOrderIndex() != null) {
-                    return response.getMilestone().getOrderIndex();
-                }
-                return 999;
-            })); // Sort theo milestoneOrderIndex trong cùng contract
-        log.info("[Performance] Step 8 - Sort assignments: {}ms", 
-            System.currentTimeMillis() - step8Start);
-        
-        long totalTime = System.currentTimeMillis() - totalStartTime;
-        log.info("[Performance] ===== getAllTaskAssignments COMPLETED in {}ms (TOTAL) =====", totalTime);
-        
         return PageResponse.<TaskAssignmentResponse>builder()
             .content(enrichedAssignments)
             .pageNumber(pageResult.getNumber())

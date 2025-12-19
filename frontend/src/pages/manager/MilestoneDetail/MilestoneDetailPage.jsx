@@ -787,7 +787,7 @@ const MilestoneDetailPage = () => {
                                 {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
                               </Text>
                               <Text type="secondary" style={{ fontSize: 11 }}>
-                                (Ước tính khi chưa có planned/actual)
+                                (Estimated when not started)
                               </Text>
                             </Space>
                           </div>
@@ -805,7 +805,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Lần giao đầu tiên - để check SLA)
+                    (First submission - to check SLA)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -818,7 +818,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Customer đã chấp nhận)
+                    (Customer accepted)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -831,7 +831,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Milestone đã được thanh toán)
+                    (Milestone paid)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -909,7 +909,7 @@ const MilestoneDetailPage = () => {
         </div>
 
         <Card
-          title="Danh sách task của milestone này"
+          title="List of tasks for this milestone"
           extra={
             canShowAssignButton && (
               <Button
@@ -932,7 +932,7 @@ const MilestoneDetailPage = () => {
               description={
                 <Space direction="vertical" size="middle">
                   <Text type="secondary">
-                    Chưa có task nào cho milestone này
+                    No tasks for this milestone
                   </Text>
                   <Button
                     type="primary"
@@ -943,7 +943,7 @@ const MilestoneDetailPage = () => {
                       )
                     }
                   >
-                    Assign Task đầu tiên
+                    Assign First Task
                   </Button>
                 </Space>
               }
@@ -963,7 +963,7 @@ const MilestoneDetailPage = () => {
                   render: value => <Text strong>#{value || 'N/A'}</Text>,
                 },
                 {
-                  title: 'Loại task',
+                  title: 'Task Type',
                   dataIndex: 'taskType',
                   width: 140,
                   render: type => (
@@ -999,7 +999,7 @@ const MilestoneDetailPage = () => {
                   ),
                 },
                 {
-                  title: 'Specialist',
+                  title: 'Specialist Name',
                   dataIndex: 'specialistName',
                   width: 220,
                   render: (_, record) => (
@@ -1007,7 +1007,7 @@ const MilestoneDetailPage = () => {
                       <Text strong>
                         {record.specialistName ||
                           record.specialistId ||
-                          'Chưa gán'}
+                          'Not assigned'}
                       </Text>
                       {record.specialistEmail && (
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1018,7 +1018,7 @@ const MilestoneDetailPage = () => {
                   ),
                 },
                 {
-                  title: 'Thời gian',
+                  title: 'Time',
                   width: 220,
                   render: (_, record) => (
                     <Space direction="vertical" size={0}>
@@ -1044,7 +1044,7 @@ const MilestoneDetailPage = () => {
                           )
                         }
                       >
-                        Xem
+                        View
                       </Button>
                       {record.hasIssue && (
                         <Button
@@ -1058,7 +1058,7 @@ const MilestoneDetailPage = () => {
                             )
                           }
                         >
-                          Xử lý Issue
+                          Handle Issue
                         </Button>
                       )}
                     </Space>

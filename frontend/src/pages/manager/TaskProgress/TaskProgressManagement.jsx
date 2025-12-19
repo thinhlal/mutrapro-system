@@ -413,7 +413,6 @@ export default function TaskProgressManagement() {
             {email}
           </Text>
         )}
-        {specialization && <Tag size="small">{specialization}</Tag>}
       </Space>
     );
   };
@@ -447,14 +446,14 @@ export default function TaskProgressManagement() {
         selectedIssueTask.assignmentId
       );
       if (response?.status === 'success') {
-        message.success('Đã cho phép specialist tiếp tục task');
+        message.success('Allowed specialist to continue task');
         setIssueModalVisible(false);
         setSelectedIssueTask(null);
         await fetchAllTaskAssignments(filters, pagination);
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(error?.message || 'Lỗi khi resolve issue');
+      message.error(error?.message || 'Error resolving issue');
     }
   };
 
@@ -469,7 +468,7 @@ export default function TaskProgressManagement() {
       );
       if (response?.status === 'success') {
         message.success(
-          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
+          'Task cancelled successfully. Redirecting to create new task...'
         );
         setIssueModalVisible(false);
         const taskToCreate = selectedIssueTask;
@@ -482,7 +481,7 @@ export default function TaskProgressManagement() {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Lỗi khi hủy task');
+      message.error(error?.message || 'Error cancelling task');
     } finally {
       setCancellingTask(false);
     }
@@ -702,13 +701,8 @@ export default function TaskProgressManagement() {
               </>
             )}
 
-            {/* Divider giữa actual và planned nếu có cả 2 */}
-            {actualDeadline && plannedDeadline && (
-              <Divider style={{ margin: '4px 0' }} dashed />
-            )}
-
-            {/* Hiển thị Planned nếu có */}
-            {plannedDeadline && (
+            {/* Chỉ hiển thị Planned khi không có Target */}
+            {!actualDeadline && plannedDeadline && (
               <>
                 <Text strong type="secondary">
                   Planned
@@ -789,15 +783,20 @@ export default function TaskProgressManagement() {
               <Text type="secondary">Chưa hoàn thành</Text>
             )}
             <Divider style={{ margin: '4px 0' }} dashed />
-            <Text strong type="secondary">
-              Planned deadline
-            </Text>
-            {plannedDeadline ? (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {plannedDeadline.format('HH:mm DD/MM/YYYY')}
-              </Text>
-            ) : (
-              <Text type="secondary">-</Text>
+            {/* Planned deadline: chỉ hiển thị khi chưa có Target deadline */}
+            {!actualDeadline && (
+              <>
+                <Text strong type="secondary">
+                  Planned deadline
+                </Text>
+                {plannedDeadline ? (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {plannedDeadline.format('HH:mm DD/MM/YYYY')}
+                  </Text>
+                ) : (
+                  <Text type="secondary">-</Text>
+                )}
+              </>
             )}
           </Space>
         );
@@ -1020,25 +1019,28 @@ export default function TaskProgressManagement() {
                           </Text>
                         </Space>
                       </div>
-                      <div>
-                        <Text strong type="secondary">
-                          Planned
-                        </Text>
-                        <Space direction="vertical" size={0}>
-                          <Text type="secondary" style={{ fontSize: 11 }}>
-                            Start:{' '}
-                            {plannedStart
-                              ? plannedStart.format('HH:mm DD/MM/YYYY')
-                              : '-'}
+                      {/* Chỉ hiển thị Planned khi không có Target */}
+                      {!actualDeadline && (
+                        <div>
+                          <Text strong type="secondary">
+                            Planned
                           </Text>
-                          <Text type="secondary">
-                            Deadline:{' '}
-                            {plannedDeadline
-                              ? plannedDeadline.format('HH:mm DD/MM/YYYY')
-                              : '-'}
-                          </Text>
-                        </Space>
-                      </div>
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              Start:{' '}
+                              {plannedStart
+                                ? plannedStart.format('HH:mm DD/MM/YYYY')
+                                : '-'}
+                            </Text>
+                            <Text type="secondary">
+                              Deadline:{' '}
+                              {plannedDeadline
+                                ? plannedDeadline.format('HH:mm DD/MM/YYYY')
+                                : '-'}
+                            </Text>
+                          </Space>
+                        </div>
+                      )}
                       {!actualDeadline &&
                         !plannedDeadline &&
                         estimatedDeadline && (

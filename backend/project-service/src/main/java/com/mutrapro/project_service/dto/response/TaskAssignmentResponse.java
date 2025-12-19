@@ -38,6 +38,8 @@ public class TaskAssignmentResponse {
     String milestoneId;
 
     LocalDateTime assignedDate;
+    
+    LocalDateTime createdAt;  // Thời điểm task assignment được tạo (từ BaseEntity)
 
     LocalDateTime completedDate;
 
