@@ -178,12 +178,12 @@ const WithdrawalRequestsManagement = () => {
         setAdminNote('');
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi duyệt withdrawal request');
+        message.error(response?.message || 'Error approving withdrawal request');
       }
     } catch (error) {
       console.error('Error approving withdrawal:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi duyệt withdrawal request'
+        error?.response?.data?.message || 'Error approving withdrawal request'
       );
     } finally {
       setActionLoading(false);
@@ -192,7 +192,7 @@ const WithdrawalRequestsManagement = () => {
 
   const handleReject = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
-      message.warning('Vui lòng nhập lý do từ chối');
+      message.warning('Please enter the rejection reason');
       return;
     }
 
@@ -205,7 +205,7 @@ const WithdrawalRequestsManagement = () => {
       );
 
       if (response?.status === 'success') {
-        message.success('Đã từ chối withdrawal request');
+        message.success('Rejected withdrawal request');
         setRejectModalVisible(false);
         setSelectedRequest(null);
         setRejectionReason('');
@@ -213,13 +213,13 @@ const WithdrawalRequestsManagement = () => {
         await loadWithdrawalRequests();
       } else {
         message.error(
-          response?.message || 'Lỗi khi từ chối withdrawal request'
+          response?.message || 'Error rejecting withdrawal request'
         );
       }
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi từ chối withdrawal request'
+        error?.response?.data?.message || 'Error rejecting withdrawal request'
       );
     } finally {
       setActionLoading(false);
@@ -228,12 +228,12 @@ const WithdrawalRequestsManagement = () => {
 
   const handleComplete = async values => {
     if (!selectedRequest) {
-      message.warning('Không tìm thấy withdrawal request');
+      message.warning('Withdrawal request not found');
       return;
     }
 
     if (!confirmComplete) {
-      message.warning('Vui lòng xác nhận đã chuyển khoản thành công');
+      message.warning('Please confirm that the transfer has been completed');
       return;
     }
 
@@ -251,7 +251,7 @@ const WithdrawalRequestsManagement = () => {
       );
 
       if (response?.status === 'success') {
-        message.success('Đã hoàn thành withdrawal');
+        message.success('Completed withdrawal');
         setCompleteModalVisible(false);
         setSelectedRequest(null);
         completeForm.resetFields();
@@ -260,12 +260,12 @@ const WithdrawalRequestsManagement = () => {
         setConfirmComplete(false);
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Lỗi khi hoàn thành withdrawal');
+        message.error(response?.message || 'Error completing withdrawal');
       }
     } catch (error) {
-      console.error('Error completing withdrawal:', error);
+      console.error('Error completing withdrawal:', error); 
       message.error(
-        error?.response?.data?.message || 'Lỗi khi hoàn thành withdrawal'
+        error?.response?.data?.message || 'Error completing withdrawal'
       );
     } finally {
       setActionLoading(false);
@@ -274,7 +274,7 @@ const WithdrawalRequestsManagement = () => {
 
   const handleFail = async () => {
     if (!selectedRequest || !rejectionReason.trim()) {
-      message.warning('Vui lòng nhập lý do thất bại');
+      message.warning('Please enter the failure reason');
       return;
     }
 
@@ -286,20 +286,20 @@ const WithdrawalRequestsManagement = () => {
       );
 
       if (response?.status === 'success') {
-        message.success('Đã đánh dấu withdrawal thất bại');
+        message.success('Marked withdrawal as failed');
         setFailModalVisible(false);
         setSelectedRequest(null);
         setRejectionReason('');
         await loadWithdrawalRequests();
       } else {
         message.error(
-          response?.message || 'Lỗi khi đánh dấu withdrawal thất bại'
+          response?.message || 'Error marking withdrawal as failed'
         );
       }
     } catch (error) {
       console.error('Error failing withdrawal:', error);
       message.error(
-        error?.response?.data?.message || 'Lỗi khi đánh dấu withdrawal thất bại'
+        error?.response?.data?.message || 'Error marking withdrawal as failed'
       );
     } finally {
       setActionLoading(false);
@@ -319,7 +319,7 @@ const WithdrawalRequestsManagement = () => {
       setProofImageUrl(url);
     } catch (error) {
       console.error('Error loading proof:', error);
-      message.error('Lỗi khi tải proof file');
+      message.error('Error loading proof file');
       setProofImageUrl(null);
     } finally {
       setLoadingProof(false);
@@ -328,7 +328,7 @@ const WithdrawalRequestsManagement = () => {
 
   const handleViewProof = async request => {
     if (!request.proofUrl) {
-      message.warning('Không có proof file');
+      message.warning('No proof file');
       return;
     }
 
@@ -339,7 +339,7 @@ const WithdrawalRequestsManagement = () => {
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Error viewing proof:', error);
-      message.error('Lỗi khi xem proof file');
+      message.error('Error viewing proof file');
     }
   };
 
@@ -355,7 +355,7 @@ const WithdrawalRequestsManagement = () => {
 
   const columns = [
     {
-      title: 'Request ID',
+      title: 'Withdrawal Request ID',
       dataIndex: 'withdrawalRequestId',
       key: 'withdrawalRequestId',
       width: 150,
@@ -369,14 +369,14 @@ const WithdrawalRequestsManagement = () => {
       render: id => <Text>{id?.substring(0, 8)}...</Text>,
     },
     {
-      title: 'Số tiền',
+      title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
       width: 120,
       render: amount => <Text strong>{formatPriceDisplay(amount)}</Text>,
     },
     {
-      title: 'Ngân hàng',
+      title: 'Bank',
       key: 'bank',
       width: 200,
       render: (_, record) => (
@@ -403,7 +403,7 @@ const WithdrawalRequestsManagement = () => {
       ),
     },
     {
-      title: 'Ngày tạo',
+      title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
@@ -430,7 +430,7 @@ const WithdrawalRequestsManagement = () => {
                     setApproveModalVisible(true);
                   }}
                 >
-                  Duyệt
+                  Approve
                 </Button>
                 <Button
                   danger
@@ -443,7 +443,7 @@ const WithdrawalRequestsManagement = () => {
                     setRejectModalVisible(true);
                   }}
                 >
-                  Từ chối
+                  Reject
                 </Button>
               </>
             )}
@@ -461,7 +461,7 @@ const WithdrawalRequestsManagement = () => {
                     setCompleteModalVisible(true);
                   }}
                 >
-                  Hoàn thành
+                  Complete
                 </Button>
                 <Button
                   danger
@@ -473,7 +473,7 @@ const WithdrawalRequestsManagement = () => {
                     setFailModalVisible(true);
                   }}
                 >
-                  Thất bại
+                  Fail
                 </Button>
               </>
             )}
@@ -491,7 +491,7 @@ const WithdrawalRequestsManagement = () => {
                 }
               }}
             >
-              Chi tiết
+              Details
             </Button>
           </Space>
         );
@@ -521,19 +521,19 @@ const WithdrawalRequestsManagement = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
               >
-                <Option value="PENDING_REVIEW">Chờ duyệt</Option>
-                <Option value="APPROVED">Đã duyệt</Option>
-                <Option value="PROCESSING">Đang xử lý</Option>
-                <Option value="COMPLETED">Hoàn thành</Option>
-                <Option value="REJECTED">Từ chối</Option>
-                <Option value="FAILED">Thất bại</Option>
+                <Option value="PENDING_REVIEW">Pending Review</Option>
+                <Option value="APPROVED">Approved</Option>
+                <Option value="PROCESSING">Processing</Option>
+                <Option value="COMPLETED">Completed</Option>
+                <Option value="REJECTED">Rejected</Option>
+                <Option value="FAILED">Failed</Option>
               </Select>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={loadWithdrawalRequests}
                 loading={loading}
               >
-                Làm mới
+                Refresh
               </Button>
             </Space>
           </div>
@@ -548,7 +548,7 @@ const WithdrawalRequestsManagement = () => {
               pageSize: pagination.pageSize,
               total: pagination.total,
               showSizeChanger: true,
-              showTotal: total => `Tổng: ${total} requests`,
+              showTotal: total => `Total: ${total} requests`,
               onChange: (page, pageSize) => {
                 setPagination({ ...pagination, current: page, pageSize });
               },
@@ -560,7 +560,7 @@ const WithdrawalRequestsManagement = () => {
 
       {/* Approve Modal */}
       <Modal
-        title="Duyệt Withdrawal Request"
+        title="Approve Withdrawal Request"
         open={approveModalVisible}
         onOk={handleApprove}
         onCancel={() => {
@@ -569,19 +569,19 @@ const WithdrawalRequestsManagement = () => {
           setAdminNote('');
         }}
         confirmLoading={actionLoading}
-        okText="Duyệt"
-        cancelText="Hủy"
+        okText="Approve"
+        cancelText="Cancel"
       >
         {selectedRequest && (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Số tiền">
+              <Descriptions.Item label="Amount">
                 <Text strong>{formatPriceDisplay(selectedRequest.amount)}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Ngân hàng">
+              <Descriptions.Item label="Bank">
                 {selectedRequest.bankName} - {selectedRequest.accountHolderName}
               </Descriptions.Item>
-              <Descriptions.Item label="Số tài khoản">
+              <Descriptions.Item label="Bank Account Number">
                 {selectedRequest.bankAccountNumber}
               </Descriptions.Item>
             </Descriptions>
@@ -591,7 +591,7 @@ const WithdrawalRequestsManagement = () => {
                 rows={3}
                 value={adminNote}
                 onChange={e => setAdminNote(e.target.value)}
-                placeholder="Nhập ghi chú nếu có..."
+                placeholder="Enter admin note if any..."
               />
             </div>
           </Space>
@@ -600,7 +600,7 @@ const WithdrawalRequestsManagement = () => {
 
       {/* Reject Modal */}
       <Modal
-        title="Từ chối Withdrawal Request"
+        title="Reject Withdrawal Request"
         open={rejectModalVisible}
         onOk={handleReject}
         onCancel={() => {
@@ -610,36 +610,36 @@ const WithdrawalRequestsManagement = () => {
           setAdminNote('');
         }}
         confirmLoading={actionLoading}
-        okText="Từ chối"
-        cancelText="Hủy"
+        okText="Reject"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
       >
         {selectedRequest && (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Số tiền">
+              <Descriptions.Item label="Amount">
                 <Text strong>{formatPriceDisplay(selectedRequest.amount)}</Text>
               </Descriptions.Item>
             </Descriptions>
             <div>
               <Text strong>
-                Lý do từ chối <Text type="danger">*</Text>:
+                Rejection Reason <Text type="danger">*</Text>:
               </Text>
               <TextArea
                 rows={3}
                 value={rejectionReason}
                 onChange={e => setRejectionReason(e.target.value)}
-                placeholder="Nhập lý do từ chối..."
+                placeholder="Enter rejection reason..."
                 required
               />
             </div>
             <div>
-              <Text strong>Ghi chú (optional):</Text>
+              <Text strong>Admin Note (optional):</Text>
               <TextArea
                 rows={2}
                 value={adminNote}
                 onChange={e => setAdminNote(e.target.value)}
-                placeholder="Nhập ghi chú nếu có..."
+                placeholder="Enter admin note if any..."
               />
             </div>
           </Space>
@@ -648,7 +648,7 @@ const WithdrawalRequestsManagement = () => {
 
       {/* Complete Modal */}
       <Modal
-        title="Hoàn thành Withdrawal"
+        title="Complete Withdrawal"
         open={completeModalVisible}
         onOk={() => completeForm.submit()}
         onCancel={() => {
@@ -661,8 +661,8 @@ const WithdrawalRequestsManagement = () => {
           setShowFullAccountNumber(false);
         }}
         confirmLoading={actionLoading}
-        okText="Hoàn thành"
-        cancelText="Hủy"
+        okText="Complete"
+        cancelText="Cancel"
         width={700}
         okButtonProps={{ disabled: !confirmComplete }}
       >
@@ -687,10 +687,10 @@ const WithdrawalRequestsManagement = () => {
               >
                 <Text strong>Thông tin nhận tiền:</Text>
                 <Descriptions column={1} size="small" bordered>
-                  <Descriptions.Item label="Ngân hàng nhận">
+                  <Descriptions.Item label="Bank">
                     <Text strong>{selectedRequest.bankName}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Số TK nhận">
+                  <Descriptions.Item label="Bank Account Number">
                     <Space>
                       <Text code>
                         {showFullAccountNumber
@@ -803,11 +803,11 @@ const WithdrawalRequestsManagement = () => {
             </Form.Item>
 
             <Form.Item
-              label="Mã giao dịch (Reference / Trace No.)"
+              label="Transaction Code (Reference / Trace No.)"
               name="bankRef"
               tooltip="Mã hiển thị trong lịch sử chuyển khoản/bank statement"
             >
-              <Input placeholder="Nhập mã giao dịch từ ngân hàng" />
+              <Input placeholder="Enter transaction code from bank" />
             </Form.Item>
 
             <Form.Item
@@ -815,12 +815,12 @@ const WithdrawalRequestsManagement = () => {
               name="txnCode"
               tooltip="Mã từ hệ thống trung gian (MoMo/Payment provider) - chỉ dùng nếu có"
             >
-              <Input placeholder="Mã từ payment provider (nếu có)" />
+              <Input placeholder="Enter transaction code from payment provider (if any)" />
             </Form.Item>
 
             <Form.Item
-              label="Proof File (Biên lai/Ảnh chuyển khoản)"
-              help="Chấp nhận: .jpg, .png, .pdf (tối đa 10MB). Không upload ảnh có lộ thông tin không cần thiết."
+              label="Proof File (Receipt/Transfer Image)"
+              help="Accepts: .jpg, .png, .pdf (maximum 10MB). Do not upload images with unnecessary sensitive information."
             >
               <Upload
                 beforeUpload={file => {
@@ -830,14 +830,14 @@ const WithdrawalRequestsManagement = () => {
                     file.type === 'application/pdf';
                   if (!isValidType) {
                     message.error(
-                      'Chỉ cho phép upload file ảnh (.jpg, .png) hoặc PDF!'
+                      'Only allows image files (.jpg, .png) or PDF!'
                     );
                     return Upload.LIST_IGNORE;
                   }
                   // Check size (max 10MB)
                   const isLt10M = file.size / 1024 / 1024 < 10;
                   if (!isLt10M) {
-                    message.error('File phải nhỏ hơn 10MB!');
+                    message.error('File must be less than 10MB!');
                     return Upload.LIST_IGNORE;
                   }
                   setProofFile(file);
@@ -869,7 +869,7 @@ const WithdrawalRequestsManagement = () => {
                 maxCount={1}
                 accept="image/*,.pdf"
               >
-                <Button icon={<UploadOutlined />}>Upload ảnh/biên lai</Button>
+                <Button icon={<UploadOutlined />}>Upload image/receipt</Button>
               </Upload>
               {proofPreview && (
                 <div style={{ marginTop: 8 }}>
@@ -900,8 +900,7 @@ const WithdrawalRequestsManagement = () => {
                   style={{ marginRight: 8 }}
                 />
                 <Text>
-                  Tôi xác nhận đã chuyển khoản thành công. Hành động này không
-                  thể sửa.
+                  I confirm that the transfer has been completed. This action cannot be undone.
                 </Text>
               </Space>
             </Form.Item>
@@ -911,7 +910,7 @@ const WithdrawalRequestsManagement = () => {
 
       {/* Fail Modal */}
       <Modal
-        title="Đánh dấu Withdrawal Thất bại"
+        title="Mark Withdrawal as Failed"
         open={failModalVisible}
         onOk={handleFail}
         onCancel={() => {
@@ -920,26 +919,26 @@ const WithdrawalRequestsManagement = () => {
           setRejectionReason('');
         }}
         confirmLoading={actionLoading}
-        okText="Xác nhận"
-        cancelText="Hủy"
+        okText="Confirm"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
       >
         {selectedRequest && (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="Số tiền">
+              <Descriptions.Item label="Amount">
                 <Text strong>{formatPriceDisplay(selectedRequest.amount)}</Text>
               </Descriptions.Item>
             </Descriptions>
             <div>
               <Text strong>
-                Lý do thất bại <Text type="danger">*</Text>:
+                Failure Reason <Text type="danger">*</Text>:
               </Text>
               <TextArea
                 rows={4}
                 value={rejectionReason}
                 onChange={e => setRejectionReason(e.target.value)}
-                placeholder="Nhập lý do thất bại (ví dụ: Chuyển nhầm tài khoản, Lỗi hệ thống ngân hàng...)"
+                placeholder="Enter failure reason (e.g. Mistakenly transferred to the wrong account, Bank system error...)"
                 required
               />
             </div>
@@ -949,7 +948,7 @@ const WithdrawalRequestsManagement = () => {
 
       {/* Detail Modal */}
       <Modal
-        title="Chi tiết Withdrawal Request"
+        title="Withdrawal Request Details"
         open={detailModalVisible}
         onCancel={() => {
           setDetailModalVisible(false);
@@ -971,7 +970,7 @@ const WithdrawalRequestsManagement = () => {
               }
             }}
           >
-            Đóng
+            Close
           </Button>,
         ]}
         width={800}
@@ -991,7 +990,7 @@ const WithdrawalRequestsManagement = () => {
                 <Descriptions.Item label="Wallet ID">
                   <Text code>{selectedRequest.walletId}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Số tiền">
+                <Descriptions.Item label="Amount">
                   <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
                     {formatPriceDisplay(selectedRequest.amount)}
                   </Text>
@@ -1008,40 +1007,27 @@ const WithdrawalRequestsManagement = () => {
                 <Descriptions.Item label="Ngày tạo">
                   {formatDateTime(selectedRequest.createdAt)}
                 </Descriptions.Item>
-                <Descriptions.Item label="Ngân hàng nhận" span={2}>
+                <Descriptions.Item label="Bank" span={2}>
                   <Text strong>{selectedRequest.bankName}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Số tài khoản nhận" span={2}>
+                <Descriptions.Item label="Bank Account Number" span={2}>
                   <Text code>{selectedRequest.bankAccountNumber}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="Chủ tài khoản" span={2}>
+                <Descriptions.Item label="Account Holder Name" span={2}>
                   <Text>{selectedRequest.accountHolderName}</Text>
                 </Descriptions.Item>
                 {selectedRequest.note && (
-                  <Descriptions.Item label="Ghi chú" span={2}>
+                  <Descriptions.Item label="Note" span={2}>
                     <Text type="secondary">{selectedRequest.note}</Text>
                   </Descriptions.Item>
                 )}
-                {selectedRequest.approvedBy && (
-                  <>
-                    <Descriptions.Item label="Approved By">
-                      <Text>{selectedRequest.approvedBy}</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Approved At">
-                      {formatDateTime(selectedRequest.approvedAt)}
-                    </Descriptions.Item>
-                  </>
-                )}
                 {selectedRequest.rejectedBy && (
                   <>
-                    <Descriptions.Item label="Rejected By">
-                      <Text>{selectedRequest.rejectedBy}</Text>
-                    </Descriptions.Item>
                     <Descriptions.Item label="Rejected At">
                       {formatDateTime(selectedRequest.rejectedAt)}
                     </Descriptions.Item>
                     {selectedRequest.rejectionReason && (
-                      <Descriptions.Item label="Lý do từ chối" span={2}>
+                      <Descriptions.Item label="Rejection Reason" span={2}>
                         <Text type="danger">
                           {selectedRequest.rejectionReason}
                         </Text>
@@ -1051,40 +1037,37 @@ const WithdrawalRequestsManagement = () => {
                 )}
                 {selectedRequest.completedBy && (
                   <>
-                    <Descriptions.Item label="Completed By">
-                      <Text>{selectedRequest.completedBy}</Text>
-                    </Descriptions.Item>
                     <Descriptions.Item label="Completed At">
                       {formatDateTime(selectedRequest.completedAt)}
                     </Descriptions.Item>
                     {selectedRequest.paidAmount && (
-                      <Descriptions.Item label="Số tiền đã chuyển">
+                      <Descriptions.Item label="Paid Amount">
                         <Text strong style={{ color: '#52c41a' }}>
                           {formatPriceDisplay(selectedRequest.paidAmount)}
                         </Text>
                         {parseFloat(selectedRequest.paidAmount) !==
                           parseFloat(selectedRequest.amount) && (
                           <Text type="secondary" style={{ marginLeft: 8 }}>
-                            (Yêu cầu:{' '}
+                            (Requested:{' '}
                             {formatPriceDisplay(selectedRequest.amount)})
                           </Text>
                         )}
                       </Descriptions.Item>
                     )}
                     {selectedRequest.provider && (
-                      <Descriptions.Item label="Kênh chuyển">
+                      <Descriptions.Item label="Provider">
                         <Tag color="blue">{selectedRequest.provider}</Tag>
                       </Descriptions.Item>
                     )}
                     {selectedRequest.bankRef && (
-                      <Descriptions.Item label="Mã tham chiếu ngân hàng">
+                      <Descriptions.Item label="Bank Reference">
                         <Text code copyable>
                           {selectedRequest.bankRef}
                         </Text>
                       </Descriptions.Item>
                     )}
                     {selectedRequest.txnCode && (
-                      <Descriptions.Item label="Mã giao dịch">
+                      <Descriptions.Item label="Transaction Code">
                         <Text code copyable>
                           {selectedRequest.txnCode}
                         </Text>
@@ -1101,7 +1084,7 @@ const WithdrawalRequestsManagement = () => {
                       {formatDateTime(selectedRequest.failedAt)}
                     </Descriptions.Item>
                     {selectedRequest.failureReason && (
-                      <Descriptions.Item label="Lý do thất bại" span={2}>
+                      <Descriptions.Item label="Failure Reason" span={2}>
                         <Text type="danger">
                           {selectedRequest.failureReason}
                         </Text>
@@ -1110,7 +1093,7 @@ const WithdrawalRequestsManagement = () => {
                   </>
                 )}
                 {selectedRequest.adminNote && (
-                  <Descriptions.Item label="Ghi chú Admin/Manager" span={2}>
+                  <Descriptions.Item label="Admin/Manager Note" span={2}>
                     <Text type="secondary" style={{ fontStyle: 'italic' }}>
                       {selectedRequest.adminNote}
                     </Text>
@@ -1128,12 +1111,12 @@ const WithdrawalRequestsManagement = () => {
               {/* Proof Image */}
               {selectedRequest.proofUrl && (
                 <>
-                  <Divider orientation="left">Biên lai chuyển khoản</Divider>
+                  <Divider orientation="left">Proof File</Divider>
                   {loadingProof ? (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       <Spin size="large" />
                       <div style={{ marginTop: 16 }}>
-                        <Text type="secondary">Đang tải proof file...</Text>
+                        <Text type="secondary">Loading proof file...</Text>
                       </div>
                     </div>
                   ) : proofImageUrl ? (
@@ -1143,7 +1126,7 @@ const WithdrawalRequestsManagement = () => {
                         alt="Proof of transfer"
                         style={{ maxWidth: '100%', maxHeight: '500px' }}
                         preview={{
-                          mask: 'Xem ảnh',
+                          mask: 'View image',
                         }}
                       />
                       <div style={{ marginTop: 8 }}>
@@ -1152,20 +1135,20 @@ const WithdrawalRequestsManagement = () => {
                           icon={<DownloadOutlined />}
                           onClick={() => handleViewProof(selectedRequest)}
                         >
-                          Tải xuống
+                          Download
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
-                      <Text type="secondary">Không thể tải proof file</Text>
+                      <Text type="secondary">Cannot load proof file</Text>
                       <div style={{ marginTop: 8 }}>
                         <Button
                           type="link"
                           icon={<DownloadOutlined />}
                           onClick={() => handleViewProof(selectedRequest)}
                         >
-                          Thử tải xuống
+                          Try downloading
                         </Button>
                       </div>
                     </div>
