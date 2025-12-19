@@ -172,9 +172,6 @@ public class SecurityConfig {
             headers.set("Access-Control-Allow-Origin", origin);
             headers.set("Access-Control-Allow-Credentials", "true");
             headers.add("Vary", "Origin");
-            System.out.println("🔒 CORS Headers set: Access-Control-Allow-Origin=" + origin);
-        } else {
-            System.out.println("🔒 CORS Headers NOT set - Origin not in allowed list");
         }
     }
 

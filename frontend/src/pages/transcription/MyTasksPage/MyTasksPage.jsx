@@ -417,7 +417,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Assignment ID',
         dataIndex: 'assignmentId',
         key: 'assignmentId',
-        width: 120,
+        width: 80,
         ellipsis: true,
         render: id => (
           <Tooltip title={id}>
@@ -574,7 +574,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
-        width: 200,
+        width: 80,
         render: (status, record) => {
           const statusDisplay = getStatusDisplay(status);
 

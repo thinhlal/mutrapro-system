@@ -740,8 +740,11 @@ public class TaskAssignmentService {
             return null;
         }
 
+        long deadlineStart = System.currentTimeMillis();
+        
         // Recording milestone: special rules by contract type
         if (milestone.getMilestoneType() == MilestoneType.recording) {
+            long contractFetchStart = System.currentTimeMillis();
             Contract contract = null;
             try {
                 contract = contractRepository.findById(milestone.getContractId()).orElse(null);
@@ -749,19 +752,37 @@ public class TaskAssignmentService {
                 log.warn("Failed to fetch contract for recording target deadline: milestoneId={}, error={}",
                     milestone.getMilestoneId(), e.getMessage());
             }
+            long contractFetchTime = System.currentTimeMillis() - contractFetchStart;
+            if (contractFetchTime > 500) {
+                log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch contract: {}ms (milestoneId={})", 
+                    contractFetchTime, milestone.getMilestoneId());
+            }
 
             // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
             if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
                 try {
-                    List<ContractMilestone> allContractMilestones = contractMilestoneRepository
-                        .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
-                    ContractMilestone lastArrangementMilestone = allContractMilestones.stream()
-                        .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                        .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                        .orElse(null);
+                    long arrangementFetchStart = System.currentTimeMillis();
+                    // Tối ưu: Chỉ fetch last arrangement milestone thay vì fetch tất cả milestones
+                    Optional<ContractMilestone> lastArrangementMilestoneOpt = contractMilestoneRepository
+                        .findFirstByContractIdAndMilestoneTypeOrderByOrderIndexDesc(
+                            milestone.getContractId(), MilestoneType.arrangement);
+                    long arrangementFetchTime = System.currentTimeMillis() - arrangementFetchStart;
+                    
+                    if (arrangementFetchTime > 500) {
+                        log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch last arrangement: {}ms (contractId={})", 
+                            arrangementFetchTime, milestone.getContractId());
+                    }
 
-                    if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
-                        return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                    if (lastArrangementMilestoneOpt.isPresent()) {
+                        ContractMilestone lastArrangementMilestone = lastArrangementMilestoneOpt.get();
+                        if (lastArrangementMilestone.getActualEndAt() != null) {
+                            long totalTime = System.currentTimeMillis() - deadlineStart;
+                            if (totalTime > 1000) {
+                                log.warn("[Performance] resolveMilestoneTargetDeadline took {}ms (slow): milestoneId={}", 
+                                    totalTime, milestone.getMilestoneId());
+                            }
+                            return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                        }
                     }
                 } catch (Exception e) {
                     log.error("Error calculating recording target deadline for arrangement_with_recording: milestoneId={}, error={}",
@@ -771,8 +792,16 @@ public class TaskAssignmentService {
             } else if (contract != null && contract.getContractType() == ContractType.recording) {
                 // Workflow 4 (recording-only): prefer booking date if active
                 try {
+                    long bookingFetchStart = System.currentTimeMillis();
                     Optional<StudioBooking> bookingOpt =
                         studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                    long bookingFetchTime = System.currentTimeMillis() - bookingFetchStart;
+                    
+                    if (bookingFetchTime > 500) {
+                        log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch booking: {}ms (milestoneId={})", 
+                            bookingFetchTime, milestone.getMilestoneId());
+                    }
+                    
                     if (bookingOpt.isPresent()) {
                         StudioBooking booking = bookingOpt.get();
                         List<BookingStatus> activeStatuses = List.of(
@@ -783,6 +812,11 @@ public class TaskAssignmentService {
                                 ? booking.getStartTime()
                                 : LocalTime.of(8, 0);
                             LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                            long totalTime = System.currentTimeMillis() - deadlineStart;
+                            if (totalTime > 1000) {
+                                log.warn("[Performance] resolveMilestoneTargetDeadline took {}ms (slow): milestoneId={}", 
+                                    totalTime, milestone.getMilestoneId());
+                            }
                             return startAt.plusDays(slaDays);
                         }
                     }
@@ -962,12 +996,17 @@ public class TaskAssignmentService {
             return;
         }
 
+        long enrichStart = System.currentTimeMillis();
         try {
+            long step1Start = System.currentTimeMillis();
             ContractMilestone milestone = contractMilestoneRepository
                 .findByMilestoneIdAndContractId(milestoneId, contractId)
                 .orElse(null);
+            log.debug("[Performance] enrichMilestoneInfo - Fetch milestone: {}ms", System.currentTimeMillis() - step1Start);
+            
             if (milestone != null) {
                 // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
+                long step2Start = System.currentTimeMillis();
                 LocalDateTime estimatedDeadline = null;
                 LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
                 LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
@@ -980,10 +1019,13 @@ public class TaskAssignmentService {
                 if (targetDeadline == null && plannedDeadline == null) {
                     estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
                 }
+                log.debug("[Performance] enrichMilestoneInfo - Calculate deadlines: {}ms", System.currentTimeMillis() - step2Start);
                 
                 // Fetch arrangement submission nếu có sourceArrangementSubmissionId (gọi từ ContractMilestoneService)
+                long step3Start = System.currentTimeMillis();
                 TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
                     contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+                log.debug("[Performance] enrichMilestoneInfo - Fetch arrangement submission: {}ms", System.currentTimeMillis() - step3Start);
                 
                 // Dùng MapStruct mapper để map các field đơn giản
                 TaskAssignmentResponse.MilestoneInfo milestoneInfo = taskAssignmentMapper.toMilestoneInfo(milestone);
@@ -1005,6 +1047,9 @@ public class TaskAssignmentService {
                 
                 response.setMilestone(milestoneInfo);
             }
+            
+            log.debug("[Performance] enrichMilestoneInfo - Total: {}ms (milestoneId={})", 
+                System.currentTimeMillis() - enrichStart, milestoneId);
         } catch (Exception e) {
             log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
                 milestoneId, contractId, e.getMessage());
@@ -2449,29 +2494,50 @@ public class TaskAssignmentService {
      * Lấy chi tiết task assignment của specialist hiện tại (với request info)
      */
     public TaskAssignmentResponse getMyTaskAssignmentById(String assignmentId) {
-        log.info("Getting task assignment detail with request info: assignmentId={}", assignmentId);
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] getMyTaskAssignmentById STARTED: assignmentId={}", assignmentId);
         
+        long step1Start = System.currentTimeMillis();
         TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
             .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        log.info("[Performance] Step 1 - Fetch assignment: {}ms", System.currentTimeMillis() - step1Start);
         
         // Verify task belongs to current specialist
+        long step2Start = System.currentTimeMillis();
         String specialistId = getCurrentSpecialistId();
         if (!assignment.getSpecialistId().equals(specialistId)) {
             throw UnauthorizedException.create(
                 "You can only view your own task assignments");
         }
+        log.info("[Performance] Step 2 - Verify specialist: {}ms", System.currentTimeMillis() - step2Start);
         
         // Map task assignment to response & enrich
+        long step3Start = System.currentTimeMillis();
         TaskAssignmentResponse response = enrichTaskAssignment(assignment);
+        log.info("[Performance] Step 3 - Enrich task assignment: {}ms", System.currentTimeMillis() - step3Start);
         
         // Fetch request info từ contract (chỉ cần requestId, không cần fetch toàn bộ contract)
+        // Tối ưu: Dùng endpoint /basic để không fetch files (giảm thời gian response từ ~4s xuống <1s)
+        long step4Start = System.currentTimeMillis();
         try {
             String requestId = contractRepository.findRequestIdByContractId(assignment.getContractId()).orElse(null);
             if (requestId != null) {
                 try {
-                    // Gọi request-service để lấy request details (đầy đủ thông tin)
+                    // Gọi request-service để lấy request basic info (KHÔNG kèm files để tối ưu performance)
+                    // Files có thể được fetch riêng sau nếu cần (từ frontend hoặc API riêng)
+                    long requestCallStart = System.currentTimeMillis();
                     ApiResponse<ServiceRequestInfoResponse> requestResponse = 
-                        requestServiceFeignClient.getServiceRequestById(requestId);
+                        requestServiceFeignClient.getServiceRequestBasicInfo(requestId);
+                    long requestCallTime = System.currentTimeMillis() - requestCallStart;
+                    
+                    if (requestCallTime > 1000) {
+                        log.warn("[Performance] Request service basic info call took {}ms (slow): requestId={}", 
+                            requestCallTime, requestId);
+                    } else {
+                        log.debug("[Performance] Request service basic info call took {}ms: requestId={}", 
+                            requestCallTime, requestId);
+                    }
+                    
                     if (requestResponse != null && "success".equals(requestResponse.getStatus()) 
                         && requestResponse.getData() != null) {
                         ServiceRequestInfoResponse requestData = requestResponse.getData();
@@ -2497,7 +2563,8 @@ public class TaskAssignmentService {
                             }
                         }
                         
-                        // Map request info (đầy đủ thông tin cho specialist)
+                        // Map request info (files sẽ là empty list vì dùng basic endpoint)
+                        // Frontend có thể fetch files riêng nếu cần
                         TaskAssignmentResponse.RequestInfo requestInfo = TaskAssignmentResponse.RequestInfo.builder()
                             .requestId(requestData.getRequestId())
                             .serviceType(requestData.getRequestType())
@@ -2506,12 +2573,12 @@ public class TaskAssignmentService {
                             .durationSeconds(durationSeconds)
                             .tempo(tempo)
                             .instruments(requestData.getInstruments()) // List instruments nếu có
-                            .files(requestData.getFiles()) // List files mà customer đã upload
+                            .files(requestData.getFiles() != null ? requestData.getFiles() : new ArrayList<>()) // Empty list từ basic endpoint
                             .build();
                         response.setRequest(requestInfo);
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to fetch request info: requestId={}, error={}", 
+                    log.warn("Failed to fetch request basic info: requestId={}, error={}", 
                         requestId, e.getMessage());
                     // Không fail nếu không load được request
                 }
@@ -2521,6 +2588,11 @@ public class TaskAssignmentService {
                 assignment.getContractId(), e.getMessage());
             // Không fail nếu không load được requestId
         }
+        log.info("[Performance] Step 4 - Fetch request basic info: {}ms", System.currentTimeMillis() - step4Start);
+        
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] getMyTaskAssignmentById COMPLETED: assignmentId={}, totalTime={}ms", 
+            assignmentId, totalTime);
         
         return response;
     }
@@ -3129,25 +3201,23 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Lấy specialistId của user hiện tại từ specialist-service
+     * Lấy specialistId của user hiện tại từ JWT token
+     * Bắt buộc phải có trong JWT token (identity-service đã thêm khi login)
+     * Không có fallback để tránh gọi API chậm
      */
     private String getCurrentSpecialistId() {
-        try {
-            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
-            if (response == null || !"success".equals(response.getStatus()) 
-                || response.getData() == null) {
-                throw UnauthorizedException.create("Specialist not found for current user");
-            }
-            Map<String, Object> data = response.getData();
-            String specialistId = (String) data.get("specialistId");
-            if (specialistId == null || specialistId.isEmpty()) {
-                throw UnauthorizedException.create("Specialist ID not found in response");
-            }
-            return specialistId;
-        } catch (Exception e) {
-            log.error("Failed to get specialist info: {}", e.getMessage(), e);
-            throw UnauthorizedException.create("Failed to get specialist information: " + e.getMessage());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw UnauthorizedException.create("User not authenticated");
         }
+        
+        String specialistId = jwt.getClaimAsString("specialistId");
+        if (specialistId == null || specialistId.isEmpty()) {
+            throw UnauthorizedException.create(
+                "Specialist ID not found in JWT token. Please login again to refresh token.");
+        }
+        
+        return specialistId;
     }
 
     /**
@@ -3166,4 +3236,3 @@ public class TaskAssignmentService {
         throw UserNotAuthenticatedException.create();
     }
 }
-

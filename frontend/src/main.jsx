@@ -8,7 +8,7 @@ import 'antd/dist/reset.css';
 import './styles/global.css';
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <App />
-  </StrictMode>
+  // </StrictMode>
 );

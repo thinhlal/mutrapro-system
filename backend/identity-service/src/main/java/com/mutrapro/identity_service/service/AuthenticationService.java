@@ -34,6 +34,8 @@ import com.mutrapro.identity_service.dto.response.ExchangeTokenResponse;
 import com.mutrapro.identity_service.dto.response.OutboundUserResponse;
 import com.mutrapro.identity_service.repository.httpclient.OutboundIdentityClient;
 import com.mutrapro.identity_service.repository.httpclient.OutboundUserClient;
+import com.mutrapro.identity_service.repository.httpclient.SpecialistServiceClient;
+import com.mutrapro.shared.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -54,6 +56,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -73,6 +76,7 @@ public class AuthenticationService {
     private final ObjectMapper objectMapper;
     private final OutboundIdentityClient outboundIdentityClient;
     private final OutboundUserClient outboundUserClient;
+    private final SpecialistServiceClient specialistServiceClient;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -449,7 +453,7 @@ public class AuthenticationService {
         // Generate unique JWT ID
         String jti = UUID.randomUUID().toString();
 
-        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder()
                 .subject(usersAuth.getEmail())
                 .issuer("mutrapro.com")
                 .issueTime(new Date())
@@ -459,8 +463,34 @@ public class AuthenticationService {
                 .jwtID(jti) // Add JWT ID claim
                 .claim("type", "access")
                 .claim("scope", usersAuth.getRole())
-                .claim("userId", usersAuth.getUserId())  // Add userId as claim
-                .build();
+                .claim("userId", usersAuth.getUserId());  // Add userId as claim
+
+        // Nếu user có role specialist, thêm specialistId vào token
+        // Roles: TRANSCRIPTION, ARRANGEMENT, RECORDING_ARTIST
+        if (usersAuth.getRole() == Role.TRANSCRIPTION 
+                || usersAuth.getRole() == Role.ARRANGEMENT 
+                || usersAuth.getRole() == Role.RECORDING_ARTIST) {
+            try {
+                ApiResponse<Map<String, Object>> specialistResponse = 
+                    specialistServiceClient.getSpecialistByUserId(usersAuth.getUserId());
+                if (specialistResponse != null 
+                        && "success".equals(specialistResponse.getStatus())
+                        && specialistResponse.getData() != null) {
+                    Map<String, Object> specialistData = specialistResponse.getData();
+                    String specialistId = (String) specialistData.get("specialistId");
+                    if (specialistId != null && !specialistId.isEmpty()) {
+                        claimsBuilder.claim("specialistId", specialistId);
+                        log.debug("Added specialistId to JWT token: {} for userId: {}", specialistId, usersAuth.getUserId());
+                    }
+                }
+            } catch (Exception e) {
+                // Log warning nhưng không fail authentication nếu không lấy được specialistId
+                // Vì có thể user chưa có specialist profile
+                log.warn("Failed to get specialistId for userId {}: {}", usersAuth.getUserId(), e.getMessage());
+            }
+        }
+
+        JWTClaimsSet jwtClaimsSet = claimsBuilder.build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(header, payload);

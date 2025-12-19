@@ -96,37 +96,23 @@ public class StudioBookingService {
     SkillEquipmentMappingRepository skillEquipmentMappingRepository;
     
     /**
-     * Lấy specialistId của user hiện tại
-     * Ưu tiên lấy từ JWT token (nếu có), nếu không thì gọi specialist-service
+     * Lấy specialistId của user hiện tại từ JWT token
+     * Bắt buộc phải có trong JWT token (identity-service đã thêm khi login)
+     * Không có fallback để tránh gọi API chậm
      */
     private String getCurrentSpecialistId() {
-        // Thử lấy từ JWT token trước (nếu identity-service set specialistId claim)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String specialistId = jwt.getClaimAsString("specialistId");
-            if (specialistId != null && !specialistId.isEmpty()) {
-                log.debug("Got specialistId from JWT token: {}", specialistId);
-                return specialistId;
-            }
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw new IllegalStateException("User not authenticated");
         }
         
-        // Fallback: gọi specialist-service để lấy specialistId từ userId
-        try {
-            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
-            if (response == null || !"success".equals(response.getStatus()) 
-                || response.getData() == null) {
-                throw new IllegalStateException("Specialist not found for current user");
-            }
-            Map<String, Object> data = response.getData();
-            String specialistId = (String) data.get("specialistId");
-            if (specialistId == null || specialistId.isEmpty()) {
-                throw new IllegalStateException("Specialist ID not found in response");
-            }
-            return specialistId;
-        } catch (Exception e) {
-            log.error("Failed to get specialist info: {}", e.getMessage(), e);
-            throw new IllegalStateException("Failed to get specialist information: " + e.getMessage());
+        String specialistId = jwt.getClaimAsString("specialistId");
+        if (specialistId == null || specialistId.isEmpty()) {
+            throw new IllegalStateException(
+                "Specialist ID not found in JWT token. Please login again to refresh token.");
         }
+        
+        return specialistId;
     }
 
     /**
@@ -902,108 +888,6 @@ public class StudioBookingService {
     }
     
     /**
-     * Map StudioBooking entity sang StudioBookingResponse với caches đã fetch sẵn (tối ưu performance)
-     */
-    private StudioBookingResponse mapToResponseWithCaches(
-            StudioBooking booking,
-            List<BookingParticipant> bookingParticipants,
-            List<BookingRequiredEquipment> bookingEquipments,
-            Map<String, Map<String, Object>> specialistInfoMap,
-            Map<String, String> equipmentNameMap) {
-        
-        List<StudioBookingResponse.BookingParticipantInfo> participants = bookingParticipants.stream()
-            .map(p -> {
-                String specialistName = null;
-                String skillName = null;
-                
-                // Lấy specialist info từ map đã fetch sẵn
-                Map<String, Object> specialistData = specialistInfoMap.get(p.getSpecialistId());
-                if (specialistData != null) {
-                    // Response structure: { specialist: {...}, skills: [...], demos: [...] }
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> specialist = (Map<String, Object>) specialistData.get("specialist");
-                    if (specialist != null) {
-                        specialistName = (String) specialist.get("fullName");
-                    }
-                    
-                    // Lấy skill name nếu là INSTRUMENT
-                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
-                        for (Map<String, Object> skill : skills) {
-                            if (p.getSkillId().equals(skill.get("skillId"))) {
-                                skillName = (String) skill.get("skillName");
-                                break;
-                            }
-                        }
-                    }
-                } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
-                    // Fallback nếu không fetch được
-                    specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
-                }
-                
-                return StudioBookingResponse.BookingParticipantInfo.builder()
-                    .participantId(p.getParticipantId())
-                    .specialistId(p.getSpecialistId())
-                    .specialistName(specialistName)
-                    .roleType(p.getRoleType() != null ? p.getRoleType().name() : null)
-                    .performerSource(p.getPerformerSource() != null ? p.getPerformerSource().name() : null)
-                    .skillId(p.getSkillId())
-                    .skillName(skillName)
-                    .instrumentSource(p.getInstrumentSource() != null ? p.getInstrumentSource().name() : null)
-                    .equipmentId(p.getEquipmentId())
-                    .participantFee(p.getParticipantFee())
-                    .build();
-            })
-            .toList();
-        
-        List<StudioBookingResponse.BookingEquipmentInfo> requiredEquipment = bookingEquipments.stream()
-            .map(eq -> {
-                // Lấy equipment name từ map đã fetch sẵn
-                String equipmentName = equipmentNameMap.getOrDefault(eq.getEquipmentId(), "Unknown Equipment");
-                
-                return StudioBookingResponse.BookingEquipmentInfo.builder()
-                    .equipmentId(eq.getEquipmentId())
-                    .equipmentName(equipmentName)
-                    .quantity(eq.getQuantity())
-                    .rentalFeePerUnit(eq.getRentalFeePerUnit())
-                    .totalRentalFee(eq.getTotalRentalFee())
-                    .build();
-            })
-            .toList();
-        
-        return StudioBookingResponse.builder()
-            .bookingId(booking.getBookingId())
-            .userId(booking.getUserId())
-            .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
-            .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
-            .requestId(booking.getRequestId())
-            .contractId(booking.getContractId())
-            .milestoneId(booking.getMilestoneId())
-            .context(booking.getContext())
-            .sessionType(booking.getSessionType())
-            .bookingDate(booking.getBookingDate())
-            .startTime(booking.getStartTime())
-            .endTime(booking.getEndTime())
-            .status(booking.getStatus())
-            .holdExpiresAt(booking.getHoldExpiresAt())
-            .externalGuestCount(booking.getExternalGuestCount())
-            .durationHours(booking.getDurationHours())
-            .artistFee(booking.getArtistFee())
-            .equipmentRentalFee(booking.getEquipmentRentalFee())
-            .externalGuestFee(booking.getExternalGuestFee())
-            .totalCost(booking.getTotalCost())
-            .purpose(booking.getPurpose())
-            .specialInstructions(booking.getSpecialInstructions())
-            .notes(booking.getNotes())
-            .createdAt(booking.getCreatedAt())
-            .updatedAt(booking.getUpdatedAt())
-            .participants(participants)
-            .requiredEquipment(requiredEquipment)
-            .build();
-    }
-    
-    /**
      * Lấy available time slots của studio trong một ngày
      * GET /studio-bookings/available-slots?date={date}
      * 
@@ -1103,13 +987,6 @@ public class StudioBookingService {
             List<String> preferredSpecialistIds) {  // Optional - preferred specialist IDs từ frontend để tránh gọi request-service
         log.info("Getting available artists for slot: milestoneId={}, date={}, time={}-{}, genres={}, preferredSpecialistIds={}", 
             milestoneId, bookingDate, startTime, endTime, genres, preferredSpecialistIds);
-        
-        // 1. Validate milestone và lấy contract
-        ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)
-            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, null));
-        
-        Contract contract = contractRepository.findById(milestone.getContractId())
-            .orElseThrow(() -> ContractNotFoundException.byId(milestone.getContractId()));
         
         // 2. Lấy preferred specialists từ parameter
         List<String> preferredIds = preferredSpecialistIds != null && !preferredSpecialistIds.isEmpty()

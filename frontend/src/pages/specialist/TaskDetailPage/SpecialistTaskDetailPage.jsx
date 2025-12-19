@@ -39,7 +39,6 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getMyTaskAssignmentById,
-  getMyTaskAssignments,
   acceptTaskAssignment,
   reportIssue,
   startTaskAssignment,
@@ -48,6 +47,7 @@ import {
   uploadTaskFile,
   getFilesByAssignmentId,
   softDeleteFile,
+  getFilesByRequestId,
 } from '../../../services/fileService';
 import { submitFilesForReview } from '../../../services/taskAssignmentService';
 import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
@@ -149,6 +149,18 @@ function getTaskTypeLabel(taskType) {
   return labels[normalizedType] || taskType;
 }
 
+function getServiceTypeLabel(serviceType) {
+  if (!serviceType) return 'N/A';
+  const normalizedType = serviceType.toLowerCase();
+  const labels = {
+    transcription: 'Transcription',
+    arrangement: 'Arrangement',
+    arrangement_with_recording: 'Arrangement with Recording',
+    recording: 'Recording',
+  };
+  return labels[normalizedType] || serviceType;
+}
+
 function getActualDeadline(milestone, studioBooking = null) {
   if (!milestone?.targetDeadline) return null;
   const d = new Date(milestone.targetDeadline);
@@ -194,7 +206,6 @@ const SpecialistTaskDetailPage = () => {
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
-  const [contractTasks, setContractTasks] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState(new Set()); // State local để chọn files submit
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState(null);
@@ -205,27 +216,6 @@ const SpecialistTaskDetailPage = () => {
   const [rejectionReasonToView, setRejectionReasonToView] = useState('');
   const [revisionRequests, setRevisionRequests] = useState([]);
   const [loadingRevisionRequests, setLoadingRevisionRequests] = useState(false);
-
-  const loadContractTasks = useCallback(async contractId => {
-    if (!contractId) {
-      setContractTasks([]);
-      return;
-    }
-    try {
-      const resp = await getMyTaskAssignments();
-      if (resp?.status === 'success' && Array.isArray(resp.data)) {
-        const sameContractTasks = resp.data.filter(
-          assignment => assignment.contractId === contractId
-        );
-        setContractTasks(sameContractTasks);
-      } else {
-        setContractTasks([]);
-      }
-    } catch (error) {
-      console.error('Failed to load contract tasks', error);
-      setContractTasks([]);
-    }
-  }, []);
 
   const { actualDeadline, plannedDeadline, estimatedDeadline } = useMemo(() => {
     if (!task?.milestone) {
@@ -254,11 +244,6 @@ const SpecialistTaskDetailPage = () => {
 
   const loadTaskFiles = useCallback(async assignmentId => {
     if (!assignmentId) return;
-    console.log(
-      'CALL getFilesByAssignmentId',
-      assignmentId,
-      new Date().toISOString()
-    );
 
     try {
       const response = await getFilesByAssignmentId(assignmentId);
@@ -306,6 +291,28 @@ const SpecialistTaskDetailPage = () => {
       // Don't show error - files might not exist yet
     }
   }, []); // No dependencies - assignmentId passed as parameter
+
+  const loadRequestFiles = useCallback(async requestId => {
+    if (!requestId) return;
+    try {
+      const response = await getFilesByRequestId(requestId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Cập nhật request state với files
+        setRequest(prevRequest => {
+          if (prevRequest && prevRequest.requestId === requestId) {
+            return {
+              ...prevRequest,
+              files: response.data,
+            };
+          }
+          return prevRequest;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading request files:', error);
+      // Don't show error - files might not exist yet
+    }
+  }, []);
 
   const loadSubmissions = useCallback(async assignmentId => {
     if (!assignmentId) return;
@@ -439,17 +446,27 @@ const SpecialistTaskDetailPage = () => {
           setRequest(taskData.request);
         }
 
+        // Tối ưu: Hiển thị UI ngay khi có task data, không đợi các data khác
+        // Điều này giúp user thấy trang nhanh hơn, các data khác sẽ load sau
+        setLoading(false);
+
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
 
-        // Load song song: tasks cùng contract + files + submissions + revision requests của assignment hiện tại
-        // Nếu là recording_supervision task và có studioBookingId, load studio booking
+        // Load các data khác sau (không block UI)
+        // Load studio booking nếu là recording_supervision task
+        // Tối ưu: Load tất cả data song song để giảm thời gian
+        // Lazy load revision requests vì nó chậm nhất (2.25s) - chỉ load khi user click vào tab
         const loadPromises = [
-          loadContractTasks(contractId),
           loadTaskFiles(taskData.assignmentId),
           loadSubmissions(taskData.assignmentId),
-          loadRevisionRequests(taskData.assignmentId),
+          // loadRevisionRequests - lazy load khi cần (khi user click vào tab revision)
         ];
+
+        // Load request files nếu có requestId (chạy song song với các requests khác)
+        if (taskData.request?.requestId) {
+          loadPromises.push(loadRequestFiles(taskData.request.requestId));
+        }
 
         if (
           taskData.studioBookingId &&
@@ -458,23 +475,27 @@ const SpecialistTaskDetailPage = () => {
           loadPromises.push(loadStudioBooking(taskData.studioBookingId));
         }
 
-        await Promise.all(loadPromises);
+        // Không đợi các promises này, để chúng load sau và cập nhật UI dần
+        Promise.all(loadPromises).catch(err => {
+          console.error('Error loading additional data:', err);
+        });
       } else {
         setError('Task not found');
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error loading task detail:', err);
       setError(err?.message || 'Failed to load task');
-    } finally {
       setLoading(false);
     }
   }, [
     taskId,
-    loadContractTasks,
+    // REMOVED: loadContractTasks - không cần thiết
     loadTaskFiles,
     loadSubmissions,
     loadRevisionRequests,
     loadStudioBooking,
+    loadRequestFiles,
   ]);
 
   useEffect(() => {
@@ -622,11 +643,9 @@ const SpecialistTaskDetailPage = () => {
   }, []);
 
   const handleDeleteFile = useCallback(fileId => {
-    console.log('CLICK DELETE BUTTON', fileId);
     setDeletingFileId(fileId);
     setDeleteModalVisible(true);
   }, []);
-  console.log(request);
 
   const handleConfirmDeleteFile = useCallback(async () => {
     if (!deletingFileId) return;
@@ -693,13 +712,11 @@ const SpecialistTaskDetailPage = () => {
     }
 
     if (uploading) {
-      console.log('Already uploading, ignoring');
       return;
     }
 
     try {
       setUploading(true);
-      console.log('Starting upload process...', selectedFile);
 
       const values = await uploadForm.validateFields();
 
@@ -1335,19 +1352,6 @@ const SpecialistTaskDetailPage = () => {
                       ? formatDateTime(task.milestone.finalCompletedAt)
                       : 'Chưa hoàn thành'}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Payment Completed">
-                    {task.milestone.actualEndAt
-                      ? formatDateTime(task.milestone.actualEndAt)
-                      : '—'}
-                    {task.milestone.actualEndAt && (
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
-                      >
-                        (Milestone đã được thanh toán)
-                      </Text>
-                    )}
-                  </Descriptions.Item>
                 </>
               )}
               <Descriptions.Item label="Milestone Deadline">
@@ -1737,7 +1741,7 @@ const SpecialistTaskDetailPage = () => {
                     </Descriptions.Item>
                     {request.serviceType && (
                       <Descriptions.Item label="Service Type">
-                        <Tag>{request.serviceType}</Tag>
+                        <Tag>{getServiceTypeLabel(request.serviceType)}</Tag>
                       </Descriptions.Item>
                     )}
                     {request.title && (
@@ -1750,12 +1754,12 @@ const SpecialistTaskDetailPage = () => {
                         <Text>{request.description}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.durationSeconds && (
+                    {request.requestType === 'transcription' && request.durationSeconds && (
                       <Descriptions.Item label="Duration">
                         <Text>{formatDuration(request.durationSeconds)}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.tempo && (
+                    {request.requestType === 'transcription' && request.tempo && (
                       <Descriptions.Item label="Tempo">
                         <Text>{request.tempo} BPM</Text>
                       </Descriptions.Item>
@@ -1886,18 +1890,10 @@ const SpecialistTaskDetailPage = () => {
                 let daysUntilBooking = null;
                 let bookingDateFormatted = '';
 
-                console.log('=== BOOKING VALIDATION START ===');
-                console.log('hasStudioBooking:', hasStudioBooking);
-                console.log('studioBooking:', studioBooking);
-                console.log('hasStartButton:', hasStartButton);
-                console.log('task.status:', task?.status);
-
                 if (hasStudioBooking && studioBooking) {
-                  // ← BỎ điều kiện hasStartButton
                   // Chỉ validate khi hasStartButton = true (ready_to_start)
                   // Nhưng vẫn hiển thị booking info cho mọi status
                   const bookingStatus = studioBooking.status;
-                  console.log('📌 Booking Status =', bookingStatus);
 
                   // Tính toán booking date và countdown (luôn tính để hiển thị)
                   if (studioBooking.bookingDate) {
@@ -1907,15 +1903,10 @@ const SpecialistTaskDetailPage = () => {
                     const today = dayjs().startOf('day');
                     daysUntilBooking = bookingDate.diff(today, 'day');
                     bookingDateFormatted = `${studioBooking.bookingDate} | ${studioBooking.startTime || 'N/A'} - ${studioBooking.endTime || 'N/A'}`;
-                    console.log('   bookingDate:', studioBooking.bookingDate);
-                    console.log('   today:', today.format('YYYY-MM-DD'));
-                    console.log('   daysUntilBooking:', daysUntilBooking);
                   }
 
                   // Chỉ validate cho nút "Start Task" khi hasStartButton = true
                   if (hasStartButton) {
-                    console.log('📌 VALIDATE FOR START BUTTON');
-
                     // Check 1: Booking Status
                     // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
                     if (
@@ -1925,74 +1916,23 @@ const SpecialistTaskDetailPage = () => {
                     ) {
                       canStartWithBooking = false;
                       bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
-                      console.log(
-                        '❌ CHECK 1 FAILED: Status không hợp lệ →',
-                        bookingStatus
-                      );
-                      console.log(
-                        '   canStartWithBooking =',
-                        canStartWithBooking
-                      );
-                      console.log('   message =', bookingStatusMessage);
-                    } else {
-                      console.log('✅ CHECK 1 PASSED: Status hợp lệ');
                     }
 
                     // Check 2: Thời gian
                     if (studioBooking.bookingDate && canStartWithBooking) {
-                      console.log('📌 CHECK 2: Thời gian');
-
                       // Quá sớm: > 7 ngày trước booking date
                       if (daysUntilBooking > 7) {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Chưa thể bắt đầu task. Recording session sẽ diễn ra vào ${bookingDateFormatted}. Bạn có thể bắt đầu task trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`;
-                        console.log('❌ CHECK 2 FAILED: Quá sớm (> 7 ngày)');
-                        console.log(
-                          '   canStartWithBooking =',
-                          canStartWithBooking
-                        );
-                        console.log('   message =', bookingStatusMessage);
                       }
                       // Quá muộn: > 1 ngày sau booking date
                       else if (daysUntilBooking < -1) {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày (${bookingDateFormatted}). Vui lòng liên hệ Manager nếu cần hỗ trợ.`;
-                        console.log('❌ CHECK 2 FAILED: Quá muộn (< -1 ngày)');
-                        console.log(
-                          '   canStartWithBooking =',
-                          canStartWithBooking
-                        );
-                        console.log('   message =', bookingStatusMessage);
-                      } else {
-                        console.log(
-                          '✅ CHECK 2 PASSED: Trong khoảng -1 đến 7 ngày'
-                        );
                       }
-                    } else if (!studioBooking.bookingDate) {
-                      console.log('⚠️ CHECK 2 SKIPPED: Không có bookingDate');
-                    } else if (!canStartWithBooking) {
-                      console.log(
-                        '⚠️ CHECK 2 SKIPPED: canStartWithBooking đã false từ CHECK 1'
-                      );
                     }
-                  } else {
-                    console.log(
-                      '⚠️ VALIDATION SKIPPED: hasStartButton = false (task status không phải ready_to_start)'
-                    );
-                    console.log(
-                      '   → Booking info vẫn được tính toán để hiển thị'
-                    );
                   }
-                } else {
-                  console.log('⚠️ VALIDATION SKIPPED: Không có booking data');
                 }
-
-                console.log('=== FINAL RESULT ===');
-                console.log('canStartWithBooking:', canStartWithBooking);
-                console.log('bookingStatusMessage:', bookingStatusMessage);
-                console.log('daysUntilBooking:', daysUntilBooking);
-                console.log('bookingDateFormatted:', bookingDateFormatted);
-                console.log('=== BOOKING VALIDATION END ===\n');
                 const cannotStart =
                   needsStudioBooking ||
                   (hasStudioBooking && hasStartButton && !canStartWithBooking);
