@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "contract_milestones", indexes = {
     @Index(name = "idx_milestones_contract_id", columnList = "contract_id"),
+    @Index(name = "idx_milestones_milestone_id", columnList = "milestone_id"),  // Tối ưu cho findByMilestoneIdIn
     @Index(name = "idx_milestones_order_index", columnList = "contract_id, order_index"),
     @Index(name = "idx_milestones_work_status", columnList = "work_status"),
     @Index(name = "idx_milestones_milestone_type", columnList = "milestone_type")

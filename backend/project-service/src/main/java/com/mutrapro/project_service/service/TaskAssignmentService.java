@@ -2480,14 +2480,93 @@ public class TaskAssignmentService {
 
     /**
      * Lấy danh sách task assignments của specialist hiện tại
+     * Tối ưu: Batch fetch milestones để tránh N+1 queries
      */
     public List<TaskAssignmentResponse> getMyTaskAssignments() {
-        log.info("Getting task assignments for current specialist");
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] getMyTaskAssignments STARTED");
+        
         String specialistId = getCurrentSpecialistId();
+        
+        long step1Start = System.currentTimeMillis();
         List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistId(specialistId);
-        return assignments.stream()
-            .map(this::enrichTaskAssignment)
-            .toList();
+        log.info("[Performance] Step 1 - Fetch assignments: {}ms (found {} assignments)", 
+            System.currentTimeMillis() - step1Start, assignments.size());
+        
+        if (assignments.isEmpty()) {
+            log.info("[Performance] getMyTaskAssignments COMPLETED: 0 assignments, totalTime={}ms", 
+                System.currentTimeMillis() - totalStart);
+            return List.of();
+        }
+        
+        // Batch fetch milestones để tránh N+1 queries
+        long step2Start = System.currentTimeMillis();
+        List<String> milestoneIds = assignments.stream()
+            .map(TaskAssignment::getMilestoneId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        
+        List<ContractMilestone> milestones = milestoneIds.isEmpty() 
+            ? List.of()
+            : contractMilestoneRepository.findByMilestoneIdIn(milestoneIds);
+        log.info("[Performance] Step 2 - Batch fetch milestones: {}ms (fetched {} milestones from {} milestoneIds)", 
+            System.currentTimeMillis() - step2Start, milestones.size(), milestoneIds.size());
+        
+        // Enrich assignments với milestones từ cache
+        long step3Start = System.currentTimeMillis();
+        final LocalDateTime now = LocalDateTime.now();
+        List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
+            .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones, now))
+            .collect(Collectors.toList());
+        log.info("[Performance] Step 3 - Enrich assignments: {}ms (enriched {} assignments)", 
+            System.currentTimeMillis() - step3Start, enrichedAssignments.size());
+        
+        // Batch fetch studio bookings cho recording tasks
+        long step4Start = System.currentTimeMillis();
+        List<String> studioBookingIds = assignments.stream()
+            .map(TaskAssignment::getStudioBookingId)
+            .filter(Objects::nonNull)
+            .filter(id -> !id.isBlank())
+            .distinct()
+            .collect(Collectors.toList());
+        
+        final Map<String, StudioBooking> studioBookingMap = !studioBookingIds.isEmpty()
+            ? studioBookingRepository.findByBookingIdIn(studioBookingIds).stream()
+                .collect(Collectors.toMap(StudioBooking::getBookingId, booking -> booking))
+            : new HashMap<>();
+        
+        if (!studioBookingIds.isEmpty()) {
+            log.info("[Performance] Step 4 - Batch fetch studio bookings: {}ms (fetched {} bookings from {} bookingIds)", 
+                System.currentTimeMillis() - step4Start, studioBookingMap.size(), studioBookingIds.size());
+        } else {
+            log.info("[Performance] Step 4 - Batch fetch studio bookings: {}ms (no bookingIds)", 
+                System.currentTimeMillis() - step4Start);
+        }
+        
+        // Map studio booking info vào responses
+        long step5Start = System.currentTimeMillis();
+        enrichedAssignments.forEach(response -> {
+            if (response.getStudioBookingId() != null && !response.getStudioBookingId().isBlank()) {
+                StudioBooking booking = studioBookingMap.get(response.getStudioBookingId());
+                if (booking != null) {
+                    TaskAssignmentResponse.StudioBookingInfo bookingInfo = TaskAssignmentResponse.StudioBookingInfo.builder()
+                        .bookingId(booking.getBookingId())
+                        .bookingDate(booking.getBookingDate() != null ? booking.getBookingDate().toString() : null)
+                        .status(booking.getStatus() != null ? booking.getStatus().name() : null)
+                        .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+                        .build();
+                    response.setStudioBooking(bookingInfo);
+                }
+            }
+        });
+        log.info("[Performance] Step 5 - Map studio bookings: {}ms", System.currentTimeMillis() - step5Start);
+        
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] getMyTaskAssignments COMPLETED: {} assignments, totalTime={}ms", 
+            enrichedAssignments.size(), totalTime);
+        
+        return enrichedAssignments;
     }
 
     /**
@@ -2542,6 +2621,10 @@ public class TaskAssignmentService {
                         && requestResponse.getData() != null) {
                         ServiceRequestInfoResponse requestData = requestResponse.getData();
                         
+                        // Debug: Log genres và purpose để kiểm tra
+                        log.debug("Request data - genres: {}, purpose: {}, requestType: {}", 
+                            requestData.getGenres(), requestData.getPurpose(), requestData.getRequestType());
+                        
                         // Convert durationMinutes sang seconds
                         Integer durationSeconds = null;
                         if (requestData.getDurationMinutes() != null) {
@@ -2574,8 +2657,14 @@ public class TaskAssignmentService {
                             .tempo(tempo)
                             .instruments(requestData.getInstruments()) // List instruments nếu có
                             .files(requestData.getFiles() != null ? requestData.getFiles() : new ArrayList<>()) // Empty list từ basic endpoint
+                            .genres(requestData.getGenres()) // List genres cho arrangement
+                            .purpose(requestData.getPurpose()) // Purpose cho arrangement
                             .build();
                         response.setRequest(requestInfo);
+                        
+                        // Debug: Log mapped request info
+                        log.debug("Mapped request info - genres: {}, purpose: {}", 
+                            requestInfo.getGenres(), requestInfo.getPurpose());
                     }
                 } catch (Exception e) {
                     log.warn("Failed to fetch request basic info: requestId={}, error={}", 

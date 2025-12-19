@@ -161,6 +161,21 @@ function getServiceTypeLabel(serviceType) {
   return labels[normalizedType] || serviceType;
 }
 
+function getPurposeLabel(purpose) {
+  if (!purpose) return 'N/A';
+  const normalizedPurpose = purpose.toLowerCase();
+  const labels = {
+    karaoke_cover: 'Karaoke Cover',
+    performance: 'Performance',
+    recording: 'Recording',
+    education: 'Education',
+    commercial: 'Commercial Use',
+    personal: 'Personal Use',
+    other: 'Other',
+  };
+  return labels[normalizedPurpose] || purpose;
+}
+
 function getActualDeadline(milestone, studioBooking = null) {
   if (!milestone?.targetDeadline) return null;
   const d = new Date(milestone.targetDeadline);
@@ -429,7 +444,8 @@ const SpecialistTaskDetailPage = () => {
     },
     [loadArtistsInfo]
   );
-
+  console.log('request', request);
+  
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -1754,14 +1770,30 @@ const SpecialistTaskDetailPage = () => {
                         <Text>{request.description}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.requestType === 'transcription' && request.durationSeconds && (
+                    {request.serviceType === 'transcription' && request.durationSeconds && (
                       <Descriptions.Item label="Duration">
                         <Text>{formatDuration(request.durationSeconds)}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.requestType === 'transcription' && request.tempo && (
+                    {request.serviceType === 'transcription' && request.tempo && (
                       <Descriptions.Item label="Tempo">
                         <Text>{request.tempo} BPM</Text>
+                      </Descriptions.Item>
+                    )}
+                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.genres && request.genres.length > 0 && (
+                      <Descriptions.Item label="Genres" span={2}>
+                        <Space wrap>
+                          {request.genres.map((genre, idx) => (
+                            <Tag key={idx} color="blue">
+                              {genre}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.purpose && (
+                      <Descriptions.Item label="Purpose">
+                        <Text>{getPurposeLabel(request.purpose)}</Text>
                       </Descriptions.Item>
                     )}
                     {request.instruments && request.instruments.length > 0 && (

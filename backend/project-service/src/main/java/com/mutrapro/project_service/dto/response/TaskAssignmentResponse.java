@@ -56,6 +56,7 @@ public class TaskAssignmentResponse {
 
     // Link to studio booking (for recording tasks)
     String studioBookingId;  // Soft reference to studio_bookings.booking_id (nullable)
+    StudioBookingInfo studioBooking;  // Studio booking info (chỉ populate cho recording tasks)
 
     // Progress percentage - tính ở backend và update khi submission thay đổi (0-100)
     Integer progressPercentage;
@@ -113,6 +114,8 @@ public class TaskAssignmentResponse {
         Integer tempo;
         Object instruments; // List instruments nếu có
         Object files; // List files mà customer đã upload
+        List<String> genres; // List genres cho arrangement (VD: ["Pop", "Rock"])
+        String purpose; // Mục đích cho arrangement (VD: "karaoke_cover", "performance")
     }
 
     @Data
@@ -171,6 +174,18 @@ public class TaskAssignmentResponse {
         String fileUrl;  // Download URL
         Long fileSize;
         String mimeType;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class StudioBookingInfo {
+        String bookingId;
+        String bookingDate;  // LocalDate as String (YYYY-MM-DD)
+        String status;  // BookingStatus enum as String
+        String studioName;  // Studio name
     }
 }
 

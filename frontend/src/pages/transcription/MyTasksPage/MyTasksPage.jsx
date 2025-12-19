@@ -33,7 +33,6 @@ import {
   cancelTaskAssignment,
   startTaskAssignment,
 } from '../../../services/taskAssignmentService';
-import { getStudioBookingById } from '../../../services/studioBookingService';
 import styles from './MyTasksPage.module.css';
 
 const { Title, Text } = Typography;
@@ -214,7 +213,6 @@ const MyTasksPage = ({ onOpenTask }) => {
   const [cancelTask, setCancelTask] = useState(null);
   const [cancelForm] = Form.useForm();
   const [startingAssignmentId, setStartingAssignmentId] = useState(null);
-  const [studioBookings, setStudioBookings] = useState({}); // Map: taskId -> booking data
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -223,37 +221,6 @@ const MyTasksPage = ({ onOpenTask }) => {
       const response = await getMyTaskAssignments();
       if (response?.status === 'success' && response?.data) {
         setTasks(response.data);
-
-        // Load studio bookings cho recording tasks
-        const recordingTasks = response.data.filter(
-          task =>
-            task.taskType?.toLowerCase() === 'recording_supervision' &&
-            task.studioBookingId
-        );
-
-        if (recordingTasks.length > 0) {
-          const bookingPromises = recordingTasks.map(async task => {
-            try {
-              const bookingRes = await getStudioBookingById(
-                task.studioBookingId
-              );
-              return { taskId: task.assignmentId, booking: bookingRes?.data };
-            } catch (err) {
-              console.error(
-                `Error loading booking for task ${task.assignmentId}:`,
-                err
-              );
-              return { taskId: task.assignmentId, booking: null };
-            }
-          });
-
-          const bookingResults = await Promise.all(bookingPromises);
-          const bookingsMap = {};
-          bookingResults.forEach(({ taskId, booking }) => {
-            if (booking) bookingsMap[taskId] = booking;
-          });
-          setStudioBookings(bookingsMap);
-        }
       } else {
         setTasks([]);
       }
@@ -461,7 +428,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         width: 190,
         render: (_, record) => {
           // Pass studioBooking để tính deadline cho recording milestone
-          const studioBooking = studioBookings[record.assignmentId];
+          const studioBooking = record.studioBooking;
           const actualDeadline = getActualDeadline(
             record?.milestone,
             studioBooking
@@ -574,12 +541,12 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
-        width: 80,
+        width: 120,
         render: (status, record) => {
           const statusDisplay = getStatusDisplay(status);
 
           // Hiển thị booking countdown cho recording tasks
-          const studioBooking = studioBookings[record.assignmentId];
+          const studioBooking = record.studioBooking;
           let bookingCountdown = null;
 
           if (
@@ -684,7 +651,7 @@ const MyTasksPage = ({ onOpenTask }) => {
                   <>
                     {(() => {
                       // Validate booking cho recording tasks
-                      const studioBooking = studioBookings[record.assignmentId];
+                      const studioBooking = record.studioBooking;
                       const validation = validateBookingForStart(
                         record,
                         studioBooking
@@ -738,7 +705,6 @@ const MyTasksPage = ({ onOpenTask }) => {
       handleCancel,
       handleStartTask,
       startingAssignmentId,
-      studioBookings,
     ]
   );
 
