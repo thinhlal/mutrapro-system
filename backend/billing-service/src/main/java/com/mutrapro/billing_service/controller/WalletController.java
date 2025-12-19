@@ -4,8 +4,10 @@ import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
+import com.mutrapro.billing_service.dto.request.WithdrawWalletRequest;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
+import com.mutrapro.billing_service.dto.response.WithdrawalRequestResponse;
 import com.mutrapro.billing_service.enums.WalletTxType;
 import com.mutrapro.billing_service.service.WalletService;
 import com.mutrapro.shared.dto.ApiResponse;
@@ -103,7 +105,7 @@ public class WalletController {
             @PathVariable String walletId,
             @Valid @RequestBody PayMilestoneRequest request) {
         log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}", 
-            walletId, request.getContractId(), request.getMilestoneId(), request.getAmount());
+            walletId, request.getContractId(), request.getMilestoneId());
         WalletTransactionResponse transaction = walletService.payMilestone(walletId, request);
         return ApiResponse.<WalletTransactionResponse>builder()
                 .message("Milestone payment successful")
@@ -125,6 +127,23 @@ public class WalletController {
         return ApiResponse.<WalletTransactionResponse>builder()
                 .message("Revision fee payment successful")
                 .data(transaction)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @PostMapping("/{walletId}/withdraw")
+    @Operation(summary = "Tạo yêu cầu rút tiền từ ví (chờ manager duyệt)")
+    public ApiResponse<WithdrawalRequestResponse> withdrawWallet(
+            @Parameter(description = "ID của ví")
+            @PathVariable String walletId,
+            @Valid @RequestBody WithdrawWalletRequest request) {
+        log.info("Create withdrawal request: walletId={}, amount={}, bankAccount={}, bankName={}", 
+            walletId, request.getAmount(), request.getBankAccountNumber(), request.getBankName());
+        WithdrawalRequestResponse withdrawalRequest = walletService.withdrawWallet(walletId, request);
+        return ApiResponse.<WithdrawalRequestResponse>builder()
+                .message("Withdrawal request submitted successfully. Waiting for manager approval.")
+                .data(withdrawalRequest)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();
@@ -200,6 +219,36 @@ public class WalletController {
         
         return ApiResponse.<PageResponse<WalletTransactionResponse>>builder()
                 .message("Transactions retrieved successfully")
+                .data(pageResponse)
+                .statusCode(HttpStatus.OK.value())
+                .status("success")
+                .build();
+    }
+
+    @GetMapping("/me/withdrawal-requests")
+    @Operation(summary = "Lấy danh sách withdrawal requests của user hiện tại")
+    public ApiResponse<PageResponse<WithdrawalRequestResponse>> getMyWithdrawalRequests(
+            @Parameter(description = "Filter theo status (PENDING_REVIEW, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED). Nếu không truyền thì trả về tất cả")
+            @RequestParam(required = false) com.mutrapro.billing_service.enums.WithdrawalStatus status,
+            @Parameter(description = "Số trang (0-based)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Số lượng items mỗi trang")
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sắp xếp theo (mặc định: createdAt,desc)")
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+        log.info("Getting my withdrawal requests: status={}, page={}, size={}", status, page, size);
+        
+        String[] sortParams = sort.split(",");
+        Sort.Direction direction = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1]) 
+            ? Sort.Direction.DESC 
+            : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+        
+        Page<WithdrawalRequestResponse> requests = walletService.getMyWithdrawalRequests(status, pageable);
+        PageResponse<WithdrawalRequestResponse> pageResponse = PageResponse.from(requests);
+        
+        return ApiResponse.<PageResponse<WithdrawalRequestResponse>>builder()
+                .message("Withdrawal requests retrieved successfully")
                 .data(pageResponse)
                 .statusCode(HttpStatus.OK.value())
                 .status("success")

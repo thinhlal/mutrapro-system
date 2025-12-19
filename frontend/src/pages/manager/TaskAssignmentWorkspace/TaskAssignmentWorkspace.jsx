@@ -592,6 +592,17 @@ export default function TaskAssignmentWorkspace() {
     return contract.milestones.find(m => m.milestoneId === selectedMilestoneId);
   }, [contract, selectedMilestoneId]);
 
+  const isSlaWindowFull = useCallback(specialist => {
+    const slaCount = Number(specialist?.tasksInSlaWindow ?? 0);
+    const max = Math.max(1, Number(specialist?.maxConcurrentTasks ?? 1));
+    return slaCount >= max;
+  }, []);
+
+  const selectedSlaFull = useMemo(() => {
+    if (!selectedSpecialist) return false;
+    return isSlaWindowFull(selectedSpecialist);
+  }, [selectedSpecialist, isSlaWindowFull]);
+
   const handleAssign = async () => {
     if (!selectedMilestoneId) {
       message.warning('Vui lòng chọn milestone');
@@ -599,6 +610,12 @@ export default function TaskAssignmentWorkspace() {
     }
     if (!selectedSpecialist) {
       message.warning('Vui lòng chọn specialist');
+      return;
+    }
+    if (isSlaWindowFull(selectedSpecialist)) {
+      message.error(
+        'Specialist đang Full trong SLA window, vui lòng chọn specialist khác'
+      );
       return;
     }
 
@@ -994,10 +1011,10 @@ export default function TaskAssignmentWorkspace() {
                               {dayjs(item.plannedStartAt).format('YYYY-MM-DD')}
                             </span>
                           )}
-                          {item.plannedDueDate && (
+                          {item.targetDeadline && (
                             <span>
                               <Text type="secondary">Due: </Text>
-                              {dayjs(item.plannedDueDate).format('YYYY-MM-DD')}
+                              {dayjs(item.targetDeadline).format('YYYY-MM-DD')}
                             </span>
                           )}
                           {item.milestoneSlaDays && (
@@ -1043,6 +1060,7 @@ export default function TaskAssignmentWorkspace() {
                   renderItem={item => {
                     const active =
                       selectedSpecialist?.specialistId === item.specialistId;
+                    const slaFull = isSlaWindowFull(item);
                     const loadTagBadge = (() => {
                       const open = item.totalOpenTasks ?? 0;
                       const max = item.maxConcurrentTasks || 1;
@@ -1086,9 +1104,15 @@ export default function TaskAssignmentWorkspace() {
                       <List.Item
                         className={`${styles.specialistItem} ${
                           active ? styles.specialistItemActive : ''
-                        }`}
+                        } ${!active && slaFull ? styles.specialistItemDisabled : ''}`}
                         onClick={() => {
                           // Cho phép bỏ chọn nếu đã chọn rồi
+                          if (!active && slaFull) {
+                            message.warning(
+                              'Specialist đang Full trong SLA window, không thể chọn'
+                            );
+                            return;
+                          }
                           setSelectedSpecialist(active ? null : item);
                         }}
                       >
@@ -1107,6 +1131,9 @@ export default function TaskAssignmentWorkspace() {
                             <Tag color="purple">
                               SLA: {item.tasksInSlaWindow ?? 0}
                             </Tag>
+                            {slaFull && !active && (
+                              <Tag color="red">SLA Full</Tag>
+                            )}
                             {item.totalProjects > 0 && (
                               <Tag color="geekblue">
                                 Projects: {item.totalProjects}
@@ -1126,8 +1153,13 @@ export default function TaskAssignmentWorkspace() {
                         <Button
                           type={active ? 'primary' : 'default'}
                           size="small"
+                          disabled={!active && slaFull}
                         >
-                          {active ? 'Đang chọn' : 'Chọn'}
+                          {!active && slaFull
+                            ? 'Không thể chọn'
+                            : active
+                              ? 'Đang chọn'
+                              : 'Chọn'}
                         </Button>
                       </List.Item>
                     );
@@ -1206,6 +1238,9 @@ export default function TaskAssignmentWorkspace() {
                               SLA window:{' '}
                               {selectedSpecialist.tasksInSlaWindow ?? 0}
                             </Tag>
+                            {selectedSlaFull && (
+                              <Tag color="red">SLA Full (không thể gán)</Tag>
+                            )}
                           </Space>
                         </Space>
                       ) : (
@@ -1228,6 +1263,11 @@ export default function TaskAssignmentWorkspace() {
                   icon={<CheckCircleOutlined />}
                   loading={assigning}
                   onClick={handleAssign}
+                  disabled={
+                    !selectedMilestoneId ||
+                    !selectedSpecialist ||
+                    selectedSlaFull
+                  }
                   block
                 >
                   {isEditMode

@@ -20,12 +20,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface RequestServiceFeignClient {
 
     /**
-     * Lấy chi tiết service request theo requestId (đầy đủ thông tin)
+     * Lấy chi tiết service request theo requestId (đầy đủ thông tin kèm files)
      * GET /requests/{requestId}
      * ServiceRequestInfoResponse đã được mở rộng để chứa đầy đủ thông tin
      */
     @GetMapping("/requests/{requestId}")
     ApiResponse<ServiceRequestInfoResponse> getServiceRequestById(@PathVariable("requestId") String requestId);
+
+    /**
+     * Lấy thông tin cơ bản của service request (không kèm files và manager info)
+     * GET /requests/{requestId}/basic
+     * Tối ưu cho performance - không fetch files từ project-service
+     */
+    @GetMapping("/requests/{requestId}/basic")
+    ApiResponse<ServiceRequestInfoResponse> getServiceRequestBasicInfo(@PathVariable("requestId") String requestId);
 
     /**
      * Cập nhật status của service request

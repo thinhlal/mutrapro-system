@@ -186,9 +186,9 @@
            - Planned dates ban đầu (từ cursor khi Start Work) được giữ nguyên như baseline
            - **Lý do:** 
              - Planned dates là ước tính ban đầu (baseline) từ Start Work
-             - Booking date validation dựa trên **actual completion date** của arrangement milestone + SLA days (không dựa trên planned dates)
+             - Booking date validation dựa trên **actualEndAt (đã thanh toán)** của arrangement milestone cuối + SLA days (không dựa trên planned dates)
              - Booking date đã được validate trong SLA range thực tế
-             - Deadline thực tế tính từ booking date (trong resolveMilestoneDeadline), không phải từ plannedDueDate
+             - **Deadline milestone (hard) tính từ actualEndAt(arrangement) + SLA days**, không tính lại từ booking date
          - **⚠️ Trường hợp milestone arrangement trước đó bị revision nhiều:**
            - **Vấn đề:** Nếu milestone arrangement bị revision nhiều, actual completion date (finalCompletedAt/actualEndAt) sẽ muộn hơn plannedDueDate ban đầu
            - **Planned dates của recording milestone:** Vẫn giữ nguyên (baseline) từ Start Work, KHÔNG được update
@@ -199,8 +199,8 @@
              - Recording milestone plannedDueDate (baseline) có thể sớm hơn so với booking date validation range (tính từ actual completion)
              - ✅ **Điều này OK vì:**
                - Planned dates = baseline (ước tính ban đầu), không cần update
-               - Booking date validation = thực tế (actual completion date), đảm bảo booking date hợp lệ
-               - Deadline thực tế = booking date + SLA days (không phải plannedDueDate)
+               - Booking date validation = thực tế (actualEndAt(arrangement)), đảm bảo booking date hợp lệ
+               - **Deadline milestone (hard) = actualEndAt(arrangement) + SLA days** (booking không làm dời deadline)
              - **Ví dụ:**
                - Arrangement milestone plannedDueDate = Day 10 (từ Start Work)
                - Arrangement milestone bị revision nhiều → finalCompletedAt = Day 15 (muộn hơn 5 ngày)
@@ -215,9 +215,9 @@
            - Planned dates giữ nguyên từ khi Start Work (baseline)
          - ✅ **QUAN TRỌNG:** 
            - **Planned dates = baseline (ước tính ban đầu)** từ Start Work
-           - **Booking date validation = actual completion date + SLA days** (thực tế)
-           - **Deadline thực tế = booking date + SLA days** (không phải plannedDueDate)
-           - ✅ **Không cần recalculate:** planned dates và booking date validation là 2 hệ thống độc lập
+           - **Booking date validation = actualEndAt(arrangement) + SLA days** (thực tế)
+           - **Deadline milestone (hard) = actualEndAt(arrangement) + SLA days** (booking không làm dời deadline)
+           - ✅ **Không cần recalculate:** planned dates là baseline, còn hard deadline/boundary tính theo actualEndAt(arrangement)
       9. Tạo StudioBooking:
          - context: CONTRACT_RECORDING
          - status: CONFIRMED (đã chốt lịch)
@@ -256,7 +256,9 @@
     - **Lý do:** Planned dates là baseline (ước tính ban đầu), booking date validation dựa trên actual completion date
   - ✅ **Planned dates = baseline (ước tính ban đầu)**
 - ✅ Customer và Artist nhận system notification "Studio booking created" (trong hệ thống)
-- ✅ **Recording milestone deadline tính từ booking date, không phải actualStartAt hoặc plannedDueDate**
+- ✅ **Recording milestone deadline là HARD deadline theo milestone window (KHÔNG tính lại từ booking date):**
+  - `deadline = actualEndAt(arrangement milestone cuối cùng, đã thanh toán) + recording milestone SLA days`
+  - Booking chỉ là điều kiện để tổ chức session, **không gia hạn deadline**
 - ✅ **Booking date validation:**
   - **Booking date phải trong range:** `[recordingStartDate, recordingDueDate]`
   - **recordingStartDate (tính từ arrangement milestone cuối cùng):**
@@ -271,8 +273,8 @@
   - ✅ **Lưu ý:** 
     - Booking date validation và planned dates là 2 hệ thống độc lập
     - Planned dates = baseline (ước tính ban đầu)
-    - Booking date validation = actual completion date + SLA days (thực tế)
-    - Deadline thực tế = booking date + SLA days (không phải plannedDueDate)
+    - Booking date validation = actualEndAt(arrangement) + SLA days (thực tế)
+    - **Deadline milestone (hard) = actualEndAt(arrangement) + SLA days** (booking không làm dời deadline)
 
 ---
 
@@ -291,7 +293,7 @@
     - ⚠️ **Khác biệt:**
       - Filter theo specialization: 'ARRANGEMENT' (recording supervision thường do arrangement specialist làm)
       - **VẪN filter theo skillNames và mainInstrumentName** (từ service request instruments) - vì thường do arrangement specialist làm nên cần match instruments
-      - **Recording milestone deadline tính từ booking date** (không phải actualStartAt) - xem chi tiết logic deadline ở Edge Case 5
+      - **Recording milestone deadline là hard deadline theo milestone window** (không phụ thuộc booking date) - xem chi tiết logic deadline ở Edge Case 5
     - **Response:** Danh sách specialists với workload info (tasksInSlaWindow, totalOpenTasks) và matchRatio
 
 85. **Assign Task to Specialist (Recording)** (Manager)
@@ -352,7 +354,7 @@
 
 **Kết quả:** ✅ **Giống WORKFLOW_2** (milestone/task status updated, notification sent)
 - ⚠️ **Khác biệt:** 
-  - **Recording milestone deadline tính từ booking date, không phải actualStartAt** (xem chi tiết logic deadline ở Edge Case 5)
+  - **Recording milestone deadline là hard deadline theo milestone window** (không phụ thuộc booking date) (xem chi tiết logic deadline ở Edge Case 5)
   - **Planned dates là baseline** (đã được tính khi Start Work, giữ nguyên như ước tính ban đầu)
 
 ---
@@ -569,7 +571,7 @@
 ### **ĐIỂM KHÁC BIỆT SO VỚI ARRANGEMENT THUẦN:**
 
 1. **Default milestones:** 2 milestones (Arrangement + Recording), milestoneType: 'arrangement' hoặc 'recording'
-2. **Recording milestone:** task_type = 'RECORDING_SUPERVISION', phải có studio booking, deadline tính từ booking date
+2. **Recording milestone:** task_type = 'RECORDING_SUPERVISION', phải có studio booking, **deadline là hard deadline** = `actualEndAt(arrangement milestone cuối cùng, đã thanh toán) + SLA days` (booking không gia hạn)
 3. **Thứ tự milestones:** Arrangement milestones trước Recording milestone, files tự động link
 4. **Studio booking:** Bắt buộc, chỉ tạo sau khi arrangement milestones đã thanh toán
 5. **Artist actor:** Thêm actor mới với use cases riêng
@@ -602,10 +604,11 @@
   - Recording specialist có thể download arrangement files từ recording milestone
 - **Lý do:** Recording specialist cần arrangement files để làm recording
 
-### **5. Recording Milestone Deadline Tính Từ Booking Date:**
-- **Recording milestone deadline:** Tính từ **booking date + SLA days** (KHÔNG phải actualStartAt + SLA)
-- **Logic ưu tiên:** actualEndAt → booking date + SLA → arrangement actualEndAt + SLA → plannedDueDate → plannedStartAt + SLA
-- **Khác với arrangement milestone:** Arrangement milestone tính từ actualStartAt + SLA, Recording milestone tính từ booking date
+### **5. Recording Milestone Deadline (Hard Deadline) - Luồng 3:**
+- **Recording milestone deadline (hard):** `actualEndAt(arrangement milestone cuối cùng, đã thanh toán) + SLA days`
+- **Booking date constraint:** booking date phải nằm trong milestone window và **không được làm dời deadline**
+- **Logic ưu tiên (backend / targetDeadline):** arrangement actualEndAt + SLA → (fallback) plannedDueDate → plannedStartAt + SLA
+- **Khác với luồng 4 (recording-only):** recording-only dùng booking date + SLA, còn luồng 3 dùng hard deadline theo arrangement paid date + SLA
 
 ### **6. Arrangement Milestone Bị Revision Nhiều:**
 - **Solution:** Planned dates giữ nguyên (baseline), booking date validation dùng actualEndAt + SLA days

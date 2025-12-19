@@ -18,10 +18,9 @@ export const getAllEquipment = async (
     if (skillId) {
       params.skillId = skillId;
     }
-    const response = await axiosInstance.get(
-      API_ENDPOINTS.EQUIPMENT.GET_ALL,
-      { params }
-    );
+    const response = await axiosInstance.get(API_ENDPOINTS.EQUIPMENT.GET_ALL, {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Lỗi khi lấy danh sách thiết bị' };
@@ -38,7 +37,11 @@ export const getAvailableEquipment = async () => {
     );
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Lỗi khi lấy danh sách thiết bị available' };
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách thiết bị available',
+      }
+    );
   }
 };
 
@@ -140,4 +143,3 @@ export const uploadEquipmentImage = async (equipmentId, imageFile) => {
     throw error.response?.data || { message: 'Lỗi khi upload hình ảnh' };
   }
 };
-

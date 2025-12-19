@@ -7,9 +7,11 @@ import com.mutrapro.shared.event.ContractNotificationEvent;
 import com.mutrapro.project_service.dto.response.ContractInstallmentResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
 import com.mutrapro.project_service.dto.response.ContractResponse;
+import com.mutrapro.project_service.dto.response.MilestonePaymentQuoteResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
+import com.mutrapro.project_service.config.LateDiscountPolicyProperties;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractInstallment;
 import com.mutrapro.project_service.entity.ContractMilestone;
@@ -21,6 +23,7 @@ import com.mutrapro.project_service.enums.CurrencyType;
 import com.mutrapro.project_service.enums.GateCondition;
 import com.mutrapro.project_service.enums.InstallmentStatus;
 import com.mutrapro.project_service.enums.InstallmentType;
+import com.mutrapro.project_service.enums.BookingStatus;
 import com.mutrapro.project_service.enums.MilestoneType;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
 import com.mutrapro.project_service.enums.SignSessionStatus;
@@ -57,6 +60,7 @@ import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.MilestonePaidNotificationEvent;
 import com.mutrapro.shared.event.MilestoneReadyForPaymentNotificationEvent;
 import com.mutrapro.shared.event.ChatSystemMessageEvent;
+import com.mutrapro.shared.event.MilestonePaidEvent;
 import com.mutrapro.project_service.repository.OutboxEventRepository;
 import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.entity.StudioBooking;
@@ -84,6 +88,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +105,7 @@ public class ContractService {
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
     ContractInstallmentRepository contractInstallmentRepository;
+    LateDiscountPolicyProperties lateDiscountPolicyProperties;
     ContractMapper contractMapper;
     ContractMilestoneMapper contractMilestoneMapper;
     RequestServiceFeignClient requestServiceFeignClient;
@@ -527,6 +533,38 @@ public class ContractService {
             .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
         
         ContractMilestoneResponse response = contractMilestoneMapper.toResponse(milestone);
+
+        // Populate target deadline (hard/target) for FE
+        try {
+            List<ContractMilestone> allMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+            response.setTargetDeadline(targetDeadline);
+
+            // Estimated deadline chỉ khi chưa có target/planned
+            LocalDateTime plannedDeadline = resolveMilestonePlannedDeadline(milestone);
+            if (targetDeadline == null && plannedDeadline == null) {
+                response.setEstimatedDeadline(calculateEstimatedDeadlineForMilestone(milestone, contract, allMilestones));
+            }
+
+            // Computed SLA status (first submission vs target deadline)
+            if (targetDeadline != null) {
+                LocalDateTime firstSubmissionAt = milestone.getFirstSubmissionAt();
+                if (firstSubmissionAt != null) {
+                    response.setFirstSubmissionLate(firstSubmissionAt.isAfter(targetDeadline));
+                    response.setOverdueNow(false);
+                } else {
+                    response.setFirstSubmissionLate(null);
+                    response.setOverdueNow(LocalDateTime.now().isAfter(targetDeadline));
+                }
+            } else {
+                response.setFirstSubmissionLate(null);
+                response.setOverdueNow(null);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate targetDeadline for milestone: contractId={}, milestoneId={}, error={}",
+                contractId, milestoneId, e.getMessage());
+        }
         
         // Enrich với arrangement submission nếu là recording milestone
         if (milestone.getMilestoneType() == MilestoneType.recording) {
@@ -564,6 +602,43 @@ public class ContractService {
         
         return response;
     }
+
+    /**
+     * Quote the payable amount for a milestone installment, including late discount breakdown (if applicable).
+     * Used by FE to show breakdown at Pay, and by billing-service to charge the correct amount.
+     */
+    @Transactional(readOnly = true)
+    public MilestonePaymentQuoteResponse getMilestonePaymentQuote(String contractId, String milestoneId) {
+        // Quick check: if SYSTEM_ADMIN, skip access check to save time
+        List<String> userRoles = getCurrentUserRoles();
+        boolean isSystemAdmin = hasRole(userRoles, "SYSTEM_ADMIN");
+        
+        Contract contract = contractRepository.findById(contractId)
+            .orElseThrow(() -> ContractNotFoundException.byId(contractId));
+        
+        // Skip access check for SYSTEM_ADMIN (internal service calls)
+        if (!isSystemAdmin) {
+            checkContractAccess(contract);
+        }
+
+        ContractMilestone milestone = contractMilestoneRepository
+            .findByMilestoneIdAndContractId(milestoneId, contractId)
+            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, contractId));
+
+        ContractInstallment installment = contractInstallmentRepository
+            .findByContractIdAndMilestoneId(contractId, milestoneId)
+            .orElseThrow(() -> ContractInstallmentNotFoundException.forMilestone(milestoneId, contractId));
+
+        // Only load all milestones if needed for targetDeadline calculation (workflow 3)
+        List<ContractMilestone> allMilestones = null;
+        if (contract.getContractType() == ContractType.arrangement_with_recording 
+            && milestone.getMilestoneType() == MilestoneType.recording) {
+            allMilestones = contractMilestoneRepository
+                .findByContractIdOrderByOrderIndexAsc(contractId);
+        }
+
+        return buildMilestonePaymentQuote(contract, milestone, installment, allMilestones);
+    }
     
     
     /**
@@ -578,8 +653,47 @@ public class ContractService {
         List<ContractMilestone> milestones = contractMilestoneRepository
             .findByContractIdOrderByOrderIndexAsc(response.getContractId());
         
+        Contract contract = null;
+        try {
+            contract = contractRepository.findById(response.getContractId()).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch contract when enriching milestones: contractId={}, error={}",
+                response.getContractId(), e.getMessage());
+        }
+
+        Contract finalContract = contract;
         List<ContractMilestoneResponse> milestoneResponses = milestones.stream()
-            .map(contractMilestoneMapper::toResponse)
+            .map(m -> {
+                ContractMilestoneResponse r = contractMilestoneMapper.toResponse(m);
+                try {
+                    LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(m, finalContract, milestones);
+                    r.setTargetDeadline(targetDeadline);
+
+                    // Estimated deadline chỉ khi chưa có target/planned
+                    LocalDateTime plannedDeadline = resolveMilestonePlannedDeadline(m);
+                    if (targetDeadline == null && plannedDeadline == null) {
+                        r.setEstimatedDeadline(calculateEstimatedDeadlineForMilestone(m, finalContract, milestones));
+                    }
+
+                    // Computed SLA status (first submission vs target deadline)
+                    if (targetDeadline != null) {
+                        LocalDateTime firstSubmissionAt = m.getFirstSubmissionAt();
+                        if (firstSubmissionAt != null) {
+                            r.setFirstSubmissionLate(firstSubmissionAt.isAfter(targetDeadline));
+                            r.setOverdueNow(false);
+                        } else {
+                            r.setFirstSubmissionLate(null);
+                            r.setOverdueNow(LocalDateTime.now().isAfter(targetDeadline));
+                        }
+                    } else {
+                        r.setFirstSubmissionLate(null);
+                        r.setOverdueNow(null);
+                    }
+                } catch (Exception ignored) {
+                    // keep response without targetDeadline
+                }
+                return r;
+            })
             .collect(Collectors.toList());
         
         response.setMilestones(milestoneResponses);
@@ -595,6 +709,157 @@ public class ContractService {
         response.setInstallments(installmentResponses);
         
         return response;
+    }
+
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) cho milestone.
+     *
+     * QUAN TRỌNG:
+     * - Không trả về actualEndAt (vì đó là mốc hoàn thành/thanh toán, không phải deadline mục tiêu).
+     * - Recording milestone:
+     *   - arrangement_with_recording: hard deadline = last arrangement actualEndAt (paid) + SLA days (booking không dời deadline)
+     *   - recording-only: deadline = bookingDate(+startTime) + SLA days
+     */
+    private LocalDateTime resolveMilestonePlannedDeadline(ContractMilestone milestone) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (slaDays != null && slaDays > 0 && milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) cho milestone.
+     * - Có thể truyền allContractMilestones để tránh query lặp (đặc biệt workflow 3).
+     */
+    private LocalDateTime resolveMilestoneTargetDeadline(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allContractMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+
+        // Recording milestone: special rules
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                // Workflow 3: hard deadline = last arrangement actualEndAt (paid) + SLA (ignore booking)
+                List<ContractMilestone> all = allContractMilestones != null
+                    ? allContractMilestones
+                    : contractMilestoneRepository.findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
+                ContractMilestone lastArrangement = all.stream()
+                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                    .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                    .orElse(null);
+                if (lastArrangement != null && lastArrangement.getActualEndAt() != null) {
+                    return lastArrangement.getActualEndAt().plusDays(slaDays);
+                }
+                // If arrangement not paid yet => fallback planned
+            } else if (contract != null && contract.getContractType() == ContractType.recording) {
+                // Workflow 4: booking date (+ startTime) + SLA
+                Optional<StudioBooking> bookingOpt = studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                if (bookingOpt.isPresent()) {
+                    StudioBooking booking = bookingOpt.get();
+                    List<BookingStatus> activeStatuses = List.of(
+                        BookingStatus.TENTATIVE, BookingStatus.PENDING,
+                        BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                    if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                        LocalTime startTime = booking.getStartTime() != null ? booking.getStartTime() : LocalTime.of(8, 0);
+                        LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                        return startAt.plusDays(slaDays);
+                    }
+                }
+            }
+
+            // Fallback for recording: planned dates
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            if (milestone.getPlannedStartAt() != null) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            return null;
+        }
+
+        // Other milestones: target deadline is based on actualStartAt (once started), otherwise planned
+        if (milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt().plusDays(slaDays);
+        }
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    private LocalDateTime calculateEstimatedPlannedStartAtForMilestone(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer orderIndex = milestone.getOrderIndex();
+        if (orderIndex == null || orderIndex <= 1) {
+            return LocalDateTime.now();
+        }
+        if (allMilestones == null || allMilestones.isEmpty()) {
+            return LocalDateTime.now();
+        }
+        ContractMilestone previous = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == orderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        if (previous == null) {
+            return LocalDateTime.now();
+        }
+        LocalDateTime prevEstimatedDeadline = calculateEstimatedDeadlineForMilestone(previous, contract, allMilestones);
+        if (prevEstimatedDeadline != null) {
+            return prevEstimatedDeadline;
+        }
+        LocalDateTime prevEstimatedStart = calculateEstimatedPlannedStartAtForMilestone(previous, contract, allMilestones);
+        Integer prevSla = previous.getMilestoneSlaDays();
+        if (prevEstimatedStart != null && prevSla != null && prevSla > 0) {
+            return prevEstimatedStart.plusDays(prevSla);
+        }
+        return LocalDateTime.now();
+    }
+
+    private LocalDateTime calculateEstimatedDeadlineForMilestone(
+        ContractMilestone milestone,
+        Contract contract,
+        List<ContractMilestone> allMilestones
+    ) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+
+        // Ưu tiên: nếu đã resolve được targetDeadline (booking / arrangement-paid / planned / actualStartAt)
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+        if (deadline != null) {
+            return deadline;
+        }
+
+        LocalDateTime estimatedStart = calculateEstimatedPlannedStartAtForMilestone(milestone, contract, allMilestones);
+        return estimatedStart != null ? estimatedStart.plusDays(slaDays) : null;
     }
     
     /**
@@ -1489,7 +1754,16 @@ public class ContractService {
      * @param paidAt Thời điểm thanh toán
      */
     @Transactional
-    public void handleMilestonePaid(String contractId, String milestoneId, Integer orderIndex, LocalDateTime paidAt) {
+    public void handleMilestonePaid(MilestonePaidEvent event) {
+        if (event == null) {
+            throw new IllegalArgumentException("MilestonePaidEvent must not be null");
+        }
+        String contractId = event.getContractId();
+        String milestoneId = event.getMilestoneId();
+        Integer orderIndex = event.getOrderIndex();
+        LocalDateTime paidAt = event.getPaidAt();
+        BigDecimal paidAmount = event.getAmount();
+
         Contract contract = contractRepository.findById(contractId)
             .orElseThrow(() -> ContractNotFoundException.byId(contractId));
         
@@ -1521,9 +1795,19 @@ public class ContractService {
             throw MilestonePaymentException.milestoneNotCompleted(contractId, milestoneId, orderIndex, workStatus);
         }
 
-        // Update installment status
+        // Update installment status + audit amount/discount (if provided)
         installment.setStatus(InstallmentStatus.PAID);
         installment.setPaidAt(paidAt);
+        installment.setPaidAmount(paidAmount);
+        installment.setLateDiscountPercent(event.getLateDiscountPercent());
+        installment.setLateDiscountAmount(event.getLateDiscountAmount());
+        installment.setLateHours(event.getLateHours());
+        installment.setGraceHours(event.getGraceHours());
+        installment.setDiscountReason(event.getDiscountReason());
+        installment.setDiscountPolicyVersion(event.getDiscountPolicyVersion());
+        if (event.getLateDiscountAmount() != null || event.getLateDiscountPercent() != null) {
+            installment.setDiscountAppliedAt(paidAt != null ? paidAt : LocalDateTime.now());
+        }
         contractInstallmentRepository.save(installment);
         log.info("Updated milestone installment to PAID: contractId={}, installmentId={}, milestoneId={}", 
             contractId, installment.getInstallmentId(), milestoneId);
@@ -1546,20 +1830,20 @@ public class ContractService {
                     ? contract.getContractNumber()
                     : contractId;
             
-            MilestonePaidNotificationEvent event = MilestonePaidNotificationEvent.builder()
+            MilestonePaidNotificationEvent notificationEvent = MilestonePaidNotificationEvent.builder()
                     .eventId(UUID.randomUUID())
                     .contractId(contractId)
                     .contractNumber(contractLabel)
                     .milestoneId(milestoneId)
                     .milestoneName(milestone.getName())
                     .managerUserId(contract.getManagerUserId())
-                    .amount(installment.getAmount())
+                    .amount(paidAmount != null ? paidAmount : installment.getAmount())
                     .currency(contract.getCurrency() != null ? contract.getCurrency().toString() : "VND")
                     .title("Milestone đã được thanh toán")
                     .content(String.format("Customer đã thanh toán milestone \"%s\" cho contract #%s. Số tiền: %s %s", 
                             milestone.getName(), 
                             contractLabel,
-                            installment.getAmount().toPlainString(),
+                            (paidAmount != null ? paidAmount : installment.getAmount()).toPlainString(),
                             contract.getCurrency() != null ? contract.getCurrency().toString() : "VND"))
                     .referenceType("CONTRACT")
                     .actionUrl("/manager/contracts/" + contractId)
@@ -1567,7 +1851,7 @@ public class ContractService {
                     .timestamp(LocalDateTime.now())
                     .build();
             
-            JsonNode payload = objectMapper.valueToTree(event);
+            JsonNode payload = objectMapper.valueToTree(notificationEvent);
             UUID aggregateId;
             try {
                 aggregateId = UUID.fromString(contractId);
@@ -1584,7 +1868,7 @@ public class ContractService {
             
             outboxEventRepository.save(outboxEvent);
             log.info("Queued MilestonePaidNotificationEvent in outbox: eventId={}, contractId={}, milestoneId={}, managerUserId={}", 
-                    event.getEventId(), contractId, milestoneId, contract.getManagerUserId());
+                    notificationEvent.getEventId(), contractId, milestoneId, contract.getManagerUserId());
         } catch (Exception e) {
             // Log error nhưng không fail transaction
             log.error("Failed to enqueue MilestonePaidNotificationEvent: contractId={}, milestoneId={}, error={}", 
@@ -1596,7 +1880,7 @@ public class ContractService {
             "💰 Customer đã thanh toán milestone \"%s\" cho contract #%s.\nSố tiền: %s %s",
             milestone.getName(),
             contract.getContractNumber(),
-            installment.getAmount().toPlainString(),
+            (paidAmount != null ? paidAmount : installment.getAmount()).toPlainString(),
             contract.getCurrency() != null ? contract.getCurrency() : "VND"
         );
         publishChatSystemMessageEvent("CONTRACT_CHAT", contract.getContractId(), systemMessage);
@@ -1647,7 +1931,7 @@ public class ContractService {
                     ? contract.getContractNumber()
                     : contractId;
                 
-                ContractNotificationEvent event = ContractNotificationEvent.builder()
+                ContractNotificationEvent contractNotificationEvent = ContractNotificationEvent.builder()
                         .eventId(UUID.randomUUID())
                         .contractId(contractId)
                         .contractNumber(contractLabel)
@@ -1661,9 +1945,9 @@ public class ContractService {
                         .timestamp(LocalDateTime.now())
                         .build();
                 
-                publishToOutbox(event, contractId, "Contract", "contract.notification");
+                publishToOutbox(contractNotificationEvent, contractId, "Contract", "contract.notification");
                 log.info("Queued ContractNotificationEvent in outbox: eventId={}, contractId={}, userId={}", 
-                        event.getEventId(), contractId, contract.getManagerUserId());
+                        contractNotificationEvent.getEventId(), contractId, contract.getManagerUserId());
             } catch (Exception e) {
                 // Log error nhưng không fail transaction
                 log.error("Failed to enqueue all milestones paid notification: userId={}, contractId={}, error={}", 
@@ -1857,7 +2141,9 @@ public class ContractService {
     
     /**
      * Tính plannedStartAt/plannedDueDate cho toàn bộ milestones dựa trên expectedStartDate (baseline cố định).
-     * Đặc biệt: Recording milestone sẽ tính từ booking date thay vì cursor hiện tại
+     * Đặc biệt:
+     * - Recording-only contracts: Recording milestone planned dates tính từ booking date (vì booking có trước)
+     * - Arrangement+Recording contracts: Recording milestone planned dates KHÔNG phụ thuộc booking (booking không được làm dời milestone window)
      * @param unlockFirstMilestone nếu true, set milestone đầu tiên thành READY_TO_START
      */
     private void calculatePlannedDatesForAllMilestones(String contractId, LocalDateTime contractStartAt, boolean unlockFirstMilestone) {
@@ -1869,11 +2155,23 @@ public class ContractService {
         }
 
         LocalDateTime cursor = contractStartAt;
+        ContractType contractType = null;
+        try {
+            contractType = contractRepository.findById(contractId).map(Contract::getContractType).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to fetch contract type when calculating planned dates: contractId={}, error={}",
+                contractId, e.getMessage());
+        }
+
+        // Chỉ recording-only contract mới dùng booking date để set planned dates cho recording milestone
+        final boolean useBookingForRecordingPlannedDates = contractType == ContractType.recording;
         for (ContractMilestone milestone : milestones) {
             Integer slaDays = milestone.getMilestoneSlaDays();
             
-            // Recording milestone: planned dates tính từ booking date
-            if (milestone.getMilestoneType() == MilestoneType.recording) {
+            // Recording milestone:
+            // - recording-only: planned dates tính từ booking date
+            // - arrangement_with_recording: planned dates tính từ cursor baseline
+            if (milestone.getMilestoneType() == MilestoneType.recording && useBookingForRecordingPlannedDates) {
                 boolean usedBookingDate = false;
                 try {
                     Optional<StudioBooking> bookingOpt = 
@@ -1971,12 +2269,127 @@ public class ContractService {
             .percent(installment.getPercent())
             .dueDate(installment.getDueDate())
             .amount(installment.getAmount())
+            .paidAmount(installment.getPaidAmount())
+            .lateDiscountPercent(installment.getLateDiscountPercent())
+            .lateDiscountAmount(installment.getLateDiscountAmount())
+            .lateHours(installment.getLateHours())
+            .graceHours(installment.getGraceHours())
+            .discountReason(installment.getDiscountReason())
+            .discountPolicyVersion(installment.getDiscountPolicyVersion())
+            .discountAppliedAt(installment.getDiscountAppliedAt())
             .currency(installment.getCurrency())
             .status(installment.getStatus())
             .gateCondition(installment.getGateCondition())
             .paidAt(installment.getPaidAt())
             .createdAt(installment.getCreatedAt())
             .updatedAt(installment.getUpdatedAt())
+            .build();
+    }
+
+    private MilestonePaymentQuoteResponse buildMilestonePaymentQuote(
+        Contract contract,
+        ContractMilestone milestone,
+        ContractInstallment installment,
+        List<ContractMilestone> allMilestones
+    ) {
+        BigDecimal baseAmount = installment != null ? installment.getAmount() : null;
+        String currency = (installment != null && installment.getCurrency() != null)
+            ? installment.getCurrency().name()
+            : (contract != null && contract.getCurrency() != null ? contract.getCurrency().name() : null);
+
+        LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone, contract, allMilestones);
+        LocalDateTime firstSubmissionAt = milestone != null ? milestone.getFirstSubmissionAt() : null;
+
+        // Cache policy values once to avoid repeated null checks
+        Integer graceHours = 6; // default
+        BigDecimal tier0To24Percent = new BigDecimal("5");
+        BigDecimal tier24To72Percent = new BigDecimal("10");
+        BigDecimal tierOver72Percent = new BigDecimal("20");
+        BigDecimal capPercent = new BigDecimal("20");
+        String policyVersion = "late_discount_v1";
+        
+        if (lateDiscountPolicyProperties != null) {
+            if (lateDiscountPolicyProperties.getGraceHours() != null) {
+                graceHours = lateDiscountPolicyProperties.getGraceHours();
+            }
+            if (lateDiscountPolicyProperties.getTier0To24HoursPercent() != null) {
+                tier0To24Percent = lateDiscountPolicyProperties.getTier0To24HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getTier24To72HoursPercent() != null) {
+                tier24To72Percent = lateDiscountPolicyProperties.getTier24To72HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getTierOver72HoursPercent() != null) {
+                tierOver72Percent = lateDiscountPolicyProperties.getTierOver72HoursPercent();
+            }
+            if (lateDiscountPolicyProperties.getCapPercent() != null) {
+                capPercent = lateDiscountPolicyProperties.getCapPercent();
+            }
+            if (lateDiscountPolicyProperties.getPolicyVersion() != null) {
+                policyVersion = lateDiscountPolicyProperties.getPolicyVersion();
+            }
+        }
+
+        Long lateHours = null;
+        BigDecimal discountPercent = null;
+        BigDecimal discountAmount = null;
+        BigDecimal payableAmount = baseAmount;
+
+        if (baseAmount != null
+            && baseAmount.compareTo(BigDecimal.ZERO) > 0
+            && targetDeadline != null
+            && firstSubmissionAt != null) {
+
+            LocalDateTime deadlineWithGrace = targetDeadline.plusHours(graceHours);
+            if (firstSubmissionAt.isAfter(deadlineWithGrace)) {
+                long lateMinutes = java.time.Duration.between(deadlineWithGrace, firstSubmissionAt).toMinutes();
+                lateHours = (long) Math.ceil(lateMinutes / 60.0);
+
+                // Apply tiered discount based on late duration:
+                // - 0-24 hours (inclusive): tier0To24Percent (e.g., 5%)
+                // - >24-72 hours (inclusive): tier24To72Percent (e.g., 10%)
+                // - >72 hours: tierOver72Percent (e.g., 20%)
+                if (lateMinutes <= 24L * 60L) {
+                    discountPercent = tier0To24Percent;
+                } else if (lateMinutes <= 72L * 60L) {
+                    discountPercent = tier24To72Percent;
+                } else {
+                    discountPercent = tierOver72Percent;
+                }
+
+                // Apply cap
+                if (discountPercent.compareTo(capPercent) > 0) {
+                    discountPercent = capPercent;
+                }
+
+                if (discountPercent.compareTo(BigDecimal.ZERO) > 0) {
+                    discountAmount = baseAmount
+                        .multiply(discountPercent)
+                        .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    payableAmount = baseAmount.subtract(discountAmount);
+                    if (payableAmount.compareTo(BigDecimal.ZERO) < 0) {
+                        payableAmount = BigDecimal.ZERO;
+                    }
+                }
+            } else {
+                lateHours = 0L;
+            }
+        }
+
+        return MilestonePaymentQuoteResponse.builder()
+            .contractId(contract != null ? contract.getContractId() : null)
+            .milestoneId(milestone != null ? milestone.getMilestoneId() : null)
+            .installmentId(installment != null ? installment.getInstallmentId() : null)
+            .currency(currency)
+            .baseAmount(baseAmount)
+            .lateDiscountPercent(discountPercent)
+            .lateDiscountAmount(discountAmount)
+            .payableAmount(payableAmount)
+            .lateHours(lateHours)
+            .graceHours(graceHours)
+            .policyVersion(policyVersion)
+            .targetDeadline(targetDeadline)
+            .firstSubmissionAt(firstSubmissionAt)
+            .computedAt(LocalDateTime.now())
             .build();
     }
     

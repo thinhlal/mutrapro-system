@@ -12,6 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/plots": "^2.6.6",
+    "@ant-design/pro-components": "^2.8.10",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.2",
@@ -24,6 +26,7 @@
     "buffer": "^6.0.3",
     "dayjs": "^1.11.18",
     "flat-embed": "^2.5.1",
+    "framer-motion": "^12.23.26",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lottie-react": "^2.4.1",

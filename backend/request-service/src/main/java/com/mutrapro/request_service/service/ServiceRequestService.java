@@ -632,6 +632,80 @@ public class ServiceRequestService {
     }
     
     /**
+     * Lấy thông tin cơ bản của service request (không fetch files và manager info)
+     * Tối ưu cho các use case không cần files ngay lập tức (ví dụ: specialist task detail)
+     * @param requestId ID của request
+     * @return ServiceRequestResponse (với files = null hoặc empty list)
+     */
+    @Transactional(readOnly = true)
+    public ServiceRequestResponse getServiceRequestBasicInfo(String requestId) {
+        long startTime = System.currentTimeMillis();
+        log.info("[Performance] getServiceRequestBasicInfo STARTED: requestId={}", requestId);
+        
+        long step1Start = System.currentTimeMillis();
+        // Tối ưu: Dùng JOIN FETCH để load instruments trong một query thay vì N+1 queries
+        ServiceRequest serviceRequest = serviceRequestRepository.findByRequestIdWithInstruments(requestId)
+                .orElseThrow(() -> ServiceRequestNotFoundException.byId(requestId));
+        log.debug("[Performance] getServiceRequestBasicInfo - Fetch request with instruments: {}ms", 
+            System.currentTimeMillis() - step1Start);
+        
+        // Extract instruments (đã được load sẵn từ JOIN FETCH)
+        long step2Start = System.currentTimeMillis();
+        List<NotationInstrumentResponse> instruments = new ArrayList<>();
+        
+        try {
+            if (serviceRequest.getNotationInstruments() != null && !serviceRequest.getNotationInstruments().isEmpty()) {
+                log.debug("Found {} notation instruments for requestId={}", serviceRequest.getNotationInstruments().size(), requestId);
+                
+                // Extract full instrument info (đã được load sẵn, không cần lazy load)
+                for (RequestNotationInstrument reqInst : serviceRequest.getNotationInstruments()) {
+                    try {
+                        if (reqInst != null) {
+                            NotationInstrument notationInstrument = reqInst.getNotationInstrument();
+                            if (notationInstrument != null) {
+                                NotationInstrumentResponse instrumentResponse = NotationInstrumentResponse.builder()
+                                        .instrumentId(notationInstrument.getInstrumentId())
+                                        .instrumentName(notationInstrument.getInstrumentName())
+                                        .usage(notationInstrument.getUsage())
+                                        .basePrice(notationInstrument.getBasePrice())
+                                        .isActive(notationInstrument.isActive())
+                                        .image(notationInstrument.getImage())
+                                        .isMain(reqInst.getIsMain() != null ? reqInst.getIsMain() : false)
+                                        .build();
+                                instruments.add(instrumentResponse);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error accessing NotationInstrument for requestId={}: {}", requestId, e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error loading notationInstruments for requestId={}: {}", requestId, e.getMessage(), e);
+        }
+        log.debug("[Performance] getServiceRequestBasicInfo - Extract instruments: {}ms", 
+            System.currentTimeMillis() - step2Start);
+        
+        // Map entity to response DTO
+        long step3Start = System.currentTimeMillis();
+        ServiceRequestResponse response = serviceRequestMapper.toServiceRequestResponse(serviceRequest);
+        response.setInstruments(instruments);
+        
+        // KHÔNG fetch files và manager info để tối ưu performance
+        // Files có thể được fetch riêng sau nếu cần
+        response.setFiles(new ArrayList<>());
+        response.setManagerInfo(null);
+        log.debug("[Performance] getServiceRequestBasicInfo - Map response: {}ms", 
+            System.currentTimeMillis() - step3Start);
+        
+        long totalTime = System.currentTimeMillis() - startTime;
+        log.info("[Performance] getServiceRequestBasicInfo COMPLETED: requestId={}, totalTime={}ms", 
+            requestId, totalTime);
+        
+        return response;
+    }
+    
+    /**
      * Lấy danh sách request mà user hiện tại đã tạo (có phân trang)
      * @param status Optional filter theo status, nếu null thì lấy tất cả
      * @param requestType Optional filter theo request type, nếu null thì lấy tất cả

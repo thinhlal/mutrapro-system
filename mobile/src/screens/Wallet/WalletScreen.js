@@ -253,40 +253,48 @@ const WalletScreen = ({ navigation }) => {
 
   const renderTransactionItem = ({ item }) => (
     <View style={styles.transactionCard}>
-      <View style={styles.transactionHeader}>
-        <View style={styles.transactionTypeSection}>
-          <Ionicons
-            name={getTxIcon(item.txType)}
-            size={24}
-            color={getTxTypeColor(item.txType)}
-          />
-          <View style={styles.transactionTypeInfo}>
-            <Text style={styles.transactionType}>{getTxTypeLabel(item.txType)}</Text>
-            <Text style={styles.transactionDate}>
-              {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.transactionAmountSection}>
-          <Text
-            style={[
-              styles.transactionAmount,
-              {
-                color:
-                  item.txType === "topup" || item.txType === "refund"
-                    ? COLORS.success
-                    : COLORS.error,
-              },
-            ]}
-          >
-            {item.txType === "topup" || item.txType === "refund" ? "+" : "-"}
-            {formatCurrency(item.amount, item.currency)}
-          </Text>
-          <Text style={styles.balanceAfter}>
-            Balance: {formatCurrency(item.balanceAfter, item.currency)}
-          </Text>
-        </View>
+      {/* Row 1: Icon + Type */}
+      <View style={styles.transactionRow}>
+        <Ionicons
+          name={getTxIcon(item.txType)}
+          size={20}
+          color={getTxTypeColor(item.txType)}
+        />
+        <Text style={styles.transactionType}>{getTxTypeLabel(item.txType)}</Text>
       </View>
+
+      {/* Row 2: Description if available */}
+      {item.description && (
+        <Text style={styles.transactionDescription} numberOfLines={2}>
+          {item.description}
+        </Text>
+      )}
+
+      {/* Row 3: Amount */}
+      <Text
+        style={[
+          styles.transactionAmount,
+          {
+            color:
+              item.txType === "topup" || item.txType === "refund"
+                ? COLORS.success
+                : COLORS.error,
+          },
+        ]}
+      >
+        {item.txType === "topup" || item.txType === "refund" ? "+" : "-"}
+        {formatCurrency(item.amount, item.currency)}
+      </Text>
+
+      {/* Row 4: Balance After */}
+      <Text style={styles.balanceAfter}>
+        Số dư: {formatCurrency(item.balanceAfter, item.currency)}
+      </Text>
+
+      {/* Row 5: Date */}
+      <Text style={styles.transactionDate}>
+        {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+      </Text>
     </View>
   );
 
@@ -341,7 +349,7 @@ const WalletScreen = ({ navigation }) => {
                 setDepositModalVisible(true);
               }}
             >
-              <Ionicons name="add-circle" size={20} color={COLORS.white} />
+              {/* <Ionicons name="add-circle" size={20} color={COLORS.white} /> */}
               <Text style={styles.depositButtonText}>Nạp tiền</Text>
             </TouchableOpacity>
           </View>
@@ -717,40 +725,36 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  transactionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  transactionTypeSection: {
+  transactionRow: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
-  },
-  transactionTypeInfo: {
-    marginLeft: SPACING.sm,
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   transactionType: {
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
+    flex: 1,
   },
   transactionDate: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: SPACING.xs,
   },
-  transactionAmountSection: {
-    alignItems: "flex-end",
+  transactionDescription: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
   },
   transactionAmount: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
+    marginBottom: SPACING.xs / 2,
   },
   balanceAfter: {
-    fontSize: FONT_SIZES.xs,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginTop: 2,
   },
   loadingMore: {
     flexDirection: "row",

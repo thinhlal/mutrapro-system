@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   Table,
   Card,
@@ -106,28 +112,15 @@ const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
 const getPlannedDeadlineDayjs = milestone => {
-  if (!milestone) return null;
-  if (milestone.plannedDueDate) {
-    return dayjs(milestone.plannedDueDate);
-  }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    return dayjs(milestone.plannedStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
-  }
-  return null;
+  if (!milestone?.plannedDueDate) return null;
+  const d = dayjs(milestone.plannedDueDate);
+  return d.isValid() ? d : null;
 };
 
 const getActualDeadlineDayjs = milestone => {
-  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-    return null;
-  }
-  return dayjs(milestone.actualStartAt).add(
-    Number(milestone.milestoneSlaDays || 0),
-    'day'
-  );
+  if (!milestone?.targetDeadline) return null;
+  const d = dayjs(milestone.targetDeadline);
+  return d.isValid() ? d : null;
 };
 
 const getTaskCompletionDate = task =>
@@ -153,6 +146,14 @@ const TASK_TYPE_OPTIONS = [
   { label: 'Recording Supervision', value: 'RECORDING_SUPERVISION' },
 ];
 
+const PROGRESS_OPTIONS = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Chưa bắt đầu (0%)', value: '0' },
+  { label: 'Đang làm (1-74%)', value: '1-74' },
+  { label: 'Gần hoàn thành (75-99%)', value: '75-99' },
+  { label: 'Hoàn thành (100%)', value: '100' },
+];
+
 export default function TaskProgressManagement() {
   const [taskAssignments, setTaskAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -160,6 +161,7 @@ export default function TaskProgressManagement() {
     search: '',
     status: 'all',
     taskType: 'all',
+    progress: 'all',
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -192,12 +194,32 @@ export default function TaskProgressManagement() {
         if (currentFilters.taskType !== 'all') {
           params.taskType = currentFilters.taskType;
         }
+        if (currentFilters.progress !== 'all') {
+          // Parse progress range: '0', '1-74', '75-99', '100'
+          const progressValue = currentFilters.progress;
+          if (progressValue === '0') {
+            params.minProgress = 0;
+            params.maxProgress = 0;
+          } else if (progressValue === '100') {
+            params.minProgress = 100;
+            params.maxProgress = 100;
+          } else if (progressValue === '1-74') {
+            params.minProgress = 1;
+            params.maxProgress = 74;
+          } else if (progressValue === '75-99') {
+            params.minProgress = 75;
+            params.maxProgress = 99;
+          }
+        }
         if (currentFilters.search && currentFilters.search.trim()) {
           params.keyword = currentFilters.search.trim();
         }
         console.log('[TaskProgress] Fetching with params:', params);
         console.log('[TaskProgress] Current filters state:', currentFilters);
-        console.log('[TaskProgress] Current pagination state:', currentPagination);
+        console.log(
+          '[TaskProgress] Current pagination state:',
+          currentPagination
+        );
         const response = await getAllTaskAssignments(params);
         if (response?.status === 'success' && response.data) {
           const pageData = response.data;
@@ -269,6 +291,7 @@ export default function TaskProgressManagement() {
   }, [
     filters.status,
     filters.taskType,
+    filters.progress,
     pagination.page,
     pagination.pageSize,
   ]);
@@ -287,7 +310,10 @@ export default function TaskProgressManagement() {
 
     // Set timer mới
     searchDebounceTimerRef.current = setTimeout(() => {
-      console.log('[TaskProgress] Search changed - fetching', isSearchEmpty ? 'immediately (empty)' : 'after debounce');
+      console.log(
+        '[TaskProgress] Search changed - fetching',
+        isSearchEmpty ? 'immediately (empty)' : 'after debounce'
+      );
       fetchAllTaskAssignments(filters, pagination);
       searchDebounceTimerRef.current = null;
       isInitialMountRef.current = false;
@@ -312,6 +338,12 @@ export default function TaskProgressManagement() {
   const handleTaskTypeChange = value => {
     console.log('[TaskProgress] TaskType changed to:', value);
     setFilters(prev => ({ ...prev, taskType: value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleProgressChange = value => {
+    console.log('[TaskProgress] Progress changed to:', value);
+    setFilters(prev => ({ ...prev, progress: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -361,132 +393,10 @@ export default function TaskProgressManagement() {
     return contractsMap[contractId] || null;
   };
 
-  // Calculate progress percentage
-  // Logic: Tính theo submission status thay vì file status
-  // - assigned, accepted_waiting, ready_to_start: 0% (chưa bắt đầu)
-  // - cancelled: 0% (đã hủy)
-  // - completed: 100% (hoàn thành)
-  // - in_progress: tính theo submissions
-  //   - Chưa có submission: 25%
-  //   - Có submission approved: 75%
-  //   - Có submission pending_review: 50%
-  //   - Có submission rejected/revision_requested: 40%
-  //   - Có submission draft: 30%
-  // - ready_for_review: có submission pending_review → 75% (sau khi revision xong và submit lại)
-  // - revision_requested: có submission rejected/revision_requested → 40%
-  const calculateProgress = record => {
-    const status = record.status?.toLowerCase();
-
-    // Status ban đầu - chưa bắt đầu
-    if (
-      status === 'assigned' ||
-      status === 'accepted_waiting' ||
-      status === 'ready_to_start'
-    ) {
-      return 0;
-    }
-
-    // Task đã hủy
-    if (status === 'cancelled') {
-      return 0;
-    }
-
-    // Task hoàn thành
-    if (status === 'completed') {
-      return 100;
-    }
-
-    // Lấy submissions để tính progress
-    const submissions = taskSubmissionsMap[record.assignmentId] || [];
-
-    // ready_for_review: đã submit lại và chờ duyệt (sau khi revision)
-    if (status === 'ready_for_review') {
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      // Nếu đã có submission pending_review sau revision → 75% (cao hơn in_revision vì đã submit lại)
-      // Nếu chưa có → 50% (trường hợp hiếm)
-      return hasPendingReview ? 75 : 50;
-    }
-
-    // revision_requested: có submission rejected hoặc revision_requested
-    if (status === 'revision_requested') {
-      const hasRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'rejected'
-      );
-      const hasRevisionRequested = submissions.some(
-        s => s.status?.toLowerCase() === 'revision_requested'
-      );
-      return hasRejected || hasRevisionRequested ? 40 : 0;
-    }
-
-    // in_revision: đang chỉnh sửa lại (đã có submission trước đó, đang làm lại)
-    if (status === 'in_revision') {
-      // Đã có submission trước đó và đang chỉnh sửa lại
-      // Progress cao hơn vì đã làm được phần lớn công việc
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      const hasDraft = submissions.some(
-        s => s.status?.toLowerCase() === 'draft'
-      );
-      // Nếu có submission pending_review trong revision → 70%
-      // Nếu có draft → 60%
-      // Mặc định → 60% (đang làm lại)
-      if (hasPendingReview) return 70;
-      if (hasDraft) return 60;
-      return 60;
-    }
-
-    // waiting_customer_review: đã giao cho customer, chờ review
-    if (status === 'waiting_customer_review') {
-      // Đã hoàn thành và giao cho customer, chờ customer review
-      // Progress rất cao vì đã hoàn thành công việc
-      return 90;
-    }
-
-    // in_progress: tính dựa trên submissions
-    if (status === 'in_progress') {
-      if (submissions.length === 0) {
-        // Chưa có submission nào
-        return 25;
-      }
-
-      // Kiểm tra submission status cao nhất (theo thứ tự ưu tiên)
-      const hasCustomerAccepted = submissions.some(
-        s => s.status?.toLowerCase() === 'customer_accepted'
-      );
-      const hasCustomerRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'customer_rejected'
-      );
-      const hasApproved = submissions.some(
-        s => s.status?.toLowerCase() === 'approved'
-      );
-      const hasPendingReview = submissions.some(
-        s => s.status?.toLowerCase() === 'pending_review'
-      );
-      const hasRejected = submissions.some(
-        s => s.status?.toLowerCase() === 'rejected'
-      );
-      const hasRevisionRequested = submissions.some(
-        s => s.status?.toLowerCase() === 'revision_requested'
-      );
-      const hasDraft = submissions.some(
-        s => s.status?.toLowerCase() === 'draft'
-      );
-
-      // Ưu tiên: customer_accepted > approved > pending_review > customer_rejected/rejected/revision_requested > draft
-      if (hasCustomerAccepted) return 95; // Đã được customer accept, gần hoàn thành
-      if (hasApproved) return 75;
-      if (hasPendingReview) return 50;
-      if (hasCustomerRejected || hasRejected || hasRevisionRequested) return 40; // Customer đã reject, cần revision
-      if (hasDraft) return 30;
-
-      // Có submission nhưng status không rõ
-      return 30;
-    }
-
-    return 0;
+  // Sử dụng progressPercentage từ backend (đã được tính sẵn)
+  const getProgress = record => {
+    // Nếu null/undefined thì default 0
+    return record.progressPercentage ?? 0;
   };
 
   // Render specialist cell
@@ -503,7 +413,6 @@ export default function TaskProgressManagement() {
             {email}
           </Text>
         )}
-        {specialization && <Tag size="small">{specialization}</Tag>}
       </Space>
     );
   };
@@ -537,14 +446,14 @@ export default function TaskProgressManagement() {
         selectedIssueTask.assignmentId
       );
       if (response?.status === 'success') {
-        message.success('Đã cho phép specialist tiếp tục task');
+        message.success('Allowed specialist to continue task');
         setIssueModalVisible(false);
         setSelectedIssueTask(null);
         await fetchAllTaskAssignments(filters, pagination);
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(error?.message || 'Lỗi khi resolve issue');
+      message.error(error?.message || 'Error resolving issue');
     }
   };
 
@@ -559,7 +468,7 @@ export default function TaskProgressManagement() {
       );
       if (response?.status === 'success') {
         message.success(
-          'Đã hủy task thành công. Đang chuyển đến trang tạo task mới...'
+          'Task cancelled successfully. Redirecting to create new task...'
         );
         setIssueModalVisible(false);
         const taskToCreate = selectedIssueTask;
@@ -572,7 +481,7 @@ export default function TaskProgressManagement() {
       }
     } catch (error) {
       console.error('Error cancelling task:', error);
-      message.error(error?.message || 'Lỗi khi hủy task');
+      message.error(error?.message || 'Error cancelling task');
     } finally {
       setCancellingTask(false);
     }
@@ -671,7 +580,7 @@ export default function TaskProgressManagement() {
       key: 'progress',
       width: 120,
       render: (_, record) => {
-        const percent = calculateProgress(record);
+        const percent = getProgress(record);
         return (
           <Progress
             percent={percent}
@@ -708,24 +617,27 @@ export default function TaskProgressManagement() {
         }
 
         const now = dayjs();
-        // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
-        const hasFirstSubmission = record.milestone?.firstSubmissionAt;
-        const submissions = taskSubmissionsMap[record.assignmentId] || [];
-        const hasPendingReview = submissions.some(
-          s => s.status?.toLowerCase() === 'pending_review'
-        );
+        // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+        const hasFirstSubmission = !!record.milestone?.firstSubmissionAt;
+        // Dùng hasPendingReview từ backend thay vì check submissions
+        const hasPendingReview = record.hasPendingReview === true;
         const shouldHideDeadlineWarning =
           hasFirstSubmission || hasPendingReview;
+        const isFirstSubmissionLate =
+          record.milestone?.firstSubmissionLate === true;
+        const isFirstSubmissionOnTime =
+          hasFirstSubmission && record.milestone?.firstSubmissionLate === false;
+        const overdueNow = record.milestone?.overdueNow;
         const isOverdue =
           !shouldHideDeadlineWarning &&
-          actualDeadline &&
-          actualDeadline.isBefore(now) &&
+          overdueNow === true &&
           record.status !== 'completed';
         const diffDays = actualDeadline
           ? actualDeadline.diff(now, 'day')
           : null;
         const isNearDeadline =
           !shouldHideDeadlineWarning &&
+          overdueNow === false &&
           diffDays !== null &&
           diffDays <= 3 &&
           diffDays >= 0 &&
@@ -739,7 +651,7 @@ export default function TaskProgressManagement() {
             {/* Hiển thị Actual nếu có */}
             {actualDeadline && (
               <>
-                <Text strong>Actual</Text>
+                <Text strong>Target</Text>
                 <Space direction="vertical" size={0}>
                   {actualStart && (
                     <Text type="secondary" style={{ fontSize: 11 }}>
@@ -775,17 +687,22 @@ export default function TaskProgressManagement() {
                       Sắp hạn
                     </Tag>
                   )}
+                  {isFirstSubmissionLate && (
+                    <Tag color="red" size="small">
+                      Nộp trễ (bản đầu)
+                    </Tag>
+                  )}
+                  {isFirstSubmissionOnTime && (
+                    <Tag color="green" size="small">
+                      Nộp đúng hạn (bản đầu)
+                    </Tag>
+                  )}
                 </Space>
               </>
             )}
 
-            {/* Divider giữa actual và planned nếu có cả 2 */}
-            {actualDeadline && plannedDeadline && (
-              <Divider style={{ margin: '4px 0' }} dashed />
-            )}
-
-            {/* Hiển thị Planned nếu có */}
-            {plannedDeadline && (
+            {/* Chỉ hiển thị Planned khi không có Target */}
+            {!actualDeadline && plannedDeadline && (
               <>
                 <Text strong type="secondary">
                   Planned
@@ -866,15 +783,20 @@ export default function TaskProgressManagement() {
               <Text type="secondary">Chưa hoàn thành</Text>
             )}
             <Divider style={{ margin: '4px 0' }} dashed />
-            <Text strong type="secondary">
-              Planned deadline
-            </Text>
-            {plannedDeadline ? (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {plannedDeadline.format('HH:mm DD/MM/YYYY')}
-              </Text>
-            ) : (
-              <Text type="secondary">-</Text>
+            {/* Planned deadline: chỉ hiển thị khi chưa có Target deadline */}
+            {!actualDeadline && (
+              <>
+                <Text strong type="secondary">
+                  Planned deadline
+                </Text>
+                {plannedDeadline ? (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {plannedDeadline.format('HH:mm DD/MM/YYYY')}
+                  </Text>
+                ) : (
+                  <Text type="secondary">-</Text>
+                )}
+              </>
             )}
           </Space>
         );
@@ -922,11 +844,11 @@ export default function TaskProgressManagement() {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-          Task Management
+            Task Management
           </Title>
           <Text type="secondary">
-          List of all tasks. Click "View Details" to see detailed task information.
-            tiết task.
+            List of all tasks. Click "View Details" to see detailed task
+            information. tiết task.
           </Text>
         </div>
         <Button
@@ -940,15 +862,15 @@ export default function TaskProgressManagement() {
 
       <Card className={styles.filterCard}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
+          <Col xs={24} md={10}>
             <Input
-              placeholder="Tìm contract / milestone / specialist"
+              placeholder="Tìm theo: Contract ID, Contract Number, Contract Name, Milestone ID, Specialist ID, Specialist Name"
               value={filters.search}
               onChange={handleSearchChange}
               allowClear
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={4}>
             <Select
               value={filters.status}
               options={STATUS_OPTIONS}
@@ -956,12 +878,21 @@ export default function TaskProgressManagement() {
               style={{ width: '100%' }}
             />
           </Col>
-          <Col xs={24} md={6}>
+          <Col xs={24} md={4}>
             <Select
               value={filters.taskType}
               options={TASK_TYPE_OPTIONS}
               onChange={handleTaskTypeChange}
               style={{ width: '100%' }}
+            />
+          </Col>
+          <Col xs={24} md={4}>
+            <Select
+              value={filters.progress}
+              options={PROGRESS_OPTIONS}
+              onChange={handleProgressChange}
+              style={{ width: '100%' }}
+              placeholder="Lọc theo tiến độ"
             />
           </Col>
         </Row>
@@ -1072,7 +1003,7 @@ export default function TaskProgressManagement() {
                   return (
                     <Space direction="vertical" size="small">
                       <div>
-                        <Text strong>Actual</Text>
+                        <Text strong>Target</Text>
                         <Space direction="vertical" size={0}>
                           <Text type="secondary" style={{ fontSize: 11 }}>
                             Start:{' '}
@@ -1088,25 +1019,28 @@ export default function TaskProgressManagement() {
                           </Text>
                         </Space>
                       </div>
-                      <div>
-                        <Text strong type="secondary">
-                          Planned
-                        </Text>
-                        <Space direction="vertical" size={0}>
-                          <Text type="secondary" style={{ fontSize: 11 }}>
-                            Start:{' '}
-                            {plannedStart
-                              ? plannedStart.format('HH:mm DD/MM/YYYY')
-                              : '-'}
+                      {/* Chỉ hiển thị Planned khi không có Target */}
+                      {!actualDeadline && (
+                        <div>
+                          <Text strong type="secondary">
+                            Planned
                           </Text>
-                          <Text type="secondary">
-                            Deadline:{' '}
-                            {plannedDeadline
-                              ? plannedDeadline.format('HH:mm DD/MM/YYYY')
-                              : '-'}
-                          </Text>
-                        </Space>
-                      </div>
+                          <Space direction="vertical" size={0}>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              Start:{' '}
+                              {plannedStart
+                                ? plannedStart.format('HH:mm DD/MM/YYYY')
+                                : '-'}
+                            </Text>
+                            <Text type="secondary">
+                              Deadline:{' '}
+                              {plannedDeadline
+                                ? plannedDeadline.format('HH:mm DD/MM/YYYY')
+                                : '-'}
+                            </Text>
+                          </Space>
+                        </div>
+                      )}
                       {!actualDeadline &&
                         !plannedDeadline &&
                         estimatedDeadline && (

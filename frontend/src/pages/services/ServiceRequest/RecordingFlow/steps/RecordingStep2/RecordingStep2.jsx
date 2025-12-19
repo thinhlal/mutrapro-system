@@ -52,7 +52,12 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
       vocalChoice === VOCAL_CHOICES.INTERNAL_ARTIST ||
       vocalChoice === VOCAL_CHOICES.BOTH;
 
-    if (!needsVocalists || !bookingDate || !bookingStartTime || !bookingEndTime) {
+    if (
+      !needsVocalists ||
+      !bookingDate ||
+      !bookingStartTime ||
+      !bookingEndTime
+    ) {
       setAvailableVocalists([]);
       return;
     }
@@ -245,7 +250,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
               <Spin tip="Loading vocalists..." />
             </div>
           ) : availableVocalists.length === 0 ? (
-              <Empty
+            <Empty
               description="No vocalists available for this slot"
               style={{ padding: '40px 0' }}
             />
@@ -292,9 +297,7 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
                                 style={{ color: '#52c41a' }}
                               />
                             )}
-                            {!isAvailable && (
-                              <Tag color="red">Busy</Tag>
-                            )}
+                            {!isAvailable && <Tag color="red">Busy</Tag>}
                           </Space>
                         }
                         description={
@@ -343,7 +346,8 @@ export default function RecordingStep2({ data, onComplete, onBack }) {
               {selectedVocalists.length > 0 && (
                 <div className={styles.selectedSummary}>
                   <Text strong>
-                    Selected Vocalist{selectedVocalists.length > 1 ? 's' : ''} ({selectedVocalists.length}):
+                    Selected Vocalist{selectedVocalists.length > 1 ? 's' : ''} (
+                    {selectedVocalists.length}):
                   </Text>
                   <Space wrap style={{ marginTop: 8 }}>
                     {selectedVocalists.map(v => (

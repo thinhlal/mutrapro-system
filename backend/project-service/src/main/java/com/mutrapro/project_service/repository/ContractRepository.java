@@ -1,5 +1,7 @@
 package com.mutrapro.project_service.repository;
 
+import com.mutrapro.project_service.dto.projection.ContractBasicInfo;
+import com.mutrapro.project_service.dto.projection.ContractRevisionDeadlineInfo;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
@@ -26,6 +28,31 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     
     @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId ORDER BY c.createdAt DESC")
     List<Contract> findByManagerUserIdOrderByCreatedAtDesc(@Param("managerUserId") String managerUserId);
+    
+    // Tối ưu: Filter contracts theo status ở database level (cho getMilestoneAssignmentSlots)
+    @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :statuses " +
+           "ORDER BY c.createdAt DESC")
+    List<Contract> findByManagerUserIdAndStatusIn(
+            @Param("managerUserId") String managerUserId,
+            @Param("statuses") List<ContractStatus> statuses);
+    
+    // Tối ưu: Projection query chỉ fetch các field cần thiết (giảm data transfer)
+    @Query("SELECT c.contractId as contractId, c.contractNumber as contractNumber, " +
+           "c.contractType as contractType, c.nameSnapshot as nameSnapshot, " +
+           "c.status as status, c.createdAt as createdAt " +
+           "FROM Contract c WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :statuses " +
+           "ORDER BY c.createdAt DESC")
+    List<ContractBasicInfo> findBasicInfoByManagerUserIdAndStatusIn(
+            @Param("managerUserId") String managerUserId,
+            @Param("statuses") List<ContractStatus> statuses);
+    
+    // Tối ưu: Chỉ fetch contractId và revisionDeadlineDays (cho getRevisionRequestsByManager)
+    @Query("SELECT c.contractId as contractId, c.revisionDeadlineDays as revisionDeadlineDays " +
+           "FROM Contract c WHERE c.contractId IN :contractIds")
+    List<ContractRevisionDeadlineInfo> findRevisionDeadlineInfoByContractIds(
+            @Param("contractIds") List<String> contractIds);
     
     @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId " +
            "AND (:search IS NULL OR :search = '' OR " +

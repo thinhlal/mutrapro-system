@@ -33,7 +33,6 @@ import {
   cancelTaskAssignment,
   startTaskAssignment,
 } from '../../../services/taskAssignmentService';
-import { getStudioBookingById } from '../../../services/studioBookingService';
 import styles from './MyTasksPage.module.css';
 
 const { Title, Text } = Typography;
@@ -119,42 +118,13 @@ function getPlannedDeadline(milestone) {
     return new Date(milestone.plannedDueDate);
   }
 
-  // Fallback: plannedStartAt + milestoneSlaDays
-  const plannedStart = getPlannedStartDate(milestone);
-  const slaDays = milestone?.milestoneSlaDays;
-  if (plannedStart && slaDays != null && slaDays > 0) {
-    const dueDate = new Date(plannedStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-
   return null;
 }
 
 function getActualDeadline(milestone, studioBooking = null) {
-  // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-  if (
-    milestone?.milestoneType?.toLowerCase() === 'recording' &&
-    studioBooking?.bookingDate &&
-    milestone?.milestoneSlaDays
-  ) {
-    const bookingDate = new Date(studioBooking.bookingDate);
-    if (!Number.isFinite(bookingDate.getTime())) return null;
-    const due = new Date(bookingDate);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
-  
-  // Other milestones: SLA tính từ khi bắt đầu làm việc (actualStartAt)
-  if (!milestone) return null;
-  const actualStart = getActualStartDate(milestone);
-  const slaDays = milestone.milestoneSlaDays;
-  if (actualStart && slaDays != null && slaDays > 0) {
-    const dueDate = new Date(actualStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-  return null;
+  if (!milestone?.targetDeadline) return null;
+  const d = new Date(milestone.targetDeadline);
+  return Number.isFinite(d.getTime()) ? d : null;
 }
 
 /**
@@ -163,54 +133,61 @@ function getActualDeadline(milestone, studioBooking = null) {
  */
 function validateBookingForStart(task, studioBooking) {
   // Nếu không phải recording supervision, không cần check
-  const isRecordingSupervision = task.taskType?.toLowerCase() === 'recording_supervision';
-  const isRecordingMilestone = task.milestone?.milestoneType?.toLowerCase() === 'recording';
-  
+  const isRecordingSupervision =
+    task.taskType?.toLowerCase() === 'recording_supervision';
+  const isRecordingMilestone =
+    task.milestone?.milestoneType?.toLowerCase() === 'recording';
+
   if (!isRecordingSupervision || !isRecordingMilestone) {
     return { canStart: true, reason: '' };
   }
-  
+
   // Recording task cần có booking
   if (!task.studioBookingId || !studioBooking) {
-    return { 
-      canStart: false, 
-      reason: 'Task recording supervision này cần có studio booking trước khi bắt đầu. Vui lòng liên hệ Manager.' 
+    return {
+      canStart: false,
+      reason:
+        'Task recording supervision này cần có studio booking trước khi bắt đầu. Vui lòng liên hệ Manager.',
     };
   }
-  
+
   const bookingStatus = studioBooking.status;
-  
+
   // Check 1: Booking status
-  if (bookingStatus !== 'CONFIRMED' && bookingStatus !== 'IN_PROGRESS' && bookingStatus !== 'COMPLETED') {
-    return { 
-      canStart: false, 
-      reason: `Studio booking chưa được xác nhận. Trạng thái: ${bookingStatus === 'TENTATIVE' ? 'Tạm thời' : bookingStatus}. Vui lòng đợi Manager xác nhận.` 
+  if (
+    bookingStatus !== 'CONFIRMED' &&
+    bookingStatus !== 'IN_PROGRESS' &&
+    bookingStatus !== 'COMPLETED'
+  ) {
+    return {
+      canStart: false,
+      reason: `Studio booking chưa được xác nhận. Trạng thái: ${bookingStatus === 'TENTATIVE' ? 'Tạm thời' : bookingStatus}. Vui lòng đợi Manager xác nhận.`,
     };
   }
-  
+
   // Check 2: Thời gian (chỉ cho phép start trong vòng 7 ngày trước booking date)
   if (studioBooking.bookingDate) {
     const bookingDate = dayjs(studioBooking.bookingDate).startOf('day');
     const today = dayjs().startOf('day');
     const daysUntilBooking = bookingDate.diff(today, 'day');
-    
+
     // Quá sớm: > 7 ngày
     if (daysUntilBooking > 7) {
-      return { 
-        canStart: false, 
-        reason: `Chưa thể bắt đầu task. Recording session vào ${studioBooking.bookingDate}. Bạn có thể bắt đầu trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).` 
+      return {
+        canStart: false,
+        reason: `Chưa thể bắt đầu task. Recording session vào ${studioBooking.bookingDate}. Bạn có thể bắt đầu trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`,
       };
     }
-    
+
     // Quá muộn: > 1 ngày sau booking date
     if (daysUntilBooking < -1) {
-      return { 
-        canStart: false, 
-        reason: `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày. Vui lòng liên hệ Manager.` 
+      return {
+        canStart: false,
+        reason: `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày. Vui lòng liên hệ Manager.`,
       };
     }
   }
-  
+
   return { canStart: true, reason: '' };
 }
 
@@ -236,7 +213,6 @@ const MyTasksPage = ({ onOpenTask }) => {
   const [cancelTask, setCancelTask] = useState(null);
   const [cancelForm] = Form.useForm();
   const [startingAssignmentId, setStartingAssignmentId] = useState(null);
-  const [studioBookings, setStudioBookings] = useState({}); // Map: taskId -> booking data
 
   const loadTasks = useCallback(async () => {
     setLoading(true);
@@ -245,30 +221,6 @@ const MyTasksPage = ({ onOpenTask }) => {
       const response = await getMyTaskAssignments();
       if (response?.status === 'success' && response?.data) {
         setTasks(response.data);
-        
-        // Load studio bookings cho recording tasks
-        const recordingTasks = response.data.filter(
-          task => task.taskType?.toLowerCase() === 'recording_supervision' && task.studioBookingId
-        );
-        
-        if (recordingTasks.length > 0) {
-          const bookingPromises = recordingTasks.map(async task => {
-            try {
-              const bookingRes = await getStudioBookingById(task.studioBookingId);
-              return { taskId: task.assignmentId, booking: bookingRes?.data };
-            } catch (err) {
-              console.error(`Error loading booking for task ${task.assignmentId}:`, err);
-              return { taskId: task.assignmentId, booking: null };
-            }
-          });
-          
-          const bookingResults = await Promise.all(bookingPromises);
-          const bookingsMap = {};
-          bookingResults.forEach(({ taskId, booking }) => {
-            if (booking) bookingsMap[taskId] = booking;
-          });
-          setStudioBookings(bookingsMap);
-        }
       } else {
         setTasks([]);
       }
@@ -432,7 +384,7 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Assignment ID',
         dataIndex: 'assignmentId',
         key: 'assignmentId',
-        width: 120,
+        width: 80,
         ellipsis: true,
         render: id => (
           <Tooltip title={id}>
@@ -471,13 +423,16 @@ const MyTasksPage = ({ onOpenTask }) => {
       },
       {
         title: 'Milestone Deadline',
-        dataIndex: ['milestone', 'plannedDueDate'],
+        dataIndex: ['milestone', 'targetDeadline'],
         key: 'milestoneDeadline',
         width: 190,
         render: (_, record) => {
           // Pass studioBooking để tính deadline cho recording milestone
-          const studioBooking = studioBookings[record.assignmentId];
-          const actualDeadline = getActualDeadline(record?.milestone, studioBooking);
+          const studioBooking = record.studioBooking;
+          const actualDeadline = getActualDeadline(
+            record?.milestone,
+            studioBooking
+          );
           const plannedDeadline = getPlannedDeadline(record?.milestone);
           // Dùng estimatedDeadline từ backend khi không có actual và planned
           const estimatedDeadline = record?.milestone?.estimatedDeadline
@@ -501,18 +456,21 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isCompleted =
             record.status?.toLowerCase() === 'completed' ||
             record.status?.toLowerCase() === 'cancelled';
-          // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc đã pending review manager (ready_for_review) thì không hiện cảnh báo deadline nữa
-          const hasFirstSubmission = record?.milestone?.firstSubmissionAt;
+          // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+          const hasFirstSubmission = !!record?.milestone?.firstSubmissionAt;
           const isPendingReview =
             status === 'ready_for_review' ||
             status === 'waiting_customer_review';
           const shouldHideDeadlineWarning =
             hasFirstSubmission || isPendingReview;
+          const isFirstSubmissionLate =
+            record?.milestone?.firstSubmissionLate === true;
+          const isFirstSubmissionOnTime =
+            hasFirstSubmission &&
+            record?.milestone?.firstSubmissionLate === false;
+          const overdueNow = record?.milestone?.overdueNow;
           const isOverdue =
-            !shouldHideDeadlineWarning &&
-            !isCompleted &&
-            displayDeadline &&
-            displayDeadline.getTime() < now.getTime();
+            !shouldHideDeadlineWarning && !isCompleted && overdueNow === true;
           const daysDiff = displayDeadline
             ? Math.floor(
                 (displayDeadline.getTime() - now.getTime()) /
@@ -522,6 +480,7 @@ const MyTasksPage = ({ onOpenTask }) => {
           const isNearDeadline =
             !shouldHideDeadlineWarning &&
             !isOverdue &&
+            overdueNow === false &&
             daysDiff !== null &&
             daysDiff <= 3 &&
             daysDiff >= 0;
@@ -534,7 +493,7 @@ const MyTasksPage = ({ onOpenTask }) => {
             <Space direction="vertical" size={0}>
               {showActual && (
                 <>
-                  <Text strong>Actual</Text>
+                  <Text strong>Target</Text>
                   <Text>
                     Deadline: {formatDateTime(actualDeadline)}
                     {record.milestone?.milestoneSlaDays && (
@@ -546,22 +505,33 @@ const MyTasksPage = ({ onOpenTask }) => {
                   </Text>
                   {isOverdue && <Tag color="red">Quá hạn</Tag>}
                   {isNearDeadline && <Tag color="orange">Sắp hạn</Tag>}
+                  {isFirstSubmissionLate && (
+                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                  )}
+                  {isFirstSubmissionOnTime && (
+                    <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                  )}
                   <Divider dashed style={{ margin: '4px 0' }} />
                 </>
               )}
-              <Text strong type={showActual ? 'secondary' : undefined}>
-                {isEstimated ? 'Estimated' : 'Planned'}
-              </Text>
-              {plannedDeadline ? (
-                <Text type="secondary">
-                  Deadline: {formatDateTime(plannedDeadline)}
-                </Text>
-              ) : estimatedDeadline ? (
-                <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                  Deadline: {formatDateTime(estimatedDeadline)} (ước tính)
-                </Text>
-              ) : (
-                <Text type="secondary">-</Text>
+              {/* Chỉ hiển thị Planned/Estimated khi không có Target */}
+              {!showActual && (
+                <>
+                  <Text strong type={showActual ? 'secondary' : undefined}>
+                    {isEstimated ? 'Estimated' : 'Planned'}
+                  </Text>
+                  {plannedDeadline ? (
+                    <Text type="secondary">
+                      Deadline: {formatDateTime(plannedDeadline)}
+                    </Text>
+                  ) : estimatedDeadline ? (
+                    <Text type="secondary" style={{ fontStyle: 'italic' }}>
+                      Deadline: {formatDateTime(estimatedDeadline)} (ước tính)
+                    </Text>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </>
               )}
               {isEstimated && (
                 <Tag color="default" size="small">
@@ -576,26 +546,27 @@ const MyTasksPage = ({ onOpenTask }) => {
         title: 'Status',
         dataIndex: 'status',
         key: 'status',
-        width: 200,
+        width: 120,
         render: (status, record) => {
           const statusDisplay = getStatusDisplay(status);
-          
+
           // Hiển thị booking countdown cho recording tasks
-          const studioBooking = studioBookings[record.assignmentId];
+          const studioBooking = record.studioBooking;
           let bookingCountdown = null;
-          
+
           if (
             record.taskType?.toLowerCase() === 'recording_supervision' &&
             studioBooking?.bookingDate &&
-            (status?.toLowerCase() === 'ready_to_start' || status?.toLowerCase() === 'accepted_waiting')
+            (status?.toLowerCase() === 'ready_to_start' ||
+              status?.toLowerCase() === 'accepted_waiting')
           ) {
             const bookingDate = dayjs(studioBooking.bookingDate).startOf('day');
             const today = dayjs().startOf('day');
             const daysUntil = bookingDate.diff(today, 'day');
-            
+
             let countdownText = '';
             let countdownColor = 'default';
-            
+
             if (daysUntil > 7) {
               countdownText = `${daysUntil} ngày`;
               countdownColor = 'blue';
@@ -612,14 +583,14 @@ const MyTasksPage = ({ onOpenTask }) => {
               countdownText = `Qua ${Math.abs(daysUntil)} ngày`;
               countdownColor = 'red';
             }
-            
+
             bookingCountdown = (
               <Tag color={countdownColor} style={{ marginTop: 4 }}>
                 {countdownText}
               </Tag>
             );
           }
-          
+
           return (
             <Space direction="vertical" size={2}>
               <Tag color={statusDisplay.color}>{statusDisplay.text}</Tag>
@@ -685,21 +656,28 @@ const MyTasksPage = ({ onOpenTask }) => {
                   <>
                     {(() => {
                       // Validate booking cho recording tasks
-                      const studioBooking = studioBookings[record.assignmentId];
-                      const validation = validateBookingForStart(record, studioBooking);
-                      
+                      const studioBooking = record.studioBooking;
+                      const validation = validateBookingForStart(
+                        record,
+                        studioBooking
+                      );
+
                       return (
-                        <Tooltip title={!validation.canStart ? validation.reason : null}>
-                      <Button
-                        type="primary"
-                        size="small"
-                        loading={isTakingAction}
+                        <Tooltip
+                          title={
+                            !validation.canStart ? validation.reason : null
+                          }
+                        >
+                          <Button
+                            type="primary"
+                            size="small"
+                            loading={isTakingAction}
                             disabled={!validation.canStart}
-                        onClick={() => handleStartTask(record)}
-                      >
+                            onClick={() => handleStartTask(record)}
+                          >
                             Start Task
-                      </Button>
-                    </Tooltip>
+                          </Button>
+                        </Tooltip>
                       );
                     })()}
                     <Button
@@ -732,7 +710,6 @@ const MyTasksPage = ({ onOpenTask }) => {
       handleCancel,
       handleStartTask,
       startingAssignmentId,
-      studioBookings,
     ]
   );
 

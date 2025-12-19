@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
     @Index(name = "idx_contracts_contract_number", columnList = "contract_number"),
     @Index(name = "idx_contracts_status", columnList = "status"),
     @Index(name = "idx_contracts_contract_type", columnList = "contract_type"),
-    @Index(name = "idx_contracts_expires_at", columnList = "expires_at")
+    @Index(name = "idx_contracts_expires_at", columnList = "expires_at"),
+    // Composite index để tối ưu query JOIN TaskAssignment với Contract (filter by managerUserId + status)
+    @Index(name = "idx_contracts_manager_status", columnList = "manager_user_id, status")
 })
 @Getter
 @Setter

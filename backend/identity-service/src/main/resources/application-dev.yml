@@ -61,6 +61,11 @@ outbound:
     client-secret: "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"
     redirect-uri: "http://localhost:5173/authenticate"
 
+# Specialist Service Configuration
+specialist:
+  service:
+    base-url: ${SPECIALIST_SERVICE_BASE_URL:http://localhost:8086}
+
 # Management & Actuator
 management:
   endpoints:

@@ -79,3 +79,5 @@ storage/
 .next/
 .nuxt/
 .cache/
+
+.specstory/

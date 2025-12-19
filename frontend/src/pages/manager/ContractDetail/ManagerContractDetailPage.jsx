@@ -136,13 +136,16 @@ const ManagerContractDetailPage = () => {
         setBookingData(null);
         return;
       }
-      
+
       try {
         setLoadingBooking(true);
         const response = await getBookingByRequestId(contract.requestId);
         if (response?.status === 'success' && response.data) {
           setBookingData(response.data);
-          console.log('Loaded booking data for recording contract:', response.data);
+          console.log(
+            'Loaded booking data for recording contract:',
+            response.data
+          );
         }
       } catch (error) {
         console.error('Error loading booking:', error);
@@ -1102,17 +1105,17 @@ const ManagerContractDetailPage = () => {
               : 'Not scheduled (will be set when work starts)'}{' '}
             | Due Date:{' '}
             {(() => {
-              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              // Get due date from last milestone's targetDeadline (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
                 const lastMilestone =
                   contract.milestones[contract.milestones.length - 1];
-                if (lastMilestone?.plannedDueDate) {
-                  return dayjs(lastMilestone.plannedDueDate).format(
+                if (lastMilestone?.targetDeadline) {
+                  return dayjs(lastMilestone.targetDeadline).format(
                     'YYYY-MM-DD'
                   );
                 }
               }
-              // No plannedDueDate yet (not calculated)
+              // No targetDeadline yet
               return 'N/A';
             })()}
           </PdfText>
@@ -1609,19 +1612,19 @@ const ManagerContractDetailPage = () => {
               </Descriptions.Item>
             )}
             {(() => {
-              // Get due date from last milestone's plannedDueDate (calculated by backend)
+              // Get due date from last milestone's targetDeadline (calculated by backend)
               if (contract?.milestones && contract.milestones.length > 0) {
                 const lastMilestone =
                   contract.milestones[contract.milestones.length - 1];
-                if (lastMilestone?.plannedDueDate) {
+                if (lastMilestone?.targetDeadline) {
                   return (
                     <Descriptions.Item label="Due Date">
-                      {dayjs(lastMilestone.plannedDueDate).format('YYYY-MM-DD')}
+                      {dayjs(lastMilestone.targetDeadline).format('YYYY-MM-DD')}
                     </Descriptions.Item>
                   );
                 }
               }
-              // No plannedDueDate yet (not calculated)
+              // No targetDeadline yet
               return (
                 <Descriptions.Item label="Due Date">
                   <Text type="secondary" italic>
@@ -2154,10 +2157,10 @@ const ManagerContractDetailPage = () => {
                                 .join(', ')}
                             </p>
                           )}
+                      </>
+                    )}
                   </>
                 )}
-              </>
-            )}
 
               {/* Studio Booking Information for Recording */}
               {contract?.contractType === 'recording' && bookingData && (
@@ -2317,37 +2320,39 @@ const ManagerContractDetailPage = () => {
                                 Recording Participants:
                               </td>
                             </tr>
-                            {bookingData.participants.map((participant, index) => (
-                              <tr key={`participant-${index}`}>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  • {participant.specialistName || 'Unnamed'}{' '}
-                                  ({participant.roleType}) -{' '}
-                                  {participant.participantFee?.toLocaleString()} VND/giờ
-                                  × {bookingData.durationHours} giờ
-                                </td>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  {(
-                                    (participant.participantFee || 0) *
-                                    (bookingData.durationHours || 1)
-                                  ).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
+                            {bookingData.participants.map(
+                              (participant, index) => (
+                                <tr key={`participant-${index}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    • {participant.specialistName || 'Unnamed'}{' '}
+                                    ({participant.roleType}) -{' '}
+                                    {participant.participantFee?.toLocaleString()}{' '}
+                                    VND/giờ × {bookingData.durationHours} giờ
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {(
+                                      (participant.participantFee || 0) *
+                                      (bookingData.durationHours || 1)
+                                    ).toLocaleString()}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                             <tr>
                               <td
                                 style={{
@@ -2400,38 +2405,40 @@ const ManagerContractDetailPage = () => {
                                 Studio Equipment Rental:
                               </td>
                             </tr>
-                            {bookingData.requiredEquipment.map((equipment, index) => (
-                              <tr key={`equipment-${index}`}>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  • {equipment.equipmentName || 'Unnamed'} ×{' '}
-                                  {equipment.quantity} -{' '}
-                                  {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
-                                  VND/giờ × {bookingData.durationHours} giờ
-                                </td>
-                                <td
-                                  style={{
-                                    border: '1px solid #000',
-                                    padding: '8px',
-                                    textAlign: 'right',
-                                    fontWeight: 'bold',
-                                    backgroundColor: '#fff',
-                                  }}
-                                >
-                                  {(
-                                    (equipment.rentalFeePerUnit || 0) *
-                                    (equipment.quantity || 1) *
-                                    (bookingData.durationHours || 1)
-                                  ).toLocaleString()}
-                                </td>
-                              </tr>
-                            ))}
+                            {bookingData.requiredEquipment.map(
+                              (equipment, index) => (
+                                <tr key={`equipment-${index}`}>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      paddingLeft: '24px',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    • {equipment.equipmentName || 'Unnamed'} ×{' '}
+                                    {equipment.quantity} -{' '}
+                                    {equipment.rentalFeePerUnit?.toLocaleString()}{' '}
+                                    VND/giờ × {bookingData.durationHours} giờ
+                                  </td>
+                                  <td
+                                    style={{
+                                      border: '1px solid #000',
+                                      padding: '8px',
+                                      textAlign: 'right',
+                                      fontWeight: 'bold',
+                                      backgroundColor: '#fff',
+                                    }}
+                                  >
+                                    {(
+                                      (equipment.rentalFeePerUnit || 0) *
+                                      (equipment.quantity || 1) *
+                                      (bookingData.durationHours || 1)
+                                    ).toLocaleString()}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                             <tr>
                               <td
                                 style={{

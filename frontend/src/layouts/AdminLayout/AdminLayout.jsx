@@ -15,6 +15,7 @@ import {
   WalletOutlined,
   StarOutlined,
   PlayCircleOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Dropdown, message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,6 +40,11 @@ const menuItems = [
     key: '/admin/wallets',
     icon: <WalletOutlined />,
     label: <Link to="/admin/wallets">Wallet Management</Link>,
+  },
+  {
+    key: '/admin/withdrawal-requests',
+    icon: <DollarOutlined />,
+    label: <Link to="/admin/withdrawal-requests">Withdrawal Requests</Link>,
   },
   {
     key: '/admin/service-requests',

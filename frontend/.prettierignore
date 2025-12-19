@@ -37,3 +37,6 @@ coverage
 *.webm
 assets/json/
 assets/lottie/*.json
+
+# Third-party libraries
+public/smoosic/

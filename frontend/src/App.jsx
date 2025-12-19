@@ -68,7 +68,7 @@ import InstrumentalistSelectionPage from './pages/services/ServiceRequest/Record
 import EquipmentSelectionPage from './pages/services/ServiceRequest/RecordingFlow/pages/EquipmentSelectionPage';
 
 // Work Pages
-import NotationEditor from './pages/work/NotationEditor/NotationEditor';
+import SmoosicEditorPage from './pages/work/SmoosicEditorPage/SmoosicEditorPage';
 import Tasks from './pages/work/Tasks/Task';
 
 // Transcription Pages
@@ -112,6 +112,7 @@ import RevisionRequestsManagement from './pages/manager/RevisionRequests/Revisio
 import StudioBookingPage from './pages/manager/StudioBooking/StudioBookingPage';
 import StudioBookingsManagement from './pages/manager/StudioBookings/StudioBookingsManagement';
 import StudioBookingDetailPage from './pages/manager/StudioBookings/StudioBookingDetailPage';
+import WithdrawalRequestsManagement from './pages/manager/WithdrawalRequests/WithdrawalRequestsManagement';
 import MyStudioBookings from './pages/recordingArtist/MyStudioBookings/MyStudioBookings';
 import RecordingArtistStudioBookingDetailPage from './pages/recordingArtist/StudioBookingDetail/StudioBookingDetailPage';
 
@@ -388,7 +389,7 @@ function App() {
                   'ARRANGEMENT',
                 ]}
               >
-                <NotationEditor />
+                <SmoosicEditorPage />
               </ProtectedRoute>
             }
           />
@@ -516,6 +517,10 @@ function App() {
               path="revision-requests"
               element={<RevisionRequestsManagement />}
             />
+            <Route
+              path="withdrawal-requests"
+              element={<WithdrawalRequestsManagement />}
+            />
             <Route path="chat" element={<ManagerChatPage />} />
             <Route path="chat/:roomId" element={<ManagerChatPage />} />
           </Route>
@@ -534,6 +539,10 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="wallets" element={<WalletManagement />} />
             <Route
+              path="withdrawal-requests"
+              element={<WithdrawalRequestsManagement />}
+            />
+            <Route
               path="service-requests"
               element={<ServiceRequestManagement />}
             />
@@ -541,10 +550,7 @@ function App() {
               path="notation-instruments"
               element={<NotationInstruments />}
             />
-            <Route
-              path="equipment"
-              element={<EquipmentManagement />}
-            />
+            <Route path="equipment" element={<EquipmentManagement />} />
             <Route path="specialists" element={<SpecialistManagement />} />
             <Route path="skills" element={<SkillManagement />} />
             <Route path="demos" element={<DemoManagement />} />
@@ -568,7 +574,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="edit-tool" replace />} />
-            <Route path="edit-tool" element={<NotationEditor />} />
+            <Route path="edit-tool" element={<SmoosicEditorPage />} />
             <Route path="my-tasks" element={<MyTasksPage />} />
             <Route
               path="my-tasks/:taskId"

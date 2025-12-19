@@ -9,12 +9,10 @@ import com.mutrapro.project_service.dto.request.ParticipantRequest;
 import com.mutrapro.project_service.dto.request.RequiredEquipmentRequest;
 import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
-import com.mutrapro.project_service.dto.response.BookingArtistResponse;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
-import com.mutrapro.project_service.entity.BookingArtist;
 import com.mutrapro.project_service.entity.BookingParticipant;
 import com.mutrapro.project_service.entity.BookingRequiredEquipment;
 import com.mutrapro.project_service.entity.Contract;
@@ -46,7 +44,6 @@ import com.mutrapro.project_service.exception.InvalidTimeRangeException;
 import com.mutrapro.project_service.exception.NoActiveStudioException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
 import com.mutrapro.project_service.exception.StudioBookingConflictException;
-import com.mutrapro.project_service.repository.BookingArtistRepository;
 import com.mutrapro.project_service.repository.BookingParticipantRepository;
 import com.mutrapro.project_service.repository.BookingRequiredEquipmentRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
@@ -70,9 +67,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -86,7 +85,6 @@ public class StudioBookingService {
     StudioRepository studioRepository;
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
-    BookingArtistRepository bookingArtistRepository;
     BookingParticipantRepository bookingParticipantRepository;
     BookingRequiredEquipmentRepository bookingRequiredEquipmentRepository;
     EquipmentRepository equipmentRepository;
@@ -98,37 +96,23 @@ public class StudioBookingService {
     SkillEquipmentMappingRepository skillEquipmentMappingRepository;
     
     /**
-     * Lấy specialistId của user hiện tại
-     * Ưu tiên lấy từ JWT token (nếu có), nếu không thì gọi specialist-service
+     * Lấy specialistId của user hiện tại từ JWT token
+     * Bắt buộc phải có trong JWT token (identity-service đã thêm khi login)
+     * Không có fallback để tránh gọi API chậm
      */
     private String getCurrentSpecialistId() {
-        // Thử lấy từ JWT token trước (nếu identity-service set specialistId claim)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            String specialistId = jwt.getClaimAsString("specialistId");
-            if (specialistId != null && !specialistId.isEmpty()) {
-                log.debug("Got specialistId from JWT token: {}", specialistId);
-                return specialistId;
-            }
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw new IllegalStateException("User not authenticated");
         }
         
-        // Fallback: gọi specialist-service để lấy specialistId từ userId
-        try {
-            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
-            if (response == null || !"success".equals(response.getStatus()) 
-                || response.getData() == null) {
-                throw new IllegalStateException("Specialist not found for current user");
-            }
-            Map<String, Object> data = response.getData();
-            String specialistId = (String) data.get("specialistId");
-            if (specialistId == null || specialistId.isEmpty()) {
-                throw new IllegalStateException("Specialist ID not found in response");
-            }
-            return specialistId;
-        } catch (Exception e) {
-            log.error("Failed to get specialist info: {}", e.getMessage(), e);
-            throw new IllegalStateException("Failed to get specialist information: " + e.getMessage());
+        String specialistId = jwt.getClaimAsString("specialistId");
+        if (specialistId == null || specialistId.isEmpty()) {
+            throw new IllegalStateException(
+                "Specialist ID not found in JWT token. Please login again to refresh token.");
         }
+        
+        return specialistId;
     }
 
     /**
@@ -316,18 +300,19 @@ public class StudioBookingService {
                 .map(ArtistBookingInfo::getSpecialistId)
                 .toList();
             
-            List<BookingArtist> conflictingArtists = bookingArtistRepository
-                .findConflictingBookingsForMultipleArtists(
+            List<BookingParticipant> conflictingParticipants = bookingParticipantRepository
+                .findConflictingBookingsForMultipleSpecialists(
                     artistIds,
                     request.getBookingDate(),
                     request.getStartTime(),
                     request.getEndTime()
                 );
             
-            if (!conflictingArtists.isEmpty()) {
+            if (!conflictingParticipants.isEmpty()) {
                 // Group by specialistId để show message rõ ràng
-                String conflictingSpecialists = conflictingArtists.stream()
-                    .map(ba -> ba.getSpecialistId())
+                String conflictingSpecialists = conflictingParticipants.stream()
+                    .map(bp -> bp.getSpecialistId())
+                    .filter(id -> id != null && !id.isBlank())
                     .distinct()
                     .collect(java.util.stream.Collectors.joining(", "));
                 
@@ -363,7 +348,7 @@ public class StudioBookingService {
             .status(BookingStatus.CONFIRMED)  // Đã chốt lịch
             .durationHours(request.getDurationHours())
             .externalGuestCount(request.getExternalGuestCount() != null ? request.getExternalGuestCount() : 0)
-            .artistFee(BigDecimal.ZERO)  // Artist fee được tính từ booking_artists, không set ở đây
+            .artistFee(BigDecimal.ZERO)  // Artist fee được tính từ booking_participants, không set ở đây
             .equipmentRentalFee(BigDecimal.ZERO)  // Không có equipment cho luồng 2
             .externalGuestFee(BigDecimal.ZERO)  // Không có guest fee cho luồng 2
             .totalCost(BigDecimal.ZERO)  // Không tính lại giá
@@ -376,22 +361,36 @@ public class StudioBookingService {
         log.info("Created studio booking for recording milestone: bookingId={}, milestoneId={}, contractId={}, bookingDate={}",
             saved.getBookingId(), recordingMilestone.getMilestoneId(), contract.getContractId(), request.getBookingDate());
         
-        // 9.5. Tạo booking_artists records (nếu có artists trong request)
+        // 9.5. Tạo booking_participants records (nếu có artists trong request)
         if (request.getArtists() != null && !request.getArtists().isEmpty()) {
             for (ArtistBookingInfo artistInfo : request.getArtists()) {
-                BookingArtist bookingArtist = BookingArtist.builder()
+                // Convert role string to SessionRoleType
+                SessionRoleType roleType = SessionRoleType.INSTRUMENT; // Default
+                if (artistInfo.getRole() != null) {
+                    String role = artistInfo.getRole().toUpperCase();
+                    if (role.contains("VOCAL") || role.contains("VOCALIST")) {
+                        roleType = SessionRoleType.VOCAL;
+                    }
+                }
+                
+                BookingParticipant participant = BookingParticipant.builder()
                     .booking(saved)
+                    .roleType(roleType)
+                    .performerSource(PerformerSource.INTERNAL_ARTIST)
                     .specialistId(artistInfo.getSpecialistId())
-                    .role(artistInfo.getRole() != null ? artistInfo.getRole() : "VOCALIST")
-                    .isPrimary(artistInfo.getIsPrimary() != null ? artistInfo.getIsPrimary() : false)
-                    .artistFee(artistInfo.getArtistFee() != null ? artistInfo.getArtistFee() : BigDecimal.ZERO)
                     .skillId(artistInfo.getSkillId())
+                    .participantFee(artistInfo.getArtistFee() != null ? artistInfo.getArtistFee() : BigDecimal.ZERO)
+                    .isPrimary(artistInfo.getIsPrimary() != null ? artistInfo.getIsPrimary() : false)
                     .build();
                 
-                bookingArtistRepository.save(bookingArtist);
-                log.info("Created booking artist: bookingId={}, specialistId={}, role={}, isPrimary={}",
-                    saved.getBookingId(), artistInfo.getSpecialistId(), bookingArtist.getRole(), bookingArtist.getIsPrimary());
+                bookingParticipantRepository.save(participant);
+                log.info("Created booking participant: bookingId={}, specialistId={}, roleType={}, isPrimary={}",
+                    saved.getBookingId(), artistInfo.getSpecialistId(), participant.getRoleType(), participant.getIsPrimary());
             }
+            // LƯU Ý: Không cần update artistFee vì:
+            // - Luồng 2 (arrangement_with_recording) không tính phí trong booking (totalCost = 0)
+            // - Phí đã được tính trong contract/milestone
+            // - artistFee trong studio_bookings chỉ để tracking, không ảnh hưởng payment
         }
         
         // 10. Update studioBookingId vào recording task (nếu đã có task)
@@ -631,16 +630,7 @@ public class StudioBookingService {
                 .toList();
             
             if (!specialistIds.isEmpty()) {
-                // Check conflict với booking_artists (cho luồng 2)
-                List<BookingArtist> conflictingArtists = bookingArtistRepository
-                    .findConflictingBookingsForMultipleArtists(
-                        specialistIds,
-                        request.getBookingDate(),
-                        request.getStartTime(),
-                        request.getEndTime()
-                    );
-                
-                // Check conflict với booking_participants (cho luồng 3)
+                // Check conflict với booking_participants (chỉ check INTERNAL_ARTIST)
                 List<BookingParticipant> conflictingParticipants = bookingParticipantRepository
                     .findConflictingBookingsForMultipleSpecialists(
                         specialistIds,
@@ -649,26 +639,11 @@ public class StudioBookingService {
                         request.getEndTime()
                     );
                 
-                // Combine conflicts từ cả 2 bảng
-                List<String> allConflictingSpecialistIds = new java.util.ArrayList<>();
-                if (!conflictingArtists.isEmpty()) {
-                    List<String> artistConflicts = conflictingArtists.stream()
-                        .map(BookingArtist::getSpecialistId)
-                        .distinct()
-                        .toList();
-                    allConflictingSpecialistIds.addAll(artistConflicts);
-                }
-                if (!conflictingParticipants.isEmpty()) {
-                    List<String> participantConflicts = conflictingParticipants.stream()
-                        .map(BookingParticipant::getSpecialistId)
-                        .filter(id -> id != null && !id.isBlank())
-                        .distinct()
-                        .toList();
-                    allConflictingSpecialistIds.addAll(participantConflicts);
-                }
-                
-                // Remove duplicates
-                List<String> uniqueConflicts = allConflictingSpecialistIds.stream()
+                // Filter chỉ lấy INTERNAL_ARTIST conflicts
+                List<String> uniqueConflicts = conflictingParticipants.stream()
+                    .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                    .map(BookingParticipant::getSpecialistId)
+                    .filter(id -> id != null && !id.isBlank())
                     .distinct()
                     .toList();
                 
@@ -792,46 +767,50 @@ public class StudioBookingService {
     
     /**
      * Map StudioBooking entity sang StudioBookingResponse
+     * Tối ưu: Batch fetch specialist info để tránh N+1 query
      */
     private StudioBookingResponse mapToResponse(StudioBooking booking) {
-        // Lấy danh sách artists tham gia booking (cho luồng 2)
-        List<BookingArtist> bookingArtists = bookingArtistRepository.findByBookingBookingId(booking.getBookingId());
-        List<BookingArtistResponse> artists = bookingArtists.stream()
-            .map(ba -> BookingArtistResponse.builder()
-                .bookingArtistId(ba.getBookingArtistId())
-                .specialistId(ba.getSpecialistId())
-                .role(ba.getRole())
-                .isPrimary(ba.getIsPrimary())
-                .artistFee(ba.getArtistFee())
-                .skillId(ba.getSkillId())
-                .build())
-            .toList();
-        
-        // Lấy danh sách participants (cho luồng 3 - recording from request)
+        // Lấy danh sách participants (tất cả luồng - cả luồng 2 và luồng 3)
         List<BookingParticipant> bookingParticipants = bookingParticipantRepository.findByBooking_BookingId(booking.getBookingId());
+        
+        // Tối ưu: Batch fetch specialist info cho tất cả unique specialistIds
+        Set<String> uniqueSpecialistIds = bookingParticipants.stream()
+                .map(BookingParticipant::getSpecialistId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+        
+        Map<String, Map<String, Object>> specialistInfoMap = new HashMap<>();
+        for (String specialistId : uniqueSpecialistIds) {
+            try {
+                ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getPublicSpecialistById(specialistId);
+                if (response != null && "success".equals(response.getStatus()) && response.getData() != null) {
+                    specialistInfoMap.put(specialistId, response.getData());
+                }
+            } catch (Exception e) {
+                // Giảm log level từ WARN xuống DEBUG cho lỗi JWT expired (client-side error)
+                log.debug("Failed to fetch specialist info for specialistId={}: {}", specialistId, e.getMessage());
+            }
+        }
+        
         List<StudioBookingResponse.BookingParticipantInfo> participants = bookingParticipants.stream()
             .map(p -> {
                 String specialistName = null;
                 String skillName = null;
                 
-                // Enrich specialist name từ specialist-service (public endpoint)
-                if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
-                    try {
-                        ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getPublicSpecialistById(p.getSpecialistId());
-                        if (response != null && "success".equals(response.getStatus()) && response.getData() != null) {
-                            Map<String, Object> data = response.getData();
-                            
+                // Lấy specialist info từ map đã fetch sẵn
+                Map<String, Object> specialistData = specialistInfoMap.get(p.getSpecialistId());
+                if (specialistData != null) {
                             // Response structure: { specialist: {...}, skills: [...], demos: [...] }
                             @SuppressWarnings("unchecked")
-                            Map<String, Object> specialist = (Map<String, Object>) data.get("specialist");
+                    Map<String, Object> specialist = (Map<String, Object>) specialistData.get("specialist");
                             if (specialist != null) {
                                 specialistName = (String) specialist.get("fullName");
                             }
                             
                             // Lấy skill name nếu là INSTRUMENT
-                            if (p.getSkillId() != null && data.get("skills") != null) {
+                    if (p.getSkillId() != null && specialistData.get("skills") != null) {
                                 @SuppressWarnings("unchecked")
-                                List<Map<String, Object>> skills = (List<Map<String, Object>>) data.get("skills");
+                        List<Map<String, Object>> skills = (List<Map<String, Object>>) specialistData.get("skills");
                                 for (Map<String, Object> skill : skills) {
                                     if (p.getSkillId().equals(skill.get("skillId"))) {
                                         skillName = (String) skill.get("skillName");
@@ -839,12 +818,9 @@ public class StudioBookingService {
                                     }
                                 }
                             }
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to fetch specialist info for participantId={}, specialistId={}: {}", 
-                            p.getParticipantId(), p.getSpecialistId(), e.getMessage());
+                } else if (p.getSpecialistId() != null && !p.getSpecialistId().isBlank()) {
+                    // Fallback nếu không fetch được
                         specialistName = "Specialist " + p.getSpecialistId().substring(0, Math.min(8, p.getSpecialistId().length()));
-                    }
                 }
                 
                 return StudioBookingResponse.BookingParticipantInfo.builder()
@@ -906,7 +882,6 @@ public class StudioBookingService {
             .notes(booking.getNotes())
             .createdAt(booking.getCreatedAt())
             .updatedAt(booking.getUpdatedAt())
-            .artists(artists)
             .participants(participants)
             .requiredEquipment(requiredEquipment)
             .build();
@@ -1013,13 +988,6 @@ public class StudioBookingService {
         log.info("Getting available artists for slot: milestoneId={}, date={}, time={}-{}, genres={}, preferredSpecialistIds={}", 
             milestoneId, bookingDate, startTime, endTime, genres, preferredSpecialistIds);
         
-        // 1. Validate milestone và lấy contract
-        ContractMilestone milestone = contractMilestoneRepository.findById(milestoneId)
-            .orElseThrow(() -> ContractMilestoneNotFoundException.byId(milestoneId, null));
-        
-        Contract contract = contractRepository.findById(milestone.getContractId())
-            .orElseThrow(() -> ContractNotFoundException.byId(milestone.getContractId()));
-        
         // 2. Lấy preferred specialists từ parameter
         List<String> preferredIds = preferredSpecialistIds != null && !preferredSpecialistIds.isEmpty()
             ? preferredSpecialistIds
@@ -1047,9 +1015,9 @@ public class StudioBookingService {
             .map(v -> (String) v.get("specialistId"))
             .toList();
         
-        List<BookingArtist> conflictingArtists = allVocalistIds.isEmpty() 
+        List<BookingParticipant> conflictingParticipants = allVocalistIds.isEmpty() 
             ? List.of()
-            : bookingArtistRepository.findConflictingBookingsForMultipleArtists(
+            : bookingParticipantRepository.findConflictingBookingsForMultipleSpecialists(
                 allVocalistIds,
                 bookingDate,
                 startTime,
@@ -1073,12 +1041,14 @@ public class StudioBookingService {
             // Check if artist is preferred
             boolean isPreferred = preferredIds.contains(specialistId);
             
-            // Check if artist is busy
-            boolean isBusy = conflictingArtists.stream()
-                .anyMatch(ba -> ba.getSpecialistId().equals(specialistId));
+            // Check if artist is busy (chỉ check INTERNAL_ARTIST)
+            boolean isBusy = conflictingParticipants.stream()
+                .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                .anyMatch(bp -> specialistId.equals(bp.getSpecialistId()));
             
-            BookingArtist conflict = conflictingArtists.stream()
-                .filter(ba -> ba.getSpecialistId().equals(specialistId))
+            BookingParticipant conflict = conflictingParticipants.stream()
+                .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                .filter(bp -> specialistId.equals(bp.getSpecialistId()))
                 .findFirst()
                 .orElse(null);
             
@@ -1182,7 +1152,7 @@ public class StudioBookingService {
      * Flow: Sau khi chọn slot → hiển thị artists/instrumentalists với:
      * - Available/Busy status cho slot đó
      * - Filter theo skillId nếu là INSTRUMENT
-     * - Check conflict từ cả booking_artists và booking_participants
+     * - Check conflict từ booking_participants (chỉ check INTERNAL_ARTIST)
      * 
      * LƯU Ý: Luồng 3 không có "preferred" artists vì customer tự chọn
      * 
@@ -1263,16 +1233,7 @@ public class StudioBookingService {
             .filter(id -> id != null && !id.isBlank())
             .toList();
         
-        // 4. Check conflict từ cả booking_artists và booking_participants
-        List<BookingArtist> conflictingArtists = allSpecialistIds.isEmpty() 
-            ? List.of()
-            : bookingArtistRepository.findConflictingBookingsForMultipleArtists(
-                allSpecialistIds,
-                bookingDate,
-                startTime,
-                endTime
-            );
-        
+        // 4. Check conflict từ booking_participants (chỉ check INTERNAL_ARTIST)
         List<BookingParticipant> conflictingParticipants = allSpecialistIds.isEmpty()
             ? List.of()
             : bookingParticipantRepository.findConflictingBookingsForMultipleSpecialists(
@@ -1282,15 +1243,12 @@ public class StudioBookingService {
                 endTime
             );
         
-        // Combine conflicts
-        List<String> allConflictingIds = new java.util.ArrayList<>();
-        allConflictingIds.addAll(conflictingArtists.stream()
-            .map(BookingArtist::getSpecialistId)
-            .toList());
-        allConflictingIds.addAll(conflictingParticipants.stream()
+        // Filter chỉ lấy INTERNAL_ARTIST conflicts
+        List<String> allConflictingIds = conflictingParticipants.stream()
+            .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
             .map(BookingParticipant::getSpecialistId)
             .filter(id -> id != null && !id.isBlank())
-            .toList());
+            .toList();
         
         // 5. Tạo response
         List<AvailableArtistResponse> artists = new java.util.ArrayList<>();
@@ -1303,26 +1261,19 @@ public class StudioBookingService {
             
             String artistName = (String) artist.getOrDefault("fullName", "Unknown Artist");
             
-            // Check if artist is busy
+            // Check if artist is busy (chỉ check INTERNAL_ARTIST)
             boolean isBusy = allConflictingIds.contains(specialistId);
             
             // Get conflict info
-            BookingArtist artistConflict = conflictingArtists.stream()
-                .filter(ba -> ba.getSpecialistId().equals(specialistId))
-                .findFirst()
-                .orElse(null);
-            
             BookingParticipant participantConflict = conflictingParticipants.stream()
+                .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
                 .filter(bp -> specialistId.equals(bp.getSpecialistId()))
                 .findFirst()
                 .orElse(null);
             
             LocalTime conflictStartTime = null;
             LocalTime conflictEndTime = null;
-            if (artistConflict != null) {
-                conflictStartTime = artistConflict.getBooking().getStartTime();
-                conflictEndTime = artistConflict.getBooking().getEndTime();
-            } else if (participantConflict != null) {
+            if (participantConflict != null) {
                 conflictStartTime = participantConflict.getBooking().getStartTime();
                 conflictEndTime = participantConflict.getBooking().getEndTime();
             }
@@ -1435,9 +1386,15 @@ public class StudioBookingService {
     /**
      * Lấy danh sách studio bookings với filter
      * GET /studio-bookings?contractId={contractId}&milestoneId={milestoneId}&status={status}
+     * Tối ưu: Batch fetch tất cả participants, equipment, và specialist info để tránh N+1 query
      */
     @Transactional(readOnly = true)
     public List<StudioBookingResponse> getStudioBookings(String contractId, String milestoneId, String status) {
+        long startTime = System.currentTimeMillis();
+        log.info("[Performance] ===== getStudioBookings STARTED - contractId={}, milestoneId={}, status={} =====", 
+            contractId, milestoneId, status);
+        
+        long step1Start = System.currentTimeMillis();
         List<StudioBooking> bookings;
         
         if (milestoneId != null && !milestoneId.isBlank()) {
@@ -1452,7 +1409,10 @@ public class StudioBookingService {
             // Lấy tất cả - cần eager load studio
             bookings = studioBookingRepository.findAll();
         }
+        log.info("[Performance] Step 1 - Fetch bookings: {}ms (found {} bookings)", 
+            System.currentTimeMillis() - step1Start, bookings.size());
         
+        long step2Start = System.currentTimeMillis();
         // Eager load studio để tránh LazyInitializationException
         bookings.forEach(booking -> {
             if (booking.getStudio() != null) {
@@ -1460,7 +1420,10 @@ public class StudioBookingService {
                 booking.getStudio().getStudioName(); // Trigger lazy load trong transaction
             }
         });
+        log.info("[Performance] Step 2 - Eager load studios: {}ms", 
+            System.currentTimeMillis() - step2Start);
         
+        long step3Start = System.currentTimeMillis();
         // Filter theo status nếu có
         if (status != null && !status.isBlank()) {
             try {
@@ -1472,11 +1435,62 @@ public class StudioBookingService {
                 log.warn("Invalid booking status: {}", status);
             }
         }
+        log.info("[Performance] Step 3 - Filter by status: {}ms (after filter: {} bookings)", 
+            System.currentTimeMillis() - step3Start, bookings.size());
         
-        // Convert sang response (trong cùng transaction)
-        return bookings.stream()
-            .map(this::mapToResponse)
+        if (bookings.isEmpty()) {
+            log.info("[Performance] ===== getStudioBookings COMPLETED in {}ms (TOTAL) =====", 
+                System.currentTimeMillis() - startTime);
+            return List.of();
+        }
+        
+        // Tối ưu: Bỏ qua fetch participants, equipment, và specialist info cho list view
+        // List view không hiển thị participants và equipment, chỉ detail page mới cần
+        // Điều này giảm đáng kể số queries và data transfer (Step 4, 5, 6, 7 đã bỏ)
+        
+        long step4Start = System.currentTimeMillis();
+        // Convert sang response (không có participants và equipment cho list view)
+        List<StudioBookingResponse> responses = bookings.stream()
+            .map(booking -> {
+                // Build response không có participants và equipment (tối ưu cho list view)
+                return StudioBookingResponse.builder()
+                    .bookingId(booking.getBookingId())
+                    .userId(booking.getUserId())
+                    .studioId(booking.getStudio() != null ? booking.getStudio().getStudioId() : null)
+                    .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+                    .requestId(booking.getRequestId())
+                    .contractId(booking.getContractId())
+                    .milestoneId(booking.getMilestoneId())
+                    .context(booking.getContext())
+                    .sessionType(booking.getSessionType())
+                    .bookingDate(booking.getBookingDate())
+                    .startTime(booking.getStartTime())
+                    .endTime(booking.getEndTime())
+                    .status(booking.getStatus())
+                    .holdExpiresAt(booking.getHoldExpiresAt())
+                    .externalGuestCount(booking.getExternalGuestCount())
+                    .durationHours(booking.getDurationHours())
+                    .artistFee(booking.getArtistFee())
+                    .equipmentRentalFee(booking.getEquipmentRentalFee())
+                    .externalGuestFee(booking.getExternalGuestFee())
+                    .totalCost(booking.getTotalCost())
+                    .purpose(booking.getPurpose())
+                    .specialInstructions(booking.getSpecialInstructions())
+                    .notes(booking.getNotes())
+                    .createdAt(booking.getCreatedAt())
+                    .updatedAt(booking.getUpdatedAt())
+                    .participants(null) // Không cần cho list view
+                    .requiredEquipment(null) // Không cần cho list view
+                    .build();
+            })
             .toList();
+        log.info("[Performance] Step 4 - Map to response: {}ms (mapped {} responses)", 
+            System.currentTimeMillis() - step4Start, responses.size());
+        
+        log.info("[Performance] ===== getStudioBookings COMPLETED in {}ms (TOTAL) =====", 
+            System.currentTimeMillis() - startTime);
+        
+        return responses;
     }
     
     /**
@@ -1568,46 +1582,32 @@ public class StudioBookingService {
      * Lấy danh sách studio bookings của recording artist hiện tại
      * GET /studio-bookings/my-bookings
      * 
-     * Query từ 2 nguồn:
-     * 1. BookingArtist (luồng 2 - arrangement_with_recording)
-     * 2. BookingParticipant với performerSource = INTERNAL_ARTIST (luồng 3 - recording từ service request)
+     * Query từ BookingParticipant với performerSource = INTERNAL_ARTIST
      */
     @Transactional(readOnly = true)
     public List<StudioBookingResponse> getMyStudioBookings() {
         String specialistId = getCurrentSpecialistId();
         log.info("Getting studio bookings for recording artist: specialistId={}", specialistId);
         
-        // 1. Lấy booking IDs từ BookingArtist (luồng 2)
-        List<String> bookingIdsFromArtists = bookingArtistRepository.findBySpecialistId(specialistId)
-            .stream()
-            .map(ba -> ba.getBooking().getBookingId())
-            .distinct()
-            .toList();
-        
-        // 2. Lấy booking IDs từ BookingParticipant với performerSource = INTERNAL_ARTIST (luồng 3)
-        List<String> bookingIdsFromParticipants = bookingParticipantRepository.findBySpecialistId(specialistId)
+        // Lấy booking IDs từ BookingParticipant với performerSource = INTERNAL_ARTIST
+        List<String> bookingIds = bookingParticipantRepository.findBySpecialistId(specialistId)
             .stream()
             .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
             .map(bp -> bp.getBooking().getBookingId())
             .distinct()
             .toList();
         
-        // 3. Merge 2 lists và distinct
-        Set<String> allBookingIds = new java.util.HashSet<>();
-        allBookingIds.addAll(bookingIdsFromArtists);
-        allBookingIds.addAll(bookingIdsFromParticipants);
+        log.info("Found {} bookings from BookingParticipant for specialistId={}",
+            bookingIds.size(), specialistId);
         
-        log.info("Found {} bookings from BookingArtist, {} from BookingParticipant, {} total unique bookings",
-            bookingIdsFromArtists.size(), bookingIdsFromParticipants.size(), allBookingIds.size());
-        
-        if (allBookingIds.isEmpty()) {
+        if (bookingIds.isEmpty()) {
             return List.of();
         }
         
-        // 4. Lấy tất cả bookings (đã JOIN FETCH studio trong query)
-        List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(new java.util.ArrayList<>(allBookingIds));
+        // Lấy tất cả bookings (đã JOIN FETCH studio trong query)
+        List<StudioBooking> bookings = studioBookingRepository.findByBookingIdIn(bookingIds);
         
-        // 5. Convert sang response (trong cùng transaction)
+        // Convert sang response (trong cùng transaction)
         return bookings.stream()
             .map(this::mapToResponse)
             .toList();

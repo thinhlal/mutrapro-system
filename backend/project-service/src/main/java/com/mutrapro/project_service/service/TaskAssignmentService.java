@@ -6,6 +6,7 @@ import com.mutrapro.project_service.client.RequestServiceFeignClient;
 import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
 import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
 import com.mutrapro.shared.event.TaskIssueReportedEvent;
+import com.mutrapro.project_service.dto.projection.ContractBasicInfo;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -23,6 +24,7 @@ import com.mutrapro.project_service.entity.OutboxEvent;
 import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.MilestoneWorkStatus;
+import com.mutrapro.project_service.enums.SubmissionStatus;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.dto.SpecialistTaskStats;
 import com.mutrapro.shared.dto.TaskStatsRequest;
@@ -54,6 +56,7 @@ import com.mutrapro.project_service.exception.TaskAssignmentNotBelongToContractE
 import com.mutrapro.project_service.exception.TaskAssignmentNoIssueException;
 import com.mutrapro.project_service.exception.SpecialistNotFoundException;
 import com.mutrapro.project_service.exception.FailedToFetchSpecialistException;
+import com.mutrapro.project_service.exception.SpecialistSlaWindowFullException;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileSubmissionRepository;
@@ -70,7 +73,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -442,7 +444,9 @@ public class TaskAssignmentService {
 
     private LocalDateTime resolveMilestoneDeadlineWithFallback(
             ContractMilestone milestone, Contract contract, String contractId) {
-        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        // SLA window end / deadline dùng để check workload phải là deadline mục tiêu (hard/target),
+        // không dùng actualEndAt (mốc hoàn thành) để tránh "deadline = lúc xong".
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone);
         if (deadline != null) {
             return deadline;
         }
@@ -519,7 +523,12 @@ public class TaskAssignmentService {
         }
         
         // Tính plannedStartAt của milestone hiện tại = plannedDueDate của milestone trước đó
-        LocalDateTime previousPlannedDueDate = resolveMilestoneDeadline(previousMilestone);
+        LocalDateTime previousPlannedDueDate = null;
+        if (previousMilestone.getPlannedDueDate() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedDueDate();
+        } else if (previousMilestone.getPlannedStartAt() != null && previousMilestone.getMilestoneSlaDays() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedStartAt().plusDays(previousMilestone.getMilestoneSlaDays());
+        }
         if (previousPlannedDueDate != null) {
             return previousPlannedDueDate;
         }
@@ -603,8 +612,8 @@ public class TaskAssignmentService {
             return null;
         }
         
-        // Thử dùng resolveMilestoneDeadline trước (nếu có actual/planned dates)
-        LocalDateTime deadline = resolveMilestoneDeadline(milestone);
+        // Thử dùng deadline mục tiêu (hard/target) trước (nếu có planned/booking/arrangement-paid)
+        LocalDateTime deadline = resolveMilestoneTargetDeadline(milestone);
         if (deadline != null) {
             return deadline;
         }
@@ -623,132 +632,218 @@ public class TaskAssignmentService {
         return null;
     }
 
-    private LocalDateTime resolveMilestoneDeadline(ContractMilestone milestone) {
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) để FE check trễ hẹn + tính SLA window workload.
+     *
+     * QUAN TRỌNG:
+     * - Không trả về actualEndAt (vì đó là mốc hoàn thành/thanh toán, không phải deadline mục tiêu).
+     * - Recording milestone:
+     *   - Workflow 3 (arrangement_with_recording): hard deadline = last arrangement actualEndAt (paid) + SLA days (booking không dời deadline)
+     *   - Workflow 4 (recording-only): deadline = bookingDate(+startTime) + SLA days
+     * 
+     * Version có cache để tránh N+1 query (dùng trong batch operations)
+     */
+    
+    private LocalDateTime resolveMilestoneTargetDeadlineWithCache(
+            ContractMilestone milestone,
+            Map<String, Contract> contractsForDeadline,
+            Map<String, StudioBooking> bookingsByMilestoneId,
+            Map<String, List<ContractMilestone>> milestonesByContractId,
+            Map<String, ContractMilestone> lastArrangementMilestoneByContractId) {
         if (milestone == null) {
             return null;
         }
         Integer slaDays = milestone.getMilestoneSlaDays();
-        
-        // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-        if (milestone.getMilestoneType() == MilestoneType.recording) {
-            // ⚠️ QUAN TRỌNG: Ưu tiên actualEndAt TRƯỚC booking date
-            // Vì actualEndAt là deadline thực tế (milestone đã completed), không phải ước tính
-            
-            // Ưu tiên 1: actualEndAt (nếu milestone đã completed) - deadline thực tế
-            if (milestone.getActualEndAt() != null) {
-                log.debug("Recording milestone deadline using actualEndAt (milestone completed): milestoneId={}, actualEndAt={}", 
-                    milestone.getMilestoneId(), milestone.getActualEndAt());
-                return milestone.getActualEndAt();
-            }
-            
-            // Ưu tiên 2: Tính từ booking date (nếu có booking active) - deadline ước tính từ booking
-            // ⚠️ QUAN TRỌNG: Ưu tiên booking date TRƯỚC plannedDueDate
-            // Vì booking date phản ánh thực tế (dựa trên actual completion của arrangement milestone),
-            // trong khi plannedDueDate chỉ là baseline (tính từ cursor khi Start Work)
-            // Nếu arrangement milestone bị revision nhiều, booking date sẽ muộn hơn plannedDueDate
-            // ⚠️ CHỈ dùng booking có status active (TENTATIVE, PENDING, CONFIRMED, IN_PROGRESS)
-            // KHÔNG dùng booking bị CANCELLED, NO_SHOW, hoặc COMPLETED (vì đã xong hoặc không còn hiệu lực)
-                try {
-                    Optional<StudioBooking> bookingOpt = 
-                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
-                    
-                if (bookingOpt.isPresent()) {
-                    StudioBooking booking = bookingOpt.get();
-                    // Chỉ dùng booking có status active (không phải CANCELLED, NO_SHOW, COMPLETED)
-                    List<BookingStatus> activeStatuses = List.of(
-                        BookingStatus.TENTATIVE, BookingStatus.PENDING, 
-                        BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
-                    
-                    if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
-                        LocalDate bookingDate = booking.getBookingDate();
-                        LocalTime startTime = booking.getStartTime() != null ? 
-                            booking.getStartTime() : LocalTime.of(8, 0);
-                        LocalDateTime bookingDateTime = bookingDate.atTime(startTime);
-                        
-                        if (slaDays != null && slaDays > 0) {
-                            LocalDateTime deadline = bookingDateTime.plusDays(slaDays);
-                            log.debug("Recording milestone deadline calculated from active booking date: milestoneId={}, bookingId={}, bookingDate={}, status={}, slaDays={}, deadline={}", 
-                                milestone.getMilestoneId(), booking.getBookingId(), bookingDate, booking.getStatus(), slaDays, deadline);
-                            return deadline;
-                        }
-                    } else {
-                        log.debug("Recording milestone has booking but not active (cancelled/completed): milestoneId={}, bookingId={}, status={}, skipping booking date for deadline calculation", 
-                            milestone.getMilestoneId(), booking.getBookingId(), booking.getStatus());
-                    }
-                    }
-                } catch (Exception e) {
-                    log.error("Error fetching booking for recording milestone deadline: milestoneId={}, error={}", 
-                        milestone.getMilestoneId(), e.getMessage());
-                }
-            
-            // ⚠️ QUAN TRỌNG: Khi chưa có booking, tính từ actualEndAt của arrangement milestone cuối cùng
-            // Vì nếu arrangement milestone bị revision nhiều, actualEndAt sẽ muộn hơn plannedDueDate
-            // Deadline phải phản ánh thực tế, không phải baseline
-            try {
-                Contract contract = contractRepository.findById(milestone.getContractId()).orElse(null);
-                if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
-                    List<ContractMilestone> allContractMilestones = contractMilestoneRepository
-                        .findByContractIdOrderByOrderIndexAsc(milestone.getContractId());
-                    List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
-                        .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                        .toList();
-                    
-                    if (!arrangementMilestones.isEmpty()) {
-                        ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
-                            .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                            .orElse(null);
-                        
-                        // Nếu arrangement milestone đã completed và đã thanh toán (actualEndAt != null)
-                        // Tính deadline từ actualEndAt + SLA days (phản ánh thực tế)
-                        if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
-                            if (slaDays != null && slaDays > 0) {
-                                LocalDateTime deadline = lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
-                                log.debug("Recording milestone deadline calculated from last arrangement actualEndAt (no booking yet): milestoneId={}, lastArrangementActualEndAt={}, slaDays={}, deadline={}", 
-                                    milestone.getMilestoneId(), lastArrangementMilestone.getActualEndAt(), slaDays, deadline);
-                                return deadline;
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error fetching arrangement milestone for recording deadline: milestoneId={}, error={}", 
-                    milestone.getMilestoneId(), e.getMessage());
-            }
-            
-            // Ưu tiên 3: plannedDueDate (baseline từ Start Work - chỉ dùng khi arrangement milestone chưa completed)
-            // Fallback khi chưa có booking VÀ arrangement milestone chưa có actualEndAt
-            if (milestone.getPlannedDueDate() != null) {
-                log.debug("Recording milestone deadline using plannedDueDate (baseline, no booking and no arrangement actualEndAt): milestoneId={}, plannedDueDate={}", 
-                    milestone.getMilestoneId(), milestone.getPlannedDueDate());
-                return milestone.getPlannedDueDate();
-            }
-            
-            // Ưu tiên 4: plannedStartAt + slaDays (fallback cuối cùng)
-            // ⚠️ LƯU Ý: Không dùng actualStartAt + SLA vì:
-            // - Với recording milestone, specialist KHÔNG THỂ start task mà không có booking
-            // - Nếu có actualStartAt → đã có booking rồi (không thể start mà không có booking)
-            // - Deadline phải tính từ booking date + SLA (thời điểm recording thực tế), không phải actualStartAt
-            // - actualStartAt là khi specialist start task (có thể trước booking date), không phản ánh thời điểm recording
-            if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
-                log.debug("Recording milestone deadline using plannedStartAt + SLA (final fallback): milestoneId={}, plannedStartAt={}, slaDays={}", 
-                    milestone.getMilestoneId(), milestone.getPlannedStartAt(), slaDays);
-                return milestone.getPlannedStartAt().plusDays(slaDays);
-            }
-            
+        if (slaDays == null || slaDays <= 0) {
             return null;
         }
-        
-        // Other milestones: logic cũ
-        if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
-            return milestone.getActualStartAt().plusDays(slaDays);
+
+        // Recording milestone: special rules by contract type
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            Contract contract = contractsForDeadline != null 
+                ? contractsForDeadline.get(milestone.getContractId())
+                : null;
+
+            // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
+            if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                // Tối ưu: Chỉ dùng cache đã filter sẵn, bỏ các fallback để tránh chậm
+                // Note: lastArrangementMilestoneByContractId luôn được tạo ở Step 4, nên không cần check null
+                ContractMilestone lastArrangementMilestone = lastArrangementMilestoneByContractId != null
+                    ? lastArrangementMilestoneByContractId.get(milestone.getContractId())
+                    : null;
+                
+                // Nếu có last arrangement milestone và đã thanh toán (actualEndAt != null)
+                if (lastArrangementMilestone != null && lastArrangementMilestone.getActualEndAt() != null) {
+                    return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                }
+                // If arrangement not paid yet (actualEndAt == null) hoặc không có arrangement milestone => fallback to planned
+            } else if (contract != null && contract.getContractType() == ContractType.recording) {
+                // Workflow 4 (recording-only): prefer booking date if active
+                // Tối ưu: Chỉ dùng cache, bỏ fallback query để tránh chậm
+                if (bookingsByMilestoneId != null) {
+                    StudioBooking booking = bookingsByMilestoneId.get(milestone.getMilestoneId());
+                    if (booking != null) {
+                        List<BookingStatus> activeStatuses = List.of(
+                            BookingStatus.TENTATIVE, BookingStatus.PENDING,
+                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                        if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                            LocalTime startTime = booking.getStartTime() != null
+                                ? booking.getStartTime()
+                                : LocalTime.of(8, 0);
+                            LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                            return startAt.plusDays(slaDays);
+                        }
+                    }
+                }
+            }
+
+            // Fallback for recording: planned dates (baseline)
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            if (milestone.getPlannedStartAt() != null) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            return null;
         }
-        if (milestone.getActualEndAt() != null) {
-            return milestone.getActualEndAt();
+
+        // Other milestones: target deadline is based on actualStartAt (once started), otherwise planned
+        if (milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt().plusDays(slaDays);
         }
         if (milestone.getPlannedDueDate() != null) {
             return milestone.getPlannedDueDate();
         }
-        if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+        if (milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt().plusDays(slaDays);
+        }
+        return null;
+    }
+
+    /**
+     * Target deadline (deadline mục tiêu / hard deadline) để FE check trễ hẹn + tính SLA window workload.
+     *
+     * QUAN TRỌNG:
+     * - Không trả về actualEndAt (vì đó là mốc hoàn thành/thanh toán, không phải deadline mục tiêu).
+     * - Recording milestone:
+     *   - Workflow 3 (arrangement_with_recording): hard deadline = last arrangement actualEndAt (paid) + SLA days (booking không dời deadline)
+     *   - Workflow 4 (recording-only): deadline = bookingDate(+startTime) + SLA days
+     * 
+     * Version không có cache (dùng cho single assignment operations)
+     */
+    private LocalDateTime resolveMilestoneTargetDeadline(ContractMilestone milestone) {
+        if (milestone == null) {
+            return null;
+        }
+        Integer slaDays = milestone.getMilestoneSlaDays();
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+
+        long deadlineStart = System.currentTimeMillis();
+        
+        // Recording milestone: special rules by contract type
+        if (milestone.getMilestoneType() == MilestoneType.recording) {
+            long contractFetchStart = System.currentTimeMillis();
+            Contract contract = null;
+            try {
+                contract = contractRepository.findById(milestone.getContractId()).orElse(null);
+            } catch (Exception e) {
+                log.warn("Failed to fetch contract for recording target deadline: milestoneId={}, error={}",
+                    milestone.getMilestoneId(), e.getMessage());
+            }
+            long contractFetchTime = System.currentTimeMillis() - contractFetchStart;
+            if (contractFetchTime > 500) {
+                log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch contract: {}ms (milestoneId={})", 
+                    contractFetchTime, milestone.getMilestoneId());
+            }
+
+            // Workflow 3: arrangement_with_recording => hard deadline from last arrangement actualEndAt + SLA (ignore booking)
+            if (contract != null && contract.getContractType() == ContractType.arrangement_with_recording) {
+                try {
+                    long arrangementFetchStart = System.currentTimeMillis();
+                    // Tối ưu: Chỉ fetch last arrangement milestone thay vì fetch tất cả milestones
+                    Optional<ContractMilestone> lastArrangementMilestoneOpt = contractMilestoneRepository
+                        .findFirstByContractIdAndMilestoneTypeOrderByOrderIndexDesc(
+                            milestone.getContractId(), MilestoneType.arrangement);
+                    long arrangementFetchTime = System.currentTimeMillis() - arrangementFetchStart;
+                    
+                    if (arrangementFetchTime > 500) {
+                        log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch last arrangement: {}ms (contractId={})", 
+                            arrangementFetchTime, milestone.getContractId());
+                    }
+
+                    if (lastArrangementMilestoneOpt.isPresent()) {
+                        ContractMilestone lastArrangementMilestone = lastArrangementMilestoneOpt.get();
+                        if (lastArrangementMilestone.getActualEndAt() != null) {
+                            long totalTime = System.currentTimeMillis() - deadlineStart;
+                            if (totalTime > 1000) {
+                                log.warn("[Performance] resolveMilestoneTargetDeadline took {}ms (slow): milestoneId={}", 
+                                    totalTime, milestone.getMilestoneId());
+                            }
+                            return lastArrangementMilestone.getActualEndAt().plusDays(slaDays);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error calculating recording target deadline for arrangement_with_recording: milestoneId={}, error={}",
+                        milestone.getMilestoneId(), e.getMessage());
+                }
+                // If arrangement not paid yet => fallback to planned
+            } else if (contract != null && contract.getContractType() == ContractType.recording) {
+                // Workflow 4 (recording-only): prefer booking date if active
+                try {
+                    long bookingFetchStart = System.currentTimeMillis();
+                    Optional<StudioBooking> bookingOpt =
+                        studioBookingRepository.findByMilestoneId(milestone.getMilestoneId());
+                    long bookingFetchTime = System.currentTimeMillis() - bookingFetchStart;
+                    
+                    if (bookingFetchTime > 500) {
+                        log.debug("[Performance] resolveMilestoneTargetDeadline - Fetch booking: {}ms (milestoneId={})", 
+                            bookingFetchTime, milestone.getMilestoneId());
+                    }
+                    
+                    if (bookingOpt.isPresent()) {
+                        StudioBooking booking = bookingOpt.get();
+                        List<BookingStatus> activeStatuses = List.of(
+                            BookingStatus.TENTATIVE, BookingStatus.PENDING,
+                            BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS);
+                        if (activeStatuses.contains(booking.getStatus()) && booking.getBookingDate() != null) {
+                            LocalTime startTime = booking.getStartTime() != null
+                                ? booking.getStartTime()
+                                : LocalTime.of(8, 0);
+                            LocalDateTime startAt = booking.getBookingDate().atTime(startTime);
+                            long totalTime = System.currentTimeMillis() - deadlineStart;
+                            if (totalTime > 1000) {
+                                log.warn("[Performance] resolveMilestoneTargetDeadline took {}ms (slow): milestoneId={}", 
+                                    totalTime, milestone.getMilestoneId());
+                            }
+                            return startAt.plusDays(slaDays);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching booking for recording target deadline: milestoneId={}, error={}",
+                        milestone.getMilestoneId(), e.getMessage());
+                }
+            }
+
+            // Fallback for recording: planned dates (baseline)
+            if (milestone.getPlannedDueDate() != null) {
+                return milestone.getPlannedDueDate();
+            }
+            if (milestone.getPlannedStartAt() != null) {
+                return milestone.getPlannedStartAt().plusDays(slaDays);
+            }
+            return null;
+        }
+
+        // Other milestones: target deadline is based on actualStartAt (once started), otherwise planned
+        if (milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt().plusDays(slaDays);
+        }
+        if (milestone.getPlannedDueDate() != null) {
+            return milestone.getPlannedDueDate();
+        }
+        if (milestone.getPlannedStartAt() != null) {
             return milestone.getPlannedStartAt().plusDays(slaDays);
         }
         return null;
@@ -767,6 +862,17 @@ public class TaskAssignmentService {
         String key = assignment.getMilestoneId() + ":" + assignment.getContractId();
         ContractMilestone milestone = milestoneCache.get(key);
         if (milestone != null) {
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
+            Boolean firstSubmissionLate = null;
+            Boolean overdueNow = null;
+            if (targetDeadline != null) {
+                if (milestone.getFirstSubmissionAt() != null) {
+                    firstSubmissionLate = milestone.getFirstSubmissionAt().isAfter(targetDeadline);
+                    overdueNow = false;
+                } else {
+                    overdueNow = LocalDateTime.now().isAfter(targetDeadline);
+                }
+            }
             TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
                 .milestoneId(milestone.getMilestoneId())
                 .name(milestone.getName())
@@ -780,6 +886,10 @@ public class TaskAssignmentService {
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
+                .targetDeadline(targetDeadline)
+                .firstSubmissionLate(firstSubmissionLate)
+                .overdueNow(overdueNow)
                 .build();
             response.setMilestone(milestoneInfo);
         }
@@ -794,7 +904,8 @@ public class TaskAssignmentService {
      */
     private TaskAssignmentResponse enrichTaskAssignmentWithMilestones(
             TaskAssignment assignment,
-            List<ContractMilestone> milestones) {
+            List<ContractMilestone> milestones,
+            LocalDateTime now) {
         TaskAssignmentResponse response = taskAssignmentMapper.toResponse(assignment);
         
         if (assignment.getMilestoneId() != null && assignment.getContractId() != null) {
@@ -804,7 +915,7 @@ public class TaskAssignmentService {
                 .findFirst()
                 .orElse(null);
             if (milestone != null) {
-                enrichMilestoneInfoFromCache(response, milestone, assignment.getContractId());
+                enrichMilestoneInfoFromCache(response, milestone, assignment.getContractId(), now);
             }
         }
         
@@ -822,53 +933,57 @@ public class TaskAssignmentService {
 
     /**
      * Enrich milestone info từ cache (không query DB)
+     * NOTE: Không fetch arrangement submissions ở đây vì không cần cho list view
+     * Chỉ fetch khi mở detail view (trong getTaskAssignmentDetail API)
+     * Đơn giản hóa: targetDeadline tính từ plannedDueDate hoặc actualStartAt + SLA
      */
     private void enrichMilestoneInfoFromCache(
             TaskAssignmentResponse response, 
             ContractMilestone milestone,
-            String contractId) {
+            String contractId,
+            LocalDateTime now) {
         if (response == null || milestone == null) {
             return;
         }
 
         try {
-            // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
             LocalDateTime estimatedDeadline = null;
-            LocalDateTime actualDeadline = resolveMilestoneDeadline(milestone);
+            LocalDateTime targetDeadline = null;
             LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
                 ? milestone.getPlannedDueDate() 
                 : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
                     ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
                     : null);
             
-            // Chỉ tính estimated deadline khi không có actual và planned
-            if (actualDeadline == null && plannedDeadline == null) {
-                estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
+            // Tính targetDeadline đơn giản: actualStartAt + SLA hoặc plannedDueDate
+            Integer slaDays = milestone.getMilestoneSlaDays();
+            if (milestone.getActualStartAt() != null && slaDays != null && slaDays > 0) {
+                targetDeadline = milestone.getActualStartAt().plusDays(slaDays);
+            } else if (plannedDeadline != null) {
+                targetDeadline = plannedDeadline;
+            } else if (milestone.getPlannedStartAt() != null && slaDays != null && slaDays > 0) {
+                targetDeadline = milestone.getPlannedStartAt().plusDays(slaDays);
             }
             
-            // Fetch arrangement submission nếu có sourceArrangementSubmissionId (gọi từ ContractMilestoneService)
-            TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
-                contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+            estimatedDeadline = null;
             
-            TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
-                .milestoneId(milestone.getMilestoneId())
-                .name(milestone.getName())
-                .description(milestone.getDescription())
-                .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
-                .contractId(milestone.getContractId())
-                .orderIndex(milestone.getOrderIndex())
-                .plannedStartAt(milestone.getPlannedStartAt())
-                .plannedDueDate(milestone.getPlannedDueDate())
-                .actualStartAt(milestone.getActualStartAt())
-                .actualEndAt(milestone.getActualEndAt())
-                .firstSubmissionAt(milestone.getFirstSubmissionAt())
-                .finalCompletedAt(milestone.getFinalCompletedAt())
-                .milestoneSlaDays(milestone.getMilestoneSlaDays())
-                .estimatedDeadline(estimatedDeadline)
-                .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
-                .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
-                .sourceArrangementSubmission(arrangementSubmissionInfo)
-                .build();
+            TaskAssignmentResponse.MilestoneInfo milestoneInfo = taskAssignmentMapper.toMilestoneInfo(milestone);
+            
+            // Set các field computed (không thể map tự động)
+            milestoneInfo.setTargetDeadline(targetDeadline);
+            milestoneInfo.setEstimatedDeadline(estimatedDeadline);
+            milestoneInfo.setFirstSubmissionLate(
+                (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                    ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                    : null
+            );
+            milestoneInfo.setOverdueNow(
+                targetDeadline != null
+                    ? (milestone.getFirstSubmissionAt() == null && now.isAfter(targetDeadline))
+                    : null
+            );
+            milestoneInfo.setSourceArrangementSubmission(null); // Không fetch cho list view, chỉ fetch trong detail view
+            
             response.setMilestone(milestoneInfo);
         } catch (Exception e) {
             log.warn("Error enriching milestone info for milestoneId={}, contractId={}: {}", 
@@ -881,50 +996,60 @@ public class TaskAssignmentService {
             return;
         }
 
+        long enrichStart = System.currentTimeMillis();
         try {
+            long step1Start = System.currentTimeMillis();
             ContractMilestone milestone = contractMilestoneRepository
                 .findByMilestoneIdAndContractId(milestoneId, contractId)
                 .orElse(null);
+            log.debug("[Performance] enrichMilestoneInfo - Fetch milestone: {}ms", System.currentTimeMillis() - step1Start);
+            
             if (milestone != null) {
                 // Tính estimated deadline chỉ khi chưa có actual deadline và planned deadline
+                long step2Start = System.currentTimeMillis();
                 LocalDateTime estimatedDeadline = null;
-                LocalDateTime actualDeadline = resolveMilestoneDeadline(milestone);
+                LocalDateTime targetDeadline = resolveMilestoneTargetDeadline(milestone);
                 LocalDateTime plannedDeadline = milestone.getPlannedDueDate() != null 
                     ? milestone.getPlannedDueDate() 
                     : (milestone.getPlannedStartAt() != null && milestone.getMilestoneSlaDays() != null
                         ? milestone.getPlannedStartAt().plusDays(milestone.getMilestoneSlaDays())
                         : null);
                 
-                // Chỉ tính estimated deadline khi không có actual và planned
-                if (actualDeadline == null && plannedDeadline == null) {
+                // Chỉ tính estimated deadline khi không có target và planned
+                if (targetDeadline == null && plannedDeadline == null) {
                     estimatedDeadline = calculateEstimatedDeadlineForMilestone(milestone, contractId);
                 }
+                log.debug("[Performance] enrichMilestoneInfo - Calculate deadlines: {}ms", System.currentTimeMillis() - step2Start);
                 
                 // Fetch arrangement submission nếu có sourceArrangementSubmissionId (gọi từ ContractMilestoneService)
+                long step3Start = System.currentTimeMillis();
                 TaskAssignmentResponse.ArrangementSubmissionInfo arrangementSubmissionInfo = 
                     contractMilestoneService.enrichMilestoneWithArrangementSubmission(milestone);
+                log.debug("[Performance] enrichMilestoneInfo - Fetch arrangement submission: {}ms", System.currentTimeMillis() - step3Start);
                 
-                TaskAssignmentResponse.MilestoneInfo milestoneInfo = TaskAssignmentResponse.MilestoneInfo.builder()
-                    .milestoneId(milestone.getMilestoneId())
-                    .name(milestone.getName())
-                    .description(milestone.getDescription())
-                    .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
-                    .contractId(milestone.getContractId())
-                    .orderIndex(milestone.getOrderIndex())
-                    .plannedStartAt(milestone.getPlannedStartAt())
-                    .plannedDueDate(milestone.getPlannedDueDate())
-                .actualStartAt(milestone.getActualStartAt())
-                .actualEndAt(milestone.getActualEndAt())
-                    .firstSubmissionAt(milestone.getFirstSubmissionAt())
-                    .finalCompletedAt(milestone.getFinalCompletedAt())
-                    .milestoneSlaDays(milestone.getMilestoneSlaDays())
-                    .estimatedDeadline(estimatedDeadline)
-                    .sourceArrangementMilestoneId(milestone.getSourceArrangementMilestoneId())
-                    .sourceArrangementSubmissionId(milestone.getSourceArrangementSubmissionId())
-                    .sourceArrangementSubmission(arrangementSubmissionInfo)
-                    .build();
+                // Dùng MapStruct mapper để map các field đơn giản
+                TaskAssignmentResponse.MilestoneInfo milestoneInfo = taskAssignmentMapper.toMilestoneInfo(milestone);
+                
+                // Set các field computed (không thể map tự động)
+                milestoneInfo.setTargetDeadline(targetDeadline);
+                milestoneInfo.setEstimatedDeadline(estimatedDeadline);
+                milestoneInfo.setFirstSubmissionLate(
+                    (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                        ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                        : null
+                );
+                milestoneInfo.setOverdueNow(
+                    targetDeadline != null
+                        ? (milestone.getFirstSubmissionAt() == null && LocalDateTime.now().isAfter(targetDeadline))
+                        : null
+                );
+                milestoneInfo.setSourceArrangementSubmission(arrangementSubmissionInfo);
+                
                 response.setMilestone(milestoneInfo);
             }
+            
+            log.debug("[Performance] enrichMilestoneInfo - Total: {}ms (milestoneId={})", 
+                System.currentTimeMillis() - enrichStart, milestoneId);
         } catch (Exception e) {
             log.warn("Failed to fetch milestone info: milestoneId={}, contractId={}, error={}", 
                 milestoneId, contractId, e.getMessage());
@@ -946,11 +1071,17 @@ public class TaskAssignmentService {
             int page,
             int size) {
 
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] ===== getMilestoneAssignmentSlots STARTED - contractId={}, status={}, keyword={}, onlyUnassigned={}, page={}, size={} =====",
+            contractId, status, keyword, onlyUnassigned, page, size);
+
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
         String managerUserId = getCurrentUserId();
         List<Contract> contracts;
+        
+        long step1Start = System.currentTimeMillis();
 
         if (contractId != null && !contractId.isBlank()) {
             Contract contract = contractRepository.findById(contractId)
@@ -969,18 +1100,38 @@ public class TaskAssignmentService {
                 contracts = List.of(); // Contract chưa signed hoặc đã bị cancel/reject, không hiển thị milestones
             }
         } else {
-            contracts = contractRepository.findByManagerUserId(managerUserId);
-            // Filter lấy contracts đã signed, active hoặc completed
-            contracts = contracts.stream()
-                .filter(c -> {
-                    ContractStatus contractStatus = c.getStatus();
-                    return contractStatus == ContractStatus.signed ||
-                           contractStatus == ContractStatus.active_pending_assignment || 
-                           contractStatus == ContractStatus.active ||
-                           contractStatus == ContractStatus.completed;
+            // Tối ưu: Filter ở database level thay vì fetch tất cả rồi filter ở memory
+            // Tối ưu thêm: Dùng projection query để chỉ fetch các field cần thiết (giảm data transfer)
+            List<ContractStatus> allowedStatuses = List.of(
+                ContractStatus.signed,
+                ContractStatus.active_pending_assignment,
+                ContractStatus.active,
+                ContractStatus.completed
+            );
+            List<ContractBasicInfo> contractBasicInfos = 
+                contractRepository.findBasicInfoByManagerUserIdAndStatusIn(managerUserId, allowedStatuses);
+            
+            // Convert projection to Contract objects (chỉ với các field cần thiết)
+            // Note: Contract extends BaseEntity, createdAt is inherited
+            contracts = contractBasicInfos.stream()
+                .<Contract>map(info -> {
+                    Contract contract = Contract.builder()
+                        .contractId(info.getContractId())
+                        .contractNumber(info.getContractNumber())
+                        .contractType(info.getContractType())
+                        .nameSnapshot(info.getNameSnapshot())
+                        .status(info.getStatus())
+                        .build();
+                    // Set createdAt from BaseEntity (if available)
+                    if (info.getCreatedAt() != null) {
+                        contract.setCreatedAt(info.getCreatedAt());
+                    }
+                    return contract;
                 })
                 .collect(Collectors.toList());
         }
+        log.info("[Performance] Step 1 - Fetch contracts: {}ms (found {} contracts)", 
+            System.currentTimeMillis() - step1Start, contracts.size());
 
         if (contracts.isEmpty()) {
             return MilestoneAssignmentSlotsResult.builder()
@@ -1005,7 +1156,10 @@ public class TaskAssignmentService {
             .collect(Collectors.toMap(Contract::getContractId, c -> c));
         List<String> contractIds = new ArrayList<>(contractMap.keySet());
 
+        long step2Start = System.currentTimeMillis();
         List<ContractMilestone> milestones = contractMilestoneRepository.findByContractIdIn(contractIds);
+        log.info("[Performance] Step 2 - Fetch milestones: {}ms (found {} milestones from {} contracts)", 
+            System.currentTimeMillis() - step2Start, milestones.size(), contractIds.size());
         if (milestones.isEmpty()) {
             return MilestoneAssignmentSlotsResult.builder()
                 .page(PageResponse.<MilestoneAssignmentSlotResponse>builder()
@@ -1028,14 +1182,62 @@ public class TaskAssignmentService {
             .map(ContractMilestone::getMilestoneId)
             .collect(Collectors.toList());
 
+        long step3Start = System.currentTimeMillis();
         List<TaskAssignment> assignments = taskAssignmentRepository.findByMilestoneIdIn(milestoneIds);
         Map<String, TaskAssignment> assignmentMap = assignments.stream()
             .collect(Collectors.groupingBy(TaskAssignment::getMilestoneId,
                 Collectors.collectingAndThen(Collectors.toList(), this::pickLatestAssignment)));
+        log.info("[Performance] Step 3 - Fetch assignments: {}ms (found {} assignments from {} milestones)", 
+            System.currentTimeMillis() - step3Start, assignments.size(), milestoneIds.size());
 
+        // Batch fetch tất cả milestones của contracts để tránh N+1 query khi check allArrangementsCompleted
+        long step4Start = System.currentTimeMillis();
+        // Sort milestones theo orderIndex một lần để tránh sort lại trong loop
+        Map<String, List<ContractMilestone>> allMilestonesByContractId = contractMilestoneRepository
+            .findByContractIdIn(contractIds)
+            .stream()
+            .collect(Collectors.groupingBy(
+                ContractMilestone::getContractId,
+                Collectors.collectingAndThen(
+                    Collectors.toList(),
+                    list -> list.stream()
+                        .sorted(Comparator.comparing(ContractMilestone::getOrderIndex))
+                        .collect(Collectors.toList())
+                )
+            ));
+        
+        // Cache arrangement milestones đã filter sẵn để tránh filter lại trong loop
+        Map<String, ContractMilestone> lastArrangementMilestoneByContractId = new HashMap<>();
+        for (Map.Entry<String, List<ContractMilestone>> entry : allMilestonesByContractId.entrySet()) {
+            ContractMilestone lastArrangement = entry.getValue().stream()
+                .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                .orElse(null);
+            if (lastArrangement != null) {
+                lastArrangementMilestoneByContractId.put(entry.getKey(), lastArrangement);
+            }
+        }
+        
+        log.info("[Performance] Step 4 - Batch fetch all milestones for contracts: {}ms ({} contracts, {} with arrangements)", 
+            System.currentTimeMillis() - step4Start, contractIds.size(), lastArrangementMilestoneByContractId.size());
+
+        // Cache LocalDateTime.now() để tránh gọi nhiều lần trong loop
+        final LocalDateTime now = LocalDateTime.now();
+
+        long step5Start = System.currentTimeMillis();
         List<MilestoneAssignmentSlotResponse> slots = new ArrayList<>();
+        
+        // Performance tracking cho từng phần
+        long timeFiltering = 0;
+        long timeTargetDeadline = 0;
+        long timeBuilding = 0;
+        int filteredCount = 0;
+        int targetDeadlineCount = 0;
+        int builtCount = 0;
 
         for (ContractMilestone milestone : milestones) {
+            long itemStart = System.currentTimeMillis();
+            
             Contract contract = contractMap.get(milestone.getContractId());
             if (contract == null) {
                 continue;
@@ -1060,43 +1262,54 @@ public class TaskAssignmentService {
             if (!matchesStatusFilter(milestone, assignment, status)) {
                 continue;
             }
+            
+            long filterEnd = System.currentTimeMillis();
+            timeFiltering += (filterEnd - itemStart);
+            filteredCount++;
 
             // Check if last arrangement milestone is completed (for recording milestones)
-            // Chỉ cần check milestone arrangement cuối cùng (gần nhất với recording milestone)
-            // Vì milestones unlock tuần tự, nếu milestone cuối cùng đã completed thì các milestone trước đó cũng đã completed
+            // Tối ưu: Dùng cache đã filter sẵn, không cần filter lại
             Boolean allArrangementsCompleted = null;
             if (milestone.getMilestoneType() == MilestoneType.recording && 
                 contract.getContractType() == ContractType.arrangement_with_recording) {
-                List<ContractMilestone> allContractMilestones = contractMilestoneRepository
-                    .findByContractIdOrderByOrderIndexAsc(contract.getContractId());
-                List<ContractMilestone> arrangementMilestones = allContractMilestones.stream()
-                    .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
-                    .toList();
+                // Dùng cache đã filter sẵn (không cần filter lại)
+                ContractMilestone lastArrangementMilestone = lastArrangementMilestoneByContractId
+                    .get(contract.getContractId());
                 
-                if (!arrangementMilestones.isEmpty()) {
-                    // Lấy milestone arrangement cuối cùng (có orderIndex cao nhất)
-                    ContractMilestone lastArrangementMilestone = arrangementMilestones.stream()
-                        .max(Comparator.comparing(ContractMilestone::getOrderIndex))
-                        .orElse(null);
-                    
-                    if (lastArrangementMilestone != null) {
-                        // Check workStatus: completed hoặc ready_for_payment
-                        // ⚠️ QUAN TRỌNG: Cũng phải check actualEndAt (đã thanh toán) vì đây là điều kiện bắt buộc để tạo booking
-                        // Frontend dùng field này để hiển thị button "Book Studio", nên cần check chính xác
-                        boolean workStatusCompleted = 
-                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
-                            lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
-                        boolean isPaid = lastArrangementMilestone.getActualEndAt() != null;
-                        // Chỉ set true nếu vừa completed/ready_for_payment VÀ đã thanh toán
-                        allArrangementsCompleted = workStatusCompleted && isPaid;
-                    } else {
-                        allArrangementsCompleted = false;
-                    }
+                if (lastArrangementMilestone != null) {
+                    // Check workStatus: completed hoặc ready_for_payment
+                    // ⚠️ QUAN TRỌNG: Cũng phải check actualEndAt (đã thanh toán) vì đây là điều kiện bắt buộc để tạo booking
+                    // Frontend dùng field này để hiển thị button "Book Studio", nên cần check chính xác
+                    boolean workStatusCompleted = 
+                        lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.COMPLETED ||
+                        lastArrangementMilestone.getWorkStatus() == MilestoneWorkStatus.READY_FOR_PAYMENT;
+                    boolean isPaid = lastArrangementMilestone.getActualEndAt() != null;
+                    // Chỉ set true nếu vừa completed/ready_for_payment VÀ đã thanh toán
+                    allArrangementsCompleted = workStatusCompleted && isPaid;
                 } else {
                     allArrangementsCompleted = false; // Không có arrangement milestone
                 }
             }
 
+            // Target deadline (hard/target) for FE display
+            // Tối ưu: Dùng cache thay vì query DB (tránh N+1 query)
+            // resolveMilestoneTargetDeadlineWithCache đã xử lý đầy đủ các trường hợp và fallback
+            long deadlineStart = System.currentTimeMillis();
+            LocalDateTime targetDeadline = resolveMilestoneTargetDeadlineWithCache(
+                milestone,
+                contractMap,
+                null, // bookingsByMilestoneId - không cần cho list view, có thể null
+                allMilestonesByContractId,
+                lastArrangementMilestoneByContractId); // Cache đã filter sẵn
+            long deadlineEnd = System.currentTimeMillis();
+            timeTargetDeadline += (deadlineEnd - deadlineStart);
+            targetDeadlineCount++;
+
+            // Bỏ tính estimated deadline (tránh N+1 query)
+            // Frontend có thể tính đơn giản từ plannedStartAt + SLA nếu cần
+            LocalDateTime estimatedDeadline = null;
+
+            long buildStart = System.currentTimeMillis();
             MilestoneAssignmentSlotResponse slot = MilestoneAssignmentSlotResponse.builder()
                 .contractId(contract.getContractId())
                 .contractNumber(contract.getContractNumber())
@@ -1111,11 +1324,23 @@ public class TaskAssignmentService {
                 .milestoneType(milestone.getMilestoneType() != null ? milestone.getMilestoneType().name() : null)
                 .plannedStartAt(milestone.getPlannedStartAt())
                 .plannedDueDate(milestone.getPlannedDueDate())
+                .targetDeadline(targetDeadline)
+                .estimatedDeadline(estimatedDeadline)
                 .actualStartAt(milestone.getActualStartAt())
                 .actualEndAt(milestone.getActualEndAt())
                 .firstSubmissionAt(milestone.getFirstSubmissionAt())
                 .finalCompletedAt(milestone.getFinalCompletedAt())
                 .milestoneSlaDays(milestone.getMilestoneSlaDays())
+                .firstSubmissionLate(
+                    (milestone.getFirstSubmissionAt() != null && targetDeadline != null)
+                        ? milestone.getFirstSubmissionAt().isAfter(targetDeadline)
+                        : null
+                )
+                .overdueNow(
+                    targetDeadline != null
+                        ? (milestone.getFirstSubmissionAt() == null && now.isAfter(targetDeadline))
+                        : null
+                )
                 .milestoneWorkStatus(milestone.getWorkStatus() != null ? milestone.getWorkStatus().name() : null)
                 .assignmentId(assignment != null ? assignment.getAssignmentId() : null)
                 .taskType(assignment != null ? assignment.getTaskType() : null)
@@ -1130,9 +1355,19 @@ public class TaskAssignmentService {
                 .studioBookingId(assignment != null ? assignment.getStudioBookingId() : null)
                 .allArrangementsCompleted(allArrangementsCompleted)
                 .build();
+            long buildEnd = System.currentTimeMillis();
+            timeBuilding += (buildEnd - buildStart);
+            builtCount++;
 
             slots.add(slot);
         }
+        log.info("[Performance] Step 5 - Build slots: {}ms (built {} slots from {} milestones)", 
+            System.currentTimeMillis() - step5Start, slots.size(), milestones.size());
+        log.info("[Performance] Step 5.1 - Filtering: {}ms ({} items)", timeFiltering, filteredCount);
+        log.info("[Performance] Step 5.2 - Target deadline calculation: {}ms ({} items, avg: {}ms/item)", 
+            timeTargetDeadline, targetDeadlineCount, targetDeadlineCount > 0 ? timeTargetDeadline / targetDeadlineCount : 0);
+        log.info("[Performance] Step 5.3 - Building response objects: {}ms ({} items, avg: {}ms/item)", 
+            timeBuilding, builtCount, builtCount > 0 ? timeBuilding / builtCount : 0);
 
         // Tạo map contractNumber -> contractCreatedAt để sort contracts theo thời gian tạo
         // Đảm bảo cùng contractNumber có cùng contractCreatedAt
@@ -1148,6 +1383,7 @@ public class TaskAssignmentService {
         // 1. Theo contractCreatedAt DESC (contract mới nhất lên trước) - dùng map để đảm bảo cùng contractNumber có cùng value
         // 2. Theo contractNumber để group cùng contract lại (secondary sort)
         // 3. Theo milestoneOrderIndex trong cùng contract
+        long step6Start = System.currentTimeMillis();
         slots.sort(Comparator
             .comparing((MilestoneAssignmentSlotResponse slot) -> 
                 contractCreatedAtMap.getOrDefault(
@@ -1162,6 +1398,7 @@ public class TaskAssignmentService {
             .thenComparing((MilestoneAssignmentSlotResponse slot) -> 
                 Optional.ofNullable(slot.getPlannedDueDate())
                     .orElseGet(() -> Optional.ofNullable(slot.getActualEndAt()).orElse(LocalDateTime.MAX))));
+        log.info("[Performance] Step 6 - Sort slots: {}ms", System.currentTimeMillis() - step6Start);
 
         if (keyword != null && !keyword.isBlank()) {
             String lowerKeyword = keyword.toLowerCase();
@@ -1176,6 +1413,7 @@ public class TaskAssignmentService {
                 .collect(Collectors.toList());
         }
 
+        long step7Start = System.currentTimeMillis();
         long totalUnassigned = slots.stream()
             .filter(slot -> slot.getAssignmentId() == null
                 || slot.getAssignmentStatus() == null
@@ -1187,7 +1425,10 @@ public class TaskAssignmentService {
         long totalCompleted = slots.stream()
             .filter(slot -> "completed".equalsIgnoreCase(slot.getAssignmentStatus()))
             .count();
+        log.info("[Performance] Step 7 - Calculate totals: {}ms (unassigned={}, inProgress={}, completed={})", 
+            System.currentTimeMillis() - step7Start, totalUnassigned, totalInProgress, totalCompleted);
 
+        long step8Start = System.currentTimeMillis();
         int totalElements = slots.size();
         int totalPages = (int) Math.ceil(totalElements / (double) safeSize);
         int fromIndex = Math.min(safePage * safeSize, totalElements);
@@ -1207,6 +1448,11 @@ public class TaskAssignmentService {
                 .hasNext(totalPages == 0 ? false : safePage < totalPages - 1)
                 .hasPrevious(safePage > 0)
                 .build();
+        log.info("[Performance] Step 8 - Paginate: {}ms (page={}, size={}, total={})", 
+            System.currentTimeMillis() - step8Start, safePage, safeSize, totalElements);
+
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] ===== getMilestoneAssignmentSlots COMPLETED in {}ms (TOTAL) =====", totalTime);
 
         return MilestoneAssignmentSlotsResult.builder()
             .page(pageResponse)
@@ -1224,45 +1470,21 @@ public class TaskAssignmentService {
             String status,
             String taskType,
             String keyword,
+            Integer minProgress,
+            Integer maxProgress,
             int page,
             int size) {
-
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 10 : size;
 
         String managerUserId = getCurrentUserId();
-        List<Contract> contracts = contractRepository.findByManagerUserId(managerUserId);
-
-        // Filter chỉ lấy contracts đã signed, active hoặc completed
-        // Loại bỏ contracts đã bị cancel/reject/need_revision để không hiển thị tasks từ contracts không active
-        contracts = contracts.stream()
-            .filter(c -> {
-                ContractStatus contractStatus = c.getStatus();
-                return contractStatus == ContractStatus.signed ||
-                       contractStatus == ContractStatus.active_pending_assignment || 
-                       contractStatus == ContractStatus.active ||
-                       contractStatus == ContractStatus.completed;
-            })
-            .collect(Collectors.toList());
-
-        if (contracts.isEmpty()) {
-            return PageResponse.<TaskAssignmentResponse>builder()
-                .content(List.of())
-                .pageNumber(safePage)
-                .pageSize(safeSize)
-                .totalElements(0)
-                .totalPages(0)
-                .first(true)
-                .last(true)
-                .hasNext(false)
-                .hasPrevious(false)
-                .build();
-        }
-
-        List<String> contractIds = contracts.stream()
-            .map(Contract::getContractId)
-            .collect(Collectors.toList());
-
+        
+        List<ContractStatus> allowedContractStatuses = List.of(
+            ContractStatus.signed,
+            ContractStatus.active_pending_assignment,
+            ContractStatus.active,
+            ContractStatus.completed
+        );
         // Parse filters
         AssignmentStatus statusEnum = null;
         if (status != null && !status.isBlank() && !"all".equalsIgnoreCase(status)) {
@@ -1292,131 +1514,122 @@ public class TaskAssignmentService {
 
         // Prepare keyword for search
         String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-
-        // Use JPA query with pagination
-        // Use different query depending on whether we have keyword (to avoid unnecessary LEFT JOIN)
+        
+        // Validate progress range
+        Integer validMinProgress = (minProgress != null && minProgress >= 0 && minProgress <= 100) ? minProgress : null;
+        Integer validMaxProgress = (maxProgress != null && maxProgress >= 0 && maxProgress <= 100) ? maxProgress : null;
+        if (validMinProgress != null && validMaxProgress != null && validMinProgress > validMaxProgress) {
+            log.warn("Invalid progress range: minProgress={} > maxProgress={}, ignoring progress filter", 
+                validMinProgress, validMaxProgress);
+            validMinProgress = null;
+            validMaxProgress = null;
+        }
+        
         Pageable pageable = PageRequest.of(safePage, safeSize);
         Page<TaskAssignment> pageResult;
         
         if (searchKeyword != null && !searchKeyword.isBlank()) {
-            // Use query with JOIN for keyword search (including contractNumber)
-            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeyword(
-                contractIds, 
+            // Use optimized query with JOIN for keyword search (including contractNumber)
+            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersAndKeywordOptimized(
+                managerUserId,
+                allowedContractStatuses,
                 statusEnum, 
                 taskTypeEnum, 
-                searchKeyword, 
+                searchKeyword,
+                validMinProgress,
+                validMaxProgress,
                 pageable
             );
         } else {
-            // Use simpler query without JOIN when no keyword (better performance)
-            pageResult = taskAssignmentRepository.findAllByManagerWithFilters(
-                contractIds, 
+            // Use optimized query with JOIN (no keyword, better performance)
+            pageResult = taskAssignmentRepository.findAllByManagerWithFiltersOptimized(
+                managerUserId,
+                allowedContractStatuses,
                 statusEnum, 
-                taskTypeEnum, 
+                taskTypeEnum,
+                validMinProgress,
+                validMaxProgress,
                 pageable
             );
         }
+        List<TaskAssignment> assignments = pageResult.getContent();
 
         // Batch fetch milestones trước để tránh N+1 query problem
-        List<TaskAssignment> assignments = pageResult.getContent();
         final List<ContractMilestone> milestones;
         if (!assignments.isEmpty()) {
-            // Batch fetch milestones - collect contractIds
-            List<String> contractIdsForMilestones = assignments.stream()
-                .map(TaskAssignment::getContractId)
+            // Tối ưu: Fetch milestones bằng milestoneIds thay vì contractIds (nhanh hơn nhiều)
+            List<String> milestoneIds = assignments.stream()
+                .map(TaskAssignment::getMilestoneId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
             
-            // Fetch milestones by contractIds (1 query thay vì N queries)
-            milestones = contractMilestoneRepository.findByContractIdIn(contractIdsForMilestones);
+            // Fetch milestones by milestoneIds (1 query thay vì N queries, và nhanh hơn findByContractIdIn)
+            if (!milestoneIds.isEmpty()) {
+                milestones = contractMilestoneRepository.findByMilestoneIdIn(milestoneIds);
+            } else {
+                milestones = List.of();
+            }
         } else {
             milestones = List.of();
         }
 
-        // Enrich task assignments với batch-fetched milestones
-        List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
-            .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones))
-            .collect(Collectors.toList());
 
-        // Batch fetch submissions và contracts (mặc định luôn include)
+        // Cache LocalDateTime.now() để tránh gọi nhiều lần trong loop
+        final LocalDateTime now = LocalDateTime.now();
+        List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
+            .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones, now))
+            .collect(Collectors.toList());
         List<String> assignmentIds = enrichedAssignments.stream()
             .map(TaskAssignmentResponse::getAssignmentId)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
-
-        // Batch fetch submissions
-        Map<String, List<TaskAssignmentResponse.SubmissionInfo>> submissionsMap = new HashMap<>();
+        
+        // Batch fetch chỉ pending_review submissions để set hasPendingReview flag
+        Map<String, Boolean> hasPendingReviewMap = new HashMap<>();
         if (!assignmentIds.isEmpty()) {
-            List<FileSubmission> submissions = fileSubmissionRepository.findByAssignmentIdIn(assignmentIds);
-            submissionsMap = submissions.stream()
-                .collect(Collectors.groupingBy(
-                    FileSubmission::getAssignmentId,
-                    Collectors.mapping(s -> TaskAssignmentResponse.SubmissionInfo.builder()
-                        .submissionId(s.getSubmissionId())
-                        .status(s.getStatus() != null ? s.getStatus().name() : null)
-                        .version(s.getVersion())
-                        .build(),
-                        Collectors.toList())
-                ));
-        }
-
-        // Batch fetch contracts
-        List<String> contractIdsToFetch = enrichedAssignments.stream()
-            .map(TaskAssignmentResponse::getContractId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
-
-        Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
-        if (!contractIdsToFetch.isEmpty()) {
-            List<Contract> contractsForAssignments = contractRepository.findAllById(contractIdsToFetch);
-            contractsMap = contractsForAssignments.stream()
+            List<FileSubmission> pendingSubmissions = fileSubmissionRepository
+                .findByAssignmentIdInAndStatus(assignmentIds, SubmissionStatus.pending_review);
+            hasPendingReviewMap = pendingSubmissions.stream()
                 .collect(Collectors.toMap(
-                    Contract::getContractId,
-                    c -> TaskAssignmentResponse.ContractInfo.builder()
-                        .contractId(c.getContractId())
-                        .contractNumber(c.getContractNumber())
-                        .nameSnapshot(c.getNameSnapshot())
-                        .revisionDeadlineDays(c.getRevisionDeadlineDays()) // Số ngày SLA để hoàn thành revision
-                        .contractCreatedAt(c.getCreatedAt()) // Thời điểm tạo contract để sort
-                        .build()
+                    FileSubmission::getAssignmentId,
+                    s -> true,
+                    (existing, replacement) -> true // Nếu có nhiều pending submissions, vẫn là true
                 ));
         }
 
-        // Attach submissions and contracts to responses (files không cần batch fetch, chỉ load khi mở detail modal)
+        // Set hasPendingReview cho mỗi assignment
         for (TaskAssignmentResponse response : enrichedAssignments) {
             if (response.getAssignmentId() != null) {
-                response.setSubmissions(submissionsMap.getOrDefault(response.getAssignmentId(), List.of()));
+                response.setHasPendingReview(hasPendingReviewMap.getOrDefault(response.getAssignmentId(), false));
+                response.setSubmissions(List.of());
             }
+        }
+
+        // Tối ưu: Sử dụng contract snapshots từ TaskAssignment thay vì fetch Contract
+        // Chỉ fetch contracts nếu cần revisionDeadlineDays (có thể null trong snapshot)
+        Map<String, TaskAssignmentResponse.ContractInfo> contractsMap = new HashMap<>();
+        for (TaskAssignment assignment : assignments) {
+            if (assignment.getContractId() != null && !contractsMap.containsKey(assignment.getContractId())) {
+                // Sử dụng snapshot từ TaskAssignment (không cần query DB)
+                contractsMap.put(assignment.getContractId(),
+                    TaskAssignmentResponse.ContractInfo.builder()
+                        .contractId(assignment.getContractId())
+                        .contractNumber(assignment.getContractNumberSnapshot())
+                        .nameSnapshot(assignment.getContractNameSnapshot())
+                        .revisionDeadlineDays(null) // Không có trong snapshot, có thể fetch sau nếu cần
+                        .contractCreatedAt(assignment.getContractCreatedAtSnapshot())
+                        .build());
+            }
+        }
+
+        // Attach contracts to responses (submissions đã được set trong Step 5)
+        for (TaskAssignmentResponse response : enrichedAssignments) {
             if (response.getContractId() != null) {
                 response.setContract(contractsMap.get(response.getContractId()));
             }
         }
 
-        // Sort theo logic tương tự getMilestoneAssignmentSlots:
-        // 1. Theo contractCreatedAt DESC (contract mới nhất lên trước)
-        // 2. Theo contractNumber để group cùng contract lại
-        // 3. Theo milestoneOrderIndex trong cùng contract
-        enrichedAssignments.sort(Comparator
-            .comparing((TaskAssignmentResponse response) -> {
-                if (response.getContract() != null && response.getContract().getContractCreatedAt() != null) {
-                    return response.getContract().getContractCreatedAt();
-                }
-                return LocalDateTime.MIN;
-            }, Comparator.reverseOrder()) // DESC: contract mới nhất lên trước (primary sort)
-            .thenComparing((TaskAssignmentResponse response) -> {
-                if (response.getContract() != null && response.getContract().getContractNumber() != null) {
-                    return response.getContract().getContractNumber();
-                }
-                return "";
-            }) // Group cùng contract lại (secondary sort)
-            .thenComparing((TaskAssignmentResponse response) -> {
-                if (response.getMilestone() != null && response.getMilestone().getOrderIndex() != null) {
-                    return response.getMilestone().getOrderIndex();
-                }
-                return 999;
-            })); // Sort theo milestoneOrderIndex trong cùng contract
         return PageResponse.<TaskAssignmentResponse>builder()
             .content(enrichedAssignments)
             .pageNumber(pageResult.getNumber())
@@ -1428,6 +1641,127 @@ public class TaskAssignmentService {
             .hasNext(pageResult.hasNext())
             .hasPrevious(pageResult.hasPrevious())
             .build();
+    }
+
+    /**
+     * Tính progress percentage dựa trên assignment status và submissions
+     * Logic tương tự frontend để đảm bảo consistency
+     */
+    private Integer calculateProgressPercentage(TaskAssignment assignment, List<FileSubmission> submissions) {
+        if (assignment == null) {
+            return 0;
+        }
+        
+        AssignmentStatus status = assignment.getStatus();
+        if (status == null) {
+            return 0;
+        }
+        
+        // Status ban đầu - chưa bắt đầu
+        if (status == AssignmentStatus.assigned || 
+            status == AssignmentStatus.accepted_waiting || 
+            status == AssignmentStatus.ready_to_start) {
+            return 0;
+        }
+        
+        // Task đã hủy
+        if (status == AssignmentStatus.cancelled) {
+            return 0;
+        }
+        
+        // Task hoàn thành
+        if (status == AssignmentStatus.completed) {
+            return 100;
+        }
+        
+        // ready_for_review: đã submit lại và chờ duyệt (sau khi revision)
+        if (status == AssignmentStatus.ready_for_review) {
+            boolean hasPendingReview = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.pending_review);
+            return hasPendingReview ? 75 : 50;
+        }
+        
+        // revision_requested: có submission rejected hoặc revision_requested
+        if (status == AssignmentStatus.revision_requested) {
+            boolean hasRejected = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.rejected);
+            boolean hasRevisionRequested = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.revision_requested);
+            return (hasRejected || hasRevisionRequested) ? 40 : 0;
+        }
+        
+        // in_revision: đang chỉnh sửa lại
+        if (status == AssignmentStatus.in_revision) {
+            boolean hasPendingReview = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.pending_review);
+            boolean hasDraft = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.draft);
+            if (hasPendingReview) return 70;
+            if (hasDraft) return 60;
+            return 60;
+        }
+        
+        // waiting_customer_review: đã giao cho customer, chờ review
+        if (status == AssignmentStatus.waiting_customer_review) {
+            return 90;
+        }
+        
+        // in_progress: tính dựa trên submissions
+        if (status == AssignmentStatus.in_progress) {
+            if (submissions.isEmpty()) {
+                return 25; // Chưa có submission nào
+            }
+            
+            // Kiểm tra submission status cao nhất (theo thứ tự ưu tiên)
+            boolean hasCustomerAccepted = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.customer_accepted);
+            boolean hasApproved = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.approved);
+            boolean hasPendingReview = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.pending_review);
+            boolean hasRejected = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.rejected);
+            boolean hasRevisionRequested = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.revision_requested);
+            boolean hasCustomerRejected = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.customer_rejected);
+            boolean hasDraft = submissions.stream()
+                .anyMatch(s -> s.getStatus() == SubmissionStatus.draft);
+            
+            // Ưu tiên: customer_accepted > approved > pending_review > rejected/revision_requested > draft
+            if (hasCustomerAccepted) return 95;
+            if (hasApproved) return 75;
+            if (hasPendingReview) return 50;
+            if (hasCustomerRejected || hasRejected || hasRevisionRequested) return 40;
+            if (hasDraft) return 30;
+            
+            return 30; // Có submission nhưng status không rõ
+        }
+        
+        return 0;
+    }
+    
+    /**
+     * Update progress percentage cho task assignment dựa trên submissions hiện tại
+     * Gọi method này khi submission được tạo/update
+     */
+    @Transactional
+    public void updateProgressForAssignment(String assignmentId) {
+        Optional<TaskAssignment> assignmentOpt = taskAssignmentRepository.findById(assignmentId);
+        if (assignmentOpt.isEmpty()) {
+            log.warn("Cannot update progress: assignment not found: {}", assignmentId);
+            return;
+        }
+        
+        TaskAssignment assignment = assignmentOpt.get();
+        List<FileSubmission> submissions = fileSubmissionRepository.findByAssignmentId(assignmentId);
+        Integer newProgress = calculateProgressPercentage(assignment, submissions);
+        
+        if (!Objects.equals(assignment.getProgressPercentage(), newProgress)) {
+            assignment.setProgressPercentage(newProgress);
+            taskAssignmentRepository.save(assignment);
+            log.debug("Updated progress for assignment {}: {}%", assignmentId, newProgress);
+        }
     }
 
     private TaskAssignment pickLatestAssignment(List<TaskAssignment> assignments) {
@@ -1657,6 +1991,44 @@ public class TaskAssignmentService {
         return null;
     }
 
+    private int countOpenTasksInSlaWindowForSpecialist(String specialistId, String contractId, String milestoneId) {
+        if (specialistId == null || specialistId.isBlank()
+            || contractId == null || contractId.isBlank()
+            || milestoneId == null || milestoneId.isBlank()) {
+            return 0;
+        }
+
+        LocalDateTime slaWindowStart = calculateSlaWindowStartInternal(contractId, milestoneId);
+        LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(contractId, milestoneId);
+
+        // Nếu không tính được window => coi như 0 (không block), consistent với getTaskStats()
+        if (slaWindowStart == null || slaWindowEnd == null) {
+            return 0;
+        }
+
+        List<TaskAssignment> tasks = taskAssignmentRepository.findBySpecialistId(specialistId);
+        return (int) tasks.stream()
+            .filter(task -> isOpenStatus(task.getStatus()))
+            .map(this::resolveTaskDeadline)
+            .filter(deadline -> deadline != null
+                && !deadline.isBefore(slaWindowStart)
+                && !deadline.isAfter(slaWindowEnd))
+            .count();
+    }
+
+    private void enforceSlaWindowCapacity(
+            String specialistId,
+            Integer maxConcurrentTasks,
+            String contractId,
+            String milestoneId) {
+        int max = maxConcurrentTasks != null && maxConcurrentTasks > 0 ? maxConcurrentTasks : 1;
+        int tasksInWindow = countOpenTasksInSlaWindowForSpecialist(specialistId, contractId, milestoneId);
+        if (tasksInWindow >= max) {
+            throw SpecialistSlaWindowFullException.create(
+                specialistId, tasksInWindow, max, contractId, milestoneId);
+        }
+    }
+
     /**
      * Lấy chi tiết task assignment
      */
@@ -1812,6 +2184,10 @@ public class TaskAssignmentService {
             log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
             throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
         }
+
+        // Enforce backend rule: SLA window full => không cho assign
+        Integer maxConcurrentTasks = asInteger(specialistData.get("maxConcurrentTasks"));
+        enforceSlaWindowCapacity(request.getSpecialistId(), maxConcurrentTasks, contractId, request.getMilestoneId());
         
         // Với recording_supervision task, tự động tìm và link studio booking (nếu đã có)
         String studioBookingId = null;
@@ -1850,6 +2226,10 @@ public class TaskAssignmentService {
         // Create task assignment
         TaskAssignment assignment = TaskAssignment.builder()
             .contractId(contractId)
+            // Populate contract snapshots để tránh fetch Contract trong list view
+            .contractNumberSnapshot(contract.getContractNumber())
+            .contractNameSnapshot(contract.getNameSnapshot())
+            .contractCreatedAtSnapshot(contract.getCreatedAt())
             .specialistId(request.getSpecialistId())
             .specialistNameSnapshot(asString(specialistData.get("fullName")))
             .specialistEmailSnapshot(asString(specialistData.get("email")))
@@ -1862,6 +2242,7 @@ public class TaskAssignmentService {
             .notes(request.getNotes())
             .assignedDate(LocalDateTime.now())
             .studioBookingId(studioBookingId)  // Có thể null nếu chưa có booking
+            .progressPercentage(0)  // Initial progress = 0%
             .build();
         
         TaskAssignment saved = taskAssignmentRepository.save(assignment);
@@ -1901,23 +2282,34 @@ public class TaskAssignmentService {
         
         // Update fields
         if (request.getSpecialistId() != null) {
-            assignment.setSpecialistId(request.getSpecialistId());
+            String newSpecialistId = request.getSpecialistId();
             Map<String, Object> specialistData;
             try {
                 ApiResponse<Map<String, Object>> specialistResponse =
-                    specialistServiceFeignClient.getSpecialistById(request.getSpecialistId());
+                    specialistServiceFeignClient.getSpecialistById(newSpecialistId);
                 if (specialistResponse == null
                     || !"success".equalsIgnoreCase(specialistResponse.getStatus())
                     || specialistResponse.getData() == null) {
-                    throw SpecialistNotFoundException.byId(request.getSpecialistId());
+                    throw SpecialistNotFoundException.byId(newSpecialistId);
                 }
                 specialistData = specialistResponse.getData();
             } catch (SpecialistNotFoundException ex) {
                 throw ex;
             } catch (Exception ex) {
-                log.error("Failed to fetch specialist info for ID {}: {}", request.getSpecialistId(), ex.getMessage());
-                throw FailedToFetchSpecialistException.create(request.getSpecialistId(), ex.getMessage(), ex);
+                log.error("Failed to fetch specialist info for ID {}: {}", newSpecialistId, ex.getMessage());
+                throw FailedToFetchSpecialistException.create(newSpecialistId, ex.getMessage(), ex);
             }
+
+            // Enforce backend rule only when changing specialist
+            if (!newSpecialistId.equals(assignment.getSpecialistId())) {
+                String milestoneIdForCheck = request.getMilestoneId() != null && !request.getMilestoneId().isBlank()
+                    ? request.getMilestoneId()
+                    : assignment.getMilestoneId();
+                Integer maxConcurrentTasks = asInteger(specialistData.get("maxConcurrentTasks"));
+                enforceSlaWindowCapacity(newSpecialistId, maxConcurrentTasks, contractId, milestoneIdForCheck);
+            }
+
+            assignment.setSpecialistId(newSpecialistId);
             assignment.setSpecialistNameSnapshot(asString(specialistData.get("fullName")));
             assignment.setSpecialistEmailSnapshot(asString(specialistData.get("email")));
             assignment.setSpecialistSpecializationSnapshot(asString(specialistData.get("specialization")));
@@ -2023,46 +2415,150 @@ public class TaskAssignmentService {
 
     /**
      * Lấy danh sách task assignments của specialist hiện tại
+     * Tối ưu: Batch fetch milestones để tránh N+1 queries
      */
     public List<TaskAssignmentResponse> getMyTaskAssignments() {
-        log.info("Getting task assignments for current specialist");
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] getMyTaskAssignments STARTED");
+        
         String specialistId = getCurrentSpecialistId();
+        
+        long step1Start = System.currentTimeMillis();
         List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistId(specialistId);
-        return assignments.stream()
-            .map(this::enrichTaskAssignment)
-            .toList();
+        log.info("[Performance] Step 1 - Fetch assignments: {}ms (found {} assignments)", 
+            System.currentTimeMillis() - step1Start, assignments.size());
+        
+        if (assignments.isEmpty()) {
+            log.info("[Performance] getMyTaskAssignments COMPLETED: 0 assignments, totalTime={}ms", 
+                System.currentTimeMillis() - totalStart);
+            return List.of();
+        }
+        
+        // Batch fetch milestones để tránh N+1 queries
+        long step2Start = System.currentTimeMillis();
+        List<String> milestoneIds = assignments.stream()
+            .map(TaskAssignment::getMilestoneId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        
+        List<ContractMilestone> milestones = milestoneIds.isEmpty() 
+            ? List.of()
+            : contractMilestoneRepository.findByMilestoneIdIn(milestoneIds);
+        log.info("[Performance] Step 2 - Batch fetch milestones: {}ms (fetched {} milestones from {} milestoneIds)", 
+            System.currentTimeMillis() - step2Start, milestones.size(), milestoneIds.size());
+        
+        // Enrich assignments với milestones từ cache
+        long step3Start = System.currentTimeMillis();
+        final LocalDateTime now = LocalDateTime.now();
+        List<TaskAssignmentResponse> enrichedAssignments = assignments.stream()
+            .map(assignment -> enrichTaskAssignmentWithMilestones(assignment, milestones, now))
+            .collect(Collectors.toList());
+        log.info("[Performance] Step 3 - Enrich assignments: {}ms (enriched {} assignments)", 
+            System.currentTimeMillis() - step3Start, enrichedAssignments.size());
+        
+        // Batch fetch studio bookings cho recording tasks
+        long step4Start = System.currentTimeMillis();
+        List<String> studioBookingIds = assignments.stream()
+            .map(TaskAssignment::getStudioBookingId)
+            .filter(Objects::nonNull)
+            .filter(id -> !id.isBlank())
+            .distinct()
+            .collect(Collectors.toList());
+        
+        final Map<String, StudioBooking> studioBookingMap = !studioBookingIds.isEmpty()
+            ? studioBookingRepository.findByBookingIdIn(studioBookingIds).stream()
+                .collect(Collectors.toMap(StudioBooking::getBookingId, booking -> booking))
+            : new HashMap<>();
+        
+        if (!studioBookingIds.isEmpty()) {
+            log.info("[Performance] Step 4 - Batch fetch studio bookings: {}ms (fetched {} bookings from {} bookingIds)", 
+                System.currentTimeMillis() - step4Start, studioBookingMap.size(), studioBookingIds.size());
+        } else {
+            log.info("[Performance] Step 4 - Batch fetch studio bookings: {}ms (no bookingIds)", 
+                System.currentTimeMillis() - step4Start);
+        }
+        
+        // Map studio booking info vào responses
+        long step5Start = System.currentTimeMillis();
+        enrichedAssignments.forEach(response -> {
+            if (response.getStudioBookingId() != null && !response.getStudioBookingId().isBlank()) {
+                StudioBooking booking = studioBookingMap.get(response.getStudioBookingId());
+                if (booking != null) {
+                    TaskAssignmentResponse.StudioBookingInfo bookingInfo = TaskAssignmentResponse.StudioBookingInfo.builder()
+                        .bookingId(booking.getBookingId())
+                        .bookingDate(booking.getBookingDate() != null ? booking.getBookingDate().toString() : null)
+                        .status(booking.getStatus() != null ? booking.getStatus().name() : null)
+                        .studioName(booking.getStudio() != null ? booking.getStudio().getStudioName() : null)
+                        .build();
+                    response.setStudioBooking(bookingInfo);
+                }
+            }
+        });
+        log.info("[Performance] Step 5 - Map studio bookings: {}ms", System.currentTimeMillis() - step5Start);
+        
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] getMyTaskAssignments COMPLETED: {} assignments, totalTime={}ms", 
+            enrichedAssignments.size(), totalTime);
+        
+        return enrichedAssignments;
     }
 
     /**
      * Lấy chi tiết task assignment của specialist hiện tại (với request info)
      */
     public TaskAssignmentResponse getMyTaskAssignmentById(String assignmentId) {
-        log.info("Getting task assignment detail with request info: assignmentId={}", assignmentId);
+        long totalStart = System.currentTimeMillis();
+        log.info("[Performance] getMyTaskAssignmentById STARTED: assignmentId={}", assignmentId);
         
+        long step1Start = System.currentTimeMillis();
         TaskAssignment assignment = taskAssignmentRepository.findById(assignmentId)
             .orElseThrow(() -> TaskAssignmentNotFoundException.byId(assignmentId));
+        log.info("[Performance] Step 1 - Fetch assignment: {}ms", System.currentTimeMillis() - step1Start);
         
         // Verify task belongs to current specialist
+        long step2Start = System.currentTimeMillis();
         String specialistId = getCurrentSpecialistId();
         if (!assignment.getSpecialistId().equals(specialistId)) {
             throw UnauthorizedException.create(
                 "You can only view your own task assignments");
         }
+        log.info("[Performance] Step 2 - Verify specialist: {}ms", System.currentTimeMillis() - step2Start);
         
         // Map task assignment to response & enrich
+        long step3Start = System.currentTimeMillis();
         TaskAssignmentResponse response = enrichTaskAssignment(assignment);
+        log.info("[Performance] Step 3 - Enrich task assignment: {}ms", System.currentTimeMillis() - step3Start);
         
         // Fetch request info từ contract (chỉ cần requestId, không cần fetch toàn bộ contract)
+        // Tối ưu: Dùng endpoint /basic để không fetch files (giảm thời gian response từ ~4s xuống <1s)
+        long step4Start = System.currentTimeMillis();
         try {
             String requestId = contractRepository.findRequestIdByContractId(assignment.getContractId()).orElse(null);
             if (requestId != null) {
                 try {
-                    // Gọi request-service để lấy request details (đầy đủ thông tin)
+                    // Gọi request-service để lấy request basic info (KHÔNG kèm files để tối ưu performance)
+                    // Files có thể được fetch riêng sau nếu cần (từ frontend hoặc API riêng)
+                    long requestCallStart = System.currentTimeMillis();
                     ApiResponse<ServiceRequestInfoResponse> requestResponse = 
-                        requestServiceFeignClient.getServiceRequestById(requestId);
+                        requestServiceFeignClient.getServiceRequestBasicInfo(requestId);
+                    long requestCallTime = System.currentTimeMillis() - requestCallStart;
+                    
+                    if (requestCallTime > 1000) {
+                        log.warn("[Performance] Request service basic info call took {}ms (slow): requestId={}", 
+                            requestCallTime, requestId);
+                    } else {
+                        log.debug("[Performance] Request service basic info call took {}ms: requestId={}", 
+                            requestCallTime, requestId);
+                    }
+                    
                     if (requestResponse != null && "success".equals(requestResponse.getStatus()) 
                         && requestResponse.getData() != null) {
                         ServiceRequestInfoResponse requestData = requestResponse.getData();
+                        
+                        // Debug: Log genres và purpose để kiểm tra
+                        log.debug("Request data - genres: {}, purpose: {}, requestType: {}", 
+                            requestData.getGenres(), requestData.getPurpose(), requestData.getRequestType());
                         
                         // Convert durationMinutes sang seconds
                         Integer durationSeconds = null;
@@ -2085,7 +2581,8 @@ public class TaskAssignmentService {
                             }
                         }
                         
-                        // Map request info (đầy đủ thông tin cho specialist)
+                        // Map request info (files sẽ là empty list vì dùng basic endpoint)
+                        // Frontend có thể fetch files riêng nếu cần
                         TaskAssignmentResponse.RequestInfo requestInfo = TaskAssignmentResponse.RequestInfo.builder()
                             .requestId(requestData.getRequestId())
                             .serviceType(requestData.getRequestType())
@@ -2094,12 +2591,18 @@ public class TaskAssignmentService {
                             .durationSeconds(durationSeconds)
                             .tempo(tempo)
                             .instruments(requestData.getInstruments()) // List instruments nếu có
-                            .files(requestData.getFiles()) // List files mà customer đã upload
+                            .files(requestData.getFiles() != null ? requestData.getFiles() : new ArrayList<>()) // Empty list từ basic endpoint
+                            .genres(requestData.getGenres()) // List genres cho arrangement
+                            .purpose(requestData.getPurpose()) // Purpose cho arrangement
                             .build();
                         response.setRequest(requestInfo);
+                        
+                        // Debug: Log mapped request info
+                        log.debug("Mapped request info - genres: {}, purpose: {}", 
+                            requestInfo.getGenres(), requestInfo.getPurpose());
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to fetch request info: requestId={}, error={}", 
+                    log.warn("Failed to fetch request basic info: requestId={}, error={}", 
                         requestId, e.getMessage());
                     // Không fail nếu không load được request
                 }
@@ -2109,6 +2612,11 @@ public class TaskAssignmentService {
                 assignment.getContractId(), e.getMessage());
             // Không fail nếu không load được requestId
         }
+        log.info("[Performance] Step 4 - Fetch request basic info: {}ms", System.currentTimeMillis() - step4Start);
+        
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("[Performance] getMyTaskAssignmentById COMPLETED: assignmentId={}, totalTime={}ms", 
+            assignmentId, totalTime);
         
         return response;
     }
@@ -2717,25 +3225,23 @@ public class TaskAssignmentService {
     }
 
     /**
-     * Lấy specialistId của user hiện tại từ specialist-service
+     * Lấy specialistId của user hiện tại từ JWT token
+     * Bắt buộc phải có trong JWT token (identity-service đã thêm khi login)
+     * Không có fallback để tránh gọi API chậm
      */
     private String getCurrentSpecialistId() {
-        try {
-            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
-            if (response == null || !"success".equals(response.getStatus()) 
-                || response.getData() == null) {
-                throw UnauthorizedException.create("Specialist not found for current user");
-            }
-            Map<String, Object> data = response.getData();
-            String specialistId = (String) data.get("specialistId");
-            if (specialistId == null || specialistId.isEmpty()) {
-                throw UnauthorizedException.create("Specialist ID not found in response");
-            }
-            return specialistId;
-        } catch (Exception e) {
-            log.error("Failed to get specialist info: {}", e.getMessage(), e);
-            throw UnauthorizedException.create("Failed to get specialist information: " + e.getMessage());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw UnauthorizedException.create("User not authenticated");
         }
+        
+        String specialistId = jwt.getClaimAsString("specialistId");
+        if (specialistId == null || specialistId.isEmpty()) {
+            throw UnauthorizedException.create(
+                "Specialist ID not found in JWT token. Please login again to refresh token.");
+        }
+        
+        return specialistId;
     }
 
     /**
@@ -2754,5 +3260,3 @@ public class TaskAssignmentService {
         throw UserNotAuthenticatedException.create();
     }
 }
-
-

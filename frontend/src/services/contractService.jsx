@@ -52,6 +52,28 @@ export const getContractById = async contractId => {
 };
 
 /**
+ * Quote số tiền cần thanh toán cho milestone (bao gồm late discount nếu trễ)
+ * GET /contracts/{contractId}/milestones/{milestoneId}/payment-quote
+ */
+export const getMilestonePaymentQuote = async (contractId, milestoneId) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.GET_MILESTONE_PAYMENT_QUOTE(
+        contractId,
+        milestoneId
+      )
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy thông tin quote thanh toán milestone',
+      }
+    );
+  }
+};
+
+/**
  * Cập nhật contract (chỉ cho DRAFT contracts)
  * PUT /contracts/{contractId}
  *

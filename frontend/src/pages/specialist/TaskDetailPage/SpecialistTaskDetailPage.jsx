@@ -39,7 +39,6 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   getMyTaskAssignmentById,
-  getMyTaskAssignments,
   acceptTaskAssignment,
   reportIssue,
   startTaskAssignment,
@@ -48,6 +47,7 @@ import {
   uploadTaskFile,
   getFilesByAssignmentId,
   softDeleteFile,
+  getFilesByRequestId,
 } from '../../../services/fileService';
 import { submitFilesForReview } from '../../../services/taskAssignmentService';
 import { getSubmissionsByAssignmentId } from '../../../services/fileSubmissionService';
@@ -149,27 +149,37 @@ function getTaskTypeLabel(taskType) {
   return labels[normalizedType] || taskType;
 }
 
+function getServiceTypeLabel(serviceType) {
+  if (!serviceType) return 'N/A';
+  const normalizedType = serviceType.toLowerCase();
+  const labels = {
+    transcription: 'Transcription',
+    arrangement: 'Arrangement',
+    arrangement_with_recording: 'Arrangement with Recording',
+    recording: 'Recording',
+  };
+  return labels[normalizedType] || serviceType;
+}
+
+function getPurposeLabel(purpose) {
+  if (!purpose) return 'N/A';
+  const normalizedPurpose = purpose.toLowerCase();
+  const labels = {
+    karaoke_cover: 'Karaoke Cover',
+    performance: 'Performance',
+    recording: 'Recording',
+    education: 'Education',
+    commercial: 'Commercial Use',
+    personal: 'Personal Use',
+    other: 'Other',
+  };
+  return labels[normalizedPurpose] || purpose;
+}
+
 function getActualDeadline(milestone, studioBooking = null) {
-  // Recording milestone: deadline tính từ booking date, không phải actualStartAt
-  if (
-    milestone?.milestoneType?.toLowerCase() === 'recording' &&
-    studioBooking?.bookingDate &&
-    milestone?.milestoneSlaDays
-  ) {
-    const bookingDate = new Date(studioBooking.bookingDate);
-    if (!Number.isFinite(bookingDate.getTime())) return null;
-    const due = new Date(bookingDate);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
-  
-  // Other milestones: SLA tính từ khi bắt đầu làm việc (actualStartAt)
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) return null;
-  const start = new Date(milestone.actualStartAt);
-  if (!Number.isFinite(start.getTime())) return null;
-  const due = new Date(start);
-  due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-  return due;
+  if (!milestone?.targetDeadline) return null;
+  const d = new Date(milestone.targetDeadline);
+  return Number.isFinite(d.getTime()) ? d : null;
 }
 
 function getPlannedDeadline(milestone) {
@@ -180,84 +190,7 @@ function getPlannedDeadline(milestone) {
       return due;
     }
   }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    const start = new Date(milestone.plannedStartAt);
-    if (!Number.isFinite(start.getTime())) return null;
-    const due = new Date(start);
-    due.setDate(due.getDate() + Number(milestone.milestoneSlaDays || 0));
-    return due;
-  }
   return null;
-}
-
-const fallbackDeadlineCache = new Map();
-
-function getFallbackDeadline(milestone, allTasks = []) {
-  if (!milestone) return null;
-  const slaDays = milestone.milestoneSlaDays;
-  if (slaDays == null || slaDays <= 0) return null;
-
-  const plannedStart = milestone.plannedStartAt
-    ? new Date(milestone.plannedStartAt)
-    : null;
-  if (plannedStart && Number.isFinite(plannedStart.getTime())) {
-    const dueDate = new Date(plannedStart);
-    dueDate.setDate(dueDate.getDate() + Number(slaDays));
-    return dueDate;
-  }
-
-  const cacheKey = milestone.milestoneId;
-  if (fallbackDeadlineCache.has(cacheKey)) {
-    return fallbackDeadlineCache.get(cacheKey);
-  }
-
-  const orderIndex = milestone.orderIndex;
-  if (!orderIndex || orderIndex === 1) {
-    const now = new Date();
-    const due = new Date(now);
-    due.setDate(due.getDate() + Number(slaDays));
-    fallbackDeadlineCache.set(cacheKey, due);
-    return due;
-  }
-
-  const contractId =
-    milestone.contractId ||
-    allTasks.find(t => t.milestone?.milestoneId === milestone.milestoneId)
-      ?.contractId;
-  if (contractId && allTasks.length > 0) {
-    const previousTask = allTasks.find(
-      t =>
-        t.contractId === contractId &&
-        t.milestone?.orderIndex === orderIndex - 1
-    );
-    if (previousTask?.milestone) {
-      const previousMilestone = previousTask.milestone;
-      // Note: previousTask có thể là recording, nhưng chúng ta không có studioBooking của previous task ở đây
-      // Frontend không cần quá chính xác cho fallback deadline của milestone phụ thuộc
-      const previousActualDeadline = getActualDeadline(previousMilestone, null);
-      const previousPlannedDeadline = getPlannedDeadline(previousMilestone);
-      const previousFallbackDeadline = getFallbackDeadline(
-        previousMilestone,
-        allTasks
-      );
-      const previousDeadline =
-        previousActualDeadline ||
-        previousPlannedDeadline ||
-        previousFallbackDeadline;
-      if (previousDeadline) {
-        const dueDate = new Date(previousDeadline);
-        dueDate.setDate(dueDate.getDate() + Number(slaDays));
-        fallbackDeadlineCache.set(cacheKey, dueDate);
-        return dueDate;
-      }
-    }
-  }
-
-  const now = new Date();
-  const due = new Date(now);
-  due.setDate(due.getDate() + Number(slaDays));
-  fallbackDeadlineCache.set(cacheKey, due);
-  return due;
 }
 
 // ---------------- Component ----------------
@@ -288,7 +221,6 @@ const SpecialistTaskDetailPage = () => {
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   const [reportingIssue, setReportingIssue] = useState(false);
   const [issueForm] = Form.useForm();
-  const [contractTasks, setContractTasks] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState(new Set()); // State local để chọn files submit
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deletingFileId, setDeletingFileId] = useState(null);
@@ -299,27 +231,6 @@ const SpecialistTaskDetailPage = () => {
   const [rejectionReasonToView, setRejectionReasonToView] = useState('');
   const [revisionRequests, setRevisionRequests] = useState([]);
   const [loadingRevisionRequests, setLoadingRevisionRequests] = useState(false);
-
-  const loadContractTasks = useCallback(async contractId => {
-    if (!contractId) {
-      setContractTasks([]);
-      return;
-    }
-    try {
-      const resp = await getMyTaskAssignments();
-      if (resp?.status === 'success' && Array.isArray(resp.data)) {
-        const sameContractTasks = resp.data.filter(
-          assignment => assignment.contractId === contractId
-        );
-        setContractTasks(sameContractTasks);
-      } else {
-        setContractTasks([]);
-      }
-    } catch (error) {
-      console.error('Failed to load contract tasks', error);
-      setContractTasks([]);
-    }
-  }, []);
 
   const { actualDeadline, plannedDeadline, estimatedDeadline } = useMemo(() => {
     if (!task?.milestone) {
@@ -333,23 +244,21 @@ const SpecialistTaskDetailPage = () => {
     const actual = getActualDeadline(task.milestone, studioBooking);
     const planned = getPlannedDeadline(task.milestone);
     const estimated =
-      !actual && !planned
-        ? getFallbackDeadline(task.milestone, contractTasks)
+      !actual && !planned && task.milestone?.estimatedDeadline
+        ? (() => {
+            const d = new Date(task.milestone.estimatedDeadline);
+            return Number.isFinite(d.getTime()) ? d : null;
+          })()
         : null;
     return {
       actualDeadline: actual,
       plannedDeadline: planned,
       estimatedDeadline: estimated,
     };
-  }, [task, contractTasks, studioBooking]);
+  }, [task, studioBooking]);
 
   const loadTaskFiles = useCallback(async assignmentId => {
     if (!assignmentId) return;
-    console.log(
-      'CALL getFilesByAssignmentId',
-      assignmentId,
-      new Date().toISOString()
-    );
 
     try {
       const response = await getFilesByAssignmentId(assignmentId);
@@ -398,6 +307,28 @@ const SpecialistTaskDetailPage = () => {
     }
   }, []); // No dependencies - assignmentId passed as parameter
 
+  const loadRequestFiles = useCallback(async requestId => {
+    if (!requestId) return;
+    try {
+      const response = await getFilesByRequestId(requestId);
+      if (response?.status === 'success' && Array.isArray(response?.data)) {
+        // Cập nhật request state với files
+        setRequest(prevRequest => {
+          if (prevRequest && prevRequest.requestId === requestId) {
+            return {
+              ...prevRequest,
+              files: response.data,
+            };
+          }
+          return prevRequest;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading request files:', error);
+      // Don't show error - files might not exist yet
+    }
+  }, []);
+
   const loadSubmissions = useCallback(async assignmentId => {
     if (!assignmentId) return;
     try {
@@ -440,10 +371,12 @@ const SpecialistTaskDetailPage = () => {
     }
   }, []);
 
-  const loadArtistsInfo = useCallback(async artists => {
+  const loadArtistsInfo = useCallback(async participants => {
     try {
       setLoadingArtists(true);
-      const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
+      const specialistIds = participants
+        .map(p => p.specialistId)
+        .filter(Boolean);
 
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
@@ -492,8 +425,12 @@ const SpecialistTaskDetailPage = () => {
           setStudioBooking(booking);
 
           // Load thông tin artists nếu có
-          if (booking.artists && booking.artists.length > 0) {
-            loadArtistsInfo(booking.artists);
+          const internalArtists =
+            booking?.participants?.filter(
+              p => p.performerSource === 'INTERNAL_ARTIST'
+            ) || [];
+          if (internalArtists.length > 0) {
+            loadArtistsInfo(internalArtists);
           }
         } else {
           setStudioBooking(null);
@@ -507,7 +444,8 @@ const SpecialistTaskDetailPage = () => {
     },
     [loadArtistsInfo]
   );
-
+  console.log('request', request);
+  
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -524,18 +462,27 @@ const SpecialistTaskDetailPage = () => {
           setRequest(taskData.request);
         }
 
-        fallbackDeadlineCache.clear();
+        // Tối ưu: Hiển thị UI ngay khi có task data, không đợi các data khác
+        // Điều này giúp user thấy trang nhanh hơn, các data khác sẽ load sau
+        setLoading(false);
+
         const contractId =
           taskData.contractId || taskData?.milestone?.contractId;
 
-        // Load song song: tasks cùng contract + files + submissions + revision requests của assignment hiện tại
-        // Nếu là recording_supervision task và có studioBookingId, load studio booking
+        // Load các data khác sau (không block UI)
+        // Load studio booking nếu là recording_supervision task
+        // Tối ưu: Load tất cả data song song để giảm thời gian
+        // Lazy load revision requests vì nó chậm nhất (2.25s) - chỉ load khi user click vào tab
         const loadPromises = [
-          loadContractTasks(contractId),
           loadTaskFiles(taskData.assignmentId),
           loadSubmissions(taskData.assignmentId),
-          loadRevisionRequests(taskData.assignmentId),
+          // loadRevisionRequests - lazy load khi cần (khi user click vào tab revision)
         ];
+
+        // Load request files nếu có requestId (chạy song song với các requests khác)
+        if (taskData.request?.requestId) {
+          loadPromises.push(loadRequestFiles(taskData.request.requestId));
+        }
 
         if (
           taskData.studioBookingId &&
@@ -544,23 +491,27 @@ const SpecialistTaskDetailPage = () => {
           loadPromises.push(loadStudioBooking(taskData.studioBookingId));
         }
 
-        await Promise.all(loadPromises);
+        // Không đợi các promises này, để chúng load sau và cập nhật UI dần
+        Promise.all(loadPromises).catch(err => {
+          console.error('Error loading additional data:', err);
+        });
       } else {
         setError('Task not found');
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error loading task detail:', err);
       setError(err?.message || 'Failed to load task');
-    } finally {
       setLoading(false);
     }
   }, [
     taskId,
-    loadContractTasks,
+    // REMOVED: loadContractTasks - không cần thiết
     loadTaskFiles,
     loadSubmissions,
     loadRevisionRequests,
     loadStudioBooking,
+    loadRequestFiles,
   ]);
 
   useEffect(() => {
@@ -708,11 +659,9 @@ const SpecialistTaskDetailPage = () => {
   }, []);
 
   const handleDeleteFile = useCallback(fileId => {
-    console.log('CLICK DELETE BUTTON', fileId);
     setDeletingFileId(fileId);
     setDeleteModalVisible(true);
   }, []);
-  console.log(request);
 
   const handleConfirmDeleteFile = useCallback(async () => {
     if (!deletingFileId) return;
@@ -779,13 +728,11 @@ const SpecialistTaskDetailPage = () => {
     }
 
     if (uploading) {
-      console.log('Already uploading, ignoring');
       return;
     }
 
     try {
       setUploading(true);
-      console.log('Starting upload process...', selectedFile);
 
       const values = await uploadForm.validateFields();
 
@@ -1421,26 +1368,13 @@ const SpecialistTaskDetailPage = () => {
                       ? formatDateTime(task.milestone.finalCompletedAt)
                       : 'Chưa hoàn thành'}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Payment Completed">
-                    {task.milestone.actualEndAt
-                      ? formatDateTime(task.milestone.actualEndAt)
-                      : '—'}
-                    {task.milestone.actualEndAt && (
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 11, display: 'block', marginTop: 4 }}
-                      >
-                        (Milestone đã được thanh toán)
-                      </Text>
-                    )}
-                  </Descriptions.Item>
                 </>
               )}
               <Descriptions.Item label="Milestone Deadline">
                 {task.milestone ? (
                   <Space direction="vertical" size={4}>
                     <div>
-                      <Text strong>Actual</Text>
+                      <Text strong>Target</Text>
                       <div>
                         {actualDeadline ? (
                           <>
@@ -1455,17 +1389,55 @@ const SpecialistTaskDetailPage = () => {
                           'Chưa có'
                         )}
                       </div>
+                      {/* SLA status tags */}
+                      <div style={{ marginTop: 4 }}>
+                        {(() => {
+                          const hasFirstSubmission =
+                            !!task.milestone?.firstSubmissionAt;
+                          const isFirstSubmissionLate =
+                            task.milestone?.firstSubmissionLate === true;
+                          const isFirstSubmissionOnTime =
+                            hasFirstSubmission &&
+                            task.milestone?.firstSubmissionLate === false;
+                          const overdueNow = task.milestone?.overdueNow;
+                          const isPendingReview =
+                            task.status?.toLowerCase() === 'ready_for_review' ||
+                            task.status?.toLowerCase() ===
+                              'waiting_customer_review';
+                          const shouldHideOverdueWarning =
+                            hasFirstSubmission || isPendingReview;
+                          const isOverdue =
+                            !shouldHideOverdueWarning &&
+                            overdueNow === true &&
+                            task.status?.toLowerCase() !== 'completed';
+
+                          return (
+                            <>
+                              {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                              {isFirstSubmissionLate && (
+                                <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                              )}
+                              {isFirstSubmissionOnTime && (
+                                <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
-                    <div>
-                      <Text strong type="secondary">
-                        Planned
-                      </Text>
-                      <Text type="secondary">
-                        {plannedDeadline
-                          ? formatDateTime(plannedDeadline)
-                          : 'Chưa có'}
-                      </Text>
-                    </div>
+                    {/* Chỉ hiển thị Planned khi không có Target */}
+                    {!actualDeadline && (
+                      <div>
+                        <Text strong type="secondary">
+                          Planned
+                        </Text>
+                        <Text type="secondary">
+                          {plannedDeadline
+                            ? formatDateTime(plannedDeadline)
+                            : 'Chưa có'}
+                        </Text>
+                      </div>
+                    )}
                     {estimatedDeadline && (
                       <div>
                         <Text strong type="warning">
@@ -1475,7 +1447,7 @@ const SpecialistTaskDetailPage = () => {
                           {formatDateTime(estimatedDeadline)}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          (Ước tính khi chưa Start Work)
+                          (Estimated when not started)
                         </Text>
                       </div>
                     )}
@@ -1608,149 +1580,161 @@ const SpecialistTaskDetailPage = () => {
                             <Tag color="blue">{studioBooking.sessionType}</Tag>
                           </Descriptions.Item>
                         )}
-                        {studioBooking.artists &&
-                          studioBooking.artists.length > 0 && (
-                            <Descriptions.Item label="Artists" span={2}>
-                              {loadingArtists ? (
-                                <Spin />
-                              ) : (
-                                <Space
-                                  direction="vertical"
-                                  size="small"
-                                  style={{ width: '100%' }}
-                                >
-                                  {studioBooking.artists.map((artist, idx) => {
-                                    const specialistInfo =
-                                      artistsInfo[artist.specialistId];
-                                    return (
-                                      <Card
-                                        key={idx}
-                                        size="small"
-                                        style={{ marginBottom: 8 }}
-                                      >
-                                        <Space
-                                          direction="vertical"
+                        {(() => {
+                          const internalArtists =
+                            studioBooking?.participants?.filter(
+                              p => p.performerSource === 'INTERNAL_ARTIST'
+                            ) || [];
+                          return (
+                            internalArtists.length > 0 && (
+                              <Descriptions.Item label="Artists" span={2}>
+                                {loadingArtists ? (
+                                  <Spin />
+                                ) : (
+                                  <Space
+                                    direction="vertical"
+                                    size="small"
+                                    style={{ width: '100%' }}
+                                  >
+                                    {internalArtists.map((participant, idx) => {
+                                      const specialistInfo =
+                                        artistsInfo[participant.specialistId];
+                                      return (
+                                        <Card
+                                          key={idx}
                                           size="small"
-                                          style={{ width: '100%' }}
+                                          style={{ marginBottom: 8 }}
                                         >
-                                          <Space>
-                                            {specialistInfo?.avatarUrl && (
-                                              <img
-                                                src={specialistInfo.avatarUrl}
-                                                alt={
-                                                  specialistInfo.fullName ||
-                                                  'Artist'
-                                                }
-                                                style={{
-                                                  width: 40,
-                                                  height: 40,
-                                                  borderRadius: '50%',
-                                                  objectFit: 'cover',
-                                                }}
-                                              />
-                                            )}
-                                            <Space
-                                              direction="vertical"
-                                              size={0}
-                                            >
-                                              <Space>
-                                                <Text strong>
-                                                  {specialistInfo?.fullName ||
-                                                    'N/A'}
-                                                </Text>
-                                                {artist.isPrimary && (
-                                                  <Tag color="gold">
-                                                    Primary
-                                                  </Tag>
-                                                )}
-                                              </Space>
-                                              {specialistInfo?.email && (
-                                                <Text
-                                                  type="secondary"
-                                                  style={{ fontSize: '12px' }}
-                                                >
-                                                  {specialistInfo.email}
-                                                </Text>
+                                          <Space
+                                            direction="vertical"
+                                            size="small"
+                                            style={{ width: '100%' }}
+                                          >
+                                            <Space>
+                                              {specialistInfo?.avatarUrl && (
+                                                <img
+                                                  src={specialistInfo.avatarUrl}
+                                                  alt={
+                                                    specialistInfo.fullName ||
+                                                    'Artist'
+                                                  }
+                                                  style={{
+                                                    width: 40,
+                                                    height: 40,
+                                                    borderRadius: '50%',
+                                                    objectFit: 'cover',
+                                                  }}
+                                                />
                                               )}
-                                            </Space>
-                                          </Space>
-                                          <Space>
-                                            <Text strong>Specialist ID:</Text>
-                                            <Text
-                                              copyable={{
-                                                text: artist.specialistId,
-                                              }}
-                                              style={{
-                                                fontFamily: 'monospace',
-                                                fontSize: '12px',
-                                              }}
-                                            >
-                                              {artist.specialistId?.substring(
-                                                0,
-                                                8
-                                              )}
-                                              ...
-                                            </Text>
-                                          </Space>
-                                          <Space>
-                                            <Text strong>Role:</Text>
-                                            <Tag
-                                              color={
-                                                artist.role === 'VOCALIST'
-                                                  ? 'orange'
-                                                  : 'blue'
-                                              }
-                                            >
-                                              {artist.role === 'VOCALIST'
-                                                ? 'Vocal'
-                                                : artist.role ===
-                                                    'INSTRUMENT_PLAYER'
-                                                  ? 'Instrument'
-                                                  : artist.role || 'N/A'}
-                                            </Tag>
-                                          </Space>
-                                          {specialistInfo && (
-                                            <>
-                                              {specialistInfo.experienceYears && (
+                                              <Space
+                                                direction="vertical"
+                                                size={0}
+                                              >
                                                 <Space>
                                                   <Text strong>
-                                                    Experience:
+                                                    {specialistInfo?.fullName ||
+                                                      'N/A'}
                                                   </Text>
-                                                  <Text>
-                                                    {
-                                                      specialistInfo.experienceYears
-                                                    }{' '}
-                                                    years
-                                                  </Text>
+                                                  {participant.isPrimary && (
+                                                    <Tag color="gold">
+                                                      Primary
+                                                    </Tag>
+                                                  )}
                                                 </Space>
-                                              )}
-                                              {specialistInfo.genres &&
-                                                specialistInfo.genres.length >
-                                                  0 && (
-                                                  <Space wrap>
-                                                    <Text strong>Genres:</Text>
-                                                    {specialistInfo.genres.map(
-                                                      (genre, gIdx) => (
-                                                        <Tag
-                                                          key={gIdx}
-                                                          color="purple"
-                                                        >
-                                                          {genre}
-                                                        </Tag>
-                                                      )
-                                                    )}
+                                                {specialistInfo?.email && (
+                                                  <Text
+                                                    type="secondary"
+                                                    style={{ fontSize: '12px' }}
+                                                  >
+                                                    {specialistInfo.email}
+                                                  </Text>
+                                                )}
+                                              </Space>
+                                            </Space>
+                                            <Space>
+                                              <Text strong>Specialist ID:</Text>
+                                              <Text
+                                                copyable={{
+                                                  text: participant.specialistId,
+                                                }}
+                                                style={{
+                                                  fontFamily: 'monospace',
+                                                  fontSize: '12px',
+                                                }}
+                                              >
+                                                {participant.specialistId?.substring(
+                                                  0,
+                                                  8
+                                                )}
+                                                ...
+                                              </Text>
+                                            </Space>
+                                            <Space>
+                                              <Text strong>Role:</Text>
+                                              <Tag
+                                                color={
+                                                  participant.roleType ===
+                                                  'VOCAL'
+                                                    ? 'orange'
+                                                    : 'blue'
+                                                }
+                                              >
+                                                {participant.roleType ===
+                                                'VOCAL'
+                                                  ? 'Vocal'
+                                                  : participant.roleType ===
+                                                      'INSTRUMENT'
+                                                    ? 'Instrument'
+                                                    : participant.roleType ||
+                                                      'N/A'}
+                                              </Tag>
+                                            </Space>
+                                            {specialistInfo && (
+                                              <>
+                                                {specialistInfo.experienceYears && (
+                                                  <Space>
+                                                    <Text strong>
+                                                      Experience:
+                                                    </Text>
+                                                    <Text>
+                                                      {
+                                                        specialistInfo.experienceYears
+                                                      }{' '}
+                                                      years
+                                                    </Text>
                                                   </Space>
                                                 )}
-                                            </>
-                                          )}
-                                        </Space>
-                                      </Card>
-                                    );
-                                  })}
-                                </Space>
-                              )}
-                            </Descriptions.Item>
-                          )}
+                                                {specialistInfo.genres &&
+                                                  specialistInfo.genres.length >
+                                                    0 && (
+                                                    <Space wrap>
+                                                      <Text strong>
+                                                        Genres:
+                                                      </Text>
+                                                      {specialistInfo.genres.map(
+                                                        (genre, gIdx) => (
+                                                          <Tag
+                                                            key={gIdx}
+                                                            color="purple"
+                                                          >
+                                                            {genre}
+                                                          </Tag>
+                                                        )
+                                                      )}
+                                                    </Space>
+                                                  )}
+                                              </>
+                                            )}
+                                          </Space>
+                                        </Card>
+                                      );
+                                    })}
+                                  </Space>
+                                )}
+                              </Descriptions.Item>
+                            )
+                          );
+                        })()}
                         {studioBooking.notes && (
                           <Descriptions.Item label="Notes" span={2}>
                             <Text type="secondary">{studioBooking.notes}</Text>
@@ -1776,7 +1760,7 @@ const SpecialistTaskDetailPage = () => {
                     </Descriptions.Item>
                     {request.serviceType && (
                       <Descriptions.Item label="Service Type">
-                        <Tag>{request.serviceType}</Tag>
+                        <Tag>{getServiceTypeLabel(request.serviceType)}</Tag>
                       </Descriptions.Item>
                     )}
                     {request.title && (
@@ -1789,14 +1773,30 @@ const SpecialistTaskDetailPage = () => {
                         <Text>{request.description}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.durationSeconds && (
+                    {request.serviceType === 'transcription' && request.durationSeconds && (
                       <Descriptions.Item label="Duration">
                         <Text>{formatDuration(request.durationSeconds)}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.tempo && (
+                    {request.serviceType === 'transcription' && request.tempo && (
                       <Descriptions.Item label="Tempo">
                         <Text>{request.tempo} BPM</Text>
+                      </Descriptions.Item>
+                    )}
+                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.genres && request.genres.length > 0 && (
+                      <Descriptions.Item label="Genres" span={2}>
+                        <Space wrap>
+                          {request.genres.map((genre, idx) => (
+                            <Tag key={idx} color="blue">
+                              {genre}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
+                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.purpose && (
+                      <Descriptions.Item label="Purpose">
+                        <Text>{getPurposeLabel(request.purpose)}</Text>
                       </Descriptions.Item>
                     )}
                     {request.instruments && request.instruments.length > 0 && (
@@ -1924,91 +1924,50 @@ const SpecialistTaskDetailPage = () => {
                 let bookingStatusMessage = '';
                 let daysUntilBooking = null;
                 let bookingDateFormatted = '';
-                
-                console.log('=== BOOKING VALIDATION START ===');
-                console.log('hasStudioBooking:', hasStudioBooking);
-                console.log('studioBooking:', studioBooking);
-                console.log('hasStartButton:', hasStartButton);
-                console.log('task.status:', task?.status);
-                
-                if (hasStudioBooking && studioBooking) { // ← BỎ điều kiện hasStartButton
+
+                if (hasStudioBooking && studioBooking) {
                   // Chỉ validate khi hasStartButton = true (ready_to_start)
                   // Nhưng vẫn hiển thị booking info cho mọi status
                   const bookingStatus = studioBooking.status;
-                  console.log('📌 Booking Status =', bookingStatus);
-                  
+
                   // Tính toán booking date và countdown (luôn tính để hiển thị)
                   if (studioBooking.bookingDate) {
-                    const bookingDate = dayjs(studioBooking.bookingDate).startOf('day');
+                    const bookingDate = dayjs(
+                      studioBooking.bookingDate
+                    ).startOf('day');
                     const today = dayjs().startOf('day');
                     daysUntilBooking = bookingDate.diff(today, 'day');
                     bookingDateFormatted = `${studioBooking.bookingDate} | ${studioBooking.startTime || 'N/A'} - ${studioBooking.endTime || 'N/A'}`;
-                    console.log('   bookingDate:', studioBooking.bookingDate);
-                    console.log('   today:', today.format('YYYY-MM-DD'));
-                    console.log('   daysUntilBooking:', daysUntilBooking);
                   }
 
                   // Chỉ validate cho nút "Start Task" khi hasStartButton = true
                   if (hasStartButton) {
-                    console.log('📌 VALIDATE FOR START BUTTON');
-                    
                     // Check 1: Booking Status
-                  // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
-                  if (
-                    bookingStatus !== 'CONFIRMED' &&
-                    bookingStatus !== 'IN_PROGRESS' &&
-                    bookingStatus !== 'COMPLETED'
-                  ) {
-                    canStartWithBooking = false;
-                    bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
-                      console.log('❌ CHECK 1 FAILED: Status không hợp lệ →', bookingStatus);
-                      console.log('   canStartWithBooking =', canStartWithBooking);
-                      console.log('   message =', bookingStatusMessage);
-                    } else {
-                      console.log('✅ CHECK 1 PASSED: Status hợp lệ');
+                    // Cho phép start khi booking status là CONFIRMED, IN_PROGRESS, hoặc COMPLETED
+                    if (
+                      bookingStatus !== 'CONFIRMED' &&
+                      bookingStatus !== 'IN_PROGRESS' &&
+                      bookingStatus !== 'COMPLETED'
+                    ) {
+                      canStartWithBooking = false;
+                      bookingStatusMessage = `Studio booking chưa được xác nhận. Trạng thái hiện tại: ${studioBooking.status === 'PENDING' ? 'Đang chờ' : studioBooking.status === 'TENTATIVE' ? 'Tạm thời' : studioBooking.status}. Vui lòng đợi Manager xác nhận booking.`;
                     }
-                    
+
                     // Check 2: Thời gian
                     if (studioBooking.bookingDate && canStartWithBooking) {
-                      console.log('📌 CHECK 2: Thời gian');
-                      
                       // Quá sớm: > 7 ngày trước booking date
                       if (daysUntilBooking > 7) {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Chưa thể bắt đầu task. Recording session sẽ diễn ra vào ${bookingDateFormatted}. Bạn có thể bắt đầu task trong vòng 7 ngày trước ngày thu âm (còn ${daysUntilBooking} ngày).`;
-                        console.log('❌ CHECK 2 FAILED: Quá sớm (> 7 ngày)');
-                        console.log('   canStartWithBooking =', canStartWithBooking);
-                        console.log('   message =', bookingStatusMessage);
                       }
                       // Quá muộn: > 1 ngày sau booking date
                       else if (daysUntilBooking < -1) {
                         canStartWithBooking = false;
                         bookingStatusMessage = `Recording session đã qua ${Math.abs(daysUntilBooking)} ngày (${bookingDateFormatted}). Vui lòng liên hệ Manager nếu cần hỗ trợ.`;
-                        console.log('❌ CHECK 2 FAILED: Quá muộn (< -1 ngày)');
-                        console.log('   canStartWithBooking =', canStartWithBooking);
-                        console.log('   message =', bookingStatusMessage);
-                      } else {
-                        console.log('✅ CHECK 2 PASSED: Trong khoảng -1 đến 7 ngày');
                       }
-                    } else if (!studioBooking.bookingDate) {
-                      console.log('⚠️ CHECK 2 SKIPPED: Không có bookingDate');
-                    } else if (!canStartWithBooking) {
-                      console.log('⚠️ CHECK 2 SKIPPED: canStartWithBooking đã false từ CHECK 1');
                     }
-                  } else {
-                    console.log('⚠️ VALIDATION SKIPPED: hasStartButton = false (task status không phải ready_to_start)');
-                    console.log('   → Booking info vẫn được tính toán để hiển thị');
                   }
-                } else {
-                  console.log('⚠️ VALIDATION SKIPPED: Không có booking data');
                 }
-                
-                console.log('=== FINAL RESULT ===');
-                console.log('canStartWithBooking:', canStartWithBooking);
-                console.log('bookingStatusMessage:', bookingStatusMessage);
-                console.log('daysUntilBooking:', daysUntilBooking);
-                console.log('bookingDateFormatted:', bookingDateFormatted);
-                console.log('=== BOOKING VALIDATION END ===\n');
                 const cannotStart =
                   needsStudioBooking ||
                   (hasStudioBooking && hasStartButton && !canStartWithBooking);
@@ -2151,47 +2110,69 @@ const SpecialistTaskDetailPage = () => {
                           showIcon
                         />
                       )}
-                      
+
                       {/* Hiển thị booking info nếu có - CHỈ KHI CHƯA START TASK */}
-                      {hasStudioBooking && 
-                        studioBooking && 
-                        bookingDateFormatted && 
-                        (status === 'ready_to_start' || status === 'accepted_waiting') && (
-                        <Alert
-                          message={`🎙️ Recording Session: ${bookingDateFormatted}`}
-                          description={
-                            daysUntilBooking !== null && (
-                              <span>
-                                {daysUntilBooking > 0 && (
-                                  <span>
-                                    Còn <strong>{daysUntilBooking} ngày</strong> đến ngày thu âm.
-                                    {daysUntilBooking <= 7 && ' Bạn đã có thể bắt đầu task!'}
-                                  </span>
-                                )}
-                                {daysUntilBooking === 0 && (
-                                  <span><strong>Hôm nay là ngày thu âm!</strong> Sẵn sàng bắt đầu task.</span>
-                                )}
-                                {daysUntilBooking < 0 && daysUntilBooking >= -1 && (
-                                  <span>Ngày thu âm đã qua {Math.abs(daysUntilBooking)} ngày. Vẫn có thể bắt đầu task.</span>
-                                )}
-                                {studioBooking.durationHours && (
-                                  <span> • Thời lượng: {studioBooking.durationHours}h</span>
-                                )}
-                                {studioBooking.status && (
-                                  <span> • Trạng thái: {studioBooking.status}</span>
-                                )}
-                              </span>
-                            )
-                          }
-                          type={
-                            canStartWithBooking && daysUntilBooking !== null && daysUntilBooking <= 7 && daysUntilBooking >= -1
-                              ? 'success'
-                              : 'info'
-                          }
-                          showIcon
-                        />
-                      )}
-                      
+                      {hasStudioBooking &&
+                        studioBooking &&
+                        bookingDateFormatted &&
+                        (status === 'ready_to_start' ||
+                          status === 'accepted_waiting') && (
+                          <Alert
+                            message={`🎙️ Recording Session: ${bookingDateFormatted}`}
+                            description={
+                              daysUntilBooking !== null && (
+                                <span>
+                                  {daysUntilBooking > 0 && (
+                                    <span>
+                                      Còn{' '}
+                                      <strong>{daysUntilBooking} ngày</strong>{' '}
+                                      đến ngày thu âm.
+                                      {daysUntilBooking <= 7 &&
+                                        ' Bạn đã có thể bắt đầu task!'}
+                                    </span>
+                                  )}
+                                  {daysUntilBooking === 0 && (
+                                    <span>
+                                      <strong>Hôm nay là ngày thu âm!</strong>{' '}
+                                      Sẵn sàng bắt đầu task.
+                                    </span>
+                                  )}
+                                  {daysUntilBooking < 0 &&
+                                    daysUntilBooking >= -1 && (
+                                      <span>
+                                        Ngày thu âm đã qua{' '}
+                                        {Math.abs(daysUntilBooking)} ngày. Vẫn
+                                        có thể bắt đầu task.
+                                      </span>
+                                    )}
+                                  {studioBooking.durationHours && (
+                                    <span>
+                                      {' '}
+                                      • Thời lượng:{' '}
+                                      {studioBooking.durationHours}h
+                                    </span>
+                                  )}
+                                  {studioBooking.status && (
+                                    <span>
+                                      {' '}
+                                      • Trạng thái: {studioBooking.status}
+                                    </span>
+                                  )}
+                                </span>
+                              )
+                            }
+                            type={
+                              canStartWithBooking &&
+                              daysUntilBooking !== null &&
+                              daysUntilBooking <= 7 &&
+                              daysUntilBooking >= -1
+                                ? 'success'
+                                : 'info'
+                            }
+                            showIcon
+                          />
+                        )}
+
                       {hasStudioBooking &&
                         !canStartWithBooking &&
                         bookingStatusMessage && (

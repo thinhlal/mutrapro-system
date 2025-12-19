@@ -6,9 +6,13 @@ import com.mutrapro.billing_service.dto.request.PayDepositRequest;
 import com.mutrapro.billing_service.dto.request.PayMilestoneRequest;
 import com.mutrapro.billing_service.dto.request.PayRevisionFeeRequest;
 import com.mutrapro.billing_service.dto.request.TopupWalletRequest;
+import com.mutrapro.billing_service.dto.request.WithdrawWalletRequest;
+import com.mutrapro.billing_service.client.ProjectServiceFeignClient;
+import com.mutrapro.billing_service.dto.response.MilestonePaymentQuoteResponse;
 import com.mutrapro.billing_service.dto.response.WalletResponse;
 import com.mutrapro.billing_service.dto.response.WalletStatisticsResponse;
 import com.mutrapro.billing_service.dto.response.WalletTransactionResponse;
+import com.mutrapro.billing_service.dto.response.WithdrawalRequestResponse;
 import com.mutrapro.billing_service.entity.OutboxEvent;
 import com.mutrapro.billing_service.entity.Wallet;
 import com.mutrapro.billing_service.entity.WalletTransaction;
@@ -19,12 +23,23 @@ import com.mutrapro.shared.event.RevisionFeePaidEvent;
 import com.mutrapro.shared.event.RevisionFeeRefundedEvent;
 import com.mutrapro.billing_service.enums.CurrencyType;
 import com.mutrapro.billing_service.enums.WalletTxType;
+import com.mutrapro.billing_service.enums.WithdrawalStatus;
+import com.mutrapro.billing_service.entity.WithdrawalRequest;
+import com.mutrapro.shared.service.S3Service;
+import org.springframework.web.multipart.MultipartFile;
 import com.mutrapro.billing_service.exception.CurrencyMismatchException;
 import com.mutrapro.billing_service.exception.InsufficientBalanceException;
 import com.mutrapro.billing_service.exception.InvalidAmountException;
+import com.mutrapro.billing_service.exception.InvalidProofFileException;
+import com.mutrapro.billing_service.exception.InvalidTransactionTypeException;
+import com.mutrapro.billing_service.exception.InvalidWithdrawalStatusException;
+import com.mutrapro.billing_service.exception.ProofFileDownloadException;
+import com.mutrapro.billing_service.exception.ProofFileUploadException;
+import com.mutrapro.billing_service.exception.TransactionAlreadyRefundedException;
 import com.mutrapro.billing_service.exception.UnauthorizedWalletAccessException;
 import com.mutrapro.billing_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.billing_service.exception.WalletNotFoundException;
+import com.mutrapro.billing_service.exception.WithdrawalRequestNotFoundException;
 import com.mutrapro.billing_service.mapper.WalletMapper;
 import com.mutrapro.billing_service.repository.WalletRepository;
 import com.mutrapro.billing_service.repository.WalletTransactionRepository;
@@ -57,6 +72,9 @@ public class WalletService {
     WalletMapper walletMapper;
     OutboxEventRepository outboxEventRepository;
     ObjectMapper objectMapper;
+    ProjectServiceFeignClient projectServiceFeignClient;
+    com.mutrapro.billing_service.repository.WithdrawalRequestRepository withdrawalRequestRepository;
+    S3Service s3Service;
 
     /**
      * Lấy hoặc tạo wallet cho user hiện tại
@@ -268,10 +286,11 @@ public class WalletService {
             throw InvalidAmountException.forDebit(request.getAmount());
         }
 
-        // Kiểm tra số dư
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+        // Kiểm tra số dư khả dụng (available = balance - holdBalance)
+        BigDecimal availableBalance = wallet.getAvailableBalance();
+        if (availableBalance.compareTo(request.getAmount()) < 0) {
             throw InsufficientBalanceException.create(
-                    walletId, wallet.getBalance(), request.getAmount());
+                    walletId, availableBalance, request.getAmount());
         }
 
         // Validate currency
@@ -354,6 +373,30 @@ public class WalletService {
     public WalletTransactionResponse payMilestone(String walletId, PayMilestoneRequest request) {
         String userId = getCurrentUserId();
 
+        MilestonePaymentQuoteResponse quote = null;
+        try {
+            var quoteResp = projectServiceFeignClient.getMilestonePaymentQuote(
+                request.getContractId(),
+                request.getMilestoneId()
+            );
+            quote = quoteResp != null ? quoteResp.getData() : null;
+        } catch (Exception e) {
+            log.error("Failed to fetch milestone payment quote (strict mode): contractId={}, milestoneId={}, error={}, cause={}",
+                request.getContractId(), request.getMilestoneId(), e.getMessage(), 
+                e.getCause() != null ? e.getCause().getMessage() : "N/A", e);
+        }
+
+        if (quote != null && quote.getInstallmentId() != null && request.getInstallmentId() != null
+            && !quote.getInstallmentId().equals(request.getInstallmentId())) {
+            throw new IllegalArgumentException("InstallmentId mismatch for milestone payment");
+        }
+
+        // Strict mode: never trust FE-provided amount. Must charge the authoritative payableAmount from project-service.
+        if (quote == null || quote.getPayableAmount() == null || quote.getPayableAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Unable to resolve payable amount for this milestone. Please try again later.");
+        }
+        BigDecimal amountToPay = quote.getPayableAmount();
+
         // Lấy wallet với lock để tránh race condition
         Wallet wallet = walletRepository.findByIdWithLock(walletId)
                 .orElseThrow(() -> WalletNotFoundException.byId(walletId));
@@ -363,15 +406,13 @@ public class WalletService {
             throw UnauthorizedWalletAccessException.create(walletId);
         }
 
-        // Validate amount
-        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw InvalidAmountException.forDebit(request.getAmount());
-        }
+        // Ignore request.amount entirely (amount is computed from quote).
 
-        // Kiểm tra số dư
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+        // Kiểm tra số dư khả dụng (available = balance - holdBalance)
+        BigDecimal availableBalance = wallet.getAvailableBalance();
+        if (availableBalance.compareTo(amountToPay) < 0) {
             throw InsufficientBalanceException.create(
-                    walletId, wallet.getBalance(), request.getAmount());
+                    walletId, availableBalance, amountToPay);
         }
 
         // Validate currency
@@ -382,7 +423,7 @@ public class WalletService {
 
         // Tính toán số dư mới
         BigDecimal balanceBefore = wallet.getBalance();
-        BigDecimal balanceAfter = balanceBefore.subtract(request.getAmount());
+        BigDecimal balanceAfter = balanceBefore.subtract(amountToPay);
 
         // Cập nhật số dư ví
         wallet.setBalance(balanceAfter);
@@ -390,16 +431,24 @@ public class WalletService {
 
         // Tạo transaction record
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("debit_amount", request.getAmount().toString());
+        metadata.put("debit_amount", amountToPay.toString());
         metadata.put("currency", currency.name());
         metadata.put("payment_method", "wallet");
         metadata.put("installment_id", request.getInstallmentId());
         metadata.put("payment_type", "MILESTONE");
+        if (quote != null) {
+            if (quote.getBaseAmount() != null) metadata.put("base_amount", quote.getBaseAmount().toString());
+            if (quote.getLateDiscountPercent() != null) metadata.put("late_discount_percent", quote.getLateDiscountPercent().toString());
+            if (quote.getLateDiscountAmount() != null) metadata.put("late_discount_amount", quote.getLateDiscountAmount().toString());
+            if (quote.getLateHours() != null) metadata.put("late_hours", quote.getLateHours().toString());
+            if (quote.getGraceHours() != null) metadata.put("grace_hours", quote.getGraceHours().toString());
+            if (quote.getPolicyVersion() != null) metadata.put("discount_policy_version", quote.getPolicyVersion());
+        }
 
         WalletTransaction transaction = WalletTransaction.builder()
                 .wallet(wallet)
                 .txType(WalletTxType.milestone_payment)
-                .amount(request.getAmount())
+                .amount(amountToPay)
                 .currency(currency)
                 .balanceBefore(balanceBefore)
                 .balanceAfter(balanceAfter)
@@ -416,15 +465,29 @@ public class WalletService {
             LocalDateTime paidAt = LocalDateTime.now();
             
             UUID eventId = UUID.randomUUID();
+
+            String discountReason = null;
+            if (quote != null && quote.getLateDiscountAmount() != null
+                && quote.getLateDiscountAmount().compareTo(BigDecimal.ZERO) > 0) {
+                discountReason = "LATE_DELIVERY";
+            }
+
             MilestonePaidEvent event = MilestonePaidEvent.builder()
                 .eventId(eventId)
                 .contractId(request.getContractId())
                 .milestoneId(request.getMilestoneId())
                 .orderIndex(request.getOrderIndex())
                 .paidAt(paidAt)
-                .amount(request.getAmount())
+                .amount(amountToPay)
                 .currency(currency.name())
                 .timestamp(LocalDateTime.now())
+                .baseAmount(quote != null ? quote.getBaseAmount() : null)
+                .lateDiscountPercent(quote != null ? quote.getLateDiscountPercent() : null)
+                .lateDiscountAmount(quote != null ? quote.getLateDiscountAmount() : null)
+                .lateHours(quote != null ? quote.getLateHours() : null)
+                .graceHours(quote != null ? quote.getGraceHours() : null)
+                .discountReason(discountReason)
+                .discountPolicyVersion(quote != null ? quote.getPolicyVersion() : null)
                 .build();
             
             JsonNode payload = objectMapper.valueToTree(event);
@@ -445,7 +508,7 @@ public class WalletService {
         }
 
         log.info("Pay milestone: walletId={}, contractId={}, milestoneId={}, amount={}, balanceBefore={}, balanceAfter={}",
-                walletId, request.getContractId(), request.getMilestoneId(), request.getAmount(), balanceBefore, balanceAfter);
+                walletId, request.getContractId(), request.getMilestoneId(), amountToPay, balanceBefore, balanceAfter);
 
         return walletMapper.toResponse(savedTransaction);
     }
@@ -471,10 +534,11 @@ public class WalletService {
             throw InvalidAmountException.forDebit(request.getAmount());
         }
 
-        // Kiểm tra số dư
-        if (wallet.getBalance().compareTo(request.getAmount()) < 0) {
+        // Kiểm tra số dư khả dụng (available = balance - holdBalance)
+        BigDecimal availableBalance = wallet.getAvailableBalance();
+        if (availableBalance.compareTo(request.getAmount()) < 0) {
             throw InsufficientBalanceException.create(
-                    walletId, wallet.getBalance(), request.getAmount());
+                    walletId, availableBalance, request.getAmount());
         }
 
         // Validate currency
@@ -568,6 +632,449 @@ public class WalletService {
                 request.getAmount(), balanceBefore, balanceAfter);
 
         return walletMapper.toResponse(savedTransaction);
+    }
+
+    /**
+     * Tạo yêu cầu rút tiền từ ví (status PENDING, chờ manager duyệt)
+     */
+    @Transactional
+    public WithdrawalRequestResponse withdrawWallet(String walletId, WithdrawWalletRequest request) {
+        String userId = getCurrentUserId();
+
+        // Lấy wallet (không cần lock vì chưa trừ tiền)
+        Wallet wallet = walletRepository.findById(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Kiểm tra quyền truy cập
+        if (!wallet.getUserId().equals(userId)) {
+            throw UnauthorizedWalletAccessException.create(walletId);
+        }
+
+        // Validate amount
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw InvalidAmountException.forDebit(request.getAmount());
+        }
+
+        // Kiểm tra số dư khả dụng (available = balance - holdBalance)
+        BigDecimal availableBalance = wallet.getAvailableBalance();
+        if (availableBalance.compareTo(request.getAmount()) < 0) {
+            throw InsufficientBalanceException.create(
+                    walletId, availableBalance, request.getAmount());
+        }
+
+        // Validate currency
+        CurrencyType currency = request.getCurrency() != null ? request.getCurrency() : CurrencyType.VND;
+        if (!wallet.getCurrency().equals(currency)) {
+            throw CurrencyMismatchException.create(wallet.getCurrency(), currency);
+        }
+
+        // Lock wallet để tránh race condition
+        Wallet lockedWallet = walletRepository.findByIdWithLock(walletId)
+                .orElseThrow(() -> WalletNotFoundException.byId(walletId));
+
+        // Double check available balance sau khi lock
+        BigDecimal lockedAvailableBalance = lockedWallet.getAvailableBalance();
+        if (lockedAvailableBalance.compareTo(request.getAmount()) < 0) {
+            throw InsufficientBalanceException.create(
+                    walletId, lockedAvailableBalance, request.getAmount());
+        }
+
+        // Hold tiền ngay (available → hold)
+        BigDecimal newHoldBalance = lockedWallet.getHoldBalance().add(request.getAmount());
+        lockedWallet.setHoldBalance(newHoldBalance);
+        walletRepository.save(lockedWallet);
+
+        // Tạo withdrawal request với status PENDING_REVIEW
+        WithdrawalRequest withdrawalRequest = WithdrawalRequest.builder()
+                .wallet(lockedWallet)
+                .amount(request.getAmount())
+                .currency(currency)
+                .bankAccountNumber(request.getBankAccountNumber())
+                .bankName(request.getBankName())
+                .accountHolderName(request.getAccountHolderName())
+                .note(request.getNote())
+                .status(WithdrawalStatus.PENDING_REVIEW)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        WithdrawalRequest savedRequest = withdrawalRequestRepository.save(withdrawalRequest);
+
+        log.info("Created withdrawal request: requestId={}, walletId={}, amount={}, bankAccount={}, bankName={}",
+                savedRequest.getWithdrawalRequestId(), walletId, request.getAmount(), 
+                request.getBankAccountNumber(), request.getBankName());
+
+        return toWithdrawalRequestResponse(savedRequest);
+    }
+
+    /**
+     * Manager/Admin duyệt yêu cầu rút tiền (tiền vẫn hold, chờ admin/manager chuyển tiền)
+     */
+    @Transactional
+    public WithdrawalRequestResponse approveWithdrawal(String withdrawalRequestId, String adminNote) {
+        String adminUserId = getCurrentUserId();
+
+        // Lấy withdrawal request
+        WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
+
+        // Kiểm tra status
+        if (request.getStatus() != WithdrawalStatus.PENDING_REVIEW) {
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.PENDING_REVIEW);
+        }
+
+        // Update withdrawal request: PENDING_REVIEW → APPROVED (tiền vẫn hold)
+        request.setStatus(WithdrawalStatus.APPROVED);
+        request.setApprovedBy(adminUserId);
+        request.setApprovedAt(LocalDateTime.now());
+        request.setAdminNote(adminNote);
+        withdrawalRequestRepository.save(request);
+
+        log.info("Approved withdrawal request: requestId={}, walletId={}, amount={}, approvedBy={} (money still on hold, waiting for admin/manager to transfer)",
+                withdrawalRequestId, request.getWallet().getWalletId(), request.getAmount(), adminUserId);
+
+        return toWithdrawalRequestResponse(request);
+    }
+
+    /**
+     * Manager/Admin từ chối yêu cầu rút tiền → Release hold về available
+     */
+    @Transactional
+    public WithdrawalRequestResponse rejectWithdrawal(String withdrawalRequestId, String rejectionReason, String adminNote) {
+        String adminUserId = getCurrentUserId();
+
+        // Lấy withdrawal request
+        WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
+
+        // Kiểm tra status
+        if (request.getStatus() != WithdrawalStatus.PENDING_REVIEW) {
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.PENDING_REVIEW);
+        }
+
+        // Lấy wallet với lock để release hold
+        Wallet wallet = walletRepository.findByIdWithLock(request.getWallet().getWalletId())
+                .orElseThrow(() -> WalletNotFoundException.byId(request.getWallet().getWalletId()));
+
+        // Release hold về available (hold → available)
+        BigDecimal newHoldBalance = wallet.getHoldBalance().subtract(request.getAmount());
+        if (newHoldBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Hold balance would be negative, setting to 0: walletId={}, currentHold={}, amount={}",
+                    wallet.getWalletId(), wallet.getHoldBalance(), request.getAmount());
+            newHoldBalance = BigDecimal.ZERO;
+        }
+        wallet.setHoldBalance(newHoldBalance);
+        walletRepository.save(wallet);
+
+        // Update withdrawal request
+        request.setStatus(WithdrawalStatus.REJECTED);
+        request.setRejectedBy(adminUserId);
+        request.setRejectedAt(LocalDateTime.now());
+        request.setRejectionReason(rejectionReason);
+        request.setAdminNote(adminNote);
+        withdrawalRequestRepository.save(request);
+
+        log.info("Rejected withdrawal request: requestId={}, walletId={}, amount={}, rejectedBy={}, reason={} (hold released)",
+                withdrawalRequestId, wallet.getWalletId(), request.getAmount(), adminUserId, rejectionReason);
+
+        return toWithdrawalRequestResponse(request);
+    }
+
+    /**
+     * Admin/Manager hoàn thành chuyển tiền (nhập thông tin chuyển tiền, trừ tiền từ hold, tạo transaction)
+     */
+    @Transactional
+    public WalletTransactionResponse completeWithdrawal(
+            String withdrawalRequestId,
+            BigDecimal paidAmount,
+            String provider,
+            String bankRef,
+            String txnCode,
+            MultipartFile proofFile) {
+        String adminUserId = getCurrentUserId();
+
+        // Lấy withdrawal request
+        WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
+
+        // Kiểm tra status
+        if (request.getStatus() != WithdrawalStatus.APPROVED && request.getStatus() != WithdrawalStatus.PROCESSING) {
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.APPROVED, WithdrawalStatus.PROCESSING);
+        }
+
+        // Lấy wallet với lock để tránh race condition
+        Wallet wallet = walletRepository.findByIdWithLock(request.getWallet().getWalletId())
+                .orElseThrow(() -> WalletNotFoundException.byId(request.getWallet().getWalletId()));
+
+        // Kiểm tra hold balance
+        if (wallet.getHoldBalance().compareTo(request.getAmount()) < 0) {
+            log.warn("Hold balance is less than request amount: walletId={}, holdBalance={}, amount={}",
+                    wallet.getWalletId(), wallet.getHoldBalance(), request.getAmount());
+        }
+
+        // Upload proof file to S3 private folder (nếu có)
+        String proofS3Key = null;
+        if (proofFile != null && !proofFile.isEmpty()) {
+            log.info("Processing proof file: requestId={}, fileName={}, contentType={}, size={}", 
+                withdrawalRequestId, proofFile.getOriginalFilename(), proofFile.getContentType(), proofFile.getSize());
+            try {
+                // Validate file type (cho phép image và PDF)
+                String contentType = proofFile.getContentType();
+                String fileName = proofFile.getOriginalFilename() != null ? proofFile.getOriginalFilename().toLowerCase() : "";
+                boolean isValidType = (contentType != null && (contentType.startsWith("image/") || contentType.equals("application/pdf"))) ||
+                                     fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || 
+                                     fileName.endsWith(".png") || fileName.endsWith(".pdf");
+                
+                if (!isValidType) {
+                    log.error("Invalid proof file type: requestId={}, contentType={}, fileName={}", 
+                        withdrawalRequestId, contentType, fileName);
+                    throw InvalidProofFileException.invalidType(fileName, contentType);
+                }
+
+                // Validate file size (max 10MB)
+                long maxSize = 10 * 1024 * 1024; // 10MB
+                if (proofFile.getSize() > maxSize) {
+                    log.error("Proof file size exceeds limit: requestId={}, size={}, maxSize={}", 
+                        withdrawalRequestId, proofFile.getSize(), maxSize);
+                    throw InvalidProofFileException.exceedsSizeLimit(fileName, proofFile.getSize(), maxSize);
+                }
+
+                // Upload to S3 private folder (không public, cần authentication để download)
+                log.info("Uploading proof file to S3: requestId={}, fileName={}, contentType={}, size={}", 
+                    withdrawalRequestId, proofFile.getOriginalFilename(), contentType, proofFile.getSize());
+                proofS3Key = s3Service.uploadFileAndReturnKey(
+                        proofFile.getInputStream(),
+                        proofFile.getOriginalFilename(),
+                        proofFile.getContentType(),
+                        proofFile.getSize(),
+                        "withdrawal-proofs"  // folder: withdrawal-proofs/
+                );
+                log.info("Proof file uploaded to S3 successfully: requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
+            } catch (InvalidProofFileException e) {
+                // Re-throw validation exceptions as-is
+                throw e;
+            } catch (Exception e) {
+                log.error("Error uploading proof file: requestId={}, error={}", withdrawalRequestId, e.getMessage(), e);
+                throw ProofFileUploadException.create(withdrawalRequestId, proofFile.getOriginalFilename(), e);
+            }
+        } else {
+            log.warn("No proof file provided: requestId={}, proofFile={}", withdrawalRequestId, proofFile);
+        }
+
+        // Tính toán số dư mới: trừ từ balance và release hold
+        BigDecimal balanceBefore = wallet.getBalance();
+        BigDecimal balanceAfter = balanceBefore.subtract(request.getAmount());  // Trừ tiền từ balance
+        BigDecimal newHoldBalance = wallet.getHoldBalance().subtract(request.getAmount());  // Release hold
+        if (newHoldBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Hold balance would be negative, setting to 0: walletId={}, currentHold={}, amount={}",
+                    wallet.getWalletId(), wallet.getHoldBalance(), request.getAmount());
+            newHoldBalance = BigDecimal.ZERO;
+        }
+
+        // Cập nhật số dư ví
+        wallet.setBalance(balanceAfter);
+        wallet.setHoldBalance(newHoldBalance);
+        walletRepository.save(wallet);
+
+        // Tạo transaction record
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("withdrawal_amount", request.getAmount().toString());
+        metadata.put("paid_amount", paidAmount != null ? paidAmount.toString() : request.getAmount().toString());
+        metadata.put("currency", request.getCurrency().name());
+        metadata.put("bank_account_number", request.getBankAccountNumber());
+        metadata.put("bank_name", request.getBankName());
+        metadata.put("account_holder_name", request.getAccountHolderName());
+        metadata.put("withdrawal_request_id", withdrawalRequestId);
+        if (provider != null && !provider.isBlank()) {
+            metadata.put("provider", provider);
+        }
+        if (bankRef != null && !bankRef.isBlank()) {
+            metadata.put("bank_ref", bankRef);
+        }
+        if (txnCode != null && !txnCode.isBlank()) {
+            metadata.put("txn_code", txnCode);
+        }
+        if (proofS3Key != null && !proofS3Key.isBlank()) {
+            metadata.put("proof_s3_key", proofS3Key);
+            log.info("Proof S3 key added to metadata: requestId={}, proofS3Key={}", withdrawalRequestId, proofS3Key);
+        } else {
+            log.warn("Proof S3 key is null or blank: requestId={}, proofFile={}, proofS3Key={}", 
+                withdrawalRequestId, proofFile != null ? "exists" : "null", proofS3Key);
+        }
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            metadata.put("note", request.getNote());
+        }
+        if (request.getAdminNote() != null && !request.getAdminNote().isBlank()) {
+            metadata.put("admin_note", request.getAdminNote());
+        }
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(wallet)
+                .txType(WalletTxType.withdrawal)
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .metadata(metadata)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        WalletTransaction savedTransaction = walletTransactionRepository.save(transaction);
+
+        // Update withdrawal request
+        request.setStatus(WithdrawalStatus.COMPLETED);
+        request.setPaidAt(LocalDateTime.now());
+        request.setPaidAmount(paidAmount != null ? paidAmount : request.getAmount());
+        request.setProvider(provider);
+        request.setBankRef(bankRef);
+        request.setTxnCode(txnCode);
+        request.setProofUrl(proofS3Key);  // Lưu S3 key thay vì URL (sẽ dùng để download)
+        request.setCompletedBy(adminUserId);
+        request.setCompletedAt(LocalDateTime.now());
+        request.setWalletTransaction(savedTransaction);
+        withdrawalRequestRepository.save(request);
+
+        log.info("Completed withdrawal: requestId={}, walletId={}, amount={}, paidAmount={}, completedBy={}, balanceBefore={}, balanceAfter={}",
+                withdrawalRequestId, wallet.getWalletId(), request.getAmount(), paidAmount, adminUserId, balanceBefore, balanceAfter);
+
+        return walletMapper.toResponse(savedTransaction);
+    }
+
+    /**
+     * Admin/Manager đánh dấu chuyển tiền thất bại/nhầm → Release hold về available
+     */
+    @Transactional
+    public WithdrawalRequestResponse failWithdrawal(String withdrawalRequestId, String failureReason) {
+        String adminUserId = getCurrentUserId();
+
+        // Lấy withdrawal request
+        WithdrawalRequest request = withdrawalRequestRepository.findById(withdrawalRequestId)
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
+
+        // Kiểm tra status
+        if (request.getStatus() != WithdrawalStatus.APPROVED && request.getStatus() != WithdrawalStatus.PROCESSING) {
+            throw InvalidWithdrawalStatusException.forOperation(
+                withdrawalRequestId, request.getStatus(), WithdrawalStatus.APPROVED, WithdrawalStatus.PROCESSING);
+        }
+
+        // Lấy wallet với lock để release hold
+        Wallet wallet = walletRepository.findByIdWithLock(request.getWallet().getWalletId())
+                .orElseThrow(() -> WalletNotFoundException.byId(request.getWallet().getWalletId()));
+
+        // Release hold về available (hold → available)
+        BigDecimal newHoldBalance = wallet.getHoldBalance().subtract(request.getAmount());
+        if (newHoldBalance.compareTo(BigDecimal.ZERO) < 0) {
+            log.warn("Hold balance would be negative, setting to 0: walletId={}, currentHold={}, amount={}",
+                    wallet.getWalletId(), wallet.getHoldBalance(), request.getAmount());
+            newHoldBalance = BigDecimal.ZERO;
+        }
+        wallet.setHoldBalance(newHoldBalance);
+        walletRepository.save(wallet);
+
+        // Update withdrawal request
+        request.setStatus(WithdrawalStatus.FAILED);
+        request.setFailedBy(adminUserId);
+        request.setFailedAt(LocalDateTime.now());
+        request.setFailureReason(failureReason);
+        withdrawalRequestRepository.save(request);
+
+        log.info("Failed withdrawal: requestId={}, walletId={}, amount={}, failedBy={}, reason={} (hold released)",
+                withdrawalRequestId, wallet.getWalletId(), request.getAmount(), adminUserId, failureReason);
+
+        return toWithdrawalRequestResponse(request);
+    }
+
+    /**
+     * Lấy withdrawal request by ID (cho admin/manager)
+     */
+    @Transactional(readOnly = true)
+    public WithdrawalRequest getWithdrawalRequestById(String withdrawalRequestId) {
+        return withdrawalRequestRepository.findById(withdrawalRequestId)
+                .orElseThrow(() -> WithdrawalRequestNotFoundException.byId(withdrawalRequestId));
+    }
+
+    /**
+     * Download proof file từ S3 (private, cần authentication)
+     */
+    @Transactional(readOnly = true)
+    public byte[] downloadProofFile(String proofS3Key) {
+        try {
+            return s3Service.downloadFile(proofS3Key);
+        } catch (Exception e) {
+            log.error("Error downloading proof file from S3: key={}, error={}", proofS3Key, e.getMessage(), e);
+            throw ProofFileDownloadException.create(proofS3Key, e);
+        }
+    }
+
+    /**
+     * Lấy danh sách withdrawal requests (cho admin)
+     */
+    @Transactional(readOnly = true)
+    public Page<WithdrawalRequestResponse> getWithdrawalRequests(WithdrawalStatus status, Pageable pageable) {
+        Page<WithdrawalRequest> requests;
+        if (status != null) {
+            requests = withdrawalRequestRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        } else {
+            requests = withdrawalRequestRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+        return requests.map(this::toWithdrawalRequestResponse);
+    }
+
+    /**
+     * Lấy danh sách withdrawal requests của user hiện tại
+     */
+    @Transactional(readOnly = true)
+    public Page<WithdrawalRequestResponse> getMyWithdrawalRequests(WithdrawalStatus status, Pageable pageable) {
+        String userId = getCurrentUserId();
+        Wallet wallet = walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new WalletNotFoundException("Wallet not found for user: " + userId));
+
+        Page<WithdrawalRequest> requests;
+        if (status != null) {
+            requests = withdrawalRequestRepository.findByWalletIdAndStatus(wallet.getWalletId(), status, pageable);
+        } else {
+            requests = withdrawalRequestRepository.findByWallet_WalletIdOrderByCreatedAtDesc(wallet.getWalletId(), pageable);
+        }
+        return requests.map(this::toWithdrawalRequestResponse);
+    }
+
+    /**
+     * Convert WithdrawalRequest to Response DTO
+     */
+    private WithdrawalRequestResponse toWithdrawalRequestResponse(WithdrawalRequest request) {
+        return WithdrawalRequestResponse.builder()
+                .withdrawalRequestId(request.getWithdrawalRequestId())
+                .walletId(request.getWallet().getWalletId())
+                .userId(request.getWallet().getUserId())
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .bankAccountNumber(request.getBankAccountNumber())
+                .bankName(request.getBankName())
+                .accountHolderName(request.getAccountHolderName())
+                .note(request.getNote())
+                .status(request.getStatus() != null ? request.getStatus().name() : null)
+                .approvedBy(request.getApprovedBy())
+                .approvedAt(request.getApprovedAt())
+                .rejectedBy(request.getRejectedBy())
+                .rejectedAt(request.getRejectedAt())
+                .rejectionReason(request.getRejectionReason())
+                .adminNote(request.getAdminNote())
+                .paidAt(request.getPaidAt())
+                .paidAmount(request.getPaidAmount())
+                .provider(request.getProvider())
+                .bankRef(request.getBankRef())
+                .txnCode(request.getTxnCode())
+                .proofUrl(request.getProofUrl())
+                .completedBy(request.getCompletedBy())
+                .completedAt(request.getCompletedAt())
+                .failedBy(request.getFailedBy())
+                .failedAt(request.getFailedAt())
+                .failureReason(request.getFailureReason())
+                .walletTxId(request.getWalletTransaction() != null ? request.getWalletTransaction().getWalletTxId() : null)
+                .createdAt(request.getCreatedAt())
+                .build();
     }
 
     /**
@@ -763,12 +1270,13 @@ public class WalletService {
         
         // Verify đây là revision_fee transaction
         if (originalTx.getTxType() != WalletTxType.revision_fee) {
-            throw new RuntimeException("Transaction is not a revision fee: " + paidWalletTxId + ", type: " + originalTx.getTxType());
+            throw InvalidTransactionTypeException.forOperation(
+                paidWalletTxId, originalTx.getTxType(), WalletTxType.revision_fee);
         }
         
         // Verify chưa được refund
         if (walletTransactionRepository.findByRefundOfWalletTx_WalletTxId(paidWalletTxId).isPresent()) {
-            throw new RuntimeException("Transaction already refunded: " + paidWalletTxId);
+            throw TransactionAlreadyRefundedException.create(paidWalletTxId);
         }
         
         // Lấy wallet và lock để tránh race condition

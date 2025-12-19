@@ -290,18 +290,13 @@ const MilestonesPage = () => {
     },
     {
       title: 'Deadline',
-      dataIndex: 'plannedDueDate',
-      key: 'plannedDueDate',
+      dataIndex: 'targetDeadline',
+      key: 'targetDeadline',
       width: 160,
       render: (_, record) => {
-        // Hiển thị deadline: plannedDueDate hoặc tính từ actualStartAt + SLA (nếu có)
-        let display = record.plannedDueDate;
-        if (!display && record.actualStartAt && record.milestoneSlaDays) {
-          display = dayjs(record.actualStartAt)
-            .add(record.milestoneSlaDays, 'day')
-            .toDate();
-        }
-        return display ? dayjs(display).format('DD/MM/YYYY') : '—';
+        if (!record?.targetDeadline) return '—';
+        const d = dayjs(record.targetDeadline);
+        return d.isValid() ? d.format('DD/MM/YYYY') : '—';
       },
     },
     {
@@ -459,10 +454,11 @@ const MilestonesPage = () => {
       <div className={styles.header}>
         <div>
           <Title level={3} style={{ marginBottom: 0 }}>
-          Milestones Management
+            Milestones Management
           </Title>
           <Text type="secondary">
-          List of milestones and tasks. Click "View Details" to manage the tasks of a milestone.
+            List of milestones and tasks. Click "View Details" to manage the
+            tasks of a milestone.
           </Text>
         </div>
         <Button

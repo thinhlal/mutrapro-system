@@ -131,7 +131,9 @@ const MyRequestsContent = () => {
 
         // Clear old bookings and load bookings for recording requests
         setBookings({});
-        const recordingRequests = data.filter(r => r.requestType === 'recording');
+        const recordingRequests = data.filter(
+          r => r.requestType === 'recording'
+        );
         if (recordingRequests.length > 0) {
           loadBookings(recordingRequests.map(r => r.requestId));
         }
@@ -147,12 +149,12 @@ const MyRequestsContent = () => {
   };
 
   // Load bookings for recording requests
-  const loadBookings = async (requestIds) => {
+  const loadBookings = async requestIds => {
     if (!requestIds || requestIds.length === 0) return;
-    
+
     try {
       setLoadingBookings(true);
-      const bookingPromises = requestIds.map(async (requestId) => {
+      const bookingPromises = requestIds.map(async requestId => {
         try {
           const response = await getBookingByRequestId(requestId);
           if (response.status === 'success' && response.data) {
@@ -476,61 +478,75 @@ const MyRequestsContent = () => {
                         </div>
                       )}
 
-                    { request.requestType !== 'recording' && request.totalPrice && (
-                      <div className={styles.infoRow}>
-                        <span className={styles.infoLabel}>Total Price:</span>
-                        <span
-                          className={styles.infoValue}
-                          style={{
-                            fontWeight: 600,
-                            color: '#52c41a',
-                            fontSize: '16px',
-                          }}
-                        >
-                          {formatPrice(
-                            request.totalPrice,
-                            request.currency || 'VND'
-                          )}
-                        </span>
-                      </div>
-                    )}
+                    {request.requestType !== 'recording' &&
+                      request.totalPrice && (
+                        <div className={styles.infoRow}>
+                          <span className={styles.infoLabel}>Total Price:</span>
+                          <span
+                            className={styles.infoValue}
+                            style={{
+                              fontWeight: 600,
+                              color: '#52c41a',
+                              fontSize: '16px',
+                            }}
+                          >
+                            {formatPrice(
+                              request.totalPrice,
+                              request.currency || 'VND'
+                            )}
+                          </span>
+                        </div>
+                      )}
 
                     {/* Show basic booking info for recording requests */}
-                    {request.requestType === 'recording' && bookings[request.requestId] && (
-                      <>
-                        {bookings[request.requestId].bookingDate && (
-                          <div className={styles.infoRow}>
-                            <span className={styles.infoLabel}>📅 Date:</span>
-                            <span className={styles.infoValue}>
-                              {formatBookingDate(bookings[request.requestId].bookingDate)}
-                            </span>
-                          </div>
-                        )}
-                        {bookings[request.requestId].startTime && bookings[request.requestId].endTime && (
-                          <div className={styles.infoRow}>
-                            <span className={styles.infoLabel}>🕒 Time Slot:</span>
-                            <span className={styles.infoValue}>
-                              {bookings[request.requestId].startTime} - {bookings[request.requestId].endTime}
-                            </span>
-                          </div>
-                        )}
-                        {bookings[request.requestId].totalCost !== undefined && (
-                          <div className={styles.infoRow}>
-                            <span className={styles.infoLabel}>💰 Total Cost:</span>
-                            <span
-                              className={styles.infoValue}
-                              style={{
-                                fontWeight: 600,
-                                color: '#ff4d4f',
-                                fontSize: '16px',
-                              }}
-                            >
-                              {bookings[request.requestId].totalCost?.toLocaleString('vi-VN')} VND
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    )}
+                    {request.requestType === 'recording' &&
+                      bookings[request.requestId] && (
+                        <>
+                          {bookings[request.requestId].bookingDate && (
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>📅 Date:</span>
+                              <span className={styles.infoValue}>
+                                {formatBookingDate(
+                                  bookings[request.requestId].bookingDate
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          {bookings[request.requestId].startTime &&
+                            bookings[request.requestId].endTime && (
+                              <div className={styles.infoRow}>
+                                <span className={styles.infoLabel}>
+                                  🕒 Time Slot:
+                                </span>
+                                <span className={styles.infoValue}>
+                                  {bookings[request.requestId].startTime} -{' '}
+                                  {bookings[request.requestId].endTime}
+                                </span>
+                              </div>
+                            )}
+                          {bookings[request.requestId].totalCost !==
+                            undefined && (
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>
+                                💰 Total Cost:
+                              </span>
+                              <span
+                                className={styles.infoValue}
+                                style={{
+                                  fontWeight: 600,
+                                  color: '#ff4d4f',
+                                  fontSize: '16px',
+                                }}
+                              >
+                                {bookings[
+                                  request.requestId
+                                ].totalCost?.toLocaleString('vi-VN')}{' '}
+                                VND
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
                   </div>
 
                   <div className={styles.cardFooter}>

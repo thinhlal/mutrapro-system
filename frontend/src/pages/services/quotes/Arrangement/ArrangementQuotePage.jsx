@@ -261,9 +261,7 @@ export default function ArrangementQuotePage() {
                   <Descriptions.Item label="Music Genres">
                     <Space wrap>
                       {formData.genres.map((genre, idx) => (
-                        <Tag key={idx}>
-                          {getGenreLabel(genre) || genre}
-                        </Tag>
+                        <Tag key={idx}>{getGenreLabel(genre) || genre}</Tag>
                       ))}
                     </Space>
                   </Descriptions.Item>
@@ -501,7 +499,6 @@ export default function ArrangementQuotePage() {
                     }
                     type="success"
                     showIcon
-                  
                   />
 
                   <Divider style={{ margin: '12px 0' }} />

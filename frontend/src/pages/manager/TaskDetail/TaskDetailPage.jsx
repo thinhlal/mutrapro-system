@@ -178,10 +178,12 @@ const TaskDetailPage = () => {
   const [artistsInfo, setArtistsInfo] = useState({});
   const [loadingArtists, setLoadingArtists] = useState(false);
 
-  const loadArtistsInfo = useCallback(async artists => {
+  const loadArtistsInfo = useCallback(async participants => {
     try {
       setLoadingArtists(true);
-      const specialistIds = artists.map(a => a.specialistId).filter(Boolean);
+      const specialistIds = participants
+        .map(p => p.specialistId)
+        .filter(Boolean);
 
       if (specialistIds.length === 0) {
         setLoadingArtists(false);
@@ -229,9 +231,13 @@ const TaskDetailPage = () => {
           const booking = response.data;
           setStudioBooking(booking);
 
-          // Load thông tin artists nếu có
-          if (booking.artists && booking.artists.length > 0) {
-            loadArtistsInfo(booking.artists);
+          // Load thông tin artists nếu có (từ participants với performerSource = INTERNAL_ARTIST)
+          const internalArtists =
+            booking?.participants?.filter(
+              p => p.performerSource === 'INTERNAL_ARTIST'
+            ) || [];
+          if (internalArtists.length > 0) {
+            loadArtistsInfo(internalArtists);
           }
         } else {
           setStudioBooking(null);
@@ -558,7 +564,9 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error('Error resolving issue:', error);
-      message.error(error?.response?.data?.message || 'Failed to resolve issue');
+      message.error(
+        error?.response?.data?.message || 'Failed to resolve issue'
+      );
     } finally {
       setActionLoading(false);
     }
@@ -674,74 +682,21 @@ const TaskDetailPage = () => {
     milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
   const getPlannedDeadlineDayjs = milestone => {
-    if (!milestone) return null;
-    if (milestone.plannedDueDate) {
-      return dayjs(milestone.plannedDueDate);
-    }
-    if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-      return dayjs(milestone.plannedStartAt).add(
-        Number(milestone.milestoneSlaDays || 0),
-        'day'
-      );
-    }
-    return null;
+    if (!milestone?.plannedDueDate) return null;
+    const d = dayjs(milestone.plannedDueDate);
+    return d.isValid() ? d : null;
   };
 
   const getActualDeadlineDayjs = milestone => {
-    // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-    if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-      return null;
-    }
-    return dayjs(milestone.actualStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
+    if (!milestone?.targetDeadline) return null;
+    const d = dayjs(milestone.targetDeadline);
+    return d.isValid() ? d : null;
   };
 
-  const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
-    if (!milestone) return null;
-    const slaDays = Number(milestone.milestoneSlaDays || 0);
-    if (!slaDays) return null;
-
-    // Ưu tiên 1: Nếu có plannedStartAt thì dùng nó
-    const plannedStart = getPlannedStartDayjs(milestone);
-    if (plannedStart) {
-      return plannedStart.add(slaDays, 'day');
-    }
-
-    // Ưu tiên 2: Nếu là milestone đầu tiên (orderIndex <= 1) thì dùng thời gian hiện tại
-    const orderIndex = milestone.orderIndex;
-    if (!orderIndex || orderIndex <= 1) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Ưu tiên 3: Tìm milestone trước đó để tính deadline
-    const previousMilestone =
-      contractMilestones.find(
-        item =>
-          item &&
-          item.orderIndex === orderIndex - 1 &&
-          (item.contractId
-            ? item.contractId === (milestone.contractId || item.contractId)
-            : true)
-      ) || null;
-
-    if (!previousMilestone) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Tính deadline của milestone trước đó
-    const previousDeadline =
-      getActualDeadlineDayjs(previousMilestone) ||
-      getPlannedDeadlineDayjs(previousMilestone) ||
-      getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
-
-    if (!previousDeadline) {
-      return dayjs().add(slaDays, 'day');
-    }
-
-    // Deadline của milestone hiện tại = deadline của milestone trước + SLA days
-    return previousDeadline.add(slaDays, 'day');
+  const getEstimatedDeadlineDayjs = (milestone, _contractMilestones = []) => {
+    if (!milestone?.estimatedDeadline) return null;
+    const d = dayjs(milestone.estimatedDeadline);
+    return d.isValid() ? d : null;
   };
 
   const calculateDaysRemaining = deadlineDayjs => {
@@ -1266,20 +1221,28 @@ const TaskDetailPage = () => {
                     : plannedDaysDiff !== null
                       ? plannedDaysDiff
                       : estimatedDaysDiff;
-                // Nếu đã có firstSubmissionAt (đã giao bản đầu tiên) hoặc có submission pending_review thì không hiện cảnh báo deadline nữa
-                const hasFirstSubmission = task.milestone?.firstSubmissionAt;
+
+                // SLA status đã được BE tính sẵn (firstSubmissionLate/overdueNow)
+                const hasFirstSubmission = !!task.milestone?.firstSubmissionAt;
                 const hasPendingReview = submissions.some(
                   s => s.status?.toLowerCase() === 'pending_review'
                 );
+                const isFirstSubmissionLate =
+                  task.milestone?.firstSubmissionLate === true;
+                const isFirstSubmissionOnTime =
+                  hasFirstSubmission &&
+                  task.milestone?.firstSubmissionLate === false;
+
+                const overdueNow = task.milestone?.overdueNow;
                 const shouldHideDeadlineWarning =
                   hasFirstSubmission || hasPendingReview;
                 const isOverdue =
                   !shouldHideDeadlineWarning &&
-                  daysDiff !== null &&
-                  daysDiff < 0 &&
+                  overdueNow === true &&
                   task.status !== 'completed';
                 const isNearDeadline =
                   !shouldHideDeadlineWarning &&
+                  overdueNow === false &&
                   daysDiff !== null &&
                   daysDiff <= 3 &&
                   daysDiff >= 0 &&
@@ -1291,11 +1254,11 @@ const TaskDetailPage = () => {
                     size="small"
                     style={{ width: '100%' }}
                   >
-                    {/* Actual Deadline */}
+                    {/* Target/SLA Deadline */}
                     {actualDeadline && (
                       <div>
                         <Space>
-                          <Text strong>Actual Deadline:</Text>
+                          <Text strong>Target Deadline:</Text>
                           <Text
                             type={
                               isOverdue && actualDaysDiff !== null
@@ -1334,6 +1297,12 @@ const TaskDetailPage = () => {
                                 </Tag>
                               )}
                             </>
+                          )}
+                          {isFirstSubmissionLate && (
+                            <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                          )}
+                          {isFirstSubmissionOnTime && (
+                            <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
                           )}
                         </Space>
                       </div>
@@ -1540,129 +1509,144 @@ const TaskDetailPage = () => {
                       <Tag color="blue">{studioBooking.sessionType}</Tag>
                     </Descriptions.Item>
                   )}
-                  {studioBooking.artists &&
-                    studioBooking.artists.length > 0 && (
-                      <Descriptions.Item label="Artists" span={2}>
-                        {loadingArtists ? (
-                          <Spin />
-                        ) : (
-                          <Space
-                            direction="vertical"
-                            size="small"
-                            style={{ width: '100%' }}
-                          >
-                            {studioBooking.artists.map((artist, idx) => {
-                              const specialistInfo =
-                                artistsInfo[artist.specialistId];
-                              return (
-                                <Card
-                                  key={idx}
-                                  size="small"
-                                  style={{ marginBottom: 8 }}
-                                >
-                                  <Space
-                                    direction="vertical"
+                  {() => {
+                    const internalArtists =
+                      studioBooking?.participants?.filter(
+                        p => p.performerSource === 'INTERNAL_ARTIST'
+                      ) || [];
+                    return (
+                      internalArtists.length > 0 && (
+                        <Descriptions.Item label="Artists" span={2}>
+                          {loadingArtists ? (
+                            <Spin />
+                          ) : (
+                            <Space
+                              direction="vertical"
+                              size="small"
+                              style={{ width: '100%' }}
+                            >
+                              {internalArtists.map((participant, idx) => {
+                                const specialistInfo =
+                                  artistsInfo[participant.specialistId];
+                                return (
+                                  <Card
+                                    key={idx}
                                     size="small"
-                                    style={{ width: '100%' }}
+                                    style={{ marginBottom: 8 }}
                                   >
-                                    <Space>
-                                      {specialistInfo?.avatarUrl && (
-                                        <img
-                                          src={specialistInfo.avatarUrl}
-                                          alt={
-                                            specialistInfo.fullName || 'Artist'
-                                          }
-                                          style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: '50%',
-                                            objectFit: 'cover',
-                                          }}
-                                        />
-                                      )}
-                                      <Space direction="vertical" size={0}>
-                                        <Space>
-                                          <Text strong>
-                                            {specialistInfo?.fullName || 'N/A'}
-                                          </Text>
-                                          {artist.isPrimary && (
-                                            <Tag color="gold">Primary</Tag>
+                                    <Space
+                                      direction="vertical"
+                                      size="small"
+                                      style={{ width: '100%' }}
+                                    >
+                                      <Space>
+                                        {specialistInfo?.avatarUrl && (
+                                          <img
+                                            src={specialistInfo.avatarUrl}
+                                            alt={
+                                              specialistInfo.fullName ||
+                                              'Artist'
+                                            }
+                                            style={{
+                                              width: 40,
+                                              height: 40,
+                                              borderRadius: '50%',
+                                              objectFit: 'cover',
+                                            }}
+                                          />
+                                        )}
+                                        <Space direction="vertical" size={0}>
+                                          <Space>
+                                            <Text strong>
+                                              {specialistInfo?.fullName ||
+                                                'N/A'}
+                                            </Text>
+                                            {participant.isPrimary && (
+                                              <Tag color="gold">Primary</Tag>
+                                            )}
+                                          </Space>
+                                          {specialistInfo?.email && (
+                                            <Text
+                                              type="secondary"
+                                              style={{ fontSize: '12px' }}
+                                            >
+                                              {specialistInfo.email}
+                                            </Text>
                                           )}
                                         </Space>
-                                        {specialistInfo?.email && (
-                                          <Text
-                                            type="secondary"
-                                            style={{ fontSize: '12px' }}
-                                          >
-                                            {specialistInfo.email}
-                                          </Text>
-                                        )}
                                       </Space>
-                                    </Space>
-                                    <Space>
-                                      <Text strong>Specialist ID:</Text>
-                                      <Text
-                                        copyable={{ text: artist.specialistId }}
-                                        style={{
-                                          fontFamily: 'monospace',
-                                          fontSize: '12px',
-                                        }}
-                                      >
-                                        {artist.specialistId?.substring(0, 8)}
-                                        ...
-                                      </Text>
-                                    </Space>
-                                    <Space>
-                                      <Text strong>Role:</Text>
-                                      <Tag
-                                        color={
-                                          artist.role === 'VOCALIST'
-                                            ? 'orange'
-                                            : 'blue'
-                                        }
-                                      >
-                                        {artist.role === 'VOCALIST'
-                                          ? 'Vocal'
-                                          : artist.role === 'INSTRUMENT_PLAYER'
-                                            ? 'Instrument'
-                                            : artist.role || 'N/A'}
-                                      </Tag>
-                                    </Space>
-                                    {specialistInfo?.primaryTag && (
                                       <Space>
-                                        <Text strong>Primary Tag:</Text>
-                                        <Tag>{specialistInfo.primaryTag}</Tag>
-                                      </Space>
-                                    )}
-                                    {specialistInfo?.experienceYears && (
-                                      <Space>
-                                        <Text strong>Experience:</Text>
-                                        <Text>
-                                          {specialistInfo.experienceYears} năm
+                                        <Text strong>Specialist ID:</Text>
+                                        <Text
+                                          copyable={{
+                                            text: participant.specialistId,
+                                          }}
+                                          style={{
+                                            fontFamily: 'monospace',
+                                            fontSize: '12px',
+                                          }}
+                                        >
+                                          {participant.specialistId?.substring(
+                                            0,
+                                            8
+                                          )}
+                                          ...
                                         </Text>
                                       </Space>
-                                    )}
-                                    {specialistInfo?.genres &&
-                                      specialistInfo.genres.length > 0 && (
-                                        <Space wrap>
-                                          <Text strong>Genres:</Text>
-                                          {specialistInfo.genres.map(
-                                            (genre, gIdx) => (
-                                              <Tag key={gIdx} size="small">
-                                                {genre}
-                                              </Tag>
-                                            )
-                                          )}
+                                      <Space>
+                                        <Text strong>Role:</Text>
+                                        <Tag
+                                          color={
+                                            participant.roleType === 'VOCAL'
+                                              ? 'orange'
+                                              : 'blue'
+                                          }
+                                        >
+                                          {participant.roleType === 'VOCAL'
+                                            ? 'Vocal'
+                                            : participant.roleType ===
+                                                'INSTRUMENT'
+                                              ? 'Instrument'
+                                              : participant.roleType || 'N/A'}
+                                        </Tag>
+                                      </Space>
+                                      {specialistInfo?.primaryTag && (
+                                        <Space>
+                                          <Text strong>Primary Tag:</Text>
+                                          <Tag>{specialistInfo.primaryTag}</Tag>
                                         </Space>
                                       )}
-                                  </Space>
-                                </Card>
-                              );
-                            })}
-                          </Space>
-                        )}
-                      </Descriptions.Item>
-                    )}
+                                      {specialistInfo?.experienceYears && (
+                                        <Space>
+                                          <Text strong>Experience:</Text>
+                                          <Text>
+                                            {specialistInfo.experienceYears} năm
+                                          </Text>
+                                        </Space>
+                                      )}
+                                      {specialistInfo?.genres &&
+                                        specialistInfo.genres.length > 0 && (
+                                          <Space wrap>
+                                            <Text strong>Genres:</Text>
+                                            {specialistInfo.genres.map(
+                                              (genre, gIdx) => (
+                                                <Tag key={gIdx} size="small">
+                                                  {genre}
+                                                </Tag>
+                                              )
+                                            )}
+                                          </Space>
+                                        )}
+                                    </Space>
+                                  </Card>
+                                );
+                              })}
+                            </Space>
+                          )}
+                        </Descriptions.Item>
+                      )
+                    );
+                  }}
                   {studioBooking.notes && (
                     <Descriptions.Item label="Notes" span={2}>
                       <Text>{studioBooking.notes}</Text>

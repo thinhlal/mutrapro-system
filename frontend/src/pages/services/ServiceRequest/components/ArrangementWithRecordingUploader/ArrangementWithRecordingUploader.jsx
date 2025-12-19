@@ -568,8 +568,8 @@ export default function ArrangementWithRecordingUploader({
               Arrangement + Recording
             </h2>
             <p className={styles.desc}>
-              Upload original notation file (MusicXML/MIDI/PDF). We will
-              arrange and record for you.
+              Upload original notation file (MusicXML/MIDI/PDF). We will arrange
+              and record for you.
             </p>
           </div>
         </div>
@@ -768,7 +768,9 @@ export default function ArrangementWithRecordingUploader({
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>
-              <p className="ant-upload-text">Drag and drop notation file here</p>
+              <p className="ant-upload-text">
+                Drag and drop notation file here
+              </p>
               <p className="ant-upload-hint">MusicXML / MIDI / PDF</p>
             </Dragger>
           </div>

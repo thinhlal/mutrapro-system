@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Smoosic Editor</title>
+    <link href="../styles/fonts.css" type="text/css" rel="stylesheet" />
+    <link href="../styles/media.css" rel="stylesheet" />
+    <link href="../styles/ribbon.css" rel="stylesheet" />
+    <link href="../styles/dialogs.css" rel="stylesheet" />
+    <link href="../styles/menus.css" rel="stylesheet" />
+    <link href="../styles/piano.css" rel="stylesheet" />
+    <link href="../styles/tree.css" rel="stylesheet" />
+    <link href="../styles/bravura-font-codes.css" rel="stylesheet" />
+    <link href="../styles/bootstrap.min.css" rel="stylesheet" />
+    <!-- MuTraPro Theme Override -->
+    <link href="../mutrapro-theme.css" rel="stylesheet" />
+    <!-- script type="text/javascript" src="../../../vexflow_smoosic/build/cjs/vexflow-debug.js"></script -->
+    <!-- script type="text/javascript" src="../../node_modules/vexflow_smoosic/build/cjs/vexflow-debug-with-tests.js"></script -->
+    <!-- script type="text/javascript" src="../../../vexflow_smoosic/build/cjs/vexflow-debug-with-tests.js"></script -->
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.3.1.slim.js"
+    ></script>
+    <script type="text/javascript" src="../jszip.js"></script>
+    <script type="text/javascript" src="../smoosic.js"></script>
+    <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function (event) {
+        Smo.SuiDom.createUiDom(document.getElementById('smoo'));
+        var config = {
+          mode: 'application',
+          leftControls: 'controls-left',
+          topControls: 'controls-top',
+          scoreDomContainer: 'smo-scroll-region',
+        };
+        Smo.SuiApplication.configure(config);
+      });
+    </script>
+  </head>
+  <body>
+    <!-- <sub id="link-hdr"><a href="https://github.com/Smoosic/smoosic">Github site</a> | 
+    <a href="https://smoosic.github.io/Smoosic/changes.md">change notes</a> |
+     <a href="https://smoosic.github.io/Smoosic/release/html/smoosic.html">application</a><button class="close-header"><span class="icon icon-cross"></span></button>
+    </sub> -->
+    <!-- audio crossOrigin="anonymous" id="sample" src="https://smoosic.github.io/Smoosic/build/sound/piano_middle_C.mp3" / -->
+    <div id="smoo"></div>
+  </body>
+</html>

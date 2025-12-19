@@ -54,10 +54,12 @@ public class TaskAssignmentController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String taskType,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer minProgress,
+            @RequestParam(required = false) Integer maxProgress,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         PageResponse<TaskAssignmentResponse> result = taskAssignmentService
-            .getAllTaskAssignments(status, taskType, keyword, page, size);
+            .getAllTaskAssignments(status, taskType, keyword, minProgress, maxProgress, page, size);
         return ApiResponse.<PageResponse<TaskAssignmentResponse>>builder()
                 .message("Task assignments retrieved successfully")
                 .data(result)

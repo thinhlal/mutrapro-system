@@ -18,6 +18,12 @@ public interface BookingRequiredEquipmentRepository extends JpaRepository<Bookin
     List<BookingRequiredEquipment> findByBooking_BookingId(String bookingId);
     
     /**
+     * Batch fetch equipment cho nhiều bookings (tối ưu performance)
+     */
+    @Query("SELECT bre FROM BookingRequiredEquipment bre WHERE bre.booking.bookingId IN :bookingIds")
+    List<BookingRequiredEquipment> findByBooking_BookingIdIn(@Param("bookingIds") List<String> bookingIds);
+    
+    /**
      * Lấy equipment theo equipment_id
      */
     List<BookingRequiredEquipment> findByEquipmentId(String equipmentId);

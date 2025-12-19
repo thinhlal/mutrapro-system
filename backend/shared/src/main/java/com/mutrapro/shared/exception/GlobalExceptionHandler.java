@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.apache.catalina.connector.ClientAbortException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -468,11 +470,31 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * Xử lý ClientAbortException - Client đã đóng kết nối trước khi server hoàn thành response
+     * Đây không phải lỗi thực sự, chỉ log debug và không trả về response
+     */
+    @ExceptionHandler({ClientAbortException.class, AsyncRequestNotUsableException.class})
+    public void handleClientAbortException(Exception ex, HttpServletRequest request) {
+        // Chỉ log debug vì đây là behavior bình thường khi client abort connection
+        // (user refresh page, navigate away, network timeout, etc.)
+        log.debug("Client aborted connection: {} - {}", request.getRequestURI(), ex.getMessage());
+        // Không trả về response vì client đã đóng kết nối
+    }
+    
+    /**
      * Xử lý tất cả các exception khác (fallback)
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(
             Exception ex, HttpServletRequest request) {
+        
+        // Skip logging cho ClientAbortException (đã handle ở trên)
+        if (ex.getCause() instanceof ClientAbortException || 
+            ex instanceof AsyncRequestNotUsableException) {
+            log.debug("Client aborted connection (caught in generic handler): {} - {}", 
+                request.getRequestURI(), ex.getMessage());
+            return null; // Không trả về response
+        }
         
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
         

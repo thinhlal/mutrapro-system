@@ -23,6 +23,7 @@ import com.mutrapro.shared.event.TaskAssignmentAssignedEvent;
 import com.mutrapro.shared.event.TaskAssignmentReadyToStartEvent;
 import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
 import com.mutrapro.shared.event.TaskIssueReportedEvent;
+import com.mutrapro.shared.event.TaskDeadlineReminderEvent;
 import com.mutrapro.shared.event.ContractNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -265,6 +266,59 @@ public class NotificationService {
 
         log.info("Task issue reported notification created: assignmentId={}, managerUserId={}",
                 event.getAssignmentId(), event.getManagerUserId());
+    }
+
+    /**
+     * Tạo notification nhắc hạn task cho specialist (Kafka event).
+     */
+    @Transactional
+    public void createTaskDeadlineReminderNotification(TaskDeadlineReminderEvent event) {
+        if (event.getSpecialistUserId() == null || event.getSpecialistUserId().isBlank()) {
+            log.warn("Cannot create task deadline reminder notification, userId missing: assignmentId={}", event.getAssignmentId());
+            return;
+        }
+
+        String contractLabel = event.getContractNumber() != null && !event.getContractNumber().isBlank()
+            ? event.getContractNumber()
+            : event.getContractId();
+        String milestoneLabel = event.getMilestoneName() != null && !event.getMilestoneName().isBlank()
+            ? event.getMilestoneName()
+            : event.getMilestoneId();
+
+        String deadlineStr = event.getTargetDeadline() != null ? event.getTargetDeadline().toString() : "N/A";
+        Integer days = event.getReminderDays();
+        String defaultTitle = days != null
+            ? String.format("Task sắp đến hạn (còn %d ngày)", days)
+            : "Task sắp đến hạn";
+        String defaultContent = String.format(
+            "Task %s cho contract #%s (Milestone: %s) sắp đến hạn. Deadline: %s. Vui lòng kiểm tra và hoàn thành đúng hạn.",
+            event.getTaskType(),
+            contractLabel,
+            milestoneLabel,
+            deadlineStr
+        );
+
+        String title = event.getTitle() != null ? event.getTitle() : defaultTitle;
+        String content = event.getContent() != null ? event.getContent() : defaultContent;
+        String actionUrl = event.getActionUrl() != null ? event.getActionUrl() : "/transcription/my-tasks";
+        String referenceType = event.getReferenceType() != null ? event.getReferenceType() : "TASK_ASSIGNMENT";
+
+        Notification notification = Notification.builder()
+            .userId(event.getSpecialistUserId())
+            .type(NotificationType.TASK_DEADLINE_REMINDER)
+            .title(title)
+            .content(content)
+            .referenceId(event.getAssignmentId())
+            .referenceType(referenceType)
+            .actionUrl(actionUrl)
+            .isRead(false)
+            .build();
+
+        Notification saved = notificationRepository.save(notification);
+        sendRealTimeNotification(event.getSpecialistUserId(), saved);
+
+        log.info("Task deadline reminder notification created: assignmentId={}, userId={}, reminderDays={}",
+            event.getAssignmentId(), event.getSpecialistUserId(), event.getReminderDays());
     }
 
     /**

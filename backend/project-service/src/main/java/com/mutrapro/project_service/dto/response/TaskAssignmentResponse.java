@@ -38,6 +38,8 @@ public class TaskAssignmentResponse {
     String milestoneId;
 
     LocalDateTime assignedDate;
+    
+    LocalDateTime createdAt;  // Thời điểm task assignment được tạo (từ BaseEntity)
 
     LocalDateTime completedDate;
 
@@ -56,6 +58,13 @@ public class TaskAssignmentResponse {
 
     // Link to studio booking (for recording tasks)
     String studioBookingId;  // Soft reference to studio_bookings.booking_id (nullable)
+    StudioBookingInfo studioBooking;  // Studio booking info (chỉ populate cho recording tasks)
+
+    // Progress percentage - tính ở backend và update khi submission thay đổi (0-100)
+    Integer progressPercentage;
+    
+    // Has pending review submission - để frontend check mà không cần fetch submissions
+    Boolean hasPendingReview;
 
     // Request info (nested) - chỉ các field quan trọng cho specialist
     RequestInfo request;
@@ -107,6 +116,8 @@ public class TaskAssignmentResponse {
         Integer tempo;
         Object instruments; // List instruments nếu có
         Object files; // List files mà customer đã upload
+        List<String> genres; // List genres cho arrangement (VD: ["Pop", "Rock"])
+        String purpose; // Mục đích cho arrangement (VD: "karaoke_cover", "performance")
     }
 
     @Data
@@ -128,7 +139,12 @@ public class TaskAssignmentResponse {
         LocalDateTime firstSubmissionAt;  // Lúc specialist giao bản đầu tiên (để check SLA milestone)
         LocalDateTime finalCompletedAt;  // Lúc customer chấp nhận bản cuối cùng (sau mọi revision)
         Integer milestoneSlaDays;
+        LocalDateTime targetDeadline;  // Deadline mục tiêu/hard deadline do backend tính (workflow 3 vs 4)
         LocalDateTime estimatedDeadline;  // Deadline ước tính khi chưa có actual/planned (tính từ deadline milestone trước đó + slaDays)
+        // Computed SLA status: true if firstSubmissionAt > targetDeadline; false if <=; null if cannot decide
+        Boolean firstSubmissionLate;
+        // Computed at query time: overdue when not yet submitted (firstSubmissionAt == null && now > targetDeadline)
+        Boolean overdueNow;
         
         // Source arrangement info (cho recording milestone)
         String sourceArrangementMilestoneId;  // ID của arrangement milestone tạo ra recording milestone này
@@ -160,6 +176,18 @@ public class TaskAssignmentResponse {
         String fileUrl;  // Download URL
         Long fileSize;
         String mimeType;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @FieldDefaults(level = PRIVATE)
+    public static class StudioBookingInfo {
+        String bookingId;
+        String bookingDate;  // LocalDate as String (YYYY-MM-DD)
+        String status;  // BookingStatus enum as String
+        String studioName;  // Studio name
     }
 }
 

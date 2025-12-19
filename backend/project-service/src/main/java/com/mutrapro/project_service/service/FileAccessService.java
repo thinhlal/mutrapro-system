@@ -1,22 +1,21 @@
 package com.mutrapro.project_service.service;
 
-import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
-import com.mutrapro.project_service.entity.BookingArtist;
+import com.mutrapro.project_service.entity.BookingParticipant;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.entity.ContractMilestone;
 import com.mutrapro.project_service.entity.File;
 import com.mutrapro.project_service.entity.StudioBooking;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.FileSourceType;
+import com.mutrapro.project_service.enums.PerformerSource;
 import com.mutrapro.project_service.exception.FileAccessDeniedException;
 import com.mutrapro.project_service.exception.FileNotFoundException;
-import com.mutrapro.project_service.repository.BookingArtistRepository;
+import com.mutrapro.project_service.repository.BookingParticipantRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
 import com.mutrapro.project_service.repository.ContractRepository;
 import com.mutrapro.project_service.repository.FileRepository;
 import com.mutrapro.project_service.repository.StudioBookingRepository;
 import com.mutrapro.project_service.repository.TaskAssignmentRepository;
-import com.mutrapro.shared.dto.ApiResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -27,7 +26,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Service kiểm tra quyền truy cập file
@@ -42,9 +40,8 @@ public class FileAccessService {
     TaskAssignmentRepository taskAssignmentRepository;
     ContractRepository contractRepository;
     ContractMilestoneRepository contractMilestoneRepository;
-    BookingArtistRepository bookingArtistRepository;
+    BookingParticipantRepository bookingParticipantRepository;
     StudioBookingRepository studioBookingRepository;
-    SpecialistServiceFeignClient specialistServiceFeignClient;
 
     /**
      * Kiểm tra xem user có quyền xem file hay không
@@ -345,11 +342,12 @@ public class FileAccessService {
                 
                 if (studioBooking != null) {
                     // Check xem recording artist có được book vào studio booking này không
-                    List<BookingArtist> bookingArtists = bookingArtistRepository
-                            .findByBookingBookingId(studioBooking.getBookingId());
+                    List<BookingParticipant> bookingParticipants = bookingParticipantRepository
+                            .findByBooking_BookingId(studioBooking.getBookingId());
                     
-                    boolean isBooked = bookingArtists.stream()
-                            .anyMatch(ba -> specialistId.equals(ba.getSpecialistId()));
+                    boolean isBooked = bookingParticipants.stream()
+                            .filter(bp -> bp.getPerformerSource() == PerformerSource.INTERNAL_ARTIST)
+                            .anyMatch(bp -> specialistId.equals(bp.getSpecialistId()));
                     
                     if (isBooked) {
                         log.debug("Recording artist {} (specialistId={}) is booked in studio booking {} for recording milestone {} linked to arrangement submission {}", 
@@ -415,21 +413,11 @@ public class FileAccessService {
                 }
             }
             
-            // Fallback: gọi specialist-service để lấy specialistId từ userId hiện tại
-            // Note: getMySpecialistInfo() lấy thông tin của user hiện tại từ JWT
-            // Trong context này, userId parameter = userId từ JWT, nên OK
-            ApiResponse<Map<String, Object>> response = specialistServiceFeignClient.getMySpecialistInfo();
-            if (response != null && "success".equals(response.getStatus()) 
-                && response.getData() != null) {
-                Map<String, Object> data = response.getData();
-                String specialistId = (String) data.get("specialistId");
-                if (specialistId != null && !specialistId.isEmpty()) {
-                    log.debug("Got specialistId from specialist-service: {} for userId: {}", specialistId, userId);
-                    return specialistId;
-                }
-            }
+            // Không có fallback - bắt buộc phải có trong JWT token
+            // Nếu không có, return null (không throw exception vì đây là optional check)
+            log.debug("SpecialistId not found in JWT token for userId: {}", userId);
         } catch (Exception e) {
-            log.warn("Failed to get specialistId from userId {}: {}", userId, e.getMessage());
+            log.warn("Failed to get specialistId from JWT token for userId {}: {}", userId, e.getMessage());
         }
         return null;
     }

@@ -30,6 +30,9 @@ public interface FileSubmissionRepository extends JpaRepository<FileSubmission, 
 
     // Batch fetch submissions by multiple assignmentIds
     List<FileSubmission> findByAssignmentIdIn(List<String> assignmentIds);
+    
+    // Batch fetch submissions by multiple assignmentIds and status (tối ưu: chỉ fetch pending_review)
+    List<FileSubmission> findByAssignmentIdInAndStatus(List<String> assignmentIds, SubmissionStatus status);
 
     /**
      * Tìm delivered submissions theo milestoneId và contractId (cho customer)

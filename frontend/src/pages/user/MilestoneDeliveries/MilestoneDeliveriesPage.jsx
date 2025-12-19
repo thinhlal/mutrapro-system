@@ -213,12 +213,14 @@ const MilestoneDeliveriesPage = () => {
       });
 
       // Tạo blob URL từ response
-      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/octet-stream',
+      });
       const blobUrl = window.URL.createObjectURL(blob);
-      
+
       // Mở file trong tab mới
       const previewWindow = window.open(blobUrl, '_blank');
-      
+
       // Cleanup blob URL sau khi window đóng (optional)
       if (previewWindow) {
         previewWindow.addEventListener('beforeunload', () => {
@@ -440,17 +442,46 @@ const MilestoneDeliveriesPage = () => {
                       Thời gian dự kiến:
                     </Text>
                     <div style={{ marginTop: 4 }}>
-                      {milestoneInfo.plannedDueDate ? (
+                      {milestoneInfo.targetDeadline ? (
                         <Text>
-                          Hoàn thành: {dayjs(milestoneInfo.plannedDueDate).format('DD/MM/YYYY')}
+                          Hoàn thành:{' '}
+                          {dayjs(milestoneInfo.targetDeadline).format(
+                            'DD/MM/YYYY'
+                          )}
                         </Text>
                       ) : (
-                        <Text type="secondary" italic>Chưa có</Text>
+                        <Text type="secondary" italic>
+                          Chưa có
+                        </Text>
                       )}
+                    </div>
+                    {/* SLA status (backend-computed): first submission on-time/late */}
+                    <div style={{ marginTop: 8 }}>
+                      {milestoneInfo.firstSubmissionAt &&
+                        milestoneInfo.firstSubmissionLate != null && (
+                          <Tag
+                            color={
+                              milestoneInfo.firstSubmissionLate
+                                ? 'red'
+                                : 'green'
+                            }
+                          >
+                            {milestoneInfo.firstSubmissionLate
+                              ? 'Nộp trễ (bản đầu)'
+                              : 'Nộp đúng hạn (bản đầu)'}
+                          </Tag>
+                        )}
+                      {!milestoneInfo.firstSubmissionAt &&
+                        milestoneInfo.overdueNow === true && (
+                          <Tag color="red">Quá hạn (chưa nộp)</Tag>
+                        )}
                     </div>
                   </div>
                   {/* Actual Dates */}
-                  {(milestoneInfo.actualStartAt || milestoneInfo.finalCompletedAt || milestoneInfo.actualEndAt) && (
+                  {(milestoneInfo.actualStartAt ||
+                    milestoneInfo.firstSubmissionAt ||
+                    milestoneInfo.finalCompletedAt ||
+                    milestoneInfo.actualEndAt) && (
                     <div>
                       <Text strong style={{ fontSize: 12 }}>
                         Thời gian thực tế:
@@ -459,16 +490,49 @@ const MilestoneDeliveriesPage = () => {
                         {milestoneInfo.actualStartAt && (
                           <div>
                             <Text>
-                              Bắt đầu: {dayjs(milestoneInfo.actualStartAt).format('DD/MM/YYYY HH:mm')}
+                              Bắt đầu:{' '}
+                              {dayjs(milestoneInfo.actualStartAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
+                            </Text>
+                          </div>
+                        )}
+                        {milestoneInfo.firstSubmissionAt && (
+                          <div>
+                            <Text>
+                              Nộp bản đầu tiên:{' '}
+                              {dayjs(milestoneInfo.firstSubmissionAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
+                            </Text>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 2,
+                              }}
+                            >
+                              (Lần đầu specialist giao work)
                             </Text>
                           </div>
                         )}
                         {milestoneInfo.finalCompletedAt && (
                           <div>
                             <Text>
-                              Work Completed: {dayjs(milestoneInfo.finalCompletedAt).format('DD/MM/YYYY HH:mm')}
+                              Work Completed:{' '}
+                              {dayjs(milestoneInfo.finalCompletedAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 2,
+                              }}
+                            >
                               (Customer đã chấp nhận work)
                             </Text>
                           </div>
@@ -476,9 +540,19 @@ const MilestoneDeliveriesPage = () => {
                         {milestoneInfo.actualEndAt && (
                           <div>
                             <Text>
-                              Payment Completed: {dayjs(milestoneInfo.actualEndAt).format('DD/MM/YYYY HH:mm')}
+                              Payment Completed:{' '}
+                              {dayjs(milestoneInfo.actualEndAt).format(
+                                'DD/MM/YYYY HH:mm'
+                              )}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 11,
+                                display: 'block',
+                                marginTop: 2,
+                              }}
+                            >
                               (Milestone đã được thanh toán)
                             </Text>
                           </div>
@@ -487,7 +561,7 @@ const MilestoneDeliveriesPage = () => {
                     </div>
                   )}
                 </Space>
-                </Descriptions.Item>
+              </Descriptions.Item>
               <Descriptions.Item label="Total Submissions">
                 <Text strong>{submissions.length}</Text>
               </Descriptions.Item>
@@ -654,36 +728,67 @@ const MilestoneDeliveriesPage = () => {
                                     size="small"
                                     onClick={async () => {
                                       try {
-                                        if (fileId && typeof fileId === 'string') {
+                                        if (
+                                          fileId &&
+                                          typeof fileId === 'string'
+                                        ) {
                                           // Fetch file với authentication header
                                           const url = `/api/v1/projects/files/preview/${fileId}`;
-                                          const response = await axiosInstance.get(url, {
-                                            responseType: 'blob',
-                                          });
+                                          const response =
+                                            await axiosInstance.get(url, {
+                                              responseType: 'blob',
+                                            });
 
                                           // Tạo blob URL từ response
-                                          const blob = new Blob([response.data], { 
-                                            type: response.headers['content-type'] || 'application/octet-stream' 
-                                          });
-                                          const blobUrl = window.URL.createObjectURL(blob);
-                                          
+                                          const blob = new Blob(
+                                            [response.data],
+                                            {
+                                              type:
+                                                response.headers[
+                                                  'content-type'
+                                                ] || 'application/octet-stream',
+                                            }
+                                          );
+                                          const blobUrl =
+                                            window.URL.createObjectURL(blob);
+
                                           // Mở file trong tab mới
-                                          const previewWindow = window.open(blobUrl, '_blank');
-                                          
+                                          const previewWindow = window.open(
+                                            blobUrl,
+                                            '_blank'
+                                          );
+
                                           // Cleanup blob URL sau khi window đóng
                                           if (previewWindow) {
-                                            previewWindow.addEventListener('beforeunload', () => {
-                                              window.URL.revokeObjectURL(blobUrl);
-                                            });
+                                            previewWindow.addEventListener(
+                                              'beforeunload',
+                                              () => {
+                                                window.URL.revokeObjectURL(
+                                                  blobUrl
+                                                );
+                                              }
+                                            );
                                           } else {
-                                            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+                                            setTimeout(
+                                              () =>
+                                                window.URL.revokeObjectURL(
+                                                  blobUrl
+                                                ),
+                                              100
+                                            );
                                           }
                                         } else if (file.url) {
                                           window.open(file.url, '_blank');
                                         }
                                       } catch (error) {
-                                        console.error('Error previewing file:', error);
-                                        message.error(error?.response?.data?.message || 'Lỗi khi xem file');
+                                        console.error(
+                                          'Error previewing file:',
+                                          error
+                                        );
+                                        message.error(
+                                          error?.response?.data?.message ||
+                                            'Lỗi khi xem file'
+                                        );
                                       }
                                     }}
                                   >

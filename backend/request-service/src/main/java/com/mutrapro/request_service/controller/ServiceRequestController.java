@@ -128,7 +128,7 @@ public class ServiceRequestController {
     }
 
     @GetMapping("/{requestId}")
-    @Operation(summary = "Lấy chi tiết một service request theo requestId")
+    @Operation(summary = "Lấy chi tiết một service request theo requestId (đầy đủ thông tin kèm files)")
     public ApiResponse<ServiceRequestResponse> getServiceRequestById(
             @Parameter(description = "ID của request")
             @PathVariable String requestId) {
@@ -136,6 +136,20 @@ public class ServiceRequestController {
         ServiceRequestResponse request = serviceRequestService.getServiceRequestById(requestId);
         return ApiResponse.<ServiceRequestResponse>builder()
                 .message("Service request retrieved successfully")
+                .data(request)
+                .statusCode(200)
+                .build();
+    }
+
+    @GetMapping("/{requestId}/basic")
+    @Operation(summary = "Lấy thông tin cơ bản của service request (không kèm files và manager info) - Tối ưu cho performance")
+    public ApiResponse<ServiceRequestResponse> getServiceRequestBasicInfo(
+            @Parameter(description = "ID của request")
+            @PathVariable String requestId) {
+        log.info("Getting service request basic info: requestId={}", requestId);
+        ServiceRequestResponse request = serviceRequestService.getServiceRequestBasicInfo(requestId);
+        return ApiResponse.<ServiceRequestResponse>builder()
+                .message("Service request basic info retrieved successfully")
                 .data(request)
                 .statusCode(200)
                 .build();

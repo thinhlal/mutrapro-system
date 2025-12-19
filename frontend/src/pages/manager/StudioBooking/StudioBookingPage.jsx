@@ -364,14 +364,12 @@ const StudioBookingPage = () => {
                 // Chỉ cho chọn từ ngày mai trở đi (cần thời gian chuẩn bị)
                 if (current < tomorrow) return true;
 
-                // Nếu có milestone, chỉ cho chọn ngày trong milestone timeline
-                // Milestone bắt đầu tính SLA từ hôm nay, nhưng chỉ cho book từ ngày mai
-                // End date = hôm nay + SLA days (không phải ngày mai + SLA days)
-                if (milestone && milestone.milestoneSlaDays) {
-                  const milestoneEnd = today
-                    .add(milestone.milestoneSlaDays, 'day')
-                    .endOf('day');
-
+                // Nếu có milestone, chỉ cho chọn ngày trong milestone window (backend-computed)
+                // Booking phải nằm trong window này, và window không được FE tự tính lại.
+                if (milestone?.targetDeadline) {
+                  const milestoneEnd = dayjs(milestone.targetDeadline).endOf(
+                    'day'
+                  );
                   return current > milestoneEnd;
                 }
 
@@ -379,14 +377,11 @@ const StudioBookingPage = () => {
               }}
               style={{ width: 200 }}
             />
-            {milestone &&
-              milestone.milestoneSlaDays &&
+            {milestone?.targetDeadline &&
               (() => {
                 const today = dayjs().startOf('day');
                 const tomorrow = today.add(1, 'day');
-                // Milestone bắt đầu tính SLA từ hôm nay, nhưng chỉ cho book từ ngày mai
-                // End date = hôm nay + SLA days (không phải ngày mai + SLA days)
-                const endDate = today.add(milestone.milestoneSlaDays, 'day');
+                const endDate = dayjs(milestone.targetDeadline).startOf('day');
 
                 return (
                   <Text

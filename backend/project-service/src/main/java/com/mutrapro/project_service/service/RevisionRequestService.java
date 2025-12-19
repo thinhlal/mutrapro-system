@@ -1,5 +1,6 @@
 package com.mutrapro.project_service.service;
 
+import com.mutrapro.project_service.dto.projection.ContractRevisionDeadlineInfo;
 import com.mutrapro.project_service.dto.request.ReviewRevisionRequest;
 import com.mutrapro.project_service.dto.response.ContractRevisionStatsResponse;
 import com.mutrapro.project_service.dto.response.RevisionRequestResponse;
@@ -1146,21 +1147,23 @@ public class RevisionRequestService {
     
     /**
      * Get all revision requests for a manager (with optional status filter)
+     * Tối ưu: Filter ở database level và batch fetch contracts để tránh N+1 query
      */
     public List<RevisionRequestResponse> getRevisionRequestsByManager(
             String managerId,
             RevisionRequestStatus status) {
         log.info("Getting revision requests for manager: {}, status: {}", managerId, status);
         
+        // Tối ưu: Filter status ở database level thay vì filter ở memory
         List<RevisionRequest> revisionRequests;
         if (status != null) {
-            // Find by manager ID and status
-            revisionRequests = revisionRequestRepository.findByManagerId(managerId).stream()
-                    .filter(rr -> rr.getStatus() == status)
-                    .toList();
+            revisionRequests = revisionRequestRepository.findByManagerIdAndStatus(managerId, status);
         } else {
-            // Find all by manager ID
             revisionRequests = revisionRequestRepository.findByManagerId(managerId);
+        }
+        
+        if (revisionRequests.isEmpty()) {
+            return List.of();
         }
         
         // Sort by requestedAt descending (newest first)
@@ -1172,11 +1175,36 @@ public class RevisionRequestService {
                     return b.getRequestedAt().compareTo(a.getRequestedAt());
                 })
                 .toList();
-        log.info("Revision requests:ssss {}", revisionRequests);
         
-        return revisionRequests.stream()
-                .map(this::toResponse)
+        // Tối ưu: Batch fetch chỉ revisionDeadlineDays từ contracts (projection query) để tránh N+1 query
+        Set<String> contractIds = revisionRequests.stream()
+                .map(RevisionRequest::getContractId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+        
+        final Map<String, Integer> revisionDeadlineDaysMap;
+        if (!contractIds.isEmpty()) {
+            List<ContractRevisionDeadlineInfo> contractInfos = 
+                    contractRepository.findRevisionDeadlineInfoByContractIds(new java.util.ArrayList<>(contractIds));
+            revisionDeadlineDaysMap = contractInfos.stream()
+                    .collect(Collectors.toMap(
+                            ContractRevisionDeadlineInfo::getContractId,
+                            info -> info.getRevisionDeadlineDays(),
+                            (existing, replacement) -> existing)); // Keep first if duplicate
+        } else {
+            revisionDeadlineDaysMap = new HashMap<>();
+        }
+        
+        // Map to response với revisionDeadlineDays đã fetch sẵn
+        final Map<String, Integer> finalRevisionDeadlineDaysMap = revisionDeadlineDaysMap; // Make effectively final for stream
+        List<RevisionRequestResponse> responses = revisionRequests.stream()
+                .map(rr -> {
+                    Integer revisionDeadlineDays = finalRevisionDeadlineDaysMap.get(rr.getContractId());
+                    return toResponseWithRevisionDeadlineDays(rr, revisionDeadlineDays);
+                })
                 .toList();
+        
+        return responses;
     }
     
     /**
@@ -1339,11 +1367,9 @@ public class RevisionRequestService {
     }
 
     /**
-     * Convert entity to response DTO with pre-loaded contract (optimized for batch loading)
+     * Convert entity to response DTO with revisionDeadlineDays (tối ưu: chỉ cần revisionDeadlineDays, không cần toàn bộ Contract)
      */
-    private RevisionRequestResponse toResponseWithContract(RevisionRequest revisionRequest, Contract contract) {
-        Integer revisionDeadlineDays = contract != null ? contract.getRevisionDeadlineDays() : null;
-        
+    private RevisionRequestResponse toResponseWithRevisionDeadlineDays(RevisionRequest revisionRequest, Integer revisionDeadlineDays) {
         return RevisionRequestResponse.builder()
                 .revisionRequestId(revisionRequest.getRevisionRequestId())
                 .contractId(revisionRequest.getContractId())
@@ -1374,6 +1400,15 @@ public class RevisionRequestService {
                 .createdBy(revisionRequest.getCreatedBy())
                 .updatedBy(revisionRequest.getUpdatedBy())
                 .build();
+    }
+    
+    /**
+     * Convert entity to response DTO with pre-loaded contract (optimized for batch loading)
+     * Giữ lại method này cho các trường hợp khác cần toàn bộ Contract
+     */
+    private RevisionRequestResponse toResponseWithContract(RevisionRequest revisionRequest, Contract contract) {
+        Integer revisionDeadlineDays = contract != null ? contract.getRevisionDeadlineDays() : null;
+        return toResponseWithRevisionDeadlineDays(revisionRequest, revisionDeadlineDays);
     }
     
     /**

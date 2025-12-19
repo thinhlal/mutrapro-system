@@ -61,7 +61,8 @@ function EquipmentFormModal({
         // Vì equipment chỉ dùng cho instrumentalists, không dùng cho vocalists
         const filteredSkills = response.data.filter(skill => {
           const skillType = skill.skillType || skill.skillType?.name || '';
-          const category = skill.recordingCategory || skill.recordingCategory?.name || '';
+          const category =
+            skill.recordingCategory || skill.recordingCategory?.name || '';
           return skillType === 'RECORDING_ARTIST' && category === 'INSTRUMENT';
         });
         setSkills(filteredSkills);
@@ -125,128 +126,131 @@ function EquipmentFormModal({
     >
       <Spin spinning={loading} tip="Loading equipment details...">
         <Form form={form} layout="vertical">
-        <Form.Item
-          label="Equipment Name"
-          name="equipmentName"
-          rules={[{ required: true, message: 'Please input equipment name!' }]}
-        >
-          <Input placeholder="e.g., Yamaha C3 Grand Piano" />
-        </Form.Item>
-
-        <Form.Item label="Brand" name="brand">
-          <Input placeholder="e.g., Yamaha" />
-        </Form.Item>
-
-        <Form.Item label="Model" name="model">
-          <Input placeholder="e.g., C3" />
-        </Form.Item>
-
-        <Form.Item label="Description" name="description">
-          <TextArea
-            rows={3}
-            placeholder="Equipment description..."
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Rental Fee (VND)"
-          name="rentalFee"
-          rules={[
-            {
-              validator: (_, value) => {
-                if (value === null || value === undefined || value === '') {
-                  return Promise.resolve(); // Optional
-                }
-                if (Number(value) < 0) {
-                  return Promise.reject(new Error('Rental fee must be positive!'));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <InputNumber
-            style={{ width: '100%' }}
-            min={0}
-            step={1000}
-            placeholder="e.g., 500000"
-            formatter={value =>
-              value !== undefined && value !== null && value !== ''
-                ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                : ''
-            }
-            parser={value => value?.replace(/,/g, '')}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Total Quantity"
-          name="totalQuantity"
-          rules={[
-            {
-              validator: (_, value) => {
-                if (value === null || value === undefined || value === '') {
-                  return Promise.resolve(); // Optional, default 1
-                }
-                if (Number(value) < 0) {
-                  return Promise.reject(new Error('Quantity must be positive!'));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <InputNumber
-            style={{ width: '100%' }}
-            min={0}
-            placeholder="e.g., 1"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label="Map with Skills"
-          name="skillIds"
-          tooltip="Select skills that can use this equipment"
-        >
-          <Select
-            mode="multiple"
-            placeholder="Select skills"
-            loading={loadingSkills}
-            allowClear
+          <Form.Item
+            label="Equipment Name"
+            name="equipmentName"
+            rules={[
+              { required: true, message: 'Please input equipment name!' },
+            ]}
           >
-            {skills.map(skill => (
-              <Option key={skill.skillId} value={skill.skillId}>
-                {skill.skillName}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
-
-        {editMode && (
-          <Form.Item label="Active" name="isActive" valuePropName="checked">
-            <Switch />
+            <Input placeholder="e.g., Yamaha C3 Grand Piano" />
           </Form.Item>
-        )}
 
-        <Form.Item label="Equipment Image">
-          <Upload {...uploadProps} listType="picture-card">
-            <div>
-              <UploadOutlined />
-              <div style={{ marginTop: 8 }}>Upload</div>
-            </div>
-          </Upload>
-          {imagePreview && (
-            <div style={{ marginTop: 10 }}>
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                width={200}
-                style={{ borderRadius: 4 }}
-              />
-            </div>
+          <Form.Item label="Brand" name="brand">
+            <Input placeholder="e.g., Yamaha" />
+          </Form.Item>
+
+          <Form.Item label="Model" name="model">
+            <Input placeholder="e.g., C3" />
+          </Form.Item>
+
+          <Form.Item label="Description" name="description">
+            <TextArea rows={3} placeholder="Equipment description..." />
+          </Form.Item>
+
+          <Form.Item
+            label="Rental Fee (VND)"
+            name="rentalFee"
+            rules={[
+              {
+                validator: (_, value) => {
+                  if (value === null || value === undefined || value === '') {
+                    return Promise.resolve(); // Optional
+                  }
+                  if (Number(value) < 0) {
+                    return Promise.reject(
+                      new Error('Rental fee must be positive!')
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              step={1000}
+              placeholder="e.g., 500000"
+              formatter={value =>
+                value !== undefined && value !== null && value !== ''
+                  ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  : ''
+              }
+              parser={value => value?.replace(/,/g, '')}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Total Quantity"
+            name="totalQuantity"
+            rules={[
+              {
+                validator: (_, value) => {
+                  if (value === null || value === undefined || value === '') {
+                    return Promise.resolve(); // Optional, default 1
+                  }
+                  if (Number(value) < 0) {
+                    return Promise.reject(
+                      new Error('Quantity must be positive!')
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              placeholder="e.g., 1"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Map with Skills"
+            name="skillIds"
+            tooltip="Select skills that can use this equipment"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select skills"
+              loading={loadingSkills}
+              allowClear
+            >
+              {skills.map(skill => (
+                <Option key={skill.skillId} value={skill.skillId}>
+                  {skill.skillName}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {editMode && (
+            <Form.Item label="Active" name="isActive" valuePropName="checked">
+              <Switch />
+            </Form.Item>
           )}
-        </Form.Item>
-      </Form>
+
+          <Form.Item label="Equipment Image">
+            <Upload {...uploadProps} listType="picture-card">
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+            {imagePreview && (
+              <div style={{ marginTop: 10 }}>
+                <Image
+                  src={imagePreview}
+                  alt="Preview"
+                  width={200}
+                  style={{ borderRadius: 4 }}
+                />
+              </div>
+            )}
+          </Form.Item>
+        </Form>
       </Spin>
     </Modal>
   );
@@ -263,4 +267,3 @@ EquipmentFormModal.propTypes = {
 };
 
 export default EquipmentFormModal;
-

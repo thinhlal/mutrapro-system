@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Smoosic Editor</title>
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/fonts.css"
+      rel="stylesheet"
+    />
+    <link href="../styles/media.css" rel="stylesheet" />
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/ribbon.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/dialogs.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/menus.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/piano.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://smoosic.github.io/Smoosic/build/styles/tree.css"
+      rel="stylesheet"
+    />
+    <script
+      type="text/javascript"
+      src="https://smoosic.github.io/vexflow_smoosic/releases/vexflow-debug.js"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"
+      integrity="sha512-uVSVjE7zYsGz4ag0HEzfugJ78oHCI1KhdkivjQro8ABL/PRiEO4ROwvrolYAcZnky0Fl/baWKYilQfWvESliRA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <!-- script type="text/javascript" src="../../../vex_smoosic/vexflow_smoosic/build/vexflow-debug.js"></script  -->
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.3.1.slim.js"
+    ></script>
+    <script type="text/javascript" src="../smoosic.js"></script>
+    <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', async function (event) {
+        // @@@@@@
+        // A very simple notation application using Smoosic in library mode.  We create event handlers
+        // for keys and mouse events, a-g for the notes and some cursor keys.
+        // If the application gets one of these keys, it will pass it to the
+        // view for rendering one of these notes.
+        const editorKeys = [];
+        'abcdefg'.split('').forEach(key => {
+          editorKeys.push({
+            event: 'keydown',
+            key,
+            action: 'setPitch',
+          });
+        });
+        // Tracker is the object that maps notes to screen locations for mouse
+        // and keyboard interaction and thus handles navigation and selection.
+        const trackerKeys = [
+          {
+            event: 'keydown',
+            key: 'ArrowRight',
+            action: 'moveSelectionRight',
+          },
+          {
+            event: 'keydown',
+            key: 'ArrowLeft',
+            action: 'moveSelectionLeft',
+          },
+        ];
+        const application = await Smo.SuiApplication.configure({
+          mode: 'library',
+          scoreDomContainer: 'outer-container',
+          keys: { trackerKeys, editorKeys },
+          initialScore: Smo.basicJson,
+        });
+        const view = application.view;
+        // Create kb handling logic.  Tracker events and other commands take
+        // different parameters, which is why the different arrays
+        window.addEventListener('keydown', async evKey => {
+          const trackerAction = trackerKeys.find(ev => ev.key === evKey.key);
+          if (trackerAction) {
+            await view[trackerAction.action](evKey);
+            return false;
+          }
+          const editorAction = editorKeys.find(ev => ev.key === evKey.key);
+          if (editorAction) {
+            await view[editorAction.action](evKey.key);
+            return false;
+          }
+        });
+        // tracker is a class that tracks the selections of the music.  If the user
+        // clicks on a musical element, make it the selection.
+        // TODO: This should be moved into the view for the API...
+        window.addEventListener('click', async ev => {
+          view.tracker.selectSuggestion(view.score, ev);
+        });
+        const musicRoot = document.getElementById('outer-container');
+        // Get mouse move event to highlight mouseover.  We pass the client coordinates
+        // into tracker (via view).  The tracker maps client space to SVG space
+        musicRoot.addEventListener('mousemove', ev => {
+          view.intersectingArtifact({
+            x: ev.clientX,
+            y: ev.clientY,
+          });
+        });
+        musicRoot.onscroll = ev => {
+          view.handleScroll(musicRoot.scrollLeft, musicRoot.scrollTop);
+        };
+      });
+    </script>
+  </head>
+
+  <body>
+    <!-- <sub id="link-hdr"><a href="https://github.com/smoosic/smoosic">Github site</a> | 
+    <a href="https://smoosic.github.io/Smoosic/release/docs/modules.html">source documentation</a> | 
+    <a href="https://smoosic.github.io/Smoosic/changes.html">change notes</a> |
+     <a href="https://smoosic.github.io/Smoosic/release/html/smoosic.html">application</a><button class="close-header"><span class="icon icon-cross"></span></button>
+    </sub> -->
+    <!-- audio crossOrigin="anonymous" id="sample" src="https://smoosic.github.io/Smoosic/build/sound/piano_middle_C.mp3" / -->
+    <div id="outer-container" style="overflow: auto"></div>
+  </body>
+</html>

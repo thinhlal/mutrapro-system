@@ -195,7 +195,7 @@ export default function SingerDetailPage() {
           // SpecialistDetailResponse có structure: { specialist, skills, demos }
           const apiResponse = response?.data || response;
           const specialistDetailData = apiResponse?.data || apiResponse;
-          
+
           if (specialistDetailData) {
             // Backend trả về SpecialistDetailResponse với structure { specialist, skills, demos }
             if (specialistDetailData.specialist) {

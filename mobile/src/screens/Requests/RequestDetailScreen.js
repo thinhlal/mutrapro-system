@@ -114,13 +114,12 @@ const RequestDetailScreen = ({ navigation, route }) => {
       const resp = await getBookingByRequestId(requestId);
       if (resp?.status === "success" && resp?.data) {
         setBooking(resp.data);
-      } else if (resp?.data) {
-        setBooking(resp.data);
       } else {
         setBooking(null);
       }
     } catch (error) {
-      console.error("Error loading booking:", error);
+      // Silently handle - booking may not exist yet for this request type
+      console.log("Booking not found or not applicable for this request");
       setBooking(null);
     }
   };
@@ -1367,6 +1366,22 @@ const styles = StyleSheet.create({
   },
   modalButtonDisabled: {
     opacity: 0.6,
+  },
+  helperText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
+  },
+  backButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  backButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
   },
 });
 

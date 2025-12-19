@@ -8,6 +8,7 @@ import com.mutrapro.project_service.dto.request.VerifyOTPRequest;
 import com.mutrapro.project_service.dto.request.StartContractWorkRequest;
 import com.mutrapro.project_service.dto.response.ContractResponse;
 import com.mutrapro.project_service.dto.response.ContractMilestoneResponse;
+import com.mutrapro.project_service.dto.response.MilestonePaymentQuoteResponse;
 import com.mutrapro.project_service.dto.response.ESignInitResponse;
 import com.mutrapro.project_service.dto.response.RequestContractInfo;
 import com.mutrapro.project_service.service.ContractService;
@@ -119,6 +120,23 @@ public class ContractController {
                 .statusCode(HttpStatus.OK.value())
                 .status("success")
                 .build();
+    }
+
+    @GetMapping("/{contractId}/milestones/{milestoneId}/payment-quote")
+    @Operation(summary = "Quote số tiền cần thanh toán cho milestone (bao gồm late discount nếu trễ)")
+    public ApiResponse<MilestonePaymentQuoteResponse> getMilestonePaymentQuote(
+        @Parameter(description = "ID của contract")
+        @PathVariable String contractId,
+        @Parameter(description = "ID của milestone")
+        @PathVariable String milestoneId
+    ) {
+        MilestonePaymentQuoteResponse quote = contractService.getMilestonePaymentQuote(contractId, milestoneId);
+        return ApiResponse.<MilestonePaymentQuoteResponse>builder()
+            .message("Milestone payment quote retrieved successfully")
+            .data(quote)
+            .statusCode(HttpStatus.OK.value())
+            .status("success")
+            .build();
     }
 
     @PostMapping("/by-request-ids")

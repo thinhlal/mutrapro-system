@@ -266,7 +266,8 @@ const SpecialistProfile = () => {
   const handleAddSkill = () => {
     setEditingSkill(null);
     // Chỉ set category cho RECORDING_ARTIST
-    const isRecordingArtist = profileDetail?.specialist?.specialization === 'RECORDING_ARTIST';
+    const isRecordingArtist =
+      profileDetail?.specialist?.specialization === 'RECORDING_ARTIST';
     if (isRecordingArtist) {
       // Tự động set category dựa trên recordingRoles của specialist
       const recordingRoles = profileDetail?.specialist?.recordingRoles || [];
@@ -1116,11 +1117,14 @@ const SpecialistProfile = () => {
         <Form form={skillForm} layout="vertical" onFinish={handleSkillSubmit}>
           {!editingSkill &&
             (() => {
-              const isRecordingArtist = profileDetail?.specialist?.specialization === 'RECORDING_ARTIST';
+              const isRecordingArtist =
+                profileDetail?.specialist?.specialization ===
+                'RECORDING_ARTIST';
               const recordingRoles =
                 profileDetail?.specialist?.recordingRoles || [];
               const hasMultipleRoles = recordingRoles.length > 1;
-              const needsCategorySelection = isRecordingArtist && hasMultipleRoles;
+              const needsCategorySelection =
+                isRecordingArtist && hasMultipleRoles;
 
               return (
                 <>

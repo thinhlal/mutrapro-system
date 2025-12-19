@@ -75,12 +75,7 @@ public class MilestonePaidEventConsumer extends BaseIdempotentConsumer<Milestone
                     event.getEventId(), event.getContractId(), event.getMilestoneId(), event.getOrderIndex(), event.getPaidAt());
             
             // Xử lý khi milestone được thanh toán
-            contractService.handleMilestonePaid(
-                event.getContractId(), 
-                event.getMilestoneId(),
-                event.getOrderIndex(),
-                event.getPaidAt()
-            );
+            contractService.handleMilestonePaid(event);
             
             log.info("✅ Milestone paid event processed successfully: contractId={}, milestoneId={}", 
                     event.getContractId(), event.getMilestoneId());

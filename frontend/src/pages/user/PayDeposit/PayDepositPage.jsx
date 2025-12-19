@@ -132,11 +132,14 @@ const PayDepositPage = () => {
     }
 
     const depositAmount = parseFloat(depositInstallment.amount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance =
+      wallet?.availableBalance ??
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < depositAmount) {
       message.warning(
-        'Insufficient wallet balance. Please top up your wallet first.'
+        'Insufficient available balance. Please top up your wallet first.'
       );
       setTopupModalVisible(true);
       return;
@@ -220,7 +223,10 @@ const PayDepositPage = () => {
   }
 
   const depositAmount = parseFloat(depositInstallment.amount);
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance =
+    wallet?.availableBalance ??
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasEnoughBalance = walletBalance >= depositAmount;
   const isDepositPaid = depositInstallment.status === 'PAID';
   const isDepositDue = depositInstallment.status === 'DUE';

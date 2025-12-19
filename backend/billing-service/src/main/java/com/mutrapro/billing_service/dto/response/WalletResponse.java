@@ -25,6 +25,10 @@ public class WalletResponse {
     
     BigDecimal balance;
     
+    BigDecimal holdBalance;  // Số tiền đang bị hold (cho withdrawal requests)
+    
+    BigDecimal availableBalance;  // Số dư khả dụng (balance - holdBalance)
+    
     CurrencyType currency;
     
     LocalDateTime createdAt;

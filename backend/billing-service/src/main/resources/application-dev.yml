@@ -64,6 +64,20 @@ management:
       probes:
         enabled: true
 
+# Project Service Configuration (for Feign client)
+project:
+  service:
+    base-url: ${PROJECT_SERVICE_BASE_URL:http://localhost:8082}
+
+# Feign Client Configuration (timeout settings)
+feign:
+  client:
+    config:
+      project-service:
+        connectTimeout: 2000  # 2 seconds connection timeout
+        readTimeout: 3000     # 3 seconds read timeout
+        loggerLevel: basic    # Log basic request/response info
+
 # SePay Configuration
 sepay:
   api:
@@ -75,3 +89,12 @@ sepay:
     expiry:
       minutes: 30
     prefix: MTP-TOPUP  # Prefix cho mã đơn hàng trong nội dung chuyển khoản
+
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: true
+    bucket-name: mutrapro-dev-files
+    region: ap-southeast-1
+    access-key: AKIAZ24ITCMNFIY2Z3VX
+    secret-key: 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

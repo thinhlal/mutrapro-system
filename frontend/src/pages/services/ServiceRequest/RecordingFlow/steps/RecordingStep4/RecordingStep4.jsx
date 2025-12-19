@@ -64,12 +64,13 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     setFileList(newFileList);
   };
 
-  const handleBeforeUpload = (file) => {
+  const handleBeforeUpload = file => {
     // Validate file type
-    const isAudio = file.type.startsWith('audio/') || 
-                    file.type === 'application/pdf' || 
-                    file.type === 'application/xml';
-    
+    const isAudio =
+      file.type.startsWith('audio/') ||
+      file.type === 'application/pdf' ||
+      file.type === 'application/xml';
+
     if (!isAudio) {
       toast.error('Only audio, PDF or XML files are accepted!');
       return Upload.LIST_IGNORE;
@@ -185,7 +186,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           const fee = rate * hours;
           breakdown.push({
             type: 'instrumentalist',
-            name: instrument.specialistName || instrument.skillName || 'Instrumentalist',
+            name:
+              instrument.specialistName ||
+              instrument.skillName ||
+              'Instrumentalist',
             rate: rate,
             hours: hours,
             fee: fee,
@@ -203,7 +207,8 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           const fee = rentalFee * quantity * hours;
           breakdown.push({
             type: 'equipment',
-            name: instrument.equipmentName || instrument.skillName || 'Equipment',
+            name:
+              instrument.equipmentName || instrument.skillName || 'Equipment',
             rate: rentalFee,
             quantity: quantity,
             hours: hours,
@@ -231,7 +236,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         // Calculate total fee = hourlyRate x hours
         const hourlyRate = vocalist.hourlyRate || 500000;
         const totalFee = hourlyRate * hours;
-        
+
         participants.push({
           specialistId: vocalist.specialistId,
           roleType: 'VOCAL',
@@ -242,7 +247,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     }
 
     // Add customer self vocalist if any
-    if (step2?.vocalChoice === 'CUSTOMER_SELF' || step2?.vocalChoice === 'BOTH') {
+    if (
+      step2?.vocalChoice === 'CUSTOMER_SELF' ||
+      step2?.vocalChoice === 'BOTH'
+    ) {
       participants.push({
         roleType: 'VOCAL',
         performerSource: 'CUSTOMER_SELF',
@@ -253,18 +261,24 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     if (step3?.instruments && step3.instruments.length > 0) {
       step3.instruments.forEach(instrument => {
         // Add performer
-        if (instrument.performerSource === 'INTERNAL_ARTIST' && instrument.specialistId) {
+        if (
+          instrument.performerSource === 'INTERNAL_ARTIST' &&
+          instrument.specialistId
+        ) {
           // Calculate total fee = hourlyRate x hours
           const hourlyRate = instrument.hourlyRate || 400000;
           const totalFee = hourlyRate * hours;
-          
+
           participants.push({
             specialistId: instrument.specialistId,
             roleType: 'INSTRUMENT',
             performerSource: 'INTERNAL_ARTIST',
             skillId: instrument.skillId,
             instrumentSource: instrument.instrumentSource,
-            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+            equipmentId:
+              instrument.instrumentSource === 'STUDIO_SIDE'
+                ? instrument.equipmentId
+                : null,
             participantFee: totalFee, // Send calculated value (hourlyRate x hours)
           });
         } else if (instrument.performerSource === 'CUSTOMER_SELF') {
@@ -273,17 +287,23 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             performerSource: 'CUSTOMER_SELF',
             skillId: instrument.skillId,
             instrumentSource: instrument.instrumentSource,
-            equipmentId: instrument.instrumentSource === 'STUDIO_SIDE' ? instrument.equipmentId : null,
+            equipmentId:
+              instrument.instrumentSource === 'STUDIO_SIDE'
+                ? instrument.equipmentId
+                : null,
           });
         }
 
         // Add equipment
-        if (instrument.instrumentSource === 'STUDIO_SIDE' && instrument.equipmentId) {
+        if (
+          instrument.instrumentSource === 'STUDIO_SIDE' &&
+          instrument.equipmentId
+        ) {
           const quantity = instrument.quantity || 1;
           const rentalFeePerHour = instrument.rentalFee || 0;
           // Calculate total: rentalFeePerHour x quantity x hours
           const totalRentalFee = rentalFeePerHour * quantity * hours;
-          
+
           requiredEquipment.push({
             equipmentId: instrument.equipmentId,
             quantity: quantity,
@@ -309,13 +329,15 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     try {
       // Validate file upload (MANDATORY)
       if (!uploadedFile) {
-        toast.error('Please upload a file (reference track, backing track, or sheet music)');
+        toast.error(
+          'Please upload a file (reference track, backing track, or sheet music)'
+        );
         return;
       }
 
       // Validate form
       const values = await form.validateFields();
-      
+
       setSubmitting(true);
 
       // Calculate duration in minutes
@@ -345,7 +367,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
 
       // 2. Create booking from service request
       const bookingData = transformBookingData();
-      const bookingResponse = await createBookingFromServiceRequest(requestId, bookingData);
+      const bookingResponse = await createBookingFromServiceRequest(
+        requestId,
+        bookingData
+      );
 
       // Clear session storage
       sessionStorage.removeItem('recordingFlowData');
@@ -363,7 +388,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
       }
     } catch (error) {
       console.error('Submit error:', error);
-      const errorMessage = error?.message || error?.data?.message || 'Failed to create request and booking';
+      const errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        'Failed to create request and booking';
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -435,16 +463,19 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         <Card
           type="inner"
           title={
-              <Space>
-                <span>Booking time</span>
-              </Space>
+            <Space>
+              <span>Booking time</span>
+            </Space>
           }
           className={styles.section}
         >
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                <Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 8 }}
+                >
                   Date
                 </Text>
                 <Tag color="blue" style={{ fontSize: 14 }}>
@@ -454,7 +485,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                <Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 8 }}
+                >
                   Start time
                 </Text>
                 <Tag color="green" style={{ fontSize: 14 }}>
@@ -464,7 +498,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
             <Col xs={24} sm={8}>
               <div style={{ textAlign: 'center' }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                <Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 8 }}
+                >
                   End time
                 </Text>
                 <Tag color="orange" style={{ fontSize: 14 }}>
@@ -555,11 +592,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         <Divider />
 
         {/* File Upload Section */}
-        <Card
-          type="inner"
-          title="Upload File *"
-          className={styles.section}
-        >
+        <Card type="inner" title="Upload File *" className={styles.section}>
           <Alert
             message="File required"
             description="Please upload a reference track, backing track, or sheet music (PDF/XML)"
@@ -577,7 +610,8 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           </Upload>
           {fileList.length > 0 && (
             <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              File: {fileList[0].name} ({(fileList[0].size / 1024 / 1024).toFixed(2)} MB)
+              File: {fileList[0].name} (
+              {(fileList[0].size / 1024 / 1024).toFixed(2)} MB)
             </Text>
           )}
         </Card>
@@ -618,7 +652,11 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 title="Total"
                 value={fees.totalFee}
                 suffix="VND"
-                valueStyle={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 24 }}
+                valueStyle={{
+                  color: '#ff4d4f',
+                  fontWeight: 'bold',
+                  fontSize: 24,
+                }}
               />
             </Col>
           </Row>
@@ -654,8 +692,8 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                         {item.type === 'vocalist'
                           ? '🎤 Vocalist'
                           : item.type === 'instrumentalist'
-                          ? '🎸 Instrumentalist'
-                          : '🔧 Equipment'}
+                            ? '🎸 Instrumentalist'
+                            : '🔧 Equipment'}
                       </Text>
                       <Text type="secondary">({item.name})</Text>
                     </Space>
@@ -669,7 +707,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               <Descriptions.Item
                 label={
                   <Text strong style={{ fontSize: 16 }}>
-                     Grand total
+                    Grand total
                   </Text>
                 }
               >
@@ -689,11 +727,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           title={<span>Service Request Information</span>}
           className={styles.section}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            requiredMark="optional"
-          >
+          <Form form={form} layout="vertical" requiredMark="optional">
             <Row gutter={16}>
               <Col xs={24}>
                 <Form.Item
@@ -710,7 +744,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                   name="description"
                   rules={[
                     { required: true, message: 'Please enter a description' },
-                    { min: 10, message: 'Description must be at least 10 characters' },
+                    {
+                      min: 10,
+                      message: 'Description must be at least 10 characters',
+                    },
                   ]}
                 >
                   <TextArea
@@ -734,7 +771,9 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 <Form.Item
                   label="Phone number"
                   name="contactPhone"
-                  rules={[{ required: true, message: 'Please enter a phone number' }]}
+                  rules={[
+                    { required: true, message: 'Please enter a phone number' },
+                  ]}
                 >
                   <Input size="large" placeholder="+84 ..." />
                 </Form.Item>

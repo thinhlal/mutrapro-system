@@ -137,11 +137,14 @@ const PayRevisionFeePage = () => {
     }
 
     const amount = parseFloat(feeAmount);
-    const walletBalance = parseFloat(wallet.balance || 0);
+    const availableBalance =
+      wallet?.availableBalance ??
+      (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+    const walletBalance = parseFloat(availableBalance);
 
     if (walletBalance < amount) {
       message.warning(
-        'Insufficient wallet balance. Please top up your wallet first.'
+        'Insufficient available balance. Please top up your wallet first.'
       );
       setTopupModalVisible(true);
       return;
@@ -246,7 +249,10 @@ const PayRevisionFeePage = () => {
   }
 
   const amount = parseFloat(feeAmount);
-  const walletBalance = parseFloat(wallet?.balance || 0);
+  const availableBalance =
+    wallet?.availableBalance ??
+    (wallet?.balance ? wallet.balance - (wallet.holdBalance || 0) : 0);
+  const walletBalance = parseFloat(availableBalance);
   const hasEnoughBalance = walletBalance >= amount;
 
   return (

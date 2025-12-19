@@ -141,6 +141,32 @@ export const payRevisionFee = async (walletId, revisionFeeData) => {
 };
 
 /**
+ * Rút tiền từ ví
+ * POST /wallets/{walletId}/withdraw
+ *
+ * @param {string} walletId - ID của ví
+ * @param {Object} withdrawData - Thông tin rút tiền
+ * @param {number} withdrawData.amount - Số tiền rút (tối thiểu 10,000 VND)
+ * @param {string} withdrawData.currency - Loại tiền tệ (VND, USD, EUR) - optional, default VND
+ * @param {string} withdrawData.bankAccountNumber - Số tài khoản ngân hàng (bắt buộc)
+ * @param {string} withdrawData.bankName - Tên ngân hàng (bắt buộc)
+ * @param {string} withdrawData.accountHolderName - Tên chủ tài khoản (bắt buộc)
+ * @param {string} withdrawData.note - Ghi chú (optional)
+ * @returns {Promise} ApiResponse với thông tin giao dịch
+ */
+export const withdrawWallet = async (walletId, withdrawData) => {
+  try {
+    const response = await axiosInstance.post(
+      API_ENDPOINTS.WALLET.WITHDRAW(walletId),
+      withdrawData
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi rút tiền từ ví' };
+  }
+};
+
+/**
  * Lấy danh sách giao dịch của ví
  * GET /wallets/{walletId}/transactions
  *
@@ -201,6 +227,37 @@ export const getMyWalletTransactions = async (filters = {}) => {
   } catch (error) {
     throw (
       error.response?.data || { message: 'Lỗi khi lấy danh sách giao dịch' }
+    );
+  }
+};
+
+/**
+ * Lấy danh sách withdrawal requests của user hiện tại
+ * GET /wallets/me/withdrawal-requests
+ *
+ * @param {Object} filters - Các filter tùy chọn
+ * @param {string} filters.status - Filter theo status: PENDING_REVIEW, APPROVED, PROCESSING, COMPLETED, REJECTED, FAILED
+ * @param {number} filters.page - Trang (default: 0)
+ * @param {number} filters.size - Số lượng (default: 20)
+ * @param {string} filters.sort - Sắp xếp (default: createdAt,desc)
+ * @returns {Promise} ApiResponse với PageResponse chứa danh sách withdrawal requests
+ */
+export const getMyWithdrawalRequests = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.page !== undefined) params.append('page', filters.page);
+    if (filters.size !== undefined) params.append('size', filters.size);
+    if (filters.sort) params.append('sort', filters.sort);
+
+    const url = `${API_ENDPOINTS.WALLET.GET_MY_WITHDRAWAL_REQUESTS}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await axiosInstance.get(url);
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi lấy danh sách withdrawal requests',
+      }
     );
   }
 };

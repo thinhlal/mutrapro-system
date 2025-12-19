@@ -127,69 +127,21 @@ const getPlannedStartDayjs = milestone =>
   milestone?.plannedStartAt ? dayjs(milestone.plannedStartAt) : null;
 
 const getPlannedDeadlineDayjs = milestone => {
-  if (!milestone) return null;
-  if (milestone.plannedDueDate) {
-    return dayjs(milestone.plannedDueDate);
-  }
-  if (milestone.plannedStartAt && milestone.milestoneSlaDays) {
-    return dayjs(milestone.plannedStartAt).add(
-      Number(milestone.milestoneSlaDays || 0),
-      'day'
-    );
-  }
-  return null;
+  if (!milestone?.plannedDueDate) return null;
+  const d = dayjs(milestone.plannedDueDate);
+  return d.isValid() ? d : null;
 };
 
 const getActualDeadlineDayjs = milestone => {
-  // SLA tính từ khi bắt đầu làm việc (actualStartAt), không phải từ khi giao bản đầu tiên
-  if (!milestone?.actualStartAt || !milestone?.milestoneSlaDays) {
-    return null;
-  }
-  return dayjs(milestone.actualStartAt).add(
-    Number(milestone.milestoneSlaDays || 0),
-    'day'
-  );
+  if (!milestone?.targetDeadline) return null;
+  const d = dayjs(milestone.targetDeadline);
+  return d.isValid() ? d : null;
 };
 
-const getEstimatedDeadlineDayjs = (milestone, contractMilestones = []) => {
-  if (!milestone) return null;
-  const slaDays = Number(milestone.milestoneSlaDays || 0);
-  if (!slaDays) return null;
-
-  const plannedStart = getPlannedStartDayjs(milestone);
-  if (plannedStart) {
-    return plannedStart.add(slaDays, 'day');
-  }
-
-  const orderIndex = milestone.orderIndex;
-  if (!orderIndex || orderIndex <= 1) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousMilestone =
-    contractMilestones.find(
-      item =>
-        item &&
-        item.orderIndex === orderIndex - 1 &&
-        (item.contractId
-          ? item.contractId === (milestone.contractId || item.contractId)
-          : true)
-    ) || null;
-
-  if (!previousMilestone) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  const previousDeadline =
-    getActualDeadlineDayjs(previousMilestone) ||
-    getPlannedDeadlineDayjs(previousMilestone) ||
-    getEstimatedDeadlineDayjs(previousMilestone, contractMilestones);
-
-  if (!previousDeadline) {
-    return dayjs().add(slaDays, 'day');
-  }
-
-  return previousDeadline.add(slaDays, 'day');
+const getEstimatedDeadlineDayjs = (milestone, _contractMilestones = []) => {
+  if (!milestone?.estimatedDeadline) return null;
+  const d = dayjs(milestone.estimatedDeadline);
+  return d.isValid() ? d : null;
 };
 
 const formatDateTime = value =>
@@ -429,7 +381,8 @@ const MilestoneDetailPage = () => {
 
       // ⚠️ QUAN TRỌNG: Arrangement milestone cuối cùng phải đã thanh toán (actualEndAt != null)
       // Backend yêu cầu actualEndAt phải có trước khi cho phép tạo booking
-      const lastArrangementMilestone = arrangementMilestones[arrangementMilestones.length - 1];
+      const lastArrangementMilestone =
+        arrangementMilestones[arrangementMilestones.length - 1];
       if (!lastArrangementMilestone.actualEndAt) {
         return false; // Arrangement milestones chưa thanh toán, chưa thể tạo booking
       }
@@ -756,7 +709,7 @@ const MilestoneDetailPage = () => {
                   return (
                     <Space direction="vertical" size="small">
                       <div>
-                        <Text strong>Actual</Text>
+                        <Text strong>Target</Text>
                         <Space direction="vertical" size={0}>
                           <Text>Start: {formatDateTime(actualStart)}</Text>
                           <Text>
@@ -767,6 +720,45 @@ const MilestoneDetailPage = () => {
                               </Text>
                             )}
                           </Text>
+                          {/* SLA status tags */}
+                          <div style={{ marginTop: 4 }}>
+                            {(() => {
+                              const hasFirstSubmission =
+                                !!milestone.firstSubmissionAt;
+                              const isFirstSubmissionLate =
+                                milestone.firstSubmissionLate === true;
+                              const isFirstSubmissionOnTime =
+                                hasFirstSubmission &&
+                                milestone.firstSubmissionLate === false;
+                              const overdueNow = milestone.overdueNow;
+                              const isCompleted =
+                                milestone.workStatus?.toLowerCase() ===
+                                'completed';
+                              const isPendingReview =
+                                milestone.workStatus?.toLowerCase() ===
+                                'ready_for_payment';
+                              const shouldHideOverdueWarning =
+                                hasFirstSubmission || isPendingReview;
+                              const isOverdue =
+                                !shouldHideOverdueWarning &&
+                                overdueNow === true &&
+                                !isCompleted;
+
+                              return (
+                                <>
+                                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                                  {isFirstSubmissionLate && (
+                                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                                  )}
+                                  {isFirstSubmissionOnTime && (
+                                    <Tag color="green">
+                                      Nộp đúng hạn (bản đầu)
+                                    </Tag>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
                         </Space>
                       </div>
                       <div>
@@ -795,7 +787,7 @@ const MilestoneDetailPage = () => {
                                 {estimatedDeadline.format('HH:mm DD/MM/YYYY')}
                               </Text>
                               <Text type="secondary" style={{ fontSize: 11 }}>
-                                (Ước tính khi chưa có planned/actual)
+                                (Estimated when not started)
                               </Text>
                             </Space>
                           </div>
@@ -813,7 +805,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Lần giao đầu tiên - để check SLA)
+                    (First submission - to check SLA)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -826,7 +818,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Customer đã chấp nhận)
+                    (Customer accepted)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -839,7 +831,7 @@ const MilestoneDetailPage = () => {
                     type="secondary"
                     style={{ fontSize: 11, display: 'block', marginTop: 4 }}
                   >
-                    (Milestone đã được thanh toán)
+                    (Milestone paid)
                   </Text>
                 )}
               </Descriptions.Item>
@@ -917,7 +909,7 @@ const MilestoneDetailPage = () => {
         </div>
 
         <Card
-          title="Danh sách task của milestone này"
+          title="List of tasks for this milestone"
           extra={
             canShowAssignButton && (
               <Button
@@ -940,7 +932,7 @@ const MilestoneDetailPage = () => {
               description={
                 <Space direction="vertical" size="middle">
                   <Text type="secondary">
-                    Chưa có task nào cho milestone này
+                    No tasks for this milestone
                   </Text>
                   <Button
                     type="primary"
@@ -951,7 +943,7 @@ const MilestoneDetailPage = () => {
                       )
                     }
                   >
-                    Assign Task đầu tiên
+                    Assign First Task
                   </Button>
                 </Space>
               }
@@ -971,7 +963,7 @@ const MilestoneDetailPage = () => {
                   render: value => <Text strong>#{value || 'N/A'}</Text>,
                 },
                 {
-                  title: 'Loại task',
+                  title: 'Task Type',
                   dataIndex: 'taskType',
                   width: 140,
                   render: type => (
@@ -1007,7 +999,7 @@ const MilestoneDetailPage = () => {
                   ),
                 },
                 {
-                  title: 'Specialist',
+                  title: 'Specialist Name',
                   dataIndex: 'specialistName',
                   width: 220,
                   render: (_, record) => (
@@ -1015,7 +1007,7 @@ const MilestoneDetailPage = () => {
                       <Text strong>
                         {record.specialistName ||
                           record.specialistId ||
-                          'Chưa gán'}
+                          'Not assigned'}
                       </Text>
                       {record.specialistEmail && (
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -1026,7 +1018,7 @@ const MilestoneDetailPage = () => {
                   ),
                 },
                 {
-                  title: 'Thời gian',
+                  title: 'Time',
                   width: 220,
                   render: (_, record) => (
                     <Space direction="vertical" size={0}>
@@ -1052,7 +1044,7 @@ const MilestoneDetailPage = () => {
                           )
                         }
                       >
-                        Xem
+                        View
                       </Button>
                       {record.hasIssue && (
                         <Button
@@ -1066,7 +1058,7 @@ const MilestoneDetailPage = () => {
                             )
                           }
                         >
-                          Xử lý Issue
+                          Handle Issue
                         </Button>
                       )}
                     </Space>

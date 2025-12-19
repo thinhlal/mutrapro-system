@@ -3,6 +3,7 @@ package com.mutrapro.project_service.repository;
 import com.mutrapro.project_service.entity.TaskAssignment;
 import com.mutrapro.project_service.enums.AssignmentStatus;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.project_service.enums.ContractStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,6 +59,9 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     // Find all task assignments by contract ID and status
     List<TaskAssignment> findByContractIdAndStatus(String contractId, AssignmentStatus status);
 
+    // Find all task assignments by multiple statuses (for schedulers / batch operations)
+    List<TaskAssignment> findByStatusIn(List<AssignmentStatus> statuses);
+
     // Find task assignment by contract ID and assignment ID
     Optional<TaskAssignment> findByContractIdAndAssignmentId(String contractId, String assignmentId);
 
@@ -72,13 +76,14 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     /**
      * Find all task assignments for manager with filters and pagination (without keyword search)
      * Filters: contractIds (manager's contracts), status, taskType
-     * Sort: hasIssue DESC, status priority, assignedDate DESC
+     * Sort: hasIssue DESC, status priority, createdAt DESC (fallback assignedDate)
      */
     @Query("SELECT ta FROM TaskAssignment ta " +
            "WHERE ta.contractId IN :contractIds " +
            "AND (:status IS NULL OR ta.status = :status) " +
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
            "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
            "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
            "CASE ta.status " +
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
@@ -88,8 +93,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
            "  ELSE 99 " +
-           "END, " +
-           "ta.assignedDate DESC")
+           "END")
     Page<TaskAssignment> findAllByManagerWithFilters(
             @Param("contractIds") List<String> contractIds,
             @Param("status") AssignmentStatus status,
@@ -98,9 +102,6 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
 
     /**
      * Find all task assignments for manager with filters, pagination and keyword search
-     * Filters: contractIds (manager's contracts), status, taskType, keyword
-     * Keyword search: contractId, contractNumber (from Contract), milestoneId, specialistId, specialistNameSnapshot, specialistUserIdSnapshot
-     * Sort: hasIssue DESC, status priority, assignedDate DESC
      */
     @Query("SELECT ta FROM TaskAssignment ta " +
            "LEFT JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
@@ -109,11 +110,14 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
            "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "     LOWER(ta.specialistUserIdSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
            "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
            "CASE ta.status " +
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
@@ -123,8 +127,7 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
            "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
            "  ELSE 99 " +
-           "END, " +
-           "ta.assignedDate DESC")
+           "END")
     Page<TaskAssignment> findAllByManagerWithFiltersAndKeyword(
             @Param("contractIds") List<String> contractIds,
             @Param("status") AssignmentStatus status,
@@ -136,5 +139,76 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     long countByStatus(AssignmentStatus status);
 
     long countByTaskType(TaskType taskType);
-}
 
+    /**
+     * Optimized versions joining Contract directly (manager view)
+     */
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "LEFT JOIN com.mutrapro.project_service.entity.ContractMilestone cm ON ta.milestoneId = cm.milestoneId " +
+           "WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
+           "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END")
+    Page<TaskAssignment> findAllByManagerWithFiltersOptimized(
+            @Param("managerUserId") String managerUserId,
+            @Param("contractStatuses") List<ContractStatus> contractStatuses,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
+            Pageable pageable);
+
+    @Query("SELECT ta FROM TaskAssignment ta " +
+           "INNER JOIN com.mutrapro.project_service.entity.Contract c ON ta.contractId = c.contractId " +
+           "LEFT JOIN com.mutrapro.project_service.entity.ContractMilestone cm ON ta.milestoneId = cm.milestoneId " +
+           "WHERE c.managerUserId = :managerUserId " +
+           "AND c.status IN :contractStatuses " +
+           "AND (:status IS NULL OR ta.status = :status) " +
+           "AND (:taskType IS NULL OR ta.taskType = :taskType) " +
+           "AND (:minProgress IS NULL OR COALESCE(ta.progressPercentage, 0) >= :minProgress) " +
+           "AND (:maxProgress IS NULL OR COALESCE(ta.progressPercentage, 0) <= :maxProgress) " +
+           "AND (LOWER(ta.contractId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(c.contractNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNumberSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.contractNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.milestoneId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistId) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistNameSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "     LOWER(ta.specialistUserIdSnapshot) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY " +
+           "COALESCE(ta.createdAt, ta.assignedDate) DESC, " +
+           "CASE WHEN ta.hasIssue = true THEN 0 ELSE 1 END, " +
+           "CASE ta.status " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.in_progress THEN 0 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.assigned THEN 1 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.accepted_waiting THEN 2 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.ready_to_start THEN 3 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.completed THEN 4 " +
+           "  WHEN com.mutrapro.project_service.enums.AssignmentStatus.cancelled THEN 5 " +
+           "  ELSE 99 " +
+           "END")
+    Page<TaskAssignment> findAllByManagerWithFiltersAndKeywordOptimized(
+            @Param("managerUserId") String managerUserId,
+            @Param("contractStatuses") List<ContractStatus> contractStatuses,
+            @Param("status") AssignmentStatus status,
+            @Param("taskType") TaskType taskType,
+            @Param("keyword") String keyword,
+            @Param("minProgress") Integer minProgress,
+            @Param("maxProgress") Integer maxProgress,
+            Pageable pageable);
+}

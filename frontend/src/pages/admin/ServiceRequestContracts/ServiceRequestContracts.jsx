@@ -209,7 +209,7 @@ export default function ServiceRequestContracts() {
   useEffect(() => {
     const fetchBooking = async () => {
       if (!requestId || request?.requestType !== 'recording') return;
-      
+
       try {
         setLoadingBooking(true);
         const response = await getBookingByRequestId(requestId);
@@ -407,7 +407,7 @@ export default function ServiceRequestContracts() {
               (a, b) => (b.orderIndex || 0) - (a.orderIndex || 0)
             );
             const lastMilestone = sortedMilestones[0];
-            return lastMilestone?.plannedDueDate || null;
+            return lastMilestone?.targetDeadline || null;
           }
           return null;
         };
@@ -822,8 +822,8 @@ export default function ServiceRequestContracts() {
 
       {/* Studio Booking Section - only for recording requests */}
       {request?.requestType === 'recording' && (
-        <Card 
-          title="🎙️ Studio Booking Information" 
+        <Card
+          title="🎙️ Studio Booking Information"
           style={{ marginBottom: '1.5rem' }}
           loading={loadingBooking}
           bordered
@@ -835,7 +835,7 @@ export default function ServiceRequestContracts() {
                   {booking.bookingDate}
                 </Descriptions.Item>
               )}
-              {(booking.startTime && booking.endTime) && (
+              {booking.startTime && booking.endTime && (
                 <Descriptions.Item label="🕒 Time Slot">
                   {booking.startTime} - {booking.endTime}
                 </Descriptions.Item>
@@ -847,19 +847,27 @@ export default function ServiceRequestContracts() {
               )}
               {booking.status && (
                 <Descriptions.Item label="Status">
-                  <Tag color={
-                    booking.status === 'CONFIRMED' ? 'green' : 
-                    booking.status === 'TENTATIVE' ? 'orange' : 
-                    'default'
-                  }>
+                  <Tag
+                    color={
+                      booking.status === 'CONFIRMED'
+                        ? 'green'
+                        : booking.status === 'TENTATIVE'
+                          ? 'orange'
+                          : 'default'
+                    }
+                  >
                     {booking.status}
                   </Tag>
                 </Descriptions.Item>
               )}
-              
+
               {booking.participants && booking.participants.length > 0 && (
                 <Descriptions.Item label="👥 Participants" span={2}>
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: '100%' }}
+                  >
                     {booking.participants.map((p, index) => (
                       <div key={index}>
                         <Tag color={p.roleType === 'VOCAL' ? 'blue' : 'purple'}>
@@ -876,24 +884,29 @@ export default function ServiceRequestContracts() {
                   </Space>
                 </Descriptions.Item>
               )}
-              
-              {booking.requiredEquipment && booking.requiredEquipment.length > 0 && (
-                <Descriptions.Item label="🎸 Equipment" span={2}>
-                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                    {booking.requiredEquipment.map((eq, index) => (
-                      <div key={index}>
-                        {eq.equipmentName || 'Equipment'} x {eq.quantity}
-                        {eq.totalRentalFee && (
-                          <span style={{ marginLeft: 8, color: '#666' }}>
-                            - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </Space>
-                </Descriptions.Item>
-              )}
-              
+
+              {booking.requiredEquipment &&
+                booking.requiredEquipment.length > 0 && (
+                  <Descriptions.Item label="🎸 Equipment" span={2}>
+                    <Space
+                      direction="vertical"
+                      size="small"
+                      style={{ width: '100%' }}
+                    >
+                      {booking.requiredEquipment.map((eq, index) => (
+                        <div key={index}>
+                          {eq.equipmentName || 'Equipment'} x {eq.quantity}
+                          {eq.totalRentalFee && (
+                            <span style={{ marginLeft: 8, color: '#666' }}>
+                              - {eq.totalRentalFee.toLocaleString('vi-VN')} VND
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+
               {booking.artistFee && booking.artistFee > 0 && (
                 <Descriptions.Item label="💰 Participant Fee">
                   {booking.artistFee.toLocaleString('vi-VN')} VND

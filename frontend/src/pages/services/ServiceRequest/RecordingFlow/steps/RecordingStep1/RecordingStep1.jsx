@@ -47,7 +47,7 @@ export default function RecordingStep1({ data, onComplete }) {
         setLoadingSlots(true);
         const dateStr = selectedDate.format('YYYY-MM-DD');
         const response = await getAvailableSlots(dateStr);
-        
+
         if (response?.status === 'success' && response?.data) {
           // Map backend slots to frontend format
           const slots = response.data.map(slot => ({
@@ -103,12 +103,12 @@ export default function RecordingStep1({ data, onComplete }) {
     return availableSlots.some(slot => {
       const slotStartTime = dayjs(slot.start, 'HH:mm');
       const slotEndTime = dayjs(slot.end, 'HH:mm');
-      
+
       // Exact match or within slot range
       return (
         slot.available &&
         ((slotStart.isSame(slotStartTime) && slotEnd.isSame(slotEndTime)) ||
-         (slotStart.isAfter(slotStartTime) && slotEnd.isBefore(slotEndTime)))
+          (slotStart.isAfter(slotStartTime) && slotEnd.isBefore(slotEndTime)))
       );
     });
   };

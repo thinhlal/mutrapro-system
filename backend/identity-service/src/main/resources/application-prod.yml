@@ -64,6 +64,11 @@ outbound:
     client-secret: ${GOOGLE_CLIENT_SECRET}
     redirect-uri: ${GOOGLE_REDIRECT_URI}
 
+# Specialist Service Configuration
+specialist:
+  service:
+    base-url: ${SPECIALIST_SERVICE_BASE_URL:http://specialist-service:8086}
+
 # Management & Actuator
 management:
   endpoints:

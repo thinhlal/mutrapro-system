@@ -53,6 +53,43 @@ public enum BillingServiceErrorCodes implements ErrorCode {
     CURRENCY_MISMATCH("WALLET_8008", 400,
         "https://docs.mutrapro.com/errors/WALLET_8008",
         "Currency mismatch between wallet and transaction",
+        Retryable.NON_TRANSIENT),
+    
+    // Withdrawal Request Errors (8100-8199)
+    WITHDRAWAL_REQUEST_NOT_FOUND("WITHDRAWAL_8100", 404,
+        "https://docs.mutrapro.com/errors/WITHDRAWAL_8100",
+        "Withdrawal request not found",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_WITHDRAWAL_STATUS("WITHDRAWAL_8101", 400,
+        "https://docs.mutrapro.com/errors/WITHDRAWAL_8101",
+        "Invalid withdrawal request status for this operation",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_PROOF_FILE("WITHDRAWAL_8102", 400,
+        "https://docs.mutrapro.com/errors/WITHDRAWAL_8102",
+        "Invalid proof file format or size",
+        Retryable.NON_TRANSIENT),
+    
+    PROOF_FILE_UPLOAD_FAILED("WITHDRAWAL_8103", 500,
+        "https://docs.mutrapro.com/errors/WITHDRAWAL_8103",
+        "Failed to upload proof file",
+        Retryable.TRANSIENT),
+    
+    PROOF_FILE_DOWNLOAD_FAILED("WITHDRAWAL_8104", 500,
+        "https://docs.mutrapro.com/errors/WITHDRAWAL_8104",
+        "Failed to download proof file",
+        Retryable.TRANSIENT),
+    
+    // Transaction Errors (8200-8299)
+    INVALID_TRANSACTION_TYPE("TRANSACTION_8200", 400,
+        "https://docs.mutrapro.com/errors/TRANSACTION_8200",
+        "Invalid transaction type for this operation",
+        Retryable.NON_TRANSIENT),
+    
+    TRANSACTION_ALREADY_REFUNDED("TRANSACTION_8201", 409,
+        "https://docs.mutrapro.com/errors/TRANSACTION_8201",
+        "Transaction has already been refunded",
         Retryable.NON_TRANSIENT);
 
     private final String code;
