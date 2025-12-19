@@ -36,6 +36,7 @@ import {
   getAvailableArtists,
   createBookingForRecordingMilestone,
 } from '../../../services/studioBookingService';
+import { getPurposeLabel } from '../../../constants';
 import styles from './StudioBookingPage.module.css';
 
 const { Title, Text } = Typography;
@@ -68,6 +69,20 @@ const StudioBookingPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Milestone meta info: deadline + days remaining
+  const milestoneDeadlineInfo = useMemo(() => {
+    if (!milestone?.targetDeadline) return null;
+    const today = dayjs().startOf('day');
+    const deadline = dayjs(milestone.targetDeadline).startOf('day');
+    const daysDiff = deadline.diff(today, 'day');
+
+    return {
+      deadline,
+      daysDiff,
+      isOverdue: daysDiff < 0,
+    };
+  }, [milestone]);
 
   // Load milestone và contract
   useEffect(() => {
@@ -275,46 +290,109 @@ const StudioBookingPage = () => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           Quay lại
         </Button>
-        <Title level={2} style={{ margin: 0 }}>
-          Book Studio cho Recording Milestone
-        </Title>
+        <div>
+          <Title level={2} style={{ margin: 0 }}>
+            Book Studio cho Recording Milestone
+          </Title>
+          {milestone && (
+            <Space size="small" wrap>
+              {milestone.name && (
+                <Tag color="blue">Milestone: {milestone.name}</Tag>
+              )}
+              {typeof milestone.orderIndex === 'number' && (
+                <Tag color="geekblue">Thứ tự: #{milestone.orderIndex}</Tag>
+              )}
+              {contract?.contractNumber && (
+                <Tag color="purple">
+                  Contract #{contract.contractNumber}
+                </Tag>
+              )}
+              {milestoneDeadlineInfo && (
+                <Tag color={milestoneDeadlineInfo.isOverdue ? 'red' : 'green'}>
+                  Deadline:{' '}
+                  {milestoneDeadlineInfo.deadline.format('DD/MM/YYYY')} (
+                  {milestoneDeadlineInfo.daysDiff === 0
+                    ? 'Hôm nay'
+                    : milestoneDeadlineInfo.daysDiff > 0
+                      ? `Còn ${milestoneDeadlineInfo.daysDiff} ngày`
+                      : `Trễ ${Math.abs(milestoneDeadlineInfo.daysDiff)} ngày`}
+                  )
+                </Tag>
+              )}
+            </Space>
+          )}
+        </div>
       </div>
 
-      {/* Thông tin Request */}
-      {request && (
-        <Card title="Thông tin Request" style={{ marginBottom: 16 }}>
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-            {request.title && (
-              <div>
-                <Text strong>Tiêu đề: </Text>
-                <Text>{request.title}</Text>
-              </div>
-            )}
-            {request.description && (
-              <div>
-                <Text strong>Mô tả: </Text>
-                <Text>{request.description}</Text>
-              </div>
-            )}
-            {request.genres && request.genres.length > 0 && (
-              <div>
-                <Text strong>Thể loại: </Text>
-                <Space wrap>
-                  {request.genres.map((genre, idx) => (
-                    <Tag key={idx} color="blue">
-                      {genre}
-                    </Tag>
-                  ))}
+      {/* Thông tin Request + Milestone context */}
+      {(request || milestoneDeadlineInfo) && (
+        <Card title="Ngữ cảnh Booking" style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]}>
+            {request && (
+              <Col xs={24} md={14}>
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
+                  {request.title && (
+                    <div>
+                      <Text strong>Tiêu đề request: </Text>
+                      <Text>{request.title}</Text>
+                    </div>
+                  )}
+                  {request.description && (
+                    <div>
+                      <Text strong>Mô tả: </Text>
+                      <Text>{request.description}</Text>
+                    </div>
+                  )}
+                  {request.genres && request.genres.length > 0 && (
+                    <div>
+                      <Text strong>Thể loại: </Text>
+                      <Space wrap>
+                        {request.genres.map((genre, idx) => (
+                          <Tag key={idx} color="blue">
+                            {genre}
+                          </Tag>
+                        ))}
+                      </Space>
+                    </div>
+                  )}
+                  {request.purpose && (
+                    <div>
+                      <Text strong>Mục đích: </Text>
+                      <Text>{getPurposeLabel(request.purpose)}</Text>
+                    </div>
+                  )}
                 </Space>
-              </div>
+              </Col>
             )}
-            {request.purpose && (
-              <div>
-                <Text strong>Mục đích: </Text>
-                <Text>{request.purpose}</Text>
-              </div>
+            {milestoneDeadlineInfo && (
+              <Col xs={24} md={10}>
+                <Space
+                  direction="vertical"
+                  size="small"
+                  style={{ width: '100%' }}
+                >
+                  <Text strong>Deadline milestone thu âm:</Text>
+                  <Text>
+                    {milestoneDeadlineInfo.deadline.format('DD/MM/YYYY')} (
+                    {milestoneDeadlineInfo.daysDiff === 0
+                      ? 'Hôm nay'
+                      : milestoneDeadlineInfo.daysDiff > 0
+                        ? `Còn ${milestoneDeadlineInfo.daysDiff} ngày`
+                        : `Trễ ${Math.abs(milestoneDeadlineInfo.daysDiff)} ngày`}
+                    )
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Booking nên được đặt trước hoặc bằng ngày deadline để đảm
+                    bảo SLA của milestone.
+                  </Text>
+                </Space>
+              </Col>
             )}
-          </Space>
+          </Row>
         </Card>
       )}
 

@@ -42,16 +42,5 @@ public class InvalidStateException extends BusinessException {
         );
     }
 
-    /**
-     * Không thể activate recording milestone khi chưa có studio booking cho recording task
-     */
-    public static InvalidStateException missingStudioBookingForRecordingMilestone(String milestoneId, String assignmentId) {
-        return new InvalidStateException(
-            String.format("Cannot activate recording milestone without studio booking linked to recording task. " +
-                "MilestoneId: %s, TaskAssignmentId: %s. " +
-                "Please create a studio booking for this milestone first, then update the task's studioBookingId.",
-                milestoneId, assignmentId)
-        );
-    }
 }
 

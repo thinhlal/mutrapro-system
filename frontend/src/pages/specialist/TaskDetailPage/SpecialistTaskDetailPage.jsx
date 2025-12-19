@@ -1306,9 +1306,24 @@ const SpecialistTaskDetailPage = () => {
                                             file.fileName
                                           )
                                         }
-                                        style={{ padding: 0, height: 'auto' }}
+                                        style={{
+                                          padding: 0,
+                                          height: 'auto',
+                                          maxWidth: '100%',
+                                        }}
                                       >
-                                        {file.fileName}
+                                        <Text
+                                          ellipsis={{
+                                            tooltip: file.fileName,
+                                          }}
+                                          style={{
+                                            maxWidth: 260,
+                                            display: 'inline-block',
+                                            verticalAlign: 'bottom',
+                                          }}
+                                        >
+                                          {file.fileName}
+                                        </Text>
                                         {file.fileSize && (
                                           <Text
                                             type="secondary"

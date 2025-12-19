@@ -2477,6 +2477,7 @@ public class ContractService {
             }
 
             // Activate assignments nếu milestone đã có task accepted
+            // Với recording milestone, nếu chưa có studio booking thì TaskAssignmentService sẽ tự log và skip
             taskAssignmentService.activateAssignmentsForMilestone(contractId, nextMilestone.getMilestoneId());
             
             // Nếu milestone tiếp theo đã có task accepted/completed (nhưng chưa có actualStartAt vì milestone trước đó chưa completed),

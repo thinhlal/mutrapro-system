@@ -33,17 +33,28 @@ import com.mutrapro.project_service.enums.RecordingSessionType;
 import com.mutrapro.project_service.enums.SessionRoleType;
 import com.mutrapro.project_service.enums.StudioBookingContext;
 import com.mutrapro.project_service.enums.TaskType;
+import com.mutrapro.project_service.exception.ArrangementMilestoneNotCompletedException;
+import com.mutrapro.project_service.exception.ArrangementMilestoneNotPaidException;
+import com.mutrapro.project_service.exception.ArrangementMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ArtistBookingConflictException;
 import com.mutrapro.project_service.exception.ContractMilestoneNotFoundException;
 import com.mutrapro.project_service.exception.ContractNotFoundException;
+import com.mutrapro.project_service.exception.InvalidBookingDateException;
 import com.mutrapro.project_service.exception.InvalidContractStatusException;
+import com.mutrapro.project_service.exception.InvalidContractTypeException;
+import com.mutrapro.project_service.exception.InvalidMilestoneTypeException;
 import com.mutrapro.project_service.exception.InvalidParticipantException;
 import com.mutrapro.project_service.exception.InvalidRequestTypeException;
 import com.mutrapro.project_service.exception.InvalidStateException;
 import com.mutrapro.project_service.exception.InvalidTimeRangeException;
+import com.mutrapro.project_service.exception.MissingCustomerUserIdException;
+import com.mutrapro.project_service.exception.MissingSlaException;
 import com.mutrapro.project_service.exception.NoActiveStudioException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
+import com.mutrapro.project_service.exception.SpecialistIdNotFoundException;
 import com.mutrapro.project_service.exception.StudioBookingConflictException;
+import com.mutrapro.project_service.exception.StudioBookingNotFoundException;
+import com.mutrapro.project_service.exception.UserNotAuthenticatedException;
 import com.mutrapro.project_service.repository.BookingParticipantRepository;
 import com.mutrapro.project_service.repository.BookingRequiredEquipmentRepository;
 import com.mutrapro.project_service.repository.ContractMilestoneRepository;
@@ -70,6 +81,7 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,13 +115,12 @@ public class StudioBookingService {
     private String getCurrentSpecialistId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-            throw new IllegalStateException("User not authenticated");
+            throw UserNotAuthenticatedException.create();
         }
         
         String specialistId = jwt.getClaimAsString("specialistId");
         if (specialistId == null || specialistId.isEmpty()) {
-            throw new IllegalStateException(
-                "Specialist ID not found in JWT token. Please login again to refresh token.");
+            throw SpecialistIdNotFoundException.inToken();
         }
         
         return specialistId;
@@ -145,8 +156,7 @@ public class StudioBookingService {
         
         // Check milestone type = recording
         if (recordingMilestone.getMilestoneType() != MilestoneType.recording) {
-            throw new IllegalArgumentException(
-                String.format("Milestone %s is not a recording milestone", request.getMilestoneId()));
+            throw InvalidMilestoneTypeException.notRecording(request.getMilestoneId());
         }
         
         // 2. Validate contract
@@ -155,8 +165,7 @@ public class StudioBookingService {
         
         // Check contract type = arrangement_with_recording
         if (contract.getContractType() != ContractType.arrangement_with_recording) {
-            throw new IllegalArgumentException(
-                String.format("Contract %s is not an arrangement_with_recording contract", contract.getContractId()));
+            throw InvalidContractTypeException.notArrangementWithRecording(contract.getContractId());
         }
         
         // Check contract status
@@ -178,8 +187,7 @@ public class StudioBookingService {
             .toList();
         
         if (arrangementMilestones.isEmpty()) {
-            throw new IllegalStateException(
-                "Arrangement milestone not found in arrangement_with_recording contract");
+            throw ArrangementMilestoneNotFoundException.inContract(contract.getContractId());
         }
         
         // Check TẤT CẢ milestone arrangement đều phải COMPLETED (hoặc READY_FOR_PAYMENT) 
@@ -194,12 +202,10 @@ public class StudioBookingService {
             .toList();
         
         if (!unacceptedArrangements.isEmpty()) {
-            throw new IllegalStateException(
-                String.format("All arrangement milestones must be completed before creating booking for recording. " +
-                    "Unaccepted arrangement milestones: %s", 
-                    unacceptedArrangements.stream()
-                        .map(m -> String.format("orderIndex=%d (status=%s)", m.getOrderIndex(), m.getWorkStatus()))
-                        .collect(java.util.stream.Collectors.joining(", "))));
+            List<String> unacceptedDetails = unacceptedArrangements.stream()
+                .map(m -> String.format("orderIndex=%d (status=%s)", m.getOrderIndex(), m.getWorkStatus()))
+                .toList();
+            throw ArrangementMilestoneNotCompletedException.withUnacceptedMilestones(unacceptedDetails);
         }
         
         // ⚠️ QUAN TRỌNG: Check TẤT CẢ arrangement milestones đã có actualEndAt (đã thanh toán)
@@ -207,12 +213,7 @@ public class StudioBookingService {
         ContractMilestone lastArrangementMilestone = arrangementMilestones.get(arrangementMilestones.size() - 1);
         
         if (lastArrangementMilestone.getActualEndAt() == null) {
-            throw new IllegalStateException(
-                String.format("Cannot create booking for recording milestone. " +
-                    "All arrangement milestones must be paid (actualEndAt must be set) before creating booking. " +
-                    "Last arrangement milestone (orderIndex=%d) has not been paid yet (actualEndAt=null). " +
-                    "Please wait for customer to pay arrangement milestones before creating booking.",
-                    lastArrangementMilestone.getOrderIndex()));
+            throw ArrangementMilestoneNotPaidException.lastMilestoneNotPaid(lastArrangementMilestone.getOrderIndex());
         }
         
         log.info("All arrangement milestones are completed and paid. Proceeding with recording booking: contractId={}, recordingMilestoneId={}, arrangementCount={}, lastArrangementActualEndAt={}",
@@ -229,8 +230,7 @@ public class StudioBookingService {
         // Tính due date = start date + SLA days
         Integer recordingSlaDays = recordingMilestone.getMilestoneSlaDays();
         if (recordingSlaDays == null || recordingSlaDays <= 0) {
-            throw new IllegalStateException(
-                "Recording milestone must have SLA days to calculate due date");
+            throw MissingSlaException.forRecordingMilestone();
         }
         
         LocalDateTime recordingDueDate = recordingStartDate.plusDays(recordingSlaDays);
@@ -241,29 +241,27 @@ public class StudioBookingService {
         // Validate booking date trong range thực tế
         if (request.getBookingDate().isBefore(validStartDate) || 
             request.getBookingDate().isAfter(validDueDate)) {
-            throw new IllegalArgumentException(
-                String.format("Booking date %s must be within recording milestone SLA range: %s to %s (calculated from arrangement completion date)",
-                    request.getBookingDate(), validStartDate, validDueDate));
+            throw InvalidBookingDateException.outsideSlaRange(request.getBookingDate(), validStartDate, validDueDate);
         }
         
         // 5. Tự động lấy studio active duy nhất (single studio system)
         List<Studio> activeStudios = studioRepository.findByIsActiveTrue();
         if (activeStudios.isEmpty()) {
-            throw new IllegalStateException("No active studio found in the system");
+            throw NoActiveStudioException.notFound();
         }
         if (activeStudios.size() > 1) {
-            throw new IllegalStateException(
-                String.format("Multiple active studios found (%d). System expects single studio.",
-                    activeStudios.size()));
+            throw NoActiveStudioException.multipleFound(activeStudios.size());
         }
         Studio studio = activeStudios.get(0);
         log.info("Auto-selected studio for booking: studioId={}, studioName={}",
             studio.getStudioId(), studio.getStudioName());
         
         // 6. Validate time range
-        if (request.getStartTime().isAfter(request.getEndTime()) || 
-            request.getStartTime().equals(request.getEndTime())) {
-            throw new IllegalArgumentException("Start time must be before end time");
+        if (request.getStartTime().isAfter(request.getEndTime())) {
+            throw InvalidTimeRangeException.startAfterEnd(request.getStartTime(), request.getEndTime());
+        }
+        if (request.getStartTime().equals(request.getEndTime())) {
+            throw InvalidTimeRangeException.startEqualsEnd(request.getStartTime(), request.getEndTime());
         }
         
         // 7. Check studio availability (tránh double booking)
@@ -289,8 +287,8 @@ public class StudioBookingService {
             });
         
         if (hasConflict) {
-            throw new IllegalArgumentException(
-                "Studio is already booked at the requested time slot");
+            throw StudioBookingConflictException.forTimeSlot(
+                request.getBookingDate(), request.getStartTime(), request.getEndTime());
         }
         
         // 7.5. Check artist availability (nếu có artists trong request)
@@ -310,22 +308,20 @@ public class StudioBookingService {
             
             if (!conflictingParticipants.isEmpty()) {
                 // Group by specialistId để show message rõ ràng
-                String conflictingSpecialists = conflictingParticipants.stream()
+                List<String> conflictingSpecialistIds = conflictingParticipants.stream()
                     .map(bp -> bp.getSpecialistId())
                     .filter(id -> id != null && !id.isBlank())
                     .distinct()
-                    .collect(java.util.stream.Collectors.joining(", "));
+                    .toList();
                 
-                throw new IllegalArgumentException(
-                    String.format("One or more artists are already booked at the requested time slot: %s", 
-                        conflictingSpecialists));
+                throw ArtistBookingConflictException.forArtists(conflictingSpecialistIds);
             }
         }
         
         // 8. Get customer user ID từ contract
         String customerUserId = contract.getUserId();
         if (customerUserId == null || customerUserId.isBlank()) {
-            throw new IllegalStateException("Contract does not have customer user ID");
+            throw MissingCustomerUserIdException.inContract();
         }
         
         // 9. Tạo booking
@@ -900,10 +896,10 @@ public class StudioBookingService {
         // 1. Tự động lấy studio active (single studio system)
         List<Studio> activeStudios = studioRepository.findByIsActiveTrue();
         if (activeStudios.isEmpty()) {
-            throw new IllegalStateException("No active studio found");
+            throw NoActiveStudioException.notFound();
         }
         if (activeStudios.size() > 1) {
-            throw new IllegalStateException("Multiple active studios found. Expected single studio system.");
+            throw NoActiveStudioException.multipleFound(activeStudios.size());
         }
         Studio studio = activeStudios.get(0);
         String studioId = studio.getStudioId();
@@ -1133,10 +1129,52 @@ public class StudioBookingService {
                 .build());
         }
         
-        // Sort: preferred artists first, then by name
+        // Chuẩn hoá genres filter để tính match score
+        final List<String> normalizedGenres = genres != null
+            ? genres.stream().filter(Objects::nonNull).map(String::toLowerCase).toList()
+            : java.util.List.of();
+
+        // Sort:
+        // 1. Preferred artists trước
+        // 2. Nghệ sĩ match nhiều genres hơn (theo request) đứng trước
+        // 3. Rating cao hơn (nếu có) đứng trước
+        // 4. Cuối cùng sort theo tên
         artists.sort((a1, a2) -> {
-            if (a1.getIsPreferred() && !a2.getIsPreferred()) return -1;
-            if (!a1.getIsPreferred() && a2.getIsPreferred()) return 1;
+            // 1. Preferred
+            if (Boolean.TRUE.equals(a1.getIsPreferred()) && !Boolean.TRUE.equals(a2.getIsPreferred())) return -1;
+            if (!Boolean.TRUE.equals(a1.getIsPreferred()) && Boolean.TRUE.equals(a2.getIsPreferred())) return 1;
+
+            // Helper: tính số genres match với filter
+            java.util.function.Function<AvailableArtistResponse, Integer> matchCountFn = artist -> {
+                if (normalizedGenres.isEmpty() || artist.getGenres() == null) return 0;
+                int count = 0;
+                for (String g : artist.getGenres()) {
+                    if (g == null) continue;
+                    if (normalizedGenres.contains(g.toLowerCase())) {
+                        count++;
+                    }
+                }
+                return count;
+            };
+
+            int m1 = matchCountFn.apply(a1);
+            int m2 = matchCountFn.apply(a2);
+            if (m1 != m2) {
+                // Nhiều match hơn đứng trước
+                return Integer.compare(m2, m1);
+            }
+
+            // 3. Rating (null-safe, cao hơn đứng trước)
+            BigDecimal r1 = a1.getRating();
+            BigDecimal r2 = a2.getRating();
+            if (r1 != null || r2 != null) {
+                if (r1 == null) return 1;
+                if (r2 == null) return -1;
+                int cmp = r2.compareTo(r1);
+                if (cmp != 0) return cmp;
+            }
+
+            // 4. Tên
             return a1.getName().compareToIgnoreCase(a2.getName());
         });
         
@@ -1399,15 +1437,13 @@ public class StudioBookingService {
         
         if (milestoneId != null && !milestoneId.isBlank()) {
             // Filter theo milestone - cần eager load studio
-            bookings = studioBookingRepository.findByMilestoneId(milestoneId)
-                .map(List::of)
-                .orElse(List.of());
+            bookings = studioBookingRepository.findByMilestoneIdOrderByBookingDateDescStartTimeAsc(milestoneId);
         } else if (contractId != null && !contractId.isBlank()) {
             // Filter theo contract - cần eager load studio
-            bookings = studioBookingRepository.findByContractId(contractId);
+            bookings = studioBookingRepository.findByContractIdOrderByBookingDateDescStartTimeAsc(contractId);
         } else {
             // Lấy tất cả - cần eager load studio
-            bookings = studioBookingRepository.findAll();
+            bookings = studioBookingRepository.findAllByOrderByBookingDateDescStartTimeAsc();
         }
         log.info("[Performance] Step 1 - Fetch bookings: {}ms (found {} bookings)", 
             System.currentTimeMillis() - step1Start, bookings.size());
@@ -1563,7 +1599,7 @@ public class StudioBookingService {
         List<StudioBooking> bookings = studioBookingRepository.findByRequestId(requestId);
         
         if (bookings.isEmpty()) {
-            throw new IllegalArgumentException("Studio booking not found for requestId: " + requestId);
+            throw StudioBookingNotFoundException.forRequestId(requestId);
         }
         
         // Lấy booking đầu tiên (should be only one)

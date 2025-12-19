@@ -317,6 +317,57 @@ public enum ProjectServiceErrorCodes implements ErrorCode {
     FILE_TYPE_NOT_ALLOWED("CONTRACT_7064", 400,
         "https://docs.mutrapro.com/errors/CONTRACT_7064",
         "File type not allowed",
+        Retryable.NON_TRANSIENT),
+    
+    // Studio Booking Validation Errors (7065-7074)
+    INVALID_MILESTONE_TYPE("CONTRACT_7065", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7065",
+        "Invalid milestone type for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_CONTRACT_TYPE("CONTRACT_7066", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7066",
+        "Invalid contract type for the requested action",
+        Retryable.NON_TRANSIENT),
+    
+    ARRANGEMENT_MILESTONE_NOT_FOUND("CONTRACT_7067", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7067",
+        "Arrangement milestone not found in contract",
+        Retryable.NON_TRANSIENT),
+    
+    ARRANGEMENT_MILESTONE_NOT_COMPLETED("CONTRACT_7068", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7068",
+        "All arrangement milestones must be completed before creating recording booking",
+        Retryable.NON_TRANSIENT),
+    
+    ARRANGEMENT_MILESTONE_NOT_PAID("CONTRACT_7069", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7069",
+        "All arrangement milestones must be paid before creating recording booking",
+        Retryable.NON_TRANSIENT),
+    
+    MISSING_SLA("CONTRACT_7070", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7070",
+        "Milestone must have SLA days to calculate due date",
+        Retryable.NON_TRANSIENT),
+    
+    INVALID_BOOKING_DATE("CONTRACT_7071", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7071",
+        "Booking date is outside the valid SLA range",
+        Retryable.NON_TRANSIENT),
+    
+    MISSING_CUSTOMER_USER_ID("CONTRACT_7072", 400,
+        "https://docs.mutrapro.com/errors/CONTRACT_7072",
+        "Contract does not have customer user ID",
+        Retryable.NON_TRANSIENT),
+    
+    SPECIALIST_ID_NOT_FOUND("CONTRACT_7073", 401,
+        "https://docs.mutrapro.com/errors/CONTRACT_7073",
+        "Specialist ID not found in JWT token",
+        Retryable.NON_TRANSIENT),
+    
+    STUDIO_BOOKING_NOT_FOUND("CONTRACT_7074", 404,
+        "https://docs.mutrapro.com/errors/CONTRACT_7074",
+        "Studio booking not found",
         Retryable.NON_TRANSIENT);
 
     private final String code;

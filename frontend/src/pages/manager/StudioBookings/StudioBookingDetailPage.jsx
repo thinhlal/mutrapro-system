@@ -22,6 +22,7 @@ import {
   getContractById,
   getMilestoneById,
 } from '../../../services/contractService';
+import { getPurposeLabel } from '../../../constants';
 import { getSpecialistById } from '../../../services/specialistService';
 import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
@@ -473,12 +474,6 @@ const StudioBookingDetailPage = () => {
                         {milestoneInfo.milestoneId}
                       </Button>
                     </Space>
-                    {milestoneInfo.orderIndex && (
-                      <Space>
-                        <Text strong>Order Index:</Text>
-                        <Tag color="blue">#{milestoneInfo.orderIndex}</Tag>
-                      </Space>
-                    )}
                     {milestoneInfo.name && (
                       <Space>
                         <Text strong>Name:</Text>
@@ -713,7 +708,9 @@ const StudioBookingDetailPage = () => {
                 {bookingDetail.requestId || 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Purpose" span={2}>
-                {bookingDetail.purpose || 'N/A'}
+                {bookingDetail.purpose
+                  ? getPurposeLabel(bookingDetail.purpose)
+                  : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Special Instructions" span={2}>
                 {bookingDetail.specialInstructions || 'N/A'}

@@ -910,24 +910,6 @@ const TaskDetailPage = () => {
                   task?.request?.requestType ===
                     'arrangement_with_recording') && (
                   <>
-                    {(() => {
-                      const instruments =
-                        request?.instruments ||
-                        task?.request?.instruments ||
-                        [];
-                      const mainInstrument = instruments.find(
-                        inst => inst.isMain === true
-                      );
-                      return mainInstrument ? (
-                        <Descriptions.Item label="Main Instrument" span={2}>
-                          <Tag color="gold" icon={<StarFilled />}>
-                            {mainInstrument.instrumentName ||
-                              mainInstrument.name ||
-                              'N/A'}
-                          </Tag>
-                        </Descriptions.Item>
-                      ) : null;
-                    })()}
                     {((request?.genres && request.genres.length > 0) ||
                       (task?.request?.genres &&
                         Array.isArray(task.request.genres) &&

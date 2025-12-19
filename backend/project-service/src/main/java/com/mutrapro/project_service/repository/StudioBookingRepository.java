@@ -38,4 +38,11 @@ public interface StudioBookingRepository extends JpaRepository<StudioBooking, St
     
     @Query("SELECT sb FROM StudioBooking sb JOIN FETCH sb.studio WHERE sb.bookingId IN :bookingIds")
     List<StudioBooking> findByBookingIdIn(@Param("bookingIds") List<String> bookingIds);
+
+    // Sorted queries for management list (order by bookingDate desc, then startTime asc)
+    List<StudioBooking> findAllByOrderByBookingDateDescStartTimeAsc();
+
+    List<StudioBooking> findByContractIdOrderByBookingDateDescStartTimeAsc(String contractId);
+
+    List<StudioBooking> findByMilestoneIdOrderByBookingDateDescStartTimeAsc(String milestoneId);
 }

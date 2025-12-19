@@ -3184,18 +3184,24 @@ public class TaskAssignmentService {
             return;
         }
         
-        // Với recording milestone, bắt buộc phải có studio booking trước khi activate
+        // Với recording milestone, bắt buộc phải có ít nhất một recording_supervision task có studio booking
         if (milestone.getMilestoneType() == MilestoneType.recording) {
-            for (TaskAssignment task : acceptedTasks) {
-                if (task.getTaskType() == TaskType.recording_supervision) {
-                    if (task.getStudioBookingId() == null || task.getStudioBookingId().isEmpty()) {
-                        throw InvalidStateException.missingStudioBookingForRecordingMilestone(
-                            milestoneId, task.getAssignmentId());
-                    }
-                    log.info("Recording task has studio booking linked: taskId={}, bookingId={}", 
-                        task.getAssignmentId(), task.getStudioBookingId());
-                }
+            boolean hasStudioBooking = acceptedTasks.stream()
+                .filter(task -> task.getTaskType() == TaskType.recording_supervision)
+                .anyMatch(task -> task.getStudioBookingId() != null && !task.getStudioBookingId().isEmpty());
+
+            if (!hasStudioBooking) {
+                log.warn("Skip activating assignments for recording milestone because studio booking is missing: " +
+                        "contractId={}, milestoneId={}", contractId, milestoneId);
+                // Không throw exception, milestone sẽ được activate sau khi studio booking được tạo
+                return;
             }
+
+            // Log chi tiết các task đã có booking
+            acceptedTasks.stream()
+                .filter(task -> task.getTaskType() == TaskType.recording_supervision)
+                .forEach(task -> log.info("Recording task has studio booking linked: taskId={}, bookingId={}",
+                    task.getAssignmentId(), task.getStudioBookingId()));
         }
         
         // Update milestone: TASK_ACCEPTED_WAITING_ACTIVATION → READY_TO_START

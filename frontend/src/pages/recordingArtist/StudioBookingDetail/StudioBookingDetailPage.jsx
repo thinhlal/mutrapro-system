@@ -24,6 +24,7 @@ import { getStudioBookingById } from '../../../services/studioBookingService';
 import { getSpecialistById } from '../../../services/specialistService';
 import { getFilesByRequestId } from '../../../services/fileService';
 import { getTaskAssignmentsByMilestone } from '../../../services/taskAssignmentService';
+import { getPurposeLabel } from '../../../constants';
 import { downloadFileHelper } from '../../../utils/filePreviewHelper';
 import styles from './StudioBookingDetailPage.module.css';
 
@@ -48,10 +49,11 @@ const bookingStatusLabels = {
   CANCELLED: 'Đã hủy',
 };
 
-// Session Type Labels
+// Session Type Labels (match RecordingSessionType enum)
 const sessionTypeLabels = {
   ARTIST_ASSISTED: 'Artist Assisted',
-  SELF_SERVICE: 'Self Service',
+  SELF_RECORDING: 'Self Recording',
+  HYBRID: 'Hybrid (Self + Artist Assisted)',
 };
 
 const StudioBookingDetailPage = () => {
@@ -307,7 +309,7 @@ const StudioBookingDetailPage = () => {
             )}
             {booking.purpose && (
               <Descriptions.Item label="Purpose" span={2}>
-                {booking.purpose}
+                {getPurposeLabel(booking.purpose)}
               </Descriptions.Item>
             )}
             {booking.specialInstructions && (
