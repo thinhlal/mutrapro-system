@@ -205,7 +205,9 @@ const StudioBookingDetailPage = () => {
   if (loading) {
     return (
       <div className={styles.container}>
-        <Spin size="large" />
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <Spin size="large" />
+        </div>
       </div>
     );
   }
@@ -404,7 +406,7 @@ const StudioBookingDetailPage = () => {
           {/* Participants Information (PRE_CONTRACT_HOLD, STANDALONE_BOOKING) */}
           {booking.participants && booking.participants.length > 0 && (
             <div>
-              <Title level={4}>👥 Participants</Title>
+              <Title level={4}> Participants</Title>
               <Space
                 direction="vertical"
                 size="middle"
@@ -556,7 +558,7 @@ const StudioBookingDetailPage = () => {
           {(booking?.context === 'PRE_CONTRACT_HOLD' ||
             booking?.context === 'CONTRACT_RECORDING') && (
             <div>
-              <Title level={4}>🎙️ Recording Supervisor</Title>
+              <Title level={4}> Recording Supervisor</Title>
               <Spin spinning={loadingSupervisor}>
                 {supervisor ? (
                   <Card size="small">

@@ -1216,7 +1216,9 @@ const SpecialistTaskDetailPage = () => {
       <Card className={styles.section}>
         <Row gutter={[16, 16]} className={styles.overviewRow}>
           <Col xs={24} lg={14}>
-            <Descriptions column={1} title="Task Assignment Details" bordered>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Card title="Task Assignment Details" size="small" bordered>
+                <Descriptions column={1} size="small" bordered>
               <Descriptions.Item label="Assignment ID">
                 <Text copyable>{task.assignmentId}</Text>
               </Descriptions.Item>
@@ -1498,7 +1500,9 @@ const SpecialistTaskDetailPage = () => {
                   />
                 </Descriptions.Item>
               )}
-            </Descriptions>
+                </Descriptions>
+              </Card>
+            </Space>
           </Col>
           <Col xs={24} lg={10}>
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
