@@ -547,6 +547,10 @@ function App() {
               element={<ServiceRequestManagement />}
             />
             <Route
+              path="service-requests/:requestId"
+              element={<ServiceRequestContracts />}
+            />
+            <Route
               path="notation-instruments"
               element={<NotationInstruments />}
             />

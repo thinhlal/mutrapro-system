@@ -504,7 +504,7 @@ const MyRequestsContent = () => {
                         <>
                           {bookings[request.requestId].bookingDate && (
                             <div className={styles.infoRow}>
-                              <span className={styles.infoLabel}>📅 Date:</span>
+                              <span className={styles.infoLabel}>Date:</span>
                               <span className={styles.infoValue}>
                                 {formatBookingDate(
                                   bookings[request.requestId].bookingDate
@@ -516,7 +516,7 @@ const MyRequestsContent = () => {
                             bookings[request.requestId].endTime && (
                               <div className={styles.infoRow}>
                                 <span className={styles.infoLabel}>
-                                  🕒 Time Slot:
+                                  Time Slot:
                                 </span>
                                 <span className={styles.infoValue}>
                                   {bookings[request.requestId].startTime} -{' '}
@@ -528,13 +528,13 @@ const MyRequestsContent = () => {
                             undefined && (
                             <div className={styles.infoRow}>
                               <span className={styles.infoLabel}>
-                                💰 Total Cost:
+                                Total Cost:
                               </span>
                               <span
                                 className={styles.infoValue}
                                 style={{
                                   fontWeight: 600,
-                                  color: '#ff4d4f',
+                                  color: '#52c41a',
                                   fontSize: '16px',
                                 }}
                               >
@@ -564,6 +564,10 @@ const MyRequestsContent = () => {
                         navigate(`/my-requests/${request.requestId}`)
                       }
                       className={styles.viewDetailBtn}
+                      style={{
+                        backgroundColor: '#ec8a1c',
+                        borderColor: '#ec8a1c',
+                      }}
                     >
                       View Details
                     </Button>

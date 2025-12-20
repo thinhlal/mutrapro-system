@@ -41,12 +41,12 @@ const bookingStatusColor = {
 };
 
 const bookingStatusLabels = {
-  TENTATIVE: 'Tạm thời',
-  PENDING: 'Đang chờ',
-  CONFIRMED: 'Đã xác nhận',
-  IN_PROGRESS: 'Đang thực hiện',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
+  TENTATIVE: 'Tentative',
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 // Session Type Labels (match RecordingSessionType enum)
@@ -105,7 +105,7 @@ const StudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading booking:', error);
-      message.error(error?.message || 'Lỗi khi tải chi tiết booking');
+      message.error(error?.message || 'Error loading booking details');
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ const StudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading request files:', error);
-      // Không hiển thị error toast, chỉ log
+      // Don't show error toast, just log
     } finally {
       setLoadingFiles(false);
     }
@@ -165,7 +165,7 @@ const StudioBookingDetailPage = () => {
         booking.milestoneId
       );
       if (response?.status === 'success' && response?.data) {
-        // Tìm task recording_supervision
+        // Find recording_supervision task
         const recordingTask = response.data.find(
           task => task.taskType === 'recording_supervision'
         );
@@ -187,7 +187,7 @@ const StudioBookingDetailPage = () => {
       }
     } catch (error) {
       console.error('Error loading supervisor:', error);
-      // Không hiển thị error toast, chỉ log
+      // Don't show error toast, just log
     } finally {
       setLoadingSupervisor(false);
     }
@@ -196,7 +196,7 @@ const StudioBookingDetailPage = () => {
   const handleCopyBookingId = () => {
     if (booking?.bookingId) {
       navigator.clipboard.writeText(booking.bookingId);
-      message.success('Đã copy Booking ID');
+      message.success('Booking ID copied');
     }
   };
 
@@ -217,7 +217,7 @@ const StudioBookingDetailPage = () => {
   if (!booking) {
     return (
       <div className={styles.container}>
-        <Empty description="Không tìm thấy booking" />
+        <Empty description="Booking not found" />
       </div>
     );
   }
@@ -230,7 +230,7 @@ const StudioBookingDetailPage = () => {
           <div className={styles.header}>
             <Space>
               <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
-                Quay lại
+                Back
               </Button>
               <Title level={3} style={{ margin: 0 }}>
                 Studio Booking Detail
@@ -243,7 +243,7 @@ const StudioBookingDetailPage = () => {
 
           {/* Booking Information */}
           <Descriptions
-            title="Thông tin Booking"
+            title="Booking Information"
             bordered
             column={2}
             size="middle"
@@ -279,18 +279,18 @@ const StudioBookingDetailPage = () => {
                       : booking.context || 'N/A'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Ngày booking">
+            <Descriptions.Item label="Booking Date">
               {booking.bookingDate
                 ? dayjs(booking.bookingDate).format('DD/MM/YYYY')
                 : 'N/A'}
             </Descriptions.Item>
-            <Descriptions.Item label="Thời gian">
+            <Descriptions.Item label="Time">
               {booking.startTime && booking.endTime
                 ? `${booking.startTime} - ${booking.endTime}`
                 : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Duration">
-              {booking.durationHours ? `${booking.durationHours} giờ` : 'N/A'}
+              {booking.durationHours ? `${booking.durationHours} hours` : 'N/A'}
             </Descriptions.Item>
             <Descriptions.Item label="Studio">
               {booking.studioName || 'N/A'}
@@ -491,7 +491,7 @@ const StudioBookingDetailPage = () => {
           {booking.requiredEquipment &&
             booking.requiredEquipment.length > 0 && (
               <div>
-                <Title level={4}>🎸 Required Equipment</Title>
+                <Title level={4}>Required Equipment</Title>
                 <Space
                   direction="vertical"
                   size="middle"
@@ -556,7 +556,7 @@ const StudioBookingDetailPage = () => {
               </div>
             )}
 
-          {/* Recording Supervisor (cho recording bookings) */}
+          {/* Recording Supervisor (for recording bookings) */}
           {(booking?.context === 'PRE_CONTRACT_HOLD' ||
             booking?.context === 'CONTRACT_RECORDING') && (
             <div>
@@ -622,7 +622,7 @@ const StudioBookingDetailPage = () => {
                   </Card>
                 ) : (
                   <Empty
-                    description="Chưa có supervisor được assign"
+                    description="No supervisor assigned"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
@@ -630,10 +630,10 @@ const StudioBookingDetailPage = () => {
             </div>
           )}
 
-          {/* Request Files (cho PRE_CONTRACT_HOLD bookings) */}
+          {/* Request Files (for PRE_CONTRACT_HOLD bookings) */}
           {booking?.context === 'PRE_CONTRACT_HOLD' && booking?.requestId && (
             <div>
-              <Title level={4}>📎 Request Files</Title>
+              <Title level={4}>Request Files</Title>
               <Spin spinning={loadingFiles}>
                 {requestFiles && requestFiles.length > 0 ? (
                   <div
@@ -674,7 +674,7 @@ const StudioBookingDetailPage = () => {
                   </div>
                 ) : (
                   <Empty
-                    description="Không có files được upload"
+                    description="No files uploaded"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
@@ -682,7 +682,7 @@ const StudioBookingDetailPage = () => {
             </div>
           )}
 
-          {/* Arrangement Final Files (cho recording milestones) */}
+          {/* Arrangement Final Files (for recording milestones) */}
           {booking?.context === 'CONTRACT_RECORDING' &&
             booking?.sourceArrangementSubmission && (
               <div>

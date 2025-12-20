@@ -104,8 +104,14 @@ export default function TranscriptionUploader({
     }).filter(Boolean);
   }, [selectedInstruments, instrumentsData]);
 
+  // Handle remove instrument
+  const handleRemoveInstrument = useCallback((instrumentId) => {
+    setSelectedInstruments(prev => prev.filter(id => id !== instrumentId));
+    setInstrumentError(''); // Clear error when instrument is removed
+  }, []);
+
   // Table columns for instruments
-  const instrumentTableColumns = [
+  const instrumentTableColumns = useMemo(() => [
     {
       title: 'Instrument Name',
       dataIndex: 'instrumentName',
@@ -118,7 +124,24 @@ export default function TranscriptionUploader({
       align: 'right',
       render: (price) => formatPrice(price),
     },
-  ];
+    {
+      title: 'Action',
+      key: 'action',
+      align: 'center',
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveInstrument(record.instrumentId)}
+          size="small"
+        >
+          Remove
+        </Button>
+      ),
+    },
+  ], [handleRemoveInstrument]);
 
   // Track previous values to avoid unnecessary updates
   const prevTempoRef = useRef(null);

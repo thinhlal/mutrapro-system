@@ -551,7 +551,7 @@ const RequestDetailPage = () => {
                 <Descriptions.Item label="Preferred Vocalists">
                   <Space wrap>
                     {request.preferredSpecialists.map((specialist, idx) => (
-                      <Tag key={idx} color="pink">
+                      <Tag key={idx} color="orange">
                         {specialist.name ||
                           `Vocalist ${specialist.specialistId}`}
                       </Tag>
@@ -578,7 +578,7 @@ const RequestDetailPage = () => {
                   {request.genres && request.genres.length > 0 ? (
                     <Space wrap>
                       {request.genres.map((genre, idx) => (
-                        <Tag key={idx} color="purple">
+                        <Tag key={idx} color="orange">
                           {getGenreLabel(genre)}
                         </Tag>
                       ))}

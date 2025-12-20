@@ -1674,7 +1674,7 @@ const ContractBuilder = () => {
                           >
                             {bookingData.bookingDate && (
                               <div>
-                                <strong>📅 Date:</strong>{' '}
+                                <strong> Date:</strong>{' '}
                                 {bookingData.bookingDate} |{' '}
                                 {bookingData.startTime} - {bookingData.endTime}{' '}
                                 ({bookingData.durationHours}h)

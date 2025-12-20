@@ -117,8 +117,19 @@ export default function ArrangementUploader({
     }).filter(Boolean);
   }, [selectedInstruments, instrumentsData, mainInstrumentId]);
 
+  // Handle remove instrument
+  const handleRemoveInstrument = useCallback((instrumentId) => {
+    setSelectedInstruments(prev => prev.filter(id => id !== instrumentId));
+    setInstrumentError(''); // Clear error when instrument is removed
+    // Nếu instrument bị xóa là main instrument, reset mainInstrumentId
+    if (mainInstrumentId === instrumentId) {
+      setMainInstrumentId(null);
+      setMainInstrumentError('');
+    }
+  }, [mainInstrumentId]);
+
   // Table columns for instruments
-  const instrumentTableColumns = [
+  const instrumentTableColumns = useMemo(() => [
     {
       title: 'Instrument Name',
       dataIndex: 'instrumentName',
@@ -141,7 +152,24 @@ export default function ArrangementUploader({
       align: 'right',
       render: (price) => formatPrice(price),
     },
-  ];
+    {
+      title: 'Action',
+      key: 'action',
+      align: 'center',
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveInstrument(record.instrumentId)}
+          size="small"
+        >
+          Remove
+        </Button>
+      ),
+    },
+  ], [handleRemoveInstrument]);
 
   // Track previous values to avoid unnecessary updates
   const prevGenresRef = useRef(null);

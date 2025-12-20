@@ -22,7 +22,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const BOOKING_STATUS = [
-  { label: 'Tất cả', value: '' },
+  { label: 'All', value: '' },
   { label: 'Tentative', value: 'TENTATIVE' },
   { label: 'Pending', value: 'PENDING' },
   { label: 'Confirmed', value: 'CONFIRMED' },
@@ -32,7 +32,7 @@ const BOOKING_STATUS = [
 ];
 
 const BOOKING_CONTEXT = [
-  { label: 'Tất cả', value: '' },
+  { label: 'All', value: '' },
   { label: 'Contract Recording', value: 'CONTRACT_RECORDING' },
   { label: 'Pre-Contract Hold', value: 'PRE_CONTRACT_HOLD' },
   { label: 'Standalone Booking', value: 'STANDALONE_BOOKING' },
@@ -76,7 +76,7 @@ const MyStudioBookings = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      message.error(error?.message || 'Lỗi khi tải danh sách bookings');
+      message.error(error?.message || 'Error loading bookings list');
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ const MyStudioBookings = () => {
 
   const handleCopyBookingId = bookingId => {
     navigator.clipboard.writeText(bookingId);
-    message.success('Đã copy Booking ID');
+    message.success('Booking ID copied');
   };
 
   const handleViewBookingDetail = bookingId => {
@@ -145,14 +145,14 @@ const MyStudioBookings = () => {
       ),
     },
     {
-      title: 'Ngày',
+      title: 'Date',
       dataIndex: 'bookingDate',
       key: 'bookingDate',
       width: 120,
       render: date => (date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'),
     },
     {
-      title: 'Thời gian',
+      title: 'Time',
       key: 'time',
       width: 150,
       render: (_, record) => (
@@ -210,7 +210,7 @@ const MyStudioBookings = () => {
       key: 'role',
       width: 120,
       render: (_, record) => {
-        // Lấy từ participants với performerSource = INTERNAL_ARTIST
+        // Get from participants with performerSource = INTERNAL_ARTIST
         const internalArtists =
           record?.participants?.filter(
             p => p.performerSource === 'INTERNAL_ARTIST'
@@ -224,9 +224,9 @@ const MyStudioBookings = () => {
           );
         }
 
-        // Fallback: lấy từ participants (cho luồng 3)
+        // Fallback: get from participants (for flow 3)
         if (record.participants && record.participants.length > 0) {
-          // Tìm participant với isPrimary = true hoặc lấy participant đầu tiên
+          // Find participant with isPrimary = true or get first participant
           const myParticipant =
             record.participants.find(p => p.isPrimary) ||
             record.participants[0];
@@ -245,9 +245,9 @@ const MyStudioBookings = () => {
       key: 'participantsCount',
       width: 120,
       render: (_, record) => {
-        // Chỉ đếm participants (artists đã được gộp vào participants)
+        // Only count participants (artists have been merged into participants)
         const count = record.participants?.length || 0;
-        return count > 0 ? `${count} người` : 'N/A';
+        return count > 0 ? `${count} people` : 'N/A';
       },
     },
     {
@@ -256,7 +256,7 @@ const MyStudioBookings = () => {
       width: 120,
       render: (_, record) => {
         const count = record.requiredEquipment?.length || 0;
-        return count > 0 ? `${count} thiết bị` : 'N/A';
+        return count > 0 ? `${count} equipment` : 'N/A';
       },
     },
     {
@@ -279,7 +279,7 @@ const MyStudioBookings = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewBookingDetail(record.bookingId)}
         >
-          Chi tiết
+          Details
         </Button>
       ),
     },
@@ -291,7 +291,7 @@ const MyStudioBookings = () => {
         <div style={{ marginBottom: 16 }}>
           <Title level={3}>My Studio Bookings</Title>
           <Text type="secondary">
-            Danh sách các studio bookings mà bạn được book vào
+            List of studio bookings you are booked into
           </Text>
         </div>
 
@@ -299,7 +299,7 @@ const MyStudioBookings = () => {
           {/* Filters */}
           <Space wrap>
             <Input
-              placeholder="Tìm kiếm (Booking ID, Contract ID, Milestone ID)"
+              placeholder="Search (Booking ID, Contract ID, Milestone ID)"
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               style={{ width: 300 }}
@@ -349,7 +349,7 @@ const MyStudioBookings = () => {
             pagination={{
               pageSize: 20,
               showSizeChanger: true,
-              showTotal: total => `Tổng ${total} bookings`,
+              showTotal: total => `Total ${total} bookings`,
             }}
             scroll={{ x: 1200 }}
           />
