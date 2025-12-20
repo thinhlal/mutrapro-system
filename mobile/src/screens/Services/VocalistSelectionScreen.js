@@ -124,7 +124,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -133,7 +133,7 @@ const VocalistSelectionScreen = ({ navigation, route }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Preferred Vocalist</Text>
         <View style={styles.placeholder} />
-      </View>
+      </View> */}
 
       <ScrollView
         style={styles.scrollView}

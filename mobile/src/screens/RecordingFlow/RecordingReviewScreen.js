@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRecordingFlow } from '../../context/RecordingFlowContext';
 import { createServiceRequest } from '../../services/serviceRequestService';
 import { createBookingFromServiceRequest } from '../../services/studioBookingService';
@@ -217,60 +218,159 @@ const RecordingReviewScreen = ({ navigation }) => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   const renderSummary = () => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Booking</Text>
-      <Text style={styles.text}>
-        Date: <Text style={styles.bold}>{step1?.bookingDate || '—'}</Text>
-      </Text>
-      <Text style={styles.text}>
-        Time: <Text style={styles.bold}>{step1?.bookingStartTime} - {step1?.bookingEndTime}</Text>
-      </Text>
-      <Text style={styles.text}>
-        Duration: <Text style={styles.bold}>{step1?.durationHours?.toFixed(2) || '—'} hrs</Text>
-      </Text>
+      <View style={styles.cardHeader}>
+        <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+        <Text style={styles.cardTitle}>Booking Details</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Ionicons name="calendar" size={16} color={COLORS.textSecondary} />
+        <View style={styles.infoContent}>
+          <Text style={styles.infoLabel}>Date</Text>
+          <Text style={styles.infoValue}>{formatDate(step1?.bookingDate)}</Text>
+        </View>
+      </View>
+      <View style={styles.infoRow}>
+        <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+        <View style={styles.infoContent}>
+          <Text style={styles.infoLabel}>Time</Text>
+          <Text style={styles.infoValue}>
+            {step1?.bookingStartTime || '—'} - {step1?.bookingEndTime || '—'}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.infoRow}>
+        <Ionicons name="hourglass-outline" size={16} color={COLORS.textSecondary} />
+        <View style={styles.infoContent}>
+          <Text style={styles.infoLabel}>Duration</Text>
+          <Text style={styles.infoValue}>
+            {step1?.durationHours?.toFixed(2) || '—'} hours
+          </Text>
+        </View>
+      </View>
     </View>
   );
 
+  const getVocalChoiceLabel = (choice) => {
+    const labels = {
+      NONE: 'No vocal',
+      CUSTOMER_SELF: 'I will sing',
+      INTERNAL_ARTIST: 'Hire in-house vocalist',
+      BOTH: 'I sing + hire vocalist(s)',
+    };
+    return labels[choice] || choice;
+  };
+
   const renderVocal = () => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Vocal</Text>
-      <Text style={styles.text}>Choice: <Text style={styles.bold}>{step2?.vocalChoice || 'NONE'}</Text></Text>
-      {step2?.selectedVocalists?.length > 0 &&
-        step2.selectedVocalists.map((v) => (
-          <Text key={v.specialistId} style={styles.text}>
-            • {v.name}
-          </Text>
-        ))}
+      <View style={styles.cardHeader}>
+        <Ionicons name="mic-outline" size={20} color={COLORS.primary} />
+        <Text style={styles.cardTitle}>Vocal Setup</Text>
+      </View>
+      <View style={styles.tagContainer}>
+        <View style={styles.tag}>
+          <Text style={styles.tagText}>{getVocalChoiceLabel(step2?.vocalChoice || 'NONE')}</Text>
+        </View>
+      </View>
+      {step2?.selectedVocalists && step2.selectedVocalists.length > 0 && (
+        <View style={styles.vocalistsList}>
+          <Text style={styles.sectionSubtitle}>Selected Vocalists:</Text>
+          {step2.selectedVocalists.map((v) => (
+            <View key={v.specialistId} style={styles.vocalistItem}>
+              <Ionicons name="person-circle" size={18} color={COLORS.primary} />
+              <Text style={styles.vocalistName}>{v.name || v.fullName || 'Vocalist'}</Text>
+              {v.hourlyRate && (
+                <Text style={styles.vocalistRate}>
+                  {v.hourlyRate.toLocaleString('vi-VN')} VND/hr
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 
   const renderInstruments = () => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Instruments</Text>
+      <View style={styles.cardHeader}>
+        <Ionicons name="musical-notes-outline" size={20} color={COLORS.primary} />
+        <Text style={styles.cardTitle}>Instruments & Equipment</Text>
+      </View>
       {step3?.hasLiveInstruments === false ? (
-        <Text style={styles.text}>No live instruments (beat/backing track only)</Text>
-      ) : step3?.instruments?.length > 0 ? (
-        step3.instruments.map((inst) => (
-          <View key={inst.instrumentId} style={{ marginBottom: SPACING.xs }}>
-            <Text style={styles.text}>
-              • {inst.instrumentName} ({inst.skillId})
-            </Text>
-            <Text style={styles.helperText}>
-              Performer: {inst.performerSource === 'INTERNAL_ARTIST' ? inst.specialistName || 'In-house' : 'Self'}
-            </Text>
-            <Text style={styles.helperText}>
-              Source: {inst.instrumentSource === 'STUDIO_SIDE' ? 'Rent studio' : 'Bring my own'}
-            </Text>
-            {inst.instrumentSource === 'STUDIO_SIDE' && inst.equipmentId && (
-              <Text style={styles.helperText}>
-                Equipment: {inst.equipmentName || 'N/A'} (Qty: {inst.quantity || 1})
-              </Text>
-            )}
-          </View>
-        ))
+        <View style={styles.emptyState}>
+          <Ionicons name="musical-note-outline" size={32} color={COLORS.textSecondary} />
+          <Text style={styles.emptyText}>No live instruments</Text>
+          <Text style={styles.helperText}>Beat/backing track only</Text>
+        </View>
+      ) : step3?.instruments && step3.instruments.length > 0 ? (
+        <View style={styles.instrumentsList}>
+          {step3.instruments.map((inst, index) => (
+            <View key={inst.instrumentId || inst.skillId || index}>
+              <View style={styles.instrumentItem}>
+                <View style={styles.instrumentHeader}>
+                  <Ionicons name="musical-note" size={18} color={COLORS.primary} />
+                  <Text style={styles.instrumentName}>{inst.instrumentName || inst.skillName}</Text>
+                </View>
+                <View style={styles.instrumentDetails}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="person-outline" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.detailText}>
+                      {inst.performerSource === 'INTERNAL_ARTIST' 
+                        ? `Performer: ${inst.specialistName || 'In-house artist'}` 
+                        : 'Performer: Self'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="cube-outline" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.detailText}>
+                      {inst.instrumentSource === 'STUDIO_SIDE' ? 'Rent from studio' : 'Bring my own'}
+                    </Text>
+                  </View>
+                  {inst.instrumentSource === 'STUDIO_SIDE' && inst.equipmentId && (
+                    <>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="hardware-chip-outline" size={14} color={COLORS.textSecondary} />
+                        <Text style={styles.detailText}>
+                          Equipment: {inst.equipmentName || 'N/A'}
+                        </Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />
+                        <Text style={styles.detailText}>
+                          Quantity: {inst.quantity || 1}
+                          {inst.rentalFee ? ` • ${inst.rentalFee.toLocaleString('vi-VN')} VND/hr` : ''}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                </View>
+              </View>
+              {index < step3.instruments.length - 1 && <View style={styles.separator} />}
+            </View>
+          ))}
+        </View>
       ) : (
-        <Text style={styles.text}>None selected.</Text>
+        <View style={styles.emptyState}>
+          <Ionicons name="musical-note-outline" size={32} color={COLORS.textSecondary} />
+          <Text style={styles.emptyText}>No instruments selected</Text>
+        </View>
       )}
     </View>
   );
@@ -334,46 +434,72 @@ const RecordingReviewScreen = ({ navigation }) => {
 
     return (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Estimated Total Fee</Text>
-        <View style={styles.feeRow}>
-          <Text style={styles.feeLabel}>Participant Fee:</Text>
-          <Text style={styles.feeValue}>
-            {fees.participantFee.toLocaleString('vi-VN')} VND
-          </Text>
+        <View style={styles.cardHeader}>
+          <Ionicons name="cash-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.cardTitle}>Estimated Total Fee</Text>
         </View>
-        <Text style={styles.feeSubtext}>(Vocalists + Instrumentalists)</Text>
-        <View style={styles.feeRow}>
-          <Text style={styles.feeLabel}>Equipment Fee:</Text>
-          <Text style={styles.feeValue}>
-            {fees.equipmentRentalFee.toLocaleString('vi-VN')} VND
-          </Text>
+        
+        <View style={styles.feeSection}>
+          <View style={styles.feeRow}>
+            <View style={styles.feeLabelContainer}>
+              <Ionicons name="people-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.feeLabel}>Participant Fee</Text>
+            </View>
+            <Text style={styles.feeValue}>
+              {fees.participantFee.toLocaleString('vi-VN')} VND
+            </Text>
+          </View>
+          <Text style={styles.feeSubtext}>Vocalists + Instrumentalists</Text>
         </View>
-        <Text style={styles.feeSubtext}>(Equipment from studio)</Text>
+
+        <View style={styles.feeSection}>
+          <View style={styles.feeRow}>
+            <View style={styles.feeLabelContainer}>
+              <Ionicons name="cube-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.feeLabel}>Equipment Fee</Text>
+            </View>
+            <Text style={styles.feeValue}>
+              {fees.equipmentRentalFee.toLocaleString('vi-VN')} VND
+            </Text>
+          </View>
+          <Text style={styles.feeSubtext}>Equipment rental from studio</Text>
+        </View>
+
         <View style={[styles.feeRow, styles.totalFeeRow]}>
-          <Text style={styles.totalFeeLabel}>Total:</Text>
+          <Text style={styles.totalFeeLabel}>Total</Text>
           <Text style={styles.totalFeeValue}>
             {fees.totalFee.toLocaleString('vi-VN')} VND
           </Text>
         </View>
+
         {fees.totalFee === 0 && (
-          <Text style={styles.helperText}>
-            Total fee = 0 VND (You are self-performing)
-          </Text>
+          <View style={styles.zeroFeeNote}>
+            <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+            <Text style={styles.zeroFeeText}>You are self-performing (No additional fees)</Text>
+          </View>
         )}
+
         {breakdown.length > 0 && (
-          <View style={{ marginTop: SPACING.md }}>
-            <Text style={[styles.cardTitle, { fontSize: FONT_SIZES.sm, marginBottom: SPACING.xs }]}>
-              Breakdown Details:
-            </Text>
+          <View style={styles.breakdownSection}>
+            <Text style={styles.breakdownTitle}>Fee Breakdown</Text>
             {breakdown.map((item, index) => (
-              <View key={index} style={{ marginBottom: SPACING.xs }}>
-                <Text style={styles.text}>
-                  {item.type === 'vocalist' ? '🎤' : item.type === 'instrumentalist' ? '🎸' : '🔧'}{' '}
-                  {item.name}
-                </Text>
-                <Text style={styles.helperText}>
-                  {item.rate.toLocaleString('vi-VN')} VND/hour
-                  {item.quantity ? ` x ${item.quantity} unit(s)` : ''} x {item.hours} hrs = {item.fee.toLocaleString('vi-VN')} VND
+              <View key={index} style={styles.breakdownItem}>
+                <View style={styles.breakdownHeader}>
+                  <Ionicons 
+                    name={
+                      item.type === 'vocalist' ? 'mic' : 
+                      item.type === 'instrumentalist' ? 'musical-note' : 
+                      'hardware-chip'
+                    } 
+                    size={16} 
+                    color={COLORS.primary} 
+                  />
+                  <Text style={styles.breakdownName}>{item.name}</Text>
+                </View>
+                <Text style={styles.breakdownDetail}>
+                  {item.rate.toLocaleString('vi-VN')} VND/hr
+                  {item.quantity ? ` × ${item.quantity}` : ''} × {item.hours} hrs = 
+                  <Text style={styles.breakdownFee}> {item.fee.toLocaleString('vi-VN')} VND</Text>
                 </Text>
               </View>
             ))}
@@ -394,7 +520,10 @@ const RecordingReviewScreen = ({ navigation }) => {
       {renderFeeBreakdown()}
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Contact</Text>
+        <View style={styles.cardHeader}>
+          <Ionicons name="person-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.cardTitle}>Contact Information</Text>
+        </View>
         <Text style={styles.label}>Title</Text>
         <TextInput
           style={styles.input}
@@ -434,7 +563,10 @@ const RecordingReviewScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Upload</Text>
+        <View style={styles.cardHeader}>
+          <Ionicons name="cloud-upload-outline" size={20} color={COLORS.primary} />
+          <Text style={styles.cardTitle}>Reference File</Text>
+        </View>
         <FileUploader
           selectedFile={file}
           onFileSelect={(f) => update({ file: f })}
@@ -470,10 +602,131 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  cardTitle: { fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    gap: SPACING.xs,
+  },
+  cardTitle: { fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.text },
   text: { fontSize: FONT_SIZES.base, color: COLORS.text },
   helperText: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary },
   bold: { fontWeight: '700' },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: SPACING.sm,
+  },
+  tag: {
+    backgroundColor: COLORS.primary + '15',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+  },
+  tagText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  vocalistsList: {
+    marginTop: SPACING.sm,
+  },
+  sectionSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  vocalistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+    gap: SPACING.sm,
+  },
+  vocalistName: {
+    flex: 1,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  vocalistRate: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  emptyText: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    marginTop: SPACING.xs,
+    fontWeight: '500',
+  },
+  instrumentsList: {
+    marginTop: SPACING.xs,
+  },
+  instrumentItem: {
+    paddingVertical: SPACING.sm,
+  },
+  instrumentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+    gap: SPACING.xs,
+  },
+  instrumentName: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  instrumentDetails: {
+    marginLeft: 26,
+    gap: SPACING.xs / 2,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs / 2,
+  },
+  detailText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
+  },
+  feeSection: {
+    marginBottom: SPACING.md,
+  },
+  feeLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs / 2,
+  },
   label: { fontSize: FONT_SIZES.sm, color: COLORS.text, marginTop: SPACING.sm },
   input: {
     borderWidth: 1,
@@ -528,6 +781,56 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     color: '#ff4d4f',
     fontWeight: '700',
+  },
+  zeroFeeNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success + '15',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginTop: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  zeroFeeText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.success,
+    fontWeight: '500',
+  },
+  breakdownSection: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  breakdownTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  breakdownItem: {
+    marginBottom: SPACING.sm,
+    paddingLeft: SPACING.xs,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    gap: SPACING.xs / 2,
+  },
+  breakdownName: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  breakdownDetail: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginLeft: 20,
+  },
+  breakdownFee: {
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });
 

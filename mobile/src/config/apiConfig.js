@@ -177,8 +177,8 @@ export const API_ENDPOINTS = {
 
   // === Equipment (Recording) ===
   EQUIPMENT: {
-    // GET /requests/equipment?skillId=&includeInactive=&includeUnavailable=
-    GET_ALL: `${REQUEST_PATH}/equipment`,
+    // GET /projects/equipment?skillId=&includeInactive=&includeUnavailable=
+    GET_ALL: `${PROJECT_PATH}/equipment`,
   },
 
   // === Studio Booking (Recording) ===
