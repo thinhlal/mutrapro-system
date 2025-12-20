@@ -383,7 +383,12 @@ const RecordingInstrumentScreen = ({ navigation }) => {
               <Text style={styles.helperText}>No instruments available</Text>
             ) : (
               <>
-                <View style={styles.rowWrap}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false} 
+                  style={styles.instrumentsScrollView}
+                  contentContainerStyle={styles.instrumentsScrollContent}
+                >
                   {instrumentOptions.map((inst) => {
                     const selected = instruments.some((i) => i.instrumentId === inst.instrumentId);
                     return (
@@ -398,7 +403,7 @@ const RecordingInstrumentScreen = ({ navigation }) => {
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                </ScrollView>
                 <Text style={styles.helperText}>Tap to add/remove instruments.</Text>
               </>
             )}
@@ -426,7 +431,12 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: FONT_SIZES.base, color: COLORS.textSecondary, marginBottom: SPACING.lg },
   section: { marginBottom: SPACING.lg },
   sectionTitle: { fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
-  rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  instrumentsScrollView: {
+    marginBottom: SPACING.sm,
+  },
+  instrumentsScrollContent: {
+    paddingRight: SPACING.md,
+  },
   choiceCard: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -458,6 +468,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.white,
+    marginRight: SPACING.sm,
   },
   chipSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '10' },
   chipText: { color: COLORS.text, fontSize: FONT_SIZES.sm },

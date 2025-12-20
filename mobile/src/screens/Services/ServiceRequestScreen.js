@@ -539,7 +539,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {isArrangement && (
           <View style={styles.formGroup}>
             <Text style={styles.label}>Purpose (Optional)</Text>
-            <View style={styles.purposeContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.purposeContainer}>
               {MUSIC_PURPOSES.map((p) => {
                 const isSelected = purpose === p.value;
                 return (
@@ -556,7 +556,7 @@ const ServiceRequestScreen = ({ route, navigation }) => {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         )}
 
@@ -564,10 +564,10 @@ const ServiceRequestScreen = ({ route, navigation }) => {
         {isArrangementWithRecording && (
           <View style={styles.formGroup}>
             <Text style={styles.label}>
-              Ca sĩ ưu tiên (Tùy chọn)
+              Preferred Vocalists (Optional)
             </Text>
             <Text style={styles.hintText}>
-              Lưu ý: Đây là gợi ý ưu tiên, không phải cam kết. Chúng tôi sẽ cố gắng book ca sĩ bạn chọn. Nếu họ không có sẵn, manager sẽ đề xuất lựa chọn tương tự.
+              Note: This is a preference suggestion, not a commitment. We will try to book the vocalist you choose. If they are not available, the manager will suggest similar options.
             </Text>
             
             {/* Selected Vocalists */}
@@ -617,16 +617,16 @@ const ServiceRequestScreen = ({ route, navigation }) => {
               <Ionicons name="add-circle" size={20} color={COLORS.primary} />
               <Text style={styles.addVocalistButtonText}>
                 {preferredVocalists.length === 0
-                  ? "Thêm ca sĩ ưu tiên (tối đa 2)"
+                  ? "Add Preferred Vocalist (max 2)"
                   : preferredVocalists.length === 1
-                  ? "Thêm ca sĩ thứ 2"
-                  : "Đã chọn đủ 2 ca sĩ"}
+                  ? "Add Second Vocalist"
+                  : "2 vocalists selected"}
               </Text>
             </TouchableOpacity>
             
             {preferredVocalists.length === 0 && (
               <Text style={styles.hintText}>
-                Hoặc để trống để manager tự đề xuất ca sĩ phù hợp
+                Or leave empty for manager to suggest suitable vocalists
               </Text>
             )}
           </View>
@@ -855,9 +855,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   purposeContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.xs,
     marginTop: SPACING.sm,
   },
   purposeButton: {
@@ -867,6 +864,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: COLORS.gray[300],
+    marginRight: SPACING.xs,
   },
   purposeButtonSelected: {
     backgroundColor: COLORS.primary + "20",

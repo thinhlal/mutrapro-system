@@ -180,9 +180,12 @@ const RecordingVocalScreen = ({ navigation }) => {
               </View>
               {vocalists.map((vocalist) => {
                 const id = vocalist.specialistId || vocalist.id;
+                if (!id) return null;
+                
                 const selected = selectedIds.includes(id);
                 const isAvailable = vocalist.isAvailable !== false;
                 const name = vocalist.name || vocalist.fullName || `Vocalist ${id}`;
+                const genres = Array.isArray(vocalist.genres) ? vocalist.genres.filter(g => g != null) : [];
 
                 return (
                   <TouchableOpacity
@@ -209,40 +212,44 @@ const RecordingVocalScreen = ({ navigation }) => {
                       <View style={styles.vocalistInfo}>
                         <View style={styles.vocalistNameRow}>
                           <Text style={styles.vocalistName}>{name}</Text>
-                          {selected && (
+                          {selected ? (
                             <Ionicons name="checkmark-circle" size={20} color="#52c41a" />
-                          )}
-                          {!isAvailable && (
+                          ) : null}
+                          {!isAvailable ? (
                             <View style={styles.busyTag}>
                               <Text style={styles.busyTagText}>Busy</Text>
                             </View>
-                          )}
+                          ) : null}
                         </View>
-                        {vocalist.role && (
-                          <Text style={styles.vocalistDetail}>Role: {vocalist.role}</Text>
-                        )}
-                        {vocalist.experienceYears && (
+                        {vocalist.role ? (
+                          <Text style={styles.vocalistDetail}>Role: {String(vocalist.role)}</Text>
+                        ) : null}
+                        {vocalist.experienceYears ? (
                           <Text style={styles.vocalistDetail}>
-                            Experience: {vocalist.experienceYears} years
+                            Experience: {String(vocalist.experienceYears)} years
                           </Text>
-                        )}
-                        {vocalist.genres && vocalist.genres.length > 0 && (
+                        ) : null}
+                        {genres.length > 0 ? (
                           <View style={styles.genresContainer}>
-                            {vocalist.genres.slice(0, 3).map((genre, idx) => (
-                              <View key={idx} style={[styles.genreTag, idx > 0 && { marginLeft: SPACING.xs }]}>
-                                <Text style={styles.genreText}>{genre}</Text>
-                              </View>
-                            ))}
-                            {vocalist.genres.length > 3 && (
-                              <Text style={[styles.genreMore, { marginLeft: SPACING.xs }]}>+{vocalist.genres.length - 3}</Text>
-                            )}
+                            {genres.slice(0, 3).map((genre, idx) => {
+                              const genreStr = String(genre || '');
+                              if (!genreStr) return null;
+                              return (
+                                <View key={`genre-${id}-${idx}`} style={[styles.genreTag, idx > 0 ? { marginLeft: SPACING.xs } : null]}>
+                                  <Text style={styles.genreText}>{genreStr}</Text>
+                                </View>
+                              );
+                            })}
+                            {genres.length > 3 ? (
+                              <Text style={[styles.genreMore, { marginLeft: SPACING.xs }]}>+{genres.length - 3}</Text>
+                            ) : null}
                           </View>
-                        )}
+                        ) : null}
                       </View>
                     </View>
                     <View style={styles.vocalistFooter}>
                       <View style={styles.vocalistStats}>
-                        {vocalist.rating != null && (
+                        {vocalist.rating != null ? (
                           <View style={styles.ratingContainer}>
                             <Ionicons name="star" size={16} color="#faad14" />
                             <Text style={styles.ratingText}>
@@ -251,12 +258,12 @@ const RecordingVocalScreen = ({ navigation }) => {
                                 : parseFloat(vocalist.rating || 0).toFixed(1)}
                             </Text>
                           </View>
-                        )}
-                        {vocalist.totalProjects && (
-                          <Text style={[styles.projectsText, vocalist.rating && { marginLeft: SPACING.sm }]}>
-                            {vocalist.totalProjects} projects
+                        ) : null}
+                        {vocalist.totalProjects ? (
+                          <Text style={[styles.projectsText, vocalist.rating != null ? { marginLeft: SPACING.sm } : null]}>
+                            {String(vocalist.totalProjects)} projects
                           </Text>
-                        )}
+                        ) : null}
                       </View>
                       <Text style={styles.hourlyRate}>
                         {vocalist.hourlyRate != null && vocalist.hourlyRate > 0

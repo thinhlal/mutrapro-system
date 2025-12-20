@@ -25,7 +25,14 @@ const VocalistDetailScreen = ({ navigation, route }) => {
   const [sound, setSound] = useState(null);
 
   const specialist = detailData?.specialist || vocalist;
-  const skills = detailData?.skills || [];
+  const allSkills = detailData?.skills || [];
+  // Filter skills by recordingCategory like frontend
+  const vocalSkills = allSkills.filter(
+    s => s.skill?.recordingCategory === 'VOCAL'
+  );
+  const instrumentSkills = allSkills.filter(
+    s => s.skill?.recordingCategory === 'INSTRUMENT'
+  );
   const demos = detailData?.demos || [];
 
   useEffect(() => {
@@ -42,7 +49,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
   const fetchDetail = async () => {
     const id = specialistId || vocalist?.id || vocalist?.specialistId;
     if (!id) {
-      Alert.alert("Error", "Không tìm thấy thông tin ca sĩ");
+      Alert.alert("Error", "Vocalist information not found");
       navigation.goBack();
       return;
     }
@@ -58,7 +65,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error("Error fetching specialist detail:", error);
-      Alert.alert("Error", error.message || "Không thể tải thông tin ca sĩ");
+      Alert.alert("Error", error.message || "Unable to load vocalist information");
     } finally {
       setLoading(false);
     }
@@ -66,7 +73,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
 
   const playAudio = async (demo) => {
     if (!demo.previewUrl) {
-      Alert.alert("Thông báo", "Demo này không có audio preview");
+      Alert.alert("Notification", "This demo has no audio preview");
       return;
     }
 
@@ -101,7 +108,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
       });
     } catch (error) {
       console.error("Error playing audio:", error);
-      Alert.alert("Error", "Không thể phát audio");
+      Alert.alert("Error", "Unable to play audio");
     }
   };
 
@@ -119,7 +126,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Đang tải thông tin ca sĩ...</Text>
+          <Text style={styles.loadingText}>Loading vocalist information...</Text>
         </View>
       </SafeAreaView>
     );
@@ -131,12 +138,12 @@ const VocalistDetailScreen = ({ navigation, route }) => {
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={64} color={COLORS.textSecondary} />
-          <Text style={styles.emptyText}>Không tìm thấy thông tin ca sĩ</Text>
+          <Text style={styles.emptyText}>Vocalist information not found</Text>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backButtonText}>Quay lại</Text>
+            <Text style={styles.backButtonText}>Go back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -155,7 +162,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => {
@@ -165,9 +172,9 @@ const VocalistDetailScreen = ({ navigation, route }) => {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chi tiết ca sĩ</Text>
+        <Text style={styles.headerTitle}>Vocalist Details</Text>
         <View style={styles.placeholder} />
-      </View>
+      </View> */}
 
       <ScrollView
         style={styles.scrollView}
@@ -194,7 +201,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
                     color={COLORS.primary}
                   />
                   <Text style={styles.genderText}>
-                    {gender === "FEMALE" ? "Nữ" : "Nam"}
+                    {gender === "FEMALE" ? "Female" : "Male"}
                   </Text>
                 </View>
               )}
@@ -204,7 +211,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
           {/* Genres */}
           {genres.length > 0 && (
             <View style={styles.genresContainer}>
-              <Text style={styles.sectionLabel}>Thể loại:</Text>
+              <Text style={styles.sectionLabel}>Genres:</Text>
               <View style={styles.genresList}>
                 {genres.map((genre, index) => (
                   <View key={`genre-${genre}-${index}`} style={styles.genreTag}>
@@ -220,7 +227,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
             <View style={styles.infoRow}>
               <Ionicons name="time-outline" size={20} color={COLORS.textSecondary} />
               <Text style={styles.infoText}>
-                {experienceYears} năm kinh nghiệm
+                {experienceYears} years of experience
               </Text>
             </View>
           )}
@@ -228,23 +235,47 @@ const VocalistDetailScreen = ({ navigation, route }) => {
           {/* Bio */}
           {bio && (
             <View style={styles.bioSection}>
-              <Text style={styles.sectionLabel}>Giới thiệu:</Text>
+              <Text style={styles.sectionLabel}>About:</Text>
               <Text style={styles.bioText}>{bio}</Text>
             </View>
           )}
 
-          {/* Skills */}
-          {skills.length > 0 && (
+          {/* Vocal Skills */}
+          {vocalSkills.length > 0 && (
             <View style={styles.skillsSection}>
-              <Text style={styles.sectionLabel}>Kỹ năng:</Text>
+              <Text style={styles.sectionLabel}>Vocal Skills:</Text>
               <View style={styles.skillsList}>
-                {skills.map((skill, index) => (
-                  <View key={skill.skillId || skill.id || `skill-${index}`} style={styles.skillTag}>
-                    <Text style={styles.skillTagText}>
-                      {skill.skillName || skill.name}
-                    </Text>
-                  </View>
-                ))}
+                {vocalSkills.map((specialistSkill, index) => {
+                  const skill = specialistSkill.skill || specialistSkill;
+                  if (!skill) return null;
+                  return (
+                    <View key={skill.skillId || skill.id || `vocal-skill-${index}`} style={styles.skillTag}>
+                      <Text style={styles.skillTagText}>
+                        {skill.skillName || skill.name}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+          
+          {/* Instrument Skills */}
+          {instrumentSkills.length > 0 && (
+            <View style={styles.skillsSection}>
+              <Text style={styles.sectionLabel}>Instrument Skills:</Text>
+              <View style={styles.skillsList}>
+                {instrumentSkills.map((specialistSkill, index) => {
+                  const skill = specialistSkill.skill || specialistSkill;
+                  if (!skill) return null;
+                  return (
+                    <View key={skill.skillId || skill.id || `instrument-skill-${index}`} style={styles.skillTag}>
+                      <Text style={styles.skillTagText}>
+                        {skill.skillName || skill.name}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -262,7 +293,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
           {demos.length === 0 ? (
             <View style={styles.emptyDemos}>
               <Ionicons name="musical-note-outline" size={48} color={COLORS.textSecondary} />
-              <Text style={styles.emptyDemosText}>Chưa có demo nào</Text>
+              <Text style={styles.emptyDemosText}>No demos available</Text>
             </View>
           ) : (
             <View style={styles.demosList}>
@@ -324,7 +355,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
                           />
                           <View style={styles.audioPlayerInfo}>
                             <Text style={styles.audioPlayerText}>
-                              {isPlaying ? "Đang phát..." : "Nhấn để nghe demo"}
+                              {isPlaying ? "Playing..." : "Tap to play demo"}
                             </Text>
                             {isPlaying && (
                               <View style={styles.playingIndicator}>
@@ -339,7 +370,7 @@ const VocalistDetailScreen = ({ navigation, route }) => {
                     ) : (
                       <View style={styles.noAudio}>
                         <Ionicons name="ban" size={20} color={COLORS.textSecondary} />
-                        <Text style={styles.noAudioText}>Không có audio preview</Text>
+                        <Text style={styles.noAudioText}>No audio preview</Text>
                       </View>
                     )}
                   </View>
