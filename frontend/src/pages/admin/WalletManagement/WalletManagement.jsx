@@ -253,7 +253,7 @@ const WalletManagement = () => {
           icon={<EyeOutlined />}
           onClick={() => handleViewDetail(record)}
         >
-          Xem chi tiết
+          View Details
         </Button>
       ),
     },
@@ -344,7 +344,7 @@ const WalletManagement = () => {
             onClick={loadWallets}
             loading={loading}
           >
-            Làm mới
+            Refresh
           </Button>
         </Space>
       </div>
@@ -361,7 +361,7 @@ const WalletManagement = () => {
             pageSize: pagination.pageSize,
             total: pagination.total,
             showSizeChanger: true,
-            showTotal: total => `Tổng ${total} wallets`,
+            showTotal: total => `Total ${total} wallets`,
             onChange: (page, pageSize) => {
               setFilters(prev => ({
                 ...prev,
@@ -385,7 +385,7 @@ const WalletManagement = () => {
         title={
           <Space>
             <WalletOutlined />
-            <span>Chi tiết Wallet</span>
+            <span>Wallet Details</span>
           </Space>
         }
         open={detailModalVisible}
@@ -429,7 +429,7 @@ const WalletManagement = () => {
               tab={
                 <Space>
                   <HistoryOutlined />
-                  <span>Lịch sử giao dịch</span>
+                  <span>Transaction History</span>
                 </Space>
               }
               key="transactions"
@@ -467,11 +467,11 @@ const WalletManagement = () => {
                       }));
                     }}
                   >
-                    <Option value="topup">Nạp tiền</Option>
-                    <Option value="payment">Thanh toán</Option>
-                    <Option value="refund">Hoàn tiền</Option>
-                    <Option value="withdrawal">Rút tiền</Option>
-                    <Option value="adjustment">Điều chỉnh</Option>
+                    <Option value="topup">Top Up</Option>
+                    <Option value="payment">Payment</Option>
+                    <Option value="refund">Refund</Option>
+                    <Option value="withdrawal">Withdrawal</Option>
+                    <Option value="adjustment">Adjustment</Option>
                   </Select>
                   <RangePicker
                     onChange={dates => {
@@ -498,7 +498,7 @@ const WalletManagement = () => {
                     onClick={() => loadTransactions(selectedWallet.walletId)}
                     loading={transactionsLoading}
                   >
-                    Làm mới
+                    Refresh
                   </Button>
                 </Space>
 
@@ -520,7 +520,7 @@ const WalletManagement = () => {
                       pageSize: transactionsPagination.pageSize,
                       total: transactionsPagination.total,
                       showSizeChanger: true,
-                      showTotal: total => `Tổng ${total} giao dịch`,
+                      showTotal: total => `Total ${total} transactions`,
                       onChange: (page, pageSize) => {
                         setTransactionFilters(prev => ({
                           ...prev,
