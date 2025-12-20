@@ -104,72 +104,80 @@ export default function ArrangementUploader({
     if (!selectedInstruments || selectedInstruments.length === 0) {
       return [];
     }
-    return selectedInstruments.map(id => {
-      const inst = instrumentsData.find(i => i.instrumentId === id);
-      if (!inst) return null;
-      return {
-        key: id,
-        instrumentId: id,
-        instrumentName: inst.instrumentName || 'Unknown',
-        basePrice: inst.basePrice || 0,
-        isMain: id === mainInstrumentId,
-      };
-    }).filter(Boolean);
+    return selectedInstruments
+      .map(id => {
+        const inst = instrumentsData.find(i => i.instrumentId === id);
+        if (!inst) return null;
+        return {
+          key: id,
+          instrumentId: id,
+          instrumentName: inst.instrumentName || 'Unknown',
+          basePrice: inst.basePrice || 0,
+          isMain: id === mainInstrumentId,
+        };
+      })
+      .filter(Boolean);
   }, [selectedInstruments, instrumentsData, mainInstrumentId]);
 
   // Handle remove instrument
-  const handleRemoveInstrument = useCallback((instrumentId) => {
-    setSelectedInstruments(prev => prev.filter(id => id !== instrumentId));
-    setInstrumentError(''); // Clear error when instrument is removed
-    // Nếu instrument bị xóa là main instrument, reset mainInstrumentId
-    if (mainInstrumentId === instrumentId) {
-      setMainInstrumentId(null);
-      setMainInstrumentError('');
-    }
-  }, [mainInstrumentId]);
+  const handleRemoveInstrument = useCallback(
+    instrumentId => {
+      setSelectedInstruments(prev => prev.filter(id => id !== instrumentId));
+      setInstrumentError(''); // Clear error when instrument is removed
+      // Nếu instrument bị xóa là main instrument, reset mainInstrumentId
+      if (mainInstrumentId === instrumentId) {
+        setMainInstrumentId(null);
+        setMainInstrumentError('');
+      }
+    },
+    [mainInstrumentId]
+  );
 
   // Table columns for instruments
-  const instrumentTableColumns = useMemo(() => [
-    {
-      title: 'Instrument Name',
-      dataIndex: 'instrumentName',
-      key: 'instrumentName',
-      render: (text, record) => (
-        <Space>
-          {text}
-          {record.isMain && (
-            <Tag color="gold" icon={<StarFilled />}>
-              Main
-            </Tag>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: 'Price',
-      dataIndex: 'basePrice',
-      key: 'basePrice',
-      align: 'right',
-      render: (price) => formatPrice(price),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      align: 'center',
-      width: 100,
-      render: (_, record) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveInstrument(record.instrumentId)}
-          size="small"
-        >
-          Remove
-        </Button>
-      ),
-    },
-  ], [handleRemoveInstrument]);
+  const instrumentTableColumns = useMemo(
+    () => [
+      {
+        title: 'Instrument Name',
+        dataIndex: 'instrumentName',
+        key: 'instrumentName',
+        render: (text, record) => (
+          <Space>
+            {text}
+            {record.isMain && (
+              <Tag color="gold" icon={<StarFilled />}>
+                Main
+              </Tag>
+            )}
+          </Space>
+        ),
+      },
+      {
+        title: 'Price',
+        dataIndex: 'basePrice',
+        key: 'basePrice',
+        align: 'right',
+        render: price => formatPrice(price),
+      },
+      {
+        title: 'Action',
+        key: 'action',
+        align: 'center',
+        width: 100,
+        render: (_, record) => (
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleRemoveInstrument(record.instrumentId)}
+            size="small"
+          >
+            Remove
+          </Button>
+        ),
+      },
+    ],
+    [handleRemoveInstrument]
+  );
 
   // Track previous values to avoid unnecessary updates
   const prevGenresRef = useRef(null);
@@ -267,13 +275,26 @@ export default function ArrangementUploader({
 
   // Clear formData error when formData is updated
   useEffect(() => {
-    if (formData && formData.title && formData.description && formData.contactName && formData.contactPhone && formData.contactEmail) {
+    if (
+      formData &&
+      formData.title &&
+      formData.description &&
+      formData.contactName &&
+      formData.contactPhone &&
+      formData.contactEmail
+    ) {
       // Check if description is long enough
       if (formData.description.trim().length >= 10) {
         setFormDataError('');
       }
     }
-  }, [formData?.title, formData?.description, formData?.contactName, formData?.contactPhone, formData?.contactEmail]);
+  }, [
+    formData?.title,
+    formData?.description,
+    formData?.contactName,
+    formData?.contactPhone,
+    formData?.contactEmail,
+  ]);
 
   // Update formData when instruments change
   useEffect(() => {
@@ -361,7 +382,9 @@ export default function ArrangementUploader({
 
     // Validate form data - check each required field
     if (!formData) {
-      setFormDataError('Please fill in all required information in the form above before submitting.');
+      setFormDataError(
+        'Please fill in all required information in the form above before submitting.'
+      );
       hasError = true;
       // Scroll to form
       setTimeout(() => {
@@ -397,7 +420,9 @@ export default function ArrangementUploader({
 
     if (missingFields.length > 0) {
       const fieldsList = missingFields.join(', ');
-      setFormDataError(`Please fill in the following required fields: ${fieldsList}`);
+      setFormDataError(
+        `Please fill in the following required fields: ${fieldsList}`
+      );
       hasError = true;
       // Scroll to form
       setTimeout(() => {
@@ -429,7 +454,9 @@ export default function ArrangementUploader({
 
     // Validate main instrument (required for arrangement)
     if (!mainInstrumentId) {
-      setMainInstrumentError('Please select a main instrument for your arrangement.');
+      setMainInstrumentError(
+        'Please select a main instrument for your arrangement.'
+      );
       hasError = true;
     }
 
@@ -437,9 +464,14 @@ export default function ArrangementUploader({
     if (hasError) {
       // Scroll to file upload area if file error
       if (!file) {
-        const fileUploadElement = document.getElementById('arrangement-uploader');
+        const fileUploadElement = document.getElementById(
+          'arrangement-uploader'
+        );
         if (fileUploadElement) {
-          fileUploadElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          fileUploadElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
         }
       }
       return;
@@ -565,7 +597,9 @@ export default function ArrangementUploader({
             <Form.Item
               label="Select Instruments (Multiple)"
               required
-              validateStatus={instrumentError || mainInstrumentError ? 'error' : ''}
+              validateStatus={
+                instrumentError || mainInstrumentError ? 'error' : ''
+              }
               help={instrumentError || mainInstrumentError || ''}
             >
               <Space direction="vertical" style={{ width: '100%' }} size={16}>

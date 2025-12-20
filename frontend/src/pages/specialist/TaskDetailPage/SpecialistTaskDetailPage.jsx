@@ -445,7 +445,7 @@ const SpecialistTaskDetailPage = () => {
     [loadArtistsInfo]
   );
   console.log('request', request);
-  
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -1219,302 +1219,322 @@ const SpecialistTaskDetailPage = () => {
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <Card title="Task Assignment Details" size="small" bordered>
                 <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="Assignment ID">
-                <Text copyable>{task.assignmentId}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Task Type">
-                <Tag color="cyan">{getTaskTypeLabel(task.taskType)}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Milestone">
-                {task.milestone ? (
-                  <div>
-                    <Space>
-                      <Text strong>{task.milestone.name}</Text>
-                      {task.milestone.milestoneType && (
-                        <Tag color="blue" size="small">
-                          {task.milestone.milestoneType === 'transcription'
-                            ? 'Transcription'
-                            : task.milestone.milestoneType === 'arrangement'
-                              ? 'Arrangement'
-                              : task.milestone.milestoneType === 'recording'
-                                ? 'Recording'
-                                : task.milestone.milestoneType}
-                        </Tag>
-                      )}
-                    </Space>
-                    {task.milestone.description && (
-                      <div style={{ marginTop: 4 }}>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {task.milestone.description}
-                        </Text>
-                      </div>
-                    )}
-                    <div style={{ marginTop: 4 }}>
-                      <Text
-                        copyable
-                        type="secondary"
-                        style={{ fontSize: '12px' }}
-                      >
-                        ID: {task.milestone.milestoneId}
-                      </Text>
-                    </div>
-                    {/* Hiển thị arrangement submission download link cho recording milestone */}
-                    {task.milestone.milestoneType === 'recording' &&
-                      task.milestone.sourceArrangementSubmission && (
-                        <div
-                          style={{
-                            marginTop: 12,
-                            padding: 12,
-                            background: '#f5f5f5',
-                            borderRadius: 4,
-                          }}
-                        >
-                          <Space
-                            direction="vertical"
-                            size="small"
-                            style={{ width: '100%' }}
-                          >
-                            <Text strong>Arrangement Final Files:</Text>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              {
-                                task.milestone.sourceArrangementSubmission
-                                  .submissionName
-                              }
-                              (v
-                              {
-                                task.milestone.sourceArrangementSubmission
-                                  .version
-                              }
-                              )
-                            </Text>
-                            {task.milestone.sourceArrangementSubmission.files &&
-                              task.milestone.sourceArrangementSubmission.files
-                                .length > 0 && (
-                                <Space
-                                  direction="vertical"
-                                  size="small"
-                                  style={{ width: '100%' }}
-                                >
-                                  {task.milestone.sourceArrangementSubmission.files.map(
-                                    (file, idx) => (
-                                      <Button
-                                        key={idx}
-                                        type="link"
-                                        size="small"
-                                        icon={<DownloadOutlined />}
-                                        onClick={() =>
-                                          downloadFileHelper(
-                                            file.fileId,
-                                            file.fileName
-                                          )
-                                        }
-                                        style={{
-                                          padding: 0,
-                                          height: 'auto',
-                                          maxWidth: '100%',
-                                        }}
-                                      >
-                                        <Text
-                                          ellipsis={{
-                                            tooltip: file.fileName,
-                                          }}
-                                          style={{
-                                            maxWidth: 260,
-                                            display: 'inline-block',
-                                            verticalAlign: 'bottom',
-                                          }}
-                                        >
-                                          {file.fileName}
-                                        </Text>
-                                        {file.fileSize && (
-                                          <Text
-                                            type="secondary"
-                                            style={{
-                                              marginLeft: 8,
-                                              fontSize: '11px',
-                                            }}
-                                          >
-                                            (
-                                            {(
-                                              file.fileSize /
-                                              1024 /
-                                              1024
-                                            ).toFixed(2)}{' '}
-                                            MB)
-                                          </Text>
-                                        )}
-                                      </Button>
-                                    )
-                                  )}
-                                </Space>
-                              )}
-                          </Space>
-                        </div>
-                      )}
-                  </div>
-                ) : (
-                  <Text copyable type="secondary">
-                    {task.milestoneId}
-                  </Text>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                {getStatusTag(task.status)}
-                {task.hasIssue && (
-                  <Tag
-                    color="orange"
-                    icon={<ExclamationCircleOutlined />}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Có issue
-                  </Tag>
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Assigned Date">
-                {task.assignedDate ? formatDateTime(task.assignedDate) : '—'}
-              </Descriptions.Item>
-              {task.milestone && (
-                <>
-                  <Descriptions.Item label="First Submission">
-                    {task.milestone.firstSubmissionAt
-                      ? formatDateTime(task.milestone.firstSubmissionAt)
-                      : '—'}
+                  <Descriptions.Item label="Assignment ID">
+                    <Text copyable>{task.assignmentId}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Work Completed">
-                    {task.milestone.finalCompletedAt
-                      ? formatDateTime(task.milestone.finalCompletedAt)
-                      : 'Chưa hoàn thành'}
+                  <Descriptions.Item label="Task Type">
+                    <Tag color="cyan">{getTaskTypeLabel(task.taskType)}</Tag>
                   </Descriptions.Item>
-                </>
-              )}
-              <Descriptions.Item label="Milestone Deadline">
-                {task.milestone ? (
-                  <Space direction="vertical" size={4}>
-                    <div>
-                      <Text strong>Target</Text>
+                  <Descriptions.Item label="Milestone">
+                    {task.milestone ? (
                       <div>
-                        {actualDeadline ? (
-                          <>
-                            {formatDateTime(actualDeadline)}
-                            {task.milestone?.milestoneSlaDays && (
-                              <Text type="secondary" style={{ marginLeft: 4 }}>
-                                (+{task.milestone.milestoneSlaDays} ngày SLA)
-                              </Text>
-                            )}
-                          </>
-                        ) : (
-                          'Chưa có'
-                        )}
-                      </div>
-                      {/* SLA status tags */}
-                      <div style={{ marginTop: 4 }}>
-                        {(() => {
-                          const hasFirstSubmission =
-                            !!task.milestone?.firstSubmissionAt;
-                          const isFirstSubmissionLate =
-                            task.milestone?.firstSubmissionLate === true;
-                          const isFirstSubmissionOnTime =
-                            hasFirstSubmission &&
-                            task.milestone?.firstSubmissionLate === false;
-                          const overdueNow = task.milestone?.overdueNow;
-                          const isPendingReview =
-                            task.status?.toLowerCase() === 'ready_for_review' ||
-                            task.status?.toLowerCase() ===
-                              'waiting_customer_review';
-                          const shouldHideOverdueWarning =
-                            hasFirstSubmission || isPendingReview;
-                          const isOverdue =
-                            !shouldHideOverdueWarning &&
-                            overdueNow === true &&
-                            task.status?.toLowerCase() !== 'completed';
-
-                          return (
-                            <>
-                              {isOverdue && <Tag color="red">Quá hạn</Tag>}
-                              {isFirstSubmissionLate && (
-                                <Tag color="red">Nộp trễ (bản đầu)</Tag>
-                              )}
-                              {isFirstSubmissionOnTime && (
-                                <Tag color="green">Nộp đúng hạn (bản đầu)</Tag>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    {/* Chỉ hiển thị Planned khi không có Target */}
-                    {!actualDeadline && (
-                      <div>
-                        <Text strong type="secondary">
-                          Planned
-                        </Text>
-                        <Text type="secondary">
-                          {plannedDeadline
-                            ? formatDateTime(plannedDeadline)
-                            : 'Chưa có'}
-                        </Text>
-                      </div>
-                    )}
-                    {estimatedDeadline && (
-                      <div>
-                        <Text strong type="warning">
-                          Estimated
-                        </Text>
-                        <Text type="secondary">
-                          {formatDateTime(estimatedDeadline)}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          (Estimated when not started)
-                        </Text>
-                      </div>
-                    )}
-                  </Space>
-                ) : (
-                  <Text type="secondary">—</Text>
-                )}
-              </Descriptions.Item>
-              {task.specialistResponseReason && (
-                <Descriptions.Item label="Cancel Reason">
-                  <Text type="danger">{task.specialistResponseReason}</Text>
-                  {task.specialistRespondedAt && (
-                    <div style={{ marginTop: 4 }}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        (Canceled at:{' '}
-                        {formatDateTime(task.specialistRespondedAt)})
-                      </Text>
-                    </div>
-                  )}
-                </Descriptions.Item>
-              )}
-              {task.hasIssue && task.issueReason && (
-                <Descriptions.Item label="Issue Report" span={2}>
-                  <Alert
-                    message="Đã báo issue / không kịp deadline"
-                    description={
-                      <div>
-                        <Text strong>Lý do: </Text>
-                        <Text>{task.issueReason}</Text>
-                        {task.issueReportedAt && (
-                          <div style={{ marginTop: 8 }}>
+                        <Space>
+                          <Text strong>{task.milestone.name}</Text>
+                          {task.milestone.milestoneType && (
+                            <Tag color="blue" size="small">
+                              {task.milestone.milestoneType === 'transcription'
+                                ? 'Transcription'
+                                : task.milestone.milestoneType === 'arrangement'
+                                  ? 'Arrangement'
+                                  : task.milestone.milestoneType === 'recording'
+                                    ? 'Recording'
+                                    : task.milestone.milestoneType}
+                            </Tag>
+                          )}
+                        </Space>
+                        {task.milestone.description && (
+                          <div style={{ marginTop: 4 }}>
                             <Text type="secondary" style={{ fontSize: '12px' }}>
-                              Báo lúc: {formatDateTime(task.issueReportedAt)}
+                              {task.milestone.description}
                             </Text>
                           </div>
                         )}
-                        <div style={{ marginTop: 8 }}>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            Manager đã được thông báo. Vui lòng chờ quyết định
-                            từ Manager.
+                        <div style={{ marginTop: 4 }}>
+                          <Text
+                            copyable
+                            type="secondary"
+                            style={{ fontSize: '12px' }}
+                          >
+                            ID: {task.milestone.milestoneId}
                           </Text>
                         </div>
+                        {/* Hiển thị arrangement submission download link cho recording milestone */}
+                        {task.milestone.milestoneType === 'recording' &&
+                          task.milestone.sourceArrangementSubmission && (
+                            <div
+                              style={{
+                                marginTop: 12,
+                                padding: 12,
+                                background: '#f5f5f5',
+                                borderRadius: 4,
+                              }}
+                            >
+                              <Space
+                                direction="vertical"
+                                size="small"
+                                style={{ width: '100%' }}
+                              >
+                                <Text strong>Arrangement Final Files:</Text>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: '12px' }}
+                                >
+                                  {
+                                    task.milestone.sourceArrangementSubmission
+                                      .submissionName
+                                  }
+                                  (v
+                                  {
+                                    task.milestone.sourceArrangementSubmission
+                                      .version
+                                  }
+                                  )
+                                </Text>
+                                {task.milestone.sourceArrangementSubmission
+                                  .files &&
+                                  task.milestone.sourceArrangementSubmission
+                                    .files.length > 0 && (
+                                    <Space
+                                      direction="vertical"
+                                      size="small"
+                                      style={{ width: '100%' }}
+                                    >
+                                      {task.milestone.sourceArrangementSubmission.files.map(
+                                        (file, idx) => (
+                                          <Button
+                                            key={idx}
+                                            type="link"
+                                            size="small"
+                                            icon={<DownloadOutlined />}
+                                            onClick={() =>
+                                              downloadFileHelper(
+                                                file.fileId,
+                                                file.fileName
+                                              )
+                                            }
+                                            style={{
+                                              padding: 0,
+                                              height: 'auto',
+                                              maxWidth: '100%',
+                                            }}
+                                          >
+                                            <Text
+                                              ellipsis={{
+                                                tooltip: file.fileName,
+                                              }}
+                                              style={{
+                                                maxWidth: 260,
+                                                display: 'inline-block',
+                                                verticalAlign: 'bottom',
+                                              }}
+                                            >
+                                              {file.fileName}
+                                            </Text>
+                                            {file.fileSize && (
+                                              <Text
+                                                type="secondary"
+                                                style={{
+                                                  marginLeft: 8,
+                                                  fontSize: '11px',
+                                                }}
+                                              >
+                                                (
+                                                {(
+                                                  file.fileSize /
+                                                  1024 /
+                                                  1024
+                                                ).toFixed(2)}{' '}
+                                                MB)
+                                              </Text>
+                                            )}
+                                          </Button>
+                                        )
+                                      )}
+                                    </Space>
+                                  )}
+                              </Space>
+                            </div>
+                          )}
                       </div>
-                    }
-                    type="warning"
-                    showIcon
-                    style={{ marginTop: 8 }}
-                  />
-                </Descriptions.Item>
-              )}
+                    ) : (
+                      <Text copyable type="secondary">
+                        {task.milestoneId}
+                      </Text>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Status">
+                    {getStatusTag(task.status)}
+                    {task.hasIssue && (
+                      <Tag
+                        color="orange"
+                        icon={<ExclamationCircleOutlined />}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Có issue
+                      </Tag>
+                    )}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Assigned Date">
+                    {task.assignedDate
+                      ? formatDateTime(task.assignedDate)
+                      : '—'}
+                  </Descriptions.Item>
+                  {task.milestone && (
+                    <>
+                      <Descriptions.Item label="First Submission">
+                        {task.milestone.firstSubmissionAt
+                          ? formatDateTime(task.milestone.firstSubmissionAt)
+                          : '—'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Work Completed">
+                        {task.milestone.finalCompletedAt
+                          ? formatDateTime(task.milestone.finalCompletedAt)
+                          : 'Chưa hoàn thành'}
+                      </Descriptions.Item>
+                    </>
+                  )}
+                  <Descriptions.Item label="Milestone Deadline">
+                    {task.milestone ? (
+                      <Space direction="vertical" size={4}>
+                        <div>
+                          <Text strong>Target</Text>
+                          <div>
+                            {actualDeadline ? (
+                              <>
+                                {formatDateTime(actualDeadline)}
+                                {task.milestone?.milestoneSlaDays && (
+                                  <Text
+                                    type="secondary"
+                                    style={{ marginLeft: 4 }}
+                                  >
+                                    (+{task.milestone.milestoneSlaDays} ngày
+                                    SLA)
+                                  </Text>
+                                )}
+                              </>
+                            ) : (
+                              'Chưa có'
+                            )}
+                          </div>
+                          {/* SLA status tags */}
+                          <div style={{ marginTop: 4 }}>
+                            {(() => {
+                              const hasFirstSubmission =
+                                !!task.milestone?.firstSubmissionAt;
+                              const isFirstSubmissionLate =
+                                task.milestone?.firstSubmissionLate === true;
+                              const isFirstSubmissionOnTime =
+                                hasFirstSubmission &&
+                                task.milestone?.firstSubmissionLate === false;
+                              const overdueNow = task.milestone?.overdueNow;
+                              const isPendingReview =
+                                task.status?.toLowerCase() ===
+                                  'ready_for_review' ||
+                                task.status?.toLowerCase() ===
+                                  'waiting_customer_review';
+                              const shouldHideOverdueWarning =
+                                hasFirstSubmission || isPendingReview;
+                              const isOverdue =
+                                !shouldHideOverdueWarning &&
+                                overdueNow === true &&
+                                task.status?.toLowerCase() !== 'completed';
+
+                              return (
+                                <>
+                                  {isOverdue && <Tag color="red">Quá hạn</Tag>}
+                                  {isFirstSubmissionLate && (
+                                    <Tag color="red">Nộp trễ (bản đầu)</Tag>
+                                  )}
+                                  {isFirstSubmissionOnTime && (
+                                    <Tag color="green">
+                                      Nộp đúng hạn (bản đầu)
+                                    </Tag>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                        {/* Chỉ hiển thị Planned khi không có Target */}
+                        {!actualDeadline && (
+                          <div>
+                            <Text strong type="secondary">
+                              Planned
+                            </Text>
+                            <Text type="secondary">
+                              {plannedDeadline
+                                ? formatDateTime(plannedDeadline)
+                                : 'Chưa có'}
+                            </Text>
+                          </div>
+                        )}
+                        {estimatedDeadline && (
+                          <div>
+                            <Text strong type="warning">
+                              Estimated
+                            </Text>
+                            <Text type="secondary">
+                              {formatDateTime(estimatedDeadline)}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              (Estimated when not started)
+                            </Text>
+                          </div>
+                        )}
+                      </Space>
+                    ) : (
+                      <Text type="secondary">—</Text>
+                    )}
+                  </Descriptions.Item>
+                  {task.specialistResponseReason && (
+                    <Descriptions.Item label="Cancel Reason">
+                      <Text type="danger">{task.specialistResponseReason}</Text>
+                      {task.specialistRespondedAt && (
+                        <div style={{ marginTop: 4 }}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            (Canceled at:{' '}
+                            {formatDateTime(task.specialistRespondedAt)})
+                          </Text>
+                        </div>
+                      )}
+                    </Descriptions.Item>
+                  )}
+                  {task.hasIssue && task.issueReason && (
+                    <Descriptions.Item label="Issue Report" span={2}>
+                      <Alert
+                        message="Đã báo issue / không kịp deadline"
+                        description={
+                          <div>
+                            <Text strong>Lý do: </Text>
+                            <Text>{task.issueReason}</Text>
+                            {task.issueReportedAt && (
+                              <div style={{ marginTop: 8 }}>
+                                <Text
+                                  type="secondary"
+                                  style={{ fontSize: '12px' }}
+                                >
+                                  Báo lúc:{' '}
+                                  {formatDateTime(task.issueReportedAt)}
+                                </Text>
+                              </div>
+                            )}
+                            <div style={{ marginTop: 8 }}>
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: '12px' }}
+                              >
+                                Manager đã được thông báo. Vui lòng chờ quyết
+                                định từ Manager.
+                              </Text>
+                            </div>
+                          </div>
+                        }
+                        type="warning"
+                        showIcon
+                        style={{ marginTop: 8 }}
+                      />
+                    </Descriptions.Item>
+                  )}
                 </Descriptions>
               </Card>
             </Space>
@@ -1792,32 +1812,39 @@ const SpecialistTaskDetailPage = () => {
                         <Text>{request.description}</Text>
                       </Descriptions.Item>
                     )}
-                    {request.serviceType === 'transcription' && request.durationSeconds && (
-                      <Descriptions.Item label="Duration">
-                        <Text>{formatDuration(request.durationSeconds)}</Text>
-                      </Descriptions.Item>
-                    )}
-                    {request.serviceType === 'transcription' && request.tempo && (
-                      <Descriptions.Item label="Tempo">
-                        <Text>{request.tempo} BPM</Text>
-                      </Descriptions.Item>
-                    )}
-                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.genres && request.genres.length > 0 && (
-                      <Descriptions.Item label="Genres" span={2}>
-                        <Space wrap>
-                          {request.genres.map((genre, idx) => (
-                            <Tag key={idx} color="blue">
-                              {genre}
-                            </Tag>
-                          ))}
-                        </Space>
-                      </Descriptions.Item>
-                    )}
-                    {(request.serviceType === 'arrangement' || request.serviceType === 'arrangement_with_recording') && request.purpose && (
-                      <Descriptions.Item label="Purpose">
-                        <Text>{getPurposeLabel(request.purpose)}</Text>
-                      </Descriptions.Item>
-                    )}
+                    {request.serviceType === 'transcription' &&
+                      request.durationSeconds && (
+                        <Descriptions.Item label="Duration">
+                          <Text>{formatDuration(request.durationSeconds)}</Text>
+                        </Descriptions.Item>
+                      )}
+                    {request.serviceType === 'transcription' &&
+                      request.tempo && (
+                        <Descriptions.Item label="Tempo">
+                          <Text>{request.tempo} BPM</Text>
+                        </Descriptions.Item>
+                      )}
+                    {(request.serviceType === 'arrangement' ||
+                      request.serviceType === 'arrangement_with_recording') &&
+                      request.genres &&
+                      request.genres.length > 0 && (
+                        <Descriptions.Item label="Genres" span={2}>
+                          <Space wrap>
+                            {request.genres.map((genre, idx) => (
+                              <Tag key={idx} color="blue">
+                                {genre}
+                              </Tag>
+                            ))}
+                          </Space>
+                        </Descriptions.Item>
+                      )}
+                    {(request.serviceType === 'arrangement' ||
+                      request.serviceType === 'arrangement_with_recording') &&
+                      request.purpose && (
+                        <Descriptions.Item label="Purpose">
+                          <Text>{getPurposeLabel(request.purpose)}</Text>
+                        </Descriptions.Item>
+                      )}
                     {request.instruments && request.instruments.length > 0 && (
                       <Descriptions.Item label="Instruments" span={2}>
                         <Space wrap>

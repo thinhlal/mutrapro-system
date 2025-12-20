@@ -373,7 +373,16 @@ export default function ContractsManagement() {
         return (
           <Tooltip title={serviceName}>
             <div style={{ maxWidth: '100%', overflow: 'hidden' }}>
-              <Tag color="processing" style={{ maxWidth: '100%', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Tag
+                color="processing"
+                style={{
+                  maxWidth: '100%',
+                  display: 'inline-block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {serviceName}
               </Tag>
             </div>
@@ -389,11 +398,21 @@ export default function ContractsManagement() {
       ellipsis: true,
       render: v => {
         const statusLower = v?.toLowerCase() || 'draft';
-        const statusLabel = statusText[statusLower] || statusLower.toUpperCase();
+        const statusLabel =
+          statusText[statusLower] || statusLower.toUpperCase();
         return (
           <Tooltip title={statusLabel}>
             <div style={{ maxWidth: '100%', overflow: 'hidden' }}>
-              <Tag color={statusColor[statusLower] || 'default'} style={{ maxWidth: '100%', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Tag
+                color={statusColor[statusLower] || 'default'}
+                style={{
+                  maxWidth: '100%',
+                  display: 'inline-block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {statusLabel}
               </Tag>
             </div>

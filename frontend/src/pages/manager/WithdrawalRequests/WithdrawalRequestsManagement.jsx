@@ -178,7 +178,9 @@ const WithdrawalRequestsManagement = () => {
         setAdminNote('');
         await loadWithdrawalRequests();
       } else {
-        message.error(response?.message || 'Error approving withdrawal request');
+        message.error(
+          response?.message || 'Error approving withdrawal request'
+        );
       }
     } catch (error) {
       console.error('Error approving withdrawal:', error);
@@ -263,7 +265,7 @@ const WithdrawalRequestsManagement = () => {
         message.error(response?.message || 'Error completing withdrawal');
       }
     } catch (error) {
-      console.error('Error completing withdrawal:', error); 
+      console.error('Error completing withdrawal:', error);
       message.error(
         error?.response?.data?.message || 'Error completing withdrawal'
       );
@@ -905,7 +907,8 @@ const WithdrawalRequestsManagement = () => {
                   style={{ marginRight: 8 }}
                 />
                 <Text>
-                  I confirm that the transfer has been completed. This action cannot be undone.
+                  I confirm that the transfer has been completed. This action
+                  cannot be undone.
                 </Text>
               </Space>
             </Form.Item>

@@ -92,56 +92,61 @@ export default function TranscriptionUploader({
     if (!selectedInstruments || selectedInstruments.length === 0) {
       return [];
     }
-    return selectedInstruments.map(id => {
-      const inst = instrumentsData.find(i => i.instrumentId === id);
-      if (!inst) return null;
-      return {
-        key: id,
-        instrumentId: id,
-        instrumentName: inst.instrumentName || 'Unknown',
-        basePrice: inst.basePrice || 0,
-      };
-    }).filter(Boolean);
+    return selectedInstruments
+      .map(id => {
+        const inst = instrumentsData.find(i => i.instrumentId === id);
+        if (!inst) return null;
+        return {
+          key: id,
+          instrumentId: id,
+          instrumentName: inst.instrumentName || 'Unknown',
+          basePrice: inst.basePrice || 0,
+        };
+      })
+      .filter(Boolean);
   }, [selectedInstruments, instrumentsData]);
 
   // Handle remove instrument
-  const handleRemoveInstrument = useCallback((instrumentId) => {
+  const handleRemoveInstrument = useCallback(instrumentId => {
     setSelectedInstruments(prev => prev.filter(id => id !== instrumentId));
     setInstrumentError(''); // Clear error when instrument is removed
   }, []);
 
   // Table columns for instruments
-  const instrumentTableColumns = useMemo(() => [
-    {
-      title: 'Instrument Name',
-      dataIndex: 'instrumentName',
-      key: 'instrumentName',
-    },
-    {
-      title: 'Price',
-      dataIndex: 'basePrice',
-      key: 'basePrice',
-      align: 'right',
-      render: (price) => formatPrice(price),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      align: 'center',
-      width: 100,
-      render: (_, record) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveInstrument(record.instrumentId)}
-          size="small"
-        >
-          Remove
-        </Button>
-      ),
-    },
-  ], [handleRemoveInstrument]);
+  const instrumentTableColumns = useMemo(
+    () => [
+      {
+        title: 'Instrument Name',
+        dataIndex: 'instrumentName',
+        key: 'instrumentName',
+      },
+      {
+        title: 'Price',
+        dataIndex: 'basePrice',
+        key: 'basePrice',
+        align: 'right',
+        render: price => formatPrice(price),
+      },
+      {
+        title: 'Action',
+        key: 'action',
+        align: 'center',
+        width: 100,
+        render: (_, record) => (
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleRemoveInstrument(record.instrumentId)}
+            size="small"
+          >
+            Remove
+          </Button>
+        ),
+      },
+    ],
+    [handleRemoveInstrument]
+  );
 
   // Track previous values to avoid unnecessary updates
   const prevTempoRef = useRef(null);
@@ -317,12 +322,15 @@ export default function TranscriptionUploader({
       setTimeout(() => {
         const instrumentElement = document.getElementById('quote-uploader');
         if (instrumentElement) {
-          instrumentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          instrumentElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
         }
       }, 100);
       return;
     }
-    
+
     // Clear instrument error if valid
     setInstrumentError('');
 

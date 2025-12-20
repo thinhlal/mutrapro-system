@@ -106,7 +106,7 @@ export default function ServiceRequestPage() {
 
     // Also restore when pathname changes (e.g., returning from navigation)
     const timeoutId = setTimeout(restoreFormData, 100);
-    
+
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('popstate', handlePopState);

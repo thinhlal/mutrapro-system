@@ -313,7 +313,8 @@ export default function RequestServiceForm({
               requiredMsg,
               {
                 pattern: /^[0-9+\-\s()]+$/,
-                message: 'Phone number can only contain numbers, +, -, spaces, and parentheses',
+                message:
+                  'Phone number can only contain numbers, +, -, spaces, and parentheses',
               },
               {
                 validator: (_, value) => {
@@ -324,21 +325,25 @@ export default function RequestServiceForm({
                   const digitsOnly = value.replace(/[\s\-()]/g, '');
                   // Check if contains at least some digits
                   if (digitsOnly.length < 7) {
-                    return Promise.reject(new Error('Phone number must contain at least 7 digits'));
+                    return Promise.reject(
+                      new Error('Phone number must contain at least 7 digits')
+                    );
                   }
                   // Check if contains any letters
                   if (/[a-zA-Z]/.test(value)) {
-                    return Promise.reject(new Error('Phone number cannot contain letters'));
+                    return Promise.reject(
+                      new Error('Phone number cannot contain letters')
+                    );
                   }
                   return Promise.resolve();
                 },
               },
             ]}
           >
-            <Input 
-              size="large" 
-              placeholder="+84 ..." 
-              onKeyPress={(e) => {
+            <Input
+              size="large"
+              placeholder="+84 ..."
+              onKeyPress={e => {
                 // Allow: numbers, +, -, space, (, )
                 const char = String.fromCharCode(e.which);
                 if (!/[0-9+\-\s()]/.test(char)) {

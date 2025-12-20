@@ -931,9 +931,7 @@ const MilestoneDetailPage = () => {
             <Empty
               description={
                 <Space direction="vertical" size="middle">
-                  <Text type="secondary">
-                    No tasks for this milestone
-                  </Text>
+                  <Text type="secondary">No tasks for this milestone</Text>
                   <Button
                     type="primary"
                     icon={<UserAddOutlined />}

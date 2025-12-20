@@ -303,9 +303,7 @@ const StudioBookingPage = () => {
                 <Tag color="geekblue">Thứ tự: #{milestone.orderIndex}</Tag>
               )}
               {contract?.contractNumber && (
-                <Tag color="purple">
-                  Contract #{contract.contractNumber}
-                </Tag>
+                <Tag color="purple">Contract #{contract.contractNumber}</Tag>
               )}
               {milestoneDeadlineInfo && (
                 <Tag color={milestoneDeadlineInfo.isOverdue ? 'red' : 'green'}>
