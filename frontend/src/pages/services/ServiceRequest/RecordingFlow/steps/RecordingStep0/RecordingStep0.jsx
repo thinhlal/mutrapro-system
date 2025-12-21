@@ -33,8 +33,6 @@ export default function RecordingStep0({ data, onComplete }) {
 
         if (response?.status === 'success' && response?.data) {
           setStudio(response.data);
-          // Save to flow data
-          onComplete({ studio: response.data });
         } else {
           message.error('Không thể tải thông tin studio');
         }
@@ -49,7 +47,7 @@ export default function RecordingStep0({ data, onComplete }) {
     };
 
     fetchStudio();
-  }, [studio, onComplete]);
+  }, [studio]);
 
   const handleContinue = () => {
     if (studio) {
@@ -91,11 +89,11 @@ export default function RecordingStep0({ data, onComplete }) {
     <div className={styles.container}>
       <Card>
         <div className={styles.header}>
-          <Title level={3} style={{ margin: 0 }}>
-            Studio Information
+          <Title level={3} style={{ margin: 0, marginBottom: 8 }}>
+            Information of Studio
           </Title>
-          <Text type="secondary">
-            Thông tin studio cho buổi thu âm của bạn
+          <Text type="secondary" style={{ fontSize: '14px' }}>
+            View the information of studio and the booking price before selecting the time
           </Text>
         </div>
 
@@ -115,41 +113,44 @@ export default function RecordingStep0({ data, onComplete }) {
               </div>
 
               <Descriptions column={1} bordered size="small">
-                <Descriptions.Item label="Giá theo giờ">
-                  <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>
-                    {formatPrice(studio.hourlyRate, 'VND')}/giờ
+                <Descriptions.Item label="Booking price per hour">
+                  <Text strong style={{ color: '#52c41a', fontSize: '18px', fontWeight: 'bold' }}>
+                    {formatPrice(studio.hourlyRate, 'VND')}/hour
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: '12px' }}>
+                    (Price calculated based on the studio usage time)
                   </Text>
                 </Descriptions.Item>
                 {studio.freeExternalGuestsLimit !== undefined && (
-                  <Descriptions.Item label="Số khách miễn phí">
+                  <Descriptions.Item label="Free guest limit">
                     <Text>
-                      {studio.freeExternalGuestsLimit} khách (miễn phí)
+                      {studio.freeExternalGuestsLimit} guests (free)
                     </Text>
                   </Descriptions.Item>
                 )}
                 {studio.extraGuestFeePerPerson && (
-                  <Descriptions.Item label="Phí khách thêm">
+                  <Descriptions.Item label="Extra guest fee">
                     <Text>
-                      {formatPrice(studio.extraGuestFeePerPerson, 'VND')}/khách
+                      {formatPrice(studio.extraGuestFeePerPerson, 'VND')}/guest
                     </Text>
                   </Descriptions.Item>
                 )}
               </Descriptions>
 
               <div className={styles.features}>
-                <Text strong>Dịch vụ bao gồm:</Text>
+                <Text strong>Services include:</Text>
                 <ul className={styles.featureList}>
                   <li>
                     <CheckCircleOutlined style={{ color: '#52c41a' }} /> Studio
-                    chuyên nghiệp với thiết bị hiện đại
+                    professional with modern equipment
                   </li>
                   <li>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} /> Hỗ trợ
-                    kỹ thuật viên chuyên nghiệp
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} /> Support
+                    professional technician support
                   </li>
                   <li>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} /> Không
-                    gian thu âm chất lượng cao
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} /> No
+                    high-quality recording space
                   </li>
                 </ul>
               </div>
@@ -164,8 +165,9 @@ export default function RecordingStep0({ data, onComplete }) {
             icon={<CheckCircleOutlined />}
             onClick={handleContinue}
             block
+            style={{ height: '48px', fontSize: '16px' }}
           >
-            Tiếp tục chọn thời gian
+            I understand, continue selecting the time
           </Button>
         </div>
       </Card>

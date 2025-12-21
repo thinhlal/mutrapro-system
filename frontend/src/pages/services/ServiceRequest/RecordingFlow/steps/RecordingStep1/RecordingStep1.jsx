@@ -3,7 +3,6 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   Calendar,
-  TimePicker,
   Button,
   Space,
   Tag,
@@ -12,13 +11,12 @@ import {
   message,
   Spin,
 } from 'antd';
-import { ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { getAvailableSlots } from '../../../../../../services/studioBookingService';
 import styles from './RecordingStep1.module.css';
 
 const { Title, Text } = Typography;
-const { RangePicker } = TimePicker;
 
 export default function RecordingStep1({ data, onComplete }) {
   const [selectedDate, setSelectedDate] = useState(
@@ -50,12 +48,24 @@ export default function RecordingStep1({ data, onComplete }) {
 
         if (response?.status === 'success' && response?.data) {
           // Map backend slots to frontend format
-          const slots = response.data.map(slot => ({
-            start: slot.startTime || slot.start_time,
-            end: slot.endTime || slot.end_time,
-            available: slot.available !== false, // Default true if not specified
-            status: slot.status || (slot.available ? 'available' : 'booked'),
-          }));
+          const slots = response.data.map(slot => {
+            // Normalize time format: remove seconds if present (08:00:00 -> 08:00)
+            const normalizeTime = (time) => {
+              if (!time) return time;
+              // If format is HH:mm:ss, extract only HH:mm
+              if (time.includes(':') && time.split(':').length === 3) {
+                return time.substring(0, 5); // Take first 5 chars (HH:mm)
+              }
+              return time;
+            };
+            
+            return {
+              start: normalizeTime(slot.startTime || slot.start_time),
+              end: normalizeTime(slot.endTime || slot.end_time),
+              available: slot.available !== false, // Default true if not specified
+              status: slot.status || (slot.available ? 'available' : 'booked'),
+            };
+          });
           console.log('slots', slots);
           setAvailableSlots(slots);
         } else {
@@ -119,38 +129,36 @@ export default function RecordingStep1({ data, onComplete }) {
   const handleDateSelect = date => {
     setSelectedDate(date);
     setSelectedTimeRange(null); // Reset time when date changes
+    setAvailableSlots([]); // Clear previous slots
+    setLoadingSlots(true); // Show loading immediately
   };
 
-  const handleTimeRangeChange = range => {
-    if (!range) {
-      setSelectedTimeRange(null);
-      return;
-    }
-
-    const [start, end] = range;
-    const startStr = start.format('HH:mm');
-    const endStr = end.format('HH:mm');
-
-    // Validate time range
-    if (end.isBefore(start) || end.isSame(start)) {
-      message.error('End time must be after start time');
-      return;
-    }
-
-    // Check if selected time slot is available
-    if (!isTimeSlotAvailable(startStr, endStr)) {
+  const handleSlotSelect = (start, end) => {
+    // Validate slot is available
+    if (!isTimeSlotAvailable(start, end)) {
       message.warning(
         'This time slot is already booked. Please select another time.'
       );
       return;
     }
 
-    setSelectedTimeRange(range);
+    const startTime = dayjs(start, 'HH:mm');
+    const endTime = dayjs(end, 'HH:mm');
+    
+    setSelectedTimeRange([startTime, endTime]);
   };
 
   const handleContinue = () => {
     if (!selectedDate) {
       message.error('Please select a date');
+      return;
+    }
+
+    // Validate that selected date is not today or in the past
+    const today = dayjs().startOf('day');
+    const selectedDay = selectedDate.startOf('day');
+    if (selectedDay.isBefore(today) || selectedDay.isSame(today)) {
+      message.error('Cannot book for today or past dates. Please select a future date.');
       return;
     }
 
@@ -179,11 +187,17 @@ export default function RecordingStep1({ data, onComplete }) {
 
   // Custom date cell renderer
   const dateCellRender = date => {
-    const isPast = date.isBefore(dayjs(), 'day');
-    const isToday = date.isSame(dayjs(), 'day');
+    const today = dayjs().startOf('day');
+    const selectedDay = date.startOf('day');
+    const isPast = selectedDay.isBefore(today);
+    const isToday = selectedDay.isSame(today);
 
-    if (isPast && !isToday) {
+    if (isPast) {
       return <div className={styles.pastDate}>Past</div>;
+    }
+    
+    if (isToday) {
+      return <div className={styles.todayDate}>Today</div>;
     }
 
     return null;
@@ -200,20 +214,26 @@ export default function RecordingStep1({ data, onComplete }) {
         </Text>
       </div>
 
-      <div className={styles.calendarSection}>
-        <Calendar
-          value={selectedDate}
-          onSelect={handleDateSelect}
-          dateCellRender={dateCellRender}
-          disabledDate={date => date.isBefore(dayjs(), 'day')}
-          className={styles.calendar}
-        />
-      </div>
+      <div className={styles.contentWrapper}>
+        <div className={styles.calendarSection}>
+          <Calendar
+            value={selectedDate}
+            onSelect={handleDateSelect}
+            dateCellRender={dateCellRender}
+            disabledDate={date => {
+              // Disable today and past dates - only allow future dates
+              const today = dayjs().startOf('day');
+              const selectedDay = date.startOf('day');
+              return selectedDay.isBefore(today) || selectedDay.isSame(today);
+            }}
+            className={styles.calendar}
+          />
+        </div>
 
-      {selectedDate && (
-        <div className={styles.timeSelectionSection}>
+        {selectedDate ? (
+          <div className={styles.timeSelectionSection}>
           <div className={styles.sectionHeader}>
-            <Title level={4}>Select Time Range</Title>
+            <Title level={4}>Select Time Slot</Title>
             <Text type="secondary">
               Selected Date: {selectedDate.format('dddd, MMMM DD, YYYY')}
             </Text>
@@ -225,7 +245,7 @@ export default function RecordingStep1({ data, onComplete }) {
             </div>
           )}
 
-          {!loadingSlots && availableSlots.some(slot => !slot.available) && (
+          {!loadingSlots && availableSlots.length > 0 && availableSlots.some(slot => !slot.available) && (
             <Alert
               message="Booked Slots"
               description={
@@ -249,52 +269,66 @@ export default function RecordingStep1({ data, onComplete }) {
             />
           )}
 
-          <div className={styles.timePickerSection}>
-            <RangePicker
-              value={selectedTimeRange}
-              onChange={handleTimeRangeChange}
-              format="HH:mm"
-              picker="time"
-              size="large"
-              style={{ width: '100%', maxWidth: 400 }}
-              disabledHours={() => []}
-              disabledMinutes={() => []}
-            />
-          </div>
-
-          {availableTimeSlots.length > 0 && (
+          {!loadingSlots && availableTimeSlots.length > 0 && (
             <div className={styles.quickSlots}>
               <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                Quick Select (Available Slots):
+                Available Time Slots:
               </Text>
               <Space wrap>
-                {availableTimeSlots.map((slot, idx) => (
-                  <Button
-                    key={idx}
-                    type={
-                      selectedTimeRange?.[0]?.format('HH:mm') === slot.start
-                        ? 'primary'
-                        : 'default'
+                {availableTimeSlots.map((slot, idx) => {
+                  // Normalize slot times to ensure format consistency (HH:mm)
+                  const normalizeTime = (time) => {
+                    if (!time) return time;
+                    // If format is HH:mm:ss, extract only HH:mm
+                    if (time.includes(':') && time.split(':').length === 3) {
+                      return time.substring(0, 5); // Take first 5 chars (HH:mm)
                     }
-                    disabled={!slot.available}
-                    onClick={() => {
-                      if (slot.available) {
-                        handleTimeRangeChange([
-                          dayjs(slot.start, 'HH:mm'),
-                          dayjs(slot.end, 'HH:mm'),
-                        ]);
-                      }
-                    }}
-                    className={styles.slotButton}
-                  >
-                    {slot.start} - {slot.end}
-                    {!slot.available && (
-                      <Tag color="red" style={{ marginLeft: 4 }}>
-                        Booked
-                      </Tag>
-                    )}
-                  </Button>
-                ))}
+                    // If format is just number, convert to HH:00
+                    if (!time.includes(':')) {
+                      return `${String(time).padStart(2, '0')}:00`;
+                    }
+                    return time;
+                  };
+                  
+                  const slotStart = normalizeTime(slot.start);
+                  const slotEnd = normalizeTime(slot.end);
+                  
+                  // Check if this slot is selected
+                  const selectedStart = selectedTimeRange?.[0]?.format('HH:mm');
+                  const selectedEnd = selectedTimeRange?.[1]?.format('HH:mm');
+                  const isSelected = selectedTimeRange && 
+                    selectedStart === slotStart &&
+                    selectedEnd === slotEnd;
+                  
+                  return (
+                    <Button
+                      key={idx}
+                      type={isSelected ? 'primary' : 'default'}
+                      disabled={!slot.available}
+                      onClick={() => {
+                        if (slot.available) {
+                          handleSlotSelect(slotStart, slotEnd);
+                        }
+                      }}
+                      className={styles.slotButton}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {slotStart} - {slotEnd}
+                        {!slot.available && (
+                          <Tag color="red" style={{ margin: 0 }}>
+                            Booked
+                          </Tag>
+                        )}
+                        {isSelected && slot.available && (
+                          <CheckCircleOutlined style={{ fontSize: '14px' }} />
+                        )}
+                        {!isSelected && slot.available && (
+                          <span style={{ width: '14px', display: 'inline-block' }} />
+                        )}
+                      </span>
+                    </Button>
+                  );
+                })}
               </Space>
             </div>
           )}
@@ -315,8 +349,15 @@ export default function RecordingStep1({ data, onComplete }) {
               </Space>
             </div>
           )}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className={styles.timeSelectionSection}>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+              <Text>Please select a date to view available time slots</Text>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className={styles.actionRow}>
         <Button

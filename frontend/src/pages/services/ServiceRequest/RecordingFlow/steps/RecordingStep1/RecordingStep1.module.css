@@ -20,14 +20,67 @@
   font-size: 16px;
 }
 
-.calendarSection {
+.contentWrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
   margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .contentWrapper {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calendarSection {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .calendar {
   background: white;
   border-radius: 8px;
-  padding: 16px;
+  padding: 8px;
+  width: 100%;
+}
+
+.calendar :global(.ant-picker-calendar) {
+  width: 100%;
+}
+
+.calendar :global(.ant-picker-calendar-header) {
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.calendar :global(.ant-picker-calendar-body) {
+  padding: 0;
+}
+
+.calendar :global(.ant-picker-calendar-table) {
+  margin: 0;
+}
+
+.calendar :global(.ant-picker-calendar-date) {
+  padding: 2px;
+  height: 32px;
+}
+
+.calendar :global(.ant-picker-calendar-date-content) {
+  height: 20px;
+  line-height: 20px;
+  font-size: 11px;
+}
+
+.calendar :global(.ant-picker-calendar-date-value) {
+  font-size: 12px;
+}
+
+.calendar :global(.ant-picker-calendar-column-header) {
+  padding: 4px 0;
+  font-size: 11px;
 }
 
 .dateInfo {
@@ -40,6 +93,12 @@
 .pastDate {
   color: #ccc;
   font-size: 11px;
+}
+
+.todayDate {
+  color: #ff4d4f;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .bookedBadge {
@@ -90,6 +149,23 @@
 
 .slotButton {
   margin: 4px;
+  min-width: 140px;
+  height: 40px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.slotButton::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.slotButton.ant-btn-primary {
+  border-width: 2px;
+  font-weight: 600;
 }
 
 .selectedInfo {
