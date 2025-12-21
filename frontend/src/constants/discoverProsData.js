@@ -24,20 +24,11 @@ export const PROS_CATEGORIES = [
   },
   {
     id: 'arrangement-with-recording',
-    title: 'Arrangement / Record',
+    title: 'Arrangement + Record',
     href: '/detail-service',
     serviceType: 'arrangement_with_recording',
     image: ImgBeatmaker,
     description:
       'Complete arrangement service with recording. Get both the arrangement and a vocal recording.',
-  },
-  {
-    id: 'recording',
-    title: 'Recording',
-    href: '/detail-service',
-    serviceType: 'recording',
-    image: ImgSession,
-    description:
-      'Professional studio recording services with top vocalists. Choose from male or female singers for your track.',
   },
 ];

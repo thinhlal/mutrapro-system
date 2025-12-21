@@ -23,9 +23,14 @@ const DiscoverServices = () => {
       const response = await getPricingMatrix();
 
       if (response.status === 'success' && response.data) {
+        // Filter out recording pricing (recording only available via RecordingFlow)
+        const filteredPricingData = response.data.filter(
+          (p) => p.serviceType !== 'recording'
+        );
+
         // Merge pricing data with display data from constants
         const mergedCategories = PROS_CATEGORIES.map((category) => {
-          const pricing = response.data.find(
+          const pricing = filteredPricingData.find(
             (p) => p.serviceType === category.serviceType && p.active
           );
 

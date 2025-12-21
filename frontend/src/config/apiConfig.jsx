@@ -191,9 +191,23 @@ export const API_ENDPOINTS = {
       `${PROJECT_PATH}/revision-requests/contract/${contractId}/stats`,
   },
 
+  // === Studio Management ===
+  STUDIOS: {
+    // GET /admin/studios
+    GET_ALL: `${PROJECT_PATH}/admin/studios`,
+    // GET /admin/studios/active
+    GET_ACTIVE: `${PROJECT_PATH}/admin/studios/active`,
+    // GET /studio-bookings/active-studio (public endpoint)
+    GET_ACTIVE_PUBLIC: `${PROJECT_PATH}/studio-bookings/active-studio`,
+    // PUT /admin/studios/{studioId}
+    UPDATE: studioId => `${PROJECT_PATH}/admin/studios/${studioId}`,
+  },
+
   // === Studio Bookings Management ===
   STUDIO_BOOKINGS: {
     BASE: `${PROJECT_PATH}/studio-bookings`,
+    // GET /studio-bookings/active-studio
+    GET_ACTIVE_STUDIO: `${PROJECT_PATH}/studio-bookings/active-studio`,
     // POST /studio-bookings/recording-milestone
     CREATE_FOR_RECORDING_MILESTONE: `${PROJECT_PATH}/studio-bookings/recording-milestone`,
     // POST /studio-bookings/from-request/{requestId}
@@ -428,6 +442,12 @@ export const API_ENDPOINTS = {
     // GET /pricing-matrix/calculate/{serviceType}?durationMinutes=X
     CALCULATE: (serviceType, durationMinutes) =>
       `${REQUEST_PATH}/pricing-matrix/calculate/${serviceType}?durationMinutes=${durationMinutes}`,
+    // POST /pricing-matrix
+    CREATE: `${REQUEST_PATH}/pricing-matrix`,
+    // PUT /pricing-matrix/{pricingId}
+    UPDATE: pricingId => `${REQUEST_PATH}/pricing-matrix/${pricingId}`,
+    // DELETE /pricing-matrix/{pricingId}
+    DELETE: pricingId => `${REQUEST_PATH}/pricing-matrix/${pricingId}`,
   },
 
   // === Notification Service (Quản lý Thông báo) ===

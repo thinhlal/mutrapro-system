@@ -17,7 +17,7 @@ export default function CategoryCard({ item }) {
     const serviceTypeMap = {
       transcription: 'Transcription',
       arrangement: 'Arrangement',
-      arrangement_with_recording: 'Arrangement / Record',
+      arrangement_with_recording: 'Arrangement + Record',
       recording: 'Recording',
       orchestration: 'Orchestration',
       mixing: 'Mixing',
@@ -53,7 +53,7 @@ export default function CategoryCard({ item }) {
 
   return (
     <div
-      className={`col-12 col-sm-6 col-lg-4 col-xl-3 ${styles.link}`}
+      className={`col-12 col-md-4 ${styles.link}`}
       onClick={handleClick}
       style={{ cursor: 'pointer' }}
     >

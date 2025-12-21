@@ -78,7 +78,7 @@ export const getPricingByServiceType = (pricingData, serviceType) => {
  * Lấy chi tiết pricing của một serviceType cụ thể
  * GET /pricing-matrix/{serviceType}
  *
- * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording, recording
+ * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording
  * @returns {Promise} ApiResponse với pricing detail
  */
 export const getPricingDetail = async (serviceType) => {
@@ -104,7 +104,7 @@ export const getPricingDetail = async (serviceType) => {
 
 /**
  * Tính toán giá dịch vụ
- * @param {string} serviceType - transcription | arrangement | arrangement_with_recording | recording
+ * @param {string} serviceType - transcription | arrangement | arrangement_with_recording
  * @param {number} durationMinutes - Thời lượng (phút)
  * @returns {Promise} Response data với breakdown giá
  */

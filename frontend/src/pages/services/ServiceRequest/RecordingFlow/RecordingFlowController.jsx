@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Steps, Button, Card } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons';
+// Step 0: Studio Information
+import RecordingStep0 from './steps/RecordingStep0/RecordingStep0';
 // Step 1: Slot Selection (moved from Step5)
 import RecordingStep1 from './steps/RecordingStep1/RecordingStep1';
 // Step 2: Vocal Setup
@@ -17,6 +19,10 @@ import Header from '../../../../components/common/Header/Header';
 const STORAGE_KEY = 'recordingFlowData';
 
 const STEPS = [
+  {
+    title: 'Studio Info',
+    description: 'Studio Information',
+  },
   {
     title: 'Slot Selection',
     description: 'Select Date & Time',
@@ -161,6 +167,14 @@ export default function RecordingFlowController() {
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
+        // Step 0: Studio Information
+        return (
+          <RecordingStep0
+            data={flowData.step0}
+            onComplete={data => handleStepComplete({ step0: data })}
+          />
+        );
+      case 1:
         // Step 1: Slot Selection
         return (
           <RecordingStep1
@@ -168,7 +182,7 @@ export default function RecordingFlowController() {
             onComplete={data => handleStepComplete({ step1: data })}
           />
         );
-      case 1:
+      case 2:
         // Step 2: Vocal Setup - pass step1 data for booking slot info
         return (
           <RecordingStep2
@@ -181,7 +195,7 @@ export default function RecordingFlowController() {
             onComplete={data => handleStepComplete({ step2: data })}
           />
         );
-      case 2:
+      case 3:
         // Step 3: Instrument Setup - pass step1 data for booking slot info
         return (
           <RecordingStep3
@@ -195,11 +209,12 @@ export default function RecordingFlowController() {
             onBack={handlePrev}
           />
         );
-      case 3:
+      case 4:
         // Step 4: Review & Submit (with form and direct submit)
         return (
           <RecordingStep4
             formData={{
+              step0: flowData.step0 || {},
               step1: flowData.step1 || {},
               step2: flowData.step2 || {},
               step3: flowData.step3 || {},

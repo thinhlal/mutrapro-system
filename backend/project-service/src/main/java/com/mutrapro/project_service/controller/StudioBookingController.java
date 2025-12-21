@@ -5,6 +5,7 @@ import com.mutrapro.project_service.dto.request.CreateStudioBookingRequest;
 import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
+import com.mutrapro.project_service.dto.response.StudioInfoResponse;
 import com.mutrapro.project_service.service.StudioBookingService;
 import com.mutrapro.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -90,6 +91,24 @@ public class StudioBookingController {
                 .statusCode(HttpStatus.CREATED.value())
                 .status("success")
                 .build());
+    }
+    
+    /**
+     * Lấy thông tin studio active (single studio system)
+     * GET /studio-bookings/active-studio
+     */
+    @GetMapping("/active-studio")
+    public ResponseEntity<ApiResponse<StudioInfoResponse>> getActiveStudio() {
+        log.info("Getting active studio info");
+        
+        StudioInfoResponse studio = studioBookingService.getActiveStudio();
+        
+        return ResponseEntity.ok(ApiResponse.<StudioInfoResponse>builder()
+            .message("Active studio retrieved successfully")
+            .data(studio)
+            .statusCode(HttpStatus.OK.value())
+            .status("success")
+            .build());
     }
     
     /**

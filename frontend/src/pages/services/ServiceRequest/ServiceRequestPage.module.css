@@ -283,13 +283,3 @@ html {
   }
 }
 
-/* Recording layout: căn giữa card */
-.recordingLayout {
-  grid-template-columns: 1fr;
-  justify-items: center;
-}
-
-.recordingLayout > *:first-child {
-  max-width: 500px;
-  width: 100%;
-}

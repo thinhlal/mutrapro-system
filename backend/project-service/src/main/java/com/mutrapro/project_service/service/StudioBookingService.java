@@ -11,6 +11,7 @@ import com.mutrapro.project_service.dto.response.AvailableArtistResponse;
 import com.mutrapro.project_service.dto.response.AvailableTimeSlotResponse;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
 import com.mutrapro.project_service.dto.response.StudioBookingResponse;
+import com.mutrapro.project_service.dto.response.StudioInfoResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.SlotBookedEvent;
@@ -53,6 +54,7 @@ import com.mutrapro.project_service.exception.MissingCustomerUserIdException;
 import com.mutrapro.project_service.exception.MissingSlaException;
 import com.mutrapro.project_service.exception.NoActiveStudioException;
 import com.mutrapro.project_service.exception.ServiceRequestNotFoundException;
+import com.mutrapro.project_service.exception.StudioNotFoundException;
 import com.mutrapro.project_service.exception.SpecialistIdNotFoundException;
 import com.mutrapro.project_service.exception.StudioBookingConflictException;
 import com.mutrapro.project_service.exception.StudioBookingNotFoundException;
@@ -813,6 +815,14 @@ public class StudioBookingService {
             }
         }
         
+        // 8.5. Tính studio cost = hourlyRate * durationHours
+        BigDecimal durationHoursDecimal = request.getDurationHours() != null 
+            ? request.getDurationHours() 
+            : BigDecimal.valueOf(durationHours);
+        BigDecimal studioCost = studio.getHourlyRate()
+            .multiply(durationHoursDecimal)
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+        
         // 9. Tạo booking
         StudioBooking booking = StudioBooking.builder()
             .userId(customerUserId)
@@ -831,7 +841,7 @@ public class StudioBookingService {
             .artistFee(totalParticipantFee)
             .equipmentRentalFee(totalEquipmentRentalFee)
             .externalGuestFee(BigDecimal.ZERO)
-            .totalCost(totalParticipantFee.add(totalEquipmentRentalFee)) // Tổng phí
+            .totalCost(studioCost.add(totalParticipantFee).add(totalEquipmentRentalFee)) // Studio cost + participant fees + equipment fees
             .purpose(request.getPurpose())
             .specialInstructions(request.getSpecialInstructions())
             .notes(request.getNotes())
@@ -1029,6 +1039,101 @@ public class StudioBookingService {
             .participants(participants)
             .requiredEquipment(requiredEquipment)
             .build();
+    }
+    
+    /**
+     * Lấy thông tin studio active (single studio system)
+     * GET /studio-bookings/active-studio
+     */
+    @Transactional(readOnly = true)
+    public StudioInfoResponse getActiveStudio() {
+        log.info("Getting active studio info");
+        
+        List<Studio> activeStudios = studioRepository.findByIsActiveTrue();
+        if (activeStudios.isEmpty()) {
+            throw NoActiveStudioException.notFound();
+        }
+        if (activeStudios.size() > 1) {
+            throw NoActiveStudioException.multipleFound(activeStudios.size());
+        }
+        Studio studio = activeStudios.getFirst();
+        
+        return StudioInfoResponse.builder()
+                .studioId(studio.getStudioId())
+                .studioName(studio.getStudioName())
+                .location(studio.getLocation())
+                .hourlyRate(studio.getHourlyRate())
+                .freeExternalGuestsLimit(studio.getFreeExternalGuestsLimit())
+                .extraGuestFeePerPerson(studio.getExtraGuestFeePerPerson())
+                .isActive(studio.getIsActive())
+                .build();
+    }
+    
+    /**
+     * Lấy tất cả studios (cho admin)
+     * GET /admin/studios
+     */
+    @Transactional(readOnly = true)
+    public List<StudioInfoResponse> getAllStudios() {
+        log.info("Getting all studios for admin");
+        
+        List<Studio> studios = studioRepository.findAll();
+        
+        return studios.stream()
+                .map(studio -> StudioInfoResponse.builder()
+                        .studioId(studio.getStudioId())
+                        .studioName(studio.getStudioName())
+                        .location(studio.getLocation())
+                        .hourlyRate(studio.getHourlyRate())
+                        .freeExternalGuestsLimit(studio.getFreeExternalGuestsLimit())
+                        .extraGuestFeePerPerson(studio.getExtraGuestFeePerPerson())
+                        .isActive(studio.getIsActive())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+    
+    /**
+     * Cập nhật studio (cho admin)
+     * PUT /admin/studios/{studioId}
+     */
+    @Transactional
+    public StudioInfoResponse updateStudio(String studioId, com.mutrapro.project_service.dto.request.UpdateStudioRequest request) {
+        log.info("Updating studio: studioId={}", studioId);
+        
+        Studio studio = studioRepository.findById(studioId)
+                .orElseThrow(() -> StudioNotFoundException.byId(studioId));
+        
+        if (request.getStudioName() != null) {
+            studio.setStudioName(request.getStudioName());
+        }
+        if (request.getLocation() != null) {
+            studio.setLocation(request.getLocation());
+        }
+        if (request.getHourlyRate() != null) {
+            studio.setHourlyRate(request.getHourlyRate());
+        }
+        if (request.getFreeExternalGuestsLimit() != null) {
+            studio.setFreeExternalGuestsLimit(request.getFreeExternalGuestsLimit());
+        }
+        if (request.getExtraGuestFeePerPerson() != null) {
+            studio.setExtraGuestFeePerPerson(request.getExtraGuestFeePerPerson());
+        }
+        if (request.getIsActive() != null) {
+            studio.setIsActive(request.getIsActive());
+        }
+        
+        Studio saved = studioRepository.save(studio);
+        log.info("Updated studio: studioId={}, studioName={}", saved.getStudioId(), saved.getStudioName());
+        
+        return StudioInfoResponse.builder()
+                .studioId(saved.getStudioId())
+                .studioName(saved.getStudioName())
+                .location(saved.getLocation())
+                .hourlyRate(saved.getHourlyRate())
+                .freeExternalGuestsLimit(saved.getFreeExternalGuestsLimit())
+                .extraGuestFeePerPerson(saved.getExtraGuestFeePerPerson())
+                .isActive(saved.getIsActive())
+                .build();
     }
     
     /**

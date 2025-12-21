@@ -76,7 +76,7 @@ export const getPricingByServiceType = (pricingData, serviceType) => {
  * Lấy chi tiết pricing của một serviceType cụ thể
  * GET /pricing-matrix/{serviceType}
  *
- * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording, recording
+ * @param {string} serviceType - Loại service: transcription, arrangement, arrangement_with_recording
  * @returns {Promise} ApiResponse với pricing detail
  * Response format:
  * {
@@ -114,7 +114,7 @@ export const getPricingDetail = async serviceType => {
 
 /**
  * Tính toán giá dịch vụ
- * @param {string} serviceType - transcription | arrangement | arrangement_with_recording | recording
+ * @param {string} serviceType - transcription | arrangement | arrangement_with_recording
  * @param {number} durationMinutes - Thời lượng (phút)
  * @returns {Promise} Response data với breakdown giá
  */
@@ -128,6 +128,83 @@ export const calculatePrice = async (serviceType, durationMinutes) => {
     throw (
       error.response?.data || {
         message: `Lỗi khi tính toán giá ${serviceType}`,
+      }
+    );
+  }
+};
+
+/**
+ * Tạo pricing matrix mới
+ * POST /pricing-matrix
+ *
+ * @param {Object} data - Pricing matrix data
+ * @param {string} data.serviceType - transcription | arrangement | arrangement_with_recording
+ * @param {string} data.unitType - per_minute | per_song | per_hour | fixed_price
+ * @param {number} data.basePrice - Base price
+ * @param {string} data.currency - VND | USD | EUR
+ * @param {string} data.description - Description (optional)
+ * @param {boolean} data.isActive - Active status (optional, default true)
+ * @returns {Promise} ApiResponse với pricing matrix created
+ */
+export const createPricingMatrix = async data => {
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.PRICING.CREATE, data);
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi tạo pricing matrix',
+      }
+    );
+  }
+};
+
+/**
+ * Cập nhật pricing matrix
+ * PUT /pricing-matrix/{pricingId}
+ *
+ * @param {string} pricingId - Pricing matrix ID
+ * @param {Object} data - Update data
+ * @param {string} data.unitType - per_minute | per_song | per_hour | fixed_price (optional)
+ * @param {number} data.basePrice - Base price (optional)
+ * @param {string} data.currency - VND | USD | EUR (optional)
+ * @param {string} data.description - Description (optional)
+ * @param {boolean} data.isActive - Active status (optional)
+ * @returns {Promise} ApiResponse với pricing matrix updated
+ */
+export const updatePricingMatrix = async (pricingId, data) => {
+  try {
+    const response = await axiosInstance.put(
+      API_ENDPOINTS.PRICING.UPDATE(pricingId),
+      data
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi cập nhật pricing matrix',
+      }
+    );
+  }
+};
+
+/**
+ * Xóa pricing matrix (soft delete)
+ * DELETE /pricing-matrix/{pricingId}
+ *
+ * @param {string} pricingId - Pricing matrix ID
+ * @returns {Promise} ApiResponse
+ */
+export const deletePricingMatrix = async pricingId => {
+  try {
+    const response = await axiosInstance.delete(
+      API_ENDPOINTS.PRICING.DELETE(pricingId)
+    );
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        message: 'Lỗi khi xóa pricing matrix',
       }
     );
   }

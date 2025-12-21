@@ -7,8 +7,10 @@ import com.mutrapro.request_service.dto.response.PricingMatrixResponse;
 import com.mutrapro.request_service.entity.PricingMatrix;
 import com.mutrapro.request_service.enums.CurrencyType;
 import com.mutrapro.request_service.enums.ServiceType;
+import com.mutrapro.request_service.enums.UnitType;
 import com.mutrapro.request_service.exception.PricingMatrixDuplicateException;
 import com.mutrapro.request_service.exception.PricingMatrixNotFoundException;
+import com.mutrapro.request_service.exception.PricingMatrixNotAllowedException;
 import com.mutrapro.request_service.repository.PricingMatrixRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -197,11 +199,41 @@ public class PricingMatrixService {
     }
 
     /**
+     * Validate unit type phù hợp với service type
+     * - transcription: chỉ cho phép per_minute
+     * - arrangement, arrangement_with_recording: chỉ cho phép per_song
+     */
+    private void validateUnitTypeForServiceType(ServiceType serviceType, UnitType unitType) {
+        if (serviceType == ServiceType.transcription && unitType != UnitType.per_minute) {
+            throw new IllegalArgumentException(
+                "Transcription service must use 'per_minute' unit type, but got: " + unitType
+            );
+        }
+        if ((serviceType == ServiceType.arrangement || 
+             serviceType == ServiceType.arrangement_with_recording) 
+            && unitType != UnitType.per_song) {
+            throw new IllegalArgumentException(
+                "Arrangement and Arrangement + Recording services must use 'per_song' unit type, but got: " + unitType
+            );
+        }
+    }
+
+    /**
      * Tạo pricing matrix mới
      * 1 ServiceType chỉ có 1 PricingMatrix
      */
     @Transactional
     public PricingMatrixResponse createPricing(CreatePricingMatrixRequest request) {
+        // Không cho phép tạo pricing matrix cho recording service
+        // Recording pricing được tính động từ studio hourlyRate × durationHours
+        // Contract price được tính từ booking.totalCost, không dùng pricing matrix
+        if (request.getServiceType() == ServiceType.recording) {
+            throw PricingMatrixNotAllowedException.forRecording();
+        }
+        
+        // Validate unit type phù hợp với service type
+        validateUnitTypeForServiceType(request.getServiceType(), request.getUnitType());
+        
         // Kiểm tra duplicate: 1 ServiceType chỉ có 1 PricingMatrix
         if (pricingMatrixRepository.existsByServiceType(request.getServiceType())) {
             throw PricingMatrixDuplicateException.create(request.getServiceType());
@@ -231,20 +263,40 @@ public class PricingMatrixService {
         PricingMatrix pricing = pricingMatrixRepository.findById(pricingId)
                 .orElseThrow(() -> PricingMatrixNotFoundException.byId(pricingId));
         
-        if (request.getUnitType() != null) {
-            pricing.setUnitType(request.getUnitType());
-        }
-        if (request.getBasePrice() != null) {
-            pricing.setBasePrice(request.getBasePrice());
-        }
-        if (request.getCurrency() != null) {
-            pricing.setCurrency(request.getCurrency());
-        }
-        if (request.getDescription() != null) {
-            pricing.setDescription(request.getDescription());
-        }
-        if (request.getIsActive() != null) {
-            pricing.setActive(request.getIsActive());
+        // Không cho phép update pricing matrix cho recording service
+        // (trừ khi chỉ deactivate - đã được xử lý bởi cleanup script)
+        if (pricing.getServiceType() == ServiceType.recording) {
+            // Chỉ cho phép deactivate, không cho phép update các field khác
+            if (request.getIsActive() != null && !request.getIsActive()) {
+                // Cho phép deactivate
+                pricing.setActive(false);
+            } else if (request.getUnitType() != null || 
+                      request.getBasePrice() != null || 
+                      request.getCurrency() != null || 
+                      request.getDescription() != null ||
+                      (request.getIsActive() != null && request.getIsActive())) {
+                // Không cho phép update các field khác hoặc activate lại
+                throw PricingMatrixNotAllowedException.forRecording();
+            }
+        } else {
+            // Các service type khác: cho phép update bình thường
+            if (request.getUnitType() != null) {
+                // Validate unit type phù hợp với service type
+                validateUnitTypeForServiceType(pricing.getServiceType(), request.getUnitType());
+                pricing.setUnitType(request.getUnitType());
+            }
+            if (request.getBasePrice() != null) {
+                pricing.setBasePrice(request.getBasePrice());
+            }
+            if (request.getCurrency() != null) {
+                pricing.setCurrency(request.getCurrency());
+            }
+            if (request.getDescription() != null) {
+                pricing.setDescription(request.getDescription());
+            }
+            if (request.getIsActive() != null) {
+                pricing.setActive(request.getIsActive());
+            }
         }
         
         PricingMatrix saved = pricingMatrixRepository.save(pricing);

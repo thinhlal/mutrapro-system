@@ -62,6 +62,16 @@ const menuItems = [
     label: <Link to="/admin/equipment">Equipment Management</Link>,
   },
   {
+    key: '/admin/pricing-matrix',
+    icon: <DollarOutlined />,
+    label: <Link to="/admin/pricing-matrix">Pricing Matrix</Link>,
+  },
+  {
+    key: '/admin/studios',
+    icon: <PlayCircleOutlined />,
+    label: <Link to="/admin/studios">Studio Management</Link>,
+  },
+  {
     key: '/admin/specialists',
     icon: <StarOutlined />,
     label: <Link to="/admin/specialists">Specialist Management</Link>,
@@ -85,11 +95,6 @@ const menuItems = [
     key: '/admin/tasks',
     icon: <UnorderedListOutlined />,
     label: <Link to="/admin/tasks">Tasks</Link>,
-  },
-  {
-    key: '/admin/settings',
-    icon: <SettingOutlined />,
-    label: <Link to="/admin/settings">Settings</Link>,
   },
 ];
 

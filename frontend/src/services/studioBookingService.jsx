@@ -2,6 +2,21 @@ import { API_ENDPOINTS } from '../config/apiConfig';
 import axiosInstance from '../utils/axiosInstance';
 
 /**
+ * Lấy thông tin studio active
+ * GET /api/v1/projects/studio-bookings/active-studio
+ */
+export const getActiveStudio = async () => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.STUDIO_BOOKINGS.GET_ACTIVE_STUDIO
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Lỗi khi lấy thông tin studio' };
+  }
+};
+
+/**
  * Tạo booking cho recording milestone
  * POST /api/v1/projects/studio-bookings/recording-milestone
  */

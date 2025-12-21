@@ -28,7 +28,7 @@ const ServiceCategoryCard = ({ item, onPress }) => {
     const serviceTypeMap = {
       transcription: "Transcription",
       arrangement: "Arrangement",
-      arrangement_with_recording: "Arrangement / Record",
+      arrangement_with_recording: "Arrangement + Record",
       recording: "Recording",
       orchestration: "Orchestration",
       mixing: "Mixing",

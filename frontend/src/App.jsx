@@ -97,6 +97,8 @@ import ServiceRequestContracts from './pages/admin/ServiceRequestContracts/Servi
 import SpecialistManagement from './pages/admin/SpecialistManagement/SpecialistManagement';
 import SkillManagement from './pages/admin/SkillManagement/SkillManagement';
 import DemoManagement from './pages/admin/DemoManagement/DemoManagement';
+import PricingMatrixManagement from './pages/admin/PricingMatrixManagement/PricingMatrixManagement';
+import StudioManagement from './pages/admin/StudioManagement/StudioManagement';
 
 // Manager Pages
 import ManagerProfile from './pages/manager/Profile/ManagerProfile';
@@ -556,6 +558,11 @@ function App() {
               element={<NotationInstruments />}
             />
             <Route path="equipment" element={<EquipmentManagement />} />
+            <Route
+              path="pricing-matrix"
+              element={<PricingMatrixManagement />}
+            />
+            <Route path="studios" element={<StudioManagement />} />
             <Route path="specialists" element={<SpecialistManagement />} />
             <Route path="skills" element={<SkillManagement />} />
             <Route path="demos" element={<DemoManagement />} />

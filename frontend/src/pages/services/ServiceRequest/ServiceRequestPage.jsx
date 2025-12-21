@@ -9,7 +9,6 @@ import Header from '../../../components/common/Header/Header';
 import TranscriptionUploader from './components/TranscriptionUploader/TranscriptionUploader'; // dùng cho Transcription
 import ArrangementUploader from './components/ArrangementUploader/ArrangementUploader';
 import ArrangementWithRecordingUploader from './components/ArrangementWithRecordingUploader/ArrangementWithRecordingUploader';
-import RecordingUploader from './components/RecordingUploader/RecordingUploader';
 import RequestServiceForm from '../../../components/common/RequestServiceForm/RequestServiceForm';
 import BackToTop from '../../../components/common/BackToTop/BackToTop';
 import Footer from '../../../components/common/Footer/Footer';
@@ -167,7 +166,6 @@ export default function ServiceRequestPage() {
                 transcription: 'From Sound to Sheet',
                 arrangement: 'Arrangement Service',
                 arrangement_with_recording: 'Arrangement + Recording',
-                recording: 'Recording Service',
               };
               return titleMap[selectedType] || 'From Sound to Sheet';
             })()}
@@ -209,9 +207,7 @@ export default function ServiceRequestPage() {
         </div>
       </section>
 
-      <div
-        className={`${styles.contentGrid} ${selectedType === 'recording' ? styles.recordingLayout : ''}`}
-      >
+      <div className={styles.contentGrid}>
         <RequestServiceForm
           onFormComplete={handleFormComplete}
           serviceType={selectedType}
@@ -242,7 +238,6 @@ export default function ServiceRequestPage() {
               onFormDataChange={handleFormComplete}
             />
           )}
-          {/* Recording service is now handled in RequestServiceForm */}
           {!selectedType && (
             <TranscriptionUploader
               serviceType={selectedType}
