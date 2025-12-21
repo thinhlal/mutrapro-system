@@ -7,6 +7,7 @@ import com.mutrapro.project_service.client.SpecialistServiceFeignClient;
 import com.mutrapro.shared.event.TaskAssignmentCanceledEvent;
 import com.mutrapro.shared.event.TaskIssueReportedEvent;
 import com.mutrapro.project_service.dto.projection.ContractBasicInfo;
+import com.mutrapro.project_service.dto.projection.ContractTaskStatsInfo;
 import com.mutrapro.project_service.dto.request.CreateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.request.UpdateTaskAssignmentRequest;
 import com.mutrapro.project_service.dto.response.ServiceRequestInfoResponse;
@@ -81,6 +82,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -248,6 +250,8 @@ public class TaskAssignmentService {
      * Đồng thời trả về danh sách specialist IDs đã cancelled task cho milestone (nếu có milestoneId)
      */
     public TaskStatsResponse getTaskStats(TaskStatsRequest request) {
+        long startTime = System.currentTimeMillis();
+        
         if (request == null || request.getSpecialistIds() == null || request.getSpecialistIds().isEmpty()) {
             return TaskStatsResponse.builder()
                 .statsBySpecialist(new HashMap<>())
@@ -268,23 +272,131 @@ public class TaskAssignmentService {
                 .cancelledSpecialistIds(List.of())
                 .build();
         }
+        
+        log.debug("getTaskStats: specialistIds={}, milestoneId={}, contractId={}", 
+            specialistIds.size(), request.getMilestoneId(), request.getContractId());
 
         // Tính SLA window start (chung cho tất cả specialists)
-        LocalDateTime slaWindowStart = calculateSlaWindowStartInternal(request.getContractId(), request.getMilestoneId());
-        
-        // Tính SLA window end cho từng specialist (có tính đến revision deadline)
-        // Mỗi specialist có thể có revision deadline khác nhau, nên cần tính riêng
+        // Tối ưu: Load assignments trước để batch load data
+        long queryStart = System.currentTimeMillis();
         List<TaskAssignment> assignments = taskAssignmentRepository.findBySpecialistIdIn(specialistIds);
+        long queryTime = System.currentTimeMillis() - queryStart;
+        if (queryTime > 1000) {
+            log.warn("[Performance] findBySpecialistIdIn took {}ms (slow) - specialistIds={}, assignments={}", 
+                queryTime, specialistIds.size(), assignments.size());
+        }
 
         Map<String, List<TaskAssignment>> assignmentsBySpecialist = assignments.stream()
             .collect(Collectors.groupingBy(TaskAssignment::getSpecialistId));
 
         Map<String, SpecialistTaskStats> result = new HashMap<>();
 
-        // Tính SLA window end (chung cho tất cả specialists, chỉ dùng milestone deadline)
-        // Không cần tính revision deadline vì milestone đang muốn assign chưa có task
-        LocalDateTime slaWindowEnd = calculateSlaWindowEndInternal(request.getContractId(), request.getMilestoneId());
+        // Tối ưu: Batch load tất cả milestones và contracts trước để tránh N+1 queries
+        Set<String> uniqueContractIds = assignments.stream()
+            .map(TaskAssignment::getContractId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        
+        // Thêm contractId của milestone đang assign vào set
+        if (request.getContractId() != null && !request.getContractId().isBlank()) {
+            uniqueContractIds.add(request.getContractId());
+        }
+        
+        // Tối ưu: Batch load contracts với projection (chỉ load contractId, contractType, workStartAt)
+        long batchStart = System.currentTimeMillis();
+        final Map<String, Contract> contractsMap;
+        if (!uniqueContractIds.isEmpty()) {
+            // Dùng projection query để chỉ load các fields cần thiết
+            List<ContractTaskStatsInfo> contractInfos = 
+                contractRepository.findTaskStatsInfoByContractIds(new ArrayList<>(uniqueContractIds));
+            
+            // Convert projection to Contract objects (chỉ với các field cần thiết)
+            contractsMap = contractInfos.stream()
+                .collect(Collectors.toMap(
+                    ContractTaskStatsInfo::getContractId,
+                    info -> Contract.builder()
+                        .contractId(info.getContractId())
+                        .contractType(info.getContractType())
+                        .workStartAt(info.getWorkStartAt())
+                        .build()
+                ));
+        } else {
+            contractsMap = new HashMap<>();
+        }
+        long contractsTime = System.currentTimeMillis() - batchStart;
+        
+        // Tối ưu: Batch load tất cả milestones trong 1 query thay vì query từng contract
+        Map<String, List<ContractMilestone>> allMilestonesByContractId;
+        Map<String, ContractMilestone> milestonesMap = new HashMap<>();
+        long milestonesStart = System.currentTimeMillis();
+        if (!uniqueContractIds.isEmpty()) {
+            List<ContractMilestone> allMilestones = contractMilestoneRepository
+                .findByContractIdIn(new ArrayList<>(uniqueContractIds));
+            
+            // Group và sort theo contractId và orderIndex
+            allMilestonesByContractId = allMilestones.stream()
+                .collect(Collectors.groupingBy(
+                    ContractMilestone::getContractId,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> list.stream()
+                            .sorted(Comparator.comparing(ContractMilestone::getOrderIndex, 
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                            .collect(Collectors.toList())
+                    )
+                ));
+            
+            // Build milestonesMap
+            allMilestones.forEach(m -> {
+                String key = m.getMilestoneId() + ":" + m.getContractId();
+                milestonesMap.put(key, m);
+            });
+        } else {
+            allMilestonesByContractId = new HashMap<>();
+        }
+        long milestonesTime = System.currentTimeMillis() - milestonesStart;
+        
+        // Batch load bookings cho recording milestones (nếu cần)
+        Set<String> recordingMilestoneIds = milestonesMap.values().stream()
+            .filter(m -> m.getMilestoneType() == MilestoneType.recording)
+            .map(ContractMilestone::getMilestoneId)
+            .collect(Collectors.toSet());
+        Map<String, StudioBooking> bookingsByMilestoneId = new HashMap<>();
+        long bookingsStart = System.currentTimeMillis();
+        if (!recordingMilestoneIds.isEmpty()) {
+            List<StudioBooking> bookings = studioBookingRepository.findByMilestoneIdIn(new ArrayList<>(recordingMilestoneIds));
+            bookings.forEach(b -> bookingsByMilestoneId.put(b.getMilestoneId(), b));
+        }
+        long bookingsTime = System.currentTimeMillis() - bookingsStart;
+        
+        if (contractsTime + milestonesTime + bookingsTime > 1000) {
+            log.warn("[Performance] Batch load took {}ms - contracts: {}ms, milestones: {}ms, bookings: {}ms", 
+                contractsTime + milestonesTime + bookingsTime, contractsTime, milestonesTime, bookingsTime);
+        }
+        
+        // Tính SLA window start và end với cached data
+        Contract milestoneContract = request.getContractId() != null 
+            ? contractsMap.get(request.getContractId()) 
+            : null;
+        ContractMilestone milestoneForSla = request.getMilestoneId() != null && request.getContractId() != null
+            ? milestonesMap.get(request.getMilestoneId() + ":" + request.getContractId())
+            : null;
+        List<ContractMilestone> allMilestonesForSla = request.getContractId() != null
+            ? allMilestonesByContractId.get(request.getContractId())
+            : null;
+        
+        LocalDateTime slaWindowStart = milestoneForSla != null
+            ? resolveMilestoneStartWithFallbackCached(milestoneForSla, milestoneContract, request.getContractId(), allMilestonesForSla)
+            : null;
+        
+        LocalDateTime slaWindowEnd = milestoneForSla != null
+            ? resolveMilestoneDeadlineWithFallbackCached(milestoneForSla, milestoneContract, request.getContractId(), allMilestonesForSla, bookingsByMilestoneId)
+            : null;
 
+        long calculationStart = System.currentTimeMillis();
+        // Tối ưu: Cache deadline đã tính để tránh tính lại cho cùng một task
+        Map<String, LocalDateTime> deadlineCache = new HashMap<>();
+        
         assignmentsBySpecialist.forEach((specialistId, tasks) -> {
             // Đếm tasks đang active
             int totalOpenTasks = (int) tasks.stream()
@@ -296,28 +408,23 @@ public class TaskAssignmentService {
                 tasksInSlaWindow = (int) tasks.stream()
                     .filter(task -> isOpenStatus(task.getStatus()))  // Bao gồm cả in_revision
                     .map(task -> {
-                        LocalDateTime deadline = resolveTaskDeadline(task);
-                        // Debug log
-                        if (deadline == null) {
-                            log.debug("Task {} has null deadline. MilestoneId={}, ContractId={}, Status={}",
-                                task.getAssignmentId(), task.getMilestoneId(), task.getContractId(), task.getStatus());
-                        } else {
-                            boolean inWindow = !deadline.isBefore(slaWindowStart) && !deadline.isAfter(slaWindowEnd);
-                            log.debug("Task {} deadline={}, window=[{}, {}], inWindow={}",
-                                task.getAssignmentId(), deadline, slaWindowStart, slaWindowEnd, inWindow);
-                        }
+                        // Tối ưu: Cache deadline để tránh tính lại
+                        String deadlineKey = task.getMilestoneId() + ":" + task.getContractId();
+                        LocalDateTime deadline = deadlineCache.computeIfAbsent(deadlineKey, k -> 
+                            resolveTaskDeadlineCached(
+                                task, 
+                                milestonesMap, 
+                                contractsMap,
+                                allMilestonesByContractId,
+                                bookingsByMilestoneId
+                            )
+                        );
                         return deadline;
                     })
                     .filter(deadline -> deadline != null
                         && !deadline.isBefore(slaWindowStart)  // >= milestone start
                         && !deadline.isAfter(slaWindowEnd))     // <= milestone deadline
                     .count();
-                
-                log.debug("Specialist {}: totalOpenTasks={}, tasksInSlaWindow={}, window=[{}, {}]",
-                    specialistId, totalOpenTasks, tasksInSlaWindow, slaWindowStart, slaWindowEnd);
-            } else {
-                log.debug("Specialist {}: slaWindowStart={}, slaWindowEnd={} (null, cannot calculate tasksInSlaWindow)",
-                    specialistId, slaWindowStart, slaWindowEnd);
             }
 
             result.put(specialistId, SpecialistTaskStats.builder()
@@ -325,6 +432,11 @@ public class TaskAssignmentService {
                 .tasksInSlaWindow(tasksInSlaWindow)
                 .build());
         });
+        long calculationTime = System.currentTimeMillis() - calculationStart;
+        if (calculationTime > 1000) {
+            log.warn("[Performance] Deadline calculation took {}ms (slow) - assignments={}", 
+                calculationTime, assignments.size());
+        }
 
         specialistIds.forEach(id -> result.putIfAbsent(id,
             SpecialistTaskStats.builder()
@@ -345,6 +457,15 @@ public class TaskAssignmentService {
                 );
         }
 
+        long duration = System.currentTimeMillis() - startTime;
+        if (duration > 1000) {
+            log.warn("[Performance] getTaskStats took {}ms (slow) - specialistIds={}, assignments={}, uniqueContracts={}", 
+                duration, specialistIds.size(), assignments.size(), uniqueContractIds.size());
+        } else {
+            log.debug("[Performance] getTaskStats completed in {}ms - specialistIds={}, assignments={}", 
+                duration, specialistIds.size(), assignments.size());
+        }
+        
         return TaskStatsResponse.builder()
             .statsBySpecialist(result)
             .cancelledSpecialistIds(cancelledSpecialistIds)
@@ -382,6 +503,232 @@ public class TaskAssignmentService {
 
         // Dùng resolveMilestoneDeadlineWithFallback để có logic fallback (ước tính deadline)
         return resolveMilestoneDeadlineWithFallback(milestone, contract, assignment.getContractId());
+    }
+    
+    /**
+     * Tối ưu: Resolve task deadline với cached milestones và contracts để tránh N+1 queries
+     */
+    private LocalDateTime resolveTaskDeadlineCached(
+            TaskAssignment assignment,
+            Map<String, ContractMilestone> milestonesMap,
+            Map<String, Contract> contractsMap,
+            Map<String, List<ContractMilestone>> allMilestonesByContractId,
+            Map<String, StudioBooking> bookingsByMilestoneId) {
+        if (assignment.getMilestoneId() == null || assignment.getContractId() == null) {
+            return null;
+        }
+
+        // Lấy milestone từ cache
+        String milestoneKey = assignment.getMilestoneId() + ":" + assignment.getContractId();
+        ContractMilestone milestone = milestonesMap.get(milestoneKey);
+        
+        if (milestone == null) {
+            return null;
+        }
+
+        // Lấy contract từ cache
+        Contract contract = contractsMap.get(assignment.getContractId());
+        List<ContractMilestone> allMilestones = allMilestonesByContractId.get(assignment.getContractId());
+
+        // Dùng cached version để tránh query lặp
+        return resolveMilestoneDeadlineWithFallbackCached(
+            milestone, 
+            contract, 
+            assignment.getContractId(), 
+            allMilestones,
+            bookingsByMilestoneId
+        );
+    }
+    
+    /**
+     * Cached version của resolveMilestoneStartWithFallback - dùng cached allMilestones
+     */
+    private LocalDateTime resolveMilestoneStartWithFallbackCached(
+            ContractMilestone milestone, 
+            Contract contract, 
+            String contractId,
+            List<ContractMilestone> allMilestones) {
+        // Ưu tiên dùng actualStartAt nếu có
+        if (milestone != null && milestone.getActualStartAt() != null) {
+            return milestone.getActualStartAt();
+        }
+        
+        // Tính plannedStartAt (có fallback ước tính nếu contract chưa Start Work)
+        LocalDateTime plannedStartAt = calculatePlannedStartAtWithFallbackCached(milestone, contract, contractId, allMilestones);
+        return plannedStartAt;
+    }
+    
+    /**
+     * Cached version của resolveMilestoneDeadlineWithFallback - dùng cached allMilestones và bookings
+     */
+    private LocalDateTime resolveMilestoneDeadlineWithFallbackCached(
+            ContractMilestone milestone, 
+            Contract contract, 
+            String contractId,
+            List<ContractMilestone> allMilestones,
+            Map<String, StudioBooking> bookingsByMilestoneId) {
+        // SLA window end / deadline dùng để check workload phải là deadline mục tiêu (hard/target)
+        // Tạo lastArrangementMilestoneByContractId từ allMilestones
+        Map<String, ContractMilestone> lastArrangementMilestoneByContractId = new HashMap<>();
+        if (allMilestones != null && contractId != null) {
+            ContractMilestone lastArrangement = allMilestones.stream()
+                .filter(m -> m.getMilestoneType() == MilestoneType.arrangement)
+                .max(Comparator.comparing(ContractMilestone::getOrderIndex))
+                .orElse(null);
+            if (lastArrangement != null) {
+                lastArrangementMilestoneByContractId.put(contractId, lastArrangement);
+            }
+        }
+        
+        LocalDateTime deadline = resolveMilestoneTargetDeadlineWithCache(
+            milestone, 
+            contract != null ? Map.of(contractId, contract) : null,
+            bookingsByMilestoneId, 
+            contractId != null ? Map.of(contractId, allMilestones != null ? allMilestones : List.of()) : null,
+            lastArrangementMilestoneByContractId
+        );
+        if (deadline != null) {
+            return deadline;
+        }
+        
+        // Fallback: Tính deadline dựa trên plannedStartAt của milestone
+        Integer slaDays = milestone != null ? milestone.getMilestoneSlaDays() : null;
+        if (slaDays == null || slaDays <= 0) {
+            return null;
+        }
+        
+        LocalDateTime plannedStartAt = calculatePlannedStartAtWithFallbackCached(milestone, contract, contractId, allMilestones);
+        return plannedStartAt != null ? plannedStartAt.plusDays(slaDays) : null;
+    }
+    
+    /**
+     * Cached version của calculatePlannedStartAtWithFallback - dùng cached allMilestones
+     */
+    private LocalDateTime calculatePlannedStartAtWithFallbackCached(
+            ContractMilestone milestone, 
+            Contract contract, 
+            String contractId,
+            List<ContractMilestone> allMilestones) {
+        // Nếu contract đã Start Work, tính plannedStartAt của milestone này
+        if (contract != null && contract.getWorkStartAt() != null) {
+            LocalDateTime plannedStartAt = calculatePlannedStartAtForMilestoneCached(milestone, contract, contractId, allMilestones);
+            if (plannedStartAt != null) {
+                return plannedStartAt;
+            }
+        }
+        
+        // Nếu contract chưa Start Work, ước tính start dựa trên giả định "nếu Start Work hôm nay"
+        return calculateEstimatedPlannedStartAtForMilestoneCached(milestone, contractId, allMilestones);
+    }
+    
+    /**
+     * Cached version của calculatePlannedStartAtForMilestone - dùng cached allMilestones
+     */
+    private LocalDateTime calculatePlannedStartAtForMilestoneCached(
+            ContractMilestone milestone, 
+            Contract contract, 
+            String contractId,
+            List<ContractMilestone> allMilestones) {
+        if (milestone == null || contract == null || contractId == null) {
+            return null;
+        }
+        
+        // Nếu milestone đã có plannedStartAt, dùng luôn
+        if (milestone.getPlannedStartAt() != null) {
+            return milestone.getPlannedStartAt();
+        }
+        
+        // Nếu milestone là milestone đầu tiên (orderIndex = 1), dùng workStartAt
+        if (milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+            return contract.getWorkStartAt();
+        }
+        
+        // Dùng cached allMilestones thay vì query lại
+        if (allMilestones == null || allMilestones.isEmpty()) {
+            return null;
+        }
+        
+        // Tìm milestone trước đó (orderIndex - 1)
+        Integer currentOrderIndex = milestone.getOrderIndex();
+        if (currentOrderIndex == null || currentOrderIndex <= 1) {
+            return contract.getWorkStartAt();
+        }
+        
+        ContractMilestone previousMilestone = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == currentOrderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        
+        if (previousMilestone == null) {
+            return contract.getWorkStartAt();
+        }
+        
+        // Tính plannedStartAt của milestone hiện tại = plannedDueDate của milestone trước đó
+        LocalDateTime previousPlannedDueDate = null;
+        if (previousMilestone.getPlannedDueDate() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedDueDate();
+        } else if (previousMilestone.getPlannedStartAt() != null && previousMilestone.getMilestoneSlaDays() != null) {
+            previousPlannedDueDate = previousMilestone.getPlannedStartAt().plusDays(previousMilestone.getMilestoneSlaDays());
+        }
+        if (previousPlannedDueDate != null) {
+            return previousPlannedDueDate;
+        }
+        
+        // Nếu milestone trước đó cũng chưa có deadline, tính lại từ đầu
+        LocalDateTime previousPlannedStartAt = calculatePlannedStartAtForMilestoneCached(
+            previousMilestone, contract, contractId, allMilestones);
+        if (previousPlannedStartAt != null && previousMilestone.getMilestoneSlaDays() != null) {
+            return previousPlannedStartAt.plusDays(previousMilestone.getMilestoneSlaDays());
+        }
+        
+        return contract.getWorkStartAt();
+    }
+    
+    /**
+     * Cached version của calculateEstimatedPlannedStartAtForMilestone - dùng cached allMilestones
+     */
+    private LocalDateTime calculateEstimatedPlannedStartAtForMilestoneCached(
+            ContractMilestone milestone, 
+            String contractId,
+            List<ContractMilestone> allMilestones) {
+        if (milestone == null || contractId == null) {
+            return null;
+        }
+        
+        // Nếu milestone là milestone đầu tiên (orderIndex = 1), dùng now
+        if (milestone.getOrderIndex() != null && milestone.getOrderIndex() == 1) {
+            return LocalDateTime.now();
+        }
+        
+        // Dùng cached allMilestones
+        if (allMilestones == null || allMilestones.isEmpty()) {
+            return null;
+        }
+        
+        // Tìm milestone trước đó (orderIndex - 1)
+        Integer currentOrderIndex = milestone.getOrderIndex();
+        if (currentOrderIndex == null || currentOrderIndex <= 1) {
+            return LocalDateTime.now();
+        }
+        
+        ContractMilestone previousMilestone = allMilestones.stream()
+            .filter(m -> m.getOrderIndex() != null && m.getOrderIndex() == currentOrderIndex - 1)
+            .findFirst()
+            .orElse(null);
+        
+        if (previousMilestone == null) {
+            return LocalDateTime.now();
+        }
+        
+        // Tính estimated plannedStartAt của milestone trước đó
+        LocalDateTime previousEstimatedStartAt = calculateEstimatedPlannedStartAtForMilestoneCached(
+            previousMilestone, contractId, allMilestones);
+        
+        if (previousEstimatedStartAt != null && previousMilestone.getMilestoneSlaDays() != null) {
+            return previousEstimatedStartAt.plusDays(previousMilestone.getMilestoneSlaDays());
+        }
+        
+        return LocalDateTime.now();
     }
 
     /**

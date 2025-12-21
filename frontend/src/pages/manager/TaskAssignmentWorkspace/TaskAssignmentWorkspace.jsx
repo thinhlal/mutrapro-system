@@ -43,6 +43,7 @@ import {
   updateTaskAssignment,
 } from '../../../services/taskAssignmentService';
 import FileList from '../../../components/common/FileList/FileList';
+import { getPurposeLabel } from '../../../constants/musicOptionsConstants';
 import styles from './TaskAssignmentWorkspace.module.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -131,10 +132,20 @@ const CONTRACT_STATUS_TEXT = {
   expired: 'Hết hạn',
 };
 
-const getInstrumentUsageLabel = usage => {
-  if (!usage) return '';
-  const key = typeof usage === 'string' ? usage.toLowerCase() : usage;
-  return INSTRUMENT_USAGE_LABELS[key] || usage;
+// Contract type labels
+const CONTRACT_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+  arrangement_with_recording: 'Arrangement + Recording',
+};
+
+// Request type labels
+const REQUEST_TYPE_LABELS = {
+  transcription: 'Transcription',
+  arrangement: 'Arrangement',
+  recording: 'Recording',
+  arrangement_with_recording: 'Arrangement + Recording',
 };
 
 export default function TaskAssignmentWorkspace() {
@@ -144,6 +155,7 @@ export default function TaskAssignmentWorkspace() {
   const navigate = useNavigate();
   const isEditMode = !!assignmentId;
   const [loading, setLoading] = useState(true);
+  const [loadingSpecialists, setLoadingSpecialists] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [contract, setContract] = useState(null);
   const [requestData, setRequestData] = useState(null);
@@ -173,10 +185,16 @@ export default function TaskAssignmentWorkspace() {
       if (response?.status === 'success' && response?.data) {
         setContract(response.data);
         const requestId = response.data.requestId;
+        
+        // Chạy song song các API không phụ thuộc để tăng tốc
+        const promises = [];
         if (requestId) {
-          await fetchRequestDetail(requestId);
+          promises.push(fetchRequestDetail(requestId));
         }
-        await fetchTaskStats(contractId);
+        promises.push(fetchTaskStats(contractId));
+        
+        // Chờ tất cả hoàn thành
+        await Promise.all(promises);
       }
     } catch (error) {
       console.error('Error fetching contract detail:', error);
@@ -251,6 +269,7 @@ export default function TaskAssignmentWorkspace() {
       mainInstrumentName = null
     ) => {
       try {
+        setLoadingSpecialists(true);
         const response = await getAllSpecialists({
           specialization: specializationFilter,
           skillNames: requiredInstrumentNames,
@@ -268,6 +287,8 @@ export default function TaskAssignmentWorkspace() {
       } catch (error) {
         console.error('Error fetching specialists:', error);
         message.error('Không thể tải danh sách specialists');
+      } finally {
+        setLoadingSpecialists(false);
       }
     },
     [selectedMilestoneId, contractId] // Thêm dependencies để fetch lại khi milestone thay đổi
@@ -726,7 +747,13 @@ export default function TaskAssignmentWorkspace() {
               </div>
               <div>
                 <Text strong>Type: </Text>
-                <Tag>{contract.contractType}</Tag>
+                <Tag>
+                  {contract.contractType
+                    ? CONTRACT_TYPE_LABELS[
+                        contract.contractType.toLowerCase()
+                      ] || contract.contractType
+                    : 'N/A'}
+                </Tag>
               </div>
               <div>
                 <Text strong>Status: </Text>
@@ -755,7 +782,11 @@ export default function TaskAssignmentWorkspace() {
             className={`${styles.fixedHeightCard} ${styles.requestCard}`}
             extra={
               requestData?.requestType && (
-                <Tag color="cyan">{requestData.requestType}</Tag>
+                <Tag color="cyan">
+                  {REQUEST_TYPE_LABELS[
+                    requestData.requestType.toLowerCase()
+                  ] || requestData.requestType}
+                </Tag>
               )
             }
             bodyStyle={{
@@ -797,12 +828,73 @@ export default function TaskAssignmentWorkspace() {
                       </Space>
                     </div>
                   )}
-                  <div>
-                    <Text strong>Contact: </Text>
-                    <Text>
-                      {requestData.contactName} · {requestData.contactEmail}
-                    </Text>
-                  </div>
+
+                  {/* Additional fields for arrangement and arrangement_with_recording */}
+                  {(requestData?.requestType === 'arrangement' ||
+                    requestData?.requestType === 'arrangement_with_recording') && (
+                    <>
+                      {requestData.genres &&
+                        requestData.genres.length > 0 && (
+                          <div>
+                            <Text strong>Genres: </Text>
+                            <Space wrap style={{ marginTop: 4 }}>
+                              {requestData.genres.map((genre, idx) => (
+                                <Tag key={idx} color="purple">
+                                  {genre}
+                                </Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        )}
+
+                      {requestData.purpose && (
+                        <div>
+                          <Text strong>Purpose: </Text>
+                          <Tag color="geekblue">
+                            {getPurposeLabel(requestData.purpose)}
+                          </Tag>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Fields for transcription */}
+                  {requestData?.requestType === 'transcription' && (
+                    <>
+                      {requestData.tempoPercentage != null && (
+                        <div>
+                          <Text strong>Tempo: </Text>
+                          <Tag color="blue">
+                            {requestData.tempoPercentage}%
+                          </Tag>
+                        </div>
+                      )}
+
+                      {requestData.durationMinutes != null && (
+                        <div>
+                          <Text strong>Duration: </Text>
+                          <Tag color="cyan">
+                            {requestData.durationMinutes} phút
+                          </Tag>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Fields for recording */}
+                  {requestData?.requestType === 'recording' && (
+                    <>
+                      {requestData.externalGuestCount != null &&
+                        requestData.externalGuestCount > 0 && (
+                          <div>
+                            <Text strong>External Guests: </Text>
+                            <Tag color="orange">
+                              {requestData.externalGuestCount} người
+                            </Tag>
+                          </div>
+                        )}
+                    </>
+                  )}
 
                   {/* Preferred Vocalists for arrangement_with_recording */}
                   {requestData?.requestType === 'arrangement_with_recording' &&
@@ -822,21 +914,6 @@ export default function TaskAssignmentWorkspace() {
                         </Space>
                       </div>
                     )}
-
-                  {/* Contract Files */}
-                  {(() => {
-                    const files = (requestData.files || []).filter(
-                      f => f.fileSource?.toLowerCase() === 'contract_pdf'
-                    );
-                    return (
-                      files.length > 0 && (
-                        <div>
-                          <Text strong>Contract Files:</Text>
-                          <FileList files={files} maxNameLength={32} />
-                        </div>
-                      )
-                    );
-                  })()}
 
                   {/* Music Files */}
                   {(() => {
@@ -1052,12 +1129,13 @@ export default function TaskAssignmentWorkspace() {
               />
             }
           >
-            <div className={styles.specialistList}>
-              {filteredSpecialists.length > 0 ? (
-                <List
-                  dataSource={filteredSpecialists}
-                  rowKey="specialistId"
-                  renderItem={item => {
+            <Spin spinning={loadingSpecialists} tip="Đang tải danh sách specialists...">
+              <div className={styles.specialistList}>
+                {filteredSpecialists.length > 0 ? (
+                  <List
+                    dataSource={filteredSpecialists}
+                    rowKey="specialistId"
+                    renderItem={item => {
                     const active =
                       selectedSpecialist?.specialistId === item.specialistId;
                     const slaFull = isSlaWindowFull(item);
@@ -1171,7 +1249,8 @@ export default function TaskAssignmentWorkspace() {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               )}
-            </div>
+              </div>
+            </Spin>
           </Card>
         </Col>
         <Col xs={24} lg={10}>

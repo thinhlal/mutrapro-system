@@ -41,17 +41,6 @@ logging:
 jwt:
   signerKey: QVHfEyXEd7KG4eUfYAWOUvuPjlufU3vImJ0MEialEhHoQPjB6wZTL6Ma9XLnKaYn
 
-# Feign Client Configuration
-feign:
-  client:
-    config:
-      default:
-        connectTimeout: 5000
-        readTimeout: 60000  # 60 seconds for batch API calls
-      project-service:
-        connectTimeout: 5000
-        readTimeout: 60000  # 60 seconds for batch API calls
-
 # AWS S3 Configuration
 aws:
   s3:

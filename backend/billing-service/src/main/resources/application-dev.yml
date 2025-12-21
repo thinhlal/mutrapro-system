@@ -69,15 +69,6 @@ project:
   service:
     base-url: ${PROJECT_SERVICE_BASE_URL:http://localhost:8082}
 
-# Feign Client Configuration (timeout settings)
-feign:
-  client:
-    config:
-      project-service:
-        connectTimeout: 2000  # 2 seconds connection timeout
-        readTimeout: 3000     # 3 seconds read timeout
-        loggerLevel: basic    # Log basic request/response info
-
 # SePay Configuration
 sepay:
   api:

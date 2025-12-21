@@ -68,15 +68,6 @@ aws:
     access-key: ${AWS_S3_ACCESS_KEY:}
     secret-key: ${AWS_S3_SECRET_KEY:}
 
-# Feign Client Configuration (timeout settings)
-feign:
-  client:
-    config:
-      project-service:
-        connectTimeout: ${FEIGN_CONNECT_TIMEOUT:2000}  # 2 seconds connection timeout
-        readTimeout: ${FEIGN_READ_TIMEOUT:3000}        # 3 seconds read timeout
-        loggerLevel: basic                             # Log basic request/response info
-
 # Management & Actuator
 management:
   endpoints:

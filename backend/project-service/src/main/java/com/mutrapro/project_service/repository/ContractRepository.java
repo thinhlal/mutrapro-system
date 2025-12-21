@@ -2,6 +2,7 @@ package com.mutrapro.project_service.repository;
 
 import com.mutrapro.project_service.dto.projection.ContractBasicInfo;
 import com.mutrapro.project_service.dto.projection.ContractRevisionDeadlineInfo;
+import com.mutrapro.project_service.dto.projection.ContractTaskStatsInfo;
 import com.mutrapro.project_service.entity.Contract;
 import com.mutrapro.project_service.enums.ContractStatus;
 import com.mutrapro.project_service.enums.ContractType;
@@ -52,6 +53,12 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     @Query("SELECT c.contractId as contractId, c.revisionDeadlineDays as revisionDeadlineDays " +
            "FROM Contract c WHERE c.contractId IN :contractIds")
     List<ContractRevisionDeadlineInfo> findRevisionDeadlineInfoByContractIds(
+            @Param("contractIds") List<String> contractIds);
+    
+    // Tối ưu: Projection query chỉ fetch các field cần thiết cho getTaskStats (contractId, contractType, workStartAt)
+    @Query("SELECT c.contractId as contractId, c.contractType as contractType, c.workStartAt as workStartAt " +
+           "FROM Contract c WHERE c.contractId IN :contractIds")
+    List<ContractTaskStatsInfo> findTaskStatsInfoByContractIds(
             @Param("contractIds") List<String> contractIds);
     
     @Query("SELECT c FROM Contract c WHERE c.managerUserId = :managerUserId " +
