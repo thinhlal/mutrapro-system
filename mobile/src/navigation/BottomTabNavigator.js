@@ -22,8 +22,8 @@ import ServiceRequestScreen from "../screens/Services/ServiceRequestScreen";
 import ServiceQuoteScreen from "../screens/Services/ServiceQuoteScreen";
 import VocalistSelectionScreen from "../screens/Services/VocalistSelectionScreen";
 import VocalistDetailScreen from "../screens/Services/VocalistDetailScreen";
-import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
-import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
+// import AITranscriptionScreen from "../screens/AI/AITranscriptionScreen";
+// import AIProcessingScreen from "../screens/AI/AIProcessingScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -111,24 +111,24 @@ const ChatStack = () => {
 };
 
 // AI Transcription Stack
-const AIStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={defaultStackScreenOptions}
-    >
-      <Stack.Screen
-        name="AITranscription"
-        component={AITranscriptionScreen}
-        options={{ title: "AI Transcription" }}
-      />
-      <Stack.Screen
-        name="AIProcessing"
-        component={AIProcessingScreen}
-        options={{ title: "Processing" }}
-      />
-    </Stack.Navigator>
-  );
-};
+// const AIStack = () => {
+//   return (
+//     <Stack.Navigator
+//       screenOptions={defaultStackScreenOptions}
+//     >
+//       <Stack.Screen
+//         name="AITranscription"
+//         component={AITranscriptionScreen}
+//         options={{ title: "AI Transcription" }}
+//       />
+//       <Stack.Screen
+//         name="AIProcessing"
+//         component={AIProcessingScreen}
+//         options={{ title: "Processing" }}
+//       />
+//     </Stack.Navigator>
+//   );
+// };
 
 // Profile Stack
 const ProfileStack = () => {
@@ -209,9 +209,9 @@ const BottomTabNavigator = ({ navigation }) => {
             case "Home":
               iconName = focused ? "home" : "home-outline";
               break;
-            case "AI":
-              iconName = focused ? "sparkles" : "sparkles-outline";
-              break;
+            // case "AI":
+            //   iconName = focused ? "sparkles" : "sparkles-outline";
+            //   break;
             case "Chat":
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
               break;
@@ -246,13 +246,13 @@ const BottomTabNavigator = ({ navigation }) => {
           tabBarLabel: "Home",
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="AI"
         component={AIStack}
         options={{
           tabBarLabel: "AI",
         }}
-      />
+      /> */}
       <Tab.Screen
         name="Chat"
         component={ChatStack}
