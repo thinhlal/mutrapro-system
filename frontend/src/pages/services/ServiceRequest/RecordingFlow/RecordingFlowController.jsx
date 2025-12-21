@@ -196,7 +196,7 @@ export default function RecordingFlowController() {
           />
         );
       case 3:
-        // Step 3: Instrument Setup - pass step1 data for booking slot info
+        // Step 3: Instrument Setup - pass step1 data for booking slot info and step2 vocalChoice
         return (
           <RecordingStep3
             data={{
@@ -204,6 +204,7 @@ export default function RecordingFlowController() {
               bookingDate: flowData.step1?.bookingDate,
               bookingStartTime: flowData.step1?.bookingStartTime,
               bookingEndTime: flowData.step1?.bookingEndTime,
+              vocalChoice: flowData.step2?.vocalChoice,
             }}
             onComplete={data => handleStepComplete({ step3: data })}
             onBack={handlePrev}

@@ -53,7 +53,7 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
   );
   const [loadingSkills, setLoadingSkills] = useState(false);
 
-  const { bookingDate, bookingStartTime, bookingEndTime } = data || {};
+  const { bookingDate, bookingStartTime, bookingEndTime, vocalChoice } = data || {};
 
   // Fetch available instrument skills
   useEffect(() => {
@@ -135,7 +135,23 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
       return;
     }
 
-    if (hasLiveInstruments && selectedInstruments.length === 0) {
+    // If no vocal needed, must have at least one instrument
+    if (vocalChoice === 'NONE') {
+      if (hasLiveInstruments === false) {
+        message.error(
+          'Since you selected "No vocal needed", you must use at least one live instrument. Please select "Yes, use live instruments" and choose instruments.'
+        );
+        return;
+      }
+      if (hasLiveInstruments === true && selectedInstruments.length === 0) {
+        message.error(
+          'Since you selected "No vocal needed", you must select at least one instrument to record.'
+        );
+        return;
+      }
+    }
+
+    if (hasLiveInstruments === true && selectedInstruments.length === 0) {
       message.error('Please select at least one instrument');
       return;
     }
@@ -207,15 +223,27 @@ export default function RecordingStep3({ data, onComplete, onBack }) {
         <Text strong style={{ display: 'block', marginBottom: 16 }}>
           Will the session use live instruments?
         </Text>
+        {vocalChoice === 'NONE' && (
+          <Alert
+            message="Required: At least one instrument needed"
+            description="Since you selected 'No vocal needed', you must use at least one live instrument for the recording session."
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Radio.Group
           value={hasLiveInstruments}
           onChange={handleLiveInstrumentsChange}
         >
           <Space direction="vertical" size={12}>
-            <Radio value={false}>
+            <Radio value={false} disabled={vocalChoice === 'NONE'}>
               <Space>
                 <span>No, only beat/backing track</span>
                 <Tag color="default">No live instruments</Tag>
+                {vocalChoice === 'NONE' && (
+                  <Tag color="red">Not allowed (no vocal selected)</Tag>
+                )}
               </Space>
             </Radio>
             <Radio value={true}>
