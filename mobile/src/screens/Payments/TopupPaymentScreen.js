@@ -30,7 +30,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
   const [creating, setCreating] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
-  const [pollingInterval, setPollingInterval] = useState(null);
+  const pollingIntervalRef = useRef(null);
   const hasNavigatedRef = useRef(false);
 
   useEffect(() => {
@@ -56,8 +56,9 @@ const TopupPaymentScreen = ({ navigation, route }) => {
     }
 
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
   }, [orderId, amount]);
@@ -73,8 +74,9 @@ const TopupPaymentScreen = ({ navigation, route }) => {
 
       if (diff <= 0) {
         setTimeRemaining(null);
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
         }
         Alert.alert("Hết hạn", "Đơn hàng đã hết hạn");
         return;
@@ -133,7 +135,12 @@ const TopupPaymentScreen = ({ navigation, route }) => {
     }
   };
 
-  const loadPaymentOrder = async () => {
+  const loadPaymentOrder = async (id = orderId) => {
+    if (!id) {
+      console.error("loadPaymentOrder: orderId is undefined");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -144,7 +151,7 @@ const TopupPaymentScreen = ({ navigation, route }) => {
       }
 
       // Load payment order
-      const orderResponse = await getPaymentOrder(orderId);
+      const orderResponse = await getPaymentOrder(id);
       if (orderResponse?.status === "success" && orderResponse?.data) {
         const order = orderResponse.data;
         setPaymentOrder(order);
@@ -185,50 +192,69 @@ const TopupPaymentScreen = ({ navigation, route }) => {
     }
   };
 
-  const startPolling = (orderId) => {
-    // Clear existing interval
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
+  const startPolling = (orderIdToPoll) => {
+    // Clear existing interval first
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
     }
 
-    // Poll every 5 seconds
+    console.log("🔄 Starting polling for order:", orderIdToPoll);
+
+    // Poll every 3 seconds for faster response
     const interval = setInterval(async () => {
       try {
-        const orderResponse = await getPaymentOrder(orderId);
+        console.log("🔍 Polling order status:", orderIdToPoll);
+        const orderResponse = await getPaymentOrder(orderIdToPoll);
         if (orderResponse?.status === "success" && orderResponse?.data) {
           const order = orderResponse.data;
+          console.log("📦 Order status:", order.status, "Order ID:", order.paymentOrderId);
           setPaymentOrder(order);
 
           if (order.status === "COMPLETED") {
+            console.log("✅ Payment completed, navigating to success");
             clearInterval(interval);
-            navigateToSuccess(orderId);
+            pollingIntervalRef.current = null;
+            navigateToSuccess(order.paymentOrderId || orderIdToPoll);
           } else if (order.status === "EXPIRED" || order.status === "CANCELLED") {
+            console.log("❌ Order expired or cancelled");
             clearInterval(interval);
+            pollingIntervalRef.current = null;
             Alert.alert("Thông báo", "Đơn hàng đã hết hạn hoặc bị hủy");
           }
         }
       } catch (error) {
-        console.error("Polling error:", error);
+        console.error("❌ Polling error:", error);
       }
-    }, 5000);
+    }, 3000); // Poll every 3 seconds
 
-    setPollingInterval(interval);
+    pollingIntervalRef.current = interval;
   };
 
   const navigateToSuccess = (orderId) => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
 
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
     }
 
     navigation.replace("PaymentSuccess", { orderId });
   };
 
-  const handleRefresh = () => {
-    if (paymentOrder) {
-      loadPaymentOrder();
+  const handleRefresh = async () => {
+    const orderIdToRefresh = paymentOrder?.paymentOrderId || orderId;
+    if (orderIdToRefresh) {
+      // Stop current polling
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      // Reload order
+      await loadPaymentOrder(orderIdToRefresh);
+    } else {
+      Alert.alert("Lỗi", "Không thể làm mới. Vui lòng quay lại và thử lại.");
     }
   };
 

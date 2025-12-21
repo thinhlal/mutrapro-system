@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -24,6 +25,7 @@ import {
   cancelContract,
 } from "../../services/contractService";
 import { getServiceRequestById } from "../../services/serviceRequestService";
+import { getBookingByRequestId } from "../../services/studioBookingService";
 import SignaturePadModal from "../../components/SignaturePadModal";
 import OTPVerificationModal from "../../components/OTPVerificationModal";
 import ContractPreview from "../../components/ContractPreview";
@@ -39,6 +41,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
     instruments: [],
     transcriptionDetails: null,
   });
+  const [bookingData, setBookingData] = useState(null);
 
   // Tab state: 'details' or 'preview'
   const [activeTab, setActiveTab] = useState("details");
@@ -63,6 +66,112 @@ const ContractDetailScreen = ({ navigation, route }) => {
     loadContract();
   }, [contractId]);
 
+  // Reload contract when screen comes into focus with polling for payment updates
+  useFocusEffect(
+    useCallback(() => {
+      if (!contractId) return;
+
+      let isCancelled = false;
+      let pollingTimeout = null;
+
+      // Load contract first
+      loadContract().then(() => {
+        if (isCancelled) return;
+
+        // Start polling for payment status updates after initial load
+        // This helps detect when payment is completed (backend processing is async)
+        const pollPaymentStatus = async () => {
+          // Store initial payment status to detect changes
+          let initialPaidCount = 0;
+          try {
+            const initialResponse = await getContractById(contractId);
+            if (isCancelled) return;
+            
+            if (initialResponse?.status === "success" && initialResponse?.data) {
+              const initialData = initialResponse.data;
+              // Count how many installments/milestones are currently paid
+              initialPaidCount =
+                (initialData.installments?.filter(inst => inst.status === "PAID")
+                  .length || 0) +
+                (initialData.milestones?.filter(m => m.paymentStatus === "PAID")
+                  .length || 0);
+            }
+          } catch (error) {
+            console.error("Error getting initial payment status:", error);
+            return; // Exit if initial load fails
+          }
+
+          // Poll for max 8 seconds (8 attempts with 1 second delay)
+          const maxRetries = 8;
+          const delay = 1000;
+
+          for (let attempt = 0; attempt < maxRetries && !isCancelled; attempt++) {
+            // Wait before checking (except first attempt)
+            if (attempt > 0) {
+              await new Promise(resolve => setTimeout(resolve, delay));
+              if (isCancelled) return;
+            }
+
+            try {
+              const response = await getContractById(contractId);
+              if (isCancelled) return;
+              
+              if (response?.status === "success" && response?.data) {
+                const contractData = response.data;
+
+                // Count current paid installments/milestones
+                const currentPaidCount =
+                  (contractData.installments?.filter(
+                    inst => inst.status === "PAID"
+                  ).length || 0) +
+                  (contractData.milestones?.filter(
+                    m => m.paymentStatus === "PAID"
+                  ).length || 0);
+
+                // If payment count increased, payment was processed
+                if (currentPaidCount > initialPaidCount) {
+                  setContract(contractData);
+                  // Update request details and pricing if needed
+                  if (contractData.requestId) {
+                    await loadRequestAndPricing(contractData.requestId);
+                    if (contractData.contractType === 'recording') {
+                      await loadBookingData(contractData.requestId);
+                    }
+                  }
+                  Alert.alert("Thành công", "Thanh toán đã được xác nhận!");
+                  return; // Stop polling once payment is detected
+                }
+
+                // Update contract data even if not paid yet (to show latest state)
+                // Only update if data actually changed to avoid unnecessary re-renders
+                setContract(contractData);
+              }
+            } catch (error) {
+              console.error("Error polling payment status:", error);
+              // Continue polling even on error
+            }
+          }
+        };
+
+        // Start polling after a short delay to allow initial load to complete
+        pollingTimeout = setTimeout(() => {
+          if (!isCancelled) {
+            pollPaymentStatus();
+          }
+        }, 1500);
+      });
+
+      // Cleanup function
+      return () => {
+        isCancelled = true;
+        if (pollingTimeout) {
+          clearTimeout(pollingTimeout);
+        }
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contractId])
+  );
+
   const loadContract = async () => {
     try {
       setLoading(true);
@@ -73,6 +182,10 @@ const ContractDetailScreen = ({ navigation, route }) => {
         // Load request details for preview
         if (response.data.requestId) {
           await loadRequestAndPricing(response.data.requestId);
+          // Load booking data for recording contracts
+          if (response.data.contractType === 'recording') {
+            await loadBookingData(response.data.requestId);
+          }
         }
       } else {
         const errorMessage = response?.error || response?.message || "Failed to load contract";
@@ -118,6 +231,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
             instrumentId: instr.instrumentId,
             instrumentName: instr.instrumentName,
             basePrice: instr.basePrice || 0,
+            isMain: instr.isMain === true,
           }));
         }
 
@@ -125,6 +239,20 @@ const ContractDetailScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.warn("Error loading request details:", error);
+    }
+  };
+
+  const loadBookingData = async (requestId) => {
+    try {
+      const bookingResponse = await getBookingByRequestId(requestId);
+      if (bookingResponse?.status === "success" && bookingResponse?.data) {
+        setBookingData(bookingResponse.data);
+      } else {
+        setBookingData(null);
+      }
+    } catch (error) {
+      console.warn("Error loading booking data:", error);
+      setBookingData(null);
     }
   };
 
@@ -147,29 +275,26 @@ const ContractDetailScreen = ({ navigation, route }) => {
           onPress: async () => {
             try {
               setActionLoading(true);
+              
+              // Optimistic update: Update contract status immediately
+              setContract((prev) => 
+                prev ? { ...prev, status: "approved" } : null
+              );
+              
               const response = await approveContract(contractId);
               
               if (response?.status === "success") {
+                // Reload to get latest data from server
+                await loadContract();
                 Alert.alert("Success", "Contract approved successfully!");
-                
-                // Try to reload, but don't fail if reload has issues
-                try {
-                  await loadContract();
-                } catch (reloadError) {
-                  console.warn("Error reloading contract after approve:", reloadError);
-                  // Contract was approved successfully, just reload failed
-                  // Navigate back and let user see updated contract from list
-                  setTimeout(() => {
-                    Alert.alert(
-                      "Notice",
-                      "Contract approved successfully. Please go back and view the updated contract.",
-                      [{ text: "OK", onPress: () => navigation.goBack() }]
-                    );
-                  }, 500);
-                }
+              } else {
+                // Revert optimistic update on failure
+                await loadContract();
               }
             } catch (error) {
               console.error("Error approving contract:", error);
+              // Revert optimistic update on error
+              await loadContract();
               Alert.alert(
                 "Error", 
                 error.message || error.error || "Failed to approve contract. Please try again."
@@ -238,14 +363,21 @@ const ContractDetailScreen = ({ navigation, route }) => {
         otpCode
       );
       if (response?.status === "success") {
-        Alert.alert("Success", response.message || "Contract signed successfully!");
+        // Optimistic update: Update contract status immediately
+        setContract((prev) => 
+          prev ? { ...prev, status: "signed", signedAt: new Date().toISOString() } : null
+        );
+        
         setOtpModalVisible(false);
         setSignatureData(null);
         setESignSession(null);
         setOtpError(null);
         setOtpExpiresAt(null);
 
+        // Reload to get latest data from server
         await loadContract();
+
+        Alert.alert("Success", response.message || "Contract signed successfully!");
 
         // Navigate to ContractSignedSuccessScreen
         setTimeout(() => {
@@ -307,12 +439,23 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
     try {
       setActionLoading(true);
+      
+      // Optimistic update: Update contract status immediately
+      setContract((prev) => 
+        prev ? { ...prev, status: "need_revision" } : null
+      );
+      
       await requestChangeContract(contractId, revisionReason);
-      Alert.alert("Success", "Revision request sent successfully");
       setRevisionModalVisible(false);
       setRevisionReason("");
+      
+      // Reload to get latest data from server
       await loadContract();
+      
+      Alert.alert("Success", "Revision request sent successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      await loadContract();
       Alert.alert("Error", error.message || "Failed to request changes");
     } finally {
       setActionLoading(false);
@@ -333,12 +476,23 @@ const ContractDetailScreen = ({ navigation, route }) => {
 
     try {
       setActionLoading(true);
+      
+      // Optimistic update: Update contract status immediately
+      setContract((prev) => 
+        prev ? { ...prev, status: "canceled_by_customer" } : null
+      );
+      
       await cancelContract(contractId, cancelReason);
-      Alert.alert("Success", "Contract cancelled successfully");
       setCancelModalVisible(false);
       setCancelReason("");
+      
+      // Reload to get latest data from server
       await loadContract();
+      
+      Alert.alert("Success", "Contract cancelled successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      await loadContract();
       Alert.alert("Error", error.message || "Failed to cancel contract");
     } finally {
       setActionLoading(false);
@@ -527,32 +681,75 @@ const ContractDetailScreen = ({ navigation, route }) => {
             </View>
           </View>
 
-          <InfoRow icon="document-text-outline" label="Contract Number" value={contract.contractNumber || "N/A"} />
-          <InfoRow icon="briefcase-outline" label="Contract Type" value={contract.contractType?.toUpperCase() || "N/A"} />
-          <InfoRow
-            icon="cash-outline"
-            label="Total Price"
-            value={formatCurrency(contract.totalPrice, contract.currency)}
-            valueColor={COLORS.primary}
-          />
-          {depositInstallment && (
-            <InfoRow
-              icon="wallet-outline"
-              label={`Deposit (${depositInstallment.percent}%)`}
-              value={formatCurrency(depositInstallment.amount, depositInstallment.currency)}
-              valueColor={isDepositPaid ? COLORS.success : COLORS.warning}
-            />
-          )}
-          <InfoRow icon="time-outline" label="SLA Days" value={`${contract.slaDays || 0} days`} />
-          {contract.expectedStartDate && (
-            <InfoRow icon="calendar-outline" label="Expected Start" value={formatDate(contract.expectedStartDate)} />
-          )}
-          {contract.sentToCustomerAt && (
-            <InfoRow icon="send-outline" label="Sent At" value={formatDate(contract.sentToCustomerAt)} />
-          )}
-          {contract.signedAt && (
-            <InfoRow icon="create-outline" label="Signed At" value={formatDate(contract.signedAt)} />
-          )}
+          <View style={styles.tableContainer}>
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Contract Number</Text>
+              <Text style={styles.tableValueVertical}>{contract.contractNumber || "N/A"}</Text>
+            </View>
+
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Contract Type</Text>
+              <Text style={styles.tableValueVertical}>
+                {contract.contractType?.toUpperCase() || "N/A"}
+              </Text>
+            </View>
+
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Total Price</Text>
+              <Text style={[styles.tableValueVertical, { color: COLORS.primary, fontWeight: "600" }]}>
+                {formatCurrency(contract.totalPrice, contract.currency)}
+              </Text>
+            </View>
+
+            {depositInstallment && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>
+                  Deposit ({depositInstallment.percent}%)
+                </Text>
+                <Text
+                  style={[
+                    styles.tableValueVertical,
+                    {
+                      color: isDepositPaid ? COLORS.success : COLORS.warning,
+                      fontWeight: "600",
+                    },
+                  ]}
+                >
+                  {formatCurrency(depositInstallment.amount, depositInstallment.currency)}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>SLA Days</Text>
+              <Text style={styles.tableValueVertical}>{contract.slaDays || 0} days</Text>
+            </View>
+
+            {contract.expectedStartDate && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Expected Start</Text>
+                <Text style={styles.tableValueVertical}>
+                  {formatDate(contract.expectedStartDate)}
+                </Text>
+              </View>
+            )}
+
+            {contract.sentToCustomerAt && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Sent At</Text>
+                <Text style={styles.tableValueVertical}>
+                  {formatDate(contract.sentToCustomerAt)}
+                </Text>
+              </View>
+            )}
+
+            {contract.signedAt && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Signed At</Text>
+                <Text style={styles.tableValueVertical}>{formatDate(contract.signedAt)}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Deposit Payment Section */}
@@ -832,6 +1029,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
           contract={contract}
           requestDetails={requestDetails}
           pricingBreakdown={pricingBreakdown}
+          bookingData={bookingData}
         />
       )}
 
@@ -1004,7 +1202,7 @@ const ContractDetailScreen = ({ navigation, route }) => {
 // Helper Component
 const InfoRow = ({ icon, label, value, valueColor }) => (
   <View style={styles.infoRow}>
-    <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
+    {icon && <Ionicons name={icon} size={18} color={COLORS.textSecondary} />}
     <View style={styles.infoContent}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>
@@ -1143,7 +1341,7 @@ const styles = StyleSheet.create({
   },
   infoContent: {
     flex: 1,
-    marginLeft: SPACING.sm,
+    marginLeft: 0,
   },
   infoLabel: {
     fontSize: FONT_SIZES.sm,
@@ -1154,6 +1352,31 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     fontWeight: "600",
     color: COLORS.text,
+  },
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
+  },
+  tableRowVertical: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableLabelVertical: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  tableValueVertical: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    lineHeight: 22,
   },
   paymentCard: {
     borderLeftWidth: 4,

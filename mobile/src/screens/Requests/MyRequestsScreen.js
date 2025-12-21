@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -46,6 +47,14 @@ const MyRequestsScreen = ({ navigation }) => {
   useEffect(() => {
     loadRequests(selectedStatus, 0, pagination.pageSize);
   }, [selectedStatus]);
+
+  // Reload requests when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadRequests(selectedStatus, 0, pagination.pageSize);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedStatus])
+  );
 
   const loadRequests = async (status = "", page = 0, size = 10, isLoadMore = false) => {
     try {

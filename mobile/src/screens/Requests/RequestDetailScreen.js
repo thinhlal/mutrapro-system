@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -47,12 +48,27 @@ const RequestDetailScreen = ({ navigation, route }) => {
   const [selectedContract, setSelectedContract] = useState(null);
   const [changeReason, setChangeReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+  
+  // Toggle state for request information
+  const [showRequestDetails, setShowRequestDetails] = useState(false);
 
   useEffect(() => {
     loadRequestDetail();
     loadContracts();
     loadBooking();
   }, [requestId]);
+
+  // Reload data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (requestId) {
+        loadRequestDetail();
+        loadContracts();
+        loadBooking();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [requestId])
+  );
 
   const loadRequestDetail = async () => {
     try {
@@ -157,11 +173,24 @@ const RequestDetailScreen = ({ navigation, route }) => {
   const handleApproveContract = async (contractId) => {
     try {
       setActionLoading(true);
+      
+      // Optimistic update: Update contract status immediately in local state
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.contractId === contractId ? { ...c, status: "approved" } : c
+        )
+      );
+      
       await approveContract(contractId);
-      Alert.alert("Success", "Contract approved successfully");
+      
+      // Reload to get latest data from server
       await loadContracts();
       await loadRequestDetail();
+      
+      Alert.alert("Success", "Contract approved successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      await loadContracts();
       Alert.alert("Error", error.message || "Failed to approve contract");
     } finally {
       setActionLoading(false);
@@ -180,14 +209,29 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
     try {
       setActionLoading(true);
+      
+      // Optimistic update: Update contract status immediately
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.contractId === selectedContract.contractId
+            ? { ...c, status: "need_revision" }
+            : c
+        )
+      );
+      
       await requestChangeContract(selectedContract.contractId, changeReason);
-      Alert.alert("Success", "Change request sent successfully");
       setRequestChangeModalVisible(false);
       setChangeReason("");
       setSelectedContract(null);
+      
+      // Reload to get latest data from server
       await loadContracts();
       await loadRequestDetail();
+      
+      Alert.alert("Success", "Change request sent successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      await loadContracts();
       Alert.alert("Error", error.message || "Failed to request change");
     } finally {
       setActionLoading(false);
@@ -206,14 +250,29 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
     try {
       setActionLoading(true);
+      
+      // Optimistic update: Update contract status immediately
+      setContracts((prev) =>
+        prev.map((c) =>
+          c.contractId === selectedContract.contractId
+            ? { ...c, status: "canceled_by_customer" }
+            : c
+        )
+      );
+      
       await cancelContract(selectedContract.contractId, cancelReason);
-      Alert.alert("Success", "Contract cancelled successfully");
       setCancelModalVisible(false);
       setCancelReason("");
       setSelectedContract(null);
+      
+      // Reload to get latest data from server
       await loadContracts();
       await loadRequestDetail();
+      
+      Alert.alert("Success", "Contract cancelled successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      await loadContracts();
       Alert.alert("Error", error.message || "Failed to cancel contract");
     } finally {
       setActionLoading(false);
@@ -406,13 +465,20 @@ const RequestDetailScreen = ({ navigation, route }) => {
       >
         {/* Title and Status */}
         <View style={styles.titleSection}>
-          <Text style={styles.title}>{request.title}</Text>
-          <View style={styles.badges}>
+          <View style={styles.titleInfoRow}>
+            <Text style={styles.titleLabel}>Title:</Text>
+            <Text style={styles.title}>{request.title}</Text>
+          </View>
+          <View style={styles.serviceInfoRow}>
+            <Text style={styles.serviceLabel}>Service:</Text>
             <View style={styles.typeBadge}>
               <Text style={styles.typeBadgeText}>
                 {getRequestTypeText(request.requestType)}
               </Text>
             </View>
+          </View>
+          <View style={styles.statusInfoRow}>
+            <Text style={styles.statusLabel}>Status:</Text>
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
               <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
               <Text style={[styles.statusText, { color: statusConfig.color }]}>
@@ -443,53 +509,77 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
         {/* Request Info Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Request Information</Text>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.cardTitle}>Request Information</Text>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowRequestDetails(!showRequestDetails)}
+            >
+              <Ionicons
+                name={showRequestDetails ? "chevron-up-outline" : "chevron-down-outline"}
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.toggleButtonText}>
+                {showRequestDetails ? "Hide" : "Show"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Request ID */}
-          <InfoRow
-            icon="finger-print-outline"
-            label="Request ID"
-            value={request.requestId}
-            monospace
-          />
+          {showRequestDetails && (
+            <>
+          {/* Table Container for fields before Contact Information */}
+          <View style={styles.tableContainer}>
+            {/* Request ID */}
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Request ID</Text>
+              <Text style={[styles.tableValueVertical, styles.monospace]}>
+                {request.requestId}
+              </Text>
+            </View>
 
-          {/* Title */}
-          <InfoRow
-            icon="text-outline"
-            label="Title"
-            value={request.title || "N/A"}
-          />
+            {/* Title */}
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Title</Text>
+              <Text style={styles.tableValueVertical}>{request.title || "N/A"}</Text>
+            </View>
 
-          {/* Duration - Only for transcription */}
-          {request.durationMinutes && request.requestType === "transcription" && (
-            <InfoRow
-              icon="time-outline"
-              label="Duration"
-              value={formatDuration(request.durationMinutes)}
-              valueColor={COLORS.success}
-            />
-          )}
+            {/* Description */}
+            <View style={styles.tableRowVertical}>
+              <Text style={styles.tableLabelVertical}>Description</Text>
+              <Text style={styles.tableValueVertical}>
+                {request.description || "No description"}
+              </Text>
+            </View>
 
-          {/* Description */}
-          <InfoRow
-            icon="document-text-outline"
-            label="Description"
-            value={request.description || "No description"}
-          />
+            {/* Duration - Only for transcription */}
+            {request.durationMinutes && request.requestType === "transcription" && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Duration</Text>
+                <Text style={[styles.tableValueVertical, { color: COLORS.success }]}>
+                  {formatDuration(request.durationMinutes)}
+                </Text>
+              </View>
+            )}
 
-          {/* Instruments - Important, show early */}
-          {(() => {
-            // Get instruments from state or request data
-            const instrumentsToShow = instruments.length > 0 
-              ? instruments 
-              : (request.instruments && Array.isArray(request.instruments) ? request.instruments : []);
-            
-            if (instrumentsToShow.length > 0) {
-              return (
-                <View style={styles.infoRow}>
-                  <Ionicons name="musical-notes-outline" size={18} color={COLORS.textSecondary} />
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Instruments</Text>
+            {/* Tempo - Only for transcription */}
+            {request.tempoPercentage && request.requestType === "transcription" && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Tempo</Text>
+                <Text style={styles.tableValueVertical}>{request.tempoPercentage}%</Text>
+              </View>
+            )}
+
+            {/* Instruments */}
+            {(() => {
+              const instrumentsToShow = instruments.length > 0 
+                ? instruments 
+                : (request.instruments && Array.isArray(request.instruments) ? request.instruments : []);
+              
+              if (instrumentsToShow.length > 0) {
+                return (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Instruments</Text>
                     <View style={styles.instrumentsContainer}>
                       {instrumentsToShow.map((inst, idx) => {
                         const instrumentId = inst.instrumentId || inst.id || request.instrumentIds?.[idx];
@@ -504,85 +594,78 @@ const RequestDetailScreen = ({ navigation, route }) => {
                               isMain && isArrangement && styles.mainInstrumentTag
                             ]}
                           >
-                            {isMain && isArrangement && (
-                              <Ionicons name="star" size={12} color={COLORS.warning} style={styles.mainInstrumentIcon} />
+                            {isMain && isArrangement ? (
+                              <Ionicons name="star" size={12} color={COLORS.warning} style={styles.instrumentIcon} />
+                            ) : (
+                              <View style={styles.instrumentIconPlaceholder} />
                             )}
                             <Text style={[
                               styles.instrumentTagText,
                               isMain && isArrangement && styles.mainInstrumentTagText
                             ]}>
                               {instrumentName || "Unknown Instrument"}
-                              {isMain && isArrangement ? " (Main)" : ""}
                             </Text>
                           </View>
                         );
                       })}
                     </View>
                   </View>
-                </View>
-              );
-            } else {
-              return (
-                <InfoRow
-                  icon="musical-notes-outline"
-                  label="Instruments"
-                  value="N/A"
-                />
-              );
-            }
-          })()}
+                );
+              } else {
+                return (
+                  <View style={styles.tableRowVertical}>
+                    <Text style={styles.tableLabelVertical}>Instruments</Text>
+                    <Text style={styles.tableValueVertical}>N/A</Text>
+                  </View>
+                );
+              }
+            })()}
 
-          {/* Tempo - Only for transcription */}
-          {request.tempoPercentage && request.requestType === "transcription" && (
-            <InfoRow
-              icon="musical-note-outline"
-              label="Tempo"
-              value={`${request.tempoPercentage}%`}
-            />
-          )}
+            {/* Instruments Price - Right after Instruments */}
+            {request.instrumentPrice && request.instrumentPrice > 0 && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Instruments Price</Text>
+                <Text style={[styles.tableValueVertical, { color: COLORS.primary, fontWeight: "600" }]}>
+                  {formatPrice(request.instrumentPrice, request.currency || "VND")}
+                </Text>
+              </View>
+            )}
+
+            {/* Service Price */}
+            {request.servicePrice && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Service Price</Text>
+                <Text style={[styles.tableValueVertical, { color: COLORS.primary, fontWeight: "600" }]}>
+                  {formatPrice(request.servicePrice, request.currency || "VND")}
+                </Text>
+              </View>
+            )}
+
+            {/* Total Price - After Service Price and Instruments Price */}
+            {request.totalPrice && (
+              <View style={styles.tableRowVertical}>
+                <Text style={styles.tableLabelVertical}>Total Price</Text>
+                <Text style={[styles.tableValueVertical, { color: COLORS.success, fontWeight: "600", fontSize: FONT_SIZES.base }]}>
+                  {formatPrice(request.totalPrice, request.currency || "VND")}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Divider before contact information */}
+          <View style={styles.divider} />
 
           {/* Contact Name */}
           <InfoRow
-            icon="person-outline"
             label="Contact Name"
             value={request.contactName}
           />
 
-          {/* Service Price */}
-          {request.servicePrice && (
-            <InfoRow
-              icon="cash-outline"
-              label="Service Price"
-              value={formatPrice(request.servicePrice, request.currency || "VND")}
-              valueColor={COLORS.primary}
-            />
-          )}
-
           {/* Contact Email */}
-          <InfoRow icon="mail-outline" label="Email" value={request.contactEmail} />
-
-          {/* Instruments Price */}
-          {request.instrumentPrice && request.instrumentPrice > 0 && (
-            <InfoRow
-              icon="musical-notes-outline"
-              label="Instruments Price"
-              value={formatPrice(request.instrumentPrice, request.currency || "VND")}
-              valueColor={COLORS.primary}
-            />
-          )}
+          <InfoRow label="Email" value={request.contactEmail} />
 
           {/* Phone Number */}
-          <InfoRow icon="call-outline" label="Phone Number" value={request.contactPhone} />
-
-          {/* Total Price */}
-          {request.totalPrice && (
-            <InfoRow
-              icon="card-outline"
-              label="Total Price"
-              value={formatPrice(request.totalPrice, request.currency || "VND")}
-              valueColor={COLORS.success}
-            />
-          )}
+          <InfoRow label="Phone Number" value={request.contactPhone} />
 
           {/* Divider before arrangement-specific fields */}
           {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
@@ -590,14 +673,13 @@ const RequestDetailScreen = ({ navigation, route }) => {
             <View style={styles.divider} />
           )}
 
-          {/* Genres - Only for arrangement, after prices */}
+          {/* Genres - Only for arrangement */}
           {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
            request.genres && 
            Array.isArray(request.genres) && 
-           request.genres.length > 0) ? (
+           request.genres.length > 0) && (
             <View style={styles.infoRow}>
-              <Ionicons name="musical-note-outline" size={18} color={COLORS.textSecondary} />
-              <View style={styles.infoContent}>
+              <View style={styles.infoContentNoIcon}>
                 <Text style={styles.infoLabel}>Genres</Text>
                 <View style={styles.genresContainer}>
                   {request.genres.filter(g => g).map((genre, idx) => (
@@ -608,40 +690,47 @@ const RequestDetailScreen = ({ navigation, route }) => {
                 </View>
               </View>
             </View>
-          ) : null}
+          )}
 
-          {/* Purpose - Only for arrangement, after genres */}
+          {/* Purpose - Only for arrangement, right after Genres */}
           {((request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") && 
-           request.purpose) ? (
+           request.purpose) && (
             <InfoRow
-              icon="flag-outline"
               label="Purpose"
               value={getPurposeLabel(request.purpose)}
             />
-          ) : null}
+          )}
 
-          {/* Other fields for recording/arrangement_with_recording */}
+          {/* Divider before recording-specific fields */}
+          {(request.requestType === "recording" || request.requestType === "arrangement_with_recording") && 
+           (request.hasVocalist !== undefined || 
+            (request.requestType === "arrangement_with_recording" && 
+             request.preferredSpecialists && 
+             Array.isArray(request.preferredSpecialists) && 
+             request.preferredSpecialists.length > 0)) && (
+            <View style={styles.divider} />
+          )}
+
+          {/* Vocalist - Only for recording/arrangement_with_recording */}
           {request.hasVocalist !== undefined && request.requestType !== "transcription" && (
             <InfoRow
-              icon="mic-outline"
               label="Vocalist"
               value={request.hasVocalist ? "Yes" : "No"}
               valueColor={request.hasVocalist ? COLORS.success : COLORS.textSecondary}
             />
           )}
 
-          {/* Preferred Vocalists for arrangement_with_recording */}
+          {/* Preferred Vocalists - Right after Vocalist for arrangement_with_recording */}
           {request.requestType === "arrangement_with_recording" &&
             request.preferredSpecialists &&
             Array.isArray(request.preferredSpecialists) &&
             request.preferredSpecialists.length > 0 && (
               <View style={styles.infoRow}>
-                <Ionicons name="people-outline" size={18} color={COLORS.textSecondary} />
-                <View style={styles.infoContent}>
+                <View style={styles.infoContentNoIcon}>
                   <Text style={styles.infoLabel}>Preferred Vocalists</Text>
                   <View style={styles.genresContainer}>
                     {request.preferredSpecialists.map((specialist, idx) => (
-                      <View key={idx} style={[styles.genreTag, { backgroundColor: COLORS.pink || '#ff69b4' }]}>
+                      <View key={idx} style={[styles.genreTag]}>
                         <Text style={styles.genreTagText}>
                           {specialist.name || `Vocalist ${specialist.specialistId}`}
                         </Text>
@@ -652,41 +741,68 @@ const RequestDetailScreen = ({ navigation, route }) => {
               </View>
             )}
 
+          {/* Guests */}
           {request.externalGuestCount > 0 && (
-            <InfoRow
-              icon="people-outline"
-              label="Guests"
-              value={`${request.externalGuestCount} ${request.externalGuestCount === 1 ? "person" : "people"}`}
-            />
+            <>
+              <View style={styles.divider} />
+              <InfoRow
+                label="Guests"
+                value={`${request.externalGuestCount} ${request.externalGuestCount === 1 ? "person" : "people"}`}
+              />
+            </>
+          )}
+          </>
           )}
 
           {/* Manager Info */}
           <View style={styles.divider} />
           <View style={styles.infoRow}>
-            <Ionicons name="person-circle-outline" size={18} color={COLORS.textSecondary} />
-            <View style={styles.infoContent}>
+            <View style={styles.infoContentNoIcon}>
               <Text style={styles.infoLabel}>Manager</Text>
               {request.managerInfo ? (
                 <View style={styles.managerInfo}>
-                  <Text style={styles.managerName}>{request.managerInfo.fullName || "N/A"}</Text>
-                  <Text style={styles.managerDetail}>{request.managerInfo.email || "N/A"}</Text>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>Name:</Text>
+                    <Text style={styles.managerName}>{request.managerInfo.fullName || "N/A"}</Text>
+                  </View>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>Email:</Text>
+                    <Text style={styles.managerDetail}>{request.managerInfo.email || "N/A"}</Text>
+                  </View>
                   {request.managerInfo.phone && (
-                    <Text style={styles.managerDetail}>{request.managerInfo.phone}</Text>
+                    <View style={styles.managerDetailRow}>
+                      <Text style={styles.managerDetailLabel}>Phone:</Text>
+                      <Text style={styles.managerDetail}>{request.managerInfo.phone}</Text>
+                    </View>
                   )}
-                  <View style={styles.managerStatusBadge}>
-                    <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>Status:</Text>
+                    <View style={styles.managerStatusBadge}>
+                      <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                    </View>
                   </View>
                 </View>
               ) : request.managerUserId ? (
                 <View style={styles.managerInfo}>
-                  <Text style={styles.managerDetail}>ID: {request.managerUserId}</Text>
-                  <View style={styles.managerStatusBadge}>
-                    <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>ID:</Text>
+                    <Text style={styles.managerDetail}>{request.managerUserId}</Text>
+                  </View>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>Status:</Text>
+                    <View style={styles.managerStatusBadge}>
+                      <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                    </View>
                   </View>
                 </View>
               ) : (
-                <View style={styles.managerStatusBadge}>
-                  <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                <View style={styles.managerInfo}>
+                  <View style={styles.managerDetailRow}>
+                    <Text style={styles.managerDetailLabel}>Status:</Text>
+                    <View style={styles.managerStatusBadge}>
+                      <Text style={styles.managerStatusText}>{getManagerStatusText()}</Text>
+                    </View>
+                  </View>
                 </View>
               )}
             </View>
@@ -707,12 +823,10 @@ const RequestDetailScreen = ({ navigation, route }) => {
 
           <View style={styles.divider} />
           <InfoRow
-            icon="calendar-outline"
             label="Created At"
             value={formatDate(request.createdAt)}
           />
           <InfoRow
-            icon="sync-outline"
             label="Last Updated"
             value={formatDate(request.updatedAt)}
           />
@@ -1001,8 +1115,8 @@ const RequestDetailScreen = ({ navigation, route }) => {
 // Helper component for info rows
 const InfoRow = ({ icon, label, value, monospace, valueColor }) => (
   <View style={styles.infoRow}>
-    <Ionicons name={icon} size={18} color={COLORS.textSecondary} />
-    <View style={styles.infoContent}>
+    {icon && <Ionicons name={icon} size={18} color={COLORS.textSecondary} />}
+    <View style={[styles.infoContent, !icon && styles.infoContentNoIcon]}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text
         style={[
@@ -1063,16 +1177,46 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  titleInfoRow: {
+    flexDirection: "row",
+    marginBottom: SPACING.md,
+    alignItems: "flex-start",
+  },
+  titleLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 60,
+  },
   title: {
     fontSize: FONT_SIZES.xxl,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    flex: 1,
   },
-  badges: {
+  serviceInfoRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+    alignItems: "center",
+  },
+  serviceLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 60,
+  },
+  statusInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statusLabel: {
+    fontSize: FONT_SIZES.base,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
+    minWidth: 60,
   },
   typeBadge: {
     backgroundColor: COLORS.primary + "20",
@@ -1130,11 +1274,29 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  cardTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    flex: 1,
+  },
+  toggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs / 2,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  toggleButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   infoRow: {
     flexDirection: "row",
@@ -1143,6 +1305,10 @@ const styles = StyleSheet.create({
   infoContent: {
     flex: 1,
     marginLeft: SPACING.sm,
+  },
+  infoContentNoIcon: {
+    flex: 1,
+    marginLeft: 0,
   },
   infoLabel: {
     fontSize: FONT_SIZES.sm,
@@ -1158,13 +1324,39 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
     fontSize: FONT_SIZES.sm,
   },
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: SPACING.sm,
+  },
+  tableRowVertical: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableLabelVertical: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
+  },
+  tableValueVertical: {
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
   instrumentsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.xs,
-    marginTop: SPACING.xs / 2,
   },
   instrumentTag: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.primary + "15",
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs / 2,
@@ -1175,13 +1367,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.warning,
   },
-  mainInstrumentIcon: {
+  instrumentIcon: {
+    marginRight: SPACING.xs / 2,
+  },
+  instrumentIconPlaceholder: {
+    width: 12,
     marginRight: SPACING.xs / 2,
   },
   instrumentTagText: {
     fontSize: FONT_SIZES.xs,
     fontWeight: "600",
     color: COLORS.primary,
+    lineHeight: FONT_SIZES.xs * 1.2,
   },
   mainInstrumentTagText: {
     color: COLORS.warning,
@@ -1211,16 +1408,28 @@ const styles = StyleSheet.create({
   managerInfo: {
     marginTop: SPACING.xs / 2,
   },
+  managerDetailRow: {
+    flexDirection: "row",
+    marginBottom: SPACING.xs / 2,
+    alignItems: "flex-start",
+  },
+  managerDetailLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.xs,
+    minWidth: 60,
+  },
   managerName: {
     fontSize: FONT_SIZES.base,
     fontWeight: "700",
     color: COLORS.text,
-    marginBottom: SPACING.xs / 2,
+    flex: 1,
   },
   managerDetail: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs / 2,
+    flex: 1,
   },
   managerStatusBadge: {
     backgroundColor: COLORS.primary + "15",
@@ -1228,7 +1437,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.sm,
-    marginTop: SPACING.xs,
   },
   managerStatusText: {
     fontSize: FONT_SIZES.xs,

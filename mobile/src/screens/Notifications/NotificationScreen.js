@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import { NotificationItem } from "../../components";
@@ -79,6 +80,13 @@ const NotificationScreen = ({ navigation }) => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Reload notifications when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotifications();
+    }, [fetchNotifications])
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchNotifications();
@@ -86,28 +94,43 @@ const NotificationScreen = ({ navigation }) => {
   }, [fetchNotifications]);
 
   const handleNotificationPress = async (notification) => {
-    // Mark as read if unread
+    // Mark as read if unread - Optimistic update first
     if (!notification.isRead) {
-      await markAsRead(notification.notificationId);
-      
-      // Update local list
-      setAllNotifications((prev) =>
-        Array.isArray(prev) 
+      // Optimistic update: Update local state immediately
+      setAllNotifications((prev) => {
+        const updated = Array.isArray(prev) 
           ? prev.map((n) =>
               n.notificationId === notification.notificationId
                 ? { ...n, isRead: true }
                 : n
             )
-          : []
-      );
+          : [];
+        
+        // If filtering by unread, remove from list
+        if (filter === 'unread') {
+          return updated.filter((n) => n.notificationId !== notification.notificationId);
+        }
+        return updated;
+      });
       
-      // If filtering by unread, remove the notification from list after marking as read
-      if (filter === 'unread') {
-        setAllNotifications((prev) =>
-          Array.isArray(prev) 
-            ? prev.filter((n) => n.notificationId !== notification.notificationId)
-            : []
-        );
+      // Then call API
+      try {
+        await markAsRead(notification.notificationId);
+        // Refresh to ensure sync with backend
+        fetchNotifications();
+      } catch (error) {
+        // Revert on error
+        setAllNotifications((prev) => {
+          const reverted = Array.isArray(prev) 
+            ? prev.map((n) =>
+                n.notificationId === notification.notificationId
+                  ? { ...n, isRead: false }
+                  : n
+              )
+            : [];
+          return reverted;
+        });
+        console.error("Error marking notification as read:", error);
       }
     }
 

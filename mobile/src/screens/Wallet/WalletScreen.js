@@ -19,7 +19,6 @@ import dayjs from "dayjs";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constants";
 import {
   getOrCreateMyWallet,
-  topupWallet,
   getMyWalletTransactions,
 } from "../../services/walletService";
 
@@ -36,7 +35,6 @@ const WalletScreen = ({ navigation }) => {
   // Deposit modal
   const [depositModalVisible, setDepositModalVisible] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
-  const [depositLoading, setDepositLoading] = useState(false);
 
   // Filters modal
   const [filtersModalVisible, setFiltersModalVisible] = useState(false);
@@ -151,25 +149,13 @@ const WalletScreen = ({ navigation }) => {
       return;
     }
 
-    try {
-      setDepositLoading(true);
-      const response = await topupWallet(wallet.walletId, {
-        amount: amount,
-        currency: "VND",
-      });
-
-      if (response?.status === "success") {
-        Alert.alert("Success", "Deposit successful!");
-        setDepositModalVisible(false);
-        setDepositAmount("");
-        await loadWallet();
-        await loadTransactions(true);
-      }
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to deposit");
-    } finally {
-      setDepositLoading(false);
-    }
+    // Navigate to TopupPaymentScreen with amount
+    setDepositModalVisible(false);
+    setDepositAmount("");
+    navigation.navigate('TopupPayment', {
+      amount: amount.toString(),
+      description: `Top Up Wallet - ${amount.toLocaleString("vi-VN")} VND`,
+    });
   };
 
   const applyFilters = () => {
@@ -288,7 +274,7 @@ const WalletScreen = ({ navigation }) => {
 
       {/* Row 4: Balance After */}
       <Text style={styles.balanceAfter}>
-        Số dư: {formatCurrency(item.balanceAfter, item.currency)}
+        Balance: {formatCurrency(item.balanceAfter, item.currency)}
       </Text>
 
       {/* Row 5: Date */}
@@ -350,7 +336,7 @@ const WalletScreen = ({ navigation }) => {
               }}
             >
               {/* <Ionicons name="add-circle" size={20} color={COLORS.white} /> */}
-              <Text style={styles.depositButtonText}>Nạp tiền</Text>
+              <Text style={styles.depositButtonText}>Top Up</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -442,22 +428,22 @@ const WalletScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nạp tiền vào ví</Text>
+              <Text style={styles.modalTitle}>Top Up Wallet</Text>
               <TouchableOpacity onPress={() => setDepositModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Số tiền (VND)</Text>
+              <Text style={styles.inputLabel}>Amount (VND)</Text>
               <TextInput
                 style={styles.amountInput}
-                placeholder="Nhập số tiền"
+                placeholder="Enter amount"
                 keyboardType="numeric"
                 value={depositAmount}
                 onChangeText={setDepositAmount}
               />
-              <Text style={styles.inputHint}>Tối thiểu: 1,000 VND</Text>
+              <Text style={styles.inputHint}>Minimum: 1,000 VND</Text>
             </View>
 
             <View style={styles.modalActions}>
@@ -465,34 +451,13 @@ const WalletScreen = ({ navigation }) => {
                 style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => setDepositModalVisible(false)}
               >
-                <Text style={styles.modalCancelButtonText}>Hủy</Text>
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  styles.modalConfirmButton,
-                  depositLoading && styles.modalButtonDisabled,
-                ]}
-                onPress={() => {
-                  const amount = parseFloat(depositAmount);
-                  if (!amount || amount < 1000) {
-                    Alert.alert("Lỗi", "Số tiền tối thiểu là 1,000 VND");
-                    return;
-                  }
-                  setDepositModalVisible(false);
-                  // Navigate to TopupPayment with amount
-                  navigation.navigate('TopupPayment', {
-                    amount: amount.toString(),
-                    description: 'Nạp tiền vào ví',
-                  });
-                }}
-                disabled={depositLoading}
+                style={[styles.modalButton, styles.modalConfirmButton]}
+                onPress={handleDeposit}
               >
-                {depositLoading ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
-                  <Text style={styles.modalConfirmButtonText}>Tiếp tục</Text>
-                )}
+                <Text style={styles.modalConfirmButtonText}>Continue</Text>
               </TouchableOpacity>
             </View>
           </View>

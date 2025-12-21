@@ -182,3 +182,47 @@ export const getAllContracts = async () => {
   }
 };
 
+/**
+ * Export contract as PDF
+ * GET /contracts/{contractId}/export-pdf
+ * 
+ * @param {string} contractId - ID của contract
+ * @returns {Promise} Blob response với PDF file
+ */
+export const exportContractPdf = async (contractId) => {
+  try {
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.CONTRACTS.BASE}/${contractId}/export-pdf`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Export Contract PDF Error]', error.response?.data || error.message);
+    throw error.response?.data || { 
+      message: error.message || 'Lỗi khi export PDF contract',
+      error: error.response?.statusText || 'Unknown error'
+    };
+  }
+};
+
+/**
+ * Get contract signature image as base64 (proxy from S3 to avoid CORS)
+ * GET /contracts/{contractId}/signature-image
+ *
+ * @param {string} contractId - ID của contract
+ * @returns {Promise} ApiResponse with base64 image data URL
+ */
+export const getSignatureImage = async (contractId) => {
+  try {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.CONTRACTS.SIGNATURE_IMAGE(contractId)
+    );
+    return response.data;
+  } catch (error) {
+    console.error('❌ [Get Signature Image Error]', error.response?.data || error.message);
+    throw error.response?.data || { message: 'Lỗi khi lấy ảnh chữ ký' };
+  }
+};
+
