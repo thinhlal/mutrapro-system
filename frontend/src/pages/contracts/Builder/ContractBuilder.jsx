@@ -638,14 +638,18 @@ const ContractBuilder = () => {
         let defaultMilestones = [];
         if (contractType === 'arrangement_with_recording') {
           // Tạo 2 milestones: 1 cho Arrangement, 1 cho Recording
+          // Tính payment percent: chia đều phần còn lại (100 - depositPercent) cho 2 milestones
+          const remainingPercent = 100 - depositPercent;
+          const paymentPercentPerMilestone = Math.floor(remainingPercent / 2);
+          
           defaultMilestones = [
             {
               name: 'Arrangement',
               description: 'Complete arrangement service',
               orderIndex: 1,
               milestoneType: 'arrangement', // Phân biệt milestone này là Arrangement
-              hasPayment: false,
-              paymentPercent: null,
+              hasPayment: true,
+              paymentPercent: paymentPercentPerMilestone,
               milestoneSlaDays: Math.floor(defaultSlaDays * 0.6), // 60% của tổng SLA
             },
             {
@@ -653,13 +657,52 @@ const ContractBuilder = () => {
               description: 'Complete recording service',
               orderIndex: 2,
               milestoneType: 'recording', // Phân biệt milestone này là Recording
-              hasPayment: false,
-              paymentPercent: null,
+              hasPayment: true,
+              paymentPercent: remainingPercent - paymentPercentPerMilestone, // Phần còn lại để đảm bảo tổng = remainingPercent
               milestoneSlaDays: Math.floor(defaultSlaDays * 0.4), // 40% của tổng SLA
             },
           ];
+        } else if (contractType === 'transcription') {
+          // Tạo 1 milestone cho Transcription
+          defaultMilestones = [
+            {
+              name: 'Transcription',
+              description: 'Complete transcription service - Convert audio recordings into musical notation',
+              orderIndex: 1,
+              milestoneType: 'transcription',
+              hasPayment: true,
+              paymentPercent: 100 - depositPercent,
+              milestoneSlaDays: defaultSlaDays,
+            },
+          ];
+        } else if (contractType === 'arrangement') {
+          // Tạo 1 milestone cho Arrangement
+          defaultMilestones = [
+            {
+              name: 'Arrangement',
+              description: 'Complete arrangement service - Create musical arrangements based on provided materials',
+              orderIndex: 1,
+              milestoneType: 'arrangement',
+              hasPayment: true,
+              paymentPercent: 100 - depositPercent,
+              milestoneSlaDays: defaultSlaDays,
+            },
+          ];
+        } else if (contractType === 'recording') {
+          // Tạo 1 milestone cho Recording
+          defaultMilestones = [
+            {
+              name: 'Recording Session',
+              description: 'Complete recording service as specified in booking details',
+              orderIndex: 1,
+              milestoneType: 'recording',
+              hasPayment: true,
+              paymentPercent: 100 - depositPercent,
+              milestoneSlaDays: defaultSlaDays,
+            },
+          ];
         }
-        // Note: Các contract type khác (transcription, arrangement, recording) sẽ không có default milestones
+        // Note: Bundle contract type không có default milestones
         // Manager sẽ tự thêm milestones và milestoneType sẽ được tự động set dựa trên contractType
 
         form.setFieldsValue({
