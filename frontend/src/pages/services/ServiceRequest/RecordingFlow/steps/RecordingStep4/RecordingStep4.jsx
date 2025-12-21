@@ -40,7 +40,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
   const [fileList, setFileList] = useState([]);
 
   // Destructure formData
-  const { step1, step2, step3 } = formData;
+  const { step0, step1, step2, step3 } = formData;
 
   // Initialize form with user info
   useEffect(() => {
@@ -93,10 +93,18 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
     setUploadedFile(null);
   };
 
-  // Calculate fees (participant + equipment only)
+  // Calculate fees (studio + participant + equipment)
   const calculateFees = () => {
+    let studioFee = 0;
     let participantFee = 0;
     let equipmentRentalFee = 0;
+
+    // Studio fee = hourlyRate * durationHours
+    const studio = step0?.studio;
+    const hours = step1?.durationHours || 2;
+    if (studio?.hourlyRate) {
+      studioFee = studio.hourlyRate * hours;
+    }
 
     // Vocal fees (when hiring internal vocalists)
     if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
@@ -104,7 +112,6 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
         // Use hourlyRate from vocalist data, fallback to 500k if missing
         const rate = vocalist.hourlyRate || 500000;
         // Calculate fee = hourlyRate * booking hours (from step1)
-        const hours = step1?.durationHours || 2;
         participantFee += rate * hours;
       });
     }
@@ -120,12 +127,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           // Use hourlyRate from instrument data, fallback to 300k if missing
           const rate = instrument.hourlyRate || 300000;
           // Calculate fee = hourlyRate * booking hours (from step1)
-          console.log('instrument', instrument);
-          console.log('rate', rate);
-          console.log('step1?.durationHours', step1?.durationHours);
-          const hours = step1?.durationHours || 2;
           participantFee += rate * hours;
-          console.log('participantFee', participantFee);
         }
 
         // Equipment rental fee (when renting from studio)
@@ -136,16 +138,16 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           const quantity = instrument.quantity || 1;
           const rentalFee = instrument.rentalFee || 0;
           // Calculate fee = rentalFee (per hour) x quantity x booking hours
-          const hours = step1?.durationHours || 2;
           equipmentRentalFee += rentalFee * quantity * hours;
         }
       });
     }
 
     return {
+      studioFee,
       participantFee,
       equipmentRentalFee,
-      totalFee: participantFee + equipmentRentalFee,
+      totalFee: studioFee + participantFee + equipmentRentalFee,
     };
   };
 
@@ -158,6 +160,20 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
   const calculateDetailedBreakdown = () => {
     const breakdown = [];
     const hours = step1?.durationHours || 2;
+
+    // Studio fee breakdown
+    const studio = step0?.studio;
+    if (studio?.hourlyRate) {
+      const studioFee = studio.hourlyRate * hours;
+      breakdown.push({
+        type: 'studio',
+        name: studio.studioName || 'Studio',
+        rate: studio.hourlyRate,
+        hours: hours,
+        fee: studioFee,
+        formula: `${studio.hourlyRate.toLocaleString('vi-VN')} VND/hour x ${hours} hrs = ${studioFee.toLocaleString('vi-VN')} VND`,
+      });
+    }
 
     // Vocal fees breakdown
     if (step2?.selectedVocalists && step2.selectedVocalists.length > 0) {
@@ -625,18 +641,29 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
           className={styles.feeSection}
         >
           <Row gutter={[16, 16]}>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={6}>
+              <Statistic
+                title="Studio fee"
+                value={fees.studioFee}
+                suffix="VND"
+                valueStyle={{ color: '#1890ff' }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                (Studio hourly rate)
+              </Text>
+            </Col>
+            <Col xs={24} sm={6}>
               <Statistic
                 title="Participant fee"
                 value={fees.participantFee}
                 suffix="VND"
-                valueStyle={{ color: '#1890ff' }}
+                valueStyle={{ color: '#52c41a' }}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
                 (Vocalists + Instrumentalists)
               </Text>
             </Col>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={6}>
               <Statistic
                 title="Equipment fee"
                 value={fees.equipmentRentalFee}
@@ -647,7 +674,7 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
                 (Equipment from studio)
               </Text>
             </Col>
-            <Col xs={24} sm={8}>
+            <Col xs={24} sm={6}>
               <Statistic
                 title="Total"
                 value={fees.totalFee}
@@ -661,10 +688,10 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
             </Col>
           </Row>
 
-          {fees.totalFee === 0 && (
+          {fees.studioFee === 0 && fees.participantFee === 0 && fees.equipmentRentalFee === 0 && (
             <Alert
-              message="Total fee = 0 VND"
-              description="You are self-performing (self vocal, self instruments, self equipment)"
+              message="Total fee = Studio fee only"
+              description="Studio fee is always included. You are self-performing (self vocal, self instruments, self equipment)."
               type="info"
               style={{ marginTop: 16 }}
             />
@@ -681,19 +708,20 @@ export default function RecordingStep4({ formData, onBack, onSubmit }) {
               size="small"
               style={{ marginBottom: 16 }}
             >
-              {/* Service Fee */}
-              {/* Participants & Equipment */}
+              {/* Studio Fee, Participants & Equipment */}
               {detailedBreakdown.map((item, index) => (
                 <Descriptions.Item
                   key={index}
                   label={
                     <Space>
                       <Text strong>
-                        {item.type === 'vocalist'
-                          ? '🎤 Vocalist'
-                          : item.type === 'instrumentalist'
-                            ? '🎸 Instrumentalist'
-                            : '🔧 Equipment'}
+                        {item.type === 'studio'
+                          ? '🏢 Studio'
+                          : item.type === 'vocalist'
+                            ? '🎤 Vocalist'
+                            : item.type === 'instrumentalist'
+                              ? '🎸 Instrumentalist'
+                              : '🔧 Equipment'}
                       </Text>
                       <Text type="secondary">({item.name})</Text>
                     </Space>
