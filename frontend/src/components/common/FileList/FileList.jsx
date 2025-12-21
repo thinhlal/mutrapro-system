@@ -31,6 +31,8 @@ const FileList = ({
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [downloadingFileIds, setDownloadingFileIds] = useState(new Set());
+  const [viewingFileIds, setViewingFileIds] = useState(new Set());
   // Nếu không có files và không show empty, return null
   if (!files || files.length === 0) {
     if (!showEmpty) return null;
@@ -60,12 +62,15 @@ const FileList = ({
   };
 
   const handleViewFile = async file => {
+    const fileId = file.fileId || file.id;
+    if (!fileId) {
+      message.error('File ID not found');
+      return;
+    }
+
     try {
-      const fileId = file.fileId || file.id;
-      if (!fileId) {
-        message.error('File ID not found');
-        return;
-      }
+      // Set loading state
+      setViewingFileIds(prev => new Set(prev).add(fileId));
 
       // Fetch file từ backend qua endpoint download
       const response = await axiosInstance.get(
@@ -87,25 +92,34 @@ const FileList = ({
       if (isAudioOrVideo) {
         // Audio/Video: Mở trong modal
         setPreviewLoading(true);
-        setPreviewFile(file);
-        setPreviewModalVisible(true);
-        setPreviewFile(prev => ({
-          ...prev,
+        setPreviewFile({
+          ...file,
           previewUrl: url,
           mimeType: mimeType,
-        }));
-        setPreviewLoading(false);
+        });
+        setPreviewModalVisible(true);
+        // Loading sẽ được tắt khi audio/video element load xong (onLoadedData)
       } else {
         // PDF/Image/Khác: Mở tab mới
         window.open(url, '_blank');
         // Clean up URL sau khi mở
         setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        setViewingFileIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Error previewing file:', error);
       message.error('Lỗi khi xem file');
       setPreviewModalVisible(false);
       setPreviewFile(null);
+      setViewingFileIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
     }
   };
 
@@ -114,7 +128,19 @@ const FileList = ({
     const fileId = file.fileId || file.id;
     const fileName = file.fileName || file.name || 'file';
     if (!fileId) return;
-    await downloadFileHelper(fileId, fileName);
+
+    try {
+      setDownloadingFileIds(prev => new Set(prev).add(fileId));
+      await downloadFileHelper(fileId, fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    } finally {
+      setDownloadingFileIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
+    }
   };
 
   const closePreviewModal = () => {
@@ -123,6 +149,16 @@ const FileList = ({
     }
     setPreviewModalVisible(false);
     setPreviewFile(null);
+    setPreviewLoading(false);
+    // Reset viewing state for the file
+    if (previewFile) {
+      setViewingFileIds(prev => {
+        const newSet = new Set(prev);
+        if (previewFile.fileId) newSet.delete(previewFile.fileId);
+        if (previewFile.id) newSet.delete(previewFile.id);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -156,6 +192,7 @@ const FileList = ({
                         onClick={() => handleViewFile(file)}
                         className={styles.actionButton}
                         title="View file"
+                        loading={viewingFileIds.has(fileId)}
                       />
                       <Button
                         type="text"
@@ -164,6 +201,7 @@ const FileList = ({
                         onClick={e => handleDownloadFile(e, file)}
                         className={styles.actionButton}
                         title="Download file"
+                        loading={downloadingFileIds.has(fileId)}
                       />
                     </Space>
                   )}
@@ -200,12 +238,29 @@ const FileList = ({
           <Button
             key="download"
             icon={<DownloadOutlined />}
-            onClick={() => {
+            loading={
+              previewFile &&
+              downloadingFileIds.has(
+                previewFile.fileId || previewFile.id
+              )
+            }
+            onClick={async () => {
               if (previewFile) {
                 const fileId = previewFile.fileId || previewFile.id;
                 const fileName =
                   previewFile.fileName || previewFile.name || 'file';
-                downloadFileHelper(fileId, fileName);
+                try {
+                  setDownloadingFileIds(prev => new Set(prev).add(fileId));
+                  await downloadFileHelper(fileId, fileName);
+                } catch (error) {
+                  console.error('Error downloading file:', error);
+                } finally {
+                  setDownloadingFileIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(fileId);
+                    return newSet;
+                  });
+                }
               }
             }}
           >
@@ -230,6 +285,25 @@ const FileList = ({
                     style={{ width: '100%' }}
                     preload="metadata"
                     autoPlay
+                    onLoadedData={() => {
+                      setPreviewLoading(false);
+                      setViewingFileIds(prev => {
+                        const newSet = new Set(prev);
+                        if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                        if (previewFile?.id) newSet.delete(previewFile.id);
+                        return newSet;
+                      });
+                    }}
+                    onError={() => {
+                      setPreviewLoading(false);
+                      message.error('Lỗi khi load file audio');
+                      setViewingFileIds(prev => {
+                        const newSet = new Set(prev);
+                        if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                        if (previewFile?.id) newSet.delete(previewFile.id);
+                        return newSet;
+                      });
+                    }}
                   >
                     <source
                       src={previewFile.previewUrl}
@@ -244,6 +318,25 @@ const FileList = ({
                   style={{ width: '100%', maxHeight: '500px' }}
                   preload="metadata"
                   autoPlay
+                  onLoadedData={() => {
+                    setPreviewLoading(false);
+                    setViewingFileIds(prev => {
+                      const newSet = new Set(prev);
+                      if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                      if (previewFile?.id) newSet.delete(previewFile.id);
+                      return newSet;
+                    });
+                  }}
+                  onError={() => {
+                    setPreviewLoading(false);
+                    message.error('Lỗi khi load file video');
+                    setViewingFileIds(prev => {
+                      const newSet = new Set(prev);
+                      if (previewFile?.fileId) newSet.delete(previewFile.fileId);
+                      if (previewFile?.id) newSet.delete(previewFile.id);
+                      return newSet;
+                    });
+                  }}
                 >
                   <source
                     src={previewFile.previewUrl}
