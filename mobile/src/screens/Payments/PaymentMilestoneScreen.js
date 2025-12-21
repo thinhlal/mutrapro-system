@@ -16,7 +16,6 @@ import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../../config/constan
 import { getContractById } from "../../services/contractService";
 import {
   getOrCreateMyWallet,
-  topupWallet,
   payMilestone,
 } from "../../services/walletService";
 
@@ -224,12 +223,19 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
     const walletBalance = parseFloat(wallet.balance || 0);
 
     if (walletBalance < milestoneAmount) {
+      const suggestedAmount = milestoneAmount - walletBalance + 10000;
       Alert.alert(
         "Insufficient Balance",
         `Your wallet balance is ${formatCurrency(walletBalance, wallet.currency)}. You need ${formatCurrency(milestoneAmount, installment.currency)} to pay this milestone.\n\nWould you like to top up your wallet?`,
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Top Up", onPress: () => setTopupModalVisible(true) },
+          { 
+            text: "Top Up", 
+            onPress: () => {
+              setTopupAmount(suggestedAmount.toString());
+              setTopupModalVisible(true);
+            }
+          },
         ]
       );
       return;
@@ -291,24 +297,13 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
       return;
     }
 
-    try {
-      setPaying(true);
-      const response = await topupWallet(wallet.walletId, {
-        amount: amount,
-        currency: "VND",
-      });
-
-      if (response?.status === "success") {
-        Alert.alert("Success", "Top-up successful!");
-        setTopupModalVisible(false);
-        setTopupAmount("");
-        await loadData();
-      }
-    } catch (error) {
-      Alert.alert("Error", error.message || "Failed to top up");
-    } finally {
-      setPaying(false);
-    }
+    // Navigate to TopupPaymentScreen with amount
+    setTopupModalVisible(false);
+    setTopupAmount("");
+    navigation.navigate("TopupPayment", {
+      amount: amount,
+      description: `Nạp tiền vào ví - ${amount.toLocaleString("vi-VN")} VND`,
+    });
   };
 
   if (loading) {
@@ -400,7 +395,13 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Your Wallet</Text>
-              <TouchableOpacity onPress={() => setTopupModalVisible(true)}>
+              <TouchableOpacity 
+                onPress={() => {
+                  const suggestedAmount = milestoneAmount - walletBalance + 10000;
+                  setTopupAmount(suggestedAmount.toString());
+                  setTopupModalVisible(true);
+                }}
+              >
                 <Text style={styles.topupLink}>Top Up</Text>
               </TouchableOpacity>
             </View>
@@ -485,7 +486,12 @@ const PaymentMilestoneScreen = ({ navigation, route }) => {
         {!hasSufficientBalance && (
           <TouchableOpacity
             style={styles.topupButton}
-            onPress={() => setTopupModalVisible(true)}
+            onPress={() => {
+              // Calculate suggested amount (need amount + 10,000 buffer)
+              const suggestedAmount = milestoneAmount - walletBalance + 10000;
+              setTopupAmount(suggestedAmount.toString());
+              setTopupModalVisible(true);
+            }}
           >
             <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
             <Text style={styles.topupButtonText}>Top Up Wallet</Text>

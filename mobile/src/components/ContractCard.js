@@ -80,7 +80,83 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
       : null;
 
   const getStatusConfig = (status) => {
+    // Normalize status to lowercase for mapping (frontend uses lowercase)
+    const statusLower = status?.toLowerCase() || "";
+    
     const configs = {
+      draft: {
+        color: COLORS.textSecondary,
+        icon: "document-outline",
+        text: "Draft",
+        bgColor: COLORS.textSecondary + "15",
+      },
+      sent: {
+        color: COLORS.info,
+        icon: "paper-plane-outline",
+        text: "Sent to Customer",
+        bgColor: COLORS.info + "15",
+      },
+      approved: {
+        color: COLORS.success,
+        icon: "checkmark-circle-outline",
+        text: "Approved - Waiting for Signature",
+        bgColor: COLORS.success + "15",
+      },
+      signed: {
+        color: COLORS.warning,
+        icon: "ribbon-outline",
+        text: "Signed - Pending Deposit Payment",
+        bgColor: COLORS.warning + "15",
+      },
+      active_pending_assignment: {
+        color: COLORS.warning,
+        icon: "time-outline",
+        text: "Deposit Paid - Pending Assignment",
+        bgColor: COLORS.warning + "15",
+      },
+      active: {
+        color: COLORS.success,
+        icon: "checkmark-circle",
+        text: "Active - Deposit Paid",
+        bgColor: COLORS.success + "15",
+      },
+      completed: {
+        color: COLORS.success,
+        icon: "checkmark-done-circle",
+        text: "Completed - All Milestones Paid",
+        bgColor: COLORS.success + "15",
+      },
+      rejected_by_customer: {
+        color: COLORS.error,
+        icon: "close-circle-outline",
+        text: "Rejected by Customer",
+        bgColor: COLORS.error + "15",
+      },
+      need_revision: {
+        color: COLORS.warning,
+        icon: "create-outline",
+        text: "Needs Revision",
+        bgColor: COLORS.warning + "15",
+      },
+      canceled_by_customer: {
+        color: COLORS.error,
+        icon: "close-circle-outline",
+        text: "Canceled by Customer",
+        bgColor: COLORS.error + "15",
+      },
+      canceled_by_manager: {
+        color: COLORS.error,
+        icon: "close-circle-outline",
+        text: "Canceled by Manager",
+        bgColor: COLORS.error + "15",
+      },
+      expired: {
+        color: COLORS.textSecondary,
+        icon: "time-outline",
+        text: "Expired",
+        bgColor: COLORS.textSecondary + "15",
+      },
+      // Legacy uppercase support (fallback)
       DRAFT: {
         color: COLORS.textSecondary,
         icon: "document-outline",
@@ -90,25 +166,25 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
       SENT: {
         color: COLORS.info,
         icon: "paper-plane-outline",
-        text: "Sent",
+        text: "Sent to Customer",
         bgColor: COLORS.info + "15",
       },
       APPROVED: {
         color: COLORS.success,
         icon: "checkmark-circle-outline",
-        text: "Approved",
+        text: "Approved - Waiting for Signature",
         bgColor: COLORS.success + "15",
       },
       SIGNED: {
-        color: COLORS.primary,
+        color: COLORS.warning,
         icon: "ribbon-outline",
-        text: "Signed",
-        bgColor: COLORS.primary + "15",
+        text: "Signed - Pending Deposit Payment",
+        bgColor: COLORS.warning + "15",
       },
       CHANGE_REQUESTED: {
         color: COLORS.warning,
         icon: "create-outline",
-        text: "Change Requested",
+        text: "Needs Revision",
         bgColor: COLORS.warning + "15",
       },
       CANCELLED: {
@@ -124,23 +200,31 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
         bgColor: COLORS.textSecondary + "15",
       },
     };
-    return configs[status] || {
+    
+    return configs[statusLower] || configs[status] || {
       color: COLORS.textSecondary,
       icon: "help-circle-outline",
-      text: status,
+      text: status || "Unknown",
       bgColor: COLORS.textSecondary + "15",
     };
   };
 
   const statusConfig = getStatusConfig(contract.status);
-  const canApprove = contract.status === "SENT";
-  const canRequestChange = contract.status === "SENT";
-  const canCancel = ["SENT", "APPROVED"].includes(contract.status);
+  const statusLower = contract.status?.toLowerCase() || "";
+  const canApprove = statusLower === "sent";
+  const canRequestChange = statusLower === "sent";
+  const canCancel = ["sent", "approved"].includes(statusLower);
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+      <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
+        <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
+        <Text style={[styles.statusText, { color: statusConfig.color }]}>
+          {statusConfig.text}
+        </Text>
+      </View>
         <View style={styles.headerLeft}>
           <Ionicons name="document-text" size={24} color={COLORS.primary} />
           <View style={styles.headerText}>
@@ -148,13 +232,8 @@ const ContractCard = ({ contract, onApprove, onRequestChange, onCancel, loading 
             <Text style={styles.contractType}>{contract.contractType}</Text>
           </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-          <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
-          <Text style={[styles.statusText, { color: statusConfig.color }]}>
-            {statusConfig.text}
-          </Text>
-        </View>
       </View>
+      
 
       {/* Price Info */}
       <View style={styles.priceSection}>
@@ -266,10 +345,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   headerLeft: {
     flexDirection: "row",
@@ -292,11 +368,14 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   statusBadge: {
+    display: "flex",
+    justifyContent: "center",
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs / 2,
+    paddingVertical: SPACING.md/ 2,
     borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
   },
   statusText: {
     fontSize: FONT_SIZES.xs,

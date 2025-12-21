@@ -173,6 +173,25 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
     }
   };
 
+  // Tính tổng giá instruments và combine với priceData (giống như web)
+  const finalPriceData = priceData
+    ? (() => {
+        // Tính tổng giá của instruments
+        const instrumentTotal = instruments.reduce(
+          (sum, inst) => sum + (inst.basePrice || 0),
+          0
+        );
+
+        // Cộng vào totalPrice từ API
+        const finalTotal = (priceData.totalPrice || 0) + instrumentTotal;
+
+        return {
+          ...priceData,
+          totalPrice: finalTotal,
+        };
+      })()
+    : null;
+
   const formatDuration = (minutes) => {
     if (!minutes) return "—";
     const totalSeconds = Math.round(minutes * 60);
@@ -298,16 +317,14 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
             {/* Selected Service */}
             <Text style={styles.sectionLabel}>Selected Service:</Text>
             <View style={styles.serviceInfoCard}>
-              <View style={styles.serviceInfoContent}>
-                <Text style={styles.serviceInfoTitle}>
-                  {SERVICE_TYPE_LABELS[serviceType] || serviceType}
+              <Text style={styles.serviceInfoTitle}>
+                {SERVICE_TYPE_LABELS[serviceType] || serviceType}
+              </Text>
+              {servicePricing?.description && (
+                <Text style={styles.serviceInfoDescription}>
+                  {servicePricing.description}
                 </Text>
-                {servicePricing?.description && (
-                  <Text style={styles.serviceInfoDescription}>
-                    {servicePricing.description}
-                  </Text>
-                )}
-              </View>
+              )}
               {servicePricing ? (
                 <View style={styles.servicePriceBadge}>
                   <Text style={styles.servicePriceText}>
@@ -328,7 +345,7 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
             {instruments.length > 0 && (
               <>
                 <Text style={[styles.sectionLabel, { marginTop: SPACING.md }]}>
-                  Selected Instruments:
+                  Selected Instruments: 
                 </Text>
                 {instruments.map((inst) => (
                   <View key={inst.instrumentId} style={styles.instrumentRow}>
@@ -352,8 +369,8 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
       </View>
 
       {/* Price Calculation Card */}
-      {priceData && (
-        <View style={[styles.card, styles.pricingCard]}>
+      {finalPriceData && (
+        <View style={ styles.pricingCard}>
           <View style={styles.cardHeader}>
             <Ionicons name="calculator" size={24} color={COLORS.success} />
             <Text style={styles.cardTitle}>Price Calculation</Text>
@@ -362,11 +379,10 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
           {/* Estimated Total Alert */}
           <View style={styles.totalAlert}>
             <View style={styles.totalAlertHeader}>
-              <Ionicons name="cash-outline" size={24} color={COLORS.success} />
               <Text style={styles.totalAlertTitle}>Estimated Total</Text>
             </View>
             <Text style={styles.totalAlertValue}>
-              {formatPrice(priceData.totalPrice, priceData.currency)}
+              {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
             </Text>
           </View>
 
@@ -377,7 +393,7 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
           <View style={styles.breakdownRow}>
             <Text style={styles.breakdownLabel}>Base Rate</Text>
             <Text style={styles.breakdownValue}>
-              {formatPrice(priceData.basePrice, priceData.currency)} / minute
+              {formatPrice(finalPriceData.basePrice, finalPriceData.currency)} / minute
             </Text>
           </View>
 
@@ -388,39 +404,43 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
             </Text>
           </View>
 
-          {priceData.instrumentPrices && priceData.instrumentPrices.length > 0 && (
+          <View style={styles.breakdownRow}>
+            <Text style={styles.breakdownLabel}>Service Subtotal</Text>
+            <Text style={styles.breakdownValue}>
+              {formatPrice(priceData.totalPrice || 0, finalPriceData.currency)}
+            </Text>
+          </View>
+
+          {instruments.length > 0 && (
             <>
               <View style={styles.breakdownRow}>
                 <Text style={styles.breakdownLabel}>Instruments</Text>
                 <Text style={styles.breakdownValue}>
-                  {priceData.instrumentPrices.length} selected
+                  {formatPrice(
+                    instruments.reduce((sum, inst) => sum + (inst.basePrice || 0), 0),
+                    finalPriceData.currency
+                  )}{' '}
+                  ({instruments.length} instrument{instruments.length > 1 ? 's' : ''})
                 </Text>
               </View>
-              {priceData.instrumentPrices.map((item, index) => (
-                <View key={index} style={styles.breakdownSubRow}>
-                  <Text style={styles.breakdownSubLabel}>• {item.instrumentName}</Text>
+              {instruments.map((inst) => (
+                <View key={inst.instrumentId} style={styles.breakdownSubRow}>
+                  <Text style={styles.breakdownSubLabel}>• {inst.instrumentName}</Text>
                   <Text style={styles.breakdownSubValue}>
-                    {formatPrice(item.price, priceData.currency)}
+                    {formatPrice(inst.basePrice || 0, finalPriceData.currency)}
                   </Text>
                 </View>
               ))}
             </>
           )}
 
-          <View style={styles.breakdownRow}>
-            <Text style={styles.breakdownLabel}>Subtotal</Text>
-            <Text style={styles.breakdownValue}>
-              {formatPrice(priceData.totalPrice, priceData.currency)}
-            </Text>
-          </View>
-
           {/* Notes */}
-          {priceData.notes && (
+          {finalPriceData.notes && (
             <>
               <View style={styles.divider} />
               <View style={styles.noteContainer}>
                 <Ionicons name="information-circle" size={20} color={COLORS.info} />
-                <Text style={styles.noteText}>{priceData.notes}</Text>
+                <Text style={styles.noteText}>{finalPriceData.notes}</Text>
               </View>
             </>
           )}
@@ -430,7 +450,7 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Price</Text>
             <Text style={styles.totalValue}>
-              {formatPrice(priceData.totalPrice, priceData.currency)}
+              {formatPrice(finalPriceData.totalPrice, finalPriceData.currency)}
             </Text>
           </View>
         </View>
@@ -449,7 +469,7 @@ const ServiceQuoteScreen = ({ route, navigation }) => {
         <TouchableOpacity
           style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={submitting || loading || !priceData}
+          disabled={submitting || loading || !finalPriceData}
         >
           {submitting ? (
             <>
@@ -592,6 +612,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success + "05",
     borderWidth: 1,
     borderColor: COLORS.success + "30",
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
   },
   priceRow: {
     flexDirection: "row",
@@ -618,9 +640,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + "10",
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: SPACING.md,
   },
   serviceInfoContent: {
@@ -636,13 +655,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     lineHeight: 18,
+    marginBottom: SPACING.sm,
   },
   servicePriceBadge: {
     backgroundColor: COLORS.success,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.sm,
+    flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: SPACING.xs,
   },
   servicePriceText: {
     fontSize: FONT_SIZES.base,
@@ -652,7 +675,7 @@ const styles = StyleSheet.create({
   serviceUnitText: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.white,
-    marginTop: 2,
+    marginLeft: SPACING.xs / 2,
   },
   instrumentRow: {
     flexDirection: "row",

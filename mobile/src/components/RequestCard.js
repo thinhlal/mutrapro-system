@@ -2,6 +2,8 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../config/constants";
+import { formatPrice } from "../services/pricingMatrixService";
+import { getGenreLabel, getPurposeLabel } from "../constants/musicOptionsConstants";
 
 const RequestCard = ({ request, onPress, booking }) => {
   const getStatusConfig = (status, hasManager) => {
@@ -90,6 +92,15 @@ const RequestCard = ({ request, onPress, booking }) => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
+  const formatBookingDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const statusConfig = getStatusConfig(request.status, !!request.managerUserId);
 
   return (
@@ -100,16 +111,14 @@ const RequestCard = ({ request, onPress, booking }) => {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.titleSection}>
-          <Text style={styles.title} numberOfLines={1}>
-            {request.title}
+        <View style={styles.typeBadge}>
+          <Text style={styles.typeBadgeText}>
+            {getRequestTypeLabel(request.requestType)}
           </Text>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>
-              {getRequestTypeLabel(request.requestType)}
-            </Text>
-          </View>
         </View>
+        <Text style={styles.title} numberOfLines={2}>
+          {request.title}
+        </Text>
       </View>
 
       {/* Status Badge */}
@@ -120,87 +129,131 @@ const RequestCard = ({ request, onPress, booking }) => {
         </Text>
       </View>
 
-      {/* Content */}
+      {/* Content - Table Layout */}
       <View style={styles.content}>
-        {/* Description */}
-        {request.description && (
-          <View style={styles.infoRow}>
-            <Ionicons name="document-text-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoText} numberOfLines={2}>
-              {request.description}
+        <View style={styles.tableContainer}>
+          {/* Description - Always show */}
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel}>Description:</Text>
+            <Text style={styles.tableValue} numberOfLines={2}>
+              {request.description || "No description"}
             </Text>
           </View>
-        )}
 
-        {/* Contact */}
-        <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoText} numberOfLines={1}>
-            {request.contactName} • {request.contactPhone}
-          </Text>
-        </View>
-
-        {/* Email */}
-        <View style={styles.infoRow}>
-          <Ionicons name="mail-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoText} numberOfLines={1}>
-            {request.contactEmail}
-          </Text>
-        </View>
-
-        {/* Optional Info */}
-        {request.tempoPercentage && (
-          <View style={styles.infoRow}>
-            <Ionicons name="musical-note-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoText}>Tempo: {request.tempoPercentage}%</Text>
-          </View>
-        )}
-
-        {request.externalGuestCount > 0 && (
-          <View style={styles.infoRow}>
-            <Ionicons name="people-outline" size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoText}>
-              Guests: {request.externalGuestCount} {request.externalGuestCount === 1 ? "person" : "people"}
+          {/* Contact Name - Always show */}
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel}>Name:</Text>
+            <Text style={styles.tableValue} numberOfLines={1}>
+              {request.contactName}
             </Text>
           </View>
-        )}
 
-        {/* Booking info for recording */}
-        {request.requestType === "recording" && booking && (
-          <>
-            {booking.bookingDate && (
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={16} color={COLORS.textSecondary} />
-                <Text style={styles.infoText}>Date: {booking.bookingDate}</Text>
+          {/* Contact Phone - Always show */}
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel}>Phone:</Text>
+            <Text style={styles.tableValue} numberOfLines={1}>
+              {request.contactPhone}
+            </Text>
+          </View>
+
+          {/* Email - Always show */}
+          <View style={styles.tableRow}>
+            <Text style={styles.tableLabel}>Email:</Text>
+            <Text style={styles.tableValue} numberOfLines={1}>
+              {request.contactEmail}
+            </Text>
+          </View>
+
+          {/* Tempo - Only for transcription */}
+          {request.tempoPercentage && request.requestType === "transcription" && (
+            <View style={styles.tableRow}>
+              <Text style={styles.tableLabel}>Tempo:</Text>
+              <Text style={styles.tableValue}>{request.tempoPercentage}%</Text>
+            </View>
+          )}
+
+          {/* Guests - If > 0 */}
+          {request.externalGuestCount > 0 && (
+            <View style={styles.tableRow}>
+              <Text style={styles.tableLabel}>Guests:</Text>
+              <Text style={styles.tableValue}>
+                {request.externalGuestCount} {request.externalGuestCount === 1 ? "person" : "people"}
+              </Text>
+            </View>
+          )}
+
+          {/* Genres - Only for arrangement/arrangement_with_recording */}
+          {(request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") &&
+            request.genres &&
+            Array.isArray(request.genres) &&
+            request.genres.length > 0 && (
+              <View style={styles.tableRow}>
+                <Text style={styles.tableLabel}>Genres:</Text>
+                <View style={styles.genresContainer}>
+                  {request.genres.map((genre, idx) => (
+                    <View key={idx} style={styles.genreTag}>
+                      <Text style={styles.genreTagText}>{getGenreLabel(genre)}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
-            {booking.startTime && booking.endTime && (
-              <View style={styles.infoRow}>
-                <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
-                <Text style={styles.infoText}>
-                  Time: {booking.startTime} - {booking.endTime}
-                </Text>
+
+          {/* Purpose - Only for arrangement/arrangement_with_recording */}
+          {(request.requestType === "arrangement" || request.requestType === "arrangement_with_recording") &&
+            request.purpose && (
+              <View style={styles.tableRow}>
+                <Text style={styles.tableLabel}>Purpose:</Text>
+                <Text style={styles.tableValue}>{getPurposeLabel(request.purpose)}</Text>
               </View>
             )}
-            {booking.totalCost !== undefined && (
-              <View style={styles.infoRow}>
-                <Ionicons name="cash-outline" size={16} color={COLORS.textSecondary} />
-                <Text style={styles.infoText}>
-                  Total: {booking.totalCost.toLocaleString("vi-VN")} VND
-                </Text>
-              </View>
-            )}
-          </>
-        )}
+
+          {/* Total Price - Only for non-recording requests */}
+          {request.requestType !== "recording" && request.totalPrice && (
+            <View style={styles.tableRow}>
+              <Text style={styles.tableLabel}>Total Price:</Text>
+              <Text style={[styles.tableValue, styles.priceValue]}>
+                {formatPrice(request.totalPrice, request.currency || "VND")}
+              </Text>
+            </View>
+          )}
+
+          {/* Booking info for recording requests */}
+          {request.requestType === "recording" && booking && (
+            <>
+              {booking.bookingDate && (
+                <View style={styles.tableRow}>
+                  <Text style={styles.tableLabel}>Date:</Text>
+                  <Text style={styles.tableValue}>
+                    {formatBookingDate(booking.bookingDate)}
+                  </Text>
+                </View>
+              )}
+              {booking.startTime && booking.endTime && (
+                <View style={styles.tableRow}>
+                  <Text style={styles.tableLabel}>Time Slot:</Text>
+                  <Text style={styles.tableValue}>
+                    {booking.startTime} - {booking.endTime}
+                  </Text>
+                </View>
+              )}
+              {booking.totalCost !== undefined && (
+                <View style={styles.tableRow}>
+                  <Text style={styles.tableLabel}>Total Cost:</Text>
+                  <Text style={[styles.tableValue, styles.priceValue]}>
+                    {booking.totalCost.toLocaleString("vi-VN")} VND
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <View style={styles.dateInfo}>
-          <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+        <Text style={styles.dateText}>Created: {formatDate(request.createdAt)}</Text>
+        <Text style={styles.dateText}>Updated: {formatDate(request.updatedAt)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -224,24 +277,18 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: SPACING.sm,
   },
-  titleSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: SPACING.xs,
-  },
-  title: {
-    flex: 1,
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginRight: SPACING.sm,
-  },
   typeBadge: {
+    alignSelf: "flex-end",
     backgroundColor: COLORS.primary + "20",
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs / 2,
     borderRadius: BORDER_RADIUS.sm,
+    marginBottom: SPACING.md,
+  },
+  title: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "700",
+    color: COLORS.text,
   },
   typeBadgeText: {
     fontSize: FONT_SIZES.xs,
@@ -265,34 +312,66 @@ const styles = StyleSheet.create({
   content: {
     marginBottom: SPACING.md,
   },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: SPACING.sm,
+  tableContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  infoText: {
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    minHeight: 40,
+    alignItems: "flex-start",
+  },
+  tableLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    width: 100,
+    minWidth: 100,
+  },
+  tableValue: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
     color: COLORS.text,
-    marginLeft: SPACING.sm,
     lineHeight: 20,
   },
-  footer: {
+  priceValue: {
+    fontWeight: "600",
+    color: COLORS.success,
+    fontSize: FONT_SIZES.base,
+  },
+  genresContainer: {
+    flex: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: SPACING.xs,
+  },
+  genreTag: {
+    backgroundColor: COLORS.primary + "20",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  genreTagText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  footer: {
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-  },
-  dateInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    gap: SPACING.xs / 2,
   },
   dateText: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    marginLeft: SPACING.xs / 2,
   },
 });
 

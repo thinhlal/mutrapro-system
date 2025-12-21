@@ -84,6 +84,7 @@ export const API_ENDPOINTS = {
     GET_BY_ID: (contractId) => `${PROJECT_PATH}/contracts/${contractId}`,
     GET_MILESTONE_BY_ID: (contractId, milestoneId) =>
       `${PROJECT_PATH}/contracts/${contractId}/milestones/${milestoneId}`,
+    SIGNATURE_IMAGE: (contractId) => `${PROJECT_PATH}/contracts/${contractId}/signature-image`,
   },
 
   // === File Submissions Management ===

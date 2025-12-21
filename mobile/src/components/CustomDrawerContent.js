@@ -130,6 +130,8 @@ const CustomDrawerContent = (props) => {
             let isActive = false;
             if (item.screen === 'MyRequests') {
               isActive = currentRoute === 'MyRequests';
+            } else if (item.screen === 'ContractsList') {
+              isActive = currentRoute === 'ContractsList';
             } else if (item.screen === 'Wallet') {
               isActive = currentRoute === 'Wallet';
             } else if (item.screen === 'MainTabs' && item.tab) {

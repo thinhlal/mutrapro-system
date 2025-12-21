@@ -100,17 +100,17 @@ const ContractsListScreen = ({ navigation }) => {
     const statusLower = status?.toLowerCase() || "";
     const labelMap = {
       draft: "Draft",
-      sent: "Đã gửi",
-      approved: "Đã duyệt",
-      signed: "Đã ký - Chờ thanh toán deposit",
-      active_pending_assignment: "Đã nhận cọc - Chờ gán task",
-      active: "Đã ký - Đã thanh toán deposit",
-      completed: "Hoàn thành - Đã thanh toán hết",
-      rejected_by_customer: "Bị từ chối",
-      need_revision: "Cần chỉnh sửa",
-      canceled_by_customer: "Đã hủy",
-      canceled_by_manager: "Đã thu hồi",
-      expired: "Hết hạn",
+      sent: "Sent",
+      approved: "Approved",
+      signed: "Signed - Pending deposit payment",
+      active_pending_assignment: "Deposit paid - Pending assignment",
+      active: "Signed - Deposit paid",
+      completed: "Completed - Fully paid",
+      rejected_by_customer: "Rejected",
+      need_revision: "Needs revision",
+      canceled_by_customer: "Cancelled",
+      canceled_by_manager: "Cancelled by manager",
+      expired: "Expired",
     };
     return labelMap[statusLower] || status;
   };
@@ -293,23 +293,26 @@ const ContractCard = ({
                 {contract.contractNumber || contract.contractId}
               </Text>
               <Text style={styles.contractType} numberOfLines={1}>
-                {getServiceName(contract.contractType)}
+                Service: {getServiceName(contract.contractType)}
               </Text>
             </View>
           </View>
-          <View style={styles.cardHeaderRight}>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: statusColor + "15" },
-              ]}
-            >
-              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-              <Text style={[styles.statusText, { color: statusColor }]} numberOfLines={1}>
-                {statusLabel}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} style={styles.arrowIcon} />
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} style={styles.arrowIcon} />
+        </View>
+
+        {/* Status Section */}
+        <View style={styles.statusSection}>
+          <Text style={styles.statusLabel}>Status:</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusColor + "15" },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.statusText, { color: statusColor }]} numberOfLines={1}>
+              {statusLabel}
+            </Text>
           </View>
         </View>
 
@@ -320,7 +323,6 @@ const ContractCard = ({
         <View style={styles.cardBody}>
           <View style={styles.infoRow}>
             <View style={styles.infoLeft}>
-              <Ionicons name="cash-outline" size={18} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Total Price</Text>
             </View>
             <Text style={styles.infoValue}>
@@ -341,7 +343,6 @@ const ContractCard = ({
           {contract.createdAt && (
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
-                <Ionicons name="calendar-outline" size={18} color={COLORS.textSecondary} />
                 <Text style={styles.infoLabel}>Created</Text>
               </View>
               <Text style={styles.infoValue}>
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: SPACING.md + 2,
     paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: BORDER_RADIUS.xl,
     backgroundColor: COLORS.gray[100],
     marginRight: SPACING.sm,
     borderWidth: 1.5,
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardHeaderLeft: {
     flexDirection: "row",
@@ -501,10 +502,16 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: SPACING.sm,
   },
-  cardHeaderRight: {
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    minHeight: 50,
+  statusSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  statusLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginRight: SPACING.sm,
   },
   iconContainer: {
     width: 40,
@@ -536,8 +543,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm + 2,
     paddingVertical: SPACING.xs + 2,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.xs,
-    maxWidth: 140,
+    flex: 1,
+    // maxWidth: 200,
   },
   statusDot: {
     width: 6,
