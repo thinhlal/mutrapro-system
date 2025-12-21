@@ -14,6 +14,7 @@ import com.mutrapro.project_service.dto.response.StudioBookingResponse;
 import com.mutrapro.project_service.dto.response.TaskAssignmentResponse;
 import com.mutrapro.shared.dto.ApiResponse;
 import com.mutrapro.shared.event.SlotBookedEvent;
+import com.mutrapro.shared.event.SlotReleasedEvent;
 import com.mutrapro.project_service.entity.BookingParticipant;
 import com.mutrapro.project_service.entity.BookingRequiredEquipment;
 import com.mutrapro.project_service.entity.Contract;
@@ -864,6 +865,8 @@ public class StudioBookingService {
                     participant.getPerformerSource(), participant.getSpecialistId());
                 
                 // Publish Kafka event để mark slots as BOOKED (async) - chỉ cho INTERNAL_ARTIST
+                // Mark ngay khi tạo booking để tránh conflict với booking khác
+                // Nếu contract cancel/expired → sẽ release slots qua SlotReleasedEvent
                 if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST 
                     && participant.getSpecialistId() != null) {
                     publishSlotBookedEvent(
@@ -1951,6 +1954,9 @@ public class StudioBookingService {
         
         log.info("Updated booking status to CONFIRMED: bookingId={}, contractId={}", 
             booking.getBookingId(), contractId);
+        
+        // Lưu ý: Slots đã được mark as BOOKED khi tạo booking (TENTATIVE)
+        // Không cần mark lại vì đã BOOKED rồi
     }
     
     /**
@@ -1993,6 +1999,115 @@ public class StudioBookingService {
             log.error("Failed to enqueue slot booked event to outbox: specialistId={}, bookingId={}, error={}", 
                 specialistId, bookingId, e.getMessage(), e);
             // Không throw exception để không fail transaction
+        }
+    }
+    
+    /**
+     * Helper method để publish slot released event vào Kafka (via Outbox Pattern)
+     * Được gọi khi contract cancel/expired
+     */
+    private void publishSlotReleasedEvent(String specialistId, String bookingId, 
+                                          LocalDate bookingDate, LocalTime startTime, LocalTime endTime,
+                                          String reason) {
+        try {
+            // Tạo event với eventId
+            UUID eventId = UUID.randomUUID();
+            SlotReleasedEvent event = SlotReleasedEvent.builder()
+                    .eventId(eventId)
+                    .specialistId(specialistId)
+                    .bookingId(bookingId)
+                    .bookingDate(bookingDate)
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .reason(reason)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            JsonNode payload = objectMapper.valueToTree(event);
+            UUID aggregateId;
+            try {
+                aggregateId = UUID.fromString(bookingId);
+            } catch (IllegalArgumentException ex) {
+                aggregateId = UUID.randomUUID();
+            }
+            
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .aggregateId(aggregateId)
+                    .aggregateType("StudioBooking")
+                    .eventType("slot.released")
+                    .eventPayload(payload)
+                    .build();
+            
+            outboxEventRepository.save(outboxEvent);
+            log.info("Queued slot released event in outbox: eventId={}, specialistId={}, bookingId={}, date={}, time={}-{}, reason={}", 
+                eventId, specialistId, bookingId, bookingDate, startTime, endTime, reason);
+        } catch (Exception e) {
+            log.error("Failed to enqueue slot released event to outbox: specialistId={}, bookingId={}, error={}", 
+                specialistId, bookingId, e.getMessage(), e);
+            // Không throw exception để không fail transaction
+        }
+    }
+    
+    /**
+     * Release slots và cancel booking khi contract cancel/expired
+     * Được gọi từ ContractService khi contract bị cancel/expired
+     * 
+     * Hỗ trợ cả 2 luồng:
+     * - Luồng 3 (PRE_CONTRACT_HOLD): Customer cancel/expired → cancel booking + release slots
+     * - Luồng 2 (CONTRACT_RECORDING): Nếu contract bị cancel sau khi active → release slots (hiếm xảy ra)
+     */
+    @Transactional
+    public void releaseSlotsForBooking(String contractId, String reason) {
+        log.info("Releasing slots and canceling booking: contractId={}, reason={}", contractId, reason);
+        
+        // Tìm tất cả bookings theo contractId (cả luồng 2 và luồng 3)
+        List<StudioBooking> bookings = studioBookingRepository.findByContractId(contractId);
+        
+        if (bookings.isEmpty()) {
+            log.debug("No bookings found for contractId={}, skipping slot release", contractId);
+            return;
+        }
+        
+        // Xử lý từng booking
+        for (StudioBooking booking : bookings) {
+            // Chỉ xử lý bookings chưa bị cancel/completed
+            if (booking.getStatus() == BookingStatus.CANCELLED || 
+                booking.getStatus() == BookingStatus.COMPLETED ||
+                booking.getStatus() == BookingStatus.NO_SHOW) {
+                log.debug("Skipping booking with status {}: bookingId={}", 
+                    booking.getStatus(), booking.getBookingId());
+                continue;
+            }
+            
+            // Update booking status thành CANCELLED (chỉ cho luồng 3 - PRE_CONTRACT_HOLD)
+            // Luồng 2 (CONTRACT_RECORDING) đã CONFIRMED, chỉ release slots
+            if (booking.getContext() == StudioBookingContext.PRE_CONTRACT_HOLD) {
+                booking.setStatus(BookingStatus.CANCELLED);
+                studioBookingRepository.save(booking);
+                log.info("Updated booking status to CANCELLED: bookingId={}, contractId={}, reason={}", 
+                    booking.getBookingId(), contractId, reason);
+            } else {
+                log.info("Releasing slots for CONTRACT_RECORDING booking (status unchanged): bookingId={}, contractId={}, reason={}", 
+                    booking.getBookingId(), contractId, reason);
+            }
+            
+            // Lấy tất cả participants là INTERNAL_ARTIST để release slots
+            List<BookingParticipant> participants = bookingParticipantRepository.findByBooking_BookingId(booking.getBookingId());
+            for (BookingParticipant participant : participants) {
+                if (participant.getPerformerSource() == PerformerSource.INTERNAL_ARTIST 
+                    && participant.getSpecialistId() != null) {
+                    publishSlotReleasedEvent(
+                        participant.getSpecialistId(),
+                        booking.getBookingId(),
+                        booking.getBookingDate(),
+                        booking.getStartTime(),
+                        booking.getEndTime(),
+                        reason
+                    );
+                    log.info("Published slot released event: specialistId={}, bookingId={}, reason={}", 
+                        participant.getSpecialistId(), booking.getBookingId(), reason);
+                }
+            }
         }
     }
     

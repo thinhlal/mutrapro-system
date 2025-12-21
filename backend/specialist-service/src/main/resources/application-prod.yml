@@ -66,6 +66,7 @@ app:
   event-topics:
     mappings:
       slot.booked: ${KAFKA_TOPIC_SLOT_BOOKED:slot-booked-events}
+      slot.released: ${KAFKA_TOPIC_SLOT_RELEASED:slot-released-events}
 
 # Management & Actuator
 management:

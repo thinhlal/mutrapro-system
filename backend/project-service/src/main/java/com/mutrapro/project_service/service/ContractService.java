@@ -456,6 +456,15 @@ public class ContractService {
                             contract.getContractId(), contract.getRequestId(), e);
                     }
                     
+                    // Release slots cho booking (nếu có)
+                    try {
+                        studioBookingService.releaseSlotsForBooking(contract.getContractId(), "CONTRACT_EXPIRED");
+                        log.info("Released slots for booking: contractId={}", contract.getContractId());
+                    } catch (Exception e) {
+                        log.error("Failed to release slots for booking: contractId={}, error={}", 
+                            contract.getContractId(), e.getMessage(), e);
+                    }
+                    
                     updatedCount++;
                     log.info("Contract expired: contractId={}, contractNumber={}, status={}, expiresAt={}", 
                         contract.getContractId(), contract.getContractNumber(), currentStatus, contract.getExpiresAt());
@@ -1361,6 +1370,15 @@ public class ContractService {
         } catch (Exception e) {
             log.error("Failed to update request status: requestId={}, contractId={}, error={}", 
                 contract.getRequestId(), contractId, e.getMessage(), e);
+        }
+        
+        // Release slots cho booking (nếu có)
+        try {
+            studioBookingService.releaseSlotsForBooking(contractId, "CONTRACT_CANCELLED_BY_CUSTOMER");
+            log.info("Released slots for booking: contractId={}", contractId);
+        } catch (Exception e) {
+            log.error("Failed to release slots for booking: contractId={}, error={}", 
+                contractId, e.getMessage(), e);
         }
         
         // Gửi notification cho manager qua Kafka

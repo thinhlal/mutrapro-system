@@ -548,6 +548,71 @@ public class SpecialistSlotService {
     }
     
     /**
+     * Release slots từ BOOKED về AVAILABLE
+     * Được gọi từ Kafka consumer khi contract cancel/expired hoặc booking CANCELLED/NO_SHOW
+     */
+    public void releaseSlots(String specialistId, LocalDate date, LocalTime startTime, LocalTime endTime) {
+        log.info("Releasing slots from BOOKED to AVAILABLE for specialistId={}, date={}, time={}-{}", 
+            specialistId, date, startTime, endTime);
+        
+        Specialist specialist = specialistRepository.findById(specialistId)
+            .orElse(null);
+        
+        if (specialist == null) {
+            log.warn("Specialist not found: {}", specialistId);
+            return;
+        }
+        
+        // Validate duration và startTime
+        if (!SlotGridConstants.isValidDuration(startTime, endTime)) {
+            log.warn("Invalid duration: {} to {} is not a multiple of 2 hours", startTime, endTime);
+            return;
+        }
+        
+        if (!SlotGridConstants.isValidStartTime(startTime)) {
+            log.warn("Invalid start time: {} is not aligned with grid", startTime);
+            return;
+        }
+        
+        // Tính các startTimes cần release
+        List<LocalTime> requiredStartTimes = new ArrayList<>();
+        LocalTime currentStartTime = startTime;
+        while (currentStartTime != null && currentStartTime.isBefore(endTime)) {
+            requiredStartTimes.add(currentStartTime);
+            currentStartTime = SlotGridConstants.getNextSlotStartTime(currentStartTime);
+            if (currentStartTime == null || currentStartTime.isAfter(endTime) || currentStartTime.equals(endTime)) {
+                break;
+            }
+        }
+        
+        // Lấy các slots cần update
+        List<SpecialistSlot> slotsToUpdate = new ArrayList<>();
+        for (LocalTime slotStartTime : requiredStartTimes) {
+            slotRepository.findBySpecialistAndSlotDateAndStartTime(specialist, date, slotStartTime)
+                .ifPresent(slot -> {
+                    // Chỉ release nếu slot đang BOOKED
+                    if (slot.getSlotStatus() == SlotStatus.BOOKED) {
+                        slot.setSlotStatus(SlotStatus.AVAILABLE);
+                        slotsToUpdate.add(slot);
+                    } else {
+                        log.debug("Slot not BOOKED (status={}), skipping release: specialistId={}, date={}, startTime={}", 
+                            slot.getSlotStatus(), specialistId, date, slotStartTime);
+                    }
+                });
+        }
+        
+        // Batch update
+        if (!slotsToUpdate.isEmpty()) {
+            slotRepository.saveAll(slotsToUpdate);
+            log.info("Released {} slots from BOOKED to AVAILABLE for specialistId={}, date={}, time={}-{}", 
+                slotsToUpdate.size(), specialistId, date, startTime, endTime);
+        } else {
+            log.warn("No BOOKED slots found to release for specialistId={}, date={}, time={}-{}", 
+                specialistId, date, startTime, endTime);
+        }
+    }
+    
+    /**
      * Get current specialist
      */
     private Specialist getCurrentSpecialist() {
